@@ -1,0 +1,6 @@
+PyQt6
+PyMuPDF
+pytest
+pytest-mock
+pytest-qt
+markdown
