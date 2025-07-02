@@ -33,6 +33,7 @@ from src.inquiry_popup import InquiryPopup
 from src.annotation_manager import AnnotationManager
 from src.loading_indicator import LoadingIndicator
 from src.responsive_utils import responsive_calc
+from src.chat_panel import ChatPanel
 
 class MainWindow(QMainWindow):
     """
@@ -86,10 +87,24 @@ class MainWindow(QMainWindow):
             self.empty_message
         )
         
+        # Connect chat panel signals
+        self._connect_chat_signals()
+        
         # -- Actions --
         self.setup_actions()
         
         self._connect_signals()
+
+    def _connect_chat_signals(self):
+        """Connect chat panel signals to main window handlers."""
+        if hasattr(self, 'chat_widget') and self.chat_widget:
+            # Connect user message signal to AI processing
+            self.chat_widget.ai_response_requested.connect(self.handle_chat_query)
+            
+            # Connect chat cleared signal
+            self.chat_widget.chat_cleared.connect(self.on_chat_cleared)
+            
+            logger.info("Chat panel signals connected")
 
     def _setup_window_geometry(self):
         """Setup modern window geometry with screen centering."""
@@ -179,17 +194,21 @@ class MainWindow(QMainWindow):
 
         main_layout.addLayout(toolbar_layout)
         
-        # --- Content Area: PDF Viewer + Annotations Panel ---
+        # --- Content Area: Chat Panel + PDF Viewer + Annotations Panel ---
         content_layout = QHBoxLayout()
         content_layout.setSpacing(8)
         
-        # PDF Viewer (takes most of the space)
+        # Chat Panel (left side)
+        self.chat_panel = self.create_chat_panel()
+        content_layout.addWidget(self.chat_panel, 1)  # 1/5 of the width
+        
+        # PDF Viewer (center, takes most of the space)
         self.pdf_viewer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        content_layout.addWidget(self.pdf_viewer, 3)  # 3/4 of the width
+        content_layout.addWidget(self.pdf_viewer, 3)  # 3/5 of the width
         
         # Annotations Panel (right side)
         self.annotations_panel = self.create_annotations_panel()
-        content_layout.addWidget(self.annotations_panel, 1)  # 1/4 of the width
+        content_layout.addWidget(self.annotations_panel, 1)  # 1/5 of the width
         
         main_layout.addLayout(content_layout)
         
@@ -276,6 +295,53 @@ class MainWindow(QMainWindow):
         
         return panel
 
+    def create_chat_panel(self):
+        """Create the left-side chat panel."""
+        # Main panel frame with responsive styling
+        panel = QFrame()
+        panel.setFrameStyle(QFrame.Shape.StyledPanel)
+        
+        # Set responsive width based on current window size
+        self._update_chat_panel_dimensions(panel)
+        
+        # Apply responsive styling for chat panel
+        panel_style = responsive_calc.create_responsive_style(
+            responsive_calc.get_chat_panel_style_template()
+        )
+        panel.setStyleSheet(panel_style)
+        
+        # Panel layout
+        panel_layout = QVBoxLayout(panel)
+        panel_layout.setContentsMargins(0, 0, 0, 0)
+        panel_layout.setSpacing(0)
+        
+        # Create chat panel widget
+        self.chat_widget = ChatPanel()
+        panel_layout.addWidget(self.chat_widget)
+        
+        # Store panel reference for responsive updates
+        self.chat_panel_widget = panel
+        
+        return panel
+
+    def _update_chat_panel_dimensions(self, panel=None):
+        """Update chat panel dimensions based on current window size."""
+        if panel is None:
+            panel = getattr(self, 'chat_panel_widget', None)
+        
+        if panel is not None:
+            # Calculate responsive width
+            current_width = self.width()
+            optimal_width = responsive_calc.get_chat_panel_width(current_width)
+            
+            # Apply responsive dimensions
+            panel_config = responsive_calc.config["chat_panel"]
+            panel.setMinimumWidth(panel_config["min_width"])
+            panel.setMaximumWidth(panel_config["max_width"])
+            panel.setFixedWidth(optimal_width)
+            
+            logger.debug(f"Updated chat panel width to {optimal_width}px (window: {current_width}px)")
+
     def _update_panel_dimensions(self, panel=None):
         """Update annotations panel dimensions based on current window size."""
         if panel is None:
@@ -301,7 +367,8 @@ class MainWindow(QMainWindow):
         # Update responsive calculations
         responsive_calc.refresh()
         
-        # Update panel dimensions
+        # Update both panel dimensions
+        self._update_chat_panel_dimensions()
         self._update_panel_dimensions()
         
         # Update empty state message styling for new responsive values
@@ -558,6 +625,73 @@ class MainWindow(QMainWindow):
             self.pdf_viewer.set_selection_mode(SelectionMode.TEXT)
             self.selection_mode_action.setText("Switch to &Area Selection")
             self.selection_mode_action.setToolTip("Currently in Text Selection mode")
+
+    def handle_chat_query(self, message: str):
+        """Handle a chat query from the chat panel."""
+        if not message.strip():
+            return
+        
+        logger.info(f"Processing chat query: {len(message)} characters")
+        
+        # Create LLM worker for chat query
+        self.setup_chat_llm_worker(message)
+
+    def setup_chat_llm_worker(self, message: str):
+        """Setup LLM worker for chat queries."""
+        try:
+            # Cancel any existing worker
+            if self.llm_worker is not None:
+                self.llm_worker.finished.disconnect()
+                self.llm_worker.error.disconnect()
+                self.llm_worker.terminate()
+                self.llm_worker.wait()
+                self.llm_worker = None
+            
+            # Create new worker for chat
+            self.llm_worker = LLMWorker(self.llm_service, message)
+            
+            # Connect signals
+            self.llm_worker.result_ready.connect(self.on_chat_query_finished)
+            self.llm_worker.error_occurred.connect(self.on_chat_query_error)
+            
+            # Start worker
+            self.llm_worker.start()
+            
+            logger.info("Chat LLM worker started")
+            
+        except Exception as e:
+            logger.error(f"Error setting up chat LLM worker: {e}")
+            self.handle_chat_error(f"Failed to start AI processing: {str(e)}")
+
+    def on_chat_query_finished(self, result):
+        """Handle completion of chat LLM query."""
+        if hasattr(self, 'chat_widget') and self.chat_widget:
+            self.chat_widget.add_ai_response(result)
+        
+        # Clean up worker
+        if self.llm_worker:
+            self.llm_worker = None
+        
+        logger.info("Chat query completed successfully")
+
+    def on_chat_query_error(self, error_message):
+        """Handle error in chat LLM query."""
+        logger.error(f"Chat query error: {error_message}")
+        self.handle_chat_error(error_message)
+        
+        # Clean up worker
+        if self.llm_worker:
+            self.llm_worker = None
+
+    def handle_chat_error(self, error_message: str):
+        """Handle chat-specific errors."""
+        if hasattr(self, 'chat_widget') and self.chat_widget:
+            self.chat_widget.handle_ai_error(error_message)
+
+    def on_chat_cleared(self):
+        """Handle chat cleared event."""
+        logger.info("Chat conversation cleared")
+        # Could add additional cleanup or analytics here
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

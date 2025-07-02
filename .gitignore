@@ -164,6 +164,25 @@ app_debug.log
 test_output.txt
 pytest_log.txt
 
-# Configuration files with secrets (uncomment if needed)
-# src/config.py
-# config.py
+# Additional cache patterns
+*.pyc
+*.pyo
+*.pyd
+.Python
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+.cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.nyc_output
+.sass-cache/
+.parcel-cache/
+
+# IDE and Editor caches
+.vscode/settings.json
+.vscode/.ropeproject
+**/.idea/
+*.sublime-workspace
+*.sublime-project

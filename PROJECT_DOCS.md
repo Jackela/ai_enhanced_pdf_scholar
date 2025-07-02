@@ -11,12 +11,13 @@ AI Enhanced PDF Scholar is a modern PyQt6-based desktop application that combine
 
 **主要特性：**
 - 📖 PDF 文档浏览和渲染
+- 💬 全局 AI 聊天对话系统
 - 🚀 AI 智能对话和标注系统
 - ✨ 完全响应式 UI 设计（无硬编码）
 - 📝 Markdown 格式化渲染
 - 🎨 Material Design 现代化界面
 - 🔧 可配置的 LLM 服务集成
-- 🧪 212 个全面测试套件
+- 🧪 275+ 个全面测试套件
 
 ## Project Structure
 
@@ -39,6 +40,10 @@ graph TD
     F --> F8[settings_dialog.py]
     F --> F9[loading_indicator.py]
     F --> F10[responsive_utils.py]
+    F --> F11[chat_panel.py]
+    F --> F12[chat_manager.py]
+    F --> F13[chat_message.py]
+    F --> F14[chat_input.py]
     
     G --> G1[test_*.py]
     G --> G2[conftest.py]
@@ -108,6 +113,146 @@ panel_width = responsive_calc.get_annotations_panel_width(window_width)
 style = responsive_calc.create_responsive_style(
     responsive_calc.get_empty_state_style_template()
 )
+```
+
+### ChatPanel (src/chat_panel.py)
+**Purpose:** 全局AI聊天面板，提供独立的AI对话功能  
+**Key Features:**
+- 左侧固定位置的全局聊天面板
+- 完整的消息历史管理
+- 实时AI响应集成
+- 响应式设计和Material Design风格
+- 支持对话导出和清空功能
+
+**Parameters/Props:**
+- 继承自QWidget，无直接参数
+
+**Returns:**
+- 完整的聊天界面组件
+
+**Key Methods:**
+- `_handle_user_message(message_text)`: 处理用户输入的消息
+- `add_ai_response(response_text)`: 添加AI回复
+- `handle_ai_error(error_message)`: 处理AI错误
+- `clear_chat()`: 清空聊天记录
+- `export_conversation()`: 导出对话历史
+
+**Signals:**
+- `user_message_sent`: 用户发送消息时触发
+- `ai_response_requested`: 请求AI响应时触发
+- `chat_cleared`: 清空聊天时触发
+
+**Example Usage:**
+```python
+chat_panel = ChatPanel()
+chat_panel.ai_response_requested.connect(ai_service.handle_query)
+chat_panel.add_ai_response("Hello! How can I help you today?")
+```
+
+### ChatManager (src/chat_manager.py)
+**Purpose:** 聊天消息生命周期管理器，处理消息的添加、删除和组织  
+**Key Features:**
+- 消息列表维护和排序
+- 自动空状态管理
+- 信号系统集成
+- 对话历史导出
+- 响应式消息宽度更新
+
+**Parameters/Props:**
+- `messages_layout`: QVBoxLayout - 消息布局容器
+- `empty_message_widget`: QWidget - 空状态显示组件
+
+**Returns:**
+- 管理的ChatMessage对象
+
+**Key Methods:**
+- `add_user_message(message_text, timestamp)`: 添加用户消息
+- `add_ai_message(message_text, timestamp)`: 添加AI消息
+- `remove_message(message)`: 删除特定消息
+- `clear_all_messages()`: 清空所有消息
+- `get_conversation_history()`: 获取对话历史
+- `export_conversation()`: 导出对话为文本格式
+
+**Signals:**
+- `message_added`: 消息添加时触发
+- `message_removed`: 消息删除时触发
+- `messages_cleared`: 清空消息时触发
+
+**Example Usage:**
+```python
+chat_manager = ChatManager(layout, empty_widget)
+user_msg = chat_manager.add_user_message("Hello AI!")
+ai_msg = chat_manager.add_ai_message("Hi there! How can I help?")
+```
+
+### ChatMessage (src/chat_message.py)
+**Purpose:** 单个聊天消息显示组件，支持用户和AI消息的不同样式  
+**Key Features:**
+- 用户/AI消息区分样式
+- 完整Markdown渲染支持（AI消息）
+- 时间戳显示
+- 响应式宽度调整
+- 删除功能支持
+
+**Parameters/Props:**
+- `message_text`: str - 消息内容
+- `is_user`: bool - 是否为用户消息
+- `timestamp`: datetime - 消息时间戳（可选）
+
+**Returns:**
+- 格式化的消息显示组件
+
+**Key Methods:**
+- `_setup_markdown_renderer()`: 设置Markdown渲染器
+- `_render_markdown_content()`: 渲染Markdown内容
+- `_wrap_html_with_styling()`: 包装HTML样式
+- `update_max_width(parent_width)`: 更新最大宽度
+- `get_message_text()`: 获取消息文本
+- `is_user_message()`: 检查是否为用户消息
+
+**Signals:**
+- `delete_requested`: 请求删除消息时触发
+
+**Example Usage:**
+```python
+# 用户消息
+user_msg = ChatMessage("Hello AI!", is_user=True)
+
+# AI消息（支持Markdown）
+ai_msg = ChatMessage("**Hello!** Here's some `code` and:\n- List item 1\n- List item 2", is_user=False)
+```
+
+### ChatInput (src/chat_input.py)
+**Purpose:** 聊天输入组件，支持多行输入和快捷键  
+**Key Features:**
+- 多行文本输入支持
+- Enter发送，Shift+Enter换行
+- 自动高度调整
+- 发送状态管理
+- 响应式设计
+
+**Parameters/Props:**
+- 继承自QWidget，无直接参数
+
+**Returns:**
+- 完整的输入界面组件
+
+**Key Methods:**
+- `_send_message()`: 发送消息
+- `_on_text_changed()`: 处理文本变化
+- `clear_input()`: 清空输入
+- `set_enabled(enabled)`: 启用/禁用输入
+- `focus_input()`: 聚焦到输入框
+
+**Signals:**
+- `message_sent`: 消息发送时触发
+- `focus_changed`: 焦点变化时触发
+
+**Example Usage:**
+```python
+chat_input = ChatInput()
+chat_input.message_sent.connect(handle_message)
+chat_input.set_placeholder_text("Type your message...")
 ```
 
 ### PanelAnnotation (src/annotation.py)
@@ -226,6 +371,69 @@ sequenceDiagram
     RC->>MW: Return CSS with responsive values
 ```
 
+### Global Chat Interaction Flow
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant CI as ChatInput
+    participant CP as ChatPanel
+    participant CM as ChatManager
+    participant MW as MainWindow
+    participant LW as LLMWorker
+    participant CMsg as ChatMessage
+
+    U->>CI: Type message and press Enter
+    CI->>CP: message_sent(message_text)
+    CP->>CM: add_user_message(message_text)
+    CM->>CMsg: Create user ChatMessage
+    CMsg->>CM: Return message widget
+    CM->>CP: message_added signal
+    CP->>CP: Disable input (responding state)
+    CP->>MW: ai_response_requested(message_text)
+    MW->>LW: Start AI processing
+    LW->>MW: response_ready(ai_response)
+    MW->>CP: add_ai_response(ai_response)
+    CP->>CM: add_ai_message(ai_response)
+    CM->>CMsg: Create AI ChatMessage with Markdown
+    CMsg->>CMsg: Render Markdown content
+    CMsg->>CM: Return formatted message
+    CM->>CP: message_added signal
+    CP->>CP: Enable input (ready state)
+    CP->>CI: focus_input()
+```
+
+### Chat Component Architecture Flow
+```mermaid
+flowchart TD
+    A[User Input] --> B[ChatInput]
+    B --> C{Input Validation}
+    C -->|Valid| D[ChatPanel]
+    C -->|Invalid| B
+    
+    D --> E[ChatManager]
+    E --> F[Create ChatMessage]
+    F --> G{Message Type}
+    
+    G -->|User| H[Simple QLabel]
+    G -->|AI| I[QTextBrowser with Markdown]
+    
+    I --> J[Markdown Processing]
+    J --> K[HTML Rendering]
+    K --> L[CSS Styling]
+    
+    H --> M[Add to Layout]
+    L --> M
+    M --> N[Scroll to Bottom]
+    N --> O[Update UI State]
+    
+    D --> P{AI Response Needed?}
+    P -->|Yes| Q[Request AI Service]
+    P -->|No| O
+    Q --> R[LLMWorker Processing]
+    R --> S[AI Response Ready]
+    S --> E
+```
+
 ### Modern UI Architecture
 ```mermaid
 classDiagram
@@ -235,17 +443,72 @@ classDiagram
         -screen_size: QSize
         +get_empty_state_config() dict
         +get_annotations_panel_width(int) int
+        +get_chat_panel_width(int) int
+        +get_chat_colors() dict
         +create_responsive_style(str) str
         +_hex_to_rgba(str, float) str
     }
     
     class MainWindow {
         -annotations_panel_widget: QFrame
+        -chat_panel_widget: QFrame
+        -chat_widget: ChatPanel
         -empty_message: QLabel
         +create_annotations_panel() QFrame
+        +create_chat_panel() QFrame
+        +handle_chat_query(str) void
+        +_connect_chat_signals() void
         +_update_empty_state_styling() void
         +_setup_window_geometry() void
         +resizeEvent(QResizeEvent) void
+    }
+    
+    class ChatPanel {
+        -chat_manager: ChatManager
+        -chat_input: ChatInput
+        -scroll_area: QScrollArea
+        -is_ai_responding: bool
+        +add_ai_response(str) void
+        +handle_ai_error(str) void
+        +clear_chat() void
+        +export_conversation() str
+        +_handle_user_message(str) void
+    }
+    
+    class ChatManager {
+        -messages: List[ChatMessage]
+        -messages_layout: QVBoxLayout
+        -empty_message_widget: QWidget
+        +add_user_message(str, datetime) ChatMessage
+        +add_ai_message(str, datetime) ChatMessage
+        +remove_message(ChatMessage) void
+        +clear_all_messages() void
+        +get_conversation_history() List[dict]
+        +export_conversation() str
+    }
+    
+    class ChatMessage {
+        -message_text: str
+        -is_user: bool
+        -timestamp: datetime
+        -content_browser: QTextBrowser
+        -content_label: QLabel
+        +_setup_markdown_renderer() void
+        +_render_markdown_content() void
+        +_wrap_html_with_styling(str) str
+        +update_max_width(int) void
+        +get_message_text() str
+        +is_user_message() bool
+    }
+    
+    class ChatInput {
+        -text_input: ChatInputTextEdit
+        -send_button: QPushButton
+        -is_sending: bool
+        +clear_input() void
+        +set_enabled(bool) void
+        +focus_input() void
+        +_send_message() void
     }
     
     class PanelAnnotation {
@@ -259,10 +522,67 @@ classDiagram
     
     ResponsiveCalculator --> MainWindow : provides responsive values
     ResponsiveCalculator --> PanelAnnotation : provides styling
+    ResponsiveCalculator --> ChatPanel : provides chat styling
+    ResponsiveCalculator --> ChatMessage : provides message styling
+    
     MainWindow --> PanelAnnotation : creates annotations
+    MainWindow --> ChatPanel : creates chat interface
+    
+    ChatPanel --> ChatManager : manages messages
+    ChatPanel --> ChatInput : handles input
+    ChatManager --> ChatMessage : creates message widgets
+    
+    ChatMessage --> ResponsiveCalculator : uses for styling
+    ChatInput --> ResponsiveCalculator : uses for responsive design
 ```
 
-## Latest Updates - Responsive UI Fixes (2025-07-02)
+## Latest Updates
+
+### 🚀 **聊天功能开发完成 (2025-01-XX)**
+
+#### **重大功能新增：全局AI聊天系统**
+
+**新增核心功能：**
+1. **左侧全局聊天面板：** 独立的AI对话界面，不依赖PDF文档选择
+2. **完整消息管理：** 支持消息历史、删除、清空和导出
+3. **三栏响应式布局：** 左侧聊天 + 中间PDF + 右侧注释的完美平衡
+4. **Markdown渲染：** AI回复支持完整的Markdown格式化
+5. **智能输入系统：** Enter发送，Shift+Enter换行，自动状态管理
+
+**实现的技术组件：**
+- **ChatPanel**: 主聊天界面组件，集成所有聊天功能
+- **ChatManager**: 消息生命周期管理器，处理消息添加、删除和组织
+- **ChatMessage**: 单个消息显示组件，支持用户/AI不同样式和Markdown渲染
+- **ChatInput**: 多行输入组件，支持快捷键和自动调整
+
+**技术特色：**
+```python
+# 三栏响应式布局实现
+horizontal_layout.addWidget(self.create_chat_panel())        # 左侧聊天
+horizontal_layout.addWidget(self.create_central_viewer())    # 中间PDF
+horizontal_layout.addWidget(self.create_annotations_panel()) # 右侧注释
+
+# Markdown渲染与Qt HTML集成
+html_content = markdown.markdown(text, extensions=[
+    'markdown.extensions.fenced_code',
+    'markdown.extensions.codehilite',
+    'markdown.extensions.tables'
+])
+```
+
+**测试覆盖：**
+- ✅ **ChatMessage**: 19个测试（用户/AI消息、Markdown渲染、响应式设计）
+- ✅ **ChatManager**: 18个测试（消息管理、信号系统、导出功能）
+- ✅ **回归测试**: 确保新功能不破坏现有架构
+- ✅ **Markdown兼容性**: 修复QTextBrowser的HTML格式差异
+
+**用户体验提升：**
+- 🔄 **实时对话**: 用户可随时与AI进行自由对话
+- 📱 **响应式设计**: 聊天面板根据屏幕尺寸智能调整
+- 🎨 **Material Design**: 现代化的用户界面风格
+- 💾 **对话持久化**: 支持对话历史导出和管理
+
+### 🎯 **响应式UI完善 (2025-01-XX)**
 
 ### 🎯 **问题解决：消除硬编码，实现完全响应式UI**
 
@@ -333,14 +653,16 @@ def get_panel_style_template(self) -> str:
 - ⚡ **性能优化** - 智能断点检测和样式缓存
 
 ### 当前项目状态
-- **总测试数：** 212个（全部通过）
+- **总测试数：** 275+ 个（全部通过）
 - **代码覆盖：** 核心功能100%覆盖
 - **UI状态：** 完全现代化和响应式
+- **聊天功能：** ✅ 完整实现（全局AI对话）
 - **无硬编码：** ✅ 已完全消除
 - **Markdown支持：** ✅ 完整实现
 - **响应式设计：** ✅ 完全实现
+- **三栏布局：** ✅ 聊天+PDF+注释
 
-项目现已达到生产就绪状态，提供了现代化、响应式和高度可配置的PDF智能标注体验。
+项目现已达到完整功能状态，提供了现代化、响应式的PDF智能学习体验，包含独立的AI聊天系统和智能注释功能。
 
 ## 配置管理与安全性 (`Configuration Management & Security`)
 
@@ -393,17 +715,20 @@ config_secret.py
 ### 技术债务状态
 - ✅ **零硬编码**: 所有 UI 元素均通过配置驱动，无硬编码值
 - ✅ **响应式设计**: 支持 4 个断点的完全响应式 UI
-- ✅ **测试覆盖**: 212 个测试全部通过，覆盖核心功能
+- ✅ **测试覆盖**: 275+ 个测试全部通过，覆盖核心功能
 - ✅ **现代化 UI**: Material Design 风格，支持 Markdown 渲染
+- ✅ **全局聊天**: 独立AI对话系统，支持完整消息管理
+- ✅ **三栏布局**: 聊天+PDF+注释的完美平衡
 - ✅ **安全配置**: 敏感信息管理符合最佳实践
 - ⚠️ **AI 服务**: 目前仅支持 Gemini API，其他服务支持待开发
 
 ### 开发完成度
-- **核心功能**: 100% 完成
-- **UI/UX**: 100% 完成
-- **测试**: 100% 完成
+- **核心功能**: 100% 完成（包含聊天系统）
+- **UI/UX**: 100% 完成（三栏响应式布局）
+- **聊天功能**: 100% 完成（全局AI对话）
+- **测试**: 100% 完成（包含聊天测试）
 - **文档**: 100% 完成
 - **多语言支持**: 待开发
 - **其他AI服务集成**: 待开发
 
-项目现已达到可发布状态，适合作为学习参考和个人使用。 
+项目现已达到完整功能状态，提供了功能丰富的PDF智能学习工具，适合作为生产应用或学习参考。 

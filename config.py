@@ -33,6 +33,28 @@ RESPONSIVE_UI = {
         "xlarge": 2560      # Large displays
     },
     
+    # Chat panel responsive settings
+    "chat_panel": {
+        # Panel width as percentage of total window width
+        "width_ratio": {
+            "small": 0.35,      # 35% for small screens
+            "medium": 0.30,     # 30% for medium screens  
+            "large": 0.25,      # 25% for large screens
+            "xlarge": 0.20      # 20% for very large screens
+        },
+        # Minimum and maximum absolute widths (in pixels)
+        "min_width": 280,
+        "max_width": 500,
+        
+        # Spacing and padding (responsive)
+        "spacing": {
+            "small": {"margin": 8, "padding": 12, "item_spacing": 8},
+            "medium": {"margin": 12, "padding": 16, "item_spacing": 12},
+            "large": {"margin": 16, "padding": 20, "item_spacing": 16},
+            "xlarge": {"margin": 20, "padding": 24, "item_spacing": 20}
+        }
+    },
+    
     # Annotations panel responsive settings
     "annotations_panel": {
         # Panel width as percentage of total window width
@@ -61,6 +83,66 @@ RESPONSIVE_UI = {
         "medium": {"title": 16, "body": 13, "caption": 10},
         "large": {"title": 18, "body": 14, "caption": 11},
         "xlarge": {"title": 20, "body": 15, "caption": 12}
+    }
+}
+
+# --- AI Chat Configuration ---
+AI_CHAT = {
+    "panel_title": "💬 AI Chat",
+    "input_placeholder": {
+        "responsive_content": {
+            "small": "Ask AI...",
+            "medium": "Ask AI anything...",
+            "large": "Ask AI anything about the document...",
+            "xlarge": "Ask AI anything about the document or general questions..."
+        }
+    },
+    "empty_state": {
+        # Responsive empty state content based on screen size
+        "responsive_content": {
+            "small": {
+                "icon": "🤖",
+                "title": "AI Chat",
+                "description": "Start a conversation with AI!"
+            },
+            "medium": {
+                "icon": "🤖",
+                "title": "AI Chat Assistant",
+                "description": "Ask questions about the document or anything else.\nYour conversation will appear here!"
+            },
+            "large": {
+                "icon": "🤖",
+                "title": "AI Chat Assistant",
+                "description": "Ask questions about the document or anything else.\nYour conversation will appear here!\n\nTip: Try asking for summaries, explanations, or general knowledge."
+            },
+            "xlarge": {
+                "icon": "🤖",
+                "title": "Welcome to AI Chat",
+                "description": "Start a conversation with your AI assistant!\nAsk questions about the document or anything else.\n\nTip: Try asking for summaries, explanations, or general knowledge.\nAll your conversations will be saved in this panel."
+            }
+        },
+        # Fallback for older code compatibility
+        "icon": "🤖",
+        "title": "AI Chat Assistant",
+        "description": "Start a conversation with your AI assistant!"
+    },
+    "colors": {
+        # Material Design inspired color palette for chat
+        "user_message": {
+            "background": "#0078d4",
+            "text": "#ffffff",
+            "border": "#106ebe"
+        },
+        "ai_message": {
+            "background": "#f5f5f5",
+            "text": "#333333", 
+            "border": "#e0e0e0"
+        },
+        "primary": "#0078d4",
+        "secondary": "#106ebe",
+        "success": "#00a86b",
+        "warning": "#ffaa44",
+        "error": "#d83b01"
     }
 }
 
