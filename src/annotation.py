@@ -583,7 +583,6 @@ class PanelAnnotation(QWidget):
             QPushButton:hover {{
                 background-color: {self.accent_color}15;
                 border-color: {self.accent_color};
-                transform: scale(1.05);
             }}
             
             QPushButton:pressed {{

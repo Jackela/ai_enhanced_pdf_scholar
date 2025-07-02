@@ -247,12 +247,36 @@ class ResponsiveCalculator:
                 padding: {padding}px;
                 font-size: {body}px;
                 font-family: 'Segoe UI', Arial, sans-serif;
-                max-height: 100px;
-                min-height: 40px;
+                max-height: 80px;
+                min-height: 36px;
             }}
             QTextEdit:focus {{
                 border-color: {secondary};
                 background-color: #f8f9fa;
+            }}
+            
+            QPushButton {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {primary}, stop:1 {secondary});
+                color: white;
+                border: none;
+                border-radius: {margin}px;
+                padding: 8px 16px;
+                font-weight: 600;
+                min-width: 60px;
+                max-height: 36px;
+            }}
+            QPushButton:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {secondary}, stop:1 {primary});
+            }}
+            QPushButton:pressed {{
+                background: {secondary};
+                padding: 9px 15px 7px 17px;
+            }}
+            QPushButton:disabled {{
+                background: #cccccc;
+                color: #888888;
             }}
         """
     
@@ -317,14 +341,19 @@ class ResponsiveCalculator:
                 font-size: {body}px;
                 font-weight: 400;
                 line-height: 1.5;
-                padding: {padding}px;
+                padding: {padding}px {padding}px {padding}px {padding}px;
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {primary_light}, stop:1 {secondary_light});
-                border: {margin}px dashed {primary_medium};
+                    stop:0 rgba(255, 255, 255, 0.9), stop:1 {primary_light});
+                border: 2px solid {primary_light};
                 border-radius: {margin}px;
                 margin: {margin}px;
                 text-align: center;
-                min-height: 120px;
+                min-height: 140px;
+            }}
+            QLabel:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 1.0), stop:1 {primary_medium});
+                border-color: {primary};
             }}
         """
     

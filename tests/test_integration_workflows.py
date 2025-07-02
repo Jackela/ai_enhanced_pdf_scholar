@@ -124,23 +124,24 @@ class TestSettingsWorkflow:
         qtbot.addWidget(main_window)
         main_window.show()
         
-        # Open settings dialog
-        with patch('src.settings_dialog.SettingsDialog.exec') as mock_exec:
-            mock_exec.return_value = True  # User clicked OK
-            
-            # Mock the settings dialog to set API key
-            with patch.object(main_window.settings, 'setValue') as mock_set_value:
+        # Test non-blocking settings dialog approach
+        with patch('src.settings_dialog.SettingsDialog.show') as mock_show:
+            with patch.object(main_window.llm_service, 'refresh_config') as mock_refresh:
+                # Open settings dialog (non-blocking)
                 main_window.open_settings()
                 
-                # Verify settings dialog was opened
-                mock_exec.assert_called_once()
-        
-        # Verify LLM service configuration refresh was called
-        with patch.object(main_window.llm_service, 'refresh_config') as mock_refresh:
-            main_window.open_settings()
-            # Mock dialog acceptance
-            with patch('src.settings_dialog.SettingsDialog.exec', return_value=True):
-                main_window.open_settings()
+                # Verify settings dialog show() was called (not exec())
+                mock_show.assert_called_once()
+                
+                # Test simulated dialog acceptance by calling the callback directly
+                mock_dialog = MagicMock()
+                main_window._on_settings_accepted(mock_dialog)
+                
+                # Verify LLM service refresh was called
+                mock_refresh.assert_called_once()
+                
+                # Verify dialog cleanup was called
+                mock_dialog.deleteLater.assert_called_once()
                 
     def test_settings_persistence_workflow(self, qtbot):
         """Test that settings persist across application restarts."""

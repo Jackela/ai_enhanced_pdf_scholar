@@ -1,14 +1,29 @@
 import pytest
 from unittest.mock import MagicMock, patch, PropertyMock
 import fitz
-from PyQt6.QtCore import Qt, QPoint, QRectF, QCoreApplication, QPointF
+from PyQt6.QtCore import Qt, QPoint, QRectF, QCoreApplication, QPointF, QObject
 from PyQt6.QtGui import QImage
 
 from src.pdf_viewer import PDFViewer
 from src.pdf_document import PDFLoadError
 
-# Helper class from another test, can be moved to a conftest.py
-from tests.test_inquiry_popup import SignalListener
+# Helper class to capture signals and their arguments
+class SignalListener(QObject):
+    def __init__(self, signal):
+        super().__init__()
+        self.received = []
+        signal.connect(self.on_signal)
+
+    def on_signal(self, *args):
+        self.received.append(args)
+
+    @property
+    def call_count(self):
+        return len(self.received)
+
+    @property
+    def last_call_args(self):
+        return self.received[-1] if self.received else None
 
 # We need a running QApplication for this test
 pytestmark = pytest.mark.usefixtures("qapp")

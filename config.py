@@ -97,34 +97,53 @@ AI_CHAT = {
             "xlarge": "Ask AI anything about the document or general questions..."
         }
     },
+    "ui_text": {
+        "send_button": "Send",
+        "sending_button": "Sending...",
+        "input_instruction": "(Enter to send)"
+    },
+    "input_settings": {
+        "max_lines": 5,
+        "button_size": {"width": 70, "height": 32},
+        "font_family": "Segoe UI, Arial, sans-serif"
+    },
+    "suggestions": {
+        "label": "💡 Quick Start:",
+        "buttons": [
+            "📋 Summarize this document",
+            "🔍 Explain key concepts", 
+            "💡 Help with research",
+            "❓ General questions"
+        ]
+    },
     "empty_state": {
         # Responsive empty state content based on screen size
         "responsive_content": {
             "small": {
                 "icon": "🤖",
-                "title": "AI Chat",
-                "description": "Start a conversation with AI!"
+                "title": "AI Assistant Ready",
+                "description": "Start chatting! Try asking:\n• \"Summarize this document\"\n• \"Explain key concepts\"\n• Any general questions"
             },
             "medium": {
                 "icon": "🤖",
-                "title": "AI Chat Assistant",
-                "description": "Ask questions about the document or anything else.\nYour conversation will appear here!"
+                "title": "AI Assistant Ready",
+                "description": "Start chatting! Try asking:\n• \"Summarize this document\"\n• \"Explain key concepts\"\n• \"Help with research\"\n• Any general questions\n\nYour conversation will appear here!"
             },
             "large": {
                 "icon": "🤖",
-                "title": "AI Chat Assistant",
-                "description": "Ask questions about the document or anything else.\nYour conversation will appear here!\n\nTip: Try asking for summaries, explanations, or general knowledge."
+                "title": "AI Assistant Ready",
+                "description": "Welcome! I can help you with:\n\n📄 Document Analysis\n• Summarize content\n• Explain complex concepts\n• Answer specific questions\n\n�� General Knowledge\n• Research assistance\n• Explanations on any topic\n• Writing and analysis help\n\nJust type your question below!"
             },
             "xlarge": {
                 "icon": "🤖",
-                "title": "Welcome to AI Chat",
-                "description": "Start a conversation with your AI assistant!\nAsk questions about the document or anything else.\n\nTip: Try asking for summaries, explanations, or general knowledge.\nAll your conversations will be saved in this panel."
+                "title": "AI Assistant Ready",
+                "description": "Welcome! I'm here to help you with:\n\n📄 Document Analysis\n• Summarize content and key points\n• Explain complex concepts in simple terms\n• Answer specific questions about the text\n• Cross-reference information\n\n🧠 General Knowledge & Research\n• Research assistance on any topic\n• Detailed explanations and analysis\n• Writing and editing help\n• Academic and professional support\n\nYour conversation history will be saved here.\nJust type your question below to get started!"
             }
         },
         # Fallback for older code compatibility
         "icon": "🤖",
-        "title": "AI Chat Assistant",
-        "description": "Start a conversation with your AI assistant!"
+        "title": "AI Assistant Ready",
+        "description": "Start chatting! Ask about the document or any general questions."
     },
     "colors": {
         # Material Design inspired color palette for chat

@@ -16,6 +16,7 @@ import logging
 from src.chat_manager import ChatManager
 from src.chat_input import ChatInput
 from src.responsive_utils import responsive_calc
+from config import AI_CHAT
 
 logger = logging.getLogger(__name__)
 
@@ -201,12 +202,61 @@ class ChatPanel(QWidget):
         desc_font.setPointSize(self.fonts["body"])
         description_label.setFont(desc_font)
         
-        # Add to layout
+        # Quick start suggestions (only for larger screens)
+        current_breakpoint = responsive_calc.get_current_breakpoint()
+        if current_breakpoint in ["large", "xlarge"]:
+            suggestions_frame = self._create_quick_suggestions()
+            empty_layout.addWidget(suggestions_frame)
+        
+        # Add widgets to layout
         empty_layout.addWidget(icon_label)
         empty_layout.addWidget(title_label)
         empty_layout.addWidget(description_label)
+        empty_layout.addStretch()
         
         return empty_frame
+
+    def _create_quick_suggestions(self) -> QWidget:
+        """Create quick suggestion buttons for starting conversations."""
+        suggestions_frame = QFrame()
+        suggestions_frame.setObjectName("suggestions_frame")
+        suggestions_layout = QVBoxLayout(suggestions_frame)
+        suggestions_layout.setContentsMargins(0, self.spacing["margin"], 0, 0)
+        suggestions_layout.setSpacing(self.spacing["item_spacing"] // 2)
+        
+        # Suggestions label - use config text
+        suggestions_label = QLabel(AI_CHAT["suggestions"]["label"])
+        suggestions_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        suggestions_font = QFont()
+        suggestions_font.setPointSize(self.fonts["caption"])
+        suggestions_font.setBold(True)
+        suggestions_label.setFont(suggestions_font)
+        suggestions_layout.addWidget(suggestions_label)
+        
+        # Suggestion buttons - use config list
+        suggestions = AI_CHAT["suggestions"]["buttons"]
+        
+        for suggestion in suggestions:
+            btn = QPushButton(suggestion)
+            btn.setObjectName("suggestion_button")
+            btn.setFixedHeight(28)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            
+            # Connect to input pre-fill
+            btn.clicked.connect(lambda checked, text=suggestion[2:]: self._prefill_suggestion(text))
+            
+            suggestions_layout.addWidget(btn)
+        
+        return suggestions_frame
+
+    def _prefill_suggestion(self, suggestion_text: str):
+        """Pre-fill the input with a suggestion and focus it."""
+        if hasattr(self.parent(), 'chat_input') and self.parent().chat_input:
+            self.parent().chat_input.set_text(suggestion_text)
+            self.parent().chat_input.focus_input()
+        elif hasattr(self, 'chat_input') and self.chat_input:
+            self.chat_input.set_text(suggestion_text)
+            self.chat_input.focus_input()
 
     def _create_input_section(self) -> QWidget:
         """Create the message input section."""
@@ -223,84 +273,121 @@ class ChatPanel(QWidget):
         return input_container
 
     def _apply_styling(self):
-        """Apply styling to the chat panel components."""
-        # Get responsive style templates
-        panel_style = responsive_calc.create_responsive_style(
-            responsive_calc.get_chat_panel_style_template()
-        )
+        """Apply responsive styling to the chat panel."""
+        style_template = responsive_calc.get_chat_panel_style_template()
+        input_style_template = responsive_calc.get_chat_input_style_template()
+        empty_style_template = responsive_calc.get_empty_state_style_template()
+        scroll_style_template = responsive_calc.get_scroll_area_style_template()
         
-        primary_color = self.colors["primary"]
-        secondary_color = self.colors["secondary"]
+        # Apply styles with current responsive values
+        panel_style = responsive_calc.create_responsive_style(style_template)
+        input_style = responsive_calc.create_responsive_style(input_style_template)
+        empty_style = responsive_calc.create_responsive_style(empty_style_template)
+        scroll_style = responsive_calc.create_responsive_style(scroll_style_template)
         
-        additional_styles = f"""
+        # Get colors for dynamic styling
+        colors = responsive_calc.get_annotation_colors()
+        spacing = responsive_calc.get_spacing_config()
+        
+        # Add suggestion button styles
+        suggestion_style = f"""
+            QPushButton#suggestion_button {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(255, 255, 255, 0.9), stop:1 rgba(0, 120, 212, 0.1));
+                border: 1px solid rgba(0, 120, 212, 0.3);
+                border-radius: {spacing['margin']}px;
+                padding: 4px 8px;
+                text-align: left;
+                font-size: {responsive_calc.get_font_config()['caption']}px;
+                color: {colors['primary']};
+            }}
+            QPushButton#suggestion_button:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(0, 120, 212, 0.1), stop:1 rgba(0, 120, 212, 0.2));
+                border-color: {colors['primary']};
+                color: {colors['secondary']};
+            }}
+            QPushButton#suggestion_button:pressed {{
+                background: rgba(0, 120, 212, 0.2);
+                border-color: {colors['secondary']};
+            }}
+        """
+        
+        # Combined styles
+        combined_style = f"""
+            /* Chat Panel Frame */
             QFrame#chat_header {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {primary_color}, stop:1 {secondary_color});
-                border: none;
-                border-radius: 0px;
-                margin: 0px;
-                padding: 0px;
+                    stop:0 {colors["primary"]}, stop:1 {colors["secondary"]});
+                border-radius: {spacing["margin"]}px;
+                margin-bottom: {spacing["margin"]}px;
             }}
             
             QLabel#chat_title {{
                 color: white;
-                background-color: transparent;
-                border: none;
-                font-weight: bold;
+                font-weight: 600;
+                padding: {spacing["padding"] // 2}px;
             }}
             
             QPushButton#clear_button {{
-                background-color: rgba(255, 255, 255, 0.2);
-                color: white;
+                background: rgba(255, 255, 255, 0.2);
                 border: 1px solid rgba(255, 255, 255, 0.3);
-                border-radius: {self.spacing["margin"] // 2}px;
+                border-radius: 16px;
+                color: white;
                 font-weight: bold;
             }}
-            
             QPushButton#clear_button:hover {{
-                background-color: rgba(255, 255, 255, 0.3);
-                border-color: white;
+                background: rgba(255, 255, 255, 0.3);
+                border-color: rgba(255, 255, 255, 0.5);
             }}
-            
             QPushButton#clear_button:pressed {{
-                background-color: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.1);
             }}
             
+            /* Messages Container */
             QWidget#messages_container {{
-                background-color: transparent;
-                border: none;
+                background: transparent;
             }}
             
-            QScrollArea#messages_scroll {{
-                background-color: transparent;
-                border: none;
-            }}
-            
-            QWidget#messages_widget {{
-                background-color: transparent;
-            }}
-            
+            /* Empty State */
             QFrame#empty_state {{
-                background-color: rgba(0, 120, 212, 0.05);
-                border: 2px dashed rgba(0, 120, 212, 0.3);
-                border-radius: {self.spacing["margin"]}px;
-                margin: {self.spacing["margin"]}px;
+                {empty_style}
             }}
             
-            QFrame#empty_state QLabel {{
-                color: {primary_color};
-                background-color: transparent;
+            /* Suggestions Frame */
+            QFrame#suggestions_frame {{
+                background: transparent;
                 border: none;
+                margin-top: {spacing["margin"]}px;
             }}
             
-            QWidget#input_container {{
-                background-color: transparent;
-                border: none;
+            /* Scroll Area */
+            {scroll_style}
+            
+            /* Input Section */
+            QFrame#input_frame {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 0.9), stop:1 rgba(0, 120, 212, 0.05));
+                border: 1px solid rgba(0, 120, 212, 0.2);
+                border-radius: {spacing["margin"]}px;
+                margin-top: {spacing["margin"]}px;
             }}
+            
+            QLabel#instruction_label {{
+                color: {colors["primary"]};
+                font-weight: 500;
+                margin-bottom: {spacing["item_spacing"] // 2}px;
+            }}
+            
+            /* Input Components */
+            {input_style}
+            
+            /* Suggestion Buttons */
+            {suggestion_style}
         """
         
-        complete_style = panel_style + additional_styles
-        self.setStyleSheet(complete_style)
+        self.setStyleSheet(combined_style)
+        logger.debug("Applied responsive styling to ChatPanel")
 
     def _connect_signals(self):
         """Connect internal signals."""

@@ -14,6 +14,7 @@ from PyQt6.QtGui import QKeySequence, QShortcut, QFont, QTextCursor
 import logging
 
 from src.responsive_utils import responsive_calc
+from config import AI_CHAT
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +69,11 @@ class ChatInputTextEdit(QTextEdit):
         # Get document height
         doc_height = self.document().size().height()
         
-        # Calculate new height with padding
+        # Calculate new height with padding - use config value
         font_height = self.fontMetrics().height()
-        max_lines = 5  # Maximum number of lines to show
+        max_lines = AI_CHAT["input_settings"]["max_lines"]
         min_height = font_height + 20  # Minimum height (1 line + padding)
-        max_height = font_height * max_lines + 20  # Maximum height (5 lines + padding)
+        max_height = font_height * max_lines + 20  # Maximum height (config lines + padding)
         
         new_height = max(min_height, min(max_height, int(doc_height) + 20))
         self.setFixedHeight(new_height)
@@ -107,7 +108,7 @@ class ChatInput(QWidget):
         "name": "ChatInput",
         "version": "1.0.0",
         "description": "Chat input widget with text area, send button, and responsive design.",
-        "dependencies": ["ChatInputTextEdit", "responsive_utils"],
+        "dependencies": ["ChatInputTextEdit", "responsive_utils", "config"],
         "interface": {
             "inputs": [],
             "outputs": "Chat input widget with send functionality"
@@ -133,6 +134,10 @@ class ChatInput(QWidget):
         self.spacing = responsive_calc.get_chat_spacing_config()
         self.fonts = responsive_calc.get_font_config()
         
+        # Get UI text and settings from config
+        self.ui_text = AI_CHAT["ui_text"]
+        self.input_settings = AI_CHAT["input_settings"]
+        
         # State management
         self.is_sending = False
         
@@ -147,10 +152,10 @@ class ChatInput(QWidget):
         # Main layout
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(
-            self.spacing["margin"],
-            self.spacing["margin"] // 2,
-            self.spacing["margin"],
-            self.spacing["margin"]
+            self.spacing["padding"],
+            self.spacing["padding"] // 2,
+            self.spacing["padding"],
+            self.spacing["padding"] // 2
         )
         main_layout.setSpacing(self.spacing["item_spacing"] // 2)
         
@@ -159,19 +164,12 @@ class ChatInput(QWidget):
         input_frame.setObjectName("input_frame")
         input_layout = QVBoxLayout(input_frame)
         input_layout.setContentsMargins(
-            self.spacing["padding"],
             self.spacing["padding"] // 2,
-            self.spacing["padding"],
+            self.spacing["padding"] // 2,
+            self.spacing["padding"] // 2,
             self.spacing["padding"] // 2
         )
         input_layout.setSpacing(self.spacing["item_spacing"] // 2)
-        
-        # Instruction label
-        self.instruction_label = QLabel("💬 Enter your message (Enter to send, Shift+Enter for new line)")
-        self.instruction_label.setObjectName("instruction_label")
-        instruction_font = QFont()
-        instruction_font.setPointSize(self.fonts["caption"])
-        self.instruction_label.setFont(instruction_font)
         
         # Input area layout
         input_area_layout = QHBoxLayout()
@@ -181,37 +179,56 @@ class ChatInput(QWidget):
         # Text input
         self.text_input = ChatInputTextEdit()
         self.text_input.setObjectName("text_input")
-        placeholder = responsive_calc.get_chat_input_placeholder()
+        
+        # Get responsive placeholder text
+        placeholder = self._get_responsive_placeholder()
         self.text_input.setPlaceholderText(placeholder)
         
-        # Set font
+        # Set font from config
         input_font = QFont()
         input_font.setPointSize(self.fonts["body"])
-        input_font.setFamily("Segoe UI, Arial, sans-serif")
+        input_font.setFamily(self.input_settings["font_family"])
         self.text_input.setFont(input_font)
         
-        # Send button
-        self.send_button = QPushButton("Send")
+        # Send button - use config text
+        self.send_button = QPushButton(self.ui_text["send_button"])
         self.send_button.setObjectName("send_button")
         send_font = QFont()
         send_font.setPointSize(self.fonts["body"])
         send_font.setBold(True)
         self.send_button.setFont(send_font)
         
-        # Button size
-        self.send_button.setFixedSize(80, 40)
-        self.send_button.setEnabled(False)  # Initially disabled
+        # Configure send button size from config
+        button_size = self.input_settings["button_size"]
+        self.send_button.setFixedSize(button_size["width"], button_size["height"])
+        self.send_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         
         # Add to input area layout
-        input_area_layout.addWidget(self.text_input, 1)  # Text input takes most space
-        input_area_layout.addWidget(self.send_button, 0)  # Button fixed size
+        input_area_layout.addWidget(self.text_input, 1)
+        input_area_layout.addWidget(self.send_button)
         
         # Add to input layout
-        input_layout.addWidget(self.instruction_label)
         input_layout.addLayout(input_area_layout)
         
         # Add to main layout
         main_layout.addWidget(input_frame)
+        
+        # Initially disable send button
+        self.send_button.setEnabled(False)
+
+    def _get_responsive_placeholder(self):
+        """Get responsive placeholder text from config."""
+        # Get current breakpoint
+        breakpoint = responsive_calc.get_current_breakpoint()
+        
+        # Get responsive placeholder and add instruction
+        base_placeholder = AI_CHAT["input_placeholder"]["responsive_content"].get(
+            breakpoint, 
+            AI_CHAT["input_placeholder"]["responsive_content"]["medium"]
+        )
+        
+        instruction = self.ui_text["input_instruction"]
+        return f"{base_placeholder} {instruction}"
 
     def _apply_styling(self):
         """Apply styling to the chat input components."""
@@ -219,20 +236,13 @@ class ChatInput(QWidget):
         primary_color = self.colors["primary"]
         secondary_color = self.colors["secondary"]
         
+        # Use only PyQt6-supported CSS properties
         style = f"""
             QFrame#input_frame {{
                 background-color: white;
                 border: 2px solid {primary_color};
                 border-radius: {self.spacing["margin"]}px;
                 margin: 0px;
-            }}
-            
-            QLabel#instruction_label {{
-                color: #666666;
-                background-color: transparent;
-                border: none;
-                margin: 0px;
-                padding: 0px;
             }}
             
             QTextEdit#text_input {{
@@ -259,12 +269,10 @@ class ChatInput(QWidget):
             
             QPushButton#send_button:hover:enabled {{
                 background-color: {secondary_color};
-                transform: translateY(-1px);
             }}
             
             QPushButton#send_button:pressed:enabled {{
                 background-color: #005a9e;
-                transform: translateY(0px);
             }}
             
             QPushButton#send_button:disabled {{
@@ -306,10 +314,10 @@ class ChatInput(QWidget):
         if not text.strip() or self.is_sending:
             return
         
-        # Set sending state
+        # Set sending state - use config text
         self.is_sending = True
         self.send_button.setEnabled(False)
-        self.send_button.setText("Sending...")
+        self.send_button.setText(self.ui_text["sending_button"])
         
         # Clear input
         self.text_input.clear()
@@ -325,7 +333,7 @@ class ChatInput(QWidget):
     def _reset_send_state(self):
         """Reset the sending state."""
         self.is_sending = False
-        self.send_button.setText("Send")
+        self.send_button.setText(self.ui_text["send_button"])
         self._on_text_changed()  # Update button state based on current text
 
     def _on_focus_in(self, event):
