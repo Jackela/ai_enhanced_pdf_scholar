@@ -168,15 +168,26 @@ class TestResponsiveCalculator:
         font_config = calculator.get_font_config()
         
         assert isinstance(font_config, dict)
-        assert "base_size" in font_config
+        assert "title" in font_config
+        assert "body" in font_config
+        assert "caption" in font_config
+        assert isinstance(font_config["title"], int)
+        assert isinstance(font_config["body"], int)
+        assert isinstance(font_config["caption"], int)
     
     def test_annotation_colors_retrieval(self, calculator):
         """Test retrieval of annotation colors."""
         colors = calculator.get_annotation_colors()
         
         assert isinstance(colors, dict)
-        assert "user_selection" in colors
-        assert "ai_response" in colors
+        assert "backgrounds" in colors
+        assert "accents" in colors
+        assert "primary" in colors
+        assert "secondary" in colors
+        assert isinstance(colors["backgrounds"], list)
+        assert isinstance(colors["accents"], list)
+        assert len(colors["backgrounds"]) > 0
+        assert len(colors["accents"]) > 0
     
     def test_chat_colors_retrieval(self, calculator):
         """Test retrieval of chat colors."""
@@ -326,6 +337,15 @@ class TestResponsiveCalculator:
 class TestResponsiveCalculatorEdgeCases:
     """Test edge cases and error conditions for ResponsiveCalculator."""
     
+    @pytest.fixture
+    def calculator(self):
+        """Create a ResponsiveCalculator instance for edge case testing."""
+        with patch('src.responsive_utils.QApplication.primaryScreen') as mock_screen:
+            mock_geometry = Mock()
+            mock_geometry.size.return_value = QSize(1440, 900)
+            mock_screen.return_value.availableGeometry.return_value = mock_geometry
+            return ResponsiveCalculator()
+    
     @patch('src.responsive_utils.QApplication.primaryScreen')
     def test_zero_window_width(self, mock_screen):
         """Test handling of zero window width."""
@@ -370,7 +390,7 @@ class TestResponsiveCalculatorEdgeCases:
             pass
     
     @patch('src.responsive_utils.config')
-    def test_missing_config_keys(self, mock_config, calculator):
+    def test_missing_config_keys(self, mock_config):
         """Test handling of missing configuration keys."""
         # Mock config with missing keys
         mock_config.RESPONSIVE_UI = {}
@@ -378,13 +398,18 @@ class TestResponsiveCalculatorEdgeCases:
         mock_config.AI_CHAT = {}
         
         # Should handle missing keys gracefully
-        try:
-            calc = ResponsiveCalculator()
-            # Basic operations should not crash
-            calc.get_current_breakpoint()
-        except (KeyError, AttributeError):
-            # It's acceptable to fail with missing config
-            pass
+        with patch('src.responsive_utils.QApplication.primaryScreen') as mock_screen:
+            mock_geometry = Mock()
+            mock_geometry.size.return_value = QSize(1440, 900)
+            mock_screen.return_value.availableGeometry.return_value = mock_geometry
+            
+            try:
+                calc = ResponsiveCalculator()
+                # Basic operations should not crash
+                calc.get_current_breakpoint()
+            except (KeyError, AttributeError):
+                # It's acceptable to fail with missing config
+                pass
 
 
 class TestResponsiveCalcFunction:
@@ -413,6 +438,15 @@ class TestResponsiveCalcFunction:
 
 class TestResponsiveCalculatorPerformance:
     """Test performance characteristics of ResponsiveCalculator."""
+    
+    @pytest.fixture
+    def calculator(self):
+        """Create a ResponsiveCalculator instance for performance testing."""
+        with patch('src.responsive_utils.QApplication.primaryScreen') as mock_screen:
+            mock_geometry = Mock()
+            mock_geometry.size.return_value = QSize(1440, 900)
+            mock_screen.return_value.availableGeometry.return_value = mock_geometry
+            return ResponsiveCalculator()
     
     def test_rapid_calculations(self, calculator):
         """Test rapid successive calculations."""
@@ -448,7 +482,7 @@ class TestResponsiveCalculatorIntegration:
         """Test integration with configuration system."""
         # Mock realistic config structure
         mock_config.RESPONSIVE_UI = {
-            "breakpoints": {"small": 768, "medium": 1024, "large": 1440},
+            "breakpoints": {"small": 1024, "medium": 1440, "large": 1920, "xlarge": 2560},
             "chat_panel": {
                 "width_ratio": {"small": 0.4, "medium": 0.3, "large": 0.25, "xlarge": 0.2},
                 "min_width": 250,
@@ -464,7 +498,12 @@ class TestResponsiveCalculatorIntegration:
             "fonts": {"small": {"base_size": 12}}
         }
         mock_config.AI_ANNOTATIONS = {
-            "colors": {"user_selection": "#FF0000", "ai_response": "#00FF00"},
+            "colors": {
+                "backgrounds": ["#FF0000", "#00FF00"], 
+                "accents": ["#0000FF", "#FFFF00"],
+                "primary": "#FF0000",
+                "secondary": "#00FF00"
+            },
             "empty_state": {"icon": "🚀", "title": "Test", "description": "Test desc"},
             "panel_title": "Test Panel"
         }
@@ -491,4 +530,7 @@ class TestResponsiveCalculatorIntegration:
             assert chat_width <= 400  # max_width
             
             colors = calc.get_annotation_colors()
-            assert colors["user_selection"] == "#FF0000" 
+            assert colors["primary"] == "#FF0000"
+            assert colors["secondary"] == "#00FF00"
+            assert "backgrounds" in colors
+            assert "accents" in colors 

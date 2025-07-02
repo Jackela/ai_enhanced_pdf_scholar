@@ -9,3 +9,6 @@ llama-index==0.12.45
 llama-index-llms-google-genai
 llama-index-embeddings-google-genai
 llama-index-readers-file
+fastapi
+uvicorn[standard]
+python-multipart

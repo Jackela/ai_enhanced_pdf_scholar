@@ -3,9 +3,9 @@
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://python.org)
 [![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green)](https://www.riverbankcomputing.com/software/pyqt/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-212%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-500%2B%20passing-brightgreen)](tests/)
 
-🚀 **一个基于PyQt6的AI增强PDF学术阅读工具，通过智能对话让学术阅读更高效**
+🚀 **一个AI增强PDF学术阅读工具，支持双UI架构：PyQt6桌面版和现代Web版本，通过智能对话让学术阅读更高效**
 
 ## ⚠️ 免责申明
 
@@ -18,6 +18,12 @@
 - 不对使用本工具造成的任何损失或问题承担责任
 
 ## ✨ 主要特性
+
+### 🌐 双UI架构支持
+- **桌面版本**：基于PyQt6的传统桌面应用，功能完整
+- **Web版本**：现代化Web界面，支持任何设备访问
+- **统一架构**：两个版本共享相同的核心业务逻辑
+- **无缝切换**：可根据需要选择合适的使用方式
 
 ### 🤖 AI智能对话
 - **一键AI问答**：选择PDF中的任意文本，向AI提问获得智能解释
@@ -38,8 +44,10 @@
 ### 🔧 技术优势
 - **异步处理**：多线程架构，UI永不卡顿
 - **错误恢复**：完善的错误处理和恢复机制
-- **高测试覆盖**：212个测试用例，保证代码质量
+- **高测试覆盖**：500+测试用例(含17个E2E测试)，保证代码质量
 - **跨平台兼容**：支持Windows、macOS、Linux
+- **实时通信**：WebSocket支持，Web界面实时更新
+- **RESTful API**：标准化API接口，易于扩展集成
 
 ## 🚀 快速开始
 
@@ -66,9 +74,21 @@ pip install -r requirements.txt
    - 启动应用后点击"⚙️ Settings"配置API密钥
 
 4. **启动应用**
+
+**桌面版本（PyQt6）**：
 ```bash
 python main.py
 ```
+
+**Web版本**：
+```bash
+# 开发模式
+python web_main.py --debug
+
+# 生产模式
+python web_main.py --host 0.0.0.0 --port 8000
+```
+然后在浏览器中访问：http://localhost:8000
 
 ## 📱 使用方法
 
@@ -86,10 +106,12 @@ python main.py
 ## 🛠️ 技术栈
 
 ### 核心技术
-- **UI框架**：PyQt6 - 现代化跨平台GUI框架
-- **PDF处理**：PyMuPDF - 高性能PDF渲染引擎
+- **桌面UI**：PyQt6 - 现代化跨平台GUI框架
+- **Web UI**：FastAPI + HTML5/CSS3/JavaScript - 现代Web技术栈
+- **PDF处理**：PyMuPDF - 高性能PDF渲染引擎  
 - **AI服务**：Google Gemini - 先进的大语言模型
 - **Markdown**：Python-Markdown - 富文本渲染支持
+- **实时通信**：WebSocket - 双向数据传输支持
 
 ### 架构设计
 - **MVC模式**：清晰的模型-视图-控制器架构
@@ -101,8 +123,11 @@ python main.py
 
 ### 运行测试
 ```bash
-# 运行所有测试
+# 运行所有单元测试
 python -m pytest tests/ -v
+
+# 运行E2E测试 (需要Web服务器)
+python -m pytest tests_e2e/ -v
 
 # 运行特定测试
 python -m pytest tests/test_modern_ui_features.py -v
@@ -112,30 +137,55 @@ python -m pytest tests/ --cov=src --cov-report=html
 ```
 
 ### 测试统计
-- **总测试数量**：212个
-- **测试分类**：单元测试、组件测试、集成测试、UI测试、错误场景测试
+- **总测试数量**：500+个
+- **测试分类**：
+  - 单元测试、组件测试、集成测试、UI测试、错误场景测试
+  - 17个E2E测试覆盖Web界面完整功能
 - **覆盖率**：核心功能100%覆盖
-- **测试框架**：pytest + pytest-qt (GUI测试)
+- **测试框架**：pytest + pytest-qt (GUI测试) + playwright (E2E测试)
 
 ## 📂 项目结构
 
 ```
 ai_enhanced_pdf_scholar/
-├── 📄 main.py                    # 主应用程序入口
-├── ⚙️ config.py                  # 响应式配置系统
+├── 📄 main.py                    # 桌面版启动入口
+├── 🌐 web_main.py               # Web版启动入口
+├── ⚙️ config.py                  # 全局配置系统
 ├── 📋 requirements.txt           # 项目依赖
 ├── 📖 README.md                  # 项目说明（中文）
 ├── 📖 README_EN.md               # 项目说明（英文）
 ├── 📚 PROJECT_DOCS.md            # 技术文档
 ├── 📁 src/                       # 核心源代码
-│   ├── 🖼️ pdf_viewer.py          # PDF渲染和交互
+│   ├── 🏗️ core/                  # SSOT基础设施
+│   │   ├── config_manager.py    # 配置管理中心
+│   │   ├── state_manager.py     # 状态管理中心
+│   │   └── style_manager.py     # 样式管理中心
+│   ├── 💼 services/              # 业务逻辑层
+│   │   ├── chat_service.py      # 聊天业务逻辑
+│   │   ├── pdf_service.py       # PDF业务逻辑
+│   │   └── annotation_service.py # 注释业务逻辑
+│   ├── 🎮 controllers/           # 控制器层
+│   │   ├── application_controller.py # 应用控制器
+│   │   ├── chat_controller.py   # 聊天控制器
+│   │   ├── pdf_controller.py    # PDF控制器
+│   │   └── annotation_controller.py # 注释控制器
+│   ├── 🌐 web/                   # Web UI层
+│   │   ├── api_server.py        # FastAPI服务器
+│   │   ├── websocket_manager.py # WebSocket管理
+│   │   └── static/              # 前端资源
+│   │       └── index.html       # Web界面
+│   ├── 🖼️ pdf_viewer.py          # PDF渲染组件
 │   ├── 🤖 llm_service.py         # AI服务接口
 │   ├── 💬 annotation.py          # 智能标注组件
 │   ├── 📱 responsive_utils.py    # 响应式UI工具
-│   └── 🔧 ...                    # 其他核心模块
-└── 🧪 tests/                     # 测试套件 (212个测试)
-    ├── 🔬 test_*.py              # 各种测试文件
-    └── ⚙️ conftest.py            # 测试配置
+│   └── 🔧 ...                    # 其他PyQt6组件
+├── 🧪 tests/                     # 单元测试套件 (500+个测试)
+│   ├── 🔬 test_*.py              # 各种测试文件
+│   └── ⚙️ conftest.py            # 测试配置
+└── 🌐 tests_e2e/                # E2E测试套件 (17个测试)
+    ├── 🎭 test_web_ui_basics.py  # Web界面基础功能测试
+    ├── 🔄 test_user_workflows.py # 用户工作流测试
+    └── ⚙️ conftest.py            # E2E测试配置
 ```
 
 ## 🤝 贡献指南

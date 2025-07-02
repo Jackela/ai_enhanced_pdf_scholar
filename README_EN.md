@@ -3,9 +3,9 @@
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://python.org)
 [![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green)](https://www.riverbankcomputing.com/software/pyqt/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-212%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-500%2B%20passing-brightgreen)](tests/)
 
-🚀 **An AI-enhanced PDF academic reading tool based on PyQt6, making academic reading more efficient through intelligent conversation**
+🚀 **An AI-enhanced PDF academic reading tool with dual UI architecture: PyQt6 desktop version and modern Web version, making academic reading more efficient through intelligent conversation**
 
 ## ⚠️ Disclaimer
 
@@ -18,6 +18,12 @@
 - No responsibility is assumed for any losses or issues caused by using this tool
 
 ## ✨ Features
+
+### 🌐 Dual UI Architecture Support
+- **Desktop Version**: Full-featured traditional desktop app based on PyQt6
+- **Web Version**: Modern web interface supporting access from any device
+- **Unified Architecture**: Both versions share the same core business logic
+- **Seamless Switching**: Choose the appropriate usage method based on needs
 
 ### 🤖 AI-Powered Conversations
 - **One-Click AI Q&A**: Select any text in PDF and ask AI for intelligent explanations
@@ -38,8 +44,10 @@
 ### 🔧 Technical Advantages
 - **Asynchronous Processing**: Multi-threaded architecture, UI never freezes
 - **Error Recovery**: Comprehensive error handling and recovery mechanisms
-- **High Test Coverage**: 212 test cases ensuring code quality
+- **High Test Coverage**: 500+ test cases (including 17 E2E tests) ensuring code quality
 - **Cross-Platform**: Compatible with Windows, macOS, Linux
+- **Real-time Communication**: WebSocket support for real-time Web UI updates
+- **RESTful API**: Standardized API interface for easy extension and integration
 
 ## 🚀 Quick Start
 
@@ -66,9 +74,21 @@ pip install -r requirements.txt
    - Launch app and click "⚙️ Settings" to configure API key
 
 4. **Start Application**
+
+**Desktop Version (PyQt6)**:
 ```bash
 python main.py
 ```
+
+**Web Version**:
+```bash
+# Development mode
+python web_main.py --debug
+
+# Production mode
+python web_main.py --host 0.0.0.0 --port 8000
+```
+Then open your browser and visit: http://localhost:8000
 
 ## 📱 Usage
 
@@ -86,10 +106,12 @@ python main.py
 ## 🛠️ Technology Stack
 
 ### Core Technologies
-- **UI Framework**: PyQt6 - Modern cross-platform GUI framework
+- **Desktop UI**: PyQt6 - Modern cross-platform GUI framework
+- **Web UI**: FastAPI + HTML5/CSS3/JavaScript - Modern web technology stack
 - **PDF Processing**: PyMuPDF - High-performance PDF rendering engine
 - **AI Service**: Google Gemini - Advanced large language model
 - **Markdown**: Python-Markdown - Rich text rendering support
+- **Real-time Communication**: WebSocket - Bidirectional data transmission support
 
 ### Architecture Design
 - **MVC Pattern**: Clear Model-View-Controller architecture
@@ -101,8 +123,11 @@ python main.py
 
 ### Run Tests
 ```bash
-# Run all tests
+# Run all unit tests
 python -m pytest tests/ -v
+
+# Run E2E tests (requires Web server)
+python -m pytest tests_e2e/ -v
 
 # Run specific tests
 python -m pytest tests/test_modern_ui_features.py -v
@@ -112,30 +137,55 @@ python -m pytest tests/ --cov=src --cov-report=html
 ```
 
 ### Test Statistics
-- **Total Tests**: 212
-- **Test Categories**: Unit tests, Component tests, Integration tests, UI tests, Error scenario tests
+- **Total Tests**: 500+
+- **Test Categories**: 
+  - Unit tests, Component tests, Integration tests, UI tests, Error scenario tests
+  - 17 E2E tests covering complete Web interface functionality
 - **Coverage**: 100% coverage for core functionality
-- **Test Framework**: pytest + pytest-qt (GUI testing)
+- **Test Framework**: pytest + pytest-qt (GUI testing) + playwright (E2E testing)
 
 ## 📂 Project Structure
 
 ```
 ai_enhanced_pdf_scholar/
-├── 📄 main.py                    # Main application entry
-├── ⚙️ config.py                  # Responsive configuration system
+├── 📄 main.py                    # Desktop version entry
+├── 🌐 web_main.py               # Web version entry
+├── ⚙️ config.py                  # Global configuration system
 ├── 📋 requirements.txt           # Project dependencies
 ├── 📖 README.md                  # Project documentation (Chinese)
 ├── 📖 README_EN.md               # Project documentation (English)
 ├── 📚 PROJECT_DOCS.md            # Technical documentation
 ├── 📁 src/                       # Core source code
-│   ├── 🖼️ pdf_viewer.py          # PDF rendering and interaction
+│   ├── 🏗️ core/                  # SSOT infrastructure
+│   │   ├── config_manager.py    # Configuration management center
+│   │   ├── state_manager.py     # State management center
+│   │   └── style_manager.py     # Style management center
+│   ├── 💼 services/              # Business logic layer
+│   │   ├── chat_service.py      # Chat business logic
+│   │   ├── pdf_service.py       # PDF business logic
+│   │   └── annotation_service.py # Annotation business logic
+│   ├── 🎮 controllers/           # Controller layer
+│   │   ├── application_controller.py # Application controller
+│   │   ├── chat_controller.py   # Chat controller
+│   │   ├── pdf_controller.py    # PDF controller
+│   │   └── annotation_controller.py # Annotation controller
+│   ├── 🌐 web/                   # Web UI layer
+│   │   ├── api_server.py        # FastAPI server
+│   │   ├── websocket_manager.py # WebSocket management
+│   │   └── static/              # Frontend resources
+│   │       └── index.html       # Web interface
+│   ├── 🖼️ pdf_viewer.py          # PDF rendering component
 │   ├── 🤖 llm_service.py         # AI service interface
 │   ├── 💬 annotation.py          # Smart annotation component
 │   ├── 📱 responsive_utils.py    # Responsive UI utilities
-│   └── 🔧 ...                    # Other core modules
-└── 🧪 tests/                     # Test suite (212 tests)
-    ├── 🔬 test_*.py              # Various test files
-    └── ⚙️ conftest.py            # Test configuration
+│   └── 🔧 ...                    # Other PyQt6 components
+├── 🧪 tests/                     # Unit test suite (500+ tests)
+│   ├── 🔬 test_*.py              # Various test files
+│   └── ⚙️ conftest.py            # Test configuration
+└── 🌐 tests_e2e/                # E2E test suite (17 tests)
+    ├── 🎭 test_web_ui_basics.py  # Web interface basic functionality tests
+    ├── 🔄 test_user_workflows.py # User workflow tests
+    └── ⚙️ conftest.py            # E2E test configuration
 ```
 
 ## 🤝 Contributing
