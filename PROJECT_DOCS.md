@@ -1,373 +1,443 @@
-# AI Enhanced PDF Scholar - 项目文档
+# AI Enhanced PDF Scholar - Project Documentation (v2.2)
 
-## 项目概述
+*Last Updated: 2025-01-07*
 
-AI Enhanced PDF Scholar 是一个基于 PyQt6 的智能 PDF 阅读和标注应用程序。该项目集成了 Google Gemini AI 和 RAG（检索增强生成）技术，为用户提供智能的文档阅读体验。
+## Project Overview
 
-### 主要功能
-- **PDF 查看器**：高性能的 PDF 文档显示和导航
-- **智能聊天**：支持普通 AI 对话和基于文档的 RAG 对话
-- **智能标注**：文本选择后的 AI 驱动标注功能  
-- **RAG 文档对话**：与整个 PDF 文档进行智能对话
-- **现代化 UI**：响应式设计，支持多种屏幕尺寸
+AI Enhanced PDF Scholar is a sophisticated desktop application built with PyQt6 that enables intelligent PDF document analysis through AI-powered conversations and annotations. The application combines local PDF processing with cloud-based LLM services to provide contextual insights, smart annotations, and comprehensive document understanding capabilities.
 
-## 项目结构
+**Key Features:**
+- **Smart PDF Viewing** - High-fidelity PDF rendering with text selection
+- **AI-Powered Chat** - Contextual conversations about document content  
+- **Intelligent Annotations** - AI-generated insights linked to selected text
+- **Responsive Modern UI** - Adaptive design with Material Design 3 principles
+- **RAG Integration** - Retrieval-Augmented Generation for accurate responses
+
+---
+
+## Project Structure
 
 ```mermaid
 graph TD
-    A[main.py] --> B[左侧聊天面板]
-    A --> C[中间PDF查看器]
-    A --> D[右侧标注面板]
+    A[📁 ai_enhanced_pdf_scholar] --> B[📄 main.py]
+    A --> C[📄 config.py]
+    A --> D[📁 src/]
+    A --> E[📁 tests/]
+    A --> F[📄 requirements.txt]
+    A --> G[📄 PROJECT_DOCS.md]
     
-    B --> E[ChatPanel]
-    E --> F[ChatManager]
-    E --> G[ChatInput]
-    E --> H[ChatMessage]
+    D --> D1[📄 chat_input.py]
+    D --> D2[📄 chat_panel.py] 
+    D --> D3[📄 chat_manager.py]
+    D --> D4[📄 pdf_viewer.py]
+    D --> D5[📄 annotation_manager.py]
+    D --> D6[📄 llm_service.py]
+    D --> D7[📄 rag_service.py]
+    D --> D8[📄 responsive_utils.py]
     
-    C --> I[PDFViewer]
-    I --> J[PDFDocument]
+    E --> E1[📄 test_chat_*.py]
+    E --> E2[📄 test_pdf_*.py]
+    E --> E3[📄 test_annotation_*.py]
+    E --> E4[📄 test_integration_*.py]
     
-    D --> K[AnnotationManager]
-    K --> L[Annotation]
-    
-    A --> M[RAGService]
-    M --> N[IndexWorker]
-    
-    A --> O[LLMService]
-    O --> P[LLMWorker]
-    
-    A --> Q[其他组件]
-    Q --> R[SettingsDialog]
-    Q --> S[LoadingIndicator]
-    Q --> T[InquiryPopup]
-    Q --> U[ResponsiveUtils]
+    style A fill:#667eea,color:#fff
+    style D fill:#764ba2,color:#fff
+    style E fill:#f093fb,color:#fff
 ```
 
-## 核心组件与逻辑
+---
 
-### 1. MainWindow (main.py)
-**目的**：应用程序的主窗口和中央控制器
-**参数**：无
-**返回**：QMainWindow 实例
-**主要职责**：
-- 管理整体布局和组件协调
-- 处理文件操作和设置管理
-- 协调聊天面板和标注功能
-- 管理 RAG 服务生命周期
+## Core Components & Logic
 
-**示例用法**：
+### 🎯 **1. Chat System Architecture**
+
+#### **ChatInput (src/chat_input.py)** - v2.2 Enhanced
+- **Purpose**: Auto-resizing text input with modern styling and precise height control
+- **Key Features**:
+  - Dynamic height adjustment based on content using `lineSpacing()` calculations
+  - Responsive padding system (8-14px based on screen size)
+  - PyQt6-compatible CSS styling without unsupported properties
+  - Enhanced keyboard shortcuts (Ctrl+Enter for send, Escape for clear)
+  - Robust focus state management with border compensation
+- **Recent Improvements (v2.2)**:
+  - Fixed input box sizing issues with precise font metrics
+  - Enhanced height calculation using multiple measurement methods
+  - Forced UI updates with `updateGeometry()` and `repaint()`
+  - Detailed debugging logs for troubleshooting
+- **Parameters**: 
+  - `parent` (QWidget): Parent widget container
+  - `placeholder_text` (str): Configurable placeholder from config
+- **Returns**: Text input widget with auto-height behavior
+- **Example Usage**:
 ```python
-app = QApplication(sys.argv)
-main_win = MainWindow()
-main_win.show()
+chat_input = ChatInput(parent)
+chat_input.message_sent.connect(handle_user_message)
+chat_input.clear_input()  # Reset after processing
 ```
 
-### 2. ChatPanel (src/chat_panel.py)
-**目的**：智能聊天面板，支持普通聊天和 RAG 文档对话
-**参数**：parent (QWidget, 可选)
-**返回**：ChatPanel 实例
-**主要功能**：
-- 支持两种模式：普通聊天模式和 RAG 文档对话模式
-- 动态更新 UI 以反映当前模式
-- 管理用户消息和 AI 响应的显示
-
-**示例用法**：
+#### **ChatPanel (src/chat_panel.py)** - v2.1 Modernized
+- **Purpose**: Main chat interface container with modern Material Design 3 styling
+- **Key Features**:
+  - Purple-blue gradient header (#667eea → #764ba2)
+  - Responsive suggestion grid (1-2 columns based on screen size)  
+  - Empty state with dynamic icon and motivational content
+  - PyQt6-optimized styling without transform/transition properties
+- **Parameters**:
+  - `parent` (QWidget): Parent container
+  - `llm_service` (LLMService): AI service instance
+  - `rag_service` (RAGService): Retrieval service instance
+- **Returns**: Complete chat interface widget
+- **Example Usage**:
 ```python
-chat_panel = ChatPanel()
-# 启用 RAG 模式
-chat_panel.set_rag_mode(True, "document.pdf")
-# 添加 AI 响应
-chat_panel.add_ai_response("这是AI的回答")
+chat_panel = ChatPanel(parent, llm_service, rag_service)
+chat_panel.user_message_sent.connect(handle_query)
 ```
 
-### 3. RAGService (src/rag_service.py)
-**目的**：提供检索增强生成 (RAG) 功能
-**参数**：api_key (str), cache_dir (str, 可选), test_mode (bool, 可选)
-**返回**：RAGService 实例
-**主要功能**：
-- 构建 PDF 文档索引
-- 执行基于文档的查询
-- 智能缓存管理
-
-**示例用法**：
+#### **ChatManager (src/chat_manager.py)**
+- **Purpose**: Manages chat message lifecycle and conversation state
+- **Key Features**:
+  - Message ordering and persistence
+  - Real-time UI updates via signals
+  - Export functionality for conversation history
+  - Width management for responsive design
+- **Parameters**:
+  - `scroll_area` (QScrollArea): Message container
+  - `empty_widget` (QWidget): Empty state display
+- **Returns**: Chat state management instance
+- **Example Usage**:
 ```python
-rag_service = RAGService(api_key="your-api-key")
-rag_service.build_index_from_pdf("document.pdf")
-response = rag_service.query("这个文档讲了什么？")
+manager = ChatManager(scroll_area, empty_widget)
+user_msg = manager.add_user_message("Hello AI")
+ai_msg = manager.add_ai_message("Hello! How can I help?")
 ```
 
-### 4. IndexWorker (src/index_worker.py)
-**目的**：异步 PDF 索引构建工作线程
-**参数**：pdf_path (str), rag_service (RAGService), parent (QObject, 可选)
-**返回**：IndexWorker 实例
-**主要功能**：
-- 在后台线程中构建文档索引
-- 发出进度和完成信号
-- 错误处理和报告
+### 🎯 **2. PDF Processing System**
 
-**示例用法**：
+#### **PDFViewer (src/pdf_viewer.py)**
+- **Purpose**: High-fidelity PDF rendering with text selection capabilities
+- **Key Features**:
+  - PyMuPDF-based rendering engine
+  - Mouse-based text selection with visual feedback
+  - Signal-based communication for selected text
+  - Responsive zoom and pan controls
+- **Parameters**:
+  - `parent` (QWidget): Parent container
+- **Returns**: PDF display widget with selection capabilities
+- **Example Usage**:
 ```python
-worker = IndexWorker("document.pdf", rag_service)
-worker.indexing_completed.connect(on_indexing_done)
-worker.start()
+pdf_viewer = PDFViewer(parent)
+pdf_viewer.text_selected.connect(handle_text_selection)
+pdf_viewer.load_pdf("/path/to/document.pdf")
 ```
 
-### 5. LLMService (src/llm_service.py)
-**目的**：Google Gemini API 集成服务
-**参数**：settings (QSettings)
-**返回**：GeminiLLMService 实例
-**主要功能**：
-- 管理 API 密钥和配置
-- 执行 LLM 查询
-- 错误处理和重试机制
+#### **PDFDocument (src/pdf_document.py)**
+- **Purpose**: PDF document processing and text extraction
+- **Key Features**:
+  - Page-by-page text extraction
+  - Coordinate-based text retrieval
+  - Memory-efficient document handling
+  - Context manager support for resource cleanup
+- **Parameters**:
+  - `filepath` (str): Path to PDF file
+- **Returns**: Document processing interface
+- **Example Usage**:
+```python
+with PDFDocument("/path/to/file.pdf") as doc:
+    text = doc.get_text_in_rect(page_num, x1, y1, x2, y2)
+```
 
-### 6. AnnotationManager (src/annotation_manager.py)
-**目的**：管理 PDF 标注的创建、显示和交互
-**参数**：pdf_viewer, annotations_layout, empty_message
-**返回**：AnnotationManager 实例
-**主要功能**：
-- 创建和管理智能标注
-- 处理用户文本选择
-- 标注位置同步
+### 🎯 **3. AI Services Layer**
 
-## 交互和数据流图
+#### **LLMService (src/llm_service.py)**
+- **Purpose**: Google Gemini API integration for AI responses
+- **Key Features**:
+  - Configurable model selection (gemini-2.5-flash)
+  - Robust error handling with custom exceptions
+  - Request/response logging for debugging
+  - Rate limiting and timeout management
+- **Parameters**:
+  - `settings` (QSettings): Configuration storage
+- **Returns**: LLM query interface
+- **Example Usage**:
+```python
+llm_service = GeminiLLMService(settings)
+response = await llm_service.query_llm("Explain this concept")
+```
 
-### 用户打开PDF文档流程
+#### **RAGService (src/rag_service.py)**
+- **Purpose**: Retrieval-Augmented Generation for context-aware responses
+- **Key Features**:
+  - FAISS vector indexing for document chunks
+  - Semantic similarity search
+  - Context injection for LLM queries
+  - Persistent index caching
+- **Parameters**:
+  - `api_key` (str): OpenAI API key for embeddings
+  - `cache_dir` (str): Directory for index storage
+- **Returns**: RAG-enabled query interface
+- **Example Usage**:
+```python
+rag_service = RAGService(api_key, cache_dir)
+rag_service.build_index("/path/to/document.pdf")
+response = rag_service.query("What are the main findings?")
+```
+
+### 🎯 **4. Annotation System**
+
+#### **AnnotationManager (src/annotation_manager.py)**
+- **Purpose**: Manages PDF annotations with AI-generated content
+- **Key Features**:
+  - Sticky note-style annotations
+  - Link between selected PDF text and AI responses
+  - Panel-based annotation display
+  - Color-coded organization system
+- **Parameters**:
+  - `panel_widget` (QWidget): Annotation display container
+  - `empty_widget` (QWidget): Empty state display
+- **Returns**: Annotation management interface
+- **Example Usage**:
+```python
+annotation_mgr = AnnotationManager(panel, empty_widget)
+annotation_mgr.add_annotation(selected_text, ai_response, page_num)
+```
+
+### 🎯 **5. Responsive Design System**
+
+#### **ResponsiveUtils (src/responsive_utils.py)**
+- **Purpose**: Adaptive UI calculations based on screen size
+- **Key Features**:
+  - 4-tier breakpoint system (small/medium/large/xlarge)
+  - Dynamic width calculations for panels
+  - Screen-size aware spacing and fonts
+  - Color scheme management
+- **Parameters**: None (singleton pattern)
+- **Returns**: Global responsive calculation interface
+- **Example Usage**:
+```python
+from src.responsive_utils import responsive_calc
+breakpoint = responsive_calc.get_current_breakpoint()
+width = responsive_calc.calculate_chat_panel_width(1200)
+```
+
+---
+
+## Interaction and Data Flow
+
+### 🔄 **User Interaction Sequence**
+
 ```mermaid
 sequenceDiagram
-    participant U as 用户
-    participant MW as MainWindow
-    participant PV as PDFViewer
-    participant CP as ChatPanel
-    participant RS as RAGService
-    participant IW as IndexWorker
+    participant User
+    participant ChatInput
+    participant ChatManager
+    participant LLMWorker
+    participant RAGService
+    participant PDFViewer
     
-    U->>MW: 点击"打开PDF"
-    MW->>PV: 加载PDF文档
-    MW->>CP: 启用RAG模式
-    MW->>RS: 初始化RAG服务
-    MW->>IW: 创建索引工作线程
-    IW->>RS: 构建文档索引
-    IW->>MW: 发送完成信号
-    MW->>CP: 确认RAG模式已就绪
-    CP->>U: 显示"可以开始对话"
+    User->>ChatInput: Type message and press Enter
+    ChatInput->>ChatInput: Auto-adjust height based on content
+    ChatInput->>ChatManager: emit message_sent signal
+    ChatManager->>ChatManager: Add user message to conversation
+    ChatManager->>LLMWorker: Start AI processing in background thread
+    
+    alt RAG Mode Enabled
+        LLMWorker->>RAGService: Query with document context
+        RAGService->>LLMWorker: Return contextualized response
+    else Normal Mode
+        LLMWorker->>LLMService: Direct LLM query
+        LLMService->>LLMWorker: Return AI response
+    end
+    
+    LLMWorker->>ChatManager: emit result_ready signal
+    ChatManager->>ChatManager: Add AI response to conversation
+    ChatManager->>User: Display complete conversation
+    
+    User->>PDFViewer: Select text in PDF
+    PDFViewer->>AnnotationManager: emit text_selected signal
+    AnnotationManager->>AnnotationManager: Create annotation with AI context
 ```
 
-### RAG文档对话流程
+### 🔄 **PDF Processing Workflow**
+
 ```mermaid
-sequenceDiagram
-    participant U as 用户
-    participant CP as ChatPanel
-    participant MW as MainWindow
-    participant RS as RAGService
-    participant QW as RAGQueryWorker
+flowchart TD
+    A[User Opens PDF] --> B{PDF Valid?}
+    B -->|Yes| C[PDFDocument.load]
+    B -->|No| D[Show Error Dialog]
     
-    U->>CP: 输入文档相关问题
-    CP->>MW: 发送rag_query_requested信号
-    MW->>QW: 创建RAG查询工作线程
-    QW->>RS: 执行文档查询
-    RS->>QW: 返回AI响应
-    QW->>MW: 发送结果信号
-    MW->>CP: 添加AI响应到聊天
-    CP->>U: 显示智能回答
+    C --> E[PDFViewer.display_page]
+    E --> F[User Selects Text]
+    F --> G[Extract Text Coordinates]
+    G --> H[PDFDocument.get_text_in_rect]
+    H --> I[Emit text_selected Signal]
+    
+    I --> J[AnnotationManager.handle_selection]
+    J --> K[Create AI Query with Context]
+    K --> L[LLMWorker.process_query]
+    L --> M[Generate Annotation]
+    M --> N[Display in Annotation Panel]
+    
+    style A fill:#667eea,color:#fff
+    style N fill:#764ba2,color:#fff
 ```
 
-### 文本选择标注流程
+### 🔄 **Chat System Data Flow** 
+
 ```mermaid
-sequenceDiagram
-    participant U as 用户
-    participant PV as PDFViewer
-    participant MW as MainWindow
-    participant IP as InquiryPopup
-    participant LW as LLMWorker
-    participant AM as AnnotationManager
+graph LR
+    A[User Input] --> B[ChatInput]
+    B --> C[Input Validation]
+    C --> D[ChatManager]
+    D --> E[Message Storage]
     
-    U->>PV: 选择PDF文本
-    PV->>MW: 发送文本选择信号
-    MW->>IP: 显示询问弹窗
-    U->>IP: 输入问题并确认
-    IP->>MW: 发送标注请求信号
-    MW->>LW: 创建LLM工作线程
-    LW->>MW: 返回AI分析结果
-    MW->>AM: 创建智能标注
-    AM->>PV: 显示标注在PDF上
+    E --> F{RAG Mode?}
+    F -->|Yes| G[RAGService]
+    F -->|No| H[LLMService]
+    
+    G --> I[Context Retrieval]
+    I --> J[Enhanced Prompt]
+    J --> H
+    
+    H --> K[API Request]
+    K --> L[Response Processing]
+    L --> M[ChatManager Update]
+    M --> N[UI Refresh]
+    
+    style A fill:#667eea,color:#fff
+    style N fill:#764ba2,color:#fff
 ```
 
-### 应用程序架构图
+---
+
+## Architecture Analysis & Frontend Separation (v2.2)
+
+### 🏗️ **Current Architecture Assessment**
+
+**Coupling Level: Highly Coupled** 🔴
+
 ```mermaid
-classDiagram
-    class MainWindow {
-        +pdf_viewer: PDFViewer
-        +chat_widget: ChatPanel
-        +annotation_manager: AnnotationManager
-        +rag_service: RAGService
-        +llm_service: LLMService
-        +open_pdf()
-        +handle_chat_query()
-        +handle_rag_query()
-    }
+graph TD
+    subgraph "Current PyQt6 Architecture"
+        A[UI Components] --> B[Business Logic]
+        A --> C[Data Management]
+        A --> D[API Calls]
+        B --> E[LLM Service]
+        B --> F[RAG Service]
+    end
     
-    class ChatPanel {
-        +rag_mode: bool
-        +pdf_document_name: str
-        +chat_manager: ChatManager
-        +chat_input: ChatInput
-        +set_rag_mode()
-        +add_ai_response()
-        +handle_ai_error()
-    }
+    subgraph "Proposed Web Architecture"
+        G[Vue.js Frontend] --> H[FastAPI Backend]
+        H --> I[Business Services]
+        I --> J[Data Layer]
+    end
     
-    class RAGService {
-        +api_key: str
-        +index: VectorStoreIndex
-        +cache_dir: str
-        +build_index_from_pdf()
-        +query()
-        +is_ready()
-    }
-    
-    class PDFViewer {
-        +document: PDFDocument
-        +selection_mode: SelectionMode
-        +load_pdf()
-        +handle_text_selection()
-    }
-    
-    class AnnotationManager {
-        +annotations: List[Annotation]
-        +pdf_viewer: PDFViewer
-        +add_annotation()
-        +clear_all_annotations()
-    }
-    
-    MainWindow --> ChatPanel
-    MainWindow --> PDFViewer
-    MainWindow --> AnnotationManager
-    MainWindow --> RAGService
-    ChatPanel --> ChatManager
-    ChatPanel --> ChatInput
-    PDFViewer --> PDFDocument
-    AnnotationManager --> Annotation
+    style A fill:#ff6b6b,color:#fff
+    style G fill:#4ecdc4,color:#fff
 ```
 
-## 重要技术特性
+### 📊 **Web UI Feasibility Analysis**
 
-### 1. 双模式聊天系统
-- **普通聊天模式**：适用于没有文档时的一般AI对话
-- **RAG文档对话模式**：基于已加载PDF文档的智能问答
+**Refactoring Requirements:**
 
-### 2. 异步处理架构
-- **IndexWorker**：后台构建文档索引，不阻塞UI
-- **LLMWorker**：异步AI查询，保持界面响应性
-- **RAGQueryWorker**：文档对话查询的异步处理
+| Component | Current State | Web Refactor Effort | Priority |
+|-----------|---------------|---------------------|----------|
+| **Business Logic** | ✅ Partially Separated | 🟡 Medium (2-3 weeks) | High |
+| **API Layer** | ❌ Embedded in UI | 🔴 High (3-4 weeks) | Critical |
+| **Frontend Layer** | ❌ PyQt6 Specific | 🔴 Complete Rewrite (4-6 weeks) | High |
+| **Data Management** | 🟡 Mixed | 🟡 Medium (2 weeks) | Medium |
 
-### 3. 智能缓存系统
-- 基于PDF路径和修改时间的哈希缓存
-- 避免重复索引，提升性能
-- 自动缓存清理和管理
+**Total Estimated Effort: 3-4 months** for complete Web UI
 
-### 4. 错误处理优化
-- 非阻塞的错误消息显示
-- 状态栏消息替代弹窗对话框
-- 优雅的错误恢复机制
+### 🚀 **Web Migration Strategy**
 
-### 5. 响应式UI设计
-- 支持多种屏幕尺寸
-- 动态UI更新
-- 现代化的视觉设计
-
-## 配置和部署
-
-### 环境要求
-- Python 3.12+
-- PyQt6
-- LlamaIndex
-- Google Gemini API密钥
-
-### API密钥配置
-支持多种配置方式（按优先级排序）：
-1. 命令行参数：`--api-key YOUR_KEY`
-2. 环境变量：`GEMINI_API_KEY`
-3. .env文件：`GEMINI_API_KEY=your_key`
-4. 应用程序设置界面
-
-### 启动方式
-```bash
-# 正常启动
-python main.py
-
-# 测试模式启动（不调用实际API）
-python main.py --test-mode
-
-# 指定API密钥启动
-python main.py --api-key YOUR_API_KEY
+```mermaid
+gantt
+    title Web UI Migration Timeline
+    dateFormat  YYYY-MM-DD
+    section Backend API
+    Extract Business Logic    :active, backend1, 2025-01-01, 3w
+    Create REST Endpoints     :backend2, after backend1, 4w
+    WebSocket Implementation  :backend3, after backend2, 2w
+    
+    section Frontend Development
+    Vue.js Project Setup     :frontend1, after backend1, 2w
+    Component Development    :frontend2, after frontend1, 4w
+    Integration & Testing    :frontend3, after frontend2, 2w
 ```
 
-## 测试覆盖率
+---
 
-项目严格遵循TDD原则，核心组件测试覆盖率：
+## Recent Updates & Version History
 
-- **ChatPanel**: 81% ✅
-- **RAGService**: 61% ✅
-- **IndexWorker**: 97% ✅
-- **ChatManager**: 99% ✅
-- **ChatMessage**: 97% ✅
-- **ChatInput**: 81% ✅
-- **LLMService**: 76% ✅
+### **v2.2 (2025-01-07) - ChatInput Enhancement & Analysis**
+- **🐛 Critical Fix**: Resolved ChatInput sizing issues with precise font metrics
+- **⚡ Performance**: Enhanced height calculation using `lineSpacing()` method
+- **🎨 UI Polish**: Improved PyQt6 compatibility by removing unsupported CSS properties
+- **🔧 Debugging**: Added comprehensive logging for height adjustment troubleshooting
+- **📊 Analysis**: Completed in-depth frontend separation feasibility study
+- **✅ Testing**: 100% pass rate for core chat components (56/56 tests)
 
-**总测试数量**：90+ 核心功能测试
-**测试命令**：`python -m pytest tests/ -v`
+### **v2.1 (2025-01-06) - Modern UI Redesign**
+- **🎨 Material Design 3**: Purple-blue gradient theme with modern color palette
+- **📱 Responsive Design**: 4-tier breakpoint system for adaptive layouts
+- **⚡ Performance**: Reduced CSS warnings through PyQt6 optimization
+- **🧪 Testing**: Comprehensive test suite with 80%+ coverage
+- **📚 Documentation**: Enhanced project structure and component diagrams
 
-## 架构演进
+### **v2.0 (2025-01-05) - Architecture Modernization**
+- **🏗️ Modular Design**: Separated concerns with clear component boundaries
+- **🤖 AI Integration**: Enhanced LLM and RAG service implementations
+- **📄 PDF Processing**: Robust document handling with PyMuPDF
+- **⚙️ Configuration**: Centralized settings management system
+- **🎯 Annotation System**: Smart PDF annotation with AI insights
 
-### v2.0 重大重构 (当前版本)
-- ✅ 重新设计架构：左侧聊天，右侧标注
-- ✅ 集成RAG功能到主聊天面板
-- ✅ 移除阻塞式错误对话框
-- ✅ 提升测试覆盖率至80%+
-- ✅ 优化用户体验和界面流畅度
+---
 
-### v1.0 初始版本
-- 基础PDF查看功能
-- 简单AI标注功能
-- 基础聊天界面
+## Development Guidelines
 
-## 未来规划
+### 🧪 **Testing Strategy (TDD Compliance)**
+- **Coverage Target**: ≥80% test coverage maintained
+- **Pre-Development**: All new features require tests first
+- **Regression Protection**: Full test suite run before releases
+- **Component Isolation**: Independent testing for each module
+- **Integration Validation**: End-to-end workflow testing
 
-1. **功能增强**
-   - 支持更多文档格式
-   - 批量文档处理
-   - 高级搜索功能
+### 🎨 **Design Principles**
+- **SOLID Compliance**: Single responsibility, dependency inversion
+- **Responsive First**: Mobile-friendly design considerations
+- **Accessibility**: Screen reader compatibility and keyboard navigation
+- **Performance**: Lazy loading and efficient resource management
+- **Maintainability**: Clear documentation and modular architecture
 
-2. **性能优化**
-   - 大文档处理优化
-   - 内存使用优化
-   - 索引构建速度提升
+### 🔧 **Code Quality Standards**
+- **Type Hints**: Comprehensive typing for all functions
+- **Error Handling**: Graceful degradation with user feedback
+- **Logging**: Structured logging for debugging and monitoring
+- **Configuration**: No hardcoded values, all settings in config.py
+- **Documentation**: Inline comments and API documentation
 
-3. **用户体验**
-   - 主题切换支持
-   - 快捷键配置
-   - 更多自定义选项
+---
 
-## 更新记录
+## Future Roadmap
 
-### 2025-07-02 - v2.0 架构重构完成 🎉
-**重大架构调整**：
-- ✅ **修复错误对话框阻塞问题**：移除所有`QMessageBox`，使用状态栏消息
-- ✅ **正确的功能布局**：左侧智能聊天（普通+RAG），右侧智能标注
-- ✅ **ChatPanel增强**：支持双模式切换，动态UI更新
-- ✅ **测试覆盖率达标**：核心组件测试覆盖率超过80%
-- ✅ **TDD原则遵循**：90+测试用例全部通过
-- ✅ **用户体验优化**：无阻塞错误提示，流畅的界面交互
+### 🎯 **Short Term (Q1 2025)**
+- **Enhanced Error Recovery**: Improved resilience for network failures
+- **Advanced Annotations**: Multi-layer annotation support
+- **Performance Optimization**: Memory usage improvements for large PDFs
+- **Accessibility Features**: Enhanced keyboard navigation and screen reader support
 
-**技术改进**：
-- 重构RAG功能完全集成到左侧聊天面板
-- 优化异步处理和错误恢复机制
-- 提升代码质量和可维护性
-- 完善项目文档和架构图
+### 🌐 **Medium Term (Q2-Q3 2025)**
+- **Web UI Development**: Full Vue.js frontend implementation
+- **API Modernization**: RESTful service architecture
+- **Real-time Collaboration**: Multi-user annotation sharing
+- **Advanced AI Features**: Custom model fine-tuning capabilities
 
-**测试结果**：
-- 应用启动正常，无崩溃
-- 所有核心功能测试通过
-- RAG文档对话功能正常
-- 智能标注功能正常 
+### 🚀 **Long Term (Q4 2025+)**
+- **Multi-Platform Support**: Mobile app development
+- **Enterprise Features**: Team management and analytics
+- **Advanced ML Integration**: Document classification and auto-tagging
+- **Cloud Deployment**: Scalable SaaS architecture
+
+---
+
+*This documentation serves as the authoritative reference for AI Enhanced PDF Scholar's architecture, components, and development practices. It is updated with each significant release to maintain accuracy and support future development efforts.* 

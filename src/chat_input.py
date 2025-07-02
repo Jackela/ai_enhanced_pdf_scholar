@@ -39,11 +39,14 @@ class ChatInputTextEdit(QTextEdit):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
-        # Auto-resize behavior
+        # Auto-resize behavior - connect AFTER other setup
         self.textChanged.connect(self._adjust_height)
         
         # Set size policies
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        
+        # Force initial height calculation
+        QTimer.singleShot(10, self._reset_height)  # Delay to ensure full initialization
 
     def _setup_shortcuts(self):
         """Setup keyboard shortcuts for the text edit."""
@@ -65,24 +68,95 @@ class ChatInputTextEdit(QTextEdit):
             self._reset_height()
 
     def _adjust_height(self):
-        """Adjust the height of the text edit based on content."""
-        # Get document height
+        """Adjust the height of the text edit based on content with enhanced debugging."""
+        # Force document layout update
+        self.document().adjustSize()
+        
+        # Get document height with multiple methods for comparison
         doc_height = self.document().size().height()
+        ideal_height = self.document().idealWidth()
+        content_height = self.document().documentLayout().documentSize().height()
         
-        # Calculate new height with padding - use config value
-        font_height = self.fontMetrics().height()
+        # Get font metrics for precise calculation
+        font_metrics = self.fontMetrics()
+        font_height = font_metrics.height()
+        line_spacing = font_metrics.lineSpacing()
+        
+        # Calculate responsive padding based on screen size
+        current_breakpoint = responsive_calc.get_current_breakpoint()
+        base_padding = {
+            "small": 8,
+            "medium": 10, 
+            "large": 12,
+            "xlarge": 14
+        }.get(current_breakpoint, 10)
+        
+        # Get actual line count from document
+        block_count = self.document().blockCount()
+        actual_lines = max(1, block_count)
+        
+        # Calculate minimum and maximum heights with proper spacing
         max_lines = AI_CHAT["input_settings"]["max_lines"]
-        min_height = font_height + 20  # Minimum height (1 line + padding)
-        max_height = font_height * max_lines + 20  # Maximum height (config lines + padding)
         
-        new_height = max(min_height, min(max_height, int(doc_height) + 20))
+        # Enhanced height calculation using line spacing
+        min_height = line_spacing + (base_padding * 2) + 6  # Extra margin for border
+        max_height = (line_spacing * max_lines) + (base_padding * 2) + 6
+        
+        # Use the most reliable height measurement
+        calculated_height = max(
+            min_height,
+            (line_spacing * actual_lines) + (base_padding * 2) + 6,
+            int(content_height) + (base_padding * 2) + 6
+        )
+        
+        # Apply height constraints
+        new_height = max(min_height, min(max_height, calculated_height))
+        
+        # Force height setting with multiple methods
         self.setFixedHeight(new_height)
+        self.setMinimumHeight(new_height)
+        self.setMaximumHeight(new_height)
+        
+        # Force layout update
+        self.updateGeometry()
+        self.repaint()
+        
+        # Enhanced debug logging
+        text_content = self.toPlainText()
+        logger.info(f"Height adjustment - Text: '{text_content[:20]}...', "
+                   f"Lines: {actual_lines}, Font: {font_height}px, LineSpacing: {line_spacing}px, "
+                   f"Padding: {base_padding}px, DocHeight: {doc_height}px, "
+                   f"ContentHeight: {content_height}px, NewHeight: {new_height}px")
 
     def _reset_height(self):
-        """Reset height to minimum after clearing text."""
-        font_height = self.fontMetrics().height()
-        min_height = font_height + 20
+        """Reset height to minimum after clearing text with enhanced calculation."""
+        # Get font metrics for precise calculation
+        font_metrics = self.fontMetrics()
+        line_spacing = font_metrics.lineSpacing()
+        
+        # Calculate responsive padding based on screen size
+        current_breakpoint = responsive_calc.get_current_breakpoint()
+        base_padding = {
+            "small": 8,
+            "medium": 10,
+            "large": 12, 
+            "xlarge": 14
+        }.get(current_breakpoint, 10)
+        
+        # Set minimum height using line spacing
+        min_height = line_spacing + (base_padding * 2) + 6
+        
+        # Force height setting with multiple methods
         self.setFixedHeight(min_height)
+        self.setMinimumHeight(min_height)
+        self.setMaximumHeight(min_height)
+        
+        # Force layout update
+        self.updateGeometry()
+        self.repaint()
+        
+        logger.info(f"Height reset - LineSpacing: {line_spacing}px, "
+                   f"Padding: {base_padding}px, MinHeight: {min_height}px")
 
     def keyPressEvent(self, event):
         """Handle key press events."""
@@ -215,6 +289,9 @@ class ChatInput(QWidget):
         
         # Initially disable send button
         self.send_button.setEnabled(False)
+        
+        # Set initial height correctly after UI setup
+        self.text_input._reset_height()
 
     def _get_responsive_placeholder(self):
         """Get responsive placeholder text from config."""
@@ -231,57 +308,98 @@ class ChatInput(QWidget):
         return f"{base_placeholder} {instruction}"
 
     def _apply_styling(self):
-        """Apply styling to the chat input components."""
+        """Apply PyQt6-compatible styling to the chat input components."""
         # Color configuration
         primary_color = self.colors["primary"]
         secondary_color = self.colors["secondary"]
         
-        # Use only PyQt6-supported CSS properties
+        # Calculate responsive padding
+        current_breakpoint = responsive_calc.get_current_breakpoint()
+        base_padding = {
+            "small": 8,
+            "medium": 10,
+            "large": 12,
+            "xlarge": 14
+        }.get(current_breakpoint, 10)
+        
+        # Border radius based on screen size
+        border_radius = {
+            "small": 6,
+            "medium": 8,
+            "large": 10,
+            "xlarge": 12
+        }.get(current_breakpoint, 8)
+        
+        # Use only PyQt6-supported CSS properties (no transform, transition, box-shadow)
         style = f"""
+            /* Input Frame Container */
             QFrame#input_frame {{
                 background-color: white;
                 border: 2px solid {primary_color};
-                border-radius: {self.spacing["margin"]}px;
+                border-radius: {border_radius}px;
                 margin: 0px;
+                padding: 2px;
             }}
             
+            /* Text Input Default State - NO height constraints in CSS */
             QTextEdit#text_input {{
-                background-color: transparent;
+                background-color: white;
                 border: 1px solid #e0e0e0;
-                border-radius: {self.spacing["margin"] // 2}px;
-                padding: {self.spacing["padding"] // 2}px;
+                border-radius: {border_radius - 2}px;
+                padding: {base_padding}px;
                 selection-background-color: {primary_color};
                 selection-color: white;
+                font-size: {self.fonts["body"]}px;
+                line-height: 1.4;
             }}
             
+            /* Text Input Focus State - Enhanced visibility, NO height constraints */
             QTextEdit#text_input:focus {{
-                border-color: {secondary_color};
-                background-color: #f8f9fa;
+                border: 2px solid {secondary_color};
+                background-color: #fafbfc;
+                padding: {base_padding - 1}px;
             }}
             
+            /* Send Button Default State */
             QPushButton#send_button {{
                 background-color: {primary_color};
                 color: white;
                 border: none;
-                border-radius: {self.spacing["margin"] // 2}px;
-                padding: {self.spacing["padding"] // 2}px;
+                border-radius: {border_radius - 2}px;
+                padding: {base_padding}px;
+                font-weight: bold;
+                min-width: 60px;
             }}
             
+            /* Send Button Hover State */
             QPushButton#send_button:hover:enabled {{
                 background-color: {secondary_color};
             }}
             
+            /* Send Button Pressed State */
             QPushButton#send_button:pressed:enabled {{
                 background-color: #005a9e;
             }}
             
+            /* Send Button Disabled State */
             QPushButton#send_button:disabled {{
                 background-color: #cccccc;
                 color: #888888;
             }}
+            
+            /* Placeholder Text Styling */
+            QTextEdit {{
+                placeholder-text-color: #999999;
+            }}
         """
         
         self.setStyleSheet(style)
+        
+        # Force height recalculation after applying styles
+        if hasattr(self, 'text_input'):
+            QTimer.singleShot(5, self.text_input._reset_height)
+        
+        logger.debug(f"Applied PyQt6-compatible styling with {base_padding}px padding")
 
     def _connect_signals(self):
         """Connect internal signals."""

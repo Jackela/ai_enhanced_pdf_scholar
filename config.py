@@ -150,22 +150,94 @@ AI_CHAT = {
         "description": "Start chatting! Ask about the document or any general questions."
     },
     "colors": {
-        # Material Design inspired color palette for chat
+        # Modern Material Design 3 inspired color palette
         "user_message": {
             "background": "#0078d4",
             "text": "#ffffff",
             "border": "#106ebe"
         },
         "ai_message": {
-            "background": "#f5f5f5",
-            "text": "#333333", 
-            "border": "#e0e0e0"
+            "background": "#f8faff",
+            "text": "#1a1a1a", 
+            "border": "#e3ecf7"
         },
         "primary": "#0078d4",
         "secondary": "#106ebe",
         "success": "#00a86b",
         "warning": "#ffaa44",
-        "error": "#d83b01"
+        "error": "#d83b01",
+        # New modern color scheme
+        "header": {
+            "gradient_start": "#667eea",
+            "gradient_end": "#764ba2",
+            "text": "#ffffff",
+            "accent": "rgba(255, 255, 255, 0.2)"
+        },
+        "container": {
+            "background": "#ffffff",
+            "border": "#e8eaed",
+            "shadow": "rgba(60, 64, 67, 0.15)",
+            "hover": "#f8f9fa"
+        },
+        "suggestion": {
+            "background": "rgba(103, 126, 234, 0.08)",
+            "border": "rgba(103, 126, 234, 0.2)",
+            "text": "#3c4043",
+            "hover_bg": "rgba(103, 126, 234, 0.12)",
+            "hover_border": "#667eea",
+            "active_bg": "rgba(103, 126, 234, 0.16)"
+        },
+        "empty_state": {
+            "icon_bg": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            "text_primary": "#202124",
+            "text_secondary": "#5f6368"
+        }
+    },
+    # New visual design configuration
+    "design": {
+        "border_radius": {
+            "small": 8,
+            "medium": 12,
+            "large": 16
+        },
+        "shadows": {
+            "light": "0 2px 8px rgba(60, 64, 67, 0.1)",
+            "medium": "0 4px 16px rgba(60, 64, 67, 0.15)",
+            "heavy": "0 8px 32px rgba(60, 64, 67, 0.2)"
+        },
+        "animations": {
+            "duration": 250,  # milliseconds
+            "easing": "ease-out"
+        },
+        "spacing": {
+            "tight": 4,
+            "normal": 8,
+            "comfortable": 12,
+            "spacious": 16
+        }
+    },
+    # Enhanced responsive breakpoints for design elements
+    "responsive_design": {
+        "small": {
+            "header_height": 60,
+            "suggestion_columns": 1,
+            "max_suggestions": 3
+        },
+        "medium": {
+            "header_height": 70,
+            "suggestion_columns": 2,
+            "max_suggestions": 4
+        },
+        "large": {
+            "header_height": 80,
+            "suggestion_columns": 2,
+            "max_suggestions": 4
+        },
+        "xlarge": {
+            "header_height": 90,
+            "suggestion_columns": 2,
+            "max_suggestions": 4
+        }
     }
 }
 
