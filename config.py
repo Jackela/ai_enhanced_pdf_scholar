@@ -6,6 +6,10 @@ It follows a modular approach to keep settings organized and easy to manage.
 """
 
 import os
+from dotenv import load_dotenv
+
+# Load .env file if it exists
+load_dotenv()
 
 # --- Application Metadata ---
 # Used for display purposes, like in the 'About' dialog.
@@ -132,7 +136,7 @@ AI_CHAT = {
             "large": {
                 "icon": "🤖",
                 "title": "AI Assistant Ready",
-                "description": "Welcome! I can help you with:\n\n📄 Document Analysis\n• Summarize content\n• Explain complex concepts\n• Answer specific questions\n\n�� General Knowledge\n• Research assistance\n• Explanations on any topic\n• Writing and analysis help\n\nJust type your question below!"
+                "description": "Welcome! I can help you with:\n\n📄 Document Analysis\n• Summarize content\n• Explain complex concepts\n• Answer specific questions\n\n🧠 General Knowledge\n• Research assistance\n• Explanations on any topic\n• Writing and analysis help\n\nJust type your question below!"
             },
             "xlarge": {
                 "icon": "🤖",
@@ -267,4 +271,49 @@ AI_FEATURE_SETTINGS = {
     "model": "gemini-2.5-flash",
     # Timeout in seconds for API requests.
     "timeout": 60,
-} 
+}
+
+class Config:
+    @staticmethod
+    def get_gemini_api_key():
+        """
+        Get Gemini API key from multiple sources (按优先级):
+        1. 命令行参数 (如果提供)
+        2. 环境变量 GEMINI_API_KEY
+        3. .env文件中的 GEMINI_API_KEY
+        4. QSettings中存储的用户设置
+        
+        @returns {string|None} API key or None if not found
+        """
+        import sys
+        from PyQt6.QtCore import QSettings
+        
+        # 1. 命令行参数
+        if len(sys.argv) > 1:
+            for i, arg in enumerate(sys.argv):
+                if arg == '--api-key' and i + 1 < len(sys.argv):
+                    return sys.argv[i + 1]
+                if arg.startswith('--api-key='):
+                    return arg.split('=', 1)[1]
+        
+        # 2. 环境变量
+        env_key = os.getenv('GEMINI_API_KEY')
+        if env_key and env_key.strip():
+            return env_key.strip()
+        
+        # 3. QSettings (用户通过GUI设置)
+        settings = QSettings('AI PDF Scholar', 'Settings')
+        settings_key = settings.value('gemini_api_key', '')
+        if settings_key and settings_key.strip():
+            return settings_key.strip()
+        
+        return None
+    
+    @staticmethod
+    def is_api_key_configured():
+        """
+        Check if API key is configured from any source.
+        
+        @returns {boolean} True if API key is available
+        """
+        return Config.get_gemini_api_key() is not None 

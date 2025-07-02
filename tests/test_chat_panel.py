@@ -2,7 +2,7 @@
 Unit tests for ChatPanel component.
 
 Tests the main chat panel widget functionality including UI components,
-signal connections, message handling, and AI interaction.
+signal connections, message handling, AI interaction, and RAG mode functionality.
 """
 
 import pytest
@@ -51,6 +51,8 @@ class TestChatPanel:
         """Test ChatPanel initialization."""
         assert chat_panel is not None
         assert chat_panel.is_ai_responding == False
+        assert chat_panel.rag_mode == False
+        assert chat_panel.pdf_document_name == ""
         assert hasattr(chat_panel, 'colors')
         assert hasattr(chat_panel, 'spacing')
         assert hasattr(chat_panel, 'fonts')
@@ -82,7 +84,71 @@ class TestChatPanel:
         """Test that all required signals exist."""
         assert hasattr(chat_panel, 'user_message_sent')
         assert hasattr(chat_panel, 'ai_response_requested')
+        assert hasattr(chat_panel, 'rag_query_requested')
         assert hasattr(chat_panel, 'chat_cleared')
+
+    def test_rag_mode_toggle_enable(self, chat_panel):
+        """Test enabling RAG mode."""
+        test_doc_name = "test_document.pdf"
+        
+        # Enable RAG mode
+        chat_panel.set_rag_mode(True, test_doc_name)
+        
+        # Verify state changes
+        assert chat_panel.rag_mode == True
+        assert chat_panel.pdf_document_name == test_doc_name
+        assert f"文档对话 - {test_doc_name}" in chat_panel.title_label.text()
+
+    def test_rag_mode_toggle_disable(self, chat_panel):
+        """Test disabling RAG mode."""
+        # First enable it
+        chat_panel.set_rag_mode(True, "test.pdf")
+        
+        # Then disable it
+        chat_panel.set_rag_mode(False)
+        
+        # Verify state changes
+        assert chat_panel.rag_mode == False
+        assert chat_panel.pdf_document_name == ""
+        assert "AI Chat" in chat_panel.title_label.text()
+
+    def test_handle_user_message_rag_mode(self, chat_panel):
+        """Test handling user message in RAG mode."""
+        test_message = "What is this document about?"
+        
+        # Enable RAG mode
+        chat_panel.set_rag_mode(True, "test.pdf")
+        
+        # Mock chat manager and signals
+        chat_panel.chat_manager.add_user_message = Mock(return_value=Mock())
+        chat_panel.user_message_sent = Mock()
+        chat_panel.rag_query_requested = Mock()
+        
+        # Call handler
+        chat_panel._handle_user_message(test_message)
+        
+        # Verify RAG query signal is emitted instead of ai_response_requested
+        chat_panel.rag_query_requested.emit.assert_called_once_with(test_message)
+        chat_panel.user_message_sent.emit.assert_called_once_with(test_message)
+
+    def test_handle_user_message_normal_mode(self, chat_panel):
+        """Test handling user message in normal mode."""
+        test_message = "Hello AI!"
+        
+        # Ensure normal mode
+        chat_panel.set_rag_mode(False)
+        
+        # Mock chat manager and signals
+        chat_panel.chat_manager.add_user_message = Mock(return_value=Mock())
+        chat_panel.user_message_sent = Mock()
+        chat_panel.ai_response_requested = Mock()
+        
+        # Call handler
+        chat_panel._handle_user_message(test_message)
+        
+        # Verify normal AI response signal is emitted
+        chat_panel.ai_response_requested.emit.assert_called_once_with(test_message)
+        chat_panel.user_message_sent.emit.assert_called_once_with(test_message)
 
     def test_handle_user_message_valid(self, chat_panel):
         """Test handling valid user message."""
@@ -108,6 +174,82 @@ class TestChatPanel:
         chat_panel.user_message_sent.emit.assert_called_once_with(test_message)
         chat_panel.ai_response_requested.emit.assert_called_once_with(test_message)
 
+    def test_handle_user_message_empty(self, chat_panel):
+        """Test handling empty user message."""
+        # Mock dependencies
+        chat_panel.chat_manager.add_user_message = Mock()
+        chat_panel.user_message_sent = Mock()
+        chat_panel.ai_response_requested = Mock()
+        
+        # Test empty message
+        chat_panel._handle_user_message("")
+        
+        # Verify nothing happens
+        chat_panel.chat_manager.add_user_message.assert_not_called()
+        chat_panel.user_message_sent.emit.assert_not_called()
+        chat_panel.ai_response_requested.emit.assert_not_called()
+
+    def test_handle_user_message_while_ai_responding(self, chat_panel):
+        """Test handling user message while AI is responding."""
+        # Set AI responding state
+        chat_panel.is_ai_responding = True
+        
+        # Mock dependencies
+        chat_panel.chat_manager.add_user_message = Mock()
+        chat_panel.user_message_sent = Mock()
+        chat_panel.ai_response_requested = Mock()
+        
+        # Try to send message
+        chat_panel._handle_user_message("Test message")
+        
+        # Verify nothing happens
+        chat_panel.chat_manager.add_user_message.assert_not_called()
+        chat_panel.user_message_sent.emit.assert_not_called()
+        chat_panel.ai_response_requested.emit.assert_not_called()
+
+    def test_add_ai_response(self, chat_panel):
+        """Test adding AI response."""
+        test_response = "This is an AI response."
+        
+        # Mock dependencies
+        chat_panel.chat_manager.add_ai_message = Mock(return_value=Mock())
+        chat_panel.chat_input.set_enabled = Mock()
+        
+        # Add AI response
+        chat_panel.add_ai_response(test_response)
+        
+        # Verify state changes
+        assert chat_panel.is_ai_responding == False
+        
+        # Verify chat manager called
+        chat_panel.chat_manager.add_ai_message.assert_called_once_with(test_response)
+        
+        # Verify input re-enabled
+        chat_panel.chat_input.set_enabled.assert_called_once_with(True)
+
+    def test_handle_ai_error(self, chat_panel):
+        """Test handling AI error."""
+        test_error = "API Error"
+        
+        # Mock dependencies
+        chat_panel.chat_manager.add_ai_message = Mock(return_value=Mock())
+        chat_panel.chat_input.set_enabled = Mock()
+        
+        # Handle error
+        chat_panel.handle_ai_error(test_error)
+        
+        # Verify state changes
+        assert chat_panel.is_ai_responding == False
+        
+        # Verify error message added
+        chat_panel.chat_manager.add_ai_message.assert_called_once()
+        error_message = chat_panel.chat_manager.add_ai_message.call_args[0][0]
+        assert "Error" in error_message
+        assert test_error in error_message
+        
+        # Verify input re-enabled
+        chat_panel.chat_input.set_enabled.assert_called_once_with(True)
+
     def test_clear_chat(self, chat_panel):
         """Test clearing chat."""
         # Mock dependencies
@@ -123,3 +265,5 @@ class TestChatPanel:
         chat_panel.chat_input.clear_input.assert_called_once()
         chat_panel.chat_input.focus_input.assert_called_once()
         chat_panel.chat_cleared.emit.assert_called_once()
+
+

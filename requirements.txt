@@ -4,3 +4,8 @@ pytest
 pytest-mock
 pytest-qt
 markdown
+python-dotenv
+llama-index==0.12.45
+llama-index-llms-google-genai
+llama-index-embeddings-google-genai
+llama-index-readers-file

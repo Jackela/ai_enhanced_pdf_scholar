@@ -2,7 +2,7 @@
 Chat Panel Component
 
 This module provides the main ChatPanel widget that integrates all chat functionality
-including message display, input handling, and AI interaction.
+including message display, input handling, AI interaction, and RAG document chat.
 """
 
 from PyQt6.QtWidgets import (
@@ -25,24 +25,28 @@ class ChatPanel(QWidget):
     """
     {
         "name": "ChatPanel",
-        "version": "1.0.0",
-        "description": "Main chat panel widget integrating message display, input, and AI interaction.",
+        "version": "2.0.0",
+        "description": "Enhanced chat panel widget supporting both general AI chat and RAG document conversation.",
         "dependencies": ["ChatManager", "ChatInput", "responsive_utils"],
         "interface": {
-            "inputs": [],
-            "outputs": "Complete chat panel widget with AI conversation capabilities"
+            "inputs": ["rag_mode: bool", "pdf_document_name: str"],
+            "outputs": "Complete chat panel widget with AI conversation and RAG capabilities"
         }
     }
     
     The main chat panel widget that provides a complete chat interface.
-    Features message display, input handling, responsive design, and AI integration.
+    Features message display, input handling, responsive design, AI integration,
+    and RAG-based document conversation capabilities.
     """
     
     # Signal emitted when user sends a message
     user_message_sent = pyqtSignal(str)  # Passes the message text
     
-    # Signal emitted when AI response is needed
+    # Signal emitted when AI response is needed (general chat)
     ai_response_requested = pyqtSignal(str)  # Passes the user message
+    
+    # Signal emitted when RAG document query is needed
+    rag_query_requested = pyqtSignal(str)  # Passes the user message for RAG
     
     # Signal emitted when chat is cleared
     chat_cleared = pyqtSignal()
@@ -58,6 +62,8 @@ class ChatPanel(QWidget):
         
         # State management
         self.is_ai_responding = False
+        self.rag_mode = False  # RAG mode flag
+        self.pdf_document_name = ""  # Current PDF document name
         
         self._setup_ui()
         self._apply_styling()
@@ -421,11 +427,17 @@ class ChatPanel(QWidget):
         self.chat_input.set_enabled(False)
         self.is_ai_responding = True
         
-        # Emit signal for AI processing
+        # Emit appropriate signal based on current mode
         self.user_message_sent.emit(message_text)
-        self.ai_response_requested.emit(message_text)
         
-        logger.info(f"User message handled: {len(message_text)} characters")
+        if self.rag_mode:
+            # RAG document query
+            self.rag_query_requested.emit(message_text)
+            logger.info(f"RAG query handled: {len(message_text)} characters")
+        else:
+            # General AI chat
+            self.ai_response_requested.emit(message_text)
+            logger.info(f"General chat message handled: {len(message_text)} characters")
 
     def add_ai_response(self, response_text: str):
         """Add an AI response to the chat."""
@@ -513,4 +525,81 @@ class ChatPanel(QWidget):
         last_message = self.chat_manager.get_last_message()
         if last_message and last_message.is_user_message():
             return last_message.get_message_text()
-        return "" 
+        return ""
+
+    def set_rag_mode(self, enabled: bool, pdf_name: str = ""):
+        """
+        Enable or disable RAG mode for document conversation.
+        
+        Args:
+            enabled: Whether to enable RAG mode
+            pdf_name: Name of the PDF document (for display)
+        """
+        self.rag_mode = enabled
+        self.pdf_document_name = pdf_name if enabled else ""
+        
+        # Update UI to reflect mode change
+        self._update_mode_ui()
+        
+        # Clear existing conversation when switching modes
+        self.clear_chat()
+        
+        logger.info(f"RAG mode {'enabled' if enabled else 'disabled'}, document: {pdf_name}")
+
+    def _update_mode_ui(self):
+        """Update UI elements based on current mode (RAG vs general chat)."""
+        # Update title
+        if self.rag_mode and self.pdf_document_name:
+            title_text = f"💬 文档对话 - {self.pdf_document_name}"
+        else:
+            title_text = responsive_calc.get_chat_panel_title()
+        
+        self.title_label.setText(title_text)
+        
+        # Update empty state
+        self._update_empty_state()
+        
+        # Update chat input placeholder
+        if hasattr(self, 'chat_input'):
+            if self.rag_mode:
+                self.chat_input.set_placeholder_text("向文档提问...")
+            else:
+                self.chat_input.set_placeholder_text("Ask AI anything...")
+
+    def _update_empty_state(self):
+        """Update empty state content based on current mode."""
+        if self.rag_mode:
+            # RAG mode empty state
+            empty_config = {
+                "icon": "💬",
+                "title": "开始与文档对话！",
+                "description": f"你现在可以向《{self.pdf_document_name}》提问了。\n\n尝试询问：\n• \"总结这个文档\"\n• \"解释关键概念\"\n• \"帮助我理解这篇论文\"\n• 任何关于文档内容的问题"
+            }
+        else:
+            # General chat mode empty state
+            empty_config = responsive_calc.get_chat_empty_state_config()
+        
+        if hasattr(self, 'empty_message'):
+            # Update icon
+            if hasattr(self.empty_message, 'layout') and self.empty_message.layout():
+                icon_label = self.empty_message.layout().itemAt(0).widget()
+                if icon_label:
+                    icon_label.setText(empty_config["icon"])
+                
+                # Update title
+                title_label = self.empty_message.layout().itemAt(1).widget()
+                if title_label:
+                    title_label.setText(empty_config["title"])
+                
+                # Update description
+                desc_label = self.empty_message.layout().itemAt(2).widget()
+                if desc_label:
+                    desc_label.setText(empty_config["description"])
+
+    def is_rag_mode(self) -> bool:
+        """Check if currently in RAG mode."""
+        return self.rag_mode
+
+    def get_pdf_document_name(self) -> str:
+        """Get the current PDF document name."""
+        return self.pdf_document_name 

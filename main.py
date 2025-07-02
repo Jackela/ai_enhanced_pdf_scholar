@@ -17,7 +17,8 @@ warnings.filterwarnings("ignore", message=".*__module__.*")
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QFileDialog,
-    QSizePolicy, QHBoxLayout, QMessageBox, QStatusBar, QToolBar, QScrollArea, QLabel, QFrame
+    QSizePolicy, QHBoxLayout, QStatusBar, QToolBar, QScrollArea, QLabel, QFrame,
+    QTabWidget, QTextBrowser, QLineEdit
 )
 from PyQt6.QtCore import QSettings, QRectF, Qt
 from PyQt6.QtGui import QImage, QAction, QIcon, QResizeEvent
@@ -48,6 +49,8 @@ from src.annotation_manager import AnnotationManager
 from src.loading_indicator import LoadingIndicator
 from src.responsive_utils import responsive_calc
 from src.chat_panel import ChatPanel
+from src.rag_service import RAGService, RAGServiceError, RAGIndexError, RAGQueryError, RAGConfigurationError
+from src.index_worker import IndexWorker
 
 class MainWindow(QMainWindow):
     """
@@ -81,6 +84,11 @@ class MainWindow(QMainWindow):
         # Query state management for debouncing
         self.is_querying = False
         self.llm_worker = None
+        
+        # RAG service state management
+        self.rag_service = None
+        self.index_worker = None
+        self.current_pdf_path = None
 
         # Central widget and layout
         central_widget = QWidget()
@@ -112,8 +120,11 @@ class MainWindow(QMainWindow):
     def _connect_chat_signals(self):
         """Connect chat panel signals to main window handlers."""
         if hasattr(self, 'chat_widget') and self.chat_widget:
-            # Connect user message signal to AI processing
+            # Connect user message signal to AI processing (general chat)
             self.chat_widget.ai_response_requested.connect(self.handle_chat_query)
+            
+            # Connect RAG query signal to document chat processing
+            self.chat_widget.rag_query_requested.connect(self._handle_rag_query)
             
             # Connect chat cleared signal
             self.chat_widget.chat_cleared.connect(self.on_chat_cleared)
@@ -239,7 +250,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Ready. Please open a PDF file to begin AI-enhanced annotation.")
 
     def create_annotations_panel(self):
-        """Create the modern responsive right-side annotations panel."""
+        """Create the modern responsive right-side panel with tabs for annotations and document chat."""
         # Main panel frame with responsive styling
         panel = QFrame()
         panel.setFrameStyle(QFrame.Shape.StyledPanel)
@@ -261,13 +272,58 @@ class MainWindow(QMainWindow):
             spacing_config["margin"]
         )
         
-        # Responsive panel title with icon
-        title_label = QLabel(responsive_calc.get_panel_title())
-        title_style = responsive_calc.create_responsive_style(
-            responsive_calc.get_title_style_template()
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                background-color: white;
+            }
+            QTabBar::tab {
+                background-color: #f5f5f5;
+                border: 1px solid #e0e0e0;
+                padding: 8px 16px;
+                margin-right: 2px;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                min-width: 80px;
+            }
+            QTabBar::tab:selected {
+                background-color: white;
+                border-bottom-color: white;
+                font-weight: bold;
+            }
+            QTabBar::tab:hover {
+                background-color: #f0f0f0;
+            }
+        """)
+        
+        # Tab: Smart Annotations (moved from tab to single panel)
+        annotations_tab = self._create_annotations_tab()
+        self.tab_widget.addTab(annotations_tab, "✨ 智能标注")
+        
+        panel_layout.addWidget(self.tab_widget)
+        
+        # Store panel reference for responsive updates
+        self.annotations_panel_widget = panel
+        
+        return panel
+
+    def _create_annotations_tab(self):
+        """Create the annotations tab with existing functionality."""
+        tab_widget = QWidget()
+        tab_layout = QVBoxLayout(tab_widget)
+        
+        # Get responsive spacing configuration
+        spacing_config = responsive_calc.get_spacing_config()
+        
+        tab_layout.setContentsMargins(
+            spacing_config["margin"]//2,
+            spacing_config["margin"]//2,
+            spacing_config["margin"]//2,
+            spacing_config["margin"]//2
         )
-        title_label.setStyleSheet(title_style)
-        panel_layout.addWidget(title_label)
         
         # Scrollable area for annotations with responsive styling
         self.annotations_scroll = QScrollArea()
@@ -302,12 +358,11 @@ class MainWindow(QMainWindow):
         self.annotations_layout.addWidget(self.empty_message)
         
         self.annotations_scroll.setWidget(self.annotations_container)
-        panel_layout.addWidget(self.annotations_scroll)
+        tab_layout.addWidget(self.annotations_scroll)
         
-        # Store panel reference for responsive updates
-        self.annotations_panel_widget = panel
-        
-        return panel
+        return tab_widget
+
+
 
     def create_chat_panel(self):
         """Create the left-side chat panel."""
@@ -469,11 +524,25 @@ class MainWindow(QMainWindow):
                 self._on_pdf_file_selected(file_path)
     
     def _on_pdf_file_selected(self, file_path: str):
-        """Handle PDF file selection."""
+        """Handle PDF file selection and initialize RAG service."""
         if file_path:
             self.annotation_manager.clear_all_annotations()
             self.pdf_viewer.load_pdf(file_path)
             self.statusBar().showMessage(f"Opened {file_path}", 5000)
+            
+            # Store current PDF path
+            self.current_pdf_path = file_path
+            
+            # Extract PDF filename for display
+            import os
+            pdf_filename = os.path.basename(file_path)
+            
+            # Enable RAG mode in chat panel
+            if hasattr(self, 'chat_widget') and self.chat_widget:
+                self.chat_widget.set_rag_mode(True, pdf_filename)
+            
+            # Initialize RAG service and start indexing
+            self._initialize_rag_service(file_path)
 
     def open_settings(self):
         """Open settings dialog using non-blocking approach."""
@@ -485,6 +554,11 @@ class MainWindow(QMainWindow):
     def _on_settings_accepted(self, dialog):
         """Handle settings dialog acceptance."""
         self.llm_service.refresh_config()
+        
+        # If there's a current PDF and RAG service, reinitialize with new settings
+        if self.current_pdf_path and hasattr(self, 'current_pdf_path'):
+            self._initialize_rag_service(self.current_pdf_path)
+        
         self.statusBar().showMessage("Settings updated.", 5000)
         dialog.deleteLater()  # Ensure proper cleanup
 
@@ -493,11 +567,7 @@ class MainWindow(QMainWindow):
         # Prevent multiple concurrent queries (debouncing)
         if self.is_querying:
             logger.warning("Query already in progress, ignoring new query request")
-            QMessageBox.information(
-                self, 
-                "Query in Progress",
-                "Please wait for the current AI query to complete before starting a new one."
-            )
+            self.statusBar().showMessage("⏳ 请等待当前AI查询完成后再开始新查询", 5000)
             return
             
         # Store selected text for later use in annotations
@@ -524,11 +594,7 @@ class MainWindow(QMainWindow):
     
     def handle_image_query(self, image: QImage):
         """Handles a query request originating from a screenshot selection."""
-        QMessageBox.information(
-            self, 
-            "Feature Not Implemented",
-            "Querying with image selections is not yet implemented."
-        )
+        self.statusBar().showMessage("ℹ️ 图像选择查询功能尚未实现", 5000)
 
     def start_ai_query(self, prompt: str, pdf_rect: fitz.Rect):
         # Additional check for concurrent queries
@@ -565,32 +631,21 @@ class MainWindow(QMainWindow):
         self.is_querying = False
         self.llm_worker = None
         
-        # The error message now includes the exception type
+        # Show error in status bar instead of blocking dialog
         if "LLMConfigurationError" in error_msg:
-            QMessageBox.critical(
-                self, 
-                "LLM Not Configured",
-                "The Gemini API key is missing or invalid. Please configure it in the Settings menu."
-            )
+            error_text = "❌ AI配置错误：请在设置中配置有效的Gemini API密钥"
+            self.statusBar().showMessage(error_text, 10000)  # Show for 10 seconds
         elif "LLMAPIError" in error_msg:
-            QMessageBox.critical(
-                self, 
-                "API Error",
-                f"An error occurred while communicating with the AI service. Please check your network connection and API key validity.\n\nDetails: {error_msg}"
-            )
+            error_text = f"❌ API错误：请检查网络连接和API密钥有效性 - {error_msg}"
+            self.statusBar().showMessage(error_text, 10000)
         elif "LLMResponseError" in error_msg:
-            QMessageBox.critical(
-                self, 
-                "Invalid AI Response",
-                f"The AI service returned an unexpected or invalid response.\n\nDetails: {error_msg}"
-            )
+            error_text = f"❌ AI响应错误：服务返回了意外的响应 - {error_msg}"
+            self.statusBar().showMessage(error_text, 10000)
         else:
-            QMessageBox.critical(
-                self, 
-                "AI Error", 
-                f"An unexpected error occurred during the AI query.\n\nDetails: {error_msg}"
-            )
-        self.statusBar().showMessage("AI query failed.", 5000)
+            error_text = f"❌ AI查询失败：{error_msg}"
+            self.statusBar().showMessage(error_text, 10000)
+        
+        logger.error(f"AI query failed: {error_msg}")
 
     def handle_ai_response(self, ai_response: str, pdf_rect: fitz.Rect):
         # Hide loading indicator with fade effect
@@ -642,7 +697,8 @@ class MainWindow(QMainWindow):
     def on_query_error(self, error_message):
         """Hides the loading indicator and shows an error message."""
         self.loading_indicator.hide_with_fade()
-        QMessageBox.critical(self, "AI Query Error", error_message)
+        error_text = f"❌ AI查询错误：{error_message}"
+        self.statusBar().showMessage(error_text, 10000)  # Show for 10 seconds
         logger.error(f"LLM query failed: {error_message}")
 
     def setup_llm_worker(self, inquiry_text, context_text, selected_rect):
@@ -737,6 +793,201 @@ class MainWindow(QMainWindow):
         """Handle chat cleared event."""
         logger.info("Chat conversation cleared")
         # Could add additional cleanup or analytics here
+    
+    def _handle_rag_query(self, message: str):
+        """Handle RAG query from the chat panel."""
+        if not message.strip():
+            return
+        
+        # Check if RAG service is ready
+        if not hasattr(self, 'rag_service') or not self.rag_service or not self.rag_service.is_ready():
+            error_msg = "RAG service is not ready. Please wait for PDF indexing to complete."
+            self.chat_widget.add_ai_response(f"❌ **Error**: {error_msg}")
+            logger.warning("RAG query attempted but service not ready")
+            return
+        
+        # Start RAG query processing
+        self._start_rag_query_for_chat(message)
+    
+    def _start_rag_query_for_chat(self, message: str):
+        """Start a RAG query for the chat panel."""
+        try:
+            # Create a temporary "thinking" message in chat
+            thinking_message = "🤔 正在分析文档并生成回答..."
+            self.chat_widget.add_ai_response(thinking_message)
+            
+            # Create RAG query worker
+            from PyQt6.QtCore import QThread, pyqtSignal
+            
+            class RAGQueryWorker(QThread):
+                result_ready = pyqtSignal(str)
+                error_occurred = pyqtSignal(str)
+                
+                def __init__(self, rag_service, prompt):
+                    super().__init__()
+                    self.rag_service = rag_service
+                    self.prompt = prompt
+                
+                def run(self):
+                    try:
+                        response = self.rag_service.query(self.prompt)
+                        self.result_ready.emit(response)
+                    except Exception as e:
+                        self.error_occurred.emit(str(e))
+            
+            # Cancel any existing RAG query worker
+            if hasattr(self, 'rag_query_worker_chat') and self.rag_query_worker_chat:
+                self.rag_query_worker_chat.result_ready.disconnect()
+                self.rag_query_worker_chat.error_occurred.disconnect()
+                self.rag_query_worker_chat.terminate()
+                self.rag_query_worker_chat.wait()
+                self.rag_query_worker_chat = None
+            
+            # Create and start new worker
+            self.rag_query_worker_chat = RAGQueryWorker(self.rag_service, message)
+            self.rag_query_worker_chat.result_ready.connect(self._on_rag_query_completed_for_chat)
+            self.rag_query_worker_chat.error_occurred.connect(self._on_rag_query_error_for_chat)
+            self.rag_query_worker_chat.start()
+            
+            logger.info(f"Started RAG query for chat: {len(message)} characters")
+            
+        except Exception as e:
+            logger.error(f"Failed to start RAG query for chat: {e}")
+            self.chat_widget.add_ai_response(f"❌ **Error**: {e}")
+    
+    def _on_rag_query_completed_for_chat(self, response: str):
+        """Handle completion of RAG query for chat panel."""
+        try:
+            # Remove the last message (thinking message) and add the actual response
+            if hasattr(self.chat_widget, 'chat_manager'):
+                # Get the last message
+                last_message = self.chat_widget.chat_manager.get_last_message()
+                if last_message and "正在分析文档" in last_message.get_message_text():
+                    # Remove the thinking message
+                    self.chat_widget.chat_manager.remove_message(last_message)
+            
+            # Add the actual AI response
+            self.chat_widget.add_ai_response(response)
+            
+            logger.info(f"RAG response added to chat: {len(response)} characters")
+            
+        except Exception as e:
+            logger.error(f"Failed to handle RAG response for chat: {e}")
+            self.chat_widget.add_ai_response(f"❌ **Error**: Failed to process response: {e}")
+        finally:
+            # Clean up worker
+            if hasattr(self, 'rag_query_worker_chat'):
+                self.rag_query_worker_chat = None
+    
+    def _on_rag_query_error_for_chat(self, error_message: str):
+        """Handle RAG query error for chat panel."""
+        logger.error(f"RAG query error for chat: {error_message}")
+        
+        # Remove thinking message if present
+        if hasattr(self.chat_widget, 'chat_manager'):
+            last_message = self.chat_widget.chat_manager.get_last_message()
+            if last_message and "正在分析文档" in last_message.get_message_text():
+                self.chat_widget.chat_manager.remove_message(last_message)
+        
+        # Add error message
+        self.chat_widget.add_ai_response(f"❌ **Error**: {error_message}")
+        
+        # Clean up worker
+        if hasattr(self, 'rag_query_worker_chat'):
+            self.rag_query_worker_chat = None
+
+    # === RAG Service Integration Methods ===
+    
+    def _initialize_rag_service(self, pdf_path: str):
+        """Initialize RAG service and start indexing for the given PDF."""
+        try:
+            # Check if API key is available from any source
+            from config import Config
+            api_key = Config.get_gemini_api_key()
+            if not api_key:
+                error_msg = "请配置 Gemini API Key，支持以下方式：环境变量、.env文件或应用设置"
+                self.statusBar().showMessage(error_msg, 10000)
+                logger.warning("RAG service initialization failed: No API key configured")
+                return
+            
+            # Initialize RAG service
+            self.rag_service = RAGService(api_key)
+            
+            # Update UI status
+            self.statusBar().showMessage("正在为文档创建智能索引...", 0)  # 0 = no timeout
+            
+            # Start indexing in background thread
+            self._start_indexing(pdf_path)
+            
+        except RAGConfigurationError as e:
+            logger.error(f"RAG configuration error: {e}")
+            self.statusBar().showMessage(f"RAG配置错误: {e}", 10000)
+        except Exception as e:
+            logger.error(f"Failed to initialize RAG service: {e}")
+            self.statusBar().showMessage(f"RAG初始化失败: {e}", 10000)
+    
+    def _start_indexing(self, pdf_path: str):
+        """Start PDF indexing in a background thread."""
+        try:
+            # Cancel any existing indexing worker
+            if self.index_worker is not None:
+                try:
+                    self.index_worker.indexing_completed.disconnect()
+                    self.index_worker.indexing_failed.disconnect()
+                except:
+                    pass  # Ignore if signals are not connected
+                self.index_worker.terminate()
+                self.index_worker.wait()
+                self.index_worker = None
+            
+            # Create new index worker
+            self.index_worker = IndexWorker(pdf_path, self.rag_service)
+            
+            # Connect signals
+            self.index_worker.indexing_completed.connect(self._on_indexing_completed)
+            self.index_worker.indexing_failed.connect(self._on_indexing_failed)
+            
+            # Start indexing
+            self.index_worker.start()
+            
+            logger.info(f"Started indexing for PDF: {pdf_path}")
+            
+        except Exception as e:
+            logger.error(f"Failed to start indexing: {e}")
+            self.statusBar().showMessage(f"索引启动失败: {e}", 10000)
+    
+    def _on_indexing_completed(self, pdf_path: str):
+        """Handle completion of PDF indexing."""
+        logger.info(f"Indexing completed for: {pdf_path}")
+        
+        # Update status bar
+        self.statusBar().showMessage("✅ 文档索引完成，可以开始智能对话！", 5000)
+        
+        # Ensure RAG mode is properly enabled in chat panel
+        if hasattr(self, 'chat_widget') and self.chat_widget:
+            import os
+            pdf_filename = os.path.basename(pdf_path)
+            self.chat_widget.set_rag_mode(True, pdf_filename)
+        
+        # Clean up worker
+        if self.index_worker:
+            self.index_worker = None
+    
+    def _on_indexing_failed(self, error_message: str):
+        """Handle indexing failure."""
+        logger.error(f"Indexing failed: {error_message}")
+        
+        # Update status bar
+        self.statusBar().showMessage(f"文档索引失败: {error_message}", 10000)
+        
+        # Disable RAG mode in chat panel
+        if hasattr(self, 'chat_widget') and self.chat_widget:
+            self.chat_widget.set_rag_mode(False)
+        
+        # Clean up worker
+        if self.index_worker:
+            self.index_worker = None
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
