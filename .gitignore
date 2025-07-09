@@ -1,0 +1,23 @@
+# Python build artifacts and caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# IDE and OS specific files
+.idea/
+.vscode/
+.DS_Store
+
+# Caches
+.pytest_cache/
+.rag_cache/
+.coverage
+
+# Logs
+*.log
+*.txt
