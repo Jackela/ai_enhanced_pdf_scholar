@@ -37,11 +37,12 @@
   }
 
   * {
-    @apply border-border;
+    border-color: rgb(226 232 240); /* border-gray-200 */
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: white;
+    color: rgb(15 23 42); /* text-slate-900 */
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
