@@ -37,8 +37,8 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install bandit safety
           pip install -r requirements.txt
+          pip install bandit safety
           cd frontend && npm ci
       
       - name: 🔍 Python security scan
