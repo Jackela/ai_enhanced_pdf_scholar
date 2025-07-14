@@ -11,6 +11,7 @@ llama-index==0.12.45
 llama-index-llms-google-genai
 llama-index-embeddings-google-genai
 llama-index-readers-file
+pydantic>=2.6.0,<2.10.0
 
 # Utilities
 python-dotenv

@@ -12,7 +12,7 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   # ============================================================================
@@ -84,7 +84,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🎨 Frontend Dependencies - npm audit" >> $GITHUB_STEP_SUMMARY
           cd frontend
-          npm audit --audit-level=moderate --json > ../npm-audit-report.json || true
+          npm audit --audit-level=high --json > ../npm-audit-report.json || true
           cd ..
           if [ -f npm-audit-report.json ]; then
             VULN_COUNT=$(jq '.metadata.vulnerabilities.total' npm-audit-report.json 2>/dev/null || echo "0")
