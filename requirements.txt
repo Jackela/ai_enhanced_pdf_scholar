@@ -1,16 +1,16 @@
 # Core Web Framework
-fastapi
-uvicorn[standard]
-python-multipart
+fastapi>=0.110.0,<0.120.0
+uvicorn[standard]>=0.30.0,<0.40.0
+python-multipart>=0.0.19,<0.1.0
 
 # PDF Processing (PyMuPDF for text extraction)
-PyMuPDF
+PyMuPDF>=1.24.0,<1.30.0
 
 # AI/RAG Dependencies
 llama-index==0.12.45
-llama-index-llms-google-genai
-llama-index-embeddings-google-genai
-llama-index-readers-file
+llama-index-llms-google-genai==0.2.4
+llama-index-embeddings-google-genai==0.2.1
+llama-index-readers-file==0.4.11
 pydantic>=2.6.0,<2.10.0
 
 # Utilities
