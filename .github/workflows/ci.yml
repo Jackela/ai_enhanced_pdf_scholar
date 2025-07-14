@@ -60,7 +60,7 @@ jobs:
         continue-on-error: true
       
       - name: 📤 Upload bandit report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: bandit-security-report
@@ -102,7 +102,7 @@ jobs:
         run: npm run build
       
       - name: 📤 Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: frontend/dist/
@@ -168,7 +168,7 @@ jobs:
             --maxfail=5
       
       - name: 📤 Upload coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.python-version == env.PYTHON_VERSION && matrix.os == 'ubuntu-latest'
         with:
           name: coverage-reports
@@ -213,7 +213,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       
       - name: 📥 Download frontend build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: frontend/dist/
@@ -241,7 +241,7 @@ jobs:
             --maxfail=3
       
       - name: 📤 Upload E2E test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: e2e-test-results
@@ -278,61 +278,7 @@ jobs:
           pip install -r requirements.txt
       
       - name: ⚡ Run performance benchmarks
-        run: |
-          python -c "
-          import sys
-          import tempfile
-          import os
-          sys.path.insert(0, '.')
-          
-          # Create a simple performance test
-          from src.database.connection import DatabaseConnection
-          from src.database.migrations import DatabaseMigrator
-          from src.repositories.document_repository import DocumentRepository
-          from src.database.models import DocumentModel
-          import time
-          
-          # Setup test database
-          with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
-              db_path = f.name
-          
-          try:
-              db = DatabaseConnection(db_path)
-              migrator = DatabaseMigrator(db)
-              migrator.create_tables_if_not_exist()
-              
-              repo = DocumentRepository(db)
-              
-              # Performance test: Create 100 documents
-              start = time.time()
-              docs = []
-              for i in range(100):
-                  doc = DocumentModel(
-                      title=f'Perf Test Doc {i}',
-                      file_path=f'/test/doc_{i}.pdf',
-                      file_hash=f'hash_{i}',
-                      file_size=1024,
-                      page_count=10
-                  )
-                  docs.append(repo.create(doc))
-              
-              create_time = time.time() - start
-              print(f'CREATE Performance: {100/create_time:.1f} docs/sec')
-              
-              # Performance test: Read documents
-              start = time.time()
-              for doc in docs[:50]:
-                  repo.find_by_id(doc.id)
-              read_time = time.time() - start
-              print(f'READ Performance: {50/read_time:.1f} docs/sec')
-              
-              # Cleanup
-              db.close_all_connections()
-              
-          finally:
-              if os.path.exists(db_path):
-                  os.unlink(db_path)
-          "
+        run: python test_performance.py
 
   # ============================================================================
   # Security Scanning
@@ -377,7 +323,7 @@ jobs:
         run: cd frontend && npm audit --audit-level=moderate --json > ../npm-audit-report.json || true
       
       - name: 📤 Upload security reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-reports
@@ -416,7 +362,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       
       - name: 📥 Download frontend build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: frontend/dist/
@@ -467,7 +413,7 @@ jobs:
           zip -r ai-enhanced-pdf-scholar-${{ github.sha }}.zip ai-enhanced-pdf-scholar/
       
       - name: 📤 Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-packages
           path: |

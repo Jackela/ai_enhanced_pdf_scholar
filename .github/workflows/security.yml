@@ -101,7 +101,7 @@ jobs:
           fi
       
       - name: 📤 Upload vulnerability reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: vulnerability-reports-${{ github.sha }}
@@ -175,7 +175,7 @@ jobs:
           fi
       
       - name: 📤 Upload SAST reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: sast-reports-${{ github.sha }}
@@ -236,7 +236,7 @@ jobs:
           license-checker --summary >> $GITHUB_STEP_SUMMARY
       
       - name: 📤 Upload license reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: license-reports-${{ github.sha }}
           path: |

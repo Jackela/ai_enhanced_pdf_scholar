@@ -275,13 +275,14 @@ jobs:
           PACKAGE_NAME="ai-enhanced-pdf-scholar-${{ needs.validate.outputs.version }}-${{ matrix.platform }}"
           
           if [ "${{ matrix.platform }}" = "windows" ]; then
-            7z a "${PACKAGE_NAME}.zip" "${PACKAGE_NAME}/"
+            # Use PowerShell to create zip on Windows
+            powershell -Command "Compress-Archive -Path '${PACKAGE_NAME}' -DestinationPath '${PACKAGE_NAME}.zip'"
           else
             tar -czf "${PACKAGE_NAME}.tar.gz" "${PACKAGE_NAME}/"
           fi
       
       - name: 📤 Upload release artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.platform }}
           path: release/ai-enhanced-pdf-scholar-${{ needs.validate.outputs.version }}-${{ matrix.platform }}.${{ matrix.extension }}
@@ -306,7 +307,7 @@ jobs:
           fetch-depth: 0
       
       - name: 📥 Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts/
       
