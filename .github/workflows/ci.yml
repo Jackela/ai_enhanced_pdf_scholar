@@ -1,0 +1,503 @@
+name: 🚀 CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # Code Quality & Linting
+  # ============================================================================
+  quality:
+    name: 🔍 Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy pylint bandit safety
+          pip install -r requirements.txt
+      
+      - name: 🎨 Check Python formatting with Black
+        run: black --check --diff src/ tests/ backend/
+      
+      - name: 📐 Check import sorting with isort
+        run: isort --check-only --diff src/ tests/ backend/
+      
+      - name: 🔍 Lint Python code with flake8
+        run: flake8 src/ tests/ backend/ --max-line-length=88 --extend-ignore=E203,W503
+      
+      - name: 🔬 Type checking with mypy
+        run: mypy src/ backend/ --ignore-missing-imports --no-strict-optional
+        continue-on-error: true  # Type checking is informational for now
+      
+      - name: 🛡️ Security check with bandit
+        run: bandit -r src/ backend/ -f json -o bandit-report.json
+        continue-on-error: true
+      
+      - name: 📤 Upload bandit report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+
+  # ============================================================================
+  # Frontend Quality & Build
+  # ============================================================================
+  frontend:
+    name: 🎨 Frontend Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    defaults:
+      run:
+        working-directory: frontend
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: 📦 Install dependencies
+        run: npm ci
+      
+      - name: 🔍 Lint TypeScript/React
+        run: npm run lint
+      
+      - name: 🔬 Type checking
+        run: npm run type-check
+      
+      - name: 🏗️ Build frontend
+        run: npm run build
+      
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/dist/
+          retention-days: 7
+
+  # ============================================================================
+  # Backend Testing Matrix
+  # ============================================================================
+  test-backend:
+    name: 🧪 Backend Tests (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+        exclude:
+          # Windows tests are slower, only test with latest Python
+          - os: windows-latest
+            python-version: '3.10'
+          - os: windows-latest  
+            python-version: '3.12'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest-cov pytest-xdist pytest-timeout
+          pip install -r requirements.txt
+      
+      - name: 🔧 Create test directories
+        run: |
+          mkdir -p test_temp
+          mkdir -p vector_indexes
+      
+      - name: 🧪 Run unit tests
+        run: |
+          pytest tests/ -v \
+            --cov=src \
+            --cov-report=xml:coverage-${{ matrix.python-version }}.xml \
+            --cov-report=html:htmlcov-${{ matrix.python-version }} \
+            --cov-report=term-missing \
+            --cov-fail-under=75 \
+            --maxfail=10 \
+            --timeout=300 \
+            -m "not e2e and not slow"
+      
+      - name: 🧪 Run integration tests
+        run: |
+          pytest test_comprehensive.py test_complete_workflow.py -v \
+            --timeout=600 \
+            --maxfail=5
+      
+      - name: 📤 Upload coverage reports
+        uses: actions/upload-artifact@v3
+        if: matrix.python-version == env.PYTHON_VERSION && matrix.os == 'ubuntu-latest'
+        with:
+          name: coverage-reports
+          path: |
+            coverage-${{ matrix.python-version }}.xml
+            htmlcov-${{ matrix.python-version }}/
+          retention-days: 14
+      
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: matrix.python-version == env.PYTHON_VERSION && matrix.os == 'ubuntu-latest'
+        with:
+          file: coverage-${{ matrix.python-version }}.xml
+          flags: backend
+          name: Backend Coverage
+          fail_ci_if_error: false
+
+  # ============================================================================
+  # End-to-End Testing
+  # ============================================================================
+  test-e2e:
+    name: 🌐 E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [frontend, test-backend]
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: 📥 Download frontend build
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/dist/
+      
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          cd frontend && npm ci
+      
+      - name: 🎭 Install Playwright
+        run: playwright install --with-deps chromium
+      
+      - name: 🚀 Start backend server
+        run: |
+          python web_main.py --host 127.0.0.1 --port 8000 &
+          sleep 10  # Wait for server to start
+        env:
+          GEMINI_API_KEY: "test_key_for_e2e"
+      
+      - name: 🧪 Run E2E tests
+        run: |
+          pytest tests_e2e/ -v \
+            --timeout=120 \
+            --maxfail=3
+      
+      - name: 📤 Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            tests_e2e/test-results/
+            tests_e2e/videos/
+            tests_e2e/screenshots/
+          retention-days: 7
+
+  # ============================================================================
+  # Performance & Load Testing
+  # ============================================================================
+  performance:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [test-backend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install psutil
+          pip install -r requirements.txt
+      
+      - name: ⚡ Run performance benchmarks
+        run: |
+          python -c "
+          import sys
+          import tempfile
+          import os
+          sys.path.insert(0, '.')
+          
+          # Create a simple performance test
+          from src.database.connection import DatabaseConnection
+          from src.database.migrations import DatabaseMigrator
+          from src.repositories.document_repository import DocumentRepository
+          from src.database.models import DocumentModel
+          import time
+          
+          # Setup test database
+          with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+              db_path = f.name
+          
+          try:
+              db = DatabaseConnection(db_path)
+              migrator = DatabaseMigrator(db)
+              migrator.create_tables_if_not_exist()
+              
+              repo = DocumentRepository(db)
+              
+              # Performance test: Create 100 documents
+              start = time.time()
+              docs = []
+              for i in range(100):
+                  doc = DocumentModel(
+                      title=f'Perf Test Doc {i}',
+                      file_path=f'/test/doc_{i}.pdf',
+                      file_hash=f'hash_{i}',
+                      file_size=1024,
+                      page_count=10
+                  )
+                  docs.append(repo.create(doc))
+              
+              create_time = time.time() - start
+              print(f'CREATE Performance: {100/create_time:.1f} docs/sec')
+              
+              # Performance test: Read documents
+              start = time.time()
+              for doc in docs[:50]:
+                  repo.find_by_id(doc.id)
+              read_time = time.time() - start
+              print(f'READ Performance: {50/read_time:.1f} docs/sec')
+              
+              # Cleanup
+              db.close_all_connections()
+              
+          finally:
+              if os.path.exists(db_path):
+                  os.unlink(db_path)
+          "
+
+  # ============================================================================
+  # Security Scanning
+  # ============================================================================
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety pip-audit
+          pip install -r requirements.txt
+      
+      - name: 🔍 Check Python dependencies for vulnerabilities
+        run: |
+          safety check --json --output safety-report.json || true
+          pip-audit --format=json --output=pip-audit-report.json || true
+      
+      - name: 📦 Setup Node.js for frontend security scan
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: 📦 Install frontend dependencies
+        run: cd frontend && npm ci
+      
+      - name: 🔍 Audit frontend dependencies
+        run: cd frontend && npm audit --audit-level=moderate --json > ../npm-audit-report.json || true
+      
+      - name: 📤 Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            safety-report.json
+            pip-audit-report.json
+            npm-audit-report.json
+          retention-days: 30
+
+  # ============================================================================
+  # Build & Package
+  # ============================================================================
+  build:
+    name: 📦 Build & Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [quality, frontend, test-backend]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for proper versioning
+      
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: 📥 Download frontend build
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/dist/
+      
+      - name: 🏗️ Build production package
+        run: |
+          # Create build directory
+          mkdir -p build/ai-enhanced-pdf-scholar
+          
+          # Copy backend files
+          cp -r src/ build/ai-enhanced-pdf-scholar/
+          cp -r backend/ build/ai-enhanced-pdf-scholar/
+          cp requirements.txt build/ai-enhanced-pdf-scholar/
+          cp web_main.py build/ai-enhanced-pdf-scholar/
+          cp config.py build/ai-enhanced-pdf-scholar/
+          cp pytest.ini build/ai-enhanced-pdf-scholar/
+          
+          # Copy frontend build
+          cp -r frontend/dist/ build/ai-enhanced-pdf-scholar/frontend/
+          
+          # Copy documentation
+          cp README.md build/ai-enhanced-pdf-scholar/
+          cp PROJECT_DOCS.md build/ai-enhanced-pdf-scholar/
+          cp API_ENDPOINTS.md build/ai-enhanced-pdf-scholar/
+          
+          # Create startup scripts
+          cat > build/ai-enhanced-pdf-scholar/start.sh << 'EOF'
+          #!/bin/bash
+          # AI Enhanced PDF Scholar - Startup Script
+          echo "🚀 Starting AI Enhanced PDF Scholar..."
+          python -m pip install -r requirements.txt
+          python web_main.py --host 0.0.0.0 --port 8000
+          EOF
+          
+          cat > build/ai-enhanced-pdf-scholar/start.bat << 'EOF'
+          @echo off
+          echo 🚀 Starting AI Enhanced PDF Scholar...
+          python -m pip install -r requirements.txt
+          python web_main.py --host 0.0.0.0 --port 8000
+          EOF
+          
+          chmod +x build/ai-enhanced-pdf-scholar/start.sh
+      
+      - name: 📦 Create release archive
+        run: |
+          cd build
+          tar -czf ai-enhanced-pdf-scholar-${{ github.sha }}.tar.gz ai-enhanced-pdf-scholar/
+          zip -r ai-enhanced-pdf-scholar-${{ github.sha }}.zip ai-enhanced-pdf-scholar/
+      
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-packages
+          path: |
+            build/ai-enhanced-pdf-scholar-${{ github.sha }}.tar.gz
+            build/ai-enhanced-pdf-scholar-${{ github.sha }}.zip
+          retention-days: 30
+
+  # ============================================================================
+  # Summary Report
+  # ============================================================================
+  summary:
+    name: 📊 CI Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [quality, frontend, test-backend, test-e2e, security, performance, build]
+    
+    steps:
+      - name: 📊 Generate summary
+        run: |
+          echo "## 🚀 CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.quality.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Build | ${{ needs.frontend.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Tests | ${{ needs.test-backend.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests | ${{ needs.test-e2e.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | ${{ needs.performance.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Package | ${{ needs.build.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

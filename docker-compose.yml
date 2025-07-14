@@ -1,0 +1,236 @@
+# ============================================================================
+# AI Enhanced PDF Scholar - Docker Compose Configuration
+# Complete development and production environment setup
+# ============================================================================
+
+version: '3.8'
+
+# ============================================================================
+# Services Configuration
+# ============================================================================
+services:
+  # Development Environment
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    profiles:
+      - dev
+      - development
+    container_name: ai-pdf-scholar-dev
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Debug port
+    volumes:
+      # Source code hot reload
+      - ./src:/app/src:ro
+      - ./backend:/app/backend:ro
+      - ./web_main.py:/app/web_main.py:ro
+      - ./config.py:/app/config.py:ro
+      # Data persistence
+      - pdf_data_dev:/app/data
+      - ./logs:/app/logs
+      # Development tools
+      - ./.vscode:/app/.vscode:ro
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - pdf-scholar-network
+
+  # Production Environment
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    profiles:
+      - prod
+      - production
+    container_name: ai-pdf-scholar-prod
+    ports:
+      - "8000:8000"
+    volumes:
+      # Data persistence only
+      - pdf_data_prod:/app/data
+      - ./logs:/app/logs:rw
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - pdf-scholar-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Testing Environment
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    profiles:
+      - test
+      - testing
+    container_name: ai-pdf-scholar-test
+    volumes:
+      - ./tests:/app/tests:ro
+      - ./tests_e2e:/app/tests_e2e:ro
+      - ./test_*.py:/app/:ro
+      - ./coverage_html:/app/coverage_html
+      - test_data:/app/test_temp
+    environment:
+      - ENVIRONMENT=testing
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    networks:
+      - pdf-scholar-network
+    command: >
+      sh -c "
+        echo '🧪 Running comprehensive test suite...' &&
+        pytest tests/ -v --cov=src --cov-report=html --cov-report=term-missing --cov-fail-under=75 &&
+        echo '🎭 Running E2E tests...' &&
+        python web_main.py --host 0.0.0.0 --port 8000 &
+        sleep 10 &&
+        pytest tests_e2e/ -v &&
+        echo '✅ All tests completed!'
+      "
+
+  # Frontend Development Server (Optional for frontend-only development)
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile
+      target: frontend-builder
+    profiles:
+      - frontend
+      - frontend-dev
+    container_name: ai-pdf-scholar-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:8000
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    networks:
+      - pdf-scholar-network
+
+  # Nginx Reverse Proxy (for production)
+  nginx:
+    image: nginx:alpine
+    profiles:
+      - prod
+      - production
+    container_name: ai-pdf-scholar-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app-prod
+    networks:
+      - pdf-scholar-network
+    restart: unless-stopped
+
+  # Monitoring (Optional)
+  monitoring:
+    image: prom/prometheus:latest
+    profiles:
+      - monitoring
+    container_name: ai-pdf-scholar-monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - monitoring_data:/prometheus
+    networks:
+      - pdf-scholar-network
+    restart: unless-stopped
+
+# ============================================================================
+# Networks Configuration
+# ============================================================================
+networks:
+  pdf-scholar-network:
+    driver: bridge
+    name: ai-pdf-scholar-network
+
+# ============================================================================
+# Volumes Configuration
+# ============================================================================
+volumes:
+  pdf_data_dev:
+    driver: local
+    name: ai-pdf-scholar-data-dev
+  pdf_data_prod:
+    driver: local
+    name: ai-pdf-scholar-data-prod
+  test_data:
+    driver: local
+    name: ai-pdf-scholar-test-data
+  monitoring_data:
+    driver: local
+    name: ai-pdf-scholar-monitoring-data
+
+# ============================================================================
+# Development Commands (use with docker-compose)
+# ============================================================================
+# Start development environment:
+#   docker-compose --profile dev up --build
+#
+# Start production environment:
+#   docker-compose --profile prod up -d --build
+#
+# Run tests:
+#   docker-compose --profile test up --build
+#
+# Frontend development only:
+#   docker-compose --profile frontend up --build
+#
+# Full production with monitoring:
+#   docker-compose --profile prod --profile monitoring up -d --build
+#
+# View logs:
+#   docker-compose logs -f app-dev
+#
+# Execute commands in container:
+#   docker-compose exec app-dev bash
+#
+# Clean up:
+#   docker-compose down --volumes --remove-orphans
