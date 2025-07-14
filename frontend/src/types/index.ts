@@ -1,0 +1,257 @@
+// Document types
+export interface Document {
+  id: number;
+  title: string;
+  file_path: string | null;
+  file_hash: string;
+  file_size: number;
+  page_count: number | null;
+  created_at: string;
+  updated_at: string;
+  last_accessed: string | null;
+  metadata: Record<string, any> | null;
+  is_file_available: boolean;
+}
+
+export interface DocumentListResponse {
+  success: boolean;
+  documents: Document[];
+  total: number;
+  page: number;
+  per_page: number;
+  message?: string;
+}
+
+export interface DocumentImportRequest {
+  title?: string;
+  check_duplicates?: boolean;
+  auto_build_index?: boolean;
+}
+
+// RAG types
+export interface RAGQueryRequest {
+  query: string;
+  document_id: number;
+  use_cache?: boolean;
+}
+
+export interface RAGQueryResponse {
+  success: boolean;
+  query: string;
+  response: string;
+  document_id: number;
+  from_cache?: boolean;
+  processing_time_ms?: number;
+  message?: string;
+}
+
+export interface IndexStatus {
+  success: boolean;
+  document_id: number;
+  has_index: boolean;
+  index_valid: boolean;
+  index_path: string | null;
+  chunk_count: number;
+  created_at: string | null;
+  can_query: boolean;
+  message?: string;
+}
+
+export interface IndexBuildRequest {
+  document_id: number;
+  force_rebuild?: boolean;
+}
+
+// Library management types
+export interface LibraryStats {
+  success: boolean;
+  documents: {
+    total_documents: number;
+    size_stats: {
+      total_size_mb: number;
+      average_size_mb: number;
+      largest_size_mb: number;
+    };
+  };
+  vector_indexes: {
+    total_indexes: number;
+    orphaned_count: number;
+    invalid_count: number;
+    coverage: {
+      coverage_percentage: number;
+    };
+  };
+  cache?: {
+    total_entries: number;
+    hit_rate_percent: number;
+    total_storage_kb: number;
+  };
+  storage?: {
+    total_size_mb: number;
+    active_indexes: number;
+    backup_count: number;
+  };
+  health: {
+    orphaned_indexes: number;
+    invalid_indexes: number;
+    index_coverage: number;
+  };
+}
+
+export interface DuplicateGroup {
+  criteria: string;
+  documents: Document[];
+}
+
+export interface DuplicatesResponse {
+  success: boolean;
+  duplicate_groups: DuplicateGroup[];
+  total_duplicates: number;
+  message?: string;
+}
+
+// System types
+export interface SystemHealth {
+  success: boolean;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  database_connected: boolean;
+  rag_service_available: boolean;
+  api_key_configured: boolean;
+  storage_health: string;
+  uptime_seconds?: number;
+  message?: string;
+}
+
+export interface Configuration {
+  success: boolean;
+  features: {
+    document_upload: boolean;
+    rag_queries: boolean;
+    vector_indexing: boolean;
+    cache_system: boolean;
+    websocket_support: boolean;
+    duplicate_detection: boolean;
+    library_management: boolean;
+  };
+  limits: {
+    max_file_size_mb: number;
+    max_query_length: number;
+    allowed_file_types: string[];
+    max_documents: number;
+    max_concurrent_queries: number;
+  };
+  version: string;
+  message?: string;
+}
+
+// WebSocket message types
+export interface WebSocketMessage {
+  type: string;
+  data?: any;
+}
+
+export interface RAGProgressMessage extends WebSocketMessage {
+  type: 'rag_progress';
+  message: string;
+  document_id?: number;
+}
+
+export interface RAGResponseMessage extends WebSocketMessage {
+  type: 'rag_response';
+  query: string;
+  response: string;
+  document_id: number;
+  processing_time_ms?: number;
+}
+
+export interface IndexProgressMessage extends WebSocketMessage {
+  type: 'index_progress';
+  document_id: number;
+  document_title: string;
+  status: string;
+  progress_percentage?: number;
+}
+
+export interface ErrorMessage extends WebSocketMessage {
+  type: 'error';
+  error: string;
+  error_code?: string;
+}
+
+export interface DocumentUpdateMessage extends WebSocketMessage {
+  type: 'document_update';
+  document_id: number;
+  action: 'created' | 'updated' | 'deleted';
+  data?: any;
+}
+
+// UI state types
+export interface UIState {
+  sidebarOpen: boolean;
+  currentView: 'library' | 'viewer' | 'chat';
+  selectedDocument: Document | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Search and filter types
+export interface SearchFilters {
+  query?: string;
+  show_missing_files?: boolean;
+  sort_by?: 'created_at' | 'updated_at' | 'last_accessed' | 'title' | 'file_size';
+  sort_order?: 'asc' | 'desc';
+  page?: number;
+  per_page?: number;
+}
+
+// API response wrapper
+export interface BaseResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
+export interface ErrorResponse extends BaseResponse {
+  success: false;
+  error_code?: string;
+  details?: Record<string, any>;
+}
+
+// Chat types
+export interface ChatMessage {
+  id: string;
+  type: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  document_id?: number;
+  from_cache?: boolean;
+}
+
+export interface ChatSession {
+  id: string;
+  document_id?: number;
+  document_title?: string;
+  messages: ChatMessage[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Upload types
+export interface UploadProgress {
+  file_name: string;
+  progress: number;
+  status: 'uploading' | 'processing' | 'completed' | 'error';
+  error?: string;
+}
+
+// Theme types
+export type Theme = 'light' | 'dark' | 'system';
+
+// PDF viewer types
+export interface PDFViewerState {
+  currentPage: number;
+  totalPages: number;
+  scale: number;
+  isLoading: boolean;
+  error: string | null;
+}

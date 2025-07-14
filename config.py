@@ -16,14 +16,14 @@ load_dotenv()
 APP_NAME = "AI Enhanced PDF Scholar"
 APP_VERSION = "0.1.0"
 
-# --- UI Configuration ---
-# Default settings for the main application window.
+# --- Web UI Configuration ---
+# Default settings for the web interface layout and styling.
 UI_SETTINGS = {
-    "default_window_title": f"{APP_NAME} v{APP_VERSION}",
-    "default_width": 1200,
-    "default_height": 800,
-    "min_width": 800,
-    "min_height": 600,
+    "default_page_title": f"{APP_NAME} v{APP_VERSION}",
+    "default_viewport_width": 1200,
+    "default_viewport_height": 800,
+    "min_viewport_width": 800,
+    "min_viewport_height": 600,
 }
 
 # --- Responsive Design Configuration ---
@@ -350,34 +350,32 @@ class Config:
     def get_gemini_api_key():
         """
         Get Gemini API key from multiple sources (按优先级):
-        1. 命令行参数 (如果提供)
-        2. 环境变量 GEMINI_API_KEY
-        3. .env文件中的 GEMINI_API_KEY
-        4. QSettings中存储的用户设置
+        1. 环境变量 GEMINI_API_KEY
+        2. .env文件中的 GEMINI_API_KEY
+        3. Web应用设置文件中存储的用户配置
         
         @returns {string|None} API key or None if not found
         """
         import sys
-        from PyQt6.QtCore import QSettings
+        import json
+        from pathlib import Path
         
-        # 1. 命令行参数
-        if len(sys.argv) > 1:
-            for i, arg in enumerate(sys.argv):
-                if arg == '--api-key' and i + 1 < len(sys.argv):
-                    return sys.argv[i + 1]
-                if arg.startswith('--api-key='):
-                    return arg.split('=', 1)[1]
-        
-        # 2. 环境变量
+        # 1. 环境变量
         env_key = os.getenv('GEMINI_API_KEY')
         if env_key and env_key.strip():
             return env_key.strip()
         
-        # 3. QSettings (用户通过GUI设置)
-        settings = QSettings('AI PDF Scholar', 'Settings')
-        settings_key = settings.value('gemini_api_key', '')
-        if settings_key and settings_key.strip():
-            return settings_key.strip()
+        # 2. 配置文件 (Web UI设置)
+        try:
+            config_file = Path.home() / ".ai_pdf_scholar" / "settings.json"
+            if config_file.exists():
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    settings = json.load(f)
+                    api_key = settings.get('gemini_api_key', '')
+                    if api_key and api_key.strip():
+                        return api_key.strip()
+        except Exception:
+            pass  # 配置文件不存在或损坏，使用默认值
         
         return None
     

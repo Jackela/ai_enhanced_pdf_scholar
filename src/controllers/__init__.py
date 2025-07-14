@@ -1,24 +1,16 @@
 """
-Controllers Module - UI-Service Decoupling Layer
+Controllers Module - Web API Controllers
 
-This module provides Controller classes that act as intermediaries between
-UI components and business logic services, ensuring complete separation of concerns.
+This module provides Controller classes for the Web-based PDF Scholar platform.
+Controllers act as intermediaries between the FastAPI endpoints and business logic services.
 
 Architecture Principles:
-- Controllers handle UI events and coordinate service calls
-- UI components remain pure presentation layer
+- Controllers handle HTTP requests and coordinate service calls
+- API endpoints remain thin routing layer
 - Services remain pure business logic layer
-- Controllers manage dependency injection and state synchronization
+- Controllers manage dependency injection and response formatting
 """
 
-from .chat_controller import ChatController
-from .annotation_controller import AnnotationController
-from .pdf_controller import PDFController
-from .application_controller import ApplicationController
+from .library_controller import LibraryController
 
-__all__ = [
-    'ChatController',
-    'AnnotationController', 
-    'PDFController',
-    'ApplicationController'
-] 
+__all__ = ['LibraryController']

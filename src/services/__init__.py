@@ -1,19 +1,28 @@
 """
 Business Logic Services
 
-This package contains all business logic services that are completely
-decoupled from UI frameworks. Services handle core application logic
-and can be easily tested in isolation or used with different UI frameworks.
+This package contains all business logic services that implement
+core application functionality for the Web-based PDF Scholar platform.
+Services are designed to be framework-agnostic and testable.
 
 Key Services:
-- ChatService: Chat message processing and conversation management
-- AnnotationService: PDF annotation creation and management  
-- PDFService: PDF document processing and analysis
-- RAGService: Document indexing and retrieval-augmented generation
+- DocumentLibraryService: Document management and library operations
+- EnhancedRAGService: RAG-based document query and analysis
+- ContentHashService: File content hashing and duplicate detection
+- VectorIndexManager: Vector index management for RAG
+- RAGCacheService: Caching for RAG query results
 """
 
-from .chat_service import ChatService
-from .annotation_service import AnnotationService
-from .pdf_service import PDFService
+from .document_library_service import DocumentLibraryService
+from .enhanced_rag_service import EnhancedRAGService
+from .content_hash_service import ContentHashService
+from .vector_index_manager import VectorIndexManager
+from .rag_cache_service import RAGCacheService
 
-__all__ = ['ChatService', 'AnnotationService', 'PDFService'] 
+__all__ = [
+    'DocumentLibraryService', 
+    'EnhancedRAGService', 
+    'ContentHashService',
+    'VectorIndexManager',
+    'RAGCacheService'
+]

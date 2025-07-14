@@ -1,0 +1,24 @@
+# Core Web Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# PDF Processing (PyMuPDF for text extraction)
+PyMuPDF
+
+# AI/RAG Dependencies
+llama-index==0.12.45
+llama-index-llms-google-genai
+llama-index-embeddings-google-genai
+llama-index-readers-file
+
+# Utilities
+python-dotenv
+markdown
+
+# Testing Framework
+pytest
+pytest-mock
+
+# Development Tools
+playwright  # For E2E testing
