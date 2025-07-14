@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Activity, Database, Wifi, AlertTriangle, CheckCircle } from 'lucide-react'
 import { api } from '../lib/api'
-import type { SystemHealth } from '../types'
+// import type { SystemHealth } from '../types'
 
 export function SystemStatus() {
   const { data: health, isLoading } = useQuery({

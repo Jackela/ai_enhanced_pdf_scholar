@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Filter, Grid, List, Upload } from 'lucide-react'
 import { api } from '../../lib/api'
@@ -31,14 +31,14 @@ export function LibraryView() {
     }))
   }
 
-  const handleSortChange = (sortBy: string) => {
-    setSearchFilters(prev => ({
-      ...prev,
-      sort_by: sortBy as any,
-      sort_order: prev.sort_by === sortBy && prev.sort_order === 'desc' ? 'asc' : 'desc',
-      page: 1,
-    }))
-  }
+  // const handleSortChange = (sortBy: string) => {
+  //   setSearchFilters(prev => ({
+  //     ...prev,
+  //     sort_by: sortBy as any,
+  //     sort_order: prev.sort_by === sortBy && prev.sort_order === 'desc' ? 'asc' : 'desc',
+  //     page: 1,
+  //   }))
+  // }
 
   const handlePageChange = (page: number) => {
     setSearchFilters(prev => ({ ...prev, page }))
