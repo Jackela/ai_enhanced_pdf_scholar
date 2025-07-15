@@ -9,8 +9,4 @@ from .base_repository import BaseRepository
 from .document_repository import DocumentRepository
 from .vector_repository import VectorIndexRepository
 
-__all__ = [
-    'BaseRepository',
-    'DocumentRepository', 
-    'VectorIndexRepository'
-]
+__all__ = ["BaseRepository", "DocumentRepository", "VectorIndexRepository"]

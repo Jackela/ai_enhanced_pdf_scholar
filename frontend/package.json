@@ -5,11 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx --package=typescript tsc --noEmit && vite build",
+    "dev:host": "vite --host",
+    "build": "npm run type-check && vite build",
+    "build:ci": "npm run type-check && set CI=true && vite build --mode production",
+    "build:analyze": "npm run build && npm run analyze",
     "preview": "vite preview",
-    "lint": "npx eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --config .eslintrc.cjs",
-    "lint:fix": "npx eslint . --ext ts,tsx --fix --config .eslintrc.cjs",
-    "type-check": "npx --package=typescript tsc --noEmit"
+    "preview:host": "vite preview --host",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "lint:staged": "lint-staged",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "clean": "rimraf dist",
+    "clean:all": "rimraf dist node_modules && npm install",
+    "analyze": "vite-bundle-analyzer dist/assets",
+    "check-deps": "npm outdated",
+    "check-size": "size-limit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "test:build": "npm run build && npm run preview",
+    "health-check": "npm run type-check && npm run lint && npm run format:check"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.15",
@@ -37,6 +52,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@size-limit/preset-app": "^11.0.0",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.15",
@@ -46,16 +62,68 @@
     "@typescript-eslint/parser": "^6.10.0",
     "@vitejs/plugin-react": "^4.1.1",
     "autoprefixer": "^10.4.16",
+    "cross-env": "^7.0.3",
+    "cssnano": "^6.0.1",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",
+    "lint-staged": "^15.2.0",
     "postcss": "^8.4.31",
+    "prettier": "^3.1.0",
+    "rimraf": "^5.0.5",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "size-limit": "^11.0.1",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.2.2",
     "vite": "^6.0.7",
+    "vite-bundle-analyzer": "^0.9.4",
     "vite-plugin-pwa": "^0.21.1"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "overrides": {
+    "nanoid": "^5.0.8",
+    "prismjs": "^1.30.0",
+    "tar-fs": "^3.0.9",
+    "ws": "^8.18.0",
+    "puppeteer-core": "^23.8.0",
+    "highlight.js": "^11.10.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,jsx,json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "size-limit": [
+    {
+      "name": "Main Bundle",
+      "path": "dist/assets/index-*.js",
+      "limit": "300 KB"
+    },
+    {
+      "name": "React Vendor",
+      "path": "dist/assets/react-vendor-*.js",
+      "limit": "150 KB"
+    },
+    {
+      "name": "PDF Vendor",
+      "path": "dist/assets/pdf-vendor-*.js",
+      "limit": "50 KB"
+    },
+    {
+      "name": "UI Vendor",
+      "path": "dist/assets/ui-vendor-*.js",
+      "limit": "100 KB"
+    },
+    {
+      "name": "CSS Bundle",
+      "path": "dist/assets/index-*.css",
+      "limit": "50 KB"
+    }
+  ]
 }

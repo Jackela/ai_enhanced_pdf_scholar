@@ -6,12 +6,12 @@ for the AI Enhanced PDF Scholar application.
 """
 
 from .connection import DatabaseConnection
-from .models import DocumentModel, VectorIndexModel
 from .migrations import DatabaseMigrator
+from .models import DocumentModel, VectorIndexModel
 
 __all__ = [
-    'DatabaseConnection',
-    'DocumentModel', 
-    'VectorIndexModel',
-    'DatabaseMigrator'
+    "DatabaseConnection",
+    "DocumentModel",
+    "VectorIndexModel",
+    "DatabaseMigrator",
 ]

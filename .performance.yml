@@ -1,0 +1,54 @@
+# ============================================================================
+# Performance Configuration - Backend Optimization Settings
+# ============================================================================
+
+# Import Optimization
+import_optimization:
+  lazy_loading: true
+  module_caching: true
+  selective_imports:
+    - "from llama_index.core import VectorStoreIndex"
+    - "from llama_index.llms.google_genai import GoogleGenerativeAI"
+    - "from llama_index.embeddings.google_genai import GoogleGenerativeAIEmbedding"
+
+# Dependency Performance Metrics
+performance_targets:
+  import_time: "<500ms"        # Target: <500ms for core imports
+  memory_usage: "<200MB"       # Target: <200MB base memory
+  startup_time: "<2s"          # Target: <2s application startup
+  response_time: "<100ms"      # Target: <100ms API response
+
+# Caching Configuration
+caching:
+  pip_cache: "~/.cache/pip"
+  build_cache: ".build-cache"
+  dependency_cache_ttl: "24h"
+  
+# Performance Monitoring
+monitoring:
+  enable_profiling: false
+  memory_tracking: true
+  import_time_tracking: true
+  benchmark_on_ci: true
+
+# Optimization Flags
+optimizations:
+  use_uvloop: true            # Unix event loop optimization
+  use_orjson: true            # Fast JSON serialization
+  enable_aiocache: true       # Async caching
+  lazy_imports: true          # Defer heavy imports
+  precompile_templates: true  # Template optimization
+
+# Development Performance
+development:
+  hot_reload: true
+  fast_startup: true
+  minimal_dependencies: true
+  cache_imports: true
+
+# Production Performance  
+production:
+  preload_models: false       # Don't preload AI models
+  optimize_memory: true       # Memory optimization
+  enable_compression: true    # Response compression
+  use_cdn: false             # CDN for static assets

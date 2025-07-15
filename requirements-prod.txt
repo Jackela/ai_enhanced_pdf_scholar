@@ -1,6 +1,6 @@
 # ============================================================================
-# AI Enhanced PDF Scholar - Optimized Requirements
-# Performance-optimized dependency configuration
+# Production Requirements - Minimal & Optimized
+# Optimized for production deployment performance
 # ============================================================================
 
 # Core Web Framework (Performance Optimized)
@@ -8,37 +8,37 @@ fastapi>=0.116.0,<0.120.0
 uvicorn[standard]>=0.35.0,<0.40.0
 python-multipart>=0.0.19,<0.1.0
 
-# Security Updates (CVE Fixes)
+# Security Updates (Required CVE Fixes)
 requests>=2.32.4
 urllib3>=2.5.0
 
-# PDF Processing (Optimized)
+# PDF Processing
 PyMuPDF>=1.26.0,<1.30.0
 
-# Core AI Dependencies (Updated & Optimized)
+# Core AI Dependencies
 pydantic>=2.11.0,<2.15.0
 google-generativeai>=0.8.5
 openai>=1.95.0
 
-# AI/RAG Dependencies (Latest Stable)
+# AI/RAG Dependencies (Minimal Set)
 llama-index-core>=0.12.49,<0.13.0
 llama-index-llms-google-genai>=0.2.4,<0.3.0
 llama-index-embeddings-google-genai>=0.2.1,<0.3.0
 llama-index-readers-file>=0.4.11,<0.5.0
 
-# Performance Optimization
-cachetools>=6.1.0
-tenacity>=8.2.3,<9.0.0
-typing-extensions>=4.14.0
+# Production Performance Optimization
+uvloop>=0.21.0                 # Fast async event loop (Unix only)
+orjson>=3.10.0                 # Fast JSON serialization
+aiocache>=0.12.3               # Async caching
+aiofiles>=24.0.0               # Async file operations
 
-# Utilities (Updated)
+# Essential Utilities
+cachetools>=6.1.0
+tenacity>=9.1.0
+typing-extensions>=4.14.0
 python-dotenv>=1.0.0
 markdown>=3.6.0
 
-# Development & Testing (Minimal for Production)
-pytest>=8.0.0
-pytest-mock>=3.12.0
-pytest-asyncio>=0.24.0
-
-# Optional: Development Tools (Install separately)
-# playwright>=1.40.0
+# Production Monitoring (Optional)
+# prometheus-client>=0.20.0
+# structlog>=24.1.0

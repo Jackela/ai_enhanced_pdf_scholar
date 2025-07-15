@@ -13,4 +13,4 @@ Architecture Principles:
 
 from .library_controller import LibraryController
 
-__all__ = ['LibraryController']
+__all__ = ["LibraryController"]

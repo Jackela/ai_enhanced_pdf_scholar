@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Filter, Grid, List, Upload } from 'lucide-react'
-import { api } from '../../lib/api'
+import { api } from '../../lib/api.ts'
 import { DocumentCard } from '../DocumentCard'
 import { DocumentUpload } from '../DocumentUpload'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-import type { SearchFilters } from '../../types'
+import type { SearchFilters, Document } from '../../types'
 
 export function LibraryView() {
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
@@ -148,13 +148,13 @@ export function LibraryView() {
           <div className="p-6">
             {viewMode === 'grid' ? (
               <div className="document-grid">
-                {documents?.documents.map((document) => (
+                {documents?.documents.map((document: Document) => (
                   <DocumentCard key={document.id} document={document} />
                 ))}
               </div>
             ) : (
               <div className="space-y-2">
-                {documents?.documents.map((document) => (
+                {documents?.documents.map((document: Document) => (
                   <DocumentCard key={document.id} document={document} variant="list" />
                 ))}
               </div>
