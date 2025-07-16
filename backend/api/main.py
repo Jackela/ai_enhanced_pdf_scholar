@@ -30,6 +30,7 @@ from fastapi.staticfiles import StaticFiles
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+
 # Models are used in individual route modules
 from backend.api.routes import settings
 from backend.api.websocket_manager import WebSocketManager
