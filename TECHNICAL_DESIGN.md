@@ -30,9 +30,10 @@
    - `DocumentLibraryService` - 文档管理业务逻辑
 
 4. **测试体系**
-   - 100% 核心功能测试覆盖
-   - 边界条件和性能测试
+   - 核心功能测试覆盖
+   - 性能优化的测试基础设施
    - 并发安全性验证
+   - 优化的CI/CD流水线
 
 ### 🚧 开发中组件
 
@@ -482,70 +483,82 @@ class StreamingPDFProcessor:
         """流式计算大文件哈希"""
 ```
 
-## 🧪 测试策略
+## 🧪 测试策略与性能优化
 
-### 测试金字塔
+### 优化的测试架构
 ```
         ┌─────────────┐
-        │   E2E Tests │  ← 5%
+        │   E2E Tests │  ← 并行执行
         │ (Playwright)│
         └─────────────┘
       ┌─────────────────┐
-      │ Integration Tests│  ← 25%
-      │   (pytest-qt)   │
+      │ Integration Tests│  ← 共享fixtures
+      │   (pytest)      │
       └─────────────────┘
     ┌─────────────────────┐
-    │    Unit Tests       │  ← 70%
+    │    Unit Tests       │  ← 多核并行
     │   (pytest + mock)   │
     └─────────────────────┘
 ```
 
-### 关键测试用例
-```python
-class TestDocumentLibraryService:
-    """文档库服务测试"""
-    
-    def test_import_new_document_success(self):
-        """测试新文档导入成功流程"""
-        
-    def test_import_duplicate_document_detection(self):
-        """测试重复文档检测"""
-        
-    def test_large_pdf_import_performance(self):
-        """测试大PDF文件导入性能"""
-        
-    def test_concurrent_import_operations(self):
-        """测试并发导入操作"""
+### ⚡ 测试性能优化 (已实现)
 
-class TestEnhancedRAGService:
-    """增强RAG服务测试"""
+**共享测试基础设施 (`tests/conftest.py`)**
+```python
+@pytest.fixture(scope="session")
+def shared_db_connection():
+    """会话级数据库连接，减少设置开销"""
     
-    def test_vector_index_persistence(self):
-        """测试向量索引持久化"""
+@pytest.fixture(scope="function") 
+def clean_db_connection():
+    """提供干净的数据库状态，智能清理"""
+
+@pytest.fixture
+def thread_test_helper():
+    """优化的并发测试助手"""
+```
+
+**并行测试配置 (`pytest.ini`)**
+```ini
+addopts = 
+    -n auto              # 自动CPU扩展
+    --dist=loadfile      # 最优负载分发
+    --maxfail=10         # 快速失败检测
+timeout = 60             # 优化的超时设置
+```
+
+**性能基准测试 (`scripts/benchmark_tests.py`)**
+```python
+class TestBenchmark:
+    """自动化性能基准测试"""
+    
+    def run_benchmark_suite(self):
+        """完整性能基准测试套件"""
         
-    def test_cross_session_query_consistency(self):
-        """测试跨会话查询一致性"""
-        
-    def test_memory_usage_optimization(self):
-        """测试内存使用优化"""
+    def _benchmark_parallel_tests(self):
+        """并行vs串行执行性能对比"""
 ```
 
 ## 📈 监控和度量
 
-### 性能指标
+### 性能指标监控
+
+**基础性能验证**
 ```python
 class PerformanceMetrics:
     """性能监控指标"""
     
-    # 核心指标
-    document_import_time: float  # 文档导入耗时
-    index_build_time: float      # 索引构建耗时
-    query_response_time: float   # 查询响应时间
-    memory_usage: int           # 内存使用量
-    database_size: int          # 数据库大小
+    # 测试执行性能
+    test_execution_time: float   # 测试执行时间
+    database_setup_time: float  # 数据库设置时间
+    parallel_speedup: float     # 并行加速比
     
-    # 用户体验指标
-    ui_response_time: float     # UI响应时间
+    # 系统性能
+    memory_usage: int           # 内存使用量
+    database_operations: float  # 数据库操作响应时间
+    
+    # CI/CD性能  
+    pipeline_duration: float    # CI流水线执行时间
     error_rate: float          # 错误率
     user_satisfaction: float   # 用户满意度
 ```

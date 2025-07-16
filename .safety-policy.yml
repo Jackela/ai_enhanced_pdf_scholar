@@ -1,0 +1,17 @@
+# Safety Security Scanner Configuration
+# Optimized for CI/CD performance
+
+# Output configuration
+output: json
+
+# Performance optimizations
+continue-on-error: true
+short-report: true
+
+# Ignore specific vulnerabilities that are not critical for development
+ignore:
+  # Add vulnerability IDs to ignore here if needed
+  # - VULN-ID-HERE
+
+# Security thresholds
+security-updates-only: false

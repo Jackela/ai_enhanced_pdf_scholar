@@ -1,0 +1,18 @@
+{
+  "python_dependencies": {
+    "status": "completed_with_issues",
+    "issues": 1,
+    "duration": 2.9269495010375977
+  },
+  "frontend_dependencies": {
+    "status": "completed",
+    "issues": 0,
+    "duration": 0.005185365676879883
+  },
+  "code_analysis": {
+    "status": "completed",
+    "issues": 0,
+    "duration": 0.3349945545196533
+  },
+  "total_duration": 5.148785829544067
+}

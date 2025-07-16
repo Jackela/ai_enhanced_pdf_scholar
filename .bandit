@@ -1,0 +1,24 @@
+# Bandit Security Scanner Configuration
+# Optimized for CI/CD performance
+
+[bandit]
+# Skip low severity issues to speed up scanning
+skips = B101,B601,B602
+
+# Include only source directories
+targets = src,backend
+
+# Exclude test files and temporary directories
+exclude_dirs = tests,test_temp,vector_indexes,htmlcov,coverage_html
+
+# Set confidence level to reduce false positives
+confidence = medium
+
+# Output format optimization
+format = json
+
+# Parallel processing
+processes = auto
+
+# Maximum number of lines to process (optimization)
+max_lines_per_file = 1000

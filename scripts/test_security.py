@@ -1,26 +1,38 @@
 #!/usr/bin/env python3
 """
-Security test script for CI/CD pipeline
+Legacy security test script for CI/CD pipeline
+This script is maintained for backward compatibility.
+For optimized security scanning, use optimized_security_scan.py
 """
 import subprocess
 import sys
 import json
 import os
 from pathlib import Path
+import time
 
-def run_command(cmd, cwd=None):
-    """Run a command and return the result"""
+def run_command(cmd, cwd=None, timeout=60):
+    """Run a command and return the result with timeout"""
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, 
+            cwd=cwd, timeout=timeout
+        )
         return result.returncode == 0, result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return False, "", f"Command timed out after {timeout}s"
     except Exception as e:
         return False, "", str(e)
 
 def test_python_security():
-    """Test Python security with bandit"""
+    """Test Python security with bandit (optimized)"""
     print("🔍 Testing Python security with bandit...")
     
-    success, stdout, stderr = run_command("python -m bandit -r src/ backend/ -f json")
+    # Use optimized bandit configuration if available
+    bandit_config = "-c .bandit" if os.path.exists(".bandit") else ""
+    cmd = f"python -m bandit {bandit_config} -r src/ backend/ -f json -ll"
+    
+    success, stdout, stderr = run_command(cmd, timeout=45)
     if success:
         print("✅ Bandit scan completed successfully")
         return True

@@ -28,8 +28,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/lib/api": ["./src/lib/api"],
-      "@/lib/utils": ["./src/lib/utils"],
+      "@/lib/api": ["./src/lib/api.ts"],
+      "@/lib/utils": ["./src/lib/utils.ts"],
       "@/components/*": ["./src/components/*"],
       "@/pages/*": ["./src/pages/*"],
       "@/hooks/*": ["./src/hooks/*"],
