@@ -114,11 +114,11 @@ jobs:
         run: |
           echo "Building frontend..."
           # Use vite build directly to avoid standalone tsc issues in CI
-          export CI=true && vite build --mode production || {
+          export CI=true && npx vite build --mode production || {
             echo "Build failed, attempting to fix common issues..."
             rm -rf node_modules package-lock.json
             npm install
-            export CI=true && vite build --mode production
+            export CI=true && npx vite build --mode production
           }
       
       - name: 📤 Upload build artifacts
