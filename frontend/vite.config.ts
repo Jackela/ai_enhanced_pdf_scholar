@@ -60,11 +60,12 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        // Enhanced alias configuration for reliable CI/CD path resolution
+        // Unambiguous alias configuration for consistent CI/CD path resolution
         '@': resolve(__dirname, './src'),
-        '@/lib': resolve(__dirname, './src/lib'),
+        // Specific file aliases - no wildcards to avoid conflicts
         '@/lib/api': resolve(__dirname, './src/lib/api.ts'),
         '@/lib/utils': resolve(__dirname, './src/lib/utils.ts'),
+        // Directory aliases for components and other modules
         '@/components': resolve(__dirname, './src/components'),
         '@/pages': resolve(__dirname, './src/pages'),
         '@/hooks': resolve(__dirname, './src/hooks'),
@@ -73,9 +74,9 @@ export default defineConfig(({ mode }) => {
         '@/types': resolve(__dirname, './src/types'),
         '@/utils': resolve(__dirname, './src/utils')
       },
-      // Improve module resolution reliability across environments
+      // Explicit extensions for reliable module resolution
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.mjs'],
-      // Ensure consistent module resolution in CI
+      // Ensure consistent symlink handling in CI
       preserveSymlinks: false
     },
     server: {
