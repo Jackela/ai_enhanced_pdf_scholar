@@ -60,24 +60,45 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        // Unambiguous alias configuration for consistent CI/CD path resolution
+        // Force absolute path resolution for CI/CD compatibility
         '@': resolve(__dirname, './src'),
-        // Specific file aliases - no wildcards to avoid conflicts
-        '@/lib/api': resolve(__dirname, './src/lib/api.ts'),
-        '@/lib/utils': resolve(__dirname, './src/lib/utils.ts'),
-        // Directory aliases for components and other modules
-        '@/components': resolve(__dirname, './src/components'),
-        '@/pages': resolve(__dirname, './src/pages'),
-        '@/hooks': resolve(__dirname, './src/hooks'),
-        '@/services': resolve(__dirname, './src/services'),
-        '@/store': resolve(__dirname, './src/store'),
-        '@/types': resolve(__dirname, './src/types'),
-        '@/utils': resolve(__dirname, './src/utils')
+        
+        // Critical: Use function-based resolution for CI environment compatibility
+        ...(() => {
+          const srcPath = resolve(__dirname, './src')
+          return {
+            // Specific file aliases with absolute paths for reliable CI resolution
+            '@/lib/api': resolve(srcPath, 'lib/api.ts'),
+            '@/lib/utils': resolve(srcPath, 'lib/utils.ts'),
+            
+            // Directory aliases for other modules
+            '@/components': resolve(srcPath, 'components'),
+            '@/pages': resolve(srcPath, 'pages'),
+            '@/hooks': resolve(srcPath, 'hooks'),
+            '@/services': resolve(srcPath, 'services'),
+            '@/store': resolve(srcPath, 'store'),
+            '@/types': resolve(srcPath, 'types'),
+            '@/utils': resolve(srcPath, 'utils')
+          }
+        })()
       },
-      // Explicit extensions for reliable module resolution
+      
+      // Enhanced extension resolution prioritizing TypeScript
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.mjs'],
-      // Ensure consistent symlink handling in CI
-      preserveSymlinks: false
+      
+      // Force resolution to prioritize exact file matches
+      conditions: ['import', 'module', 'browser', 'default'],
+      
+      // Ensure consistent symlink handling across environments
+      preserveSymlinks: false,
+      
+      // Enhanced alias resolution for CI environments
+      mainFields: ['browser', 'module', 'main'],
+      
+      // Force case-sensitive resolution for consistency
+      ...(isCIBuild && {
+        caseSensitive: true
+      })
     },
     server: {
       port: 3000,
@@ -110,6 +131,26 @@ export default defineConfig(({ mode }) => {
       cssCodeSplit: isProduction,
       
       rollupOptions: {
+        // Enhanced module resolution for CI/CD environments
+        plugins: [
+          // Custom resolver plugin for CI environment compatibility
+          {
+            name: 'ci-path-resolver',
+            resolveId(id, importer) {
+              // Force resolution of @/lib/* aliases in CI builds
+              if (id === '@/lib/utils') {
+                const utilsPath = resolve(__dirname, './src/lib/utils.ts')
+                return utilsPath
+              }
+              if (id === '@/lib/api') {
+                const apiPath = resolve(__dirname, './src/lib/api.ts')
+                return apiPath
+              }
+              return null
+            }
+          }
+        ],
+        
         output: {
           // Enhanced chunk splitting for better caching
           manualChunks: {
