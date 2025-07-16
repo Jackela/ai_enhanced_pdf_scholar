@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Filter, Grid, List, Upload } from 'lucide-react'
-import { api } from '../../lib/api.ts'
+import { api } from '@/lib/api'
 import { DocumentCard } from '../DocumentCard'
 import { DocumentUpload } from '../DocumentUpload'
 import { Button } from '../ui/Button'
