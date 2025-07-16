@@ -1,6 +1,5 @@
 """
 Database Models
-
 Data models representing the database entities for document management
 and vector indexing. These are pure data classes without business logic.
 """
@@ -25,7 +24,6 @@ class DocumentModel:
             "outputs": "Document data object with metadata"
         }
     }
-
     Pure data model for documents stored in the system.
     Contains file metadata, indexing status, and access tracking.
     """
@@ -37,18 +35,14 @@ class DocumentModel:
     file_size: int
     content_hash: Optional[str] = None
     page_count: Optional[int] = None
-
     # Timestamps
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     last_accessed: Optional[datetime] = None
-
     # Database ID (set after insertion)
     id: Optional[int] = None
-
     # Metadata as JSON dict
     metadata: Optional[Dict[str, Any]] = None
-
     # Internal flag to distinguish between new creation and database loading
     _from_database: bool = field(default=False, init=True, repr=False, compare=False)
 
@@ -61,11 +55,9 @@ class DocumentModel:
                 self.created_at = datetime.now()
             if self.updated_at is None:
                 self.updated_at = self.created_at
-
         # Initialize metadata if not provided
         if self.metadata is None:
             self.metadata = {}
-
         # Validate required fields
         # Note: We allow empty title as get_display_name() provides fallback logic
         if not self.file_hash.strip():
@@ -79,26 +71,21 @@ class DocumentModel:
     ) -> "DocumentModel":
         """
         Create DocumentModel from file path.
-
         Args:
             file_path: Path to the PDF file
             file_hash: Content hash of the file
             title: Document title (defaults to filename)
-
         Returns:
             DocumentModel instance
         """
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
-
         # Extract title from filename if not provided
         if title is None:
             title = path.stem
-
         # Get file stats
         stat = path.stat()
-
         return cls(
             title=title,
             file_path=str(path.absolute()),
@@ -115,10 +102,8 @@ class DocumentModel:
     def from_database_row(cls, row: Dict[str, Any]) -> "DocumentModel":
         """
         Create DocumentModel from database row.
-
         Args:
             row: Database row as dictionary
-
         Returns:
             DocumentModel instance
         """
@@ -134,10 +119,8 @@ class DocumentModel:
             if row.get("last_accessed")
             else None
         )
-
         # Parse metadata JSON
         metadata = json.loads(row["metadata"]) if row.get("metadata") else {}
-
         return cls(
             id=row["id"],
             title=row["title"],
@@ -156,7 +139,6 @@ class DocumentModel:
     def to_database_dict(self) -> Dict[str, Any]:
         """
         Convert model to dictionary for database insertion.
-
         Returns:
             Dictionary suitable for database operations
         """
@@ -179,7 +161,6 @@ class DocumentModel:
     def to_api_dict(self) -> Dict[str, Any]:
         """
         Convert model to dictionary for API responses.
-
         Returns:
             Dictionary suitable for API response models
         """
@@ -206,7 +187,9 @@ class DocumentModel:
     def get_display_name(self) -> str:
         """Get user-friendly display name."""
         if self.metadata:
-            return self.title or self.metadata.get("original_filename", "Unknown Document")
+            return self.title or self.metadata.get(
+                "original_filename", "Unknown Document"
+            )
         return self.title or "Unknown Document"
 
     def get_file_extension(self) -> str:
@@ -236,7 +219,6 @@ class VectorIndexModel:
             "outputs": "Vector index data object with metadata"
         }
     }
-
     Pure data model for vector indexes associated with documents.
     Contains index metadata, chunk information, and storage location.
     """
@@ -246,10 +228,8 @@ class VectorIndexModel:
     index_path: str
     index_hash: str
     chunk_count: Optional[int] = None
-
     # Timestamps
     created_at: Optional[datetime] = None
-
     # Database ID (set after insertion)
     id: Optional[int] = None
 
@@ -258,7 +238,6 @@ class VectorIndexModel:
         # Set default timestamp
         if self.created_at is None:
             self.created_at = datetime.now()
-
         # Validate required fields
         if self.document_id <= 0:
             raise ValueError("Document ID must be positive")
@@ -271,17 +250,14 @@ class VectorIndexModel:
     def from_database_row(cls, row: Dict[str, Any]) -> "VectorIndexModel":
         """
         Create VectorIndexModel from database row.
-
         Args:
             row: Database row as dictionary
-
         Returns:
             VectorIndexModel instance
         """
         created_at = (
             datetime.fromisoformat(row["created_at"]) if row.get("created_at") else None
         )
-
         return cls(
             id=row["id"],
             document_id=row["document_id"],
@@ -294,7 +270,6 @@ class VectorIndexModel:
     def to_database_dict(self) -> Dict[str, Any]:
         """
         Convert model to dictionary for database insertion.
-
         Returns:
             Dictionary suitable for database operations
         """
@@ -312,18 +287,15 @@ class VectorIndexModel:
         index_path = Path(self.index_path)
         if not index_path.exists():
             return False
-
         # Check for essential LlamaIndex files
         required_files = [
             "default__vector_store.json",
             "graph_store.json",
             "index_store.json",
         ]
-
         for file_name in required_files:
             if not (index_path / file_name).exists():
                 return False
-
         return True
 
 
@@ -340,17 +312,14 @@ class TagModel:
             "outputs": "Tag data object"
         }
     }
-
     Pure data model for tags used to categorize documents.
     """
 
     # Core fields
     name: str
     color: Optional[str] = None
-
     # Database ID (set after insertion)
     id: Optional[int] = None
-
     # Internal flag to distinguish between new creation and database loading
     _from_database: bool = field(default=False, init=True, repr=False, compare=False)
 
@@ -358,10 +327,8 @@ class TagModel:
         """Post-initialization validation."""
         if not self.name.strip():
             raise ValueError("Tag name cannot be empty")
-
         # Normalize name
         self.name = self.name.strip().lower()
-
         # Set default color only for new tags, not when loading from database
         if not self._from_database and self.color is None:
             self.color = "#0078d4"  # Default blue
@@ -370,10 +337,8 @@ class TagModel:
     def from_database_row(cls, row: Dict[str, Any]) -> "TagModel":
         """
         Create TagModel from database row.
-
         Args:
             row: Database row as dictionary
-
         Returns:
             TagModel instance
         """
@@ -384,7 +349,6 @@ class TagModel:
     def to_database_dict(self) -> Dict[str, Any]:
         """
         Convert model to dictionary for database insertion.
-
         Returns:
             Dictionary suitable for database operations
         """

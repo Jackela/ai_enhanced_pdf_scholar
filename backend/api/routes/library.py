@@ -1,6 +1,5 @@
 """
 Library Management API Routes
-
 RESTful API endpoints for document library management operations.
 """
 
@@ -10,11 +9,19 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.api.dependencies import get_library_controller
-from backend.api.models import *
+from backend.api.models import (
+    BaseResponse,
+    CleanupRequest,
+    CleanupResponse,
+    DocumentListResponse,
+    DocumentResponse,
+    DuplicateGroup,
+    DuplicatesResponse,
+    LibraryStatsResponse,
+)
 from src.controllers.library_controller import LibraryController
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
@@ -25,12 +32,10 @@ async def get_library_statistics(
     """Get comprehensive library statistics."""
     try:
         stats = controller.get_library_statistics()
-
         if "error" in stats:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=stats["error"]
             )
-
         return LibraryStatsResponse(
             documents=stats.get("documents", {}),
             vector_indexes=stats.get("vector_indexes", {}),
@@ -38,7 +43,6 @@ async def get_library_statistics(
             storage=stats.get("storage"),
             health=stats.get("health", {}),
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -56,10 +60,8 @@ async def find_duplicate_documents(
     """Find duplicate documents in the library."""
     try:
         duplicates = controller.find_duplicate_documents()
-
         duplicate_groups = []
         total_duplicates = 0
-
         for criteria, docs in duplicates:
             # Convert documents to response models
             doc_responses = []
@@ -67,16 +69,13 @@ async def find_duplicate_documents(
                 doc_dict = doc.to_api_dict()
                 doc_dict["is_file_available"] = doc.is_file_available()
                 doc_responses.append(DocumentResponse(**doc_dict))
-
             duplicate_groups.append(
                 DuplicateGroup(criteria=criteria, documents=doc_responses)
             )
             total_duplicates += len(docs)
-
         return DuplicatesResponse(
             duplicate_groups=duplicate_groups, total_duplicates=total_duplicates
         )
-
     except Exception as e:
         logger.error(f"Failed to find duplicates: {e}")
         raise HTTPException(
@@ -93,13 +92,11 @@ async def cleanup_library(
     """Perform library cleanup operations."""
     try:
         results = controller.cleanup_library()
-
         if "error" in results:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=results["error"],
             )
-
         return CleanupResponse(
             orphaned_removed=results.get("orphaned_indexes_cleaned", 0),
             corrupted_removed=results.get("invalid_indexes_cleaned", 0),
@@ -107,7 +104,6 @@ async def cleanup_library(
             storage_optimized=results.get("storage_optimized", 0),
             message="Library cleanup completed successfully",
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -126,15 +122,12 @@ async def check_library_health(
     try:
         stats = controller.get_library_statistics()
         health = stats.get("health", {})
-
         # Determine overall health
         issues = []
         if health.get("orphaned_indexes", 0) > 0:
             issues.append(f"{health['orphaned_indexes']} orphaned indexes")
-
         if health.get("invalid_indexes", 0) > 0:
             issues.append(f"{health['invalid_indexes']} invalid indexes")
-
         if issues:
             return BaseResponse(
                 success=False,
@@ -142,7 +135,6 @@ async def check_library_health(
             )
         else:
             return BaseResponse(message="Library is healthy")
-
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise HTTPException(
@@ -159,41 +151,33 @@ async def optimize_library(
     try:
         # This could include various optimization operations
         results = controller.cleanup_library()
-
         if "error" in results:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=results["error"],
             )
-
         optimizations = []
         if results.get("orphaned_indexes_cleaned", 0) > 0:
             optimizations.append(
                 f"Removed {results['orphaned_indexes_cleaned']} orphaned indexes"
             )
-
         if results.get("invalid_indexes_cleaned", 0) > 0:
             optimizations.append(
                 f"Removed {results['invalid_indexes_cleaned']} invalid indexes"
             )
-
         if results.get("cache_optimized", 0) > 0:
             optimizations.append(
                 f"Optimized {results['cache_optimized']} cache entries"
             )
-
         if results.get("storage_optimized", 0) > 0:
             optimizations.append(
                 f"Optimized {results['storage_optimized']} storage items"
             )
-
         if optimizations:
             message = f"Library optimized: {', '.join(optimizations)}"
         else:
             message = "Library was already optimized"
-
         return BaseResponse(message=message)
-
     except HTTPException:
         raise
     except Exception as e:
@@ -213,18 +197,15 @@ async def search_documents(
     """Search documents by title and content."""
     try:
         documents = controller.get_documents(search_query=q, limit=limit)
-
         # Convert to response models
         doc_responses = []
         for doc in documents:
             doc_dict = doc.to_api_dict()
             doc_dict["is_file_available"] = doc.is_file_available()
             doc_responses.append(DocumentResponse(**doc_dict))
-
         return DocumentListResponse(
             documents=doc_responses, total=len(doc_responses), page=1, per_page=limit
         )
-
     except Exception as e:
         logger.error(f"Search failed: {e}")
         raise HTTPException(
@@ -241,18 +222,15 @@ async def get_recent_documents(
     try:
         # Use the library service directly for recent documents
         recent_docs = controller.library_service.get_recent_documents(limit)
-
         # Convert to response models
         doc_responses = []
         for doc in recent_docs:
             doc_dict = doc.to_api_dict()
             doc_dict["is_file_available"] = doc.is_file_available()
             doc_responses.append(DocumentResponse(**doc_dict))
-
         return DocumentListResponse(
             documents=doc_responses, total=len(doc_responses), page=1, per_page=limit
         )
-
     except Exception as e:
         logger.error(f"Failed to get recent documents: {e}")
         raise HTTPException(

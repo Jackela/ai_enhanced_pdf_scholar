@@ -1,6 +1,5 @@
 """
 WebSocket Manager
-
 Manages WebSocket connections for real-time communication.
 """
 
@@ -29,7 +28,6 @@ class WebSocketManager:
         logger.info(
             f"WebSocket client {client_id} connected. Total: {len(self.active_connections)}"
         )
-
         # Send welcome message
         await self.send_personal_message(
             json.dumps(
@@ -46,12 +44,10 @@ class WebSocketManager:
         """Remove a WebSocket connection."""
         if client_id in self.active_connections:
             del self.active_connections[client_id]
-
             # Remove from all rooms
             for room_name, members in self.rooms.items():
                 if client_id in members:
                     members.remove(client_id)
-
             logger.info(
                 f"WebSocket client {client_id} disconnected. Total: {len(self.active_connections)}"
             )
@@ -74,14 +70,12 @@ class WebSocketManager:
     async def broadcast(self, message: str):
         """Send a message to all connected clients."""
         disconnected = []
-
         for client_id, websocket in self.active_connections.items():
             try:
                 await websocket.send_text(message)
             except Exception as e:
                 logger.error(f"Failed to broadcast to {client_id}: {e}")
                 disconnected.append(client_id)
-
         # Clean up broken connections
         for client_id in disconnected:
             self.disconnect(client_id)
@@ -94,10 +88,8 @@ class WebSocketManager:
         """Add a client to a room."""
         if room_name not in self.rooms:
             self.rooms[room_name] = []
-
         if client_id not in self.rooms[room_name]:
             self.rooms[room_name].append(client_id)
-
         logger.info(f"Client {client_id} joined room {room_name}")
 
     async def leave_room(self, client_id: str, room_name: str):
@@ -110,9 +102,7 @@ class WebSocketManager:
         """Send a message to all clients in a room."""
         if room_name not in self.rooms:
             return
-
         disconnected = []
-
         for client_id in self.rooms[room_name]:
             if client_id in self.active_connections:
                 try:
@@ -123,7 +113,6 @@ class WebSocketManager:
                         f"Failed to send to room {room_name}, client {client_id}: {e}"
                     )
                     disconnected.append(client_id)
-
         # Clean up broken connections
         for client_id in disconnected:
             self.disconnect(client_id)
@@ -178,7 +167,6 @@ class WebSocketManager:
         data = {"type": "index_progress", "document_id": document_id, "status": status}
         if progress is not None:
             data["progress"] = progress
-
         await self.send_personal_json(data, client_id)
 
     async def send_document_update(
@@ -192,7 +180,6 @@ class WebSocketManager:
         }
         if data:
             message["data"] = data
-
         await self.broadcast_json(message)
 
     def get_stats(self) -> dict:

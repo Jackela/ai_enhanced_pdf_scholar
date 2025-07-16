@@ -46,7 +46,7 @@ class WebServerManager:
                         self.is_running = True
                         print(f"✅ Web server started on {BASE_URL}")
                         return True
-                except:
+                except Exception:
                     time.sleep(0.5)
                     continue
             

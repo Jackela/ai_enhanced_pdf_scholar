@@ -1,6 +1,5 @@
 """
 Repository Package
-
 This package provides data access layer implementations following the Repository pattern.
 All database operations are encapsulated here to maintain separation of concerns.
 """

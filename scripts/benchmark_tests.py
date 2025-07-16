@@ -202,7 +202,7 @@ class TestBenchmark:
             pattern = r'(\d+)\s+(?:passed|failed|skipped)'
             matches = re.findall(pattern, stdout)
             return sum(int(match) for match in matches)
-        except:
+        except Exception:
             return 0
     
     def _generate_report(self) -> None:

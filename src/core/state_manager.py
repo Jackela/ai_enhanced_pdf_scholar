@@ -1,9 +1,7 @@
 """
 Global State Manager
-
 This module provides centralized application state management using the observer pattern.
 It implements SSOT for all application state with change notifications.
-
 Key Features:
 - Centralized state storage with nested path support
 - Observer pattern for state change notifications
@@ -40,7 +38,6 @@ class StateManager:
             "outputs": "Centralized state with change notifications"
         }
     }
-
     Singleton state manager that provides unified access to all application state
     with observer pattern for reactive UI updates and data flow.
     """
@@ -57,7 +54,6 @@ class StateManager:
         """Initialize state manager with default application state."""
         if hasattr(self, "_initialized"):
             return
-
         # Application state tree
         self._state: Dict[str, Any] = {
             "app": {
@@ -95,28 +91,22 @@ class StateManager:
                 "cache_info": {},
             },
         }
-
         # Observer registry: path -> list of callbacks
         self._observers: Dict[str, List[Callable]] = {}
-
         # State change history for debugging
         self._change_history: List[Dict[str, Any]] = []
-
         self._initialized = True
         logger.info("StateManager initialized with default application state")
 
     def get_state(self, path: str = None, default: Any = None) -> Any:
         """
         Get state value using dot-separated path notation.
-
         Args:
             path: Dot-separated state path (e.g., 'chat.messages').
                   If None, returns entire state tree.
             default: Default value to return if path doesn't exist
-
         Returns:
             State value at the specified path, or default if path doesn't exist
-
         Examples:
             get_state('chat.messages') -> List of chat messages
             get_state('app.rag_mode', False) -> Boolean RAG mode flag with default
@@ -124,7 +114,6 @@ class StateManager:
         """
         if path is None:
             return self._state
-
         try:
             return self._get_nested_value(self._state, path)
         except Exception as e:
@@ -134,25 +123,20 @@ class StateManager:
     def set_state(self, path: str, value: Any, notify: bool = True) -> bool:
         """
         Set state value at the specified path with optional change notification.
-
         Args:
             path: Dot-separated state path to set
             value: Value to set at the path
             notify: Whether to notify observers of the change
-
         Returns:
             True if state was successfully set, False otherwise
-
         Examples:
             set_state('app.rag_mode', True) -> Enable RAG mode
             set_state('chat.is_ai_responding', False) -> Stop AI response indicator
         """
         try:
             old_value = self._get_nested_value(self._state, path)
-
             # Set the new value
             self._set_nested_value(self._state, path, value)
-
             # Record the change
             change_record = {
                 "timestamp": datetime.now(),
@@ -162,19 +146,14 @@ class StateManager:
                 "change_type": StateChangeType.SET,
             }
             self._change_history.append(change_record)
-
             # Keep history limited to last 100 changes
             if len(self._change_history) > 100:
                 self._change_history.pop(0)
-
             logger.debug(f"State set: {path} = {value}")
-
             # Notify observers if requested
             if notify:
                 self._notify_observers(path, value, old_value, StateChangeType.SET)
-
             return True
-
         except Exception as e:
             logger.error(f"Failed to set state at path '{path}': {e}")
             return False
@@ -184,15 +163,12 @@ class StateManager:
     ) -> bool:
         """
         Update state value using a function that receives the current value.
-
         Args:
             path: Dot-separated state path to update
             update_func: Function that takes current value and returns new value
             notify: Whether to notify observers of the change
-
         Returns:
             True if state was successfully updated, False otherwise
-
         Examples:
             update_state('chat.message_count', lambda x: x + 1) -> Increment message count
             update_state('chat.messages', lambda msgs: msgs + [new_message]) -> Add message
@@ -200,10 +176,8 @@ class StateManager:
         try:
             current_value = self._get_nested_value(self._state, path)
             new_value = update_func(current_value)
-
             # Use set_state to handle the actual update
             return self.set_state(path, new_value, notify)
-
         except Exception as e:
             logger.error(f"Failed to update state at path '{path}': {e}")
             return False
@@ -211,20 +185,16 @@ class StateManager:
     def delete_state(self, path: str, notify: bool = True) -> bool:
         """
         Delete state value at the specified path.
-
         Args:
             path: Dot-separated state path to delete
             notify: Whether to notify observers of the deletion
-
         Returns:
             True if state was successfully deleted, False otherwise
         """
         try:
             old_value = self._get_nested_value(self._state, path)
-
             # Delete the value
             self._delete_nested_value(self._state, path)
-
             # Record the change
             change_record = {
                 "timestamp": datetime.now(),
@@ -234,15 +204,11 @@ class StateManager:
                 "change_type": StateChangeType.DELETE,
             }
             self._change_history.append(change_record)
-
             logger.debug(f"State deleted: {path}")
-
             # Notify observers if requested
             if notify:
                 self._notify_observers(path, None, old_value, StateChangeType.DELETE)
-
             return True
-
         except Exception as e:
             logger.error(f"Failed to delete state at path '{path}': {e}")
             return False
@@ -252,21 +218,18 @@ class StateManager:
     ) -> None:
         """
         Subscribe to state changes at a specific path.
-
         Args:
             path: State path to observe (supports wildcards)
             callback: Function called when state changes (path, new_value, old_value, change_type)
         """
         if path not in self._observers:
             self._observers[path] = []
-
         self._observers[path].append(callback)
         logger.debug(f"Added observer for path '{path}': {callback.__name__}")
 
     def unsubscribe(self, path: str, callback: Callable) -> None:
         """
         Unsubscribe from state changes at a specific path.
-
         Args:
             path: State path being observed
             callback: Function to remove from observers
@@ -279,13 +242,11 @@ class StateManager:
         """Get value from nested dictionary using dot notation."""
         keys = path.split(".")
         current = state_dict
-
         for key in keys:
             if isinstance(current, dict) and key in current:
                 current = current[key]
             else:
                 return None
-
         return current
 
     def _set_nested_value(
@@ -294,13 +255,11 @@ class StateManager:
         """Set value in nested dictionary using dot notation."""
         keys = path.split(".")
         current = state_dict
-
         # Navigate to the parent of the target key
         for key in keys[:-1]:
             if key not in current:
                 current[key] = {}
             current = current[key]
-
         # Set the final value
         current[keys[-1]] = value
 
@@ -308,13 +267,11 @@ class StateManager:
         """Delete value from nested dictionary using dot notation."""
         keys = path.split(".")
         current = state_dict
-
         # Navigate to the parent of the target key
         for key in keys[:-1]:
             if key not in current:
                 return  # Path doesn't exist
             current = current[key]
-
         # Delete the final key if it exists
         if keys[-1] in current:
             del current[keys[-1]]
@@ -324,7 +281,6 @@ class StateManager:
     ) -> None:
         """
         Notify all relevant observers of state changes.
-
         Args:
             path: Path that changed
             new_value: New value at the path
@@ -340,7 +296,6 @@ class StateManager:
                     logger.error(
                         f"Error notifying observer {observer.__name__} for path '{path}': {e}"
                     )
-
         # Notify wildcard observers (e.g., 'chat.*' matches 'chat.messages')
         for observer_path, observers in self._observers.items():
             if "*" in observer_path:
@@ -359,7 +314,6 @@ class StateManager:
     def reset_state(self, section: str = None) -> None:
         """
         Reset state to defaults.
-
         Args:
             section: Optional section to reset (e.g., 'chat'). If None, resets all state.
         """

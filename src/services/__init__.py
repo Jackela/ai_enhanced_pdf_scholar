@@ -1,10 +1,8 @@
 """
 Business Logic Services
-
 This package contains all business logic services that implement
 core application functionality for the Web-based PDF Scholar platform.
 Services are designed to be framework-agnostic and testable.
-
 Key Services:
 - DocumentLibraryService: Document management and library operations
 - EnhancedRAGService: RAG-based document query and analysis

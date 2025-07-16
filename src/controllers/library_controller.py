@@ -24,7 +24,6 @@ class LibraryController:
     ):
         """
         Initialize LibraryController with flexible dependency injection.
-
         Supports both old style (for desktop app) and new style (for web API) initialization.
         """
         if library_service is not None:
@@ -36,7 +35,6 @@ class LibraryController:
             # Web API style initialization
             if db_connection is None:
                 raise ValueError("db_connection is required for web API initialization")
-
             # Initialize library service with managed documents directory
             from pathlib import Path
 
@@ -46,7 +44,6 @@ class LibraryController:
             )
             self.enhanced_rag_service = enhanced_rag_service
             self.state_manager = state_manager
-
         logger.info("LibraryController initialized")
 
     def get_all_documents(
@@ -147,12 +144,10 @@ class LibraryController:
         """
         if not self.enhanced_rag_service:
             raise ValueError("Enhanced RAG service not available")
-
         # Get document from library
         document = self.get_document_by_id(document_id)
         if not document:
             raise ValueError(f"Document {document_id} not found")
-
         # Load index for the document
         success = self.enhanced_rag_service.load_index_for_document(document_id)
         if not success:
@@ -162,6 +157,5 @@ class LibraryController:
                 raise ValueError(
                     f"Failed to build or load index for document {document_id}"
                 )
-
         # Perform query
         return self.enhanced_rag_service.query(query)

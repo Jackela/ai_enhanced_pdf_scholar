@@ -1,6 +1,5 @@
 """
 API Dependencies
-
 Dependency injection for FastAPI endpoints.
 """
 
@@ -17,7 +16,6 @@ from src.database.connection import DatabaseConnection
 from src.services.enhanced_rag_service import EnhancedRAGService
 
 logger = logging.getLogger(__name__)
-
 # Global instances
 _db_connection: Optional[DatabaseConnection] = None
 _enhanced_rag_service: Optional[EnhancedRAGService] = None
@@ -35,7 +33,6 @@ def get_database_path() -> str:
 def get_db() -> DatabaseConnection:
     """Get database connection dependency."""
     global _db_connection
-
     if _db_connection is None:
         try:
             db_path = get_database_path()
@@ -47,7 +44,6 @@ def get_db() -> DatabaseConnection:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Database connection failed",
             )
-
     return _db_connection
 
 
@@ -56,7 +52,6 @@ def get_enhanced_rag(
 ) -> Optional[EnhancedRAGService]:
     """Get enhanced RAG service dependency."""
     global _enhanced_rag_service
-
     if _enhanced_rag_service is None:
         try:
             # Get API key
@@ -64,7 +59,6 @@ def get_enhanced_rag(
             if not api_key:
                 logger.warning("No Gemini API key configured, RAG service unavailable")
                 return None
-
             # Initialize enhanced RAG service
             vector_storage_dir = Path.home() / ".ai_pdf_scholar" / "vector_indexes"
             _enhanced_rag_service = EnhancedRAGService(
@@ -72,13 +66,10 @@ def get_enhanced_rag(
                 db_connection=db,
                 vector_storage_dir=str(vector_storage_dir),
             )
-
             logger.info("Enhanced RAG service initialized")
-
         except Exception as e:
             logger.error(f"Failed to initialize enhanced RAG service: {e}")
             return None
-
     return _enhanced_rag_service
 
 
@@ -88,7 +79,6 @@ def get_library_controller(
 ) -> LibraryController:
     """Get library controller dependency."""
     global _library_controller
-
     if _library_controller is None:
         try:
             _library_controller = LibraryController(
@@ -101,7 +91,6 @@ def get_library_controller(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Library controller initialization failed",
             )
-
     return _library_controller
 
 

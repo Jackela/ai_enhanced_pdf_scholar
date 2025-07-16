@@ -1,6 +1,5 @@
 """
 RAG API Routes
-
 RESTful API endpoints for RAG (Retrieval-Augmented Generation) operations.
 """
 
@@ -15,12 +14,20 @@ from backend.api.dependencies import (
     require_rag_service,
     validate_document_access,
 )
-from backend.api.models import *
+from backend.api.models import (
+    BaseResponse,
+    CacheClearResponse,
+    CacheStatsResponse,
+    IndexBuildRequest,
+    IndexBuildResponse,
+    IndexStatusResponse,
+    RAGQueryRequest,
+    RAGQueryResponse,
+)
 from src.controllers.library_controller import LibraryController
 from src.services.enhanced_rag_service import EnhancedRAGService
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
@@ -34,7 +41,6 @@ async def query_document(
     try:
         # Validate document exists
         validate_document_access(query_request.document_id, controller)
-
         # Check if document has a valid index
         index_status = controller.get_index_status(query_request.document_id)
         if not index_status.get("can_query", False):
@@ -42,10 +48,8 @@ async def query_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Document does not have a valid vector index. Please build index first.",
             )
-
         # Perform query with timing
         start_time = time.time()
-
         # Check cache first if enabled
         from_cache = False
         if (
@@ -67,15 +71,12 @@ async def query_document(
             response = controller.query_document(
                 query_request.document_id, query_request.query
             )
-
         processing_time = (time.time() - start_time) * 1000  # Convert to milliseconds
-
         if response is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="RAG query failed",
             )
-
         return RAGQueryResponse(
             query=query_request.query,
             response=response,
@@ -83,7 +84,6 @@ async def query_document(
             from_cache=from_cache,
             processing_time_ms=processing_time,
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -105,7 +105,6 @@ async def build_index(
     try:
         # Validate document exists
         validate_document_access(build_request.document_id, controller)
-
         # Check if index already exists and force_rebuild is False
         if not build_request.force_rebuild:
             index_status = controller.get_index_status(build_request.document_id)
@@ -117,22 +116,18 @@ async def build_index(
                     build_started=False,
                     message="Index already exists. Use force_rebuild=true to rebuild.",
                 )
-
         # Start index building (this should be async in production)
         success = controller.build_index_for_document(build_request.document_id)
-
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to start index building",
             )
-
         return IndexBuildResponse(
             document_id=build_request.document_id,
             build_started=True,
             message="Index building started",
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -151,10 +146,8 @@ async def get_index_status(
     try:
         # Validate document exists
         validate_document_access(document_id, controller)
-
         # Get index status
         status_info = controller.get_index_status(document_id)
-
         return IndexStatusResponse(
             document_id=document_id,
             has_index=status_info.get("has_index", False),
@@ -164,7 +157,6 @@ async def get_index_status(
             created_at=status_info.get("created_at"),
             can_query=status_info.get("can_query", False),
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -185,7 +177,6 @@ async def delete_index(
     try:
         # Validate document exists
         validate_document_access(document_id, controller)
-
         # Check if index exists
         index_status = controller.get_index_status(document_id)
         if not index_status.get("has_index", False):
@@ -193,11 +184,9 @@ async def delete_index(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No index found for this document",
             )
-
         # Delete index (this would need to be implemented in the controller)
         # For now, we'll return a success message
         return BaseResponse(message=f"Index for document {document_id} will be deleted")
-
     except HTTPException:
         raise
     except Exception as e:
@@ -231,19 +220,16 @@ async def get_cache_stats(
     """Get RAG cache statistics."""
     try:
         stats = controller.get_cache_statistics()
-
         if "error" in stats:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=stats["error"]
             )
-
         return CacheStatsResponse(
             total_entries=stats.get("total_entries", 0),
             hit_rate_percent=stats.get("hit_rate_percent", 0.0),
             total_storage_kb=stats.get("total_storage_kb", 0.0),
             configuration=stats.get("configuration", {}),
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -259,18 +245,15 @@ async def clear_cache(controller: LibraryController = Depends(get_library_contro
     """Clear RAG query cache."""
     try:
         success = controller.clear_cache()
-
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Cache clear operation failed",
             )
-
         return CacheClearResponse(
             entries_cleared=0,  # Would need to track this
             message="Cache cleared successfully",
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -289,10 +272,8 @@ async def clear_document_cache(
     try:
         # Validate document exists
         validate_document_access(document_id, controller)
-
         # Clear document cache (would need to be implemented)
         return BaseResponse(message=f"Cache cleared for document {document_id}")
-
     except HTTPException:
         raise
     except Exception as e:

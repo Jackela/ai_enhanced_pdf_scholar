@@ -1,6 +1,5 @@
 """
 RAG Query Cache Service
-
 This module provides intelligent caching for RAG query results to improve
 performance and reduce API calls. Features LRU eviction, semantic similarity
 matching, and query result persistence.
@@ -57,7 +56,6 @@ class RAGCacheService:
             "outputs": "Query result caching with semantic similarity matching"
         }
     }
-
     Provides intelligent caching for RAG query results with features:
     - LRU (Least Recently Used) eviction policy
     - Semantic similarity matching for related queries
@@ -74,7 +72,6 @@ class RAGCacheService:
     ) -> None:
         """
         Initialize RAG cache service.
-
         Args:
             db_connection: Database connection instance
             max_entries: Maximum number of cache entries
@@ -85,7 +82,6 @@ class RAGCacheService:
         self.max_entries = max_entries
         self.ttl_hours = ttl_hours
         self.similarity_threshold = similarity_threshold
-
         # Performance metrics
         self.metrics = {
             "total_queries": 0,
@@ -94,10 +90,8 @@ class RAGCacheService:
             "evictions": 0,
             "expired_entries": 0,
         }
-
         # Initialize cache table
         self._initialize_cache_table()
-
         logger.info(
             f"RAG cache service initialized: max_entries={max_entries}, ttl={ttl_hours}h"
         )
@@ -122,7 +116,6 @@ class RAGCacheService:
                 )
             """
             )
-
             # Create indexes for performance
             self.db.execute(
                 "CREATE INDEX IF NOT EXISTS idx_cache_document ON rag_query_cache(document_id)"
@@ -133,9 +126,7 @@ class RAGCacheService:
             self.db.execute(
                 "CREATE INDEX IF NOT EXISTS idx_cache_hash ON rag_query_cache(query_hash)"
             )
-
             logger.debug("RAG cache table initialized")
-
         except Exception as e:
             logger.error(f"Failed to initialize cache table: {e}")
             raise RAGCacheServiceError(f"Cache initialization failed: {e}") from e
@@ -143,20 +134,16 @@ class RAGCacheService:
     def get_cached_response(self, query: str, document_id: int) -> Optional[str]:
         """
         Get cached response for a query.
-
         Args:
             query: User query
             document_id: Document ID being queried
-
         Returns:
             Cached response if found, None otherwise
         """
         try:
             self.metrics["total_queries"] += 1
-
             # Generate query hash
             query_hash = self._generate_query_hash(query, document_id)
-
             # Try exact match first
             exact_match = self._get_exact_match(query_hash)
             if exact_match:
@@ -164,7 +151,6 @@ class RAGCacheService:
                 self._update_access(exact_match["id"])
                 self.metrics["cache_hits"] += 1
                 return exact_match["response"]
-
             # Try semantic similarity matching
             similar_entry = self._find_similar_query(query, document_id)
             if similar_entry:
@@ -172,12 +158,10 @@ class RAGCacheService:
                 self._update_access(similar_entry["id"])
                 self.metrics["cache_hits"] += 1
                 return similar_entry["response"]
-
             # No cache hit
             self.metrics["cache_misses"] += 1
             logger.debug(f"Cache miss for query: {query[:50]}...")
             return None
-
         except Exception as e:
             logger.error(f"Failed to get cached response: {e}")
             return None
@@ -185,12 +169,10 @@ class RAGCacheService:
     def cache_response(self, query: str, document_id: int, response: str) -> bool:
         """
         Cache a query response.
-
         Args:
             query: User query
             document_id: Document ID that was queried
             response: RAG response to cache
-
         Returns:
             True if successfully cached
         """
@@ -198,31 +180,24 @@ class RAGCacheService:
             # Clean query and response
             query = query.strip()
             response = response.strip()
-
             if not query or not response:
                 logger.warning("Cannot cache empty query or response")
                 return False
-
             # Generate query hash
             query_hash = self._generate_query_hash(query, document_id)
-
             # Check if already cached (exact match)
             if self._get_exact_match(query_hash):
                 logger.debug("Query already cached, skipping")
                 return True
-
             # Ensure cache size limit
             self._enforce_cache_size()
-
             # Clean expired entries
             self._clean_expired_entries()
-
             # Insert new cache entry
             now = datetime.now().isoformat()
-
             self.db.execute(
                 """
-                INSERT INTO rag_query_cache 
+                INSERT INTO rag_query_cache
                 (query_hash, query_text, document_id, response, created_at, accessed_at, query_length, response_length)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -237,12 +212,10 @@ class RAGCacheService:
                     len(response),
                 ),
             )
-
             logger.debug(
                 f"Cached query response: hash={query_hash[:8]}, doc={document_id}"
             )
             return True
-
         except Exception as e:
             logger.error(f"Failed to cache response: {e}")
             return False
@@ -250,10 +223,8 @@ class RAGCacheService:
     def invalidate_document_cache(self, document_id: int) -> int:
         """
         Invalidate all cached queries for a specific document.
-
         Args:
             document_id: Document ID to invalidate cache for
-
         Returns:
             Number of cache entries removed
         """
@@ -261,13 +232,11 @@ class RAGCacheService:
             result = self.db.execute(
                 "DELETE FROM rag_query_cache WHERE document_id = ?", (document_id,)
             )
-
             removed_count = result.rowcount if hasattr(result, "rowcount") else 0
             logger.info(
                 f"Invalidated {removed_count} cache entries for document {document_id}"
             )
             return removed_count
-
         except Exception as e:
             logger.error(f"Failed to invalidate document cache: {e}")
             return 0
@@ -275,13 +244,11 @@ class RAGCacheService:
     def clear_cache(self) -> bool:
         """
         Clear all cache entries.
-
         Returns:
             True if successful
         """
         try:
             self.db.execute("DELETE FROM rag_query_cache")
-
             # Reset metrics
             self.metrics.update(
                 {
@@ -292,10 +259,8 @@ class RAGCacheService:
                     "expired_entries": 0,
                 }
             )
-
             logger.info("Cache cleared successfully")
             return True
-
         except Exception as e:
             logger.error(f"Failed to clear cache: {e}")
             return False
@@ -303,7 +268,6 @@ class RAGCacheService:
     def get_cache_statistics(self) -> Dict[str, Any]:
         """
         Get comprehensive cache statistics.
-
         Returns:
             Dictionary with cache statistics
         """
@@ -311,7 +275,7 @@ class RAGCacheService:
             # Get basic counts
             cache_stats = self.db.fetch_one(
                 """
-                SELECT 
+                SELECT
                     COUNT(*) as total_entries,
                     AVG(access_count) as avg_access_count,
                     SUM(query_length) as total_query_length,
@@ -321,7 +285,6 @@ class RAGCacheService:
                 FROM rag_query_cache
             """
             )
-
             # Document distribution
             doc_distribution = self.db.fetch_all(
                 """
@@ -332,7 +295,6 @@ class RAGCacheService:
                 LIMIT 10
             """
             )
-
             # Calculate hit rate
             total_queries = self.metrics["total_queries"]
             hit_rate = (
@@ -340,7 +302,6 @@ class RAGCacheService:
                 if total_queries > 0
                 else 0
             )
-
             # Build statistics
             stats = {
                 "cache_metrics": self.metrics.copy(),
@@ -371,9 +332,7 @@ class RAGCacheService:
                     "similarity_threshold": self.similarity_threshold,
                 },
             }
-
             return stats
-
         except Exception as e:
             logger.error(f"Failed to get cache statistics: {e}")
             return {"error": str(e)}
@@ -381,36 +340,29 @@ class RAGCacheService:
     def optimize_cache(self) -> Dict[str, int]:
         """
         Optimize cache by removing expired entries and least used entries.
-
         Returns:
             Dictionary with optimization results
         """
         try:
             results = {"expired_removed": 0, "lru_removed": 0, "duplicates_removed": 0}
-
             # Remove expired entries
             expired_count = self._clean_expired_entries()
             results["expired_removed"] = expired_count
             self.metrics["expired_entries"] += expired_count
-
             # Remove duplicates (same query text, different hash)
             duplicate_count = self._remove_duplicate_queries()
             results["duplicates_removed"] = duplicate_count
-
             # Enforce cache size (LRU eviction)
             lru_count = self._enforce_cache_size()
             results["lru_removed"] = lru_count
             self.metrics["evictions"] += lru_count
-
             logger.info(f"Cache optimization completed: {results}")
             return results
-
         except Exception as e:
             logger.error(f"Cache optimization failed: {e}")
             return {"error": str(e)}
 
     # Private helper methods
-
     def _generate_query_hash(self, query: str, document_id: int) -> str:
         """Generate hash for query + document combination."""
         content = f"{query.lower().strip()}:{document_id}"
@@ -430,7 +382,6 @@ class RAGCacheService:
     ) -> Optional[Dict[str, Any]]:
         """
         Find semantically similar cached query.
-
         Note: This is a simplified implementation. In production, you might want
         to use proper embedding-based similarity search.
         """
@@ -440,30 +391,23 @@ class RAGCacheService:
                 "SELECT * FROM rag_query_cache WHERE document_id = ? ORDER BY accessed_at DESC LIMIT 50",
                 (document_id,),
             )
-
             query_words = set(query.lower().split())
             best_match = None
             best_score = 0
-
             for cached_query in cached_queries:
                 cached_words = set(cached_query["query_text"].lower().split())
-
                 # Calculate Jaccard similarity
                 intersection = len(query_words & cached_words)
                 union = len(query_words | cached_words)
-
                 if union > 0:
                     similarity = intersection / union
-
                     if (
                         similarity > best_score
                         and similarity >= self.similarity_threshold
                     ):
                         best_score = similarity
                         best_match = cached_query
-
             return best_match
-
         except Exception as e:
             logger.error(f"Failed to find similar query: {e}")
             return None
@@ -474,13 +418,12 @@ class RAGCacheService:
             now = datetime.now().isoformat()
             self.db.execute(
                 """
-                UPDATE rag_query_cache 
-                SET accessed_at = ?, access_count = access_count + 1 
+                UPDATE rag_query_cache
+                SET accessed_at = ?, access_count = access_count + 1
                 WHERE id = ?
             """,
                 (now, cache_id),
             )
-
         except Exception as e:
             logger.error(f"Failed to update access for cache entry {cache_id}: {e}")
 
@@ -491,21 +434,17 @@ class RAGCacheService:
             current_count = self.db.fetch_one(
                 "SELECT COUNT(*) as count FROM rag_query_cache"
             )["count"]
-
             if current_count <= self.max_entries:
                 return 0
-
             # Calculate how many to remove
             to_remove = (
                 current_count - self.max_entries + 100
             )  # Remove extra for buffer
-
             # Get least recently used entries
             lru_entries = self.db.fetch_all(
                 "SELECT id FROM rag_query_cache ORDER BY accessed_at ASC LIMIT ?",
                 (to_remove,),
             )
-
             # Remove LRU entries
             removed_count = 0
             for entry in lru_entries:
@@ -513,10 +452,8 @@ class RAGCacheService:
                     "DELETE FROM rag_query_cache WHERE id = ?", (entry["id"],)
                 )
                 removed_count += 1
-
             logger.debug(f"Removed {removed_count} LRU cache entries")
             return removed_count
-
         except Exception as e:
             logger.error(f"Failed to enforce cache size: {e}")
             return 0
@@ -527,19 +464,14 @@ class RAGCacheService:
             # Calculate expiration cutoff
             cutoff = datetime.now() - timedelta(hours=self.ttl_hours)
             cutoff_str = cutoff.isoformat()
-
             # Delete expired entries
             result = self.db.execute(
                 "DELETE FROM rag_query_cache WHERE created_at < ?", (cutoff_str,)
             )
-
             removed_count = result.rowcount if hasattr(result, "rowcount") else 0
-
             if removed_count > 0:
                 logger.debug(f"Removed {removed_count} expired cache entries")
-
             return removed_count
-
         except Exception as e:
             logger.error(f"Failed to clean expired entries: {e}")
             return 0
@@ -556,9 +488,7 @@ class RAGCacheService:
                 HAVING count > 1
             """
             )
-
             removed_count = 0
-
             for duplicate in duplicates:
                 # Keep only the most recent entry
                 old_entries = self.db.fetch_all(
@@ -570,18 +500,14 @@ class RAGCacheService:
                 """,
                     (duplicate["query_text"], duplicate["document_id"]),
                 )
-
                 for entry in old_entries:
                     self.db.execute(
                         "DELETE FROM rag_query_cache WHERE id = ?", (entry["id"],)
                     )
                     removed_count += 1
-
             if removed_count > 0:
                 logger.debug(f"Removed {removed_count} duplicate cache entries")
-
             return removed_count
-
         except Exception as e:
             logger.error(f"Failed to remove duplicates: {e}")
             return 0

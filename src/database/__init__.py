@@ -1,6 +1,5 @@
 """
 Database Module
-
 This package provides database connectivity, models, and migration utilities
 for the AI Enhanced PDF Scholar application.
 """

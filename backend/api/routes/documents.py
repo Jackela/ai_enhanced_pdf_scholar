@@ -1,6 +1,5 @@
 """
 Documents API Routes
-
 RESTful API endpoints for document management operations.
 """
 
@@ -19,13 +18,19 @@ from backend.api.dependencies import (
     get_upload_directory,
     validate_document_access,
 )
-from backend.api.models import *
+from backend.api.models import (
+    BaseResponse,
+    DocumentImportResponse,
+    DocumentListResponse,
+    DocumentResponse,
+    DocumentUpdate,
+    IntegrityCheckResponse,
+)
 from src.controllers.library_controller import LibraryController
 from src.database.models import DocumentModel
 from src.services.document_library_service import DuplicateDocumentError
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
@@ -51,27 +56,22 @@ async def get_documents(
             limit=per_page * page,  # Simple pagination for now
             sort_by=sort_by,
         )
-
         # Apply additional filters
         if not show_missing:
             documents = [doc for doc in documents if doc.is_file_available()]
-
         # Simple pagination
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         paginated_docs = documents[start_idx:end_idx]
-
         # Convert to response models
         doc_responses = []
         for doc in paginated_docs:
             doc_dict = doc.to_api_dict()
             doc_dict["is_file_available"] = doc.is_file_available()
             doc_responses.append(DocumentResponse(**doc_dict))
-
         return DocumentListResponse(
             documents=doc_responses, total=len(documents), page=page, per_page=per_page
         )
-
     except Exception as e:
         logger.error(f"Failed to get documents: {e}")
         raise HTTPException(
@@ -86,10 +86,8 @@ async def get_document(
 ) -> DocumentResponse:
     """Get a specific document by ID."""
     document = validate_document_access(document_id, controller)
-
     doc_dict = document.to_api_dict()
     doc_dict["is_file_available"] = document.is_file_available()
-
     return DocumentResponse(**doc_dict)
 
 
@@ -111,23 +109,19 @@ async def upload_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Only PDF files are allowed",
             )
-
         # Validate file size
         max_size = config["max_file_size_mb"] * 1024 * 1024
         file_size = 0
-
         # Create temporary file
         with tempfile.NamedTemporaryFile(
             delete=False, suffix=".pdf", dir=upload_dir
         ) as temp_file:
             temp_path = temp_file.name
-
             # Stream file content and check size
             while True:
                 chunk = await file.read(8192)  # 8KB chunks
                 if not chunk:
                     break
-
                 file_size += len(chunk)
                 if file_size > max_size:
                     # Clean up temp file
@@ -136,9 +130,7 @@ async def upload_document(
                         status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                         detail=f"File too large. Maximum size: {config['max_file_size_mb']}MB",
                     )
-
                 temp_file.write(chunk)
-
         try:
             # Import document (this will copy file to managed storage)
             success = controller.import_document(
@@ -147,16 +139,13 @@ async def upload_document(
                 check_duplicates=check_duplicates,
                 auto_build_index=auto_build_index,
             )
-
             if not success:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Document import failed",
                 )
-
             # Clean up temp file after successful import
             Path(temp_path).unlink(missing_ok=True)
-
             # Get the imported document
             # Note: This is a simplified approach - in production, you'd want to
             # return the document ID from import_document method
@@ -165,14 +154,11 @@ async def upload_document(
                 document = documents[0]
                 doc_dict = document.to_api_dict()
                 doc_dict["is_file_available"] = document.is_file_available()
-
                 return DocumentImportResponse(document=DocumentResponse(**doc_dict))
-
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Document imported but could not retrieve details",
             )
-
         except DuplicateDocumentError as e:
             # Clean up temp file on duplicate error
             Path(temp_path).unlink(missing_ok=True)
@@ -184,7 +170,6 @@ async def upload_document(
             # Clean up temp file on any error
             Path(temp_path).unlink(missing_ok=True)
             raise
-
     except HTTPException:
         raise
     except Exception as e:
@@ -203,24 +188,19 @@ async def update_document(
 ) -> DocumentResponse:
     """Update document metadata."""
     document = validate_document_access(document_id, controller)
-
     try:
         # Update document fields
         if update_data.title is not None:
             document.title = update_data.title
-
         if update_data.metadata is not None:
             if document.metadata is None:
                 document.metadata = {}
             document.metadata.update(update_data.metadata)
-
         # Save changes (this would need to be implemented in the controller)
         # For now, we'll return the document as-is
         doc_dict = document.to_api_dict()
         doc_dict["is_file_available"] = document.is_file_available()
-
         return DocumentResponse(**doc_dict)
-
     except Exception as e:
         logger.error(f"Failed to update document {document_id}: {e}")
         raise HTTPException(
@@ -235,10 +215,8 @@ async def delete_document(
 ) -> BaseResponse:
     """Delete a document."""
     validate_document_access(document_id, controller)
-
     try:
         success = controller.delete_document(document_id)
-
         if success:
             return BaseResponse(message=f"Document {document_id} deleted successfully")
         else:
@@ -246,7 +224,6 @@ async def delete_document(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Delete operation failed",
             )
-
     except Exception as e:
         logger.error(f"Failed to delete document {document_id}: {e}")
         raise HTTPException(
@@ -261,12 +238,10 @@ async def download_document(
 ) -> FileResponse:
     """Download the original PDF file."""
     document = validate_document_access(document_id, controller)
-
     if not document.file_path or not Path(document.file_path).exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document file not found"
         )
-
     try:
         return FileResponse(
             path=document.file_path,
@@ -287,10 +262,8 @@ async def check_document_integrity(
 ) -> IntegrityCheckResponse:
     """Check document and index integrity."""
     validate_document_access(document_id, controller)
-
     try:
         integrity = controller.verify_document_integrity(document_id)
-
         return IntegrityCheckResponse(
             document_id=document_id,
             exists=integrity.get("exists", False),
@@ -303,7 +276,6 @@ async def check_document_integrity(
             errors=integrity.get("errors", []),
             warnings=integrity.get("warnings", []),
         )
-
     except Exception as e:
         logger.error(f"Failed to check integrity for document {document_id}: {e}")
         raise HTTPException(

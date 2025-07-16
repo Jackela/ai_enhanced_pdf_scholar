@@ -1,6 +1,5 @@
 """
 Service Interfaces
-
 Defines abstract interfaces for business logic services
 following the Dependency Inversion Principle (DIP).
 """
@@ -14,7 +13,6 @@ from src.database.models import DocumentModel, VectorIndexModel
 class IContentHashService(ABC):
     """
     Content hashing service interface.
-
     Abstracts content hashing operations to allow different implementations
     following the Dependency Inversion Principle.
     """
@@ -43,7 +41,6 @@ class IContentHashService(ABC):
 class IRAGService(ABC):
     """
     RAG (Retrieval-Augmented Generation) service interface.
-
     Abstracts RAG operations to support different implementations
     and models while following the Open/Closed Principle.
     """
@@ -77,7 +74,6 @@ class IRAGService(ABC):
 class IDocumentLibraryService(ABC):
     """
     Document library service interface.
-
     Defines the contract for document library management operations
     following the Interface Segregation Principle.
     """
@@ -141,7 +137,6 @@ class IDocumentLibraryService(ABC):
 class IVectorIndexService(ABC):
     """
     Vector index management service interface.
-
     Abstracts vector index operations following the Single Responsibility Principle.
     """
 

@@ -1,6 +1,5 @@
 """
 System API Routes
-
 RESTful API endpoints for system status, configuration, and health checks.
 """
 
@@ -12,15 +11,17 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.api.dependencies import get_api_config, get_db, get_enhanced_rag
-from backend.api.models import *
+from backend.api.models import (
+    BaseResponse,
+    ConfigurationResponse,
+    SystemHealthResponse,
+)
 from config import Config
 from src.database.connection import DatabaseConnection
 from src.services.enhanced_rag_service import EnhancedRAGService
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
-
 # Store startup time for uptime calculation
 startup_time = time.time()
 
@@ -40,16 +41,12 @@ async def get_system_health(
         except Exception as e:
             logger.error(f"Database health check failed: {e}")
             database_connected = False
-
         # Check RAG service availability
         rag_service_available = rag_service is not None
-
         # Check API key configuration
         api_key_configured = Config.get_gemini_api_key() is not None
-
         # Calculate uptime
         uptime_seconds = time.time() - startup_time
-
         # Determine overall health status
         if database_connected and rag_service_available:
             status_value = "healthy"
@@ -57,7 +54,6 @@ async def get_system_health(
             status_value = "degraded"
         else:
             status_value = "unhealthy"
-
         # Check storage health
         storage_health = "unknown"
         try:
@@ -76,7 +72,6 @@ async def get_system_health(
         except Exception as e:
             logger.error(f"Storage health check failed: {e}")
             storage_health = "error"
-
         return SystemHealthResponse(
             status=status_value,
             database_connected=database_connected,
@@ -85,7 +80,6 @@ async def get_system_health(
             storage_health=storage_health,
             uptime_seconds=uptime_seconds,
         )
-
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise HTTPException(
@@ -108,7 +102,6 @@ async def get_configuration(config: dict = Depends(get_api_config)):
             "duplicate_detection": True,
             "library_management": True,
         }
-
         # System limits
         limits = {
             "max_file_size_mb": config["max_file_size_mb"],
@@ -117,11 +110,9 @@ async def get_configuration(config: dict = Depends(get_api_config)):
             "max_documents": 10000,  # Configurable limit
             "max_concurrent_queries": 10,
         }
-
         return ConfigurationResponse(
             features=features, limits=limits, version=config["version"]
         )
-
     except Exception as e:
         logger.error(f"Failed to get configuration: {e}")
         raise HTTPException(
@@ -141,9 +132,7 @@ async def get_system_info():
             "data_directory": str(Path.home() / ".ai_pdf_scholar"),
             "uptime_seconds": time.time() - startup_time,
         }
-
         return BaseResponse(message="System information retrieved", data=info)
-
     except Exception as e:
         logger.error(f"Failed to get system info: {e}")
         raise HTTPException(
@@ -173,7 +162,6 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Database migration failed",
                 )
-
         # Create necessary directories
         base_dir = Path.home() / ".ai_pdf_scholar"
         directories = [
@@ -183,12 +171,9 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
             base_dir / "vector_indexes" / "backup",
             base_dir / "vector_indexes" / "temp",
         ]
-
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
-
         return BaseResponse(message="System initialized successfully")
-
     except HTTPException:
         raise
     except Exception as e:
@@ -204,21 +189,17 @@ async def get_storage_info():
     """Get storage usage information."""
     try:
         base_dir = Path.home() / ".ai_pdf_scholar"
-
         if not base_dir.exists():
             return BaseResponse(
                 message="Storage not initialized", data={"initialized": False}
             )
-
         # Calculate storage usage
         total_size = 0
         file_count = 0
-
         for file_path in base_dir.rglob("*"):
             if file_path.is_file():
                 total_size += file_path.stat().st_size
                 file_count += 1
-
         # Directory breakdown
         directories = {}
         for subdir in ["uploads", "vector_indexes", "backups"]:
@@ -231,7 +212,6 @@ async def get_storage_info():
                     "size_bytes": subdir_size,
                     "size_mb": round(subdir_size / (1024 * 1024), 2),
                 }
-
         storage_info = {
             "initialized": True,
             "base_directory": str(base_dir),
@@ -240,9 +220,7 @@ async def get_storage_info():
             "total_files": file_count,
             "directories": directories,
         }
-
         return BaseResponse(message="Storage information retrieved", data=storage_info)
-
     except Exception as e:
         logger.error(f"Failed to get storage info: {e}")
         raise HTTPException(
@@ -256,35 +234,28 @@ async def run_maintenance():
     """Run system maintenance tasks."""
     try:
         maintenance_tasks = []
-
         # Clean up temporary files
         temp_dir = Path.home() / ".ai_pdf_scholar" / "uploads"
         if temp_dir.exists():
             import time
 
             cutoff_time = time.time() - (24 * 60 * 60)  # 24 hours ago
-
             cleaned_files = 0
             for temp_file in temp_dir.iterdir():
                 if temp_file.is_file() and temp_file.stat().st_mtime < cutoff_time:
                     temp_file.unlink()
                     cleaned_files += 1
-
             if cleaned_files > 0:
                 maintenance_tasks.append(f"Cleaned {cleaned_files} temporary files")
-
         # TODO: Add more maintenance tasks
         # - Log rotation
         # - Cache optimization
         # - Database optimization
-
         if maintenance_tasks:
             message = f"Maintenance completed: {', '.join(maintenance_tasks)}"
         else:
             message = "No maintenance tasks needed"
-
         return BaseResponse(message=message)
-
     except Exception as e:
         logger.error(f"Maintenance failed: {e}")
         raise HTTPException(

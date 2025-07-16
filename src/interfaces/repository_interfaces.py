@@ -1,6 +1,5 @@
 """
 Repository Interfaces
-
 Defines abstract base classes for repository pattern implementation
 following the Interface Segregation Principle (ISP).
 """
@@ -16,7 +15,6 @@ T = TypeVar("T")
 class IRepository(ABC, Generic[T]):
     """
     Generic repository interface.
-
     Follows the Interface Segregation Principle by providing
     minimal, focused interface that all repositories must implement.
     """
@@ -45,7 +43,6 @@ class IRepository(ABC, Generic[T]):
 class IDocumentRepository(IRepository[DocumentModel]):
     """
     Document-specific repository interface.
-
     Extends the base repository with document-specific operations
     following the Interface Segregation Principle.
     """
@@ -87,7 +84,6 @@ class IDocumentRepository(IRepository[DocumentModel]):
 class IVectorIndexRepository(IRepository[VectorIndexModel]):
     """
     Vector index repository interface.
-
     Provides vector index-specific operations following ISP.
     """
 

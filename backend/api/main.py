@@ -1,6 +1,5 @@
 """
 FastAPI Main Application
-
 Modern web API for AI Enhanced PDF Scholar with document library management,
 RAG functionality, and real-time features.
 """
@@ -30,9 +29,8 @@ from fastapi.staticfiles import StaticFiles
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
-
 from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
-from backend.api.models import *
+# Models are used in individual route modules
 from backend.api.routes import settings
 from backend.api.websocket_manager import WebSocketManager
 from src.controllers.library_controller import LibraryController
@@ -43,7 +41,6 @@ from src.services.enhanced_rag_service import EnhancedRAGService
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 # Create FastAPI app
 app = FastAPI(
     title="AI Enhanced PDF Scholar API",
@@ -52,7 +49,6 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
-
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -61,10 +57,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # WebSocket manager
 websocket_manager = WebSocketManager()
-
 # Include API routes
 from backend.api.routes import documents, library, rag, system
 
@@ -73,7 +67,6 @@ app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
 app.include_router(library.router, prefix="/api/library", tags=["library"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
 app.include_router(settings.router, prefix="/api")
-
 # Serve static files for frontend
 frontend_dist = project_root / "frontend" / "dist"
 if frontend_dist.exists():
@@ -118,7 +111,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
             # Keep connection alive and handle incoming messages
             data = await websocket.receive_text()
             message = json.loads(data)
-
             # Handle different message types
             if message.get("type") == "ping":
                 await websocket_manager.send_personal_message(
@@ -131,7 +123,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
                         message.get("query", ""), message.get("document_id"), client_id
                     )
                 )
-
     except WebSocketDisconnect:
         websocket_manager.disconnect(client_id)
         logger.info(f"WebSocket client {client_id} disconnected")
@@ -146,7 +137,6 @@ async def handle_rag_query_websocket(
         db = next(get_db())
         enhanced_rag = get_enhanced_rag(db)
         controller = get_library_controller(db, enhanced_rag)
-
         # Send progress update
         await websocket_manager.send_personal_message(
             json.dumps(
@@ -154,10 +144,8 @@ async def handle_rag_query_websocket(
             ),
             client_id,
         )
-
         # Perform query
         response = controller.query_document(document_id, query)
-
         # Send result
         await websocket_manager.send_personal_message(
             json.dumps(
@@ -170,7 +158,6 @@ async def handle_rag_query_websocket(
             ),
             client_id,
         )
-
     except Exception as e:
         logger.error(f"WebSocket RAG query failed: {e}")
         await websocket_manager.send_personal_message(
@@ -184,21 +171,17 @@ async def startup_event() -> None:
     """Initialize services on startup."""
     try:
         logger.info("Starting AI Enhanced PDF Scholar API...")
-
         # Initialize database
         db_dir = Path.home() / ".ai_pdf_scholar"
         db_dir.mkdir(exist_ok=True)
         db_path = db_dir / "documents.db"
-
         # Run migrations if needed
         db = DatabaseConnection(str(db_path))
         migrator = DatabaseMigrator(db)
         if migrator.needs_migration():
             logger.info("Running database migrations...")
             migrator.migrate()
-
         logger.info("API startup completed successfully")
-
     except Exception as e:
         logger.error(f"Startup failed: {e}")
         raise

@@ -1,6 +1,5 @@
 """
 API Data Models
-
 Pydantic models for API request/response serialization.
 """
 

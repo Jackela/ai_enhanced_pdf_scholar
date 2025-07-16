@@ -1,4 +1,5 @@
 import pytest
+
 from src.database.connection import DatabaseConnection
 from src.database.migrations import DatabaseMigrator
 

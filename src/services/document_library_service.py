@@ -1,6 +1,5 @@
 """
 Document Library Service
-
 Business logic layer for document management. Provides high-level operations
 for document importing, organization, and lifecycle management.
 """
@@ -45,7 +44,6 @@ class DocumentLibraryService:
             "outputs": "Document management operations with business logic"
         }
     }
-
     Service layer for document library management.
     Provides intelligent import, duplicate detection, and organization features.
     """
@@ -55,7 +53,6 @@ class DocumentLibraryService:
     ) -> None:
         """
         Initialize document library service.
-
         Args:
             db_connection: Database connection instance
             documents_dir: Directory for permanent document storage (defaults to ~/.ai_pdf_scholar/documents)
@@ -63,7 +60,6 @@ class DocumentLibraryService:
         self.db = db_connection
         self.document_repo = DocumentRepository(db_connection)
         self.vector_repo = VectorIndexRepository(db_connection)
-
         # Set up managed documents directory
         if documents_dir:
             self.documents_dir = Path(documents_dir)
@@ -74,11 +70,9 @@ class DocumentLibraryService:
     def _create_managed_file_path(self, file_hash: str, original_filename: str) -> Path:
         """
         Create a managed file path for permanent storage.
-
         Args:
             file_hash: File hash for unique identification
             original_filename: Original filename for extension
-
         Returns:
             Path for managed file storage
         """
@@ -90,11 +84,9 @@ class DocumentLibraryService:
     def _copy_to_managed_storage(self, source_path: str, managed_path: Path) -> None:
         """
         Copy file to managed storage location.
-
         Args:
             source_path: Source file path
             managed_path: Destination managed path
-
         Raises:
             DocumentImportError: If copy fails
         """
@@ -114,31 +106,25 @@ class DocumentLibraryService:
     ) -> DocumentModel:
         """
         Import a document into the library with intelligent duplicate detection.
-
         Args:
             file_path: Path to the PDF file
             title: Custom title (defaults to filename)
             check_duplicates: Whether to check for duplicates
             overwrite_duplicates: Whether to overwrite existing duplicates
-
         Returns:
             Imported document model
-
         Raises:
             DocumentImportError: If import fails
             DuplicateDocumentError: If duplicate found and not overwriting
         """
         try:
             logger.info(f"Starting document import: {file_path}")
-
             # Validate file
             file_path_obj = Path(file_path)
             if not file_path_obj.exists():
                 raise DocumentImportError(f"File not found: {file_path}")
-
             if not ContentHashService.validate_pdf_file(file_path):
                 raise DocumentImportError(f"Invalid PDF file: {file_path}")
-
             # Calculate hashes
             try:
                 file_hash, content_hash = ContentHashService.calculate_combined_hashes(
@@ -149,12 +135,10 @@ class DocumentLibraryService:
                 )
             except ContentHashError as e:
                 raise DocumentImportError(f"Failed to calculate file hash: {e}")
-
             # Create managed file path
             managed_file_path = self._create_managed_file_path(
                 file_hash, file_path_obj.name
             )
-
             # Check for duplicates
             if check_duplicates:
                 existing_doc = self.document_repo.find_by_file_hash(file_hash)
@@ -172,19 +156,15 @@ class DocumentLibraryService:
                         if title:
                             existing_doc.title = title
                         return self.document_repo.update(existing_doc)
-
             # Copy file to managed storage
             self._copy_to_managed_storage(file_path, managed_file_path)
-
             # Create new document model with managed path
             if title is None:
                 title = file_path_obj.stem
-
             document = DocumentModel.from_file(
                 file_path=str(managed_file_path), file_hash=file_hash, title=title
             )
             document.content_hash = content_hash
-
             # Additional metadata
             try:
                 file_info = ContentHashService.get_file_info(file_path)
@@ -201,15 +181,12 @@ class DocumentLibraryService:
                     )
             except Exception as e:
                 logger.warning(f"Could not extract additional metadata: {e}")
-
             # Save to database
             saved_document = self.document_repo.create(document)
-
             logger.info(
                 f"Document imported successfully: {saved_document.id} - {saved_document.title}"
             )
             return saved_document
-
         except (DocumentImportError, DuplicateDocumentError):
             raise
         except Exception as e:
@@ -226,14 +203,12 @@ class DocumentLibraryService:
     ) -> List[DocumentModel]:
         """
         Get documents with optional search and pagination.
-
         Args:
             search_query: Search term for title
             limit: Maximum number of documents
             offset: Number of documents to skip
             sort_by: Field to sort by
             sort_order: Sort direction (asc/desc)
-
         Returns:
             List of document models
         """
@@ -244,7 +219,6 @@ class DocumentLibraryService:
                 # For now, use simple pagination
                 # TODO: Implement proper sorting in repository
                 return self.document_repo.find_all(limit, offset)
-
         except Exception as e:
             logger.error(f"Failed to get documents: {e}")
             raise
@@ -252,10 +226,8 @@ class DocumentLibraryService:
     def get_recent_documents(self, limit: int = 20) -> List[DocumentModel]:
         """
         Get recently accessed documents.
-
         Args:
             limit: Maximum number of documents
-
         Returns:
             List of recent documents
         """
@@ -268,10 +240,8 @@ class DocumentLibraryService:
     def get_document_by_path(self, file_path: str) -> Optional[DocumentModel]:
         """
         Get document by its file path.
-
         Args:
             file_path: Absolute path to the document file
-
         Returns:
             Document model or None if not found
         """
@@ -284,10 +254,8 @@ class DocumentLibraryService:
     def get_document_by_id(self, document_id: int) -> Optional[DocumentModel]:
         """
         Get document by ID and update access time.
-
         Args:
             document_id: Document primary key
-
         Returns:
             Document model or None if not found
         """
@@ -306,11 +274,9 @@ class DocumentLibraryService:
     ) -> bool:
         """
         Delete document and optionally its vector index.
-
         Args:
             document_id: Document primary key
             remove_vector_index: Whether to also remove vector index
-
         Returns:
             True if deleted successfully
         """
@@ -332,18 +298,13 @@ class DocumentLibraryService:
                                 )
                         except Exception as e:
                             logger.warning(f"Could not remove vector index files: {e}")
-
                         # Remove from database
                         self.vector_repo.delete_by_document_id(document_id)
-
                 # Remove document
                 deleted = self.document_repo.delete(document_id)
-
                 if deleted:
                     logger.info(f"Document {document_id} deleted successfully")
-
                 return deleted
-
         except Exception as e:
             logger.error(f"Failed to delete document {document_id}: {e}")
             raise
@@ -351,23 +312,17 @@ class DocumentLibraryService:
     def find_duplicate_documents(self) -> List[Tuple[str, List[DocumentModel]]]:
         """
         Find potential duplicate documents.
-
         Returns:
             List of tuples (criteria, list_of_duplicates)
         """
         try:
             duplicates = []
-
             # Find duplicates by file size and similar names
             size_duplicates = self.document_repo.find_duplicates_by_size_and_name()
-
             for file_size, docs in size_duplicates:
                 duplicates.append((f"File size: {file_size} bytes", docs))
-
             # TODO: Add content-based duplicate detection when content_hash field is available
-
             return duplicates
-
         except Exception as e:
             logger.error(f"Failed to find duplicate documents: {e}")
             raise
@@ -375,21 +330,17 @@ class DocumentLibraryService:
     def get_library_statistics(self) -> Dict[str, Any]:
         """
         Get comprehensive library statistics.
-
         Returns:
             Dictionary with various statistics
         """
         try:
             stats = {}
-
             # Document statistics
             doc_stats = self.document_repo.get_statistics()
             stats["documents"] = doc_stats
-
             # Vector index statistics
             vector_stats = self.vector_repo.get_index_statistics()
             stats["vector_indexes"] = vector_stats
-
             # Library health
             stats["health"] = {
                 "orphaned_indexes": vector_stats.get("orphaned_count", 0),
@@ -398,9 +349,7 @@ class DocumentLibraryService:
                     "coverage_percentage", 0
                 ),
             }
-
             return stats
-
         except Exception as e:
             logger.error(f"Failed to get library statistics: {e}")
             raise
@@ -408,31 +357,25 @@ class DocumentLibraryService:
     def cleanup_library(self) -> Dict[str, int]:
         """
         Perform library cleanup operations.
-
         Returns:
             Dictionary with cleanup results
         """
         try:
             results = {}
-
             # Cleanup orphaned vector indexes
             orphaned_cleaned = self.vector_repo.cleanup_orphaned_indexes()
             results["orphaned_indexes_cleaned"] = orphaned_cleaned
-
             # Cleanup invalid vector indexes
             invalid_cleaned = self.vector_repo.cleanup_invalid_indexes(
                 remove_files=True
             )
             results["invalid_indexes_cleaned"] = invalid_cleaned
-
             # TODO: Add more cleanup operations
             # - Remove documents with missing files
             # - Clean up unused tags
             # - Optimize database
-
             logger.info(f"Library cleanup completed: {results}")
             return results
-
         except Exception as e:
             logger.error(f"Failed to cleanup library: {e}")
             raise
@@ -440,10 +383,8 @@ class DocumentLibraryService:
     def verify_document_integrity(self, document_id: int) -> Dict[str, Any]:
         """
         Verify the integrity of a document and its associated data.
-
         Args:
             document_id: Document primary key
-
         Returns:
             Dictionary with integrity check results
         """
@@ -458,25 +399,20 @@ class DocumentLibraryService:
                 "vector_index_valid": False,
                 "errors": [],
             }
-
             # Check document existence
             document = self.document_repo.find_by_id(document_id)
             if not document:
                 result["errors"].append("Document not found in database")
                 return result
-
             result["exists"] = True
             result["title"] = document.title
             result["file_path"] = document.file_path
-
             # Check file existence
             if document.file_path:
                 file_path = Path(document.file_path)
                 result["file_exists"] = file_path.exists()
-
                 if result["file_exists"]:
                     result["file_accessible"] = file_path.is_file()
-
                     # Verify file hash
                     try:
                         current_hash = ContentHashService.calculate_file_hash(
@@ -485,32 +421,26 @@ class DocumentLibraryService:
                         result["hash_matches"] = current_hash == document.file_hash
                         result["current_hash"] = current_hash
                         result["stored_hash"] = document.file_hash
-
                         if not result["hash_matches"]:
                             result["errors"].append(
                                 "File hash mismatch - file may have been modified"
                             )
-
                     except Exception as e:
                         result["errors"].append(f"Could not calculate file hash: {e}")
                 else:
                     result["errors"].append("File path is not accessible")
             else:
                 result["errors"].append("No file path stored")
-
             # Check vector index
             vector_index = self.vector_repo.find_by_document_id(document_id)
             if vector_index:
                 result["vector_index_exists"] = True
-
                 # Verify vector index integrity
                 index_check = self.vector_repo.verify_index_integrity(vector_index.id)
                 result["vector_index_valid"] = index_check.get("is_valid", False)
                 result["vector_index_details"] = index_check
-
                 if not result["vector_index_valid"]:
                     result["errors"].extend(index_check.get("errors", []))
-
             # Overall health
             result["is_healthy"] = (
                 result["exists"]
@@ -518,9 +448,7 @@ class DocumentLibraryService:
                 and result["file_accessible"]
                 and result["hash_matches"]
             )
-
             return result
-
         except Exception as e:
             logger.error(f"Failed to verify document integrity for {document_id}: {e}")
             return {"document_id": document_id, "error": str(e)}
@@ -528,10 +456,8 @@ class DocumentLibraryService:
     def advanced_search(self, **kwargs: Any) -> List[DocumentModel]:
         """
         Perform advanced search with multiple criteria.
-
         Args:
             **kwargs: Search criteria (passed to repository)
-
         Returns:
             List of matching documents
         """
