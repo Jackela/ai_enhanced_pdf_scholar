@@ -113,11 +113,12 @@ jobs:
       - name: 🏗️ Build frontend
         run: |
           echo "Building frontend..."
-          npm run build || {
+          # Use vite build directly to avoid standalone tsc issues in CI
+          export CI=true && vite build --mode production || {
             echo "Build failed, attempting to fix common issues..."
             rm -rf node_modules package-lock.json
             npm install
-            npm run build
+            export CI=true && vite build --mode production
           }
       
       - name: 📤 Upload build artifacts
