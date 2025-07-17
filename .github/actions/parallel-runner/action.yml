@@ -1,0 +1,267 @@
+name: 'Parallel Runner'
+description: 'Intelligent parallel execution engine for CI/CD workflows'
+author: 'AI Enhanced PDF Scholar'
+
+inputs:
+  strategy:
+    description: 'Parallel execution strategy (matrix, concurrent, sequential)'
+    required: true
+  max-parallel:
+    description: 'Maximum parallel jobs'
+    required: false
+    default: '4'
+  fail-fast:
+    description: 'Stop all jobs on first failure'
+    required: false
+    default: 'false'
+  timeout-minutes:
+    description: 'Timeout for each parallel job'
+    required: false
+    default: '10'
+  jobs-config:
+    description: 'Jobs configuration (JSON)'
+    required: true
+  resource-monitor:
+    description: 'Enable resource monitoring'
+    required: false
+    default: 'true'
+
+outputs:
+  execution-time:
+    description: 'Total execution time'
+    value: ${{ steps.execution-summary.outputs.time }}
+  success-rate:
+    description: 'Success rate percentage'
+    value: ${{ steps.execution-summary.outputs.success-rate }}
+  parallel-efficiency:
+    description: 'Parallel execution efficiency'
+    value: ${{ steps.execution-summary.outputs.efficiency }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🚀 Parallel Runner Setup
+      id: setup
+      shell: bash
+      run: |
+        echo "🚀 Setting up Parallel Runner"
+        echo "Strategy: ${{ inputs.strategy }}"
+        echo "Max Parallel: ${{ inputs.max-parallel }}"
+        echo "Fail Fast: ${{ inputs.fail-fast }}"
+        echo "Timeout: ${{ inputs.timeout-minutes }} minutes"
+        
+        # 记录开始时间
+        start_time=$(date +%s)
+        echo "start-time=$start_time" >> $GITHUB_OUTPUT
+        
+        # 解析作业配置
+        jobs_config='${{ inputs.jobs-config }}'
+        job_count=$(echo "$jobs_config" | jq '. | length')
+        
+        echo "Total Jobs: $job_count"
+        echo "job-count=$job_count" >> $GITHUB_OUTPUT
+        
+        # 创建作业状态跟踪
+        mkdir -p /tmp/parallel-runner
+        echo "[]" > /tmp/parallel-runner/job-status.json
+        
+        echo "✅ Parallel Runner initialized"
+
+    - name: 🔍 Resource Monitoring Setup
+      if: inputs.resource-monitor == 'true'
+      shell: bash
+      run: |
+        echo "🔍 Setting up resource monitoring..."
+        
+        # 创建资源监控脚本
+        cat > /tmp/parallel-runner/monitor.sh << 'EOF'
+        #!/bin/bash
+        while true; do
+          cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+          memory_usage=$(free | grep '^Mem' | awk '{printf "%.1f", $3/$2 * 100.0}')
+          disk_usage=$(df -h / | awk 'NR==2 {print $5}' | cut -d'%' -f1)
+          
+          echo "$(date): CPU=${cpu_usage}%, Memory=${memory_usage}%, Disk=${disk_usage}%" >> /tmp/parallel-runner/resource-log.txt
+          sleep 30
+        done
+        EOF
+        
+        chmod +x /tmp/parallel-runner/monitor.sh
+        /tmp/parallel-runner/monitor.sh &
+        monitor_pid=$!
+        echo "monitor-pid=$monitor_pid" >> $GITHUB_OUTPUT
+        
+        echo "✅ Resource monitoring started (PID: $monitor_pid)"
+
+    - name: 🎯 Execute Parallel Jobs
+      id: parallel-execution
+      shell: bash
+      run: |
+        echo "🎯 Starting parallel job execution..."
+        
+        jobs_config='${{ inputs.jobs-config }}'
+        max_parallel=${{ inputs.max-parallel }}
+        fail_fast=${{ inputs.fail-fast }}
+        timeout_minutes=${{ inputs.timeout-minutes }}
+        
+        # 作业执行函数
+        execute_job() {
+          local job_id=$1
+          local job_config=$2
+          local job_name=$(echo "$job_config" | jq -r '.name')
+          local job_command=$(echo "$job_config" | jq -r '.command')
+          local job_timeout=$(echo "$job_config" | jq -r '.timeout // $timeout_minutes')
+          
+          echo "🏃 Starting job: $job_name (ID: $job_id)"
+          
+          # 执行作业
+          start_time=$(date +%s)
+          timeout "${job_timeout}m" bash -c "$job_command" > "/tmp/parallel-runner/job-${job_id}.log" 2>&1
+          exit_code=$?
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+          
+          # 更新作业状态
+          if [ $exit_code -eq 0 ]; then
+            status="success"
+            echo "✅ Job completed: $job_name (${duration}s)"
+          else
+            status="failure"
+            echo "❌ Job failed: $job_name (${duration}s, exit code: $exit_code)"
+          fi
+          
+          # 记录结果
+          result="{\"id\":\"$job_id\",\"name\":\"$job_name\",\"status\":\"$status\",\"duration\":$duration,\"exit_code\":$exit_code}"
+          echo "$result" >> "/tmp/parallel-runner/job-results.jsonl"
+          
+          return $exit_code
+        }
+        
+        # 并行执行作业
+        job_pids=()
+        active_jobs=0
+        job_index=0
+        
+        for job_config in $(echo "$jobs_config" | jq -r '.[] | @base64'); do
+          # 解码作业配置
+          job_data=$(echo "$job_config" | base64 -d)
+          
+          # 等待空闲槽位
+          while [ $active_jobs -ge $max_parallel ]; do
+            sleep 1
+            # 检查完成的作业
+            for i in "${!job_pids[@]}"; do
+              if ! kill -0 "${job_pids[$i]}" 2>/dev/null; then
+                wait "${job_pids[$i]}"
+                job_exit_code=$?
+                unset job_pids[$i]
+                ((active_jobs--))
+                
+                # 如果fail-fast启用且作业失败，终止所有作业
+                if [ "$fail_fast" == "true" ] && [ $job_exit_code -ne 0 ]; then
+                  echo "❌ Fail-fast triggered, terminating all jobs"
+                  for pid in "${job_pids[@]}"; do
+                    kill -TERM "$pid" 2>/dev/null || true
+                  done
+                  exit 1
+                fi
+              fi
+            done
+          done
+          
+          # 启动新作业
+          execute_job "$job_index" "$job_data" &
+          job_pids+=($!)
+          ((active_jobs++))
+          ((job_index++))
+        done
+        
+        # 等待所有作业完成
+        for pid in "${job_pids[@]}"; do
+          wait "$pid"
+        done
+        
+        echo "✅ All parallel jobs completed"
+
+    - name: 📊 Execution Summary
+      id: execution-summary
+      shell: bash
+      run: |
+        echo "📊 Generating execution summary..."
+        
+        end_time=$(date +%s)
+        start_time=${{ steps.setup.outputs.start-time }}
+        total_time=$((end_time - start_time))
+        
+        # 统计结果
+        if [ -f "/tmp/parallel-runner/job-results.jsonl" ]; then
+          total_jobs=$(wc -l < "/tmp/parallel-runner/job-results.jsonl")
+          successful_jobs=$(grep '"status":"success"' "/tmp/parallel-runner/job-results.jsonl" | wc -l)
+          failed_jobs=$(grep '"status":"failure"' "/tmp/parallel-runner/job-results.jsonl" | wc -l)
+        else
+          total_jobs=0
+          successful_jobs=0
+          failed_jobs=0
+        fi
+        
+        # 计算成功率
+        if [ $total_jobs -gt 0 ]; then
+          success_rate=$((successful_jobs * 100 / total_jobs))
+        else
+          success_rate=0
+        fi
+        
+        # 计算并行效率
+        max_parallel=${{ inputs.max-parallel }}
+        if [ $total_jobs -gt 0 ]; then
+          theoretical_sequential_time=$(jq -s 'map(.duration) | add' "/tmp/parallel-runner/job-results.jsonl" 2>/dev/null || echo "0")
+          if [ $theoretical_sequential_time -gt 0 ]; then
+            efficiency=$((theoretical_sequential_time * 100 / (total_time * max_parallel)))
+          else
+            efficiency=0
+          fi
+        else
+          efficiency=0
+        fi
+        
+        # 输出结果
+        echo "time=$total_time" >> $GITHUB_OUTPUT
+        echo "success-rate=$success_rate" >> $GITHUB_OUTPUT
+        echo "efficiency=$efficiency" >> $GITHUB_OUTPUT
+        
+        echo "📊 Execution Statistics:"
+        echo "- Total Time: ${total_time}s"
+        echo "- Total Jobs: $total_jobs"
+        echo "- Successful: $successful_jobs"
+        echo "- Failed: $failed_jobs"
+        echo "- Success Rate: ${success_rate}%"
+        echo "- Parallel Efficiency: ${efficiency}%"
+
+    - name: 🧹 Cleanup
+      if: always()
+      shell: bash
+      run: |
+        echo "🧹 Cleaning up parallel runner..."
+        
+        # 停止资源监控
+        if [ -n "${{ steps.setup.outputs.monitor-pid }}" ]; then
+          kill "${{ steps.setup.outputs.monitor-pid }}" 2>/dev/null || true
+        fi
+        
+        # 保存最终报告
+        if [ -f "/tmp/parallel-runner/job-results.jsonl" ]; then
+          echo "📋 Final job results:"
+          cat "/tmp/parallel-runner/job-results.jsonl"
+        fi
+        
+        # 显示资源使用情况
+        if [ -f "/tmp/parallel-runner/resource-log.txt" ]; then
+          echo "📊 Resource usage summary:"
+          tail -5 "/tmp/parallel-runner/resource-log.txt"
+        fi
+        
+        echo "✅ Cleanup completed"
+
+branding:
+  icon: 'zap'
+  color: 'green'

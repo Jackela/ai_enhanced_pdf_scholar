@@ -1,0 +1,288 @@
+name: 'Smart Trigger'
+description: 'Intelligent workflow triggering based on file changes and conditions'
+author: 'AI Enhanced PDF Scholar'
+
+inputs:
+  trigger-conditions:
+    description: 'Trigger conditions (JSON)'
+    required: true
+  base-ref:
+    description: 'Base reference for comparison'
+    required: false
+    default: 'main'
+  force-trigger:
+    description: 'Force trigger all conditions'
+    required: false
+    default: 'false'
+  cache-trigger-results:
+    description: 'Cache trigger analysis results'
+    required: false
+    default: 'true'
+  analysis-depth:
+    description: 'Analysis depth (shallow, medium, deep)'
+    required: false
+    default: 'medium'
+
+outputs:
+  should-trigger:
+    description: 'Whether workflow should trigger'
+    value: ${{ steps.trigger-decision.outputs.should-trigger }}
+  trigger-reasons:
+    description: 'Reasons for triggering'
+    value: ${{ steps.trigger-decision.outputs.reasons }}
+  changed-components:
+    description: 'List of changed components'
+    value: ${{ steps.change-analysis.outputs.components }}
+  trigger-confidence:
+    description: 'Confidence level of trigger decision'
+    value: ${{ steps.trigger-decision.outputs.confidence }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔍 Smart Trigger Analysis
+      id: trigger-analysis
+      shell: bash
+      run: |
+        echo "🔍 Starting smart trigger analysis..."
+        
+        # 基础信息
+        echo "Event: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Base Ref: ${{ inputs.base-ref }}"
+        echo "Force Trigger: ${{ inputs.force-trigger }}"
+        echo "Analysis Depth: ${{ inputs.analysis-depth }}"
+        
+        # 解析触发条件
+        conditions='${{ inputs.trigger-conditions }}'
+        echo "Trigger Conditions: $conditions"
+        
+        # 初始化分析结果
+        mkdir -p /tmp/smart-trigger
+        echo "[]" > /tmp/smart-trigger/changed-files.json
+        echo "[]" > /tmp/smart-trigger/trigger-reasons.json
+        
+        echo "✅ Smart trigger analysis initialized"
+
+    - name: 📊 Change Analysis
+      id: change-analysis
+      shell: bash
+      run: |
+        echo "📊 Analyzing repository changes..."
+        
+        # 获取变更文件列表
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          # PR 事件：比较 PR 分支与目标分支
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+          changed_files=$(git diff --name-only "$base_sha" "$head_sha")
+        elif [ "${{ github.event_name }}" == "push" ]; then
+          # Push 事件：比较当前提交与之前提交
+          if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            changed_files=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")
+          else
+            # 首次推送，获取所有文件
+            changed_files=$(git ls-files)
+          fi
+        else
+          # 其他事件：获取最近的变更
+          changed_files=$(git diff --name-only HEAD~1 HEAD)
+        fi
+        
+        echo "Changed files:"
+        echo "$changed_files"
+        
+        # 将变更文件保存为JSON
+        echo "$changed_files" | jq -R -s 'split("\n") | map(select(. != ""))' > /tmp/smart-trigger/changed-files.json
+        
+        # 分析变更组件
+        components=()
+        
+        # 前端变更检测
+        if echo "$changed_files" | grep -E "(^frontend/|package\.json|vite\.config|tsconfig)" > /dev/null; then
+          components+=("frontend")
+        fi
+        
+        # 后端变更检测
+        if echo "$changed_files" | grep -E "(^src/|requirements|pyproject\.toml|poetry\.lock)" > /dev/null; then
+          components+=("backend")
+        fi
+        
+        # 配置变更检测
+        if echo "$changed_files" | grep -E "(^\.github/|docker|compose|\.env)" > /dev/null; then
+          components+=("config")
+        fi
+        
+        # 文档变更检测
+        if echo "$changed_files" | grep -E "(\.md$|docs/|README)" > /dev/null; then
+          components+=("docs")
+        fi
+        
+        # 测试变更检测
+        if echo "$changed_files" | grep -E "(^tests/|test_|spec_)" > /dev/null; then
+          components+=("tests")
+        fi
+        
+        # 输出组件列表
+        components_json=$(printf '%s\n' "${components[@]}" | jq -R -s 'split("\n") | map(select(. != ""))')
+        echo "components=$components_json" >> $GITHUB_OUTPUT
+        
+        echo "📊 Changed components: ${components[*]}"
+
+    - name: 🎯 Trigger Decision Engine
+      id: trigger-decision
+      shell: bash
+      run: |
+        echo "🎯 Making trigger decision..."
+        
+        conditions='${{ inputs.trigger-conditions }}'
+        changed_components='${{ steps.change-analysis.outputs.components }}'
+        force_trigger="${{ inputs.force-trigger }}"
+        
+        # 初始化决策变量
+        should_trigger=false
+        trigger_reasons=()
+        confidence=0
+        
+        # 强制触发检查
+        if [ "$force_trigger" == "true" ]; then
+          should_trigger=true
+          trigger_reasons+=("Force trigger enabled")
+          confidence=100
+        else
+          # 遍历触发条件
+          for condition in $(echo "$conditions" | jq -r '.[] | @base64'); do
+            condition_data=$(echo "$condition" | base64 -d)
+            condition_name=$(echo "$condition_data" | jq -r '.name')
+            condition_type=$(echo "$condition_data" | jq -r '.type')
+            condition_rules=$(echo "$condition_data" | jq -r '.rules[]')
+            
+            echo "🔍 Evaluating condition: $condition_name"
+            
+            case $condition_type in
+              "file_pattern")
+                # 文件模式匹配
+                for rule in $condition_rules; do
+                  if git diff --name-only HEAD~1 HEAD | grep -E "$rule" > /dev/null; then
+                    should_trigger=true
+                    trigger_reasons+=("File pattern match: $rule")
+                    confidence=$((confidence + 20))
+                  fi
+                done
+                ;;
+              
+              "component_change")
+                # 组件变更检测
+                for rule in $condition_rules; do
+                  if echo "$changed_components" | jq -e ".[] | select(. == \"$rule\")" > /dev/null; then
+                    should_trigger=true
+                    trigger_reasons+=("Component changed: $rule")
+                    confidence=$((confidence + 30))
+                  fi
+                done
+                ;;
+              
+              "branch_pattern")
+                # 分支模式匹配
+                current_branch="${{ github.ref_name }}"
+                for rule in $condition_rules; do
+                  if [[ "$current_branch" =~ $rule ]]; then
+                    should_trigger=true
+                    trigger_reasons+=("Branch pattern match: $rule")
+                    confidence=$((confidence + 15))
+                  fi
+                done
+                ;;
+              
+              "time_based")
+                # 基于时间的触发
+                current_hour=$(date +%H)
+                for rule in $condition_rules; do
+                  if [[ "$current_hour" -ge $(echo "$rule" | jq -r '.start') && 
+                        "$current_hour" -le $(echo "$rule" | jq -r '.end') ]]; then
+                    should_trigger=true
+                    trigger_reasons+=("Time-based trigger: $rule")
+                    confidence=$((confidence + 10))
+                  fi
+                done
+                ;;
+              
+              "commit_message")
+                # 提交消息模式匹配
+                commit_message="${{ github.event.head_commit.message }}"
+                for rule in $condition_rules; do
+                  if [[ "$commit_message" =~ $rule ]]; then
+                    should_trigger=true
+                    trigger_reasons+=("Commit message match: $rule")
+                    confidence=$((confidence + 25))
+                  fi
+                done
+                ;;
+            esac
+          done
+        fi
+        
+        # 限制置信度上限
+        if [ $confidence -gt 100 ]; then
+          confidence=100
+        fi
+        
+        # 输出决策结果
+        echo "should-trigger=$should_trigger" >> $GITHUB_OUTPUT
+        echo "confidence=$confidence" >> $GITHUB_OUTPUT
+        
+        # 输出触发原因
+        reasons_json=$(printf '%s\n' "${trigger_reasons[@]}" | jq -R -s 'split("\n") | map(select(. != ""))')
+        echo "reasons=$reasons_json" >> $GITHUB_OUTPUT
+        
+        echo "🎯 Trigger Decision:"
+        echo "- Should Trigger: $should_trigger"
+        echo "- Confidence: $confidence%"
+        echo "- Reasons: ${trigger_reasons[*]}"
+
+    - name: 🔄 Cache Trigger Results
+      if: inputs.cache-trigger-results == 'true'
+      uses: actions/cache@v4
+      with:
+        path: /tmp/smart-trigger/
+        key: smart-trigger-${{ github.sha }}-${{ hashFiles('.github/workflows/**/*.yml') }}
+        restore-keys: |
+          smart-trigger-${{ github.sha }}-
+          smart-trigger-
+
+    - name: 📊 Trigger Analytics
+      shell: bash
+      run: |
+        echo "📊 Trigger Analytics Report"
+        
+        # 统计信息
+        total_files=$(cat /tmp/smart-trigger/changed-files.json | jq '. | length')
+        total_components=$(echo '${{ steps.change-analysis.outputs.components }}' | jq '. | length')
+        total_reasons=$(echo '${{ steps.trigger-decision.outputs.reasons }}' | jq '. | length')
+        
+        echo "📋 Analysis Summary:"
+        echo "- Changed Files: $total_files"
+        echo "- Affected Components: $total_components"
+        echo "- Trigger Reasons: $total_reasons"
+        echo "- Decision Confidence: ${{ steps.trigger-decision.outputs.confidence }}%"
+        echo "- Final Decision: ${{ steps.trigger-decision.outputs.should-trigger }}"
+        
+        # 性能统计
+        echo "📈 Performance Metrics:"
+        echo "- Analysis Depth: ${{ inputs.analysis-depth }}"
+        echo "- Cache Enabled: ${{ inputs.cache-trigger-results }}"
+        echo "- Force Trigger: ${{ inputs.force-trigger }}"
+        
+        # 建议
+        confidence=${{ steps.trigger-decision.outputs.confidence }}
+        if [ $confidence -ge 80 ]; then
+          echo "💡 Recommendation: High confidence trigger - proceed with full workflow"
+        elif [ $confidence -ge 50 ]; then
+          echo "💡 Recommendation: Medium confidence - consider selective workflow execution"
+        else
+          echo "💡 Recommendation: Low confidence - may skip non-critical stages"
+        fi
+
+branding:
+  icon: 'git-branch'
+  color: 'purple'

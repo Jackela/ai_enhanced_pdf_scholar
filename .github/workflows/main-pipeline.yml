@@ -1,0 +1,222 @@
+name: 🚀 Revolutionary CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_full_pipeline:
+        description: 'Force run all stages regardless of changes'
+        required: false
+        default: false
+        type: boolean
+
+# 全局环境变量
+env:
+  NODE_VERSION: '22.17.0'
+  PYTHON_VERSION: '3.11'
+  PNPM_VERSION: '9.15.1'
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+# 全局并发控制
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 🔍 智能变更检测
+  detect-changes:
+    name: 🔍 Smart Change Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
+      backend-changed: ${{ steps.changes.outputs.backend }}
+      docs-changed: ${{ steps.changes.outputs.docs }}
+      config-changed: ${{ steps.changes.outputs.config }}
+      security-changed: ${{ steps.changes.outputs.security }}
+      force-full: ${{ github.event.inputs.force_full_pipeline == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect Changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'package*.json'
+              - 'vite.config.ts'
+              - 'tsconfig.json'
+            backend:
+              - 'src/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
+              - 'requirements*.txt'
+            docs:
+              - 'docs/**'
+              - '*.md'
+              - 'CLAUDE.md'
+            config:
+              - '.github/**'
+              - 'docker-compose*.yml'
+              - 'Dockerfile*'
+            security:
+              - '.github/workflows/security-*.yml'
+              - 'poetry.lock'
+              - 'package-lock.json'
+              - 'requirements*.txt'
+
+  # ⚡ 阶段1: 闪电质量检查 (90秒)
+  quality-lightning:
+    name: ⚡ Quality Lightning
+    needs: detect-changes
+    if: |
+      always() && 
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/quality-lightning.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+    secrets: inherit
+
+  # 🔧 阶段2: 智能构建 (2分钟)
+  build-intelligent:
+    name: 🔧 Intelligent Build
+    needs: [detect-changes, quality-lightning]
+    if: |
+      always() && 
+      needs.quality-lightning.result == 'success' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/build-intelligent.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+    secrets: inherit
+
+  # 🧪 阶段3: 全面测试 (4分钟)
+  test-comprehensive:
+    name: 🧪 Comprehensive Testing
+    needs: [detect-changes, build-intelligent]
+    if: |
+      always() && 
+      needs.build-intelligent.result == 'success' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/test-comprehensive.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+    secrets: inherit
+
+  # 🔒 阶段4: 高效安全扫描 (3分钟)
+  security-optimized:
+    name: 🔒 Security Optimized
+    needs: [detect-changes, build-intelligent]
+    if: |
+      always() && 
+      needs.build-intelligent.result == 'success' &&
+      (needs.detect-changes.outputs.security-changed == 'true' || 
+       needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/security-optimized.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+    secrets: inherit
+
+  # 📊 阶段5: 性能基准测试 (2分钟)
+  performance-benchmark:
+    name: 📊 Performance Benchmark
+    needs: [detect-changes, test-comprehensive, security-optimized]
+    if: |
+      always() && 
+      needs.test-comprehensive.result == 'success' &&
+      needs.security-optimized.result == 'success' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/performance-benchmark.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+    secrets: inherit
+
+  # 🚀 阶段6: 智能部署 (1分钟)
+  deploy-intelligent:
+    name: 🚀 Intelligent Deploy
+    needs: [detect-changes, performance-benchmark]
+    if: |
+      always() && 
+      needs.performance-benchmark.result == 'success' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/deploy-intelligent.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+    secrets: inherit
+
+  # 📈 最终状态报告
+  pipeline-status:
+    name: 📈 Pipeline Status Report
+    runs-on: ubuntu-latest
+    needs: [detect-changes, quality-lightning, build-intelligent, test-comprehensive, security-optimized, performance-benchmark, deploy-intelligent]
+    if: always()
+    timeout-minutes: 1
+    steps:
+      - name: 📊 Generate Status Report
+        run: |
+          echo "# 🚀 CI/CD Pipeline Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|---------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Change Detection | ${{ needs.detect-changes.result }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚡ Quality Lightning | ${{ needs.quality-lightning.result }} | ~90s |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 Intelligent Build | ${{ needs.build-intelligent.result }} | ~2m |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Comprehensive Test | ${{ needs.test-comprehensive.result }} | ~4m |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security Optimized | ${{ needs.security-optimized.result }} | ~3m |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📊 Performance Benchmark | ${{ needs.performance-benchmark.result }} | ~2m |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Intelligent Deploy | ${{ needs.deploy-intelligent.result }} | ~1m |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔍 Change Detection Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend Changed: ${{ needs.detect-changes.outputs.frontend-changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Changed: ${{ needs.detect-changes.outputs.backend-changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Changed: ${{ needs.detect-changes.outputs.security-changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Force Full Pipeline: ${{ needs.detect-changes.outputs.force-full }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Performance Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Total Estimated Duration: ~12-15 minutes" >> $GITHUB_STEP_SUMMARY
+          echo "- Parallel Execution: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- Smart Caching: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- Incremental Processing: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
+          
+          # 设置整体状态
+          if [[ "${{ needs.quality-lightning.result }}" == "success" && 
+                "${{ needs.build-intelligent.result }}" == "success" && 
+                "${{ needs.test-comprehensive.result }}" == "success" && 
+                "${{ needs.security-optimized.result }}" == "success" && 
+                "${{ needs.performance-benchmark.result }}" == "success" ]]; then
+            echo "✅ **Pipeline Status: SUCCESS**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Pipeline Status: FAILED**" >> $GITHUB_STEP_SUMMARY
+          fi
