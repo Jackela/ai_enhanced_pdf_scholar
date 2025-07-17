@@ -33,16 +33,6 @@ jobs:
           cd frontend
           npm ci
       
-      - name: Debug - List files in src/lib
-        run: |
-          echo "Debugging file structure..."
-          cd frontend
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          find src -name "*.ts" -type f || echo "No .ts files found"
-          echo "Specific lib files:"
-          ls src/lib/ || echo "src/lib directory not found"
-      
       - name: Build frontend
         run: |
           echo "Building frontend..."
