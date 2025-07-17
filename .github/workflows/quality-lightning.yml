@@ -185,16 +185,20 @@ jobs:
         if: matrix.test-suite == 'backend' && (inputs.backend-changed == 'true' || inputs.force-full == 'true')
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov pytest-xdist
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        timeout-minutes: 3
+          # Use minimal test requirements for faster CI
+          if [ -f requirements-test.txt ]; then 
+            pip install -r requirements-test.txt
+          else
+            pip install pytest pytest-cov pytest-xdist
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          fi
+        timeout-minutes: 2
 
       - name: 🧪 Run Frontend Tests
         if: matrix.test-suite == 'frontend' && (inputs.frontend-changed == 'true' || inputs.force-full == 'true')
         run: |
           cd frontend
-          npm test -- --coverage --watchAll=false --maxWorkers=2
+          npm run test:coverage
         timeout-minutes: 2
 
       - name: 🧪 Run Backend Tests
