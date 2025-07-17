@@ -1,7 +1,7 @@
 // React import removed
 import { useQuery } from '@tanstack/react-query'
 import { Activity, Database, Wifi, AlertTriangle, CheckCircle } from 'lucide-react'
-import { api } from '../lib/api'
+import { api } from '../lib/api.ts'
 import type { SystemHealth } from '../types'
 
 export function SystemStatus() {
