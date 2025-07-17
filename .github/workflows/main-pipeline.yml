@@ -87,7 +87,6 @@ jobs:
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
-      force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
   # 🔧 阶段2: 智能构建 (2分钟)
