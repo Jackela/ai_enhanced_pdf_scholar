@@ -8,7 +8,7 @@ on:
   workflow_dispatch: # Allows manual triggering from GitHub UI
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22.17.0'
 
 jobs:
   frontend-build-only:
@@ -27,28 +27,28 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       
+      - name: Setup NPM version to match local
+        run: npm install -g npm@10.9.2
+      
       - name: Install frontend dependencies
         run: |
           echo "Installing frontend dependencies..."
           cd frontend
-          npm ci
-      
-      - name: Build frontend  
-        run: |
-          echo "Building frontend..."
-          cd frontend
-          echo "=== Diagnostic Information ==="
           echo "Node.js version: $(node --version)"
           echo "NPM version: $(npm --version)"
-          echo "Current directory: $(pwd)"
-          echo "Files in current directory:"
-          ls -la
-          echo "Files in src/lib:"
-          ls -la src/lib/
-          echo "Vite version:"
-          npx vite --version
-          echo "=== Starting build with verbose output ==="
-          export CI=true && npx vite build --mode production --debug 2>&1 | tee build.log || { echo "Build failed. Log contents:"; cat build.log; exit 1; }
+          echo "NPM config verification:"
+          npm config get registry
+          npm ci --prefer-offline --no-audit
+      
+      - name: Build frontend
+        run: |
+          echo "Building frontend with unified environment..."
+          cd frontend
+          echo "Environment verification:"
+          echo "Node.js: $(node --version)"
+          echo "NPM: $(npm --version)"
+          echo "=== Building ==="
+          npm run build
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
