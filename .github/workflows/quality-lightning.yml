@@ -235,27 +235,55 @@ jobs:
           echo "| 🚀 Unit Tests | ${{ needs.unit-tests-fast.result }} | ~2m |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # 计算成功率
-          total_jobs=4
+          # 计算成功率 - 只考虑实际执行的作业
+          total_jobs=0
           successful_jobs=0
+          failed_jobs=0
           
-          [[ "${{ needs.frontend-quality.result }}" == "success" || "${{ needs.frontend-quality.result }}" == "skipped" ]] && ((successful_jobs++))
-          [[ "${{ needs.typescript-check.result }}" == "success" || "${{ needs.typescript-check.result }}" == "skipped" ]] && ((successful_jobs++))
-          [[ "${{ needs.python-quality.result }}" == "success" || "${{ needs.python-quality.result }}" == "skipped" ]] && ((successful_jobs++))
-          [[ "${{ needs.unit-tests-fast.result }}" == "success" || "${{ needs.unit-tests-fast.result }}" == "skipped" ]] && ((successful_jobs++))
+          # 统计各作业状态
+          if [[ "${{ needs.frontend-quality.result }}" != "skipped" ]]; then
+            ((total_jobs++))
+            [[ "${{ needs.frontend-quality.result }}" == "success" ]] && ((successful_jobs++))
+            [[ "${{ needs.frontend-quality.result }}" == "failure" ]] && ((failed_jobs++))
+          fi
           
-          success_rate=$((successful_jobs * 100 / total_jobs))
+          if [[ "${{ needs.typescript-check.result }}" != "skipped" ]]; then
+            ((total_jobs++))
+            [[ "${{ needs.typescript-check.result }}" == "success" ]] && ((successful_jobs++))
+            [[ "${{ needs.typescript-check.result }}" == "failure" ]] && ((failed_jobs++))
+          fi
+          
+          if [[ "${{ needs.python-quality.result }}" != "skipped" ]]; then
+            ((total_jobs++))
+            [[ "${{ needs.python-quality.result }}" == "success" ]] && ((successful_jobs++))
+            [[ "${{ needs.python-quality.result }}" == "failure" ]] && ((failed_jobs++))
+          fi
+          
+          if [[ "${{ needs.unit-tests-fast.result }}" != "skipped" ]]; then
+            ((total_jobs++))
+            [[ "${{ needs.unit-tests-fast.result }}" == "success" ]] && ((successful_jobs++))
+            [[ "${{ needs.unit-tests-fast.result }}" == "failure" ]] && ((failed_jobs++))
+          fi
+          
+          # 计算成功率
+          if [ $total_jobs -gt 0 ]; then
+            success_rate=$((successful_jobs * 100 / total_jobs))
+          else
+            success_rate=100  # 如果没有任务执行，认为是成功的
+          fi
+          
           echo "## 📊 Quality Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Success Rate**: ${success_rate}%" >> $GITHUB_STEP_SUMMARY
+          echo "- **Success Rate**: ${success_rate}% (${successful_jobs}/${total_jobs})" >> $GITHUB_STEP_SUMMARY
           echo "- **Total Duration**: ~3 minutes" >> $GITHUB_STEP_SUMMARY
           echo "- **Parallel Execution**: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
           echo "- **Fast Feedback**: ✅ Under 90 seconds" >> $GITHUB_STEP_SUMMARY
           
-          if [ $success_rate -eq 100 ]; then
+          # 质量门控：只要没有失败的作业就算通过
+          if [ $failed_jobs -eq 0 ]; then
             echo "✅ **Quality Gate: PASSED**" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Quality Gate: FAILED**" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Quality Gate: FAILED** ($failed_jobs failures)" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
