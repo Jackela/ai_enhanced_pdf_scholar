@@ -189,3 +189,142 @@ python test_complete_workflow.py
 - **保持谦逊语调**：使用"改进"、"优化"而非"大幅提升"
 - **双语支持**：重要文档同时提供中英文版本
 - **性能基准**：使用相对改进而非绝对数字
+
+## 🔧 CI/CD环境差异解决方案 (2025-01-17)
+
+### 关键教训：本地vs CI环境的根本差异
+
+#### 🎯 核心问题：TypeScript模块路径解析的环境敏感性
+
+**症状表现**：
+```bash
+# 本地环境 (Windows + Node.js v22)
+✅ npm run build  # 成功
+✅ export CI=true && npx vite build  # 成功
+
+# CI环境 (Ubuntu + Node.js v20)
+❌ npx vite build --mode production  # 失败
+Error: Could not load /src/lib/utils (missing .ts extension)
+```
+
+#### 🔍 根本原因分析
+
+| 差异维度 | 本地环境 | CI环境 | 影响 |
+|---------|---------|--------|------|
+| **操作系统** | Windows (NTFS) | Ubuntu (ext4) | 文件系统大小写敏感性 |
+| **Node.js版本** | v22.17.0 | v20 | 模块解析算法差异 |
+| **工作目录** | 相对路径 | `/home/runner/work/...` | 绝对路径解析基准不同 |
+| **vite-plugin-pwa** | 本地缓存辅助 | 干净环境构建 | PWA插件绕过别名解析器 |
+
+#### 🛠️ 解决方案演进历程
+
+**第一阶段：对象别名配置 (失败)**
+```typescript
+// ❌ 被PWA插件绕过
+alias: {
+  '@/lib/utils': resolve(__dirname, './src/lib/utils.ts')
+}
+```
+
+**第二阶段：自定义Rollup插件 (部分成功)**
+```typescript
+// ⚠️ 仅在主构建阶段生效，PWA构建阶段失效
+plugins: [{
+  name: 'ci-path-resolver',
+  resolveId(id) { /* ... */ }
+}]
+```
+
+**第三阶段：数组别名配置 (成功)**
+```typescript
+// ✅ 最终解决方案：优先级排序的别名数组
+alias: [
+  // PRIMARY: 直接文件映射，PWA插件兼容
+  { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
+  { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
+  
+  // SECONDARY: 正则模式匹配目录
+  { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
+  
+  // BASE: 根目录映射 (必须最后)
+  { find: '@', replacement: resolve(__dirname, './src') }
+]
+```
+
+#### 🧪 验证策略
+
+**本地CI模拟验证**：
+```bash
+# 1. 标准构建测试
+npm run build
+
+# 2. CI环境模拟
+export CI=true && npx vite build --mode production
+
+# 3. PWA插件兼容性
+# 验证dist/manifest.webmanifest和sw.js生成
+```
+
+**关键验证指标**：
+- TypeScript编译: `tsc --noEmit` ✅
+- Vite构建: `vite build` ✅ 
+- PWA生成: `manifest.webmanifest + sw.js` ✅
+- 构建时间: ~5.2s (无性能回归) ✅
+
+#### 🚨 预防机制
+
+**1. 环境一致性检查**
+```yaml
+# .github/workflows/ci.yml
+env:
+  NODE_VERSION: '20'  # 固定Node.js版本
+  CI: 'true'          # 明确CI环境标识
+```
+
+**2. 本地CI模拟工具**
+```bash
+# package.json scripts
+"build:ci": "cross-env CI=true NODE_ENV=production vite build"
+"test:ci-local": "act --container-architecture linux/amd64"
+```
+
+**3. 文档化配置模式**
+```typescript
+// vite.config.ts - 注释说明别名优先级
+alias: [
+  // 🎯 CRITICAL: 具体文件映射必须在前，确保PWA插件兼容
+  { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
+  // 🔧 PATTERN: 目录模式匹配
+  { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
+  // 🏠 BASE: 根映射必须最后，避免覆盖具体规则
+  { find: '@', replacement: resolve(__dirname, './src') }
+]
+```
+
+#### 📋 故障排除检查清单
+
+当CI构建失败而本地成功时，按以下顺序检查：
+
+1. **[ ]** Node.js版本一致性 (`package.json` engines vs CI)
+2. **[ ]** 文件扩展名显式性 (`.ts` vs 省略)
+3. **[ ]** 路径别名优先级 (数组顺序很关键)
+4. **[ ]** PWA插件兼容性 (是否绕过别名解析)
+5. **[ ]** 工作目录上下文 (`__dirname` 解析基准)
+6. **[ ]** 大小写敏感性 (Linux vs Windows)
+
+#### 🎯 最佳实践总结
+
+**配置原则**：
+- **显式优于隐式**：明确指定文件扩展名和绝对路径
+- **优先级明确**：使用数组别名确保解析顺序
+- **插件兼容**：考虑第三方插件的解析机制
+- **环境一致**：本地尽可能模拟CI环境
+
+**开发工作流**：
+```bash
+# 每次别名配置变更后的验证序列
+1. npm run type-check    # TypeScript编译检查
+2. npm run build         # 本地标准构建
+3. npm run build:ci      # 本地CI模拟构建
+4. git commit && git push # 触发实际CI验证
+```

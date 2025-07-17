@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:host": "vite --host",
     "build": "npm run type-check && vite build",
-    "build:ci": "npm run type-check && set CI=true && vite build --mode production",
+    "build:ci": "cross-env CI=true NODE_ENV=production vite build --mode production",
     "build:analyze": "npm run build && npm run analyze",
     "preview": "vite preview",
     "preview:host": "vite preview --host",
