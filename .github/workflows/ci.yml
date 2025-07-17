@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
+    defaults:
+      run:
+        working-directory: frontend
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,13 +34,11 @@ jobs:
       - name: Install frontend dependencies
         run: |
           echo "Installing frontend dependencies..."
-          cd frontend
           npm ci
       
       - name: Build frontend
         run: |
           echo "Building frontend..."
-          cd frontend
           export CI=true && npx vite build --mode production
       
       - name: Upload build artifacts
