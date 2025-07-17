@@ -84,6 +84,9 @@ jobs:
     needs: quality
     if: always()
     
+    env:
+      VITE_PROJECT_ROOT: ${{ github.workspace }}
+    
     defaults:
       run:
         working-directory: frontend

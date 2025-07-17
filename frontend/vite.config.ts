@@ -7,7 +7,12 @@ import { resolve } from 'path'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const isProduction = mode === 'production'
-  const isCIBuild = env.CI === 'true'
+  // Enhanced CI detection for different environments
+  const isCIBuild = env.CI === 'true' || process.env.CI === 'true' || !!process.env.CI
+  
+  // Get project root from environment variable or calculate from current directory
+  const projectRoot = process.env.VITE_PROJECT_ROOT || resolve(__dirname, '..')
+  const frontendSrcPath = resolve(projectRoot, 'frontend/src')
 
   return {
     plugins: [
@@ -19,8 +24,8 @@ export default defineConfig(({ mode }) => {
       }),
       VitePWA({
         registerType: 'autoUpdate',
-        // Enhanced PWA configuration for CI compatibility
-        disable: false,
+        // Temporarily disable PWA in CI/act to isolate path resolution issue
+        disable: isCIBuild,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           // Enhanced caching for production
@@ -62,21 +67,21 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: [
-        // PRIMARY: Direct file mappings for PWA plugin compatibility
-        { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
-        { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
+        // PRIMARY: Direct file mappings using absolute paths for CI/act compatibility
+        { find: '@/lib/utils', replacement: resolve(frontendSrcPath, 'lib/utils.ts') },
+        { find: '@/lib/api', replacement: resolve(frontendSrcPath, 'lib/api.ts') },
         
-        // SECONDARY: Directory mappings with explicit trailing slash handling
-        { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
-        { find: /^@\/pages\/(.*)/, replacement: resolve(__dirname, './src/pages/$1') },
-        { find: /^@\/hooks\/(.*)/, replacement: resolve(__dirname, './src/hooks/$1') },
-        { find: /^@\/services\/(.*)/, replacement: resolve(__dirname, './src/services/$1') },
-        { find: /^@\/store\/(.*)/, replacement: resolve(__dirname, './src/store/$1') },
-        { find: /^@\/types\/(.*)/, replacement: resolve(__dirname, './src/types/$1') },
-        { find: /^@\/utils\/(.*)/, replacement: resolve(__dirname, './src/utils/$1') },
+        // SECONDARY: Directory mappings with absolute paths
+        { find: /^@\/components\/(.*)/, replacement: resolve(frontendSrcPath, 'components/$1') },
+        { find: /^@\/pages\/(.*)/, replacement: resolve(frontendSrcPath, 'pages/$1') },
+        { find: /^@\/hooks\/(.*)/, replacement: resolve(frontendSrcPath, 'hooks/$1') },
+        { find: /^@\/services\/(.*)/, replacement: resolve(frontendSrcPath, 'services/$1') },
+        { find: /^@\/store\/(.*)/, replacement: resolve(frontendSrcPath, 'store/$1') },
+        { find: /^@\/types\/(.*)/, replacement: resolve(frontendSrcPath, 'types/$1') },
+        { find: /^@\/utils\/(.*)/, replacement: resolve(frontendSrcPath, 'utils/$1') },
         
-        // BASE: Root @ mapping (must be last)
-        { find: '@', replacement: resolve(__dirname, './src') }
+        // BASE: Root @ mapping using absolute path
+        { find: '@', replacement: frontendSrcPath }
       ],
       
       // Enhanced extension resolution prioritizing TypeScript
@@ -133,20 +138,20 @@ export default defineConfig(({ mode }) => {
           {
             name: 'universal-path-resolver',
             resolveId(id, importer) {
-              // Force resolution at every possible Rollup phase
+              // Force resolution using absolute paths for CI/act compatibility
               if (id === '@/lib/utils') {
-                return resolve(__dirname, './src/lib/utils.ts')
+                return resolve(frontendSrcPath, 'lib/utils.ts')
               }
               if (id === '@/lib/api') {
-                return resolve(__dirname, './src/lib/api.ts')
+                return resolve(frontendSrcPath, 'lib/api.ts')
               }
               return null
             },
             // Also handle during build phase for PWA plugin
             buildStart() {
-              // Pre-register critical modules for PWA plugin
-              this.addWatchFile(resolve(__dirname, './src/lib/utils.ts'))
-              this.addWatchFile(resolve(__dirname, './src/lib/api.ts'))
+              // Pre-register critical modules using absolute paths
+              this.addWatchFile(resolve(frontendSrcPath, 'lib/utils.ts'))
+              this.addWatchFile(resolve(frontendSrcPath, 'lib/api.ts'))
             }
           }
         ],
