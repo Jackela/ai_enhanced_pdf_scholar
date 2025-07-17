@@ -17,42 +17,42 @@ jobs:
     timeout-minutes: 10
     
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: 📦 Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       
-      - name: 📦 Install frontend dependencies
+      - name: Install frontend dependencies
         run: |
           echo "Installing frontend dependencies..."
           cd frontend
           npm ci
       
-      - name: 🔍 Debug: List files in src/lib (Verification Step)
+      - name: Debug - List files in src/lib
         run: |
           echo "Listing files in frontend/src/lib/ from current working directory:"
           cd frontend
           ls -la src/lib/
           echo "Checking if utils.ts exists:"
-          test -f src/lib/utils.ts && echo "✅ utils.ts found" || echo "❌ utils.ts not found"
+          test -f src/lib/utils.ts && echo "utils.ts found" || echo "utils.ts not found"
           echo "Checking if api.ts exists:"
-          test -f src/lib/api.ts && echo "✅ api.ts found" || echo "❌ api.ts not found"
+          test -f src/lib/api.ts && echo "api.ts found" || echo "api.ts not found"
           echo "Working directory after cd frontend:"
           pwd
           echo "Done listing files."
       
-      - name: 🏗️ Build frontend
+      - name: Build frontend
         run: |
           echo "Building frontend..."
           cd frontend
           export CI=true && npx vite build --mode production
       
-      - name: 📤 Upload build artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build-output
