@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
       }),
       VitePWA({
         registerType: 'autoUpdate',
-        disable: false,
+        disable: isCIBuild, // Disable PWA plugin in CI to avoid path resolution conflicts
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           // Enhanced caching for production
@@ -79,21 +79,21 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: [
-        // CRITICAL: Specific file mappings first, PWA plugin compatible
-        { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
-        { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
+        // CRITICAL: Specific file mappings using process.cwd() for CI compatibility
+        { find: '@/lib/utils', replacement: resolve(process.cwd(), 'src/lib/utils.ts') },
+        { find: '@/lib/api', replacement: resolve(process.cwd(), 'src/lib/api.ts') },
         
-        // SECONDARY: Directory patterns with regex
-        { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
-        { find: /^@\/pages\/(.*)/, replacement: resolve(__dirname, './src/pages/$1') },
-        { find: /^@\/hooks\/(.*)/, replacement: resolve(__dirname, './src/hooks/$1') },
-        { find: /^@\/services\/(.*)/, replacement: resolve(__dirname, './src/services/$1') },
-        { find: /^@\/store\/(.*)/, replacement: resolve(__dirname, './src/store/$1') },
-        { find: /^@\/types\/(.*)/, replacement: resolve(__dirname, './src/types/$1') },
-        { find: /^@\/utils\/(.*)/, replacement: resolve(__dirname, './src/utils/$1') },
+        // SECONDARY: Directory patterns with regex using process.cwd()
+        { find: /^@\/components\/(.*)/, replacement: resolve(process.cwd(), 'src/components/$1') },
+        { find: /^@\/pages\/(.*)/, replacement: resolve(process.cwd(), 'src/pages/$1') },
+        { find: /^@\/hooks\/(.*)/, replacement: resolve(process.cwd(), 'src/hooks/$1') },
+        { find: /^@\/services\/(.*)/, replacement: resolve(process.cwd(), 'src/services/$1') },
+        { find: /^@\/store\/(.*)/, replacement: resolve(process.cwd(), 'src/store/$1') },
+        { find: /^@\/types\/(.*)/, replacement: resolve(process.cwd(), 'src/types/$1') },
+        { find: /^@\/utils\/(.*)/, replacement: resolve(process.cwd(), 'src/utils/$1') },
         
-        // BASE: Root @ mapping (must be last)
-        { find: '@', replacement: resolve(__dirname, './src') }
+        // BASE: Root @ mapping (must be last) using process.cwd()
+        { find: '@', replacement: resolve(process.cwd(), 'src') }
       ],
       
       // Enhanced extension resolution prioritizing TypeScript
@@ -150,12 +150,12 @@ export default defineConfig(({ mode }) => {
             name: 'ci-path-resolver',
             order: 'pre', // Critical: run before PWA plugin
             resolveId(id, importer) {
-              // Direct file mappings for maximum compatibility
+              // Direct file mappings using process.cwd() for CI compatibility
               if (id === '@/lib/utils') {
-                return resolve(__dirname, './src/lib/utils.ts')
+                return resolve(process.cwd(), 'src/lib/utils.ts')
               }
               if (id === '@/lib/api') {
-                return resolve(__dirname, './src/lib/api.ts')
+                return resolve(process.cwd(), 'src/lib/api.ts')
               }
               return null
             }
