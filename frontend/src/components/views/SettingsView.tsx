@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { useToast } from '../../hooks/useToast'
@@ -21,9 +21,9 @@ export function SettingsView() {
   // Load current settings
   useEffect(() => {
     loadSettings()
-  }, [])
+  }, [loadSettings])
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch('/api/system/settings')
@@ -46,7 +46,7 @@ export function SettingsView() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
   const saveSettings = async () => {
     try {

@@ -21,6 +21,12 @@ interface UploadFile extends File {
   progress?: number
 }
 
+interface UploadOptions {
+  check_duplicates: boolean
+  auto_build_index: boolean
+  custom_title?: string
+}
+
 export function DocumentUpload({ onClose, onSuccess }: DocumentUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [checkDuplicates, setCheckDuplicates] = useState(true)
@@ -28,7 +34,7 @@ export function DocumentUpload({ onClose, onSuccess }: DocumentUploadProps) {
   const { toast } = useToast()
 
   const uploadMutation = useMutation({
-    mutationFn: async ({ file, options }: { file: UploadFile, options: any }) => {
+    mutationFn: async ({ file, options }: { file: UploadFile, options: UploadOptions }) => {
       // Update file status to uploading
       setFiles(prev => prev.map(f => 
         f.id === file.id ? { ...f, status: 'uploading' as const } : f

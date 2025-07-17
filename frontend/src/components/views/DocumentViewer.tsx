@@ -1,21 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import { useToast } from '../../hooks/useToast'
 
+interface Document {
+  id: string
+  name: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
 export function DocumentViewer() {
   const { id } = useParams<{ id: string }>()
-  const [document, setDocument] = useState<any>(null)
+  const [document, setDocument] = useState<Document | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (id) {
-      loadDocument(id)
-    }
-  }, [id])
-
-  const loadDocument = async (documentId: string) => {
+  const loadDocument = useCallback(async (documentId: string) => {
     try {
       setLoading(true)
       const response = await fetch(`/api/library/documents/${documentId}`)
@@ -35,7 +37,13 @@ export function DocumentViewer() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    if (id) {
+      loadDocument(id)
+    }
+  }, [id, loadDocument])
 
   if (loading) {
     return (

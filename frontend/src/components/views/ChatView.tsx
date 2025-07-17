@@ -5,9 +5,17 @@ import { Input } from '../ui/Input'
 import { useToast } from '../../hooks/useToast'
 import { useWebSocket } from '../../contexts/WebSocketContext'
 
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+  document_id?: string
+}
+
 export function ChatView() {
   const { documentId } = useParams<{ documentId?: string }>()
-  const [messages, setMessages] = useState<any[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()

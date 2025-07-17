@@ -3,7 +3,7 @@ import type { WebSocketMessage, RAGProgressMessage, RAGResponseMessage, IndexPro
 
 interface WebSocketContextType {
   isConnected: boolean
-  sendMessage: (message: any) => void
+  sendMessage: (message: Record<string, unknown>) => void
   lastMessage: WebSocketMessage | null
   connectionError: string | null
   reconnect: () => void
@@ -89,7 +89,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: Record<string, unknown>) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(message))
     } else {

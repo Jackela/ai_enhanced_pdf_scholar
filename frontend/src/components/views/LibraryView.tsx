@@ -109,8 +109,8 @@ export function LibraryView() {
                 const [sortBy, sortOrder] = e.target.value.split('_')
                 setSearchFilters(prev => ({
                   ...prev,
-                  sort_by: sortBy as any,
-                  sort_order: sortOrder as any,
+                  sort_by: sortBy as 'title' | 'created_at' | 'updated_at',
+                  sort_order: sortOrder as 'asc' | 'desc',
                   page: 1,
                 }))
               }}
