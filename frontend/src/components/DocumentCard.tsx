@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { FileText, Calendar, HardDrive, Eye, MessageSquare, MoreVertical, Download, Trash2 } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '../lib/api'
 import { formatFileSize, formatDate } from '../lib/utils'
 import { Button } from './ui/Button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/DropdownMenu'
