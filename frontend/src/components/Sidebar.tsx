@@ -12,7 +12,7 @@ import {
   X 
 } from 'lucide-react'
 import { Button } from './ui/Button'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 
 interface SidebarProps {
   isOpen: boolean
