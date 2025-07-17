@@ -139,6 +139,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useWebSocket() {
   const context = useContext(WebSocketContext)
   if (context === undefined) {

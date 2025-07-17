@@ -9,7 +9,7 @@ export interface Document {
   created_at: string;
   updated_at: string;
   last_accessed: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   is_file_available: boolean;
 }
 
@@ -147,7 +147,7 @@ export interface Configuration {
 // WebSocket message types
 export interface WebSocketMessage {
   type: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface RAGProgressMessage extends WebSocketMessage {
@@ -182,7 +182,7 @@ export interface DocumentUpdateMessage extends WebSocketMessage {
   type: 'document_update';
   document_id: number;
   action: 'created' | 'updated' | 'deleted';
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 // UI state types
@@ -208,13 +208,13 @@ export interface SearchFilters {
 export interface BaseResponse {
   success: boolean;
   message?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface ErrorResponse extends BaseResponse {
   success: false;
   error_code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Chat types

@@ -23,9 +23,7 @@ export default defineConfig(({ mode }) => {
     })
   }
   
-  // Get project root from environment variable or calculate from current directory
-  const projectRoot = process.env.VITE_PROJECT_ROOT || resolve(__dirname, '..')
-  const frontendSrcPath = resolve(projectRoot, 'frontend/src')
+  // Note: Project root is available via process.env.VITE_PROJECT_ROOT if needed
 
   return {
     plugins: [
@@ -149,7 +147,7 @@ export default defineConfig(({ mode }) => {
           {
             name: 'ci-path-resolver',
             order: 'pre', // Critical: run before PWA plugin
-            resolveId(id, importer) {
+            resolveId(id, _importer) {
               // Direct file mappings using __dirname for CI timing reliability
               if (id === '@/lib/utils') {
                 return resolve(__dirname, 'src/lib/utils.ts')

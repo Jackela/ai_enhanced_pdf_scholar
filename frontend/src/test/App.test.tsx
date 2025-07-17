@@ -1,7 +1,4 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from '../App'
 
 // Mock the WebSocket context
@@ -32,22 +29,7 @@ vi.mock('../contexts/ThemeContext', () => ({
   }),
 }))
 
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
-})
-
-const TestWrapper = ({ children }: { children: React.ReactNode }) => {
-  const queryClient = createTestQueryClient()
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  )
-}
+// Test configuration removed - using simple smoke test approach
 
 describe('App', () => {
   it('smoke test - imports correctly', () => {
