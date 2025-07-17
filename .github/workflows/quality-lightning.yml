@@ -188,6 +188,7 @@ jobs:
           pip install pytest pytest-cov pytest-xdist
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        timeout-minutes: 3
 
       - name: 🧪 Run Frontend Tests
         if: matrix.test-suite == 'frontend' && (inputs.frontend-changed == 'true' || inputs.force-full == 'true')

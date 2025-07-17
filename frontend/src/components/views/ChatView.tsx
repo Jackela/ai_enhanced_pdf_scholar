@@ -103,8 +103,8 @@ export function ChatView() {
               >
                 <p className='whitespace-pre-wrap'>{message.content}</p>
                 <p className='text-xs opacity-70 mt-1'>
-                  {message.timestamp instanceof Date 
-                    ? message.timestamp.toLocaleTimeString() 
+                  {message.timestamp instanceof Date
+                    ? message.timestamp.toLocaleTimeString()
                     : new Date(message.timestamp).toLocaleTimeString()}
                 </p>
               </div>
