@@ -192,9 +192,9 @@ python test_complete_workflow.py
 
 ## 🔧 CI/CD环境差异解决方案 (2025-01-17)
 
-### 关键教训：本地vs CI环境的根本差异
+### ✅ 已解决：TypeScript模块路径解析的PWA插件兼容性问题
 
-#### 🎯 核心问题：TypeScript模块路径解析的环境敏感性
+#### 🎯 问题根源：PWA插件绕过Vite别名解析器
 
 **症状表现**：
 ```bash
@@ -202,9 +202,13 @@ python test_complete_workflow.py
 ✅ npm run build  # 成功
 ✅ export CI=true && npx vite build  # 成功
 
-# CI环境 (Ubuntu + Node.js v20)
+# CI环境 (Ubuntu + Node.js v20) - 修复前
 ❌ npx vite build --mode production  # 失败
 Error: Could not load /src/lib/utils (missing .ts extension)
+
+# CI环境 - 修复后 
+✅ npx vite build --mode production  # 成功
+✅ PWA manifest.webmanifest + sw.js 正常生成
 ```
 
 #### 🔍 根本原因分析
@@ -235,20 +239,34 @@ plugins: [{
 }]
 ```
 
-**第三阶段：数组别名配置 (成功)**
+**最终解决方案：PWA插件兼容的双重解析器 (成功)**
 ```typescript
-// ✅ 最终解决方案：优先级排序的别名数组
-alias: [
-  // PRIMARY: 直接文件映射，PWA插件兼容
-  { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
-  { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
-  
-  // SECONDARY: 正则模式匹配目录
-  { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
-  
-  // BASE: 根目录映射 (必须最后)
-  { find: '@', replacement: resolve(__dirname, './src') }
-]
+// ✅ 核心解决方案：数组别名 + 自定义Rollup插件
+resolve: {
+  alias: [
+    // CRITICAL: 具体文件映射优先，PWA插件兼容
+    { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
+    { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
+    
+    // PATTERN: 目录正则匹配
+    { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
+    
+    // BASE: 根目录映射 (必须最后)
+    { find: '@', replacement: resolve(__dirname, './src') }
+  ]
+},
+
+rollupOptions: {
+  plugins: [{
+    name: 'ci-path-resolver',
+    order: 'pre', // 关键：在PWA插件之前运行
+    resolveId(id) {
+      if (id === '@/lib/utils') return resolve(__dirname, './src/lib/utils.ts')
+      if (id === '@/lib/api') return resolve(__dirname, './src/lib/api.ts')
+      return null
+    }
+  }]
+}
 ```
 
 #### 🧪 验证策略

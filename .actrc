@@ -1,0 +1,23 @@
+# Act Configuration for AI Enhanced PDF Scholar CI/CD
+# GitHub Actions local runner configuration
+
+# 🐳 Docker Platform Configuration
+-P ubuntu-latest=ubuntu:latest
+
+# 🏗️ Container Architecture
+--container-architecture linux/amd64
+
+# 📦 Artifact Storage
+--artifact-server-path /tmp/artifacts
+
+# 🚀 Performance Optimization
+--reuse
+
+# 📋 Logging Configuration
+--verbose
+
+# 🧹 Cleanup
+--rm
+
+# 🔧 Skip Docker pull to avoid auth issues  
+--pull=false
