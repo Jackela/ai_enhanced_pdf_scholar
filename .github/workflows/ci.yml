@@ -35,16 +35,13 @@ jobs:
       
       - name: Debug - List files in src/lib
         run: |
-          echo "Listing files in frontend/src/lib/ from current working directory:"
+          echo "Debugging file structure..."
           cd frontend
-          ls -la src/lib/
-          echo "Checking if utils.ts exists:"
-          test -f src/lib/utils.ts && echo "utils.ts found" || echo "utils.ts not found"
-          echo "Checking if api.ts exists:"
-          test -f src/lib/api.ts && echo "api.ts found" || echo "api.ts not found"
-          echo "Working directory after cd frontend:"
-          pwd
-          echo "Done listing files."
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          find src -name "*.ts" -type f || echo "No .ts files found"
+          echo "Specific lib files:"
+          ls src/lib/ || echo "src/lib directory not found"
       
       - name: Build frontend
         run: |
