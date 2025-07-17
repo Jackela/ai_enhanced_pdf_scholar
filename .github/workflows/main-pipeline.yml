@@ -87,6 +87,7 @@ jobs:
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
   # 🔧 阶段2: 智能构建 (2分钟)
@@ -103,6 +104,7 @@ jobs:
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
   # 🧪 阶段3: 全面测试 (4分钟)
@@ -119,6 +121,7 @@ jobs:
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
   # 🔒 阶段4: 高效安全扫描 (3分钟)
@@ -136,6 +139,7 @@ jobs:
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
   # 📊 阶段5: 性能基准测试 (2分钟)
@@ -153,6 +157,7 @@ jobs:
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
   # 🚀 阶段6: 智能部署 (1分钟)
@@ -170,6 +175,7 @@ jobs:
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
   # 📈 最终状态报告

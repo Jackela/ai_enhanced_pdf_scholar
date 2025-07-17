@@ -9,6 +9,10 @@ on:
       backend-changed:
         required: true
         type: string
+      force-full:
+        required: false
+        type: string
+        default: 'false'
 
 env:
   NODE_VERSION: '22.17.0'
@@ -20,7 +24,7 @@ jobs:
     name: 🚀 Frontend Performance
     runs-on: ubuntu-latest
     timeout-minutes: 4
-    if: inputs.frontend-changed == 'true'
+    if: inputs.frontend-changed == 'true' || inputs.force-full == 'true'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -134,7 +138,7 @@ jobs:
     name: 🔧 Backend Performance
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: inputs.backend-changed == 'true'
+    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
     services:
       postgres:
         image: postgres:15
@@ -312,7 +316,7 @@ jobs:
     name: 📈 Performance Regression Test
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    if: inputs.frontend-changed == 'true' || inputs.backend-changed == 'true'
+    if: inputs.frontend-changed == 'true' || inputs.force-full == 'true' || inputs.backend-changed == 'true'
     needs: [frontend-performance, backend-performance]
     steps:
       - name: 📥 Checkout

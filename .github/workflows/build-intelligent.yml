@@ -9,6 +9,10 @@ on:
       backend-changed:
         required: true
         type: string
+      force-full:
+        required: false
+        type: string
+        default: 'false'
     outputs:
       frontend-build-success:
         description: "Frontend build success status"
@@ -32,7 +36,7 @@ jobs:
     name: 🚀 Frontend Intelligent Build
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    if: inputs.frontend-changed == 'true'
+    if: inputs.frontend-changed == 'true' || inputs.force-full == 'true'
     outputs:
       build-success: ${{ steps.build-status.outputs.success }}
     steps:
@@ -164,7 +168,7 @@ jobs:
     name: 🐍 Backend Intelligent Build
     runs-on: ubuntu-latest
     timeout-minutes: 4
-    if: inputs.backend-changed == 'true'
+    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
     outputs:
       build-success: ${{ steps.build-status.outputs.success }}
       docker-tag: ${{ steps.docker-meta.outputs.tags }}

@@ -9,6 +9,10 @@ on:
       backend-changed:
         required: true
         type: string
+      force-full:
+        required: false
+        type: string
+        default: 'false'
     outputs:
       deployment-url:
         description: "Deployment URL"

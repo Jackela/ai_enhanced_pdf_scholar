@@ -9,6 +9,10 @@ on:
       backend-changed:
         required: true
         type: string
+      force-full:
+        required: false
+        type: string
+        default: 'false'
 
 env:
   NODE_VERSION: '22.17.0'
@@ -21,7 +25,7 @@ jobs:
     name: 🔗 Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 6
-    if: inputs.backend-changed == 'true'
+    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
     services:
       postgres:
         image: postgres:15
@@ -130,7 +134,7 @@ jobs:
     name: 🎭 E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 8
-    if: inputs.frontend-changed == 'true' || inputs.backend-changed == 'true'
+    if: inputs.frontend-changed == 'true' || inputs.force-full == 'true' || inputs.backend-changed == 'true' || inputs.force-full == 'true'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -233,7 +237,7 @@ jobs:
     name: 🧩 Component Tests
     runs-on: ubuntu-latest
     timeout-minutes: 4
-    if: inputs.frontend-changed == 'true'
+    if: inputs.frontend-changed == 'true' || inputs.force-full == 'true'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -287,7 +291,7 @@ jobs:
     name: 🔄 API Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: inputs.backend-changed == 'true'
+    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4

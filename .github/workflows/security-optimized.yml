@@ -9,6 +9,10 @@ on:
       backend-changed:
         required: true
         type: string
+      force-full:
+        required: false
+        type: string
+        default: 'false'
 
 env:
   NODE_VERSION: '22.17.0'
