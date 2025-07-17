@@ -79,21 +79,21 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: [
-        // CRITICAL: Specific file mappings using process.cwd() for CI compatibility
-        { find: '@/lib/utils', replacement: resolve(process.cwd(), 'src/lib/utils.ts') },
-        { find: '@/lib/api', replacement: resolve(process.cwd(), 'src/lib/api.ts') },
+        // CRITICAL: Specific file mappings using environment-aware paths for CI compatibility
+        { find: '@/lib/utils', replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/lib/utils.ts') },
+        { find: '@/lib/api', replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/lib/api.ts') },
         
-        // SECONDARY: Directory patterns with regex using process.cwd()
-        { find: /^@\/components\/(.*)/, replacement: resolve(process.cwd(), 'src/components/$1') },
-        { find: /^@\/pages\/(.*)/, replacement: resolve(process.cwd(), 'src/pages/$1') },
-        { find: /^@\/hooks\/(.*)/, replacement: resolve(process.cwd(), 'src/hooks/$1') },
-        { find: /^@\/services\/(.*)/, replacement: resolve(process.cwd(), 'src/services/$1') },
-        { find: /^@\/store\/(.*)/, replacement: resolve(process.cwd(), 'src/store/$1') },
-        { find: /^@\/types\/(.*)/, replacement: resolve(process.cwd(), 'src/types/$1') },
-        { find: /^@\/utils\/(.*)/, replacement: resolve(process.cwd(), 'src/utils/$1') },
+        // SECONDARY: Directory patterns with environment-aware paths
+        { find: /^@\/components\/(.*)/, replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/components/$1') },
+        { find: /^@\/pages\/(.*)/, replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/pages/$1') },
+        { find: /^@\/hooks\/(.*)/, replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/hooks/$1') },
+        { find: /^@\/services\/(.*)/, replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/services/$1') },
+        { find: /^@\/store\/(.*)/, replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/store/$1') },
+        { find: /^@\/types\/(.*)/, replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/types/$1') },
+        { find: /^@\/utils\/(.*)/, replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src/utils/$1') },
         
-        // BASE: Root @ mapping (must be last) using process.cwd()
-        { find: '@', replacement: resolve(process.cwd(), 'src') }
+        // BASE: Root @ mapping (must be last) using environment-aware path
+        { find: '@', replacement: resolve(process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd(), 'src') }
       ],
       
       // Enhanced extension resolution prioritizing TypeScript
@@ -150,12 +150,13 @@ export default defineConfig(({ mode }) => {
             name: 'ci-path-resolver',
             order: 'pre', // Critical: run before PWA plugin
             resolveId(id, importer) {
-              // Direct file mappings using process.cwd() for CI compatibility
+              // Direct file mappings using environment-aware paths for CI compatibility
+              const basePath = process.env.GITHUB_WORKSPACE ? `${process.env.GITHUB_WORKSPACE}/frontend` : process.cwd()
               if (id === '@/lib/utils') {
-                return resolve(process.cwd(), 'src/lib/utils.ts')
+                return resolve(basePath, 'src/lib/utils.ts')
               }
               if (id === '@/lib/api') {
-                return resolve(process.cwd(), 'src/lib/api.ts')
+                return resolve(basePath, 'src/lib/api.ts')
               }
               return null
             }
