@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => {
       }),
       VitePWA({
         registerType: 'autoUpdate',
+        // Enhanced PWA configuration for CI compatibility
+        disable: false,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           // Enhanced caching for production
@@ -59,29 +61,23 @@ export default defineConfig(({ mode }) => {
       })
     ],
     resolve: {
-      alias: {
-        // Force absolute path resolution for CI/CD compatibility
-        '@': resolve(__dirname, './src'),
+      alias: [
+        // PRIMARY: Direct file mappings for PWA plugin compatibility
+        { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
+        { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
         
-        // Critical: Use function-based resolution for CI environment compatibility
-        ...(() => {
-          const srcPath = resolve(__dirname, './src')
-          return {
-            // Specific file aliases with absolute paths for reliable CI resolution
-            '@/lib/api': resolve(srcPath, 'lib/api.ts'),
-            '@/lib/utils': resolve(srcPath, 'lib/utils.ts'),
-            
-            // Directory aliases for other modules
-            '@/components': resolve(srcPath, 'components'),
-            '@/pages': resolve(srcPath, 'pages'),
-            '@/hooks': resolve(srcPath, 'hooks'),
-            '@/services': resolve(srcPath, 'services'),
-            '@/store': resolve(srcPath, 'store'),
-            '@/types': resolve(srcPath, 'types'),
-            '@/utils': resolve(srcPath, 'utils')
-          }
-        })()
-      },
+        // SECONDARY: Directory mappings with explicit trailing slash handling
+        { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
+        { find: /^@\/pages\/(.*)/, replacement: resolve(__dirname, './src/pages/$1') },
+        { find: /^@\/hooks\/(.*)/, replacement: resolve(__dirname, './src/hooks/$1') },
+        { find: /^@\/services\/(.*)/, replacement: resolve(__dirname, './src/services/$1') },
+        { find: /^@\/store\/(.*)/, replacement: resolve(__dirname, './src/store/$1') },
+        { find: /^@\/types\/(.*)/, replacement: resolve(__dirname, './src/types/$1') },
+        { find: /^@\/utils\/(.*)/, replacement: resolve(__dirname, './src/utils/$1') },
+        
+        // BASE: Root @ mapping (must be last)
+        { find: '@', replacement: resolve(__dirname, './src') }
+      ],
       
       // Enhanced extension resolution prioritizing TypeScript
       extensions: ['.ts', '.tsx', '.js', '.jsx', '.json', '.mjs'],
@@ -133,20 +129,24 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         // Enhanced module resolution for CI/CD environments
         plugins: [
-          // Custom resolver plugin for CI environment compatibility
+          // Multi-phase resolver for PWA plugin compatibility
           {
-            name: 'ci-path-resolver',
+            name: 'universal-path-resolver',
             resolveId(id, importer) {
-              // Force resolution of @/lib/* aliases in CI builds
+              // Force resolution at every possible Rollup phase
               if (id === '@/lib/utils') {
-                const utilsPath = resolve(__dirname, './src/lib/utils.ts')
-                return utilsPath
+                return resolve(__dirname, './src/lib/utils.ts')
               }
               if (id === '@/lib/api') {
-                const apiPath = resolve(__dirname, './src/lib/api.ts')
-                return apiPath
+                return resolve(__dirname, './src/lib/api.ts')
               }
               return null
+            },
+            // Also handle during build phase for PWA plugin
+            buildStart() {
+              // Pre-register critical modules for PWA plugin
+              this.addWatchFile(resolve(__dirname, './src/lib/utils.ts'))
+              this.addWatchFile(resolve(__dirname, './src/lib/api.ts'))
             }
           }
         ],
