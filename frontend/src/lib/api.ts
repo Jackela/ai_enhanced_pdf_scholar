@@ -41,16 +41,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (contentType && contentType.includes('application/json')) {
     return response.json()
   }
-  
+
   return response.text() as unknown as T
 }
 
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
-  
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
   }
@@ -78,7 +75,7 @@ export const api = {
   // Document operations
   async getDocuments(filters?: SearchFilters): Promise<DocumentListResponse> {
     const params = new URLSearchParams()
-    
+
     if (filters?.query) params.append('query', filters.query)
     if (filters?.show_missing_files !== undefined) {
       params.append('show_missing_files', filters.show_missing_files.toString())
@@ -90,7 +87,7 @@ export const api = {
 
     const queryString = params.toString()
     const endpoint = queryString ? `/documents?${queryString}` : '/documents'
-    
+
     return apiRequest<DocumentListResponse>(endpoint)
   },
 
@@ -98,13 +95,10 @@ export const api = {
     return apiRequest<Document>(`/documents/${id}`)
   },
 
-  async uploadDocument(
-    file: File,
-    options?: DocumentImportRequest
-  ): Promise<BaseResponse> {
+  async uploadDocument(file: File, options?: DocumentImportRequest): Promise<BaseResponse> {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     if (options?.title) formData.append('title', options.title)
     if (options?.check_duplicates !== undefined) {
       formData.append('check_duplicates', options.check_duplicates.toString())

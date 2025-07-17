@@ -11,9 +11,11 @@ function App() {
   React.useEffect(() => {
     const root = document.documentElement
     root.classList.remove('light', 'dark')
-    
+
     if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
       root.classList.add(systemTheme)
     } else {
       root.classList.add(theme)
@@ -22,7 +24,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-background font-sans antialiased">
+      <div className='min-h-screen bg-background font-sans antialiased'>
         <Layout />
         <Toaster />
       </div>

@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
-import type { WebSocketMessage, RAGProgressMessage, RAGResponseMessage, IndexProgressMessage, ErrorMessage, DocumentUpdateMessage } from '../types'
+import type {
+  WebSocketMessage,
+  RAGProgressMessage,
+  RAGResponseMessage,
+  IndexProgressMessage,
+  ErrorMessage,
+  DocumentUpdateMessage,
+} from '../types'
 
 interface WebSocketContextType {
   isConnected: boolean
@@ -24,7 +31,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const wsUrl = `${protocol}//${window.location.host}/ws`
-      
+
       ws.current = new WebSocket(wsUrl)
 
       ws.current.onopen = () => {
@@ -34,18 +41,21 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         reconnectAttempts.current = 0
       }
 
-      ws.current.onmessage = (event) => {
+      ws.current.onmessage = event => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data)
           setLastMessage(message)
-          
+
           // Log different message types for debugging
           switch (message.type) {
             case 'rag_progress':
               console.log('RAG Progress:', (message as RAGProgressMessage).message)
               break
             case 'rag_response':
-              console.log('RAG Response received for document:', (message as RAGResponseMessage).document_id)
+              console.log(
+                'RAG Response received for document:',
+                (message as RAGResponseMessage).document_id
+              )
               break
             case 'index_progress':
               console.log('Index Progress:', (message as IndexProgressMessage).status)
@@ -62,14 +72,14 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      ws.current.onclose = (event) => {
+      ws.current.onclose = event => {
         console.log('WebSocket disconnected:', event.code, event.reason)
         setIsConnected(false)
-        
+
         if (!event.wasClean && reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.pow(2, reconnectAttempts.current) * 1000 // Exponential backoff
           console.log(`Attempting to reconnect in ${delay}ms...`)
-          
+
           reconnectTimeoutRef.current = window.setTimeout(() => {
             reconnectAttempts.current++
             connect()
@@ -79,7 +89,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      ws.current.onerror = (error) => {
+      ws.current.onerror = error => {
         console.error('WebSocket error:', error)
         setConnectionError('WebSocket connection error')
       }
@@ -101,11 +111,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
     }
-    
+
     if (ws.current) {
       ws.current.close()
     }
-    
+
     reconnectAttempts.current = 0
     setConnectionError(null)
     connect()
@@ -132,11 +142,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     reconnect,
   }
 
-  return (
-    <WebSocketContext.Provider value={value}>
-      {children}
-    </WebSocketContext.Provider>
-  )
+  return <WebSocketContext.Provider value={value}>{children}</WebSocketContext.Provider>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

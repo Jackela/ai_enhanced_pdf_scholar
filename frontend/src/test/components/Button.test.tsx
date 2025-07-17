@@ -11,7 +11,7 @@ describe('Button', () => {
   })
 
   it('renders with different variants', () => {
-    render(<Button variant="outline">Outline Button</Button>)
+    render(<Button variant='outline'>Outline Button</Button>)
     const button = screen.getByRole('button')
     expect(button).toBeInTheDocument()
     expect(button).toHaveTextContent('Outline Button')
@@ -20,10 +20,10 @@ describe('Button', () => {
   it('calls onClick when clicked', () => {
     const handleClick = vi.fn()
     render(<Button onClick={handleClick}>Click Me</Button>)
-    
+
     const button = screen.getByRole('button')
     fireEvent.click(button)
-    
+
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 
@@ -34,7 +34,7 @@ describe('Button', () => {
   })
 
   it('renders different sizes', () => {
-    render(<Button size="sm">Small Button</Button>)
+    render(<Button size='sm'>Small Button</Button>)
     const button = screen.getByRole('button')
     expect(button).toBeInTheDocument()
   })

@@ -7,11 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes'
-  
+
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
@@ -19,35 +19,35 @@ export function formatDate(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
+
   // Less than 1 minute
   if (diff < 60000) {
     return 'Just now'
   }
-  
+
   // Less than 1 hour
   if (diff < 3600000) {
     const minutes = Math.floor(diff / 60000)
     return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
   }
-  
+
   // Less than 1 day
   if (diff < 86400000) {
     const hours = Math.floor(diff / 3600000)
     return `${hours} hour${hours > 1 ? 's' : ''} ago`
   }
-  
+
   // Less than 7 days
   if (diff < 604800000) {
     const days = Math.floor(diff / 86400000)
     return `${days} day${days > 1 ? 's' : ''} ago`
   }
-  
+
   // Format as date
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -55,10 +55,10 @@ export function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
   const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
-  
+
   const diff = date.getTime() - now.getTime()
   const diffDays = Math.round(diff / (1000 * 60 * 60 * 24))
-  
+
   if (Math.abs(diffDays) < 1) {
     const diffHours = Math.round(diff / (1000 * 60 * 60))
     if (Math.abs(diffHours) < 1) {
@@ -67,16 +67,16 @@ export function formatRelativeTime(dateString: string): string {
     }
     return rtf.format(diffHours, 'hour')
   }
-  
+
   if (Math.abs(diffDays) < 7) {
     return rtf.format(diffDays, 'day')
   }
-  
+
   if (Math.abs(diffDays) < 30) {
     const diffWeeks = Math.round(diffDays / 7)
     return rtf.format(diffWeeks, 'week')
   }
-  
+
   const diffMonths = Math.round(diffDays / 30)
   return rtf.format(diffMonths, 'month')
 }
@@ -86,12 +86,12 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: number | null = null
-  
+
   return (...args: Parameters<T>) => {
     if (timeout) {
       clearTimeout(timeout)
     }
-    
+
     timeout = window.setTimeout(() => {
       func(...args)
     }, wait)
@@ -103,7 +103,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean = false
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args)

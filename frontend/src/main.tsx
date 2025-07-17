@@ -31,5 +31,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </WebSocketProvider>
       </ThemeProvider>
     </QueryClientProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 )
