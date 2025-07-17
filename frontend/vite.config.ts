@@ -35,8 +35,7 @@ export default defineConfig(({ mode }) => {
         // Enable JSX runtime optimization
         jsxRuntime: 'automatic'
       }),
-      // Temporarily comment out PWA plugin to resolve CI build issues
-      ...(isCIBuild ? [] : [VitePWA({
+      VitePWA({
         registerType: 'autoUpdate',
         disable: false,
         workbox: {
@@ -76,25 +75,25 @@ export default defineConfig(({ mode }) => {
             }
           ]
         }
-      })]),
+      }),
     ],
     resolve: {
       alias: [
-        // PRIMARY: Direct file mappings using absolute paths for CI/act compatibility
-        { find: '@/lib/utils', replacement: resolve(frontendSrcPath, 'lib/utils.ts') },
-        { find: '@/lib/api', replacement: resolve(frontendSrcPath, 'lib/api.ts') },
+        // CRITICAL: Specific file mappings first, PWA plugin compatible
+        { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
+        { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
         
-        // SECONDARY: Directory mappings with absolute paths
-        { find: /^@\/components\/(.*)/, replacement: resolve(frontendSrcPath, 'components/$1') },
-        { find: /^@\/pages\/(.*)/, replacement: resolve(frontendSrcPath, 'pages/$1') },
-        { find: /^@\/hooks\/(.*)/, replacement: resolve(frontendSrcPath, 'hooks/$1') },
-        { find: /^@\/services\/(.*)/, replacement: resolve(frontendSrcPath, 'services/$1') },
-        { find: /^@\/store\/(.*)/, replacement: resolve(frontendSrcPath, 'store/$1') },
-        { find: /^@\/types\/(.*)/, replacement: resolve(frontendSrcPath, 'types/$1') },
-        { find: /^@\/utils\/(.*)/, replacement: resolve(frontendSrcPath, 'utils/$1') },
+        // SECONDARY: Directory patterns with regex
+        { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
+        { find: /^@\/pages\/(.*)/, replacement: resolve(__dirname, './src/pages/$1') },
+        { find: /^@\/hooks\/(.*)/, replacement: resolve(__dirname, './src/hooks/$1') },
+        { find: /^@\/services\/(.*)/, replacement: resolve(__dirname, './src/services/$1') },
+        { find: /^@\/store\/(.*)/, replacement: resolve(__dirname, './src/store/$1') },
+        { find: /^@\/types\/(.*)/, replacement: resolve(__dirname, './src/types/$1') },
+        { find: /^@\/utils\/(.*)/, replacement: resolve(__dirname, './src/utils/$1') },
         
-        // BASE: Root @ mapping using absolute path
-        { find: '@', replacement: frontendSrcPath }
+        // BASE: Root @ mapping (must be last)
+        { find: '@', replacement: resolve(__dirname, './src') }
       ],
       
       // Enhanced extension resolution prioritizing TypeScript
@@ -145,26 +144,20 @@ export default defineConfig(({ mode }) => {
       cssCodeSplit: isProduction,
       
       rollupOptions: {
-        // Enhanced module resolution for CI/CD environments
+        // PWA-compatible path resolver with proper priority ordering
         plugins: [
-          // Multi-phase resolver for PWA plugin compatibility
           {
-            name: 'universal-path-resolver',
+            name: 'ci-path-resolver',
+            order: 'pre', // Critical: run before PWA plugin
             resolveId(id, importer) {
-              // Force resolution using absolute paths for CI/act compatibility
+              // Direct file mappings for maximum compatibility
               if (id === '@/lib/utils') {
-                return resolve(frontendSrcPath, 'lib/utils.ts')
+                return resolve(__dirname, './src/lib/utils.ts')
               }
               if (id === '@/lib/api') {
-                return resolve(frontendSrcPath, 'lib/api.ts')
+                return resolve(__dirname, './src/lib/api.ts')
               }
               return null
-            },
-            // Also handle during build phase for PWA plugin
-            buildStart() {
-              // Pre-register critical modules using absolute paths
-              this.addWatchFile(resolve(frontendSrcPath, 'lib/utils.ts'))
-              this.addWatchFile(resolve(frontendSrcPath, 'lib/api.ts'))
             }
           }
         ],
