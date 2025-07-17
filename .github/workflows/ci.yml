@@ -33,11 +33,22 @@ jobs:
           cd frontend
           npm ci
       
-      - name: Build frontend
+      - name: Build frontend  
         run: |
           echo "Building frontend..."
           cd frontend
-          export CI=true && npx vite build --mode production
+          echo "=== Diagnostic Information ==="
+          echo "Node.js version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          echo "Files in src/lib:"
+          ls -la src/lib/
+          echo "Vite version:"
+          npx vite --version
+          echo "=== Starting build with verbose output ==="
+          export CI=true && npx vite build --mode production --debug 2>&1 | tee build.log || { echo "Build failed. Log contents:"; cat build.log; exit 1; }
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
