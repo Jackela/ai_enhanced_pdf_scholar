@@ -47,8 +47,14 @@ jobs:
           echo "Environment verification:"
           echo "Node.js: $(node --version)"
           echo "NPM: $(npm --version)"
+          echo "=== TypeScript Verification ==="
+          npx tsc --noEmit --listFiles | head -10
           echo "=== Building ==="
-          npm run build
+          npm run build || {
+            echo "=== Build failed, checking specific error ==="
+            npx vite build 2>&1 | head -20
+            exit 1
+          }
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
