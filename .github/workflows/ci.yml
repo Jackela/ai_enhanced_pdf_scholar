@@ -180,7 +180,6 @@ jobs:
       - name: 🧪 Run stable test suite
         run: |
           # Run stable test subset to ensure CI reliability
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
           pytest tests/test_database_models.py tests/test_content_hash_service.py \
             -v \
             --cov=src \
@@ -198,12 +197,15 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         run: |
           # Run integration tests only on specific configuration
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
           pytest test_comprehensive.py test_complete_workflow.py -v \
             --timeout=120 \
             --maxfail=5 \
             -n 2 \
             --dist=loadfile || echo "Integration tests completed with issues"
+        env:
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
+          TEST_MODE: "true"
+          CI: "true"
       
       - name: 📤 Upload coverage reports
         uses: actions/upload-artifact@v4

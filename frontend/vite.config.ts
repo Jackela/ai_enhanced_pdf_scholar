@@ -7,8 +7,21 @@ import { resolve } from 'path'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const isProduction = mode === 'production'
-  // Enhanced CI detection for different environments
-  const isCIBuild = env.CI === 'true' || process.env.CI === 'true' || !!process.env.CI
+  // Enhanced CI detection for different environments  
+  const isCIBuild = env.CI === 'true' || process.env.CI === 'true' || !!process.env.CI || 
+                     process.env.GITHUB_ACTIONS === 'true' || process.env.NODE_ENV === 'production'
+  
+  // Debug CI detection in GitHub Actions
+  if (process.env.GITHUB_ACTIONS) {
+    console.log('🔍 CI Detection Debug:', {
+      'env.CI': env.CI,
+      'process.env.CI': process.env.CI,
+      'process.env.GITHUB_ACTIONS': process.env.GITHUB_ACTIONS,
+      'process.env.NODE_ENV': process.env.NODE_ENV,
+      'isCIBuild': isCIBuild,
+      'mode': mode
+    })
+  }
   
   // Get project root from environment variable or calculate from current directory
   const projectRoot = process.env.VITE_PROJECT_ROOT || resolve(__dirname, '..')
@@ -22,10 +35,10 @@ export default defineConfig(({ mode }) => {
         // Enable JSX runtime optimization
         jsxRuntime: 'automatic'
       }),
-      VitePWA({
+      // Temporarily comment out PWA plugin to resolve CI build issues
+      ...(isCIBuild ? [] : [VitePWA({
         registerType: 'autoUpdate',
-        // Temporarily disable PWA in CI/act to isolate path resolution issue
-        disable: isCIBuild,
+        disable: false,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           // Enhanced caching for production
@@ -63,7 +76,7 @@ export default defineConfig(({ mode }) => {
             }
           ]
         }
-      })
+      })]),
     ],
     resolve: {
       alias: [
