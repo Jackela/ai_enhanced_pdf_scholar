@@ -393,20 +393,23 @@ class DatabaseConnection:
                 conn.execute(f"SAVEPOINT {savepoint_name}")
                 conn_info.transaction_level += 1
                 logger.debug(
-                    f"Started savepoint: {savepoint_name} (L{conn_info.transaction_level})"
+                    f"Started savepoint: {savepoint_name} "
+                    f"(L{conn_info.transaction_level})"
                 )
                 yield conn
                 conn.execute(f"RELEASE SAVEPOINT {savepoint_name}")
                 conn_info.transaction_level -= 1
                 logger.debug(
-                    f"Released savepoint: {savepoint_name} (L{conn_info.transaction_level})"
+                    f"Released savepoint: {savepoint_name} "
+                    f"(L{conn_info.transaction_level})"
                 )
             except Exception as e:
                 try:
                     conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint_name}")
                     conn_info.transaction_level -= 1
                     logger.debug(
-                        f"Rolled back savepoint: {savepoint_name} (L{conn_info.transaction_level})"
+                        f"Rolled back savepoint: {savepoint_name} "
+                        f"(L{conn_info.transaction_level})"
                     )
                 except Exception as rollback_error:
                     logger.error(
@@ -436,18 +439,24 @@ class DatabaseConnection:
                 logger.error(f"Transaction failed and rolled back: {e}")
                 raise TransactionError(f"Transaction failed: {e}") from e
 
-    def _handle_operational_error(self, e: sqlite3.OperationalError, attempt: int, max_retries: int) -> bool:
-        """Handle operational errors with appropriate retry logic. Returns True if should retry."""
+    def _handle_operational_error(
+        self, e: sqlite3.OperationalError, attempt: int, max_retries: int
+    ) -> bool:
+        """Handle operational errors with retry logic. Returns True if should retry."""
         error_msg = str(e).lower()
         if "database is locked" in error_msg or "database is busy" in error_msg:
             if attempt < max_retries:
                 wait_time = 0.1 * (2**attempt)  # Exponential backoff
-                logger.warning(f"DB busy, retrying in {wait_time}s (attempt {attempt + 1})")
+                logger.warning(
+                    f"DB busy, retrying in {wait_time}s (attempt {attempt + 1})"
+                )
                 time.sleep(wait_time)
                 return True
             else:
                 logger.error(f"Database locked after {max_retries} retries: {e}")
-                raise DatabaseConnectionError(f"Database locked after retries: {e}") from e
+                raise DatabaseConnectionError(
+                    f"Database locked after retries: {e}"
+                ) from e
         elif "disk i/o error" in error_msg:
             logger.error(f"Disk I/O error: {e}")
             raise DatabaseConnectionError(f"Disk I/O error: {e}") from e
@@ -461,7 +470,9 @@ class DatabaseConnection:
             logger.error(f"Operational error in query execution: {e}")
             raise DatabaseConnectionError(f"Query execution failed: {e}") from e
 
-    def _handle_database_error(self, e: Exception, query: str, params: tuple[Any, ...] | None) -> None:
+    def _handle_database_error(
+        self, e: Exception, query: str, params: tuple[Any, ...] | None
+    ) -> None:
         """Handle database errors with appropriate logging."""
         logger.error(f"{type(e).__name__}: {e}")
         logger.error(f"Query: {query}")
@@ -499,9 +510,13 @@ class DatabaseConnection:
                 execution_time = (time.time() - start_time) * 1000
 
                 if execution_time > self.SLOW_QUERY_THRESHOLD_MS:
-                    logger.warning(f"Slow query ({execution_time:.2f}ms): {query[:100]}...")
+                    logger.warning(
+                        f"Slow query ({execution_time:.2f}ms): {query[:100]}..."
+                    )
                 else:
-                    logger.debug(f"Executed query ({execution_time:.2f}ms): {query[:100]}...")
+                    logger.debug(
+                        f"Executed query ({execution_time:.2f}ms): {query[:100]}..."
+                    )
                 return cursor
 
             except sqlite3.OperationalError as e:
@@ -509,7 +524,12 @@ class DatabaseConnection:
                     continue  # Retry
                 # If not retrying, exception was already raised in handler
 
-            except (sqlite3.IntegrityError, sqlite3.DataError, sqlite3.DatabaseError, Exception) as e:
+            except (
+                sqlite3.IntegrityError,
+                sqlite3.DataError,
+                sqlite3.DatabaseError,
+                Exception,
+            ) as e:
                 self._handle_database_error(e, query, params)
 
         # Should never reach here due to exception handling, but added for safety

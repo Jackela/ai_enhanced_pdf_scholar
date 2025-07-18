@@ -281,7 +281,12 @@ class StateManager:
             del current[keys[-1]]
 
     def _safe_notify_observer(
-        self, observer: callable, path: str, new_value: Any, old_value: Any, change_type: StateChangeType
+        self,
+        observer: callable,
+        path: str,
+        new_value: Any,
+        old_value: Any,
+        change_type: StateChangeType,
     ) -> None:
         """Safely notify a single observer, handling exceptions."""
         try:
@@ -303,16 +308,21 @@ class StateManager:
         # Notify exact path observers
         if path in self._observers:
             for observer in self._observers[path]:
-                self._safe_notify_observer(observer, path, new_value, old_value, change_type)
+                self._safe_notify_observer(
+                    observer, path, new_value, old_value, change_type
+                )
 
         # Notify wildcard observers (e.g., 'chat.*' matches 'chat.messages')
         import re
+
         for observer_path, observers in self._observers.items():
             if "*" in observer_path:
                 pattern = observer_path.replace("*", ".*")
                 if re.match(pattern, path):
                     for observer in observers:
-                        self._safe_notify_observer(observer, path, new_value, old_value, change_type)
+                        self._safe_notify_observer(
+                            observer, path, new_value, old_value, change_type
+                        )
 
     def reset_state(self, section: str | None = None) -> None:
         """

@@ -37,7 +37,11 @@ class DocumentLibraryService:
         "name": "DocumentLibraryService",
         "version": "1.0.0",
         "description": "High-level business logic for document library management.",
-        "dependencies": ["DocumentRepository", "VectorIndexRepository", "ContentHashService"],
+        "dependencies": [
+            "DocumentRepository",
+            "VectorIndexRepository",
+            "ContentHashService"
+        ],
         "interface": {
             "inputs": ["database_connection: DatabaseConnection"],
             "outputs": "Document management operations with business logic"
@@ -54,7 +58,8 @@ class DocumentLibraryService:
         Initialize document library service.
         Args:
             db_connection: Database connection instance
-            documents_dir: Directory for permanent document storage (defaults to ~/.ai_pdf_scholar/documents)
+            documents_dir: Directory for permanent document storage
+                (defaults to ~/.ai_pdf_scholar/documents)
         """
         self.db = db_connection
         self.document_repo = DocumentRepository(db_connection)
@@ -110,15 +115,23 @@ class DocumentLibraryService:
     def _calculate_file_hashes(self, file_path: str) -> tuple[str, str]:
         """Calculate file and content hashes."""
         try:
-            file_hash, content_hash = ContentHashService.calculate_combined_hashes(file_path)
-            logger.debug(f"Calculated hashes - file: {file_hash}, content: {content_hash}")
+            file_hash, content_hash = ContentHashService.calculate_combined_hashes(
+                file_path
+            )
+            logger.debug(
+                f"Calculated hashes - file: {file_hash}, content: {content_hash}"
+            )
             return file_hash, content_hash
         except ContentHashError as e:
             raise DocumentImportError(f"Failed to calculate file hash: {e}") from e
 
     def _handle_duplicate_document(
-        self, existing_doc: DocumentModel, overwrite: bool, file_path: str,
-        managed_file_path: Path, title: str | None
+        self,
+        existing_doc: DocumentModel,
+        overwrite: bool,
+        file_path: str,
+        managed_file_path: Path,
+        title: str | None,
     ) -> DocumentModel | None:
         """Handle duplicate document found during import."""
         if not overwrite:
@@ -133,20 +146,27 @@ class DocumentLibraryService:
             existing_doc.title = title
         return self.document_repo.update(existing_doc)
 
-    def _enrich_document_metadata(self, document: DocumentModel, file_path: str,
-                                  managed_file_path: Path, content_hash: str) -> None:
+    def _enrich_document_metadata(
+        self,
+        document: DocumentModel,
+        file_path: str,
+        managed_file_path: Path,
+        content_hash: str,
+    ) -> None:
         """Enrich document with additional metadata."""
         try:
             file_info = ContentHashService.get_file_info(file_path)
             document.page_count = file_info.get("page_count", 0)
             if document.metadata is not None:
-                document.metadata.update({
-                    "content_hash": content_hash,
-                    "import_timestamp": datetime.now().isoformat(),
-                    "original_path": str(Path(file_path).absolute()),
-                    "managed_path": str(managed_file_path),
-                    "file_valid": file_info.get("is_valid_pdf", False),
-                })
+                document.metadata.update(
+                    {
+                        "content_hash": content_hash,
+                        "import_timestamp": datetime.now().isoformat(),
+                        "original_path": str(Path(file_path).absolute()),
+                        "managed_path": str(managed_file_path),
+                        "file_valid": file_info.get("is_valid_pdf", False),
+                    }
+                )
         except Exception as e:
             logger.warning(f"Could not extract additional metadata: {e}")
 
@@ -176,14 +196,20 @@ class DocumentLibraryService:
             # Validate and calculate hashes
             file_path_obj = self._validate_import_file(file_path)
             file_hash, content_hash = self._calculate_file_hashes(file_path)
-            managed_file_path = self._create_managed_file_path(file_hash, file_path_obj.name)
+            managed_file_path = self._create_managed_file_path(
+                file_hash, file_path_obj.name
+            )
 
             # Handle duplicates
             if check_duplicates:
                 existing_doc = self.document_repo.find_by_file_hash(file_hash)
                 if existing_doc:
                     return self._handle_duplicate_document(
-                        existing_doc, overwrite_duplicates, file_path, managed_file_path, title
+                        existing_doc,
+                        overwrite_duplicates,
+                        file_path,
+                        managed_file_path,
+                        title,
                     )
 
             # Create new document
@@ -195,10 +221,15 @@ class DocumentLibraryService:
             document.content_hash = content_hash
 
             # Enrich with metadata and save
-            self._enrich_document_metadata(document, file_path, managed_file_path, content_hash)
+            self._enrich_document_metadata(
+                document, file_path, managed_file_path, content_hash
+            )
             saved_document = self.document_repo.create(document)
 
-            logger.info(f"Document imported successfully: {saved_document.id} - {saved_document.title}")
+            logger.info(
+                f"Document imported successfully: {saved_document.id} - "
+                f"{saved_document.title}"
+            )
             return saved_document
 
         except (DocumentImportError, DuplicateDocumentError):
@@ -335,7 +366,8 @@ class DocumentLibraryService:
             size_duplicates = self.document_repo.find_duplicates_by_size_and_name()
             for file_size, docs in size_duplicates:
                 duplicates.append((f"File size: {file_size} bytes", docs))
-            # TODO: Add content-based duplicate detection when content_hash field is available
+            # TODO: Add content-based duplicate detection when content_hash
+            # field is available
             return duplicates
         except Exception as e:
             logger.error(f"Failed to find duplicate documents: {e}")

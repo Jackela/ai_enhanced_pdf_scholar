@@ -205,7 +205,8 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             query = """
             SELECT * FROM documents
             ORDER BY
-                CASE WHEN last_accessed IS NOT NULL THEN last_accessed ELSE created_at END DESC,
+                CASE WHEN last_accessed IS NOT NULL
+                     THEN last_accessed ELSE created_at END DESC,
                 created_at DESC
             LIMIT ?
             """
