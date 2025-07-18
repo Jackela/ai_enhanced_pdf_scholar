@@ -280,6 +280,15 @@ class StateManager:
         if keys[-1] in current:
             del current[keys[-1]]
 
+    def _safe_notify_observer(
+        self, observer: callable, path: str, new_value: Any, old_value: Any, change_type: StateChangeType
+    ) -> None:
+        """Safely notify a single observer, handling exceptions."""
+        try:
+            observer(path, new_value, old_value, change_type)
+        except Exception as e:
+            logger.error(f"Error notifying observer {observer.__name__}: {e}")
+
     def _notify_observers(
         self, path: str, new_value: Any, old_value: Any, change_type: StateChangeType
     ) -> None:
@@ -294,24 +303,16 @@ class StateManager:
         # Notify exact path observers
         if path in self._observers:
             for observer in self._observers[path]:
-                try:
-                    observer(path, new_value, old_value, change_type)
-                except Exception as e:
-                    logger.error(f"Error notifying observer {observer.__name__}: {e}")
+                self._safe_notify_observer(observer, path, new_value, old_value, change_type)
+
         # Notify wildcard observers (e.g., 'chat.*' matches 'chat.messages')
+        import re
         for observer_path, observers in self._observers.items():
             if "*" in observer_path:
                 pattern = observer_path.replace("*", ".*")
-                import re
-
                 if re.match(pattern, path):
                     for observer in observers:
-                        try:
-                            observer(path, new_value, old_value, change_type)
-                        except Exception as e:
-                            logger.error(
-                                f"Error notifying observer {observer.__name__}: {e}"
-                            )
+                        self._safe_notify_observer(observer, path, new_value, old_value, change_type)
 
     def reset_state(self, section: str | None = None) -> None:
         """

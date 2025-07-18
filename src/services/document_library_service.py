@@ -98,6 +98,58 @@ class DocumentLibraryService:
                 f"Failed to copy file to managed storage: {e}"
             ) from e
 
+    def _validate_import_file(self, file_path: str) -> Path:
+        """Validate file for import."""
+        file_path_obj = Path(file_path)
+        if not file_path_obj.exists():
+            raise DocumentImportError(f"File not found: {file_path}")
+        if not ContentHashService.validate_pdf_file(file_path):
+            raise DocumentImportError(f"Invalid PDF file: {file_path}")
+        return file_path_obj
+
+    def _calculate_file_hashes(self, file_path: str) -> tuple[str, str]:
+        """Calculate file and content hashes."""
+        try:
+            file_hash, content_hash = ContentHashService.calculate_combined_hashes(file_path)
+            logger.debug(f"Calculated hashes - file: {file_hash}, content: {content_hash}")
+            return file_hash, content_hash
+        except ContentHashError as e:
+            raise DocumentImportError(f"Failed to calculate file hash: {e}") from e
+
+    def _handle_duplicate_document(
+        self, existing_doc: DocumentModel, overwrite: bool, file_path: str,
+        managed_file_path: Path, title: str | None
+    ) -> DocumentModel | None:
+        """Handle duplicate document found during import."""
+        if not overwrite:
+            raise DuplicateDocumentError(
+                f"Document already exists: {existing_doc.title} (ID: {existing_doc.id})"
+            )
+        logger.info(f"Overwriting existing document: {existing_doc.id}")
+        self._copy_to_managed_storage(file_path, managed_file_path)
+        existing_doc.file_path = str(managed_file_path)
+        existing_doc.updated_at = datetime.now()
+        if title:
+            existing_doc.title = title
+        return self.document_repo.update(existing_doc)
+
+    def _enrich_document_metadata(self, document: DocumentModel, file_path: str,
+                                  managed_file_path: Path, content_hash: str) -> None:
+        """Enrich document with additional metadata."""
+        try:
+            file_info = ContentHashService.get_file_info(file_path)
+            document.page_count = file_info.get("page_count", 0)
+            if document.metadata is not None:
+                document.metadata.update({
+                    "content_hash": content_hash,
+                    "import_timestamp": datetime.now().isoformat(),
+                    "original_path": str(Path(file_path).absolute()),
+                    "managed_path": str(managed_file_path),
+                    "file_valid": file_info.get("is_valid_pdf", False),
+                })
+        except Exception as e:
+            logger.warning(f"Could not extract additional metadata: {e}")
+
     def import_document(
         self,
         file_path: str,
@@ -120,74 +172,35 @@ class DocumentLibraryService:
         """
         try:
             logger.info(f"Starting document import: {file_path}")
-            # Validate file
-            file_path_obj = Path(file_path)
-            if not file_path_obj.exists():
-                raise DocumentImportError(f"File not found: {file_path}")
-            if not ContentHashService.validate_pdf_file(file_path):
-                raise DocumentImportError(f"Invalid PDF file: {file_path}")
-            # Calculate hashes
-            try:
-                file_hash, content_hash = ContentHashService.calculate_combined_hashes(
-                    file_path
-                )
-                logger.debug(
-                    f"Calculated hashes - file: {file_hash}, content: {content_hash}"
-                )
-            except ContentHashError as e:
-                raise DocumentImportError(f"Failed to calculate file hash: {e}") from e
-            # Create managed file path
-            managed_file_path = self._create_managed_file_path(
-                file_hash, file_path_obj.name
-            )
-            # Check for duplicates
+
+            # Validate and calculate hashes
+            file_path_obj = self._validate_import_file(file_path)
+            file_hash, content_hash = self._calculate_file_hashes(file_path)
+            managed_file_path = self._create_managed_file_path(file_hash, file_path_obj.name)
+
+            # Handle duplicates
             if check_duplicates:
                 existing_doc = self.document_repo.find_by_file_hash(file_hash)
                 if existing_doc:
-                    if not overwrite_duplicates:
-                        raise DuplicateDocumentError(
-                            f"Document already exists: {existing_doc.title} (ID: {existing_doc.id})"
-                        )
-                    else:
-                        logger.info(f"Overwriting existing document: {existing_doc.id}")
-                        # Copy to managed storage and update existing document
-                        self._copy_to_managed_storage(file_path, managed_file_path)
-                        existing_doc.file_path = str(managed_file_path)
-                        existing_doc.updated_at = datetime.now()
-                        if title:
-                            existing_doc.title = title
-                        return self.document_repo.update(existing_doc)
-            # Copy file to managed storage
+                    return self._handle_duplicate_document(
+                        existing_doc, overwrite_duplicates, file_path, managed_file_path, title
+                    )
+
+            # Create new document
             self._copy_to_managed_storage(file_path, managed_file_path)
-            # Create new document model with managed path
-            if title is None:
-                title = file_path_obj.stem
+            title = title or file_path_obj.stem
             document = DocumentModel.from_file(
                 file_path=str(managed_file_path), file_hash=file_hash, title=title
             )
             document.content_hash = content_hash
-            # Additional metadata
-            try:
-                file_info = ContentHashService.get_file_info(file_path)
-                document.page_count = file_info.get("page_count", 0)
-                if document.metadata is not None:
-                    document.metadata.update(
-                        {
-                            "content_hash": content_hash,
-                            "import_timestamp": datetime.now().isoformat(),
-                            "original_path": str(file_path_obj.absolute()),
-                            "managed_path": str(managed_file_path),
-                            "file_valid": file_info.get("is_valid_pdf", False),
-                        }
-                    )
-            except Exception as e:
-                logger.warning(f"Could not extract additional metadata: {e}")
-            # Save to database
+
+            # Enrich with metadata and save
+            self._enrich_document_metadata(document, file_path, managed_file_path, content_hash)
             saved_document = self.document_repo.create(document)
-            logger.info(
-                f"Document imported successfully: {saved_document.id} - {saved_document.title}"
-            )
+
+            logger.info(f"Document imported successfully: {saved_document.id} - {saved_document.title}")
             return saved_document
+
         except (DocumentImportError, DuplicateDocumentError):
             raise
         except Exception as e:

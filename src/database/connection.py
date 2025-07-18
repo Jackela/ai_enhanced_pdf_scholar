@@ -436,6 +436,46 @@ class DatabaseConnection:
                 logger.error(f"Transaction failed and rolled back: {e}")
                 raise TransactionError(f"Transaction failed: {e}") from e
 
+    def _handle_operational_error(self, e: sqlite3.OperationalError, attempt: int, max_retries: int) -> bool:
+        """Handle operational errors with appropriate retry logic. Returns True if should retry."""
+        error_msg = str(e).lower()
+        if "database is locked" in error_msg or "database is busy" in error_msg:
+            if attempt < max_retries:
+                wait_time = 0.1 * (2**attempt)  # Exponential backoff
+                logger.warning(f"DB busy, retrying in {wait_time}s (attempt {attempt + 1})")
+                time.sleep(wait_time)
+                return True
+            else:
+                logger.error(f"Database locked after {max_retries} retries: {e}")
+                raise DatabaseConnectionError(f"Database locked after retries: {e}") from e
+        elif "disk i/o error" in error_msg:
+            logger.error(f"Disk I/O error: {e}")
+            raise DatabaseConnectionError(f"Disk I/O error: {e}") from e
+        elif "database disk image is malformed" in error_msg:
+            logger.error(f"Database corruption detected: {e}")
+            raise DatabaseConnectionError(f"Database corruption: {e}") from e
+        elif "no such table" in error_msg or "no such column" in error_msg:
+            logger.error(f"Schema error: {e}")
+            raise DatabaseConnectionError(f"Schema error: {e}") from e
+        else:
+            logger.error(f"Operational error in query execution: {e}")
+            raise DatabaseConnectionError(f"Query execution failed: {e}") from e
+
+    def _handle_database_error(self, e: Exception, query: str, params: tuple[Any, ...] | None) -> None:
+        """Handle database errors with appropriate logging."""
+        logger.error(f"{type(e).__name__}: {e}")
+        logger.error(f"Query: {query}")
+        logger.error(f"Params: {params}")
+
+        if isinstance(e, sqlite3.IntegrityError):
+            raise DatabaseConnectionError(f"Integrity constraint violation: {e}") from e
+        elif isinstance(e, sqlite3.DataError):
+            raise DatabaseConnectionError(f"Data error: {e}") from e
+        elif isinstance(e, sqlite3.DatabaseError):
+            raise DatabaseConnectionError(f"Database error: {e}") from e
+        else:
+            raise DatabaseConnectionError(f"Unexpected error: {e}") from e
+
     def execute(
         self, query: str, params: tuple[Any, ...] | None = None, max_retries: int = 3
     ) -> sqlite3.Cursor:
@@ -452,71 +492,27 @@ class DatabaseConnection:
         """
         conn = self.get_connection()
         start_time = time.time()
+
         for attempt in range(max_retries + 1):
             try:
                 cursor = conn.execute(query, params) if params else conn.execute(query)
                 execution_time = (time.time() - start_time) * 1000
-                if execution_time > self.SLOW_QUERY_THRESHOLD_MS:  # Log slow queries
-                    logger.warning(
-                        f"Slow query ({execution_time:.2f}ms): {query[:100]}..."
-                    )
+
+                if execution_time > self.SLOW_QUERY_THRESHOLD_MS:
+                    logger.warning(f"Slow query ({execution_time:.2f}ms): {query[:100]}...")
                 else:
-                    logger.debug(
-                        f"Executed query ({execution_time:.2f}ms): {query[:100]}..."
-                    )
+                    logger.debug(f"Executed query ({execution_time:.2f}ms): {query[:100]}...")
                 return cursor
+
             except sqlite3.OperationalError as e:
-                error_msg = str(e).lower()
-                if "database is locked" in error_msg or "database is busy" in error_msg:
-                    if attempt < max_retries:
-                        wait_time = 0.1 * (2**attempt)  # Exponential backoff
-                        logger.warning(
-                            f"DB busy, retrying in {wait_time}s (attempt {attempt + 1})"
-                        )
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        logger.error(
-                            f"Database locked after {max_retries} retries: {e}"
-                        )
-                        raise DatabaseConnectionError(
-                            f"Database locked after retries: {e}"
-                        ) from e
-                elif "disk i/o error" in error_msg:
-                    logger.error(f"Disk I/O error: {e}")
-                    raise DatabaseConnectionError(f"Disk I/O error: {e}") from e
-                elif "database disk image is malformed" in error_msg:
-                    logger.error(f"Database corruption detected: {e}")
-                    raise DatabaseConnectionError(f"Database corruption: {e}") from e
-                elif "no such table" in error_msg or "no such column" in error_msg:
-                    logger.error(f"Schema error: {e}")
-                    raise DatabaseConnectionError(f"Schema error: {e}") from e
-                else:
-                    logger.error(f"Operational error in query execution: {e}")
-                    raise DatabaseConnectionError(f"Query execution failed: {e}") from e
-            except sqlite3.IntegrityError as e:
-                logger.error(f"Integrity constraint violation: {e}")
-                logger.error(f"Query: {query}")
-                logger.error(f"Params: {params}")
-                raise DatabaseConnectionError(
-                    f"Integrity constraint violation: {e}"
-                ) from e
-            except sqlite3.DataError as e:
-                logger.error(f"Data error: {e}")
-                logger.error(f"Query: {query}")
-                logger.error(f"Params: {params}")
-                raise DatabaseConnectionError(f"Data error: {e}") from e
-            except sqlite3.DatabaseError as e:
-                logger.error(f"Database error: {e}")
-                logger.error(f"Query: {query}")
-                logger.error(f"Params: {params}")
-                raise DatabaseConnectionError(f"Database error: {e}") from e
-            except Exception as e:
-                logger.error(f"Unexpected error in query execution: {e}")
-                logger.error(f"Query: {query}")
-                logger.error(f"Params: {params}")
-                raise DatabaseConnectionError(f"Unexpected error: {e}") from e
-        # Should never reach here
+                if self._handle_operational_error(e, attempt, max_retries):
+                    continue  # Retry
+                # If not retrying, exception was already raised in handler
+
+            except (sqlite3.IntegrityError, sqlite3.DataError, sqlite3.DatabaseError, Exception) as e:
+                self._handle_database_error(e, query, params)
+
+        # Should never reach here due to exception handling, but added for safety
         raise DatabaseConnectionError("Maximum retries exceeded")
 
     def execute_many(
