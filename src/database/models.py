@@ -293,10 +293,7 @@ class VectorIndexModel:
             "graph_store.json",
             "index_store.json",
         ]
-        for file_name in required_files:
-            if not (index_path / file_name).exists():
-                return False
-        return True
+        return all((index_path / file_name).exists() for file_name in required_files)
 
 
 @dataclass
@@ -305,7 +302,7 @@ class TagModel:
     {
         "name": "TagModel",
         "version": "1.0.0",
-        "description": "Pure data model representing a tag for document categorization.",
+        "description": "Pure data model representing a tag for documents.",
         "dependencies": [],
         "interface": {
             "inputs": ["name", "color"],

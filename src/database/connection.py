@@ -10,7 +10,7 @@ import threading
 import time
 import weakref
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Empty, Queue
@@ -393,24 +393,24 @@ class DatabaseConnection:
                 conn.execute(f"SAVEPOINT {savepoint_name}")
                 conn_info.transaction_level += 1
                 logger.debug(
-                    f"Started savepoint: {savepoint_name} (lvl: {conn_info.transaction_level})"
+                    f"Started savepoint: {savepoint_name} (L{conn_info.transaction_level})"
                 )
                 yield conn
                 conn.execute(f"RELEASE SAVEPOINT {savepoint_name}")
                 conn_info.transaction_level -= 1
                 logger.debug(
-                    f"Released savepoint: {savepoint_name} (lvl: {conn_info.transaction_level})"
+                    f"Released savepoint: {savepoint_name} (L{conn_info.transaction_level})"
                 )
             except Exception as e:
                 try:
                     conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint_name}")
                     conn_info.transaction_level -= 1
                     logger.debug(
-                        f"Rolled back to savepoint: {savepoint_name} (lvl: {conn_info.transaction_level})"
+                        f"Rolled back savepoint: {savepoint_name} (L{conn_info.transaction_level})"
                     )
                 except Exception as rollback_error:
                     logger.error(
-                        f"Failed to rollback savepoint {savepoint_name}: {rollback_error}"
+                        f"Failed rollback savepoint {savepoint_name}: {rollback_error}"
                     )
                 logger.error(
                     f"Transaction rolled back to savepoint {savepoint_name}: {e}"
@@ -471,7 +471,7 @@ class DatabaseConnection:
                     if attempt < max_retries:
                         wait_time = 0.1 * (2**attempt)  # Exponential backoff
                         logger.warning(
-                            f"Database busy, retrying in {wait_time}s (attempt {attempt + 1})"
+                            f"DB busy, retrying in {wait_time}s (attempt {attempt + 1})"
                         )
                         time.sleep(wait_time)
                         continue
@@ -640,7 +640,5 @@ class DatabaseConnection:
 
     def __del__(self) -> None:
         """Cleanup database connections on destruction."""
-        try:
+        with suppress(Exception):
             self.close_all_connections()
-        except Exception:
-            pass  # Ignore errors during cleanup

@@ -12,6 +12,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from src.database.connection import DatabaseConnection
+from src.database.models import DocumentModel, VectorIndexModel
+from src.repositories.document_repository import DocumentRepository
+from src.repositories.vector_repository import VectorIndexRepository
+from src.services.content_hash_service import ContentHashError, ContentHashService
+
 
 # Define base RAG exceptions
 class RAGServiceError(Exception):
@@ -30,13 +36,6 @@ class RAGQueryError(RAGServiceError):
     """Exception for RAG query related errors."""
 
     pass
-
-
-from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel, VectorIndexModel
-from src.repositories.document_repository import DocumentRepository
-from src.repositories.vector_repository import VectorIndexRepository
-from src.services.content_hash_service import ContentHashError, ContentHashService
 
 logger = logging.getLogger(__name__)
 

@@ -312,7 +312,7 @@ class DatabaseMigrator:
             current_version = self.get_current_version()
             if current_version != self.CURRENT_VERSION:
                 logger.warning(
-                    f"Schema version mismatch: {current_version} != {self.CURRENT_VERSION}"
+                    f"Schema mismatch: {current_version} != {self.CURRENT_VERSION}"
                 )
                 return False
             # Check required tables exist
