@@ -6,8 +6,7 @@ Follows the Repository pattern to encapsulate data access logic.
 
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
+from typing import Any, Generic, TypeVar
 
 from src.database.connection import DatabaseConnection
 
@@ -50,7 +49,7 @@ class BaseRepository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def to_model(self, row: Dict[str, Any]) -> T:
+    def to_model(self, row: dict[str, Any]) -> T:
         """
         Convert database row to model object.
         Args:
@@ -61,7 +60,7 @@ class BaseRepository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def to_database_dict(self, model: T) -> Dict[str, Any]:
+    def to_database_dict(self, model: T) -> dict[str, Any]:
         """
         Convert model object to database dictionary.
         Args:
@@ -71,7 +70,7 @@ class BaseRepository(ABC, Generic[T]):
         """
         pass
 
-    def find_by_id(self, id: int) -> Optional[T]:
+    def find_by_id(self, id: int) -> T | None:
         """
         Find entity by ID.
         Args:
@@ -89,7 +88,7 @@ class BaseRepository(ABC, Generic[T]):
             logger.error(f"Failed to find {self.get_table_name()} by ID {id}: {e}")
             raise
 
-    def find_all(self, limit: Optional[int] = None, offset: int = 0) -> List[T]:
+    def find_all(self, limit: int | None = None, offset: int = 0) -> list[T]:
         """
         Find all entities with optional pagination.
         Args:
@@ -220,7 +219,7 @@ class BaseRepository(ABC, Generic[T]):
             )
             raise
 
-    def find_by_field(self, field: str, value: Any) -> List[T]:
+    def find_by_field(self, field: str, value: Any) -> list[T]:
         """
         Find entities by specific field value.
         Args:
@@ -240,8 +239,8 @@ class BaseRepository(ABC, Generic[T]):
             raise
 
     def execute_custom_query(
-        self, query: str, params: Optional[Tuple[Any, ...]] = None
-    ) -> List[T]:
+        self, query: str, params: tuple[Any, ...] | None = None
+    ) -> list[T]:
         """
         Execute custom query and return model objects.
         Args:

@@ -5,7 +5,7 @@ following the Dependency Inversion Principle (DIP).
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.database.models import DocumentModel, VectorIndexModel
 
@@ -66,7 +66,7 @@ class IRAGService(ABC):
         pass
 
     @abstractmethod
-    def get_index_info(self) -> Dict[str, Any]:
+    def get_index_info(self) -> dict[str, Any]:
         """Get information about loaded index."""
         pass
 
@@ -82,7 +82,7 @@ class IDocumentLibraryService(ABC):
     def import_document(
         self,
         file_path: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         check_duplicates: bool = True,
         overwrite_duplicates: bool = False,
     ) -> DocumentModel:
@@ -90,19 +90,19 @@ class IDocumentLibraryService(ABC):
         pass
 
     @abstractmethod
-    def get_document_by_id(self, document_id: int) -> Optional[DocumentModel]:
+    def get_document_by_id(self, document_id: int) -> DocumentModel | None:
         """Get document by ID."""
         pass
 
     @abstractmethod
     def get_documents(
         self,
-        search_query: Optional[str] = None,
+        search_query: str | None = None,
         limit: int = 50,
         offset: int = 0,
         sort_by: str = "created_at",
         sort_order: str = "desc",
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """Get documents with optional search and pagination."""
         pass
 
@@ -114,22 +114,22 @@ class IDocumentLibraryService(ABC):
         pass
 
     @abstractmethod
-    def find_duplicate_documents(self) -> List[tuple]:
+    def find_duplicate_documents(self) -> list[tuple]:
         """Find potential duplicate documents."""
         pass
 
     @abstractmethod
-    def get_library_statistics(self) -> Dict[str, Any]:
+    def get_library_statistics(self) -> dict[str, Any]:
         """Get library statistics."""
         pass
 
     @abstractmethod
-    def cleanup_library(self) -> Dict[str, int]:
+    def cleanup_library(self) -> dict[str, int]:
         """Clean up orphaned data."""
         pass
 
     @abstractmethod
-    def verify_document_integrity(self, document_id: int) -> Dict[str, Any]:
+    def verify_document_integrity(self, document_id: int) -> dict[str, Any]:
         """Verify document integrity."""
         pass
 
@@ -141,12 +141,12 @@ class IVectorIndexService(ABC):
     """
 
     @abstractmethod
-    def create_index(self, document: DocumentModel) -> Optional[VectorIndexModel]:
+    def create_index(self, document: DocumentModel) -> VectorIndexModel | None:
         """Create vector index for document."""
         pass
 
     @abstractmethod
-    def get_index_by_document_id(self, document_id: int) -> Optional[VectorIndexModel]:
+    def get_index_by_document_id(self, document_id: int) -> VectorIndexModel | None:
         """Get vector index by document ID."""
         pass
 
@@ -156,7 +156,7 @@ class IVectorIndexService(ABC):
         pass
 
     @abstractmethod
-    def verify_index_integrity(self, index_id: int) -> Dict[str, Any]:
+    def verify_index_integrity(self, index_id: int) -> dict[str, Any]:
         """Verify index file integrity."""
         pass
 

@@ -6,7 +6,7 @@ Provides methods for document search, filtering, and duplicate detection.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel
@@ -45,23 +45,23 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         """Get the database table name."""
         return "documents"
 
-    def to_model(self, row: Dict[str, Any]) -> DocumentModel:
+    def to_model(self, row: dict[str, Any]) -> DocumentModel:
         """Convert database row to DocumentModel."""
         return DocumentModel.from_database_row(row)
 
-    def to_database_dict(self, model: DocumentModel) -> Dict[str, Any]:
+    def to_database_dict(self, model: DocumentModel) -> dict[str, Any]:
         """Convert DocumentModel to database dictionary."""
         return model.to_database_dict()
 
-    def get_by_id(self, entity_id: int) -> Optional[DocumentModel]:
+    def get_by_id(self, entity_id: int) -> DocumentModel | None:
         """Interface method - alias for find_by_id."""
         return self.find_by_id(entity_id)
 
-    def find_by_hash(self, file_hash: str) -> Optional[DocumentModel]:
+    def find_by_hash(self, file_hash: str) -> DocumentModel | None:
         """Interface method - alias for find_by_file_hash."""
         return self.find_by_file_hash(file_hash)
 
-    def find_by_file_hash(self, file_hash: str) -> Optional[DocumentModel]:
+    def find_by_file_hash(self, file_hash: str) -> DocumentModel | None:
         """
         Find document by file hash.
         Args:
@@ -79,7 +79,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             logger.error(f"Failed to find document by file hash {file_hash}: {e}")
             raise
 
-    def find_by_file_path(self, file_path: str) -> Optional[DocumentModel]:
+    def find_by_file_path(self, file_path: str) -> DocumentModel | None:
         """
         Find document by its absolute file path.
         Args:
@@ -97,7 +97,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             logger.error(f"Failed to find document by file path {file_path}: {e}")
             raise
 
-    def find_by_content_hash(self, content_hash: str) -> Optional[DocumentModel]:
+    def find_by_content_hash(self, content_hash: str) -> DocumentModel | None:
         """
         Find documents by content hash (for duplicate detection).
         Note: This requires adding content_hash column to database.
@@ -119,7 +119,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
 
     def search_by_title(
         self, search_query: str, limit: int = 50
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """
         Search documents by title.
         Args:
@@ -144,7 +144,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
 
     def search(
         self, query: str, limit: int = 50, offset: int = 0
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """Interface method - search documents by query."""
         return self.search_by_title(query, limit)
 
@@ -154,7 +154,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         offset: int = 0,
         sort_by: str = "created_at",
         sort_order: str = "desc",
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """Interface method - get all documents with pagination and sorting."""
         try:
             # Validate sort_by parameter
@@ -193,7 +193,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         """Interface method - delete document by ID."""
         return super().delete(entity_id)
 
-    def find_recent_documents(self, limit: int = 20) -> List[DocumentModel]:
+    def find_recent_documents(self, limit: int = 20) -> list[DocumentModel]:
         """
         Find recently accessed documents.
         Args:
@@ -216,8 +216,8 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             raise
 
     def find_by_size_range(
-        self, min_size: Optional[int] = None, max_size: Optional[int] = None
-    ) -> List[DocumentModel]:
+        self, min_size: int | None = None, max_size: int | None = None
+    ) -> list[DocumentModel]:
         """
         Find documents by file size range.
         Args:
@@ -246,8 +246,8 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             raise
 
     def find_by_date_range(
-        self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None
-    ) -> List[DocumentModel]:
+        self, start_date: datetime | None = None, end_date: datetime | None = None
+    ) -> list[DocumentModel]:
         """
         Find documents by creation date range.
         Args:
@@ -303,14 +303,14 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             )
             raise
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get document repository statistics.
         Returns:
             Dictionary with various statistics
         """
         try:
-            stats: Dict[str, Any] = {}
+            stats: dict[str, Any] = {}
             # Total count
             stats["total_documents"] = self.count()
             # Size statistics
@@ -353,7 +353,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             logger.error(f"Failed to get document statistics: {e}")
             raise
 
-    def find_duplicates_by_size_and_name(self) -> List[Tuple[int, List[DocumentModel]]]:
+    def find_duplicates_by_size_and_name(self) -> list[tuple[int, list[DocumentModel]]]:
         """
         Find potential duplicates based on file size and similar names.
         Returns:
@@ -382,14 +382,14 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
 
     def advanced_search(
         self,
-        title_query: Optional[str] = None,
-        min_size: Optional[int] = None,
-        max_size: Optional[int] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        has_vector_index: Optional[bool] = None,
+        title_query: str | None = None,
+        min_size: int | None = None,
+        max_size: int | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        has_vector_index: bool | None = None,
         limit: int = 50,
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """
         Advanced search with multiple criteria.
         Args:
@@ -404,8 +404,8 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             List of matching documents
         """
         try:
-            conditions: List[str] = []
-            params: List[Any] = []
+            conditions: list[str] = []
+            params: list[Any] = []
             # Title search
             if title_query:
                 conditions.append("d.title LIKE ?")

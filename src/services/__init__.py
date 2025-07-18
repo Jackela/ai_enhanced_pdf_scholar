@@ -18,9 +18,9 @@ from .rag_cache_service import RAGCacheService
 from .vector_index_manager import VectorIndexManager
 
 __all__ = [
+    "ContentHashService",
     "DocumentLibraryService",
     "EnhancedRAGService",
-    "ContentHashService",
-    "VectorIndexManager",
     "RAGCacheService",
+    "VectorIndexManager",
 ]

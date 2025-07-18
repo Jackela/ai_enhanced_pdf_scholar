@@ -10,7 +10,7 @@ from .models import DocumentModel, VectorIndexModel
 
 __all__ = [
     "DatabaseConnection",
+    "DatabaseMigrator",
     "DocumentModel",
     "VectorIndexModel",
-    "DatabaseMigrator",
 ]

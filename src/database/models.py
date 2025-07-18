@@ -5,10 +5,10 @@ and vector indexing. These are pure data classes without business logic.
 """
 
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -30,19 +30,19 @@ class DocumentModel:
 
     # Core fields
     title: str
-    file_path: Optional[str]
+    file_path: str | None
     file_hash: str
     file_size: int
-    content_hash: Optional[str] = None
-    page_count: Optional[int] = None
+    content_hash: str | None = None
+    page_count: int | None = None
     # Timestamps
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    last_accessed: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    last_accessed: datetime | None = None
     # Database ID (set after insertion)
-    id: Optional[int] = None
+    id: int | None = None
     # Metadata as JSON dict
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
     # Internal flag to distinguish between new creation and database loading
     _from_database: bool = field(default=False, init=True, repr=False, compare=False)
 
@@ -67,7 +67,7 @@ class DocumentModel:
 
     @classmethod
     def from_file(
-        cls, file_path: str, file_hash: str, title: Optional[str] = None
+        cls, file_path: str, file_hash: str, title: str | None = None
     ) -> "DocumentModel":
         """
         Create DocumentModel from file path.
@@ -99,7 +99,7 @@ class DocumentModel:
         )
 
     @classmethod
-    def from_database_row(cls, row: Dict[str, Any]) -> "DocumentModel":
+    def from_database_row(cls, row: dict[str, Any]) -> "DocumentModel":
         """
         Create DocumentModel from database row.
         Args:
@@ -136,7 +136,7 @@ class DocumentModel:
             _from_database=True,
         )
 
-    def to_database_dict(self) -> Dict[str, Any]:
+    def to_database_dict(self) -> dict[str, Any]:
         """
         Convert model to dictionary for database insertion.
         Returns:
@@ -158,7 +158,7 @@ class DocumentModel:
             "metadata": json.dumps(self.metadata) if self.metadata else "{}",
         }
 
-    def to_api_dict(self) -> Dict[str, Any]:
+    def to_api_dict(self) -> dict[str, Any]:
         """
         Convert model to dictionary for API responses.
         Returns:
@@ -227,11 +227,11 @@ class VectorIndexModel:
     document_id: int
     index_path: str
     index_hash: str
-    chunk_count: Optional[int] = None
+    chunk_count: int | None = None
     # Timestamps
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
     # Database ID (set after insertion)
-    id: Optional[int] = None
+    id: int | None = None
 
     def __post_init__(self) -> None:
         """Post-initialization validation and defaults."""
@@ -247,7 +247,7 @@ class VectorIndexModel:
             raise ValueError("Index hash cannot be empty")
 
     @classmethod
-    def from_database_row(cls, row: Dict[str, Any]) -> "VectorIndexModel":
+    def from_database_row(cls, row: dict[str, Any]) -> "VectorIndexModel":
         """
         Create VectorIndexModel from database row.
         Args:
@@ -267,7 +267,7 @@ class VectorIndexModel:
             created_at=created_at,
         )
 
-    def to_database_dict(self) -> Dict[str, Any]:
+    def to_database_dict(self) -> dict[str, Any]:
         """
         Convert model to dictionary for database insertion.
         Returns:
@@ -317,9 +317,9 @@ class TagModel:
 
     # Core fields
     name: str
-    color: Optional[str] = None
+    color: str | None = None
     # Database ID (set after insertion)
-    id: Optional[int] = None
+    id: int | None = None
     # Internal flag to distinguish between new creation and database loading
     _from_database: bool = field(default=False, init=True, repr=False, compare=False)
 
@@ -334,7 +334,7 @@ class TagModel:
             self.color = "#0078d4"  # Default blue
 
     @classmethod
-    def from_database_row(cls, row: Dict[str, Any]) -> "TagModel":
+    def from_database_row(cls, row: dict[str, Any]) -> "TagModel":
         """
         Create TagModel from database row.
         Args:
@@ -346,7 +346,7 @@ class TagModel:
             id=row["id"], name=row["name"], color=row.get("color"), _from_database=True
         )
 
-    def to_database_dict(self) -> Dict[str, Any]:
+    def to_database_dict(self) -> dict[str, Any]:
         """
         Convert model to dictionary for database insertion.
         Returns:

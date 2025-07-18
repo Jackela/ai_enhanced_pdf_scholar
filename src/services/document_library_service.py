@@ -5,14 +5,13 @@ for document importing, organization, and lifecycle management.
 """
 
 import logging
-import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel, VectorIndexModel
+from src.database.models import DocumentModel
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.vector_repository import VectorIndexRepository
 from src.services.content_hash_service import ContentHashError, ContentHashService
@@ -49,7 +48,7 @@ class DocumentLibraryService:
     """
 
     def __init__(
-        self, db_connection: DatabaseConnection, documents_dir: Optional[str] = None
+        self, db_connection: DatabaseConnection, documents_dir: str | None = None
     ) -> None:
         """
         Initialize document library service.
@@ -100,7 +99,7 @@ class DocumentLibraryService:
     def import_document(
         self,
         file_path: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         check_duplicates: bool = True,
         overwrite_duplicates: bool = False,
     ) -> DocumentModel:
@@ -195,12 +194,12 @@ class DocumentLibraryService:
 
     def get_documents(
         self,
-        search_query: Optional[str] = None,
+        search_query: str | None = None,
         limit: int = 50,
         offset: int = 0,
         sort_by: str = "created_at",
         sort_order: str = "desc",
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """
         Get documents with optional search and pagination.
         Args:
@@ -223,7 +222,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to get documents: {e}")
             raise
 
-    def get_recent_documents(self, limit: int = 20) -> List[DocumentModel]:
+    def get_recent_documents(self, limit: int = 20) -> list[DocumentModel]:
         """
         Get recently accessed documents.
         Args:
@@ -237,7 +236,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to get recent documents: {e}")
             raise
 
-    def get_document_by_path(self, file_path: str) -> Optional[DocumentModel]:
+    def get_document_by_path(self, file_path: str) -> DocumentModel | None:
         """
         Get document by its file path.
         Args:
@@ -251,7 +250,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to get document by path {file_path}: {e}")
             raise
 
-    def get_document_by_id(self, document_id: int) -> Optional[DocumentModel]:
+    def get_document_by_id(self, document_id: int) -> DocumentModel | None:
         """
         Get document by ID and update access time.
         Args:
@@ -309,7 +308,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to delete document {document_id}: {e}")
             raise
 
-    def find_duplicate_documents(self) -> List[Tuple[str, List[DocumentModel]]]:
+    def find_duplicate_documents(self) -> list[tuple[str, list[DocumentModel]]]:
         """
         Find potential duplicate documents.
         Returns:
@@ -327,7 +326,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to find duplicate documents: {e}")
             raise
 
-    def get_library_statistics(self) -> Dict[str, Any]:
+    def get_library_statistics(self) -> dict[str, Any]:
         """
         Get comprehensive library statistics.
         Returns:
@@ -354,7 +353,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to get library statistics: {e}")
             raise
 
-    def cleanup_library(self) -> Dict[str, int]:
+    def cleanup_library(self) -> dict[str, int]:
         """
         Perform library cleanup operations.
         Returns:
@@ -380,7 +379,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to cleanup library: {e}")
             raise
 
-    def verify_document_integrity(self, document_id: int) -> Dict[str, Any]:
+    def verify_document_integrity(self, document_id: int) -> dict[str, Any]:
         """
         Verify the integrity of a document and its associated data.
         Args:
@@ -389,7 +388,7 @@ class DocumentLibraryService:
             Dictionary with integrity check results
         """
         try:
-            result: Dict[str, Any] = {
+            result: dict[str, Any] = {
                 "document_id": document_id,
                 "exists": False,
                 "file_exists": False,
@@ -453,7 +452,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to verify document integrity for {document_id}: {e}")
             return {"document_id": document_id, "error": str(e)}
 
-    def advanced_search(self, **kwargs: Any) -> List[DocumentModel]:
+    def advanced_search(self, **kwargs: Any) -> list[DocumentModel]:
         """
         Perform advanced search with multiple criteria.
         Args:

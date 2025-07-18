@@ -10,7 +10,7 @@ import shutil
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 
 # Define base RAG exceptions
@@ -103,7 +103,7 @@ class EnhancedRAGService:
         self.test_mode = test_mode
         # RAG service attributes (previously from base class)
         self.current_index = None
-        self.current_pdf_path: Optional[str] = None
+        self.current_pdf_path: str | None = None
         self.cache_dir = Path(".rag_cache")
         self.cache_dir.mkdir(exist_ok=True)
         # Database integration
@@ -114,8 +114,8 @@ class EnhancedRAGService:
         self.vector_storage_dir = Path(vector_storage_dir)
         self.vector_storage_dir.mkdir(exist_ok=True)
         # Current state
-        self.current_document_id: Optional[int] = None
-        self.current_vector_index: Optional[VectorIndexModel] = None
+        self.current_document_id: int | None = None
+        self.current_vector_index: VectorIndexModel | None = None
         # Initialize LlamaIndex components if not in test mode
         if not test_mode:
             self._initialize_llama_index()
@@ -148,7 +148,7 @@ class EnhancedRAGService:
             raise RAGServiceError(f"LlamaIndex initialization failed: {e}")
 
     def build_index_from_pdf(
-        self, pdf_path: str, cache_dir: Optional[str] = None
+        self, pdf_path: str, cache_dir: str | None = None
     ) -> bool:
         """
         Build vector index from PDF file using LlamaIndex.
@@ -163,7 +163,6 @@ class EnhancedRAGService:
                 logger.info(f"Test mode: Simulating index build for {pdf_path}")
                 return True
             from llama_index.core import (
-                SimpleDirectoryReader,
                 StorageContext,
                 VectorStoreIndex,
             )
@@ -217,7 +216,7 @@ class EnhancedRAGService:
             logger.error(f"Query execution failed: {e}")
             raise RAGQueryError(f"Failed to execute query: {e}")
 
-    def get_cache_info(self) -> Dict[str, Any]:
+    def get_cache_info(self) -> dict[str, Any]:
         """
         Get information about the current cache and index status.
         Returns:
@@ -396,7 +395,7 @@ class EnhancedRAGService:
         logger.info(f"Query completed for document {document_id}")
         return response
 
-    def get_document_index_status(self, document_id: int) -> Dict[str, Any]:
+    def get_document_index_status(self, document_id: int) -> dict[str, Any]:
         """
         Get the indexing status for a document.
         Args:
@@ -465,7 +464,7 @@ class EnhancedRAGService:
             logger.error(f"Failed to cleanup orphaned indexes: {e}")
             raise EnhancedRAGServiceError(f"Cleanup failed: {e}") from e
 
-    def get_enhanced_cache_info(self) -> Dict[str, Any]:
+    def get_enhanced_cache_info(self) -> dict[str, Any]:
         """
         Get enhanced cache information including database statistics.
         Returns:
@@ -593,7 +592,7 @@ class EnhancedRAGService:
             if metadata_path.exists():
                 import json
 
-                with open(metadata_path, "r") as f:
+                with open(metadata_path) as f:
                     metadata = json.load(f)
                     return int(metadata.get("document_count", 0))
             # Fallback: estimate from vector store file
@@ -601,7 +600,7 @@ class EnhancedRAGService:
             if vector_store_path.exists():
                 import json
 
-                with open(vector_store_path, "r") as f:
+                with open(vector_store_path) as f:
                     data = json.load(f)
                     # Estimate chunk count from vector store data
                     return len(data.get("embedding_dict", {}))

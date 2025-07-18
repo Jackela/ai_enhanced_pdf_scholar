@@ -7,7 +7,7 @@ Supports both file-level and content-level hashing for different use cases.
 import hashlib
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import fitz  # PyMuPDF
 
@@ -105,7 +105,7 @@ class ContentHashService:
             raise ContentHashError(f"Content hashing failed: {e}") from e
 
     @staticmethod
-    def calculate_combined_hashes(file_path: str) -> Tuple[str, str]:
+    def calculate_combined_hashes(file_path: str) -> tuple[str, str]:
         """
         Calculate both file and content hashes in one operation.
         More efficient than calling both methods separately for the same file.
@@ -216,7 +216,7 @@ class ContentHashService:
             return False
 
     @staticmethod
-    def get_file_info(file_path: str) -> Dict[str, Any]:
+    def get_file_info(file_path: str) -> dict[str, Any]:
         """
         Get comprehensive file information for debugging and logging.
         Args:

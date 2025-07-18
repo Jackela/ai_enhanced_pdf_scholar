@@ -1,6 +1,6 @@
 """
 Global State Manager
-This module provides centralized application state management using the observer pattern.
+This module provides centralized application state management using observers.
 It implements SSOT for all application state with change notifications.
 Key Features:
 - Centralized state storage with nested path support
@@ -10,9 +10,10 @@ Key Features:
 """
 
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class StateManager:
     {
         "name": "StateManager",
         "version": "1.0.0",
-        "description": "Global application state management with observer pattern and nested path support.",
+        "description": "Global application state management with observer pattern.",
         "dependencies": [],
         "interface": {
             "inputs": ["path: str", "value: Any", "notify: bool"],
@@ -41,6 +42,9 @@ class StateManager:
     Singleton state manager that provides unified access to all application state
     with observer pattern for reactive UI updates and data flow.
     """
+
+    # Constants
+    MAX_HISTORY_SIZE = 100  # Maximum number of state changes to keep in history
 
     _instance: Optional["StateManager"] = None
 
@@ -55,7 +59,7 @@ class StateManager:
         if hasattr(self, "_initialized"):
             return
         # Application state tree
-        self._state: Dict[str, Any] = {
+        self._state: dict[str, Any] = {
             "app": {
                 "current_pdf": None,
                 "rag_mode": False,
@@ -92,13 +96,13 @@ class StateManager:
             },
         }
         # Observer registry: path -> list of callbacks
-        self._observers: Dict[str, List[Callable]] = {}
+        self._observers: dict[str, list[Callable]] = {}
         # State change history for debugging
-        self._change_history: List[Dict[str, Any]] = []
+        self._change_history: list[dict[str, Any]] = []
         self._initialized = True
         logger.info("StateManager initialized with default application state")
 
-    def get_state(self, path: str = None, default: Any = None) -> Any:
+    def get_state(self, path: str | None = None, default: Any = None) -> Any:
         """
         Get state value using dot-separated path notation.
         Args:
@@ -146,8 +150,8 @@ class StateManager:
                 "change_type": StateChangeType.SET,
             }
             self._change_history.append(change_record)
-            # Keep history limited to last 100 changes
-            if len(self._change_history) > 100:
+            # Keep history limited to last MAX_HISTORY_SIZE changes
+            if len(self._change_history) > self.MAX_HISTORY_SIZE:
                 self._change_history.pop(0)
             logger.debug(f"State set: {path} = {value}")
             # Notify observers if requested
@@ -170,8 +174,8 @@ class StateManager:
         Returns:
             True if state was successfully updated, False otherwise
         Examples:
-            update_state('chat.message_count', lambda x: x + 1) -> Increment message count
-            update_state('chat.messages', lambda msgs: msgs + [new_message]) -> Add message
+            update_state('chat.message_count', lambda x: x + 1) -> Increment count
+            update_state('chat.messages', lambda msgs: msgs + [new_msg]) -> Add msg
         """
         try:
             current_value = self._get_nested_value(self._state, path)
@@ -220,7 +224,7 @@ class StateManager:
         Subscribe to state changes at a specific path.
         Args:
             path: State path to observe (supports wildcards)
-            callback: Function called when state changes (path, new_value, old_value, change_type)
+            callback: Function called when state changes (path, new_val, old_val, type)
         """
         if path not in self._observers:
             self._observers[path] = []
@@ -238,7 +242,7 @@ class StateManager:
             self._observers[path].remove(callback)
             logger.debug(f"Removed observer for path '{path}': {callback.__name__}")
 
-    def _get_nested_value(self, state_dict: Dict[str, Any], path: str) -> Any:
+    def _get_nested_value(self, state_dict: dict[str, Any], path: str) -> Any:
         """Get value from nested dictionary using dot notation."""
         keys = path.split(".")
         current = state_dict
@@ -250,7 +254,7 @@ class StateManager:
         return current
 
     def _set_nested_value(
-        self, state_dict: Dict[str, Any], path: str, value: Any
+        self, state_dict: dict[str, Any], path: str, value: Any
     ) -> None:
         """Set value in nested dictionary using dot notation."""
         keys = path.split(".")
@@ -263,7 +267,7 @@ class StateManager:
         # Set the final value
         current[keys[-1]] = value
 
-    def _delete_nested_value(self, state_dict: Dict[str, Any], path: str) -> None:
+    def _delete_nested_value(self, state_dict: dict[str, Any], path: str) -> None:
         """Delete value from nested dictionary using dot notation."""
         keys = path.split(".")
         current = state_dict
@@ -294,7 +298,7 @@ class StateManager:
                     observer(path, new_value, old_value, change_type)
                 except Exception as e:
                     logger.error(
-                        f"Error notifying observer {observer.__name__} for path '{path}': {e}"
+                        f"Error notifying observer {observer.__name__}: {e}"
                     )
         # Notify wildcard observers (e.g., 'chat.*' matches 'chat.messages')
         for observer_path, observers in self._observers.items():
@@ -308,14 +312,14 @@ class StateManager:
                             observer(path, new_value, old_value, change_type)
                         except Exception as e:
                             logger.error(
-                                f"Error notifying wildcard observer {observer.__name__}: {e}"
+                                f"Error notifying observer {observer.__name__}: {e}"
                             )
 
-    def reset_state(self, section: str = None) -> None:
+    def reset_state(self, section: str | None = None) -> None:
         """
         Reset state to defaults.
         Args:
-            section: Optional section to reset (e.g., 'chat'). If None, resets all state.
+            section: Optional section to reset (e.g., 'chat'). If None, resets all.
         """
         if section:
             if section in self._state:
@@ -333,7 +337,7 @@ class StateManager:
             )
             logger.info("Reset all application state")
 
-    def _get_default_state(self) -> Dict[str, Any]:
+    def _get_default_state(self) -> dict[str, Any]:
         """Get default application state structure."""
         return {
             "app": {
@@ -372,11 +376,11 @@ class StateManager:
             },
         }
 
-    def get_change_history(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_change_history(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get recent state change history for debugging."""
         return self._change_history[-limit:] if limit > 0 else self._change_history
 
-    def get_state_summary(self) -> Dict[str, Any]:
+    def get_state_summary(self) -> dict[str, Any]:
         """Get summary of current state for debugging."""
         return {
             "total_observers": sum(len(obs) for obs in self._observers.values()),

@@ -5,7 +5,7 @@ following the Interface Segregation Principle (ISP).
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from src.database.models import DocumentModel, VectorIndexModel
 
@@ -25,7 +25,7 @@ class IRepository(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def get_by_id(self, entity_id: int) -> Optional[T]:
+    def get_by_id(self, entity_id: int) -> T | None:
         """Get entity by ID."""
         pass
 
@@ -48,19 +48,19 @@ class IDocumentRepository(IRepository[DocumentModel]):
     """
 
     @abstractmethod
-    def find_by_hash(self, file_hash: str) -> Optional[DocumentModel]:
+    def find_by_hash(self, file_hash: str) -> DocumentModel | None:
         """Find document by file hash."""
         pass
 
     @abstractmethod
-    def find_by_content_hash(self, content_hash: str) -> Optional[DocumentModel]:
+    def find_by_content_hash(self, content_hash: str) -> DocumentModel | None:
         """Find document by content hash."""
         pass
 
     @abstractmethod
     def search(
         self, query: str, limit: int = 50, offset: int = 0
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """Search documents by query."""
         pass
 
@@ -71,7 +71,7 @@ class IDocumentRepository(IRepository[DocumentModel]):
         offset: int = 0,
         sort_by: str = "created_at",
         sort_order: str = "desc",
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """Get all documents with pagination and sorting."""
         pass
 
@@ -88,17 +88,17 @@ class IVectorIndexRepository(IRepository[VectorIndexModel]):
     """
 
     @abstractmethod
-    def find_by_document_id(self, document_id: int) -> Optional[VectorIndexModel]:
+    def find_by_document_id(self, document_id: int) -> VectorIndexModel | None:
         """Find vector index by document ID."""
         pass
 
     @abstractmethod
-    def find_by_hash(self, index_hash: str) -> Optional[VectorIndexModel]:
+    def find_by_hash(self, index_hash: str) -> VectorIndexModel | None:
         """Find vector index by hash."""
         pass
 
     @abstractmethod
-    def get_orphaned_indexes(self) -> List[VectorIndexModel]:
+    def get_orphaned_indexes(self) -> list[VectorIndexModel]:
         """Get vector indexes without corresponding documents."""
         pass
 

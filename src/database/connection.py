@@ -9,11 +9,12 @@ import sqlite3
 import threading
 import time
 import weakref
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Empty, Queue
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ class ConnectionInfo:
     last_used: float
     in_use: bool = False
     transaction_level: int = 0
-    connection_id: Optional[str] = None
+    connection_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.connection_id is None:
@@ -72,11 +73,11 @@ class ConnectionPool:
         # Thread-safe connection management
         self._lock = threading.RLock()
         self._pool: Queue[ConnectionInfo] = Queue(maxsize=max_connections)
-        self._active_connections: Dict[str, ConnectionInfo] = {}
+        self._active_connections: dict[str, ConnectionInfo] = {}
         self._connection_count = 0
         self._stats = {"created": 0, "reused": 0, "expired": 0, "errors": 0}
         # Connection lifecycle management
-        self._cleanup_timer: Optional[threading.Thread] = None
+        self._cleanup_timer: threading.Thread | None = None
         self._shutdown_event = threading.Event()
         self._start_cleanup_timer()
         # Register cleanup at exit
@@ -123,7 +124,7 @@ class ConnectionPool:
             conn.execute("PRAGMA optimize")
             self._stats["created"] += 1
             logger.debug(
-                f"Created optimized database connection (total: {self._stats['created']})"
+                f"Created optimized connection (total: {self._stats['created']})"
             )
             return conn
         except Exception as e:
@@ -202,9 +203,8 @@ class ConnectionPool:
             # Check if connection is alive
             conn_info.connection.execute("SELECT 1").fetchone()
             # Check if connection is too old (expire after 1 hour)
-            if time.time() - conn_info.created_at > 3600:
-                return False
-            return True
+            age = time.time() - conn_info.created_at
+            return not age > self.CONNECTION_EXPIRY_SECONDS
         except Exception:
             return False
 
@@ -234,7 +234,7 @@ class ConnectionPool:
                 self._close_connection(conn_info)
                 self._stats["expired"] += 1
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get connection pool statistics."""
         with self._lock:
             return {
@@ -286,11 +286,11 @@ class DatabaseConnection:
     {
         "name": "DatabaseConnection",
         "version": "2.0.0",
-        "description": "High-performance thread-safe SQLite connection manager with pooling and advanced transaction support.",
+        "description": "High-performance thread-safe SQLite connection manager.",
         "dependencies": ["sqlite3", "threading", "queue"],
         "interface": {
-            "inputs": ["db_path: str", "max_connections: int", "connection_timeout: float"],
-            "outputs": "Thread-safe database connection with pooling and transaction management"
+            "inputs": ["db_path: str", "max_connections: int", "timeout: float"],
+            "outputs": "Thread-safe database connection with pooling"
         }
     }
     Enhanced thread-safe SQLite database connection manager.
@@ -301,6 +301,10 @@ class DatabaseConnection:
     - Comprehensive error handling
     - Connection health monitoring
     """
+
+    # Constants
+    CONNECTION_EXPIRY_SECONDS = 3600  # 1 hour in seconds
+    SLOW_QUERY_THRESHOLD_MS = 100     # Threshold for slow query logging in ms
 
     def __init__(
         self, db_path: str, max_connections: int = 20, connection_timeout: float = 30.0
@@ -363,7 +367,7 @@ class DatabaseConnection:
 
     @contextmanager
     def transaction(
-        self, savepoint_name: Optional[str] = None
+        self, savepoint_name: str | None = None
     ) -> Iterator[sqlite3.Connection]:
         """
         Enhanced context manager for database transactions with savepoint support.
@@ -433,7 +437,7 @@ class DatabaseConnection:
                 raise TransactionError(f"Transaction failed: {e}") from e
 
     def execute(
-        self, query: str, params: Optional[Tuple[Any, ...]] = None, max_retries: int = 3
+        self, query: str, params: tuple[Any, ...] | None = None, max_retries: int = 3
     ) -> sqlite3.Cursor:
         """
         Execute SQL query with parameters and comprehensive error handling.
@@ -450,12 +454,9 @@ class DatabaseConnection:
         start_time = time.time()
         for attempt in range(max_retries + 1):
             try:
-                if params:
-                    cursor = conn.execute(query, params)
-                else:
-                    cursor = conn.execute(query)
+                cursor = conn.execute(query, params) if params else conn.execute(query)
                 execution_time = (time.time() - start_time) * 1000
-                if execution_time > 100:  # Log slow queries
+                if execution_time > self.SLOW_QUERY_THRESHOLD_MS:  # Log slow queries
                     logger.warning(
                         f"Slow query ({execution_time:.2f}ms): {query[:100]}..."
                     )
@@ -519,8 +520,8 @@ class DatabaseConnection:
         raise DatabaseConnectionError("Maximum retries exceeded")
 
     def execute_many(
-        self, query: str, params_list: List[Tuple[Any, ...]]
-    ) -> Optional[sqlite3.Cursor]:
+        self, query: str, params_list: list[tuple[Any, ...]]
+    ) -> sqlite3.Cursor | None:
         """
         Execute SQL query with multiple parameter sets using optimized batch processing.
         Args:
@@ -553,8 +554,8 @@ class DatabaseConnection:
             raise DatabaseConnectionError(f"Batch execution failed: {e}") from e
 
     def fetch_one(
-        self, query: str, params: Optional[Tuple[Any, ...]] = None
-    ) -> Optional[sqlite3.Row]:
+        self, query: str, params: tuple[Any, ...] | None = None
+    ) -> sqlite3.Row | None:
         """
         Execute query and fetch one row.
         Args:
@@ -568,8 +569,8 @@ class DatabaseConnection:
         return result  # type: ignore # SQLite Row objects are properly typed
 
     def fetch_all(
-        self, query: str, params: Optional[Tuple[Any, ...]] = None
-    ) -> List[sqlite3.Row]:
+        self, query: str, params: tuple[Any, ...] | None = None
+    ) -> list[sqlite3.Row]:
         """
         Execute query and fetch all rows.
         Args:
@@ -581,7 +582,7 @@ class DatabaseConnection:
         cursor = self.execute(query, params)
         return cursor.fetchall()
 
-    def get_last_insert_id(self) -> Optional[int]:
+    def get_last_insert_id(self) -> int | None:
         """
         Get the ID of the last inserted row.
         Returns:
@@ -604,7 +605,7 @@ class DatabaseConnection:
         self._pool.close_all()
         logger.info("All database connections closed")
 
-    def get_pool_stats(self) -> Dict[str, Any]:
+    def get_pool_stats(self) -> dict[str, Any]:
         """Get connection pool statistics."""
         return self._pool.get_stats()
 
@@ -612,7 +613,7 @@ class DatabaseConnection:
         """Clean up expired connections from the pool."""
         self._pool.cleanup_expired_connections()
 
-    def get_database_info(self) -> Dict[str, Any]:
+    def get_database_info(self) -> dict[str, Any]:
         """
         Get database information and statistics.
         Returns:

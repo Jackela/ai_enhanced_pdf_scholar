@@ -6,14 +6,10 @@ matching, and query result persistence.
 """
 
 import hashlib
-import json
 import logging
-import sqlite3
-import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.database.connection import DatabaseConnection
 
@@ -131,7 +127,7 @@ class RAGCacheService:
             logger.error(f"Failed to initialize cache table: {e}")
             raise RAGCacheServiceError(f"Cache initialization failed: {e}") from e
 
-    def get_cached_response(self, query: str, document_id: int) -> Optional[str]:
+    def get_cached_response(self, query: str, document_id: int) -> str | None:
         """
         Get cached response for a query.
         Args:
@@ -265,7 +261,7 @@ class RAGCacheService:
             logger.error(f"Failed to clear cache: {e}")
             return False
 
-    def get_cache_statistics(self) -> Dict[str, Any]:
+    def get_cache_statistics(self) -> dict[str, Any]:
         """
         Get comprehensive cache statistics.
         Returns:
@@ -337,7 +333,7 @@ class RAGCacheService:
             logger.error(f"Failed to get cache statistics: {e}")
             return {"error": str(e)}
 
-    def optimize_cache(self) -> Dict[str, int]:
+    def optimize_cache(self) -> dict[str, int]:
         """
         Optimize cache by removing expired entries and least used entries.
         Returns:
@@ -368,7 +364,7 @@ class RAGCacheService:
         content = f"{query.lower().strip()}:{document_id}"
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
-    def _get_exact_match(self, query_hash: str) -> Optional[Dict[str, Any]]:
+    def _get_exact_match(self, query_hash: str) -> dict[str, Any] | None:
         """Get exact cache match by query hash."""
         try:
             return self.db.fetch_one(
@@ -379,7 +375,7 @@ class RAGCacheService:
 
     def _find_similar_query(
         self, query: str, document_id: int
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Find semantically similar cached query.
         Note: This is a simplified implementation. In production, you might want

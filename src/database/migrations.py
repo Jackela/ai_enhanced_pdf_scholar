@@ -5,10 +5,10 @@ Ensures database schema is up-to-date and supports gradual upgrades.
 """
 
 import logging
-from pathlib import Path
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any
 
-from .connection import DatabaseConnection, DatabaseConnectionError
+from .connection import DatabaseConnection
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class DatabaseMigrator:
         self.db = db_connection
         self.migrations = self._get_migrations()
 
-    def _get_migrations(self) -> Dict[int, Callable[[], None]]:
+    def _get_migrations(self) -> dict[int, Callable[[], None]]:
         """
         Get all available migrations.
         Returns:
@@ -123,7 +123,7 @@ class DatabaseMigrator:
                     migration_func()
                     self.set_version(version)
                     logger.info(f"Migration {version} completed successfully")
-                logger.info(f"Database migration completed successfully")
+                logger.info("Database migration completed successfully")
                 return True
         except Exception as e:
             logger.error(f"Database migration failed: {e}")
@@ -259,14 +259,14 @@ class DatabaseMigrator:
         logger.info("Created index on content_hash")
         logger.info("Migration 002 completed successfully")
 
-    def get_schema_info(self) -> Dict[str, Any]:
+    def get_schema_info(self) -> dict[str, Any]:
         """
         Get information about current database schema.
         Returns:
             Dictionary with schema information
         """
         try:
-            info: Dict[str, Any] = {
+            info: dict[str, Any] = {
                 "current_version": self.get_current_version(),
                 "target_version": self.CURRENT_VERSION,
                 "needs_migration": self.needs_migration(),

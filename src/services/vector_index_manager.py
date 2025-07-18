@@ -4,18 +4,16 @@ This module provides comprehensive vector index persistence management,
 including index lifecycle, integrity verification, and optimization.
 """
 
-import hashlib
 import json
 import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from src.database.connection import DatabaseConnection
 from src.database.models import VectorIndexModel
 from src.repositories.vector_repository import VectorIndexRepository
-from src.services.content_hash_service import ContentHashError, ContentHashService
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +190,7 @@ class VectorIndexManager:
             logger.error(f"Failed to move index files: {e}")
             raise VectorIndexManagerError(f"Index move failed: {e}") from e
 
-    def verify_index_integrity(self, vector_index_id: int) -> Dict[str, Any]:
+    def verify_index_integrity(self, vector_index_id: int) -> dict[str, Any]:
         """
         Verify the integrity of a vector index.
         Args:
@@ -239,7 +237,7 @@ class VectorIndexManager:
                         file_check["size"] = file_path.stat().st_size
                         file_check["readable"] = True
                         # Verify JSON structure
-                        with open(file_path, "r") as f:
+                        with open(file_path) as f:
                             json.load(f)
                         file_check["valid_json"] = True
                     except Exception as e:
@@ -252,7 +250,7 @@ class VectorIndexManager:
             metadata_path = index_path / "index_metadata.json"
             if metadata_path.exists():
                 try:
-                    with open(metadata_path, "r") as f:
+                    with open(metadata_path) as f:
                         metadata = json.load(f)
                     result["metadata_check"] = True
                     # Verify metadata consistency
@@ -332,7 +330,7 @@ class VectorIndexManager:
             logger.error(f"Failed to backup index {vector_index_id}: {e}")
             raise VectorIndexManagerError(f"Index backup failed: {e}") from e
 
-    def optimize_storage(self) -> Dict[str, int]:
+    def optimize_storage(self) -> dict[str, int]:
         """
         Optimize vector index storage by removing duplicates and cleaning up.
         Returns:
@@ -362,7 +360,7 @@ class VectorIndexManager:
             logger.error(f"Storage optimization failed: {e}")
             raise VectorIndexManagerError(f"Optimization failed: {e}") from e
 
-    def get_storage_statistics(self) -> Dict[str, Any]:
+    def get_storage_statistics(self) -> dict[str, Any]:
         """
         Get comprehensive storage statistics.
         Returns:
@@ -424,13 +422,13 @@ class VectorIndexManager:
             # Try metadata first
             metadata_path = index_path / "index_metadata.json"
             if metadata_path.exists():
-                with open(metadata_path, "r") as f:
+                with open(metadata_path) as f:
                     metadata = json.load(f)
                     return metadata.get("chunk_count", 0)
             # Fallback to vector store
             vector_store_path = index_path / "default__vector_store.json"
             if vector_store_path.exists():
-                with open(vector_store_path, "r") as f:
+                with open(vector_store_path) as f:
                     data = json.load(f)
                     return len(data.get("embedding_dict", {}))
             return 0

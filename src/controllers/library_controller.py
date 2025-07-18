@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.core.state_manager import StateManager
 from src.database.connection import DatabaseConnection
@@ -24,7 +24,7 @@ class LibraryController:
     ):
         """
         Initialize LibraryController with flexible dependency injection.
-        Supports both old style (for desktop app) and new style (for web API) initialization.
+        Supports both old style (desktop app) and new style (web API) initialization.
         """
         if library_service is not None:
             # Legacy desktop app style initialization (deprecated)
@@ -47,8 +47,8 @@ class LibraryController:
         logger.info("LibraryController initialized")
 
     def get_all_documents(
-        self, search_query: Optional[str] = None
-    ) -> List[DocumentModel]:
+        self, search_query: str | None = None
+    ) -> list[DocumentModel]:
         """
         Get all documents, optionally filtered by search query.
         """
@@ -56,10 +56,10 @@ class LibraryController:
 
     def get_documents(
         self,
-        search_query: Optional[str] = None,
-        limit: Optional[int] = None,
+        search_query: str | None = None,
+        limit: int | None = None,
         sort_by: str = "created_at",
-    ) -> List[DocumentModel]:
+    ) -> list[DocumentModel]:
         """
         Get documents with filtering and sorting options for API endpoints.
         """
@@ -70,7 +70,7 @@ class LibraryController:
     def import_document(
         self,
         file_path: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         check_duplicates: bool = True,
         auto_build_index: bool = False,
     ) -> bool:
@@ -92,7 +92,7 @@ class LibraryController:
     def import_document_legacy(
         self,
         file_path: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         overwrite_duplicates: bool = False,
     ) -> DocumentModel:
         """
@@ -108,31 +108,31 @@ class LibraryController:
         """
         return self.library_service.delete_document(document_id)
 
-    def get_document_by_id(self, document_id: int) -> Optional[DocumentModel]:
+    def get_document_by_id(self, document_id: int) -> DocumentModel | None:
         """
         Get a document by its ID.
         """
         return self.library_service.get_document_by_id(document_id)
 
-    def get_library_statistics(self) -> Dict[str, Any]:
+    def get_library_statistics(self) -> dict[str, Any]:
         """
         Get library statistics.
         """
         return self.library_service.get_library_statistics()
 
-    def find_duplicate_documents(self) -> List[tuple]:
+    def find_duplicate_documents(self) -> list[tuple]:
         """
         Find duplicate documents.
         """
         return self.library_service.find_duplicate_documents()
 
-    def cleanup_library(self) -> Dict[str, int]:
+    def cleanup_library(self) -> dict[str, int]:
         """
         Clean up the library.
         """
         return self.library_service.cleanup_library()
 
-    def verify_document_integrity(self, document_id: int) -> Dict[str, Any]:
+    def verify_document_integrity(self, document_id: int) -> dict[str, Any]:
         """
         Verify document integrity.
         """

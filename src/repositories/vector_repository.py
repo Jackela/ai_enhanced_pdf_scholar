@@ -6,7 +6,7 @@ Provides methods for index management and document-index associations.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.database.connection import DatabaseConnection
 from src.database.models import VectorIndexModel
@@ -44,15 +44,15 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
         """Get the database table name."""
         return "vector_indexes"
 
-    def to_model(self, row: Dict[str, Any]) -> VectorIndexModel:
+    def to_model(self, row: dict[str, Any]) -> VectorIndexModel:
         """Convert database row to VectorIndexModel."""
         return VectorIndexModel.from_database_row(row)
 
-    def to_database_dict(self, model: VectorIndexModel) -> Dict[str, Any]:
+    def to_database_dict(self, model: VectorIndexModel) -> dict[str, Any]:
         """Convert VectorIndexModel to database dictionary."""
         return model.to_database_dict()
 
-    def find_by_document_id(self, document_id: int) -> Optional[VectorIndexModel]:
+    def find_by_document_id(self, document_id: int) -> VectorIndexModel | None:
         """
         Find vector index by document ID.
         Args:
@@ -72,7 +72,7 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             )
             raise
 
-    def find_by_index_hash(self, index_hash: str) -> Optional[VectorIndexModel]:
+    def find_by_index_hash(self, index_hash: str) -> VectorIndexModel | None:
         """
         Find vector index by index hash.
         Args:
@@ -90,7 +90,7 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             logger.error(f"Failed to find vector index by hash {index_hash}: {e}")
             raise
 
-    def find_all_with_documents(self) -> List[Dict[str, Any]]:
+    def find_all_with_documents(self) -> list[dict[str, Any]]:
         """
         Find all vector indexes with associated document information.
         Returns:
@@ -134,7 +134,7 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             )
             raise
 
-    def find_orphaned_indexes(self) -> List[VectorIndexModel]:
+    def find_orphaned_indexes(self) -> list[VectorIndexModel]:
         """
         Find vector indexes that don't have corresponding documents.
         Returns:
@@ -153,7 +153,7 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             logger.error(f"Failed to find orphaned vector indexes: {e}")
             raise
 
-    def find_invalid_indexes(self) -> List[VectorIndexModel]:
+    def find_invalid_indexes(self) -> list[VectorIndexModel]:
         """
         Find vector indexes where the index files no longer exist.
         Returns:
@@ -230,14 +230,14 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             logger.error(f"Failed to cleanup invalid vector indexes: {e}")
             raise
 
-    def get_index_statistics(self) -> Dict[str, Any]:
+    def get_index_statistics(self) -> dict[str, Any]:
         """
         Get vector index repository statistics.
         Returns:
             Dictionary with index statistics
         """
         try:
-            stats: Dict[str, Any] = {}
+            stats: dict[str, Any] = {}
             # Total count
             stats["total_indexes"] = self.count()
             # Chunk statistics
@@ -280,7 +280,7 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             logger.error(f"Failed to get vector index statistics: {e}")
             raise
 
-    def verify_index_integrity(self, index_id: int) -> Dict[str, Any]:
+    def verify_index_integrity(self, index_id: int) -> dict[str, Any]:
         """
         Verify the integrity of a specific vector index.
         Args:
@@ -292,7 +292,7 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             index = self.find_by_id(index_id)
             if not index:
                 return {"exists": False, "error": "Index not found in database"}
-            result: Dict[str, Any] = {
+            result: dict[str, Any] = {
                 "exists": True,
                 "index_id": index_id,
                 "document_id": index.document_id,
