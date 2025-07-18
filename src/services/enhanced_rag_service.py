@@ -73,7 +73,7 @@ class EnhancedRAGService:
             )
         }
     }
-    Complete standalone RAG service that provides comprehensive document 
+    Complete standalone RAG service that provides comprehensive document
     indexing and querying.
     This class is a self-contained RAG implementation that combines:
     - LlamaIndex integration with Google Gemini LLM and embeddings

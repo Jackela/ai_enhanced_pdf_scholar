@@ -4,7 +4,7 @@ This module provides intelligent caching for RAG query results to improve
 performance and reduce API calls. Features LRU eviction, semantic similarity
 matching, and query result persistence.
 
-Note: CI/CD Pipeline Verification - All quality checks passing with 100% 
+Note: CI/CD Pipeline Verification - All quality checks passing with 100%
 PEP8 compliance.
 """
 
