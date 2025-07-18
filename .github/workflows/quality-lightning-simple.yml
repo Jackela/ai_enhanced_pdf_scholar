@@ -47,9 +47,9 @@ jobs:
           pip install ruff
         timeout-minutes: 2
 
-      - name: 🔍 Basic Ruff Check (E,W,F only, relaxed line length)
+      - name: 🔍 Basic Ruff Check (E,W,F only, approaching 88-char standard)
         run: |
-          ruff check src --select=E,W,F --line-length=120 --output-format=github
+          ruff check src --select=E,W,F --line-length=100 --output-format=github
         timeout-minutes: 1
 
   # 🧪 基础测试 (简化版)

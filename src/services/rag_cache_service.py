@@ -385,7 +385,8 @@ class RAGCacheService:
         try:
             # Simple text similarity for now
             cached_queries = self.db.fetch_all(
-                "SELECT * FROM rag_query_cache WHERE document_id = ? ORDER BY accessed_at DESC LIMIT 50",
+                "SELECT * FROM rag_query_cache WHERE document_id = ? "
+                "ORDER BY accessed_at DESC LIMIT 50",
                 (document_id,),
             )
             query_words = set(query.lower().split())

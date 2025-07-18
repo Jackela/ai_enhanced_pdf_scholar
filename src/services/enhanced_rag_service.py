@@ -513,7 +513,8 @@ class EnhancedRAGService:
                                     "MockResponse",
                                     (),
                                     {
-                                        "__str__": lambda: f"Mock response for doc {document.id}: {prompt}"
+                                        "__str__": lambda: f"Mock response for doc {document.id}: "
+                                       f"{prompt}"
                                     },
                                 )()
                             },
@@ -546,7 +547,8 @@ class EnhancedRAGService:
                             "MockResponse",
                             (),
                             {
-                                "__str__": lambda: f"Mock response for document {document_id}: {prompt}"
+                                "__str__": lambda: f"Mock response for document "
+                                                   f"{document_id}: {prompt}"
                             },
                         )()
                     },

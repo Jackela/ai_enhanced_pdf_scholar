@@ -184,7 +184,8 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
                 return 0
             orphaned_ids = [index.id for index in orphaned]
             # Delete orphaned indexes
-            query = f"DELETE FROM vector_indexes WHERE id IN ({','.join(['?' for _ in orphaned_ids])})"
+            placeholders = ','.join(['?' for _ in orphaned_ids])
+            query = f"DELETE FROM vector_indexes WHERE id IN ({placeholders})"
             result = self.db.execute(query, tuple(orphaned_ids))
             cleaned_count = result.rowcount
             logger.info(f"Cleaned up {cleaned_count} orphaned vector indexes")
