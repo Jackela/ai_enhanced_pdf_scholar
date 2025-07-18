@@ -90,13 +90,30 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 🔧 阶段2: 优化构建 (6分钟) - 重新启用优化版本
-  build-optimized:
-    name: 🔧 Optimized Build
+  # 🔍 阶段2C: 增强质量分析 (8分钟) - 重新启用增强版本
+  quality-enhanced:
+    name: 🔍 Quality Enhanced
     needs: [detect-changes, quality-lightning]
     if: |
       always() && 
       needs.quality-lightning.result == 'success' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/quality-enhanced.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
+    secrets: inherit
+
+  # 🔧 阶段2: 优化构建 (6分钟) - 重新启用优化版本
+  build-optimized:
+    name: 🔧 Optimized Build
+    needs: [detect-changes, quality-enhanced]
+    if: |
+      always() && 
+      needs.quality-enhanced.result == 'success' &&
       (needs.detect-changes.outputs.frontend-changed == 'true' || 
        needs.detect-changes.outputs.backend-changed == 'true' ||
        needs.detect-changes.outputs.force-full == 'true')
@@ -167,7 +184,7 @@ jobs:
   pipeline-status:
     name: 📈 Pipeline Status Report
     runs-on: ubuntu-latest
-    needs: [detect-changes, quality-lightning, build-optimized, test-optimized, security-optimized, performance-benchmark, deploy-intelligent]
+    needs: [detect-changes, quality-lightning, quality-enhanced, build-optimized, test-optimized, security-optimized, performance-benchmark, deploy-intelligent]
     if: always()
     timeout-minutes: 1
     steps:
@@ -181,6 +198,7 @@ jobs:
           echo "|-------|---------|----------|" >> $GITHUB_STEP_SUMMARY
           echo "| 🔍 Change Detection | ${{ needs.detect-changes.result }} | - |" >> $GITHUB_STEP_SUMMARY
           echo "| ⚡ Quality Lightning | ${{ needs.quality-lightning.result }} | ~30s |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Quality Enhanced | ${{ needs.quality-enhanced.result }} | ~8m |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔧 Build (Optimized) | ${{ needs.build-optimized.result }} | ~6m |" >> $GITHUB_STEP_SUMMARY
           echo "| 🧪 Test (Optimized) | ${{ needs.test-optimized.result }} | ~8m |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔒 Security (Simplified) | ${{ needs.security-optimized.result }} | disabled |" >> $GITHUB_STEP_SUMMARY
@@ -196,7 +214,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Performance Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Total Estimated Duration: ~12-15 minutes" >> $GITHUB_STEP_SUMMARY
+          echo "- Total Estimated Duration: ~20-25 minutes" >> $GITHUB_STEP_SUMMARY
           echo "- Parallel Execution: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
           echo "- Smart Caching: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
           echo "- Incremental Processing: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
@@ -207,8 +225,9 @@ jobs:
                 ("${{ needs.test-optimized.result }}" == "success" || "${{ needs.test-optimized.result }}" == "skipped") ]]; then
             echo "✅ **Pipeline Status: SUCCESS (Phase 2)**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Phase 2 Complete**: Core testing framework operational" >> $GITHUB_STEP_SUMMARY
+            echo "**Phase 2C Complete**: Enhanced quality framework operational" >> $GITHUB_STEP_SUMMARY
             echo "- Quality checks (88-char Black standard): ✅ Passing" >> $GITHUB_STEP_SUMMARY
+            echo "- Enhanced quality analysis: ✅ Functional" >> $GITHUB_STEP_SUMMARY
             echo "- Optimized build process: ✅ Functional" >> $GITHUB_STEP_SUMMARY
             echo "- Core test suite: ✅ Operational" >> $GITHUB_STEP_SUMMARY
           else

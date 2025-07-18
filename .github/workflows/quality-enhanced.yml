@@ -1,0 +1,335 @@
+name: 🔍 Quality Enhanced
+
+on:
+  workflow_call:
+    inputs:
+      frontend-changed:
+        required: true
+        type: string
+      backend-changed:
+        required: true
+        type: string
+      force-full:
+        required: false
+        type: string
+        default: 'false'
+
+env:
+  NODE_VERSION: '22.17.0'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # 🐍 Enhanced Python Quality Analysis
+  python-quality-enhanced:
+    name: 🐍 Python Quality Enhanced
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python with Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'requirements*.txt'
+
+      - name: 🔧 Enhanced Quality Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            .ruff_cache
+          key: quality-deps-v2-${{ runner.os }}-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            quality-deps-v2-${{ runner.os }}-
+            quality-deps-v1-${{ runner.os }}-
+
+      - name: 📦 Install Quality Dependencies
+        run: |
+          echo "🚀 Installing enhanced quality tools..."
+          python -m pip install --upgrade pip --timeout 30
+          
+          # Install quality tools
+          pip install --timeout 60 ruff black bandit safety
+          
+          # Install minimal dependencies for analysis
+          if [ -f requirements-test.txt ]; then
+            pip install --timeout 60 -r requirements-test.txt
+          else
+            pip install --timeout 60 fastapi pydantic pytest
+          fi
+        timeout-minutes: 3
+
+      - name: 🔍 Comprehensive Ruff Analysis
+        run: |
+          echo "🔍 Running comprehensive code quality analysis..."
+          
+          # Extended rule set for enhanced quality
+          ruff check src \
+            --select=E,W,F,UP,B,SIM,I,N,ERA,PL,RUF,C90,T20,PIE,PT,Q,RET,SLF,TID,TCH,INT,ARG,PTH,TRY,FLY,PERF,FURB,LOG,G,INP,ICN,YTT,BLE,FBT,A,COM,C4,DTZ,EM,EXE,FA,ISC,T10 \
+            --line-length=88 \
+            --output-format=github \
+            --statistics
+        timeout-minutes: 2
+
+      - name: 🎨 Code Formatting Check
+        run: |
+          echo "🎨 Checking code formatting..."
+          
+          # Check if code is formatted according to Black standard
+          black --check --diff --line-length=88 src/
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Code formatting is compliant"
+          else
+            echo "❌ Code formatting issues found"
+            exit 1
+          fi
+        timeout-minutes: 1
+
+      - name: 🔒 Security Analysis
+        run: |
+          echo "🔒 Running security analysis..."
+          
+          # Basic security checks with Bandit
+          bandit -r src/ -f json -o bandit-report.json || true
+          
+          # Check for high-severity issues
+          if [ -f bandit-report.json ]; then
+            # Count high and medium severity issues
+            high_count=$(grep -c '"issue_severity": "HIGH"' bandit-report.json 2>/dev/null || echo "0")
+            medium_count=$(grep -c '"issue_severity": "MEDIUM"' bandit-report.json 2>/dev/null || echo "0")
+            
+            echo "Security scan results:"
+            echo "- High severity issues: $high_count"
+            echo "- Medium severity issues: $medium_count"
+            
+            if [ "$high_count" -gt 0 ]; then
+              echo "❌ High severity security issues found"
+              exit 1
+            else
+              echo "✅ No high severity security issues found"
+            fi
+          else
+            echo "⚠️  Bandit report not generated, proceeding with caution"
+          fi
+        timeout-minutes: 1
+
+      - name: 📊 Code Complexity Analysis
+        run: |
+          echo "📊 Analyzing code complexity..."
+          
+          # Check cyclomatic complexity
+          ruff check src --select=C90 --output-format=github || true
+          
+          # Count complex functions (>10 complexity)
+          complex_count=$(ruff check src --select=C90 --output-format=text | grep -c "C901" 2>/dev/null || echo "0")
+          
+          echo "Complexity analysis results:"
+          echo "- Complex functions (>10): $complex_count"
+          
+          if [ "$complex_count" -gt 5 ]; then
+            echo "⚠️  Many complex functions detected, consider refactoring"
+          else
+            echo "✅ Code complexity is manageable"
+          fi
+        timeout-minutes: 1
+
+      - name: 📤 Upload Quality Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: |
+            bandit-report.json
+            .ruff_cache/
+          retention-days: 7
+
+  # 🚀 Enhanced Frontend Quality Analysis
+  frontend-quality-enhanced:
+    name: 🚀 Frontend Quality Enhanced
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    if: inputs.frontend-changed == 'true' || inputs.force-full == 'true'
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🚀 Setup Node.js with Cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: 🔧 Frontend Quality Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules
+            frontend/.eslintcache
+          key: frontend-quality-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            frontend-quality-${{ runner.os }}-
+
+      - name: 📦 Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci --prefer-offline --no-audit --no-fund --silent
+        timeout-minutes: 2
+
+      - name: 🔍 TypeScript Type Checking
+        run: |
+          cd frontend
+          echo "🔍 Running TypeScript type checking..."
+          npx tsc --noEmit --skipLibCheck
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ TypeScript type checking passed"
+          else
+            echo "❌ TypeScript type checking failed"
+            exit 1
+          fi
+        timeout-minutes: 2
+
+      - name: 🎨 Frontend Linting
+        run: |
+          cd frontend
+          echo "🎨 Running ESLint analysis..."
+          
+          # Check if ESLint config exists
+          if [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ]; then
+            npx eslint src/ --ext .ts,.tsx --format=github --max-warnings=10
+            
+            if [ $? -eq 0 ]; then
+              echo "✅ Frontend linting passed"
+            else
+              echo "❌ Frontend linting failed"
+              exit 1
+            fi
+          else
+            echo "⚠️  No ESLint configuration found, skipping linting"
+          fi
+        timeout-minutes: 2
+
+      - name: 📊 Frontend Code Quality Metrics
+        run: |
+          cd frontend
+          echo "📊 Analyzing frontend code quality..."
+          
+          # Count source files
+          ts_files=$(find src -name "*.ts" -o -name "*.tsx" 2>/dev/null | wc -l)
+          
+          if [ "$ts_files" -gt 0 ]; then
+            total_lines=$(find src -name "*.ts" -o -name "*.tsx" -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}')
+            
+            echo "Frontend code metrics:"
+            echo "- TypeScript files: $ts_files"
+            echo "- Total lines of code: $total_lines"
+            
+            avg_lines_per_file=$((total_lines / ts_files))
+            echo "- Average lines per file: $avg_lines_per_file"
+            
+            if [ "$avg_lines_per_file" -gt 200 ]; then
+              echo "⚠️  Large average file size detected"
+            else
+              echo "✅ File sizes are reasonable"
+            fi
+          else
+            echo "⚠️  No TypeScript files found in src/ directory"
+          fi
+        timeout-minutes: 1
+
+  # 📋 Enhanced Quality Gate
+  quality-gate-enhanced:
+    name: 📋 Quality Gate Enhanced
+    runs-on: ubuntu-latest
+    needs: [python-quality-enhanced, frontend-quality-enhanced]
+    if: always()
+    timeout-minutes: 2
+    steps:
+      - name: 📊 Enhanced Quality Analysis
+        run: |
+          echo "# 🔍 Enhanced Quality Gate Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 🧪 Quality Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------------|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐍 Python Quality | ${{ needs.python-quality-enhanced.result }} | Comprehensive analysis |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Frontend Quality | ${{ needs.frontend-quality-enhanced.result }} | TypeScript + ESLint |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Calculate quality score
+          python_status="${{ needs.python-quality-enhanced.result }}"
+          frontend_status="${{ needs.frontend-quality-enhanced.result }}"
+          
+          passed_checks=0
+          total_checks=0
+          
+          if [[ "$python_status" == "success" ]]; then
+            ((passed_checks++))
+          elif [[ "$python_status" == "skipped" ]]; then
+            echo "⚠️  Python quality checks were skipped"
+          fi
+          
+          if [[ "$frontend_status" == "success" ]]; then
+            ((passed_checks++))
+          elif [[ "$frontend_status" == "skipped" ]]; then
+            echo "⚠️  Frontend quality checks were skipped"
+          fi
+          
+          # Count non-skipped checks
+          [[ "$python_status" != "skipped" ]] && ((total_checks++))
+          [[ "$frontend_status" != "skipped" ]] && ((total_checks++))
+          
+          if [ $total_checks -eq 0 ]; then
+            echo "⚠️  All quality checks were skipped"
+            echo "## ⚠️ Quality Gate Result: SKIPPED" >> $GITHUB_STEP_SUMMARY
+          else
+            quality_score=$((passed_checks * 100 / total_checks))
+            
+            echo "## 📊 Quality Metrics" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Quality Score**: ${quality_score}%" >> $GITHUB_STEP_SUMMARY
+            echo "- **Passed Checks**: ${passed_checks}/${total_checks}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Enhanced Analysis**: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ $quality_score -ge 80 ]; then
+              echo "✅ **Enhanced Quality Gate: PASSED**" >> $GITHUB_STEP_SUMMARY
+              echo "🎉 Code quality meets enhanced standards"
+            else
+              echo "❌ **Enhanced Quality Gate: FAILED**" >> $GITHUB_STEP_SUMMARY
+              echo "🔧 Code quality requires improvement"
+              exit 1
+            fi
+          fi
+
+      - name: 🎯 Enhanced Quality Decision
+        run: |
+          python_status="${{ needs.python-quality-enhanced.result }}"
+          frontend_status="${{ needs.frontend-quality-enhanced.result }}"
+          
+          failed_checks=0
+          
+          if [[ "$python_status" == "failure" ]]; then
+            echo "❌ Python quality checks failed"
+            ((failed_checks++))
+          fi
+          
+          if [[ "$frontend_status" == "failure" ]]; then
+            echo "❌ Frontend quality checks failed"
+            ((failed_checks++))
+          fi
+          
+          if [ $failed_checks -gt 0 ]; then
+            echo "❌ Enhanced quality gate failed with $failed_checks failed checks"
+            exit 1
+          else
+            echo "✅ Enhanced quality gate passed!"
+          fi
