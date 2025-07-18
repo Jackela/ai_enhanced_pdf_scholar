@@ -275,9 +275,8 @@ class VectorIndexManager:
                 for check in result["file_checks"].values()
             )
             result["is_valid"] = all_files_valid and len(result["errors"]) == 0
-            logger.debug(
-                f"Index check for {vector_index_id}: {'VALID' if result['is_valid'] else 'INVALID'}"
-            )
+            status = 'VALID' if result['is_valid'] else 'INVALID'
+            logger.debug(f"Index check for {vector_index_id}: {status}")
             return result
         except Exception as e:
             logger.error(f"Failed to verify index integrity for {vector_index_id}: {e}")

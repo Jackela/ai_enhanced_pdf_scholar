@@ -59,16 +59,22 @@ class EnhancedRAGService:
         "name": "EnhancedRAGService",
         "version": "2.0.0",
         "description": "Complete RAG service with database integration.",
-        "dependencies": ["DatabaseConnection", "DocumentRepository", "VectorIndexRepository"],
+        "dependencies": [
+            "DatabaseConnection", "DocumentRepository", "VectorIndexRepository"
+        ],
         "interface": {
             "inputs": [
                 {"name": "api_key", "type": "string"},
                 {"name": "db_connection", "type": "DatabaseConnection"}
             ],
-            "outputs": "Complete RAG functionality with database persistence and Gemini integration"
+            "outputs": (
+                "Complete RAG functionality with database persistence "
+                "and Gemini integration"
+            )
         }
     }
-    Complete standalone RAG service that provides comprehensive document indexing and querying.
+    Complete standalone RAG service that provides comprehensive document 
+    indexing and querying.
     This class is a self-contained RAG implementation that combines:
     - LlamaIndex integration with Google Gemini LLM and embeddings
     - Database persistence for documents and vector indexes
@@ -120,7 +126,8 @@ class EnhancedRAGService:
         if not test_mode:
             self._initialize_llama_index()
         logger.info(
-            f"Enhanced RAG service initialized with vector storage: {vector_storage_dir}"
+            f"Enhanced RAG service initialized with vector storage: "
+            f"{vector_storage_dir}"
         )
 
     def _initialize_llama_index(self) -> None:
@@ -319,7 +326,8 @@ class EnhancedRAGService:
             self.current_document_id = document.id
             self.current_vector_index = saved_index
             logger.info(
-                f"Vector index for document {document.id} built successfully: {saved_index.id}"
+                f"Vector index for document {document.id} built successfully: "
+                f"{saved_index.id}"
             )
             return saved_index
 
@@ -513,8 +521,10 @@ class EnhancedRAGService:
                                     "MockResponse",
                                     (),
                                     {
-                                        "__str__": lambda: f"Mock response for doc {document.id}: "
-                                       f"{prompt}"
+                                        "__str__": lambda: (
+                                            f"Mock response for doc {document.id}: "
+                                            f"{prompt}"
+                                        )
                                     },
                                 )()
                             },

@@ -4,7 +4,8 @@ This module provides intelligent caching for RAG query results to improve
 performance and reduce API calls. Features LRU eviction, semantic similarity
 matching, and query result persistence.
 
-Note: CI/CD Pipeline Verification - All quality checks passing with 100% PEP8 compliance.
+Note: CI/CD Pipeline Verification - All quality checks passing with 100% 
+PEP8 compliance.
 """
 
 import hashlib
@@ -91,7 +92,8 @@ class RAGCacheService:
         # Initialize cache table
         self._initialize_cache_table()
         logger.info(
-            f"RAG cache service initialized: max_entries={max_entries}, ttl={ttl_hours}h"
+            f"RAG cache service initialized: max_entries={max_entries}, "
+            f"ttl={ttl_hours}h"
         )
 
     def _initialize_cache_table(self) -> None:
@@ -116,13 +118,16 @@ class RAGCacheService:
             )
             # Create indexes for performance
             self.db.execute(
-                "CREATE INDEX IF NOT EXISTS idx_cache_document ON rag_query_cache(document_id)"
+                "CREATE INDEX IF NOT EXISTS idx_cache_document ON "
+                "rag_query_cache(document_id)"
             )
             self.db.execute(
-                "CREATE INDEX IF NOT EXISTS idx_cache_accessed ON rag_query_cache(accessed_at DESC)"
+                "CREATE INDEX IF NOT EXISTS idx_cache_accessed ON "
+                "rag_query_cache(accessed_at DESC)"
             )
             self.db.execute(
-                "CREATE INDEX IF NOT EXISTS idx_cache_hash ON rag_query_cache(query_hash)"
+                "CREATE INDEX IF NOT EXISTS idx_cache_hash ON "
+                "rag_query_cache(query_hash)"
             )
             logger.debug("RAG cache table initialized")
         except Exception as e:
