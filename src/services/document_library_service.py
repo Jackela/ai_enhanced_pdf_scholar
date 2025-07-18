@@ -94,7 +94,7 @@ class DocumentLibraryService:
             shutil.copy2(source_path, managed_path)
             logger.debug(f"File copied successfully to {managed_path}")
         except Exception as e:
-            raise DocumentImportError(f"Failed to copy file to managed storage: {e}")
+            raise DocumentImportError(f"Failed to copy file to managed storage: {e}") from e
 
     def import_document(
         self,
@@ -133,7 +133,7 @@ class DocumentLibraryService:
                     f"Calculated hashes - file: {file_hash}, content: {content_hash}"
                 )
             except ContentHashError as e:
-                raise DocumentImportError(f"Failed to calculate file hash: {e}")
+                raise DocumentImportError(f"Failed to calculate file hash: {e}") from e
             # Create managed file path
             managed_file_path = self._create_managed_file_path(
                 file_hash, file_path_obj.name
@@ -190,7 +190,7 @@ class DocumentLibraryService:
             raise
         except Exception as e:
             logger.error(f"Unexpected error during document import: {e}")
-            raise DocumentImportError(f"Import failed: {e}")
+            raise DocumentImportError(f"Import failed: {e}") from e
 
     def get_documents(
         self,

@@ -20,7 +20,7 @@ class BaseRepository(ABC, Generic[T]):
     {
         "name": "BaseRepository",
         "version": "1.0.0",
-        "description": "Abstract base class for all repository implementations using Repository pattern.",
+        "description": "Abstract base class for all repository implementations.",
         "dependencies": ["DatabaseConnection"],
         "interface": {
             "inputs": ["database_connection: DatabaseConnection"],
@@ -137,14 +137,15 @@ class BaseRepository(ABC, Generic[T]):
             columns = list(db_dict.keys())
             placeholders = ", ".join(["?" for _ in columns])
             values = [db_dict[col] for col in columns]
-            query = f"INSERT INTO {self.get_table_name()} ({', '.join(columns)}) VALUES ({placeholders})"
+            cols = ', '.join(columns)
+            query = f"INSERT INTO {self.get_table_name()} ({cols}) VALUES ({placeholders})"
             self.db.execute(query, tuple(values))
             # Get the inserted ID and return updated model
             new_id = self.db.get_last_insert_id()
             created_model = self.find_by_id(new_id)
             if created_model is None:
                 raise RuntimeError(
-                    f"Failed to retrieve created {self.get_table_name()} with ID {new_id}"
+                    f"Failed to retrieve created {self.get_table_name()} ID {new_id}"
                 )
             return created_model
         except Exception as e:
@@ -178,7 +179,7 @@ class BaseRepository(ABC, Generic[T]):
             updated_model = self.find_by_id(entity_id)
             if updated_model is None:
                 raise RuntimeError(
-                    f"Failed to retrieve updated {self.get_table_name()} with ID {entity_id}"
+                    f"Failed to retrieve updated {self.get_table_name()} ID {entity_id}"
                 )
             return updated_model
         except Exception as e:

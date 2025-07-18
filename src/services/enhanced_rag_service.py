@@ -142,10 +142,10 @@ class EnhancedRAGService:
             logger.info("LlamaIndex initialized with Gemini integration")
         except ImportError as e:
             logger.error(f"Failed to import LlamaIndex components: {e}")
-            raise RAGServiceError(f"LlamaIndex dependencies not available: {e}")
+            raise RAGServiceError(f"LlamaIndex dependencies not available: {e}") from e
         except Exception as e:
             logger.error(f"Failed to initialize LlamaIndex: {e}")
-            raise RAGServiceError(f"LlamaIndex initialization failed: {e}")
+            raise RAGServiceError(f"LlamaIndex initialization failed: {e}") from e
 
     def build_index_from_pdf(
         self, pdf_path: str, cache_dir: str | None = None
@@ -214,7 +214,7 @@ class EnhancedRAGService:
             return str(response)
         except Exception as e:
             logger.error(f"Query execution failed: {e}")
-            raise RAGQueryError(f"Failed to execute query: {e}")
+            raise RAGQueryError(f"Failed to execute query: {e}") from e
 
     def get_cache_info(self) -> dict[str, Any]:
         """
@@ -389,7 +389,7 @@ class EnhancedRAGService:
             try:
                 self.load_index_for_document(document_id)
             except (VectorIndexNotFoundError, RAGIndexError) as e:
-                raise RAGQueryError(f"Failed to load index for query: {e}")
+                raise RAGQueryError(f"Failed to load index for query: {e}") from e
         # Execute query using base RAG service
         response = self.query(query)
         logger.info(f"Query completed for document {document_id}")

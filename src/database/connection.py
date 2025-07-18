@@ -353,7 +353,7 @@ class DatabaseConnection:
 
             # Use weakref callback for cleanup
             self._local.cleanup_ref = weakref.finalize(self._local, cleanup)
-        # mypy can't determine that connection_info is not None here due to the check above
+        # mypy can't determine connection_info is not None due to check above
         return self._local.connection_info  # type: ignore
 
     def get_connection(self) -> sqlite3.Connection:
@@ -393,24 +393,24 @@ class DatabaseConnection:
                 conn.execute(f"SAVEPOINT {savepoint_name}")
                 conn_info.transaction_level += 1
                 logger.debug(
-                    f"Started savepoint: {savepoint_name} (level: {conn_info.transaction_level})"
+                    f"Started savepoint: {savepoint_name} (lvl: {conn_info.transaction_level})"
                 )
                 yield conn
                 conn.execute(f"RELEASE SAVEPOINT {savepoint_name}")
                 conn_info.transaction_level -= 1
                 logger.debug(
-                    f"Released savepoint: {savepoint_name} (level: {conn_info.transaction_level})"
+                    f"Released savepoint: {savepoint_name} (lvl: {conn_info.transaction_level})"
                 )
             except Exception as e:
                 try:
                     conn.execute(f"ROLLBACK TO SAVEPOINT {savepoint_name}")
                     conn_info.transaction_level -= 1
                     logger.debug(
-                        f"Rolled back to savepoint: {savepoint_name} (level: {conn_info.transaction_level})"
+                        f"Rolled back to savepoint: {savepoint_name} (lvl: {conn_info.transaction_level})"
                     )
                 except Exception as rollback_error:
                     logger.error(
-                        f"Failed to rollback to savepoint {savepoint_name}: {rollback_error}"
+                        f"Failed to rollback savepoint {savepoint_name}: {rollback_error}"
                     )
                 logger.error(
                     f"Transaction rolled back to savepoint {savepoint_name}: {e}"
@@ -471,7 +471,7 @@ class DatabaseConnection:
                     if attempt < max_retries:
                         wait_time = 0.1 * (2**attempt)  # Exponential backoff
                         logger.warning(
-                            f"Database busy, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries + 1})"
+                            f"Database busy, retrying in {wait_time}s (attempt {attempt + 1})"
                         )
                         time.sleep(wait_time)
                         continue
