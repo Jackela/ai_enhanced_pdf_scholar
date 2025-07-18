@@ -260,13 +260,7 @@ class TestImportStructure:
 
     def test_database_imports(self):
         """Test database module imports."""
-        if IMPORTS_AVAILABLE:
-            from src.database.models import DocumentModel, VectorIndexModel
-            from src.database.connection import DatabaseConnection
-        else:
-            # Use the mock classes defined above
-            pass
-        
+        # The global imports at module level handle this
         assert DocumentModel is not None
         assert VectorIndexModel is not None
         assert DatabaseConnection is not None
@@ -287,9 +281,7 @@ class TestImportStructure:
 
     def test_service_imports(self):
         """Test service module imports."""
-        if IMPORTS_AVAILABLE:
-            from src.services.content_hash_service import ContentHashService
-        
+        # The global imports at module level handle this
         assert ContentHashService is not None
 
     def test_api_imports(self):
