@@ -1,11 +1,10 @@
 name: 🚀 Revolutionary CI/CD Pipeline
 
 on:
-  # Temporarily disabled during CI/CD simplification process
-  # push:
-  #   branches: [main, develop]
-  # pull_request:
-  #   branches: [main]
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       force_full_pipeline:
@@ -75,7 +74,7 @@ jobs:
               - 'package-lock.json'
               - 'requirements*.txt'
 
-  # ⚡ 阶段1: 闪电质量检查 (90秒)
+  # ⚡ 阶段1: 闪电质量检查 (90秒) - 使用经过验证的简化版本
   quality-lightning:
     name: ⚡ Quality Lightning
     needs: detect-changes
@@ -84,7 +83,7 @@ jobs:
       (needs.detect-changes.outputs.frontend-changed == 'true' || 
        needs.detect-changes.outputs.backend-changed == 'true' ||
        needs.detect-changes.outputs.force-full == 'true')
-    uses: ./.github/workflows/quality-lightning.yml
+    uses: ./.github/workflows/quality-lightning-simple.yml
     with:
       frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
       backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
