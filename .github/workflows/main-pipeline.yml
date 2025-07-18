@@ -158,31 +158,40 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 🔒 阶段5: 高效安全扫描 (3分钟) - 简化版
-  security-optimized:
-    name: 🔒 Security Optimized (Simplified)
-    needs: [detect-changes, quality-lightning]
-    if: false  # 暂时禁用复杂安全扫描
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 📝 Security Placeholder
-        run: |
-          echo "✅ Security scanning simplified - basic checks in quality-lightning"
-          echo "Complex security workflows disabled until dependency issues resolved"
+  # 🔒 阶段3B: 高级安全扫描 (12分钟) - Phase 3B实施
+  security-advanced:
+    name: 🔒 Security Advanced
+    needs: [detect-changes, integration-validation]
+    if: |
+      always() && 
+      needs.integration-validation.result == 'success' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.security-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/security-advanced.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
+    secrets: inherit
 
-  # 📊 阶段6: 性能基准测试 (2分钟) - 简化版
-  performance-benchmark:
-    name: 📊 Performance Benchmark (Simplified)
-    needs: [detect-changes, quality-lightning]
-    if: false  # 暂时禁用性能基准测试
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 📝 Performance Placeholder
-        run: |
-          echo "✅ Performance benchmarking simplified"
-          echo "Complex performance workflows disabled until dependency issues resolved"
+  # 📊 阶段3A: 高级性能基准测试 (10分钟) - Phase 3A实施
+  performance-advanced:
+    name: 📊 Performance Advanced
+    needs: [detect-changes, integration-validation]
+    if: |
+      always() && 
+      needs.integration-validation.result == 'success' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/performance-advanced.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
+    secrets: inherit
 
   # 🚀 阶段7: 智能部署 (1分钟) - 简化版
   deploy-intelligent:
@@ -197,31 +206,31 @@ jobs:
           echo "✅ Deployment simplified"
           echo "Complex deployment workflows disabled until dependency issues resolved"
 
-  # 📈 最终状态报告 - 简化版
+  # 📈 最终状态报告 - Phase 3版本
   pipeline-status:
     name: 📈 Pipeline Status Report
     runs-on: ubuntu-latest
-    needs: [detect-changes, quality-lightning, quality-enhanced, build-optimized, test-optimized, integration-validation, security-optimized, performance-benchmark, deploy-intelligent]
+    needs: [detect-changes, quality-lightning, quality-enhanced, build-optimized, test-optimized, integration-validation, security-advanced, performance-advanced, deploy-intelligent]
     if: always()
-    timeout-minutes: 1
+    timeout-minutes: 2
     steps:
       - name: 📊 Generate Status Report
         run: |
-          echo "# 🚀 CI/CD Pipeline Status Report (Phase 2)" >> $GITHUB_STEP_SUMMARY
+          echo "# 🚀 CI/CD Pipeline Status Report (Phase 3)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📋 Execution Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Stage | Status | Duration |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|---------|----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Change Detection | ${{ needs.detect-changes.result }} | - |" >> $GITHUB_STEP_SUMMARY
-          echo "| ⚡ Quality Lightning | ${{ needs.quality-lightning.result }} | ~30s |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔍 Quality Enhanced | ${{ needs.quality-enhanced.result }} | ~8m |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔧 Build (Optimized) | ${{ needs.build-optimized.result }} | ~6m |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧪 Test (Optimized) | ${{ needs.test-optimized.result }} | ~8m |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔗 Integration Validation | ${{ needs.integration-validation.result }} | ~12m |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔒 Security (Simplified) | ${{ needs.security-optimized.result }} | disabled |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📊 Performance (Simplified) | ${{ needs.performance-benchmark.result }} | disabled |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 Deploy (Simplified) | ${{ needs.deploy-intelligent.result }} | disabled |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status | Duration | Phase |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|---------|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Change Detection | ${{ needs.detect-changes.result }} | - | Core |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚡ Quality Lightning | ${{ needs.quality-lightning.result }} | ~30s | 1 |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Quality Enhanced | ${{ needs.quality-enhanced.result }} | ~8m | 2C |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 Build (Optimized) | ${{ needs.build-optimized.result }} | ~6m | 2A |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Test (Optimized) | ${{ needs.test-optimized.result }} | ~8m | 2B |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Integration Validation | ${{ needs.integration-validation.result }} | ~12m | 2D |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 Security (Advanced) | ${{ needs.security-advanced.result }} | ~12m | 3B |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📊 Performance (Advanced) | ${{ needs.performance-advanced.result }} | ~10m | 3A |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Deploy (Simplified) | ${{ needs.deploy-intelligent.result }} | disabled | 3C |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔍 Change Detection Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -232,25 +241,47 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Performance Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Total Estimated Duration: ~35-40 minutes" >> $GITHUB_STEP_SUMMARY
-          echo "- Parallel Execution: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
-          echo "- Smart Caching: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
-          echo "- Incremental Processing: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Estimated Duration**: ~50-60 minutes (Phase 3)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Core Pipeline**: ~35 minutes (Phase 2)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Advanced Analysis**: ~22 minutes (Phase 3A+3B)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Parallel Execution**: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- **Smart Caching**: ✅ Enhanced" >> $GITHUB_STEP_SUMMARY
+          echo "- **Incremental Processing**: ✅ Optimized" >> $GITHUB_STEP_SUMMARY
           
-          # 设置整体状态 - Phase 2D 检查完整集成流程
+          # 设置整体状态 - Phase 3 检查完整高级流程
+          core_success=false
+          advanced_success=false
+          
+          # Check core pipeline (Phase 2)
           if [[ "${{ needs.quality-lightning.result }}" == "success" && 
                 ("${{ needs.quality-enhanced.result }}" == "success" || "${{ needs.quality-enhanced.result }}" == "skipped") && 
                 ("${{ needs.build-optimized.result }}" == "success" || "${{ needs.build-optimized.result }}" == "skipped") && 
                 ("${{ needs.test-optimized.result }}" == "success" || "${{ needs.test-optimized.result }}" == "skipped") && 
                 ("${{ needs.integration-validation.result }}" == "success" || "${{ needs.integration-validation.result }}" == "skipped") ]]; then
-            echo "✅ **Pipeline Status: SUCCESS (Phase 2D)**" >> $GITHUB_STEP_SUMMARY
+            core_success=true
+          fi
+          
+          # Check advanced features (Phase 3)
+          if [[ ("${{ needs.security-advanced.result }}" == "success" || "${{ needs.security-advanced.result }}" == "skipped") && 
+                ("${{ needs.performance-advanced.result }}" == "success" || "${{ needs.performance-advanced.result }}" == "skipped") ]]; then
+            advanced_success=true
+          fi
+          
+          if [[ "$core_success" == true && "$advanced_success" == true ]]; then
+            echo "✅ **Pipeline Status: SUCCESS (Phase 3)**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Phase 2D Complete**: End-to-end integration framework operational" >> $GITHUB_STEP_SUMMARY
-            echo "- Quality checks (88-char Black standard): ✅ Passing" >> $GITHUB_STEP_SUMMARY
-            echo "- Enhanced quality analysis: ✅ Functional" >> $GITHUB_STEP_SUMMARY
-            echo "- Optimized build process: ✅ Functional" >> $GITHUB_STEP_SUMMARY
-            echo "- Core test suite: ✅ Operational" >> $GITHUB_STEP_SUMMARY
-            echo "- Integration validation: ✅ Functional" >> $GITHUB_STEP_SUMMARY
+            echo "**Phase 3 Complete**: Advanced CI/CD framework operational" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 2 Core**: ✅ All systems operational" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 3A Performance**: ✅ Advanced monitoring active" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 3B Security**: ✅ Comprehensive scanning enabled" >> $GITHUB_STEP_SUMMARY
+            echo "- **Quality Gates**: ✅ Multi-tier validation" >> $GITHUB_STEP_SUMMARY
+            echo "- **Artifact Management**: ✅ Enhanced retention" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$core_success" == true ]]; then
+            echo "⚠️ **Pipeline Status: CORE SUCCESS**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Phase 2 Complete**: Core pipeline operational, advanced features may need attention" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Pipeline Status: FAILED**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Core pipeline issues detected**: Review failed stages" >> $GITHUB_STEP_SUMMARY
           fi
