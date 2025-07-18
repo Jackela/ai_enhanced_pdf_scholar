@@ -297,9 +297,7 @@ class StateManager:
                 try:
                     observer(path, new_value, old_value, change_type)
                 except Exception as e:
-                    logger.error(
-                        f"Error notifying observer {observer.__name__}: {e}"
-                    )
+                    logger.error(f"Error notifying observer {observer.__name__}: {e}")
         # Notify wildcard observers (e.g., 'chat.*' matches 'chat.messages')
         for observer_path, observers in self._observers.items():
             if "*" in observer_path:

@@ -41,7 +41,7 @@ class RAGCacheService:
     {
         "name": "RAGCacheService",
         "version": "1.0.0",
-        "description": "Intelligent caching service for RAG query results with LRU and semantic matching.",
+        "description": "Intelligent caching service for RAG query results.",
         "dependencies": ["DatabaseConnection"],
         "interface": {
             "inputs": [

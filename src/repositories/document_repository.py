@@ -22,7 +22,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
     {
         "name": "DocumentRepository",
         "version": "1.0.0",
-        "description": "Repository for document data access with advanced search and filtering.",
+        "description": "Repository for document data access with search.",
         "dependencies": ["BaseRepository", "DocumentModel", "DatabaseConnection"],
         "interface": {
             "inputs": ["database_connection: DatabaseConnection"],

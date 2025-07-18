@@ -304,7 +304,7 @@ class DatabaseConnection:
 
     # Constants
     CONNECTION_EXPIRY_SECONDS = 3600  # 1 hour in seconds
-    SLOW_QUERY_THRESHOLD_MS = 100     # Threshold for slow query logging in ms
+    SLOW_QUERY_THRESHOLD_MS = 100  # Threshold for slow query logging in ms
 
     def __init__(
         self, db_path: str, max_connections: int = 20, connection_timeout: float = 30.0

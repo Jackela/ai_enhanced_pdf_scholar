@@ -46,9 +46,7 @@ class LibraryController:
             self.state_manager = state_manager
         logger.info("LibraryController initialized")
 
-    def get_all_documents(
-        self, search_query: str | None = None
-    ) -> list[DocumentModel]:
+    def get_all_documents(self, search_query: str | None = None) -> list[DocumentModel]:
         """
         Get all documents, optionally filtered by search query.
         """

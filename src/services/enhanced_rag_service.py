@@ -37,6 +37,7 @@ class RAGQueryError(RAGServiceError):
 
     pass
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -146,9 +147,7 @@ class EnhancedRAGService:
             logger.error(f"Failed to initialize LlamaIndex: {e}")
             raise RAGServiceError(f"LlamaIndex initialization failed: {e}") from e
 
-    def build_index_from_pdf(
-        self, pdf_path: str, cache_dir: str | None = None
-    ) -> bool:
+    def build_index_from_pdf(self, pdf_path: str, cache_dir: str | None = None) -> bool:
         """
         Build vector index from PDF file using LlamaIndex.
         Args:

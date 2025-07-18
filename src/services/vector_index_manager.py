@@ -35,8 +35,8 @@ class VectorIndexManager:
     {
         "name": "VectorIndexManager",
         "version": "1.0.0",
-        "description": "Comprehensive vector index persistence and lifecycle management.",
-        "dependencies": ["DatabaseConnection", "VectorIndexRepository", "ContentHashService"],
+        "description": "Vector index persistence and lifecycle management.",
+        "dependencies": ["DatabaseConnection", "VectorIndexRepository"],
         "interface": {
             "inputs": [
                 {"name": "db_connection", "type": "DatabaseConnection"},
@@ -46,7 +46,7 @@ class VectorIndexManager:
         }
     }
     Manages the complete lifecycle of vector indexes including creation, validation,
-    optimization, and cleanup. Provides integrity verification and performance monitoring.
+    optimization, and cleanup. Provides integrity verification.
     """
 
     def __init__(

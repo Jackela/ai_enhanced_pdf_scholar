@@ -137,8 +137,10 @@ class BaseRepository(ABC, Generic[T]):
             columns = list(db_dict.keys())
             placeholders = ", ".join(["?" for _ in columns])
             values = [db_dict[col] for col in columns]
-            cols = ', '.join(columns)
-            query = f"INSERT INTO {self.get_table_name()} ({cols}) VALUES ({placeholders})"
+            cols = ", ".join(columns)
+            query = (
+                f"INSERT INTO {self.get_table_name()} ({cols}) VALUES ({placeholders})"
+            )
             self.db.execute(query, tuple(values))
             # Get the inserted ID and return updated model
             new_id = self.db.get_last_insert_id()

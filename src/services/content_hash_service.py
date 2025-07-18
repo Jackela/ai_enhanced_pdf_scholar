@@ -25,7 +25,7 @@ class ContentHashService:
     {
         "name": "ContentHashService",
         "version": "1.0.0",
-        "description": "Service for generating content-based hashes for document deduplication.",
+        "description": "Service for generating content-based hashes.",
         "dependencies": ["PyMuPDF", "hashlib"],
         "interface": {
             "inputs": ["file_path: str"],

@@ -21,7 +21,7 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
     {
         "name": "VectorIndexRepository",
         "version": "1.0.0",
-        "description": "Repository for vector index data access with document relationship management.",
+        "description": "Repository for vector index data access.",
         "dependencies": ["BaseRepository", "VectorIndexModel", "DatabaseConnection"],
         "interface": {
             "inputs": ["database_connection: DatabaseConnection"],

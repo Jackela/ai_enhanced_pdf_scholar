@@ -94,7 +94,9 @@ class DocumentLibraryService:
             shutil.copy2(source_path, managed_path)
             logger.debug(f"File copied successfully to {managed_path}")
         except Exception as e:
-            raise DocumentImportError(f"Failed to copy file to managed storage: {e}") from e
+            raise DocumentImportError(
+                f"Failed to copy file to managed storage: {e}"
+            ) from e
 
     def import_document(
         self,
