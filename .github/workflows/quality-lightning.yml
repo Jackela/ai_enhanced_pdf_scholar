@@ -118,9 +118,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ruff mypy black isort
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-        timeout-minutes: 1
+          # Use minimal test requirements for faster CI (excludes heavy AI/ML packages)
+          if [ -f requirements-test.txt ]; then 
+            pip install -r requirements-test.txt
+          else
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+            if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          fi
+        timeout-minutes: 2
 
       - name: 🔍 Ruff Linting
         run: |

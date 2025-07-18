@@ -1,12 +1,16 @@
 # ============================================================================
 # Minimal Requirements for Unit Testing
-# Fast installation for CI/CD pipelines
+# Fast installation for CI/CD pipelines - Core dependencies only
 # ============================================================================
 
 # Core Web Framework (Required for models and basic functionality)
 fastapi>=0.116.0,<0.120.0
 pydantic>=2.11.0,<2.15.0
 python-multipart>=0.0.19,<0.1.0
+
+# Database Support (Required for src.database modules)
+sqlalchemy>=2.0.0,<2.1.0
+# Note: sqlite3 is built into Python
 
 # Basic utilities (Required for core functionality)
 python-dotenv>=1.0.0
@@ -19,5 +23,4 @@ pytest-mock>=3.12.0
 pytest-asyncio>=0.24.0
 pytest-xdist>=3.8.0
 
-# Basic database models support
-# Note: AI dependencies excluded for unit tests
+# Note: Heavy AI/ML dependencies (llama-index, Google AI packages) excluded for fast CI
