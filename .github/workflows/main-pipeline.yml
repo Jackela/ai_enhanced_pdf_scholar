@@ -115,11 +115,6 @@ jobs:
         run: |
           echo "✅ Comprehensive testing simplified - using quality-lightning-simple"
           echo "Complex test workflows disabled until dependency issues resolved"
-    with:
-      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
-      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
-      force-full: ${{ needs.detect-changes.outputs.force-full }}
-    secrets: inherit
 
   # 🔒 阶段4: 高效安全扫描 (3分钟) - 简化版
   security-optimized:
@@ -133,11 +128,6 @@ jobs:
         run: |
           echo "✅ Security scanning simplified - basic checks in quality-lightning"
           echo "Complex security workflows disabled until dependency issues resolved"
-    with:
-      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
-      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
-      force-full: ${{ needs.detect-changes.outputs.force-full }}
-    secrets: inherit
 
   # 📊 阶段5: 性能基准测试 (2分钟) - 简化版
   performance-benchmark:
@@ -151,11 +141,6 @@ jobs:
         run: |
           echo "✅ Performance benchmarking simplified"
           echo "Complex performance workflows disabled until dependency issues resolved"
-    with:
-      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
-      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
-      force-full: ${{ needs.detect-changes.outputs.force-full }}
-    secrets: inherit
 
   # 🚀 阶段6: 智能部署 (1分钟) - 简化版
   deploy-intelligent:
@@ -169,11 +154,6 @@ jobs:
         run: |
           echo "✅ Deployment simplified"
           echo "Complex deployment workflows disabled until dependency issues resolved"
-    with:
-      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
-      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
-      force-full: ${{ needs.detect-changes.outputs.force-full }}
-    secrets: inherit
 
   # 📈 最终状态报告 - 简化版
   pipeline-status:
