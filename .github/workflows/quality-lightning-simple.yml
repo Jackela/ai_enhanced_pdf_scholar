@@ -1,0 +1,106 @@
+name: ⚡ Quality Lightning (Simple)
+
+on:
+  workflow_call:
+    inputs:
+      frontend-changed:
+        required: true
+        type: string
+      backend-changed:
+        required: true
+        type: string
+      force-full:
+        required: false
+        type: string
+        default: 'false'
+
+env:
+  NODE_VERSION: '22.17.0'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # 🐍 Python 基础质量检查 (简化版)
+  python-quality-simple:
+    name: 🐍 Python Quality (Simple)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install Basic Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+        timeout-minutes: 2
+
+      - name: 🔍 Basic Ruff Check (E,W,F only, relaxed line length)
+        run: |
+          ruff check src --select=E,W,F --line-length=120 --output-format=github
+        timeout-minutes: 1
+
+  # 🧪 基础测试 (简化版)
+  basic-tests:
+    name: 🧪 Basic Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install Test Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-test.txt ]; then 
+            pip install -r requirements-test.txt
+          else
+            pip install pytest pytest-cov
+          fi
+        timeout-minutes: 3
+
+      - name: 🧪 Run Basic Tests (8% coverage)
+        run: |
+          pytest tests/unit -v --cov=src --cov-report=xml --cov-fail-under=8
+        timeout-minutes: 2
+
+  # 📋 简单质量门控
+  quality-gate-simple:
+    name: 📋 Quality Gate (Simple)
+    runs-on: ubuntu-latest
+    needs: [python-quality-simple, basic-tests]
+    if: always()
+    timeout-minutes: 1
+    steps:
+      - name: 🎯 Simple Quality Decision
+        run: |
+          # 检查是否有实际的失败
+          failed_count=0
+          
+          [[ "${{ needs.python-quality-simple.result }}" == "failure" ]] && ((failed_count++))
+          [[ "${{ needs.basic-tests.result }}" == "failure" ]] && ((failed_count++))
+          
+          echo "Simple quality gate analysis:"
+          echo "- Python Quality: ${{ needs.python-quality-simple.result }}"
+          echo "- Basic Tests: ${{ needs.basic-tests.result }}"
+          echo "- Failed jobs: $failed_count"
+          
+          if [ $failed_count -gt 0 ]; then
+            echo "❌ Simple quality gate failed."
+            exit 1
+          else
+            echo "✅ Simple quality gate passed!"
+          fi

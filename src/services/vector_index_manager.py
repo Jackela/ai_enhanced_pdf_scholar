@@ -276,7 +276,7 @@ class VectorIndexManager:
             )
             result["is_valid"] = all_files_valid and len(result["errors"]) == 0
             logger.debug(
-                f"Index integrity check completed for {vector_index_id}: {'VALID' if result['is_valid'] else 'INVALID'}"
+                f"Index check for {vector_index_id}: {'VALID' if result['is_valid'] else 'INVALID'}"
             )
             return result
         except Exception as e:

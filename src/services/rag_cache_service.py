@@ -194,7 +194,8 @@ class RAGCacheService:
             self.db.execute(
                 """
                 INSERT INTO rag_query_cache
-                (query_hash, query_text, document_id, response, created_at, accessed_at, query_length, response_length)
+                (query_hash, query_text, document_id, response, created_at, accessed_at,
+                 query_length, response_length)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (

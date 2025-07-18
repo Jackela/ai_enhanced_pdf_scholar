@@ -122,7 +122,7 @@ class ContentHashService:
             # Calculate content hash (slower, PDF-specific)
             content_hash = ContentHashService.calculate_content_hash(file_path)
             logger.debug(
-                f"Calculated combined hashes for {file_path}: file={file_hash}, content={content_hash}"
+                f"Calculated hashes for {file_path}: file={file_hash}, content={content_hash}"
             )
             return file_hash, content_hash
         except Exception as e:

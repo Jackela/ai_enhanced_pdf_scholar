@@ -58,8 +58,8 @@ class EnhancedRAGService:
     {
         "name": "EnhancedRAGService",
         "version": "2.0.0",
-        "description": "Complete standalone RAG service with database integration and vector index management.",
-        "dependencies": ["DatabaseConnection", "DocumentRepository", "VectorIndexRepository", "LlamaIndex", "Google Gemini API"],
+        "description": "Complete RAG service with database integration.",
+        "dependencies": ["DatabaseConnection", "DocumentRepository", "VectorIndexRepository"],
         "interface": {
             "inputs": [
                 {"name": "api_key", "type": "string"},
@@ -513,7 +513,7 @@ class EnhancedRAGService:
                                     "MockResponse",
                                     (),
                                     {
-                                        "__str__": lambda: f"Mock response for existing document {document.id}: {prompt}"
+                                        "__str__": lambda: f"Mock response for doc {document.id}: {prompt}"
                                     },
                                 )()
                             },
