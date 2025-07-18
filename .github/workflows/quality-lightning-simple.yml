@@ -1,18 +1,24 @@
 name: ⚡ Quality Lightning (Simple)
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_call:
     inputs:
       frontend-changed:
-        required: true
+        required: false
         type: string
+        default: 'true'
       backend-changed:
-        required: true
+        required: false
         type: string
+        default: 'true'
       force-full:
         required: false
         type: string
-        default: 'false'
+        default: 'true'
 
 env:
   NODE_VERSION: '22.17.0'
@@ -24,7 +30,7 @@ jobs:
     name: 🐍 Python Quality (Simple)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || inputs.backend-changed == 'true' || inputs.force-full == 'true'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -51,7 +57,7 @@ jobs:
     name: 🧪 Basic Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: inputs.backend-changed == 'true' || inputs.force-full == 'true'
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || inputs.backend-changed == 'true' || inputs.force-full == 'true'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4

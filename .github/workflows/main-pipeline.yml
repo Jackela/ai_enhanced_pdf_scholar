@@ -1,10 +1,11 @@
 name: 🚀 Revolutionary CI/CD Pipeline
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+  # Temporarily disabled during CI/CD simplification process
+  # push:
+  #   branches: [main, develop]
+  # pull_request:
+  #   branches: [main]
   workflow_dispatch:
     inputs:
       force_full_pipeline:
