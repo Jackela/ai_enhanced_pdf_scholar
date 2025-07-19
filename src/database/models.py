@@ -205,6 +205,13 @@ class DocumentModel:
             return False
         return Path(self.file_path).exists()
 
+    def is_processed(self) -> bool:
+        """
+        Check if the document has been fully processed.
+        A document is considered processed if it has content_hash and page_count.
+        """
+        return bool(self.content_hash and self.page_count is not None)
+
 
 @dataclass
 class VectorIndexModel:
