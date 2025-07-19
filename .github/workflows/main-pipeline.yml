@@ -38,11 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     outputs:
-      frontend-changed: ${{ github.event.inputs.test_mode == 'true' && 'true' || steps.changes.outputs.frontend }}
-      backend-changed: ${{ github.event.inputs.test_mode == 'true' && 'true' || steps.changes.outputs.backend }}
-      docs-changed: ${{ github.event.inputs.test_mode == 'true' && 'true' || steps.changes.outputs.docs }}
-      config-changed: ${{ github.event.inputs.test_mode == 'true' && 'true' || steps.changes.outputs.config }}
-      security-changed: ${{ github.event.inputs.test_mode == 'true' && 'true' || steps.changes.outputs.security }}
+      frontend-changed: ${{ github.event.inputs.test_mode == 'true' || steps.changes.outputs.frontend == 'true' }}
+      backend-changed: ${{ github.event.inputs.test_mode == 'true' || steps.changes.outputs.backend == 'true' }}
+      docs-changed: ${{ github.event.inputs.test_mode == 'true' || steps.changes.outputs.docs == 'true' }}
+      config-changed: ${{ github.event.inputs.test_mode == 'true' || steps.changes.outputs.config == 'true' }}
+      security-changed: ${{ github.event.inputs.test_mode == 'true' || steps.changes.outputs.security == 'true' }}
       force-full: ${{ github.event.inputs.force_full_pipeline == 'true' || github.event.inputs.test_mode == 'true' }}
     steps:
       - name: 📥 Checkout
@@ -79,16 +79,11 @@ jobs:
               - 'package-lock.json'
               - 'requirements*.txt'
 
-      - name: 🧪 Override Changes for Test Mode
+      - name: 🧪 Test Mode Status
         if: github.event.inputs.test_mode == 'true'
         run: |
-          echo "🧪 Test mode activated - forcing all changes"
-          echo "frontend=true" >> $GITHUB_OUTPUT
-          echo "backend=true" >> $GITHUB_OUTPUT
-          echo "docs=true" >> $GITHUB_OUTPUT
-          echo "config=true" >> $GITHUB_OUTPUT
-          echo "security=true" >> $GITHUB_OUTPUT
-        id: test-override
+          echo "🧪 Test mode activated - all components will be marked as changed"
+          echo "This will force execution of all CI/CD jobs regardless of actual changes"
 
   # ⚡ 阶段1: 闪电质量检查 (90秒) - 使用经过验证的简化版本
   quality-lightning:
