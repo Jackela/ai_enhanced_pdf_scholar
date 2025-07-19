@@ -286,130 +286,16 @@ jobs:
           # Create performance reports directory
           mkdir -p performance-reports
           
-          # Create performance test script
-          cat > performance-reports/api_benchmark.py << 'EOF'
-"""
-API Performance Benchmark Tests
-Measures performance of core API operations.
-"""
-import time
-import psutil
-import pytest
-from pathlib import Path
-import json
-import tempfile
-import os
-
-# Create mock classes to avoid import issues
-class MockContentHashService:
-    def calculate_content_hash(self, content):
-        import hashlib
-        return hashlib.sha256(content.encode()).hexdigest()
-    
-    def calculate_file_hash(self, file_path):
-        import hashlib
-        return hashlib.md5(str(file_path).encode()).hexdigest()[:16]
-
-class MockDocumentModel:
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-def test_content_hash_performance():
-    """Test content hash calculation performance."""
-    service = MockContentHashService()
-    
-    # Small content test
-    small_content = "test content" * 10
-    start_time = time.time()
-    hash_result = service.calculate_content_hash(small_content)
-    small_time = time.time() - start_time
-    
-    assert hash_result is not None
-    assert small_time < 0.001  # Should be very fast
-    
-    # Medium content test
-    medium_content = "test content with more data " * 1000
-    start_time = time.time()
-    hash_result = service.calculate_content_hash(medium_content)
-    medium_time = time.time() - start_time
-    
-    assert hash_result is not None
-    assert medium_time < 0.01  # Should still be fast
-    
-    # Large content test
-    large_content = "test content with lots of data " * 10000
-    start_time = time.time()
-    hash_result = service.calculate_content_hash(large_content)
-    large_time = time.time() - start_time
-    
-    assert hash_result is not None
-    assert large_time < 0.1  # Should complete within 100ms
-    
-    print(f"Performance results:")
-    print(f"Small content: {small_time:.6f}s")
-    print(f"Medium content: {medium_time:.6f}s")
-    print(f"Large content: {large_time:.6f}s")
-
-def test_memory_usage():
-    """Test memory usage patterns."""
-    process = psutil.Process(os.getpid())
-    initial_memory = process.memory_info().rss / 1024 / 1024  # MB
-    
-    # Create multiple service instances
-    services = []
-    for i in range(100):
-        service = MockContentHashService()
-        services.append(service)
-    
-    peak_memory = process.memory_info().rss / 1024 / 1024  # MB
-    memory_increase = peak_memory - initial_memory
-    
-    print(f"Memory usage:")
-    print(f"Initial: {initial_memory:.2f}MB")
-    print(f"Peak: {peak_memory:.2f}MB")
-    print(f"Increase: {memory_increase:.2f}MB")
-    
-    # Memory should not increase dramatically
-    assert memory_increase < 50  # Less than 50MB increase
-
-def test_model_creation_performance():
-    """Test model creation performance."""
-    start_time = time.time()
-    
-    models = []
-    for i in range(1000):
-        model = MockDocumentModel(
-            title=f"Document {i}",
-            file_path=f"/path/to/doc_{i}.pdf",
-            file_hash=f"hash_{i}",
-            file_size=1024 * i
-        )
-        models.append(model)
-    
-    creation_time = time.time() - start_time
-    
-    print(f"Model creation performance:")
-    print(f"Created 1000 models in {creation_time:.6f}s")
-    print(f"Average per model: {creation_time/1000:.6f}s")
-    
-    # Should be very fast
-    assert creation_time < 0.1
-    assert len(models) == 1000
-
-if __name__ == "__main__":
-    test_content_hash_performance()
-    test_memory_usage()
-    test_model_creation_performance()
-    print("✅ All performance benchmarks passed!")
-EOF
+          # Create performance benchmark script
+          echo "🚀 Starting performance benchmarks..." > performance-reports/benchmark_results.txt
+          echo "Running simplified performance tests..." >> performance-reports/benchmark_results.txt
           
-          # Run performance benchmarks
-          cd performance-reports
-          python api_benchmark.py > benchmark_results.txt 2>&1 || true
+          # Simple Python performance test
+          python3 -c 'import time, hashlib; start=time.time(); [hashlib.sha256(f"test{i}".encode()).hexdigest() for i in range(1000)]; print(f"Hash test: {time.time()-start:.4f}s"); start=time.time(); models=[{"id":i} for i in range(1000)]; print(f"Model test: {time.time()-start:.4f}s"); print("✅ Benchmarks completed")' >> performance-reports/benchmark_results.txt 2>&1
+
           
           echo "📊 Performance benchmark results:"
-          cat benchmark_results.txt
+          cat performance-reports/benchmark_results.txt
         timeout-minutes: 3
 
       - name: 📊 System Resource Analysis

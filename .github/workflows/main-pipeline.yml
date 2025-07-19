@@ -193,26 +193,49 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 🚀 阶段7: 智能部署 (1分钟) - 简化版
-  deploy-intelligent:
-    name: 🚀 Intelligent Deploy (Simplified)
-    needs: [detect-changes, quality-lightning]
-    if: false  # 暂时禁用部署流程
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: 📝 Deploy Placeholder
-        run: |
-          echo "✅ Deployment simplified"
-          echo "Complex deployment workflows disabled until dependency issues resolved"
+  # 🚀 阶段3C: 高级部署自动化 (15分钟) - Phase 3C实施
+  deployment-advanced:
+    name: 🚀 Deployment Advanced
+    needs: [detect-changes, security-advanced, performance-advanced]
+    if: |
+      always() && 
+      (needs.security-advanced.result == 'success' || needs.security-advanced.result == 'skipped') &&
+      (needs.performance-advanced.result == 'success' || needs.performance-advanced.result == 'skipped') &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/deployment-advanced.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
+      environment: 'staging'
+    secrets: inherit
 
-  # 📈 最终状态报告 - Phase 3版本
+  # 🔄 阶段3D: 高级E2E验证 (18分钟) - Phase 3D实施
+  e2e-advanced:
+    name: 🔄 E2E Advanced
+    needs: [detect-changes, deployment-advanced]
+    if: |
+      always() && 
+      (needs.deployment-advanced.result == 'success' || needs.deployment-advanced.result == 'skipped') &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/e2e-advanced.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
+    secrets: inherit
+
+  # 📈 最终状态报告 - 完整Phase 3版本
   pipeline-status:
     name: 📈 Pipeline Status Report
     runs-on: ubuntu-latest
-    needs: [detect-changes, quality-lightning, quality-enhanced, build-optimized, test-optimized, integration-validation, security-advanced, performance-advanced, deploy-intelligent]
+    needs: [detect-changes, quality-lightning, quality-enhanced, build-optimized, test-optimized, integration-validation, security-advanced, performance-advanced, deployment-advanced, e2e-advanced]
     if: always()
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: 📊 Generate Status Report
         run: |
@@ -230,7 +253,8 @@ jobs:
           echo "| 🔗 Integration Validation | ${{ needs.integration-validation.result }} | ~12m | 2D |" >> $GITHUB_STEP_SUMMARY
           echo "| 🔒 Security (Advanced) | ${{ needs.security-advanced.result }} | ~12m | 3B |" >> $GITHUB_STEP_SUMMARY
           echo "| 📊 Performance (Advanced) | ${{ needs.performance-advanced.result }} | ~10m | 3A |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 Deploy (Simplified) | ${{ needs.deploy-intelligent.result }} | disabled | 3C |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Deployment (Advanced) | ${{ needs.deployment-advanced.result }} | ~15m | 3C |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔄 E2E (Advanced) | ${{ needs.e2e-advanced.result }} | ~18m | 3D |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔍 Change Detection Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -241,9 +265,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Performance Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total Estimated Duration**: ~50-60 minutes (Phase 3)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Core Pipeline**: ~35 minutes (Phase 2)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Estimated Duration**: ~90-100 minutes (Complete Phase 3)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Core Pipeline**: ~35 minutes (Phase 2A-2D)" >> $GITHUB_STEP_SUMMARY
           echo "- **Advanced Analysis**: ~22 minutes (Phase 3A+3B)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment & E2E**: ~33 minutes (Phase 3C+3D)" >> $GITHUB_STEP_SUMMARY
           echo "- **Parallel Execution**: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
           echo "- **Smart Caching**: ✅ Enhanced" >> $GITHUB_STEP_SUMMARY
           echo "- **Incremental Processing**: ✅ Optimized" >> $GITHUB_STEP_SUMMARY
@@ -261,21 +286,25 @@ jobs:
             core_success=true
           fi
           
-          # Check advanced features (Phase 3)
+          # Check advanced features (Phase 3A-3D)
           if [[ ("${{ needs.security-advanced.result }}" == "success" || "${{ needs.security-advanced.result }}" == "skipped") && 
-                ("${{ needs.performance-advanced.result }}" == "success" || "${{ needs.performance-advanced.result }}" == "skipped") ]]; then
+                ("${{ needs.performance-advanced.result }}" == "success" || "${{ needs.performance-advanced.result }}" == "skipped") &&
+                ("${{ needs.deployment-advanced.result }}" == "success" || "${{ needs.deployment-advanced.result }}" == "skipped") &&
+                ("${{ needs.e2e-advanced.result }}" == "success" || "${{ needs.e2e-advanced.result }}" == "skipped") ]]; then
             advanced_success=true
           fi
           
           if [[ "$core_success" == true && "$advanced_success" == true ]]; then
             echo "✅ **Pipeline Status: SUCCESS (Phase 3)**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Phase 3 Complete**: Advanced CI/CD framework operational" >> $GITHUB_STEP_SUMMARY
-            echo "- **Phase 2 Core**: ✅ All systems operational" >> $GITHUB_STEP_SUMMARY
-            echo "- **Phase 3A Performance**: ✅ Advanced monitoring active" >> $GITHUB_STEP_SUMMARY
-            echo "- **Phase 3B Security**: ✅ Comprehensive scanning enabled" >> $GITHUB_STEP_SUMMARY
-            echo "- **Quality Gates**: ✅ Multi-tier validation" >> $GITHUB_STEP_SUMMARY
-            echo "- **Artifact Management**: ✅ Enhanced retention" >> $GITHUB_STEP_SUMMARY
+            echo "**Phase 3 Complete**: Enterprise-grade CI/CD framework fully operational" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 2 Core**: ✅ All foundational systems operational" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 3A Performance**: ✅ Advanced monitoring & benchmarking" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 3B Security**: ✅ Multi-layer security scanning" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 3C Deployment**: ✅ Automated deployment validation" >> $GITHUB_STEP_SUMMARY
+            echo "- **Phase 3D E2E**: ✅ End-to-end system validation" >> $GITHUB_STEP_SUMMARY
+            echo "- **Quality Gates**: ✅ Enterprise-grade multi-tier validation" >> $GITHUB_STEP_SUMMARY
+            echo "- **Artifact Management**: ✅ Complete lifecycle management" >> $GITHUB_STEP_SUMMARY
           elif [[ "$core_success" == true ]]; then
             echo "⚠️ **Pipeline Status: CORE SUCCESS**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
