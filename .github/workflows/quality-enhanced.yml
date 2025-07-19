@@ -71,8 +71,7 @@ jobs:
           ruff check src \
             --select=E,W,F,UP,B,SIM,I,N,ERA,PL,RUF,C90,T20,PIE,PT,Q,RET,SLF,TID,TCH,INT,ARG,PTH,TRY,FLY,PERF,FURB,LOG,G,INP,ICN,YTT,BLE,FBT,A,COM,C4,DTZ,EM,EXE,FA,ISC,T10 \
             --line-length=88 \
-            --output-format=github \
-            --statistics
+            --output-format=github
         timeout-minutes: 2
 
       - name: 🎨 Code Formatting Check
