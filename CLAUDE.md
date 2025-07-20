@@ -175,7 +175,27 @@ python test_complete_workflow.py
 **适用版本**: AI Enhanced PDF Scholar v2.1.0+  
 **更新要求**: 每次重大架构变更时更新此文档
 
-## ⚡ 最新开发实践 (2025-01-15)
+## ⚡ 最新开发实践 (2025-01-19)
+
+### 🎯 引用提取系统架构完成状态
+- **数据层**：CitationModel + CitationRelationModel (24个测试通过)
+- **仓库层**：Repository Pattern + SOLID原则 (21个测试通过)  
+- **服务层**：业务逻辑 + 智能解析 (18个测试通过)
+- **总计**：63个单元测试，100%通过率
+
+### 🏗️ 模块化架构设计原则
+- **接口隔离**：每个模块使用抽象接口，降低耦合度
+- **依赖注入**：构造函数注入，便于独立LLM模块开发
+- **单一职责**：每个类/服务专注单一功能领域
+- **可扩展性**：使用Plugin Pattern支持新解析算法
+
+### 📋 LLM模块开发指南
+```python
+# 模块边界清晰，便于LLM独立开发
+class CitationParsingService:  # 可独立优化
+class CitationService:         # 业务逻辑层
+class ICitationRepository:     # 接口定义层
+```
 
 ### 性能优化开发实践
 - **测试优化**：使用 `tests/conftest.py` 共享fixtures减少设置开销
@@ -183,6 +203,12 @@ python test_complete_workflow.py
 - **CI优化**：GitHub Actions 流水线超时从30分钟优化到15分钟
 - **性能监控**：使用 `scripts/benchmark_tests.py` 自动验证性能指标
 - **智能清理**：表级清理替代完整数据库重建
+
+### 集成测试策略
+- **分层测试**：单元 → 集成 → 端到端
+- **Mock策略**：外部依赖使用Mock，内部组件使用真实实现
+- **数据驱动**：使用真实PDF样本进行端到端验证
+- **性能基准**：集成测试包含性能指标验证
 
 ### 文档更新标准
 - **避免具体数字**：除非有明确测试结果支持

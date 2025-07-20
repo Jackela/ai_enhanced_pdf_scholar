@@ -1,0 +1,269 @@
+{
+  "metadata": {
+    "total_nodes": 5,
+    "total_edges": 10,
+    "center_document": 3,
+    "depth": 2
+  },
+  "nodes": [
+    {
+      "id": 1,
+      "title": "Attention Is All You Need",
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 4,
+        "out_degree": 0,
+        "total_degree": 4,
+        "citing_documents": 4,
+        "cited_documents": 0
+      }
+    },
+    {
+      "id": 2,
+      "title": "BERT: Pre-training Deep Bidirectional Transformers",
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 2,
+        "out_degree": 2,
+        "total_degree": 4,
+        "citing_documents": 2,
+        "cited_documents": 2
+      }
+    },
+    {
+      "id": 3,
+      "title": "Language Models are Few-Shot Learners",
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 2,
+        "out_degree": 4,
+        "total_degree": 6,
+        "citing_documents": 2,
+        "cited_documents": 4
+      }
+    },
+    {
+      "id": 4,
+      "title": "Training Language Models to Follow Instructions",
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 2,
+        "out_degree": 2,
+        "total_degree": 4,
+        "citing_documents": 2,
+        "cited_documents": 2
+      }
+    },
+    {
+      "id": 5,
+      "title": "Constitutional AI: Harmlessness from AI Feedback",
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 0,
+        "out_degree": 2,
+        "total_degree": 2,
+        "citing_documents": 0,
+        "cited_documents": 2
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": 3,
+      "target": 1,
+      "type": "cites",
+      "confidence": 0.9
+    },
+    {
+      "source": 2,
+      "target": 1,
+      "type": "cites",
+      "confidence": 0.95
+    },
+    {
+      "source": 2,
+      "target": 1,
+      "type": "cites",
+      "confidence": 0.95
+    },
+    {
+      "source": 3,
+      "target": 2,
+      "type": "cites",
+      "confidence": 0.85
+    },
+    {
+      "source": 3,
+      "target": 1,
+      "type": "cites",
+      "confidence": 0.9
+    },
+    {
+      "source": 3,
+      "target": 2,
+      "type": "cites",
+      "confidence": 0.85
+    },
+    {
+      "source": 4,
+      "target": 3,
+      "type": "builds_on",
+      "confidence": 0.95
+    },
+    {
+      "source": 4,
+      "target": 3,
+      "type": "builds_on",
+      "confidence": 0.95
+    },
+    {
+      "source": 5,
+      "target": 4,
+      "type": "extends",
+      "confidence": 0.9
+    },
+    {
+      "source": 5,
+      "target": 4,
+      "type": "extends",
+      "confidence": 0.9
+    }
+  ],
+  "analytics": {
+    "network_size": 5,
+    "connection_count": 10,
+    "density": 0.5,
+    "avg_degree": 4.0,
+    "citation_patterns": {
+      "pattern_count": 10,
+      "relation_types": {
+        "cites": 6,
+        "builds_on": 2,
+        "extends": 2
+      },
+      "confidence_distribution": {
+        "high": 10,
+        "medium": 0,
+        "low": 0
+      },
+      "dominant_relation_type": "cites"
+    },
+    "temporal_analysis": {
+      "temporal_span": 5,
+      "earliest_document": "2025-07-20 03:14:22",
+      "latest_document": "2025-07-20 03:14:22",
+      "date_coverage": "2025-07-20 03:14:22 to 2025-07-20 03:14:22",
+      "chronological_distribution": 1
+    },
+    "centrality_measures": {
+      "centrality_calculated": true,
+      "degree_centrality": {
+        "1": 1.0,
+        "2": 1.0,
+        "3": 1.5,
+        "4": 1.0,
+        "5": 0.5
+      },
+      "most_central_nodes": [
+        {
+          "node_id": 3,
+          "centrality": 1.5
+        },
+        {
+          "node_id": 1,
+          "centrality": 1.0
+        },
+        {
+          "node_id": 2,
+          "centrality": 1.0
+        },
+        {
+          "node_id": 4,
+          "centrality": 1.0
+        },
+        {
+          "node_id": 5,
+          "centrality": 0.5
+        }
+      ],
+      "avg_centrality": 1.0
+    }
+  },
+  "influential_documents": [
+    {
+      "document_id": 1,
+      "title": "Attention Is All You Need",
+      "influence_score": 8.0,
+      "times_cited": 4,
+      "documents_cited": 0,
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 4,
+        "out_degree": 0,
+        "total_degree": 4,
+        "citing_documents": 4,
+        "cited_documents": 0
+      }
+    },
+    {
+      "document_id": 3,
+      "title": "Language Models are Few-Shot Learners",
+      "influence_score": 6.0,
+      "times_cited": 2,
+      "documents_cited": 4,
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 2,
+        "out_degree": 4,
+        "total_degree": 6,
+        "citing_documents": 2,
+        "cited_documents": 4
+      }
+    },
+    {
+      "document_id": 2,
+      "title": "BERT: Pre-training Deep Bidirectional Transformers",
+      "influence_score": 5.0,
+      "times_cited": 2,
+      "documents_cited": 2,
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 2,
+        "out_degree": 2,
+        "total_degree": 4,
+        "citing_documents": 2,
+        "cited_documents": 2
+      }
+    },
+    {
+      "document_id": 4,
+      "title": "Training Language Models to Follow Instructions",
+      "influence_score": 5.0,
+      "times_cited": 2,
+      "documents_cited": 2,
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 2,
+        "out_degree": 2,
+        "total_degree": 4,
+        "citing_documents": 2,
+        "cited_documents": 2
+      }
+    },
+    {
+      "document_id": 5,
+      "title": "Constitutional AI: Harmlessness from AI Feedback",
+      "influence_score": 1.0,
+      "times_cited": 0,
+      "documents_cited": 2,
+      "created_at": "2025-07-20 03:14:22",
+      "metrics": {
+        "in_degree": 0,
+        "out_degree": 2,
+        "total_degree": 2,
+        "citing_documents": 0,
+        "cited_documents": 2
+      }
+    }
+  ]
+}

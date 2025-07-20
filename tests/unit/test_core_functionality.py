@@ -237,22 +237,143 @@ class TestContentHashService:
 
     def test_content_hash_calculation(self):
         """Test content hash calculation."""
+        import tempfile
+        import os
+        
         service = ContentHashService()
         
-        test_content = "test content for hashing"
-        hash_result = service.calculate_content_hash(test_content)
+        # Create a temporary PDF file for testing
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+            # Create minimal PDF content
+            pdf_content = """%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 35
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+(Test Content) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000200 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+285
+%%EOF"""
+            temp_file.write(pdf_content.encode())
+            temp_file.flush()
+            
+            try:
+                hash_result = service.calculate_content_hash(temp_file.name)
+                
+                assert hash_result is not None
+                assert len(hash_result) == 16  # Content hash is 16 characters
+                
+                # Verify hash is consistent
+                hash_result2 = service.calculate_content_hash(temp_file.name)
+                assert hash_result == hash_result2
+            finally:
+                try:
+                    os.unlink(temp_file.name)
+                except (PermissionError, OSError):
+                    pass
         
-        assert hash_result is not None
-        assert len(hash_result) == 64  # SHA256 hex length
-        
-        # Verify hash is consistent
-        hash_result2 = service.calculate_content_hash(test_content)
-        assert hash_result == hash_result2
-        
-        # Verify different content produces different hash
-        different_content = "different test content"
-        different_hash = service.calculate_content_hash(different_content)
-        assert hash_result != different_hash
+        # Test with different content
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file2:
+            pdf_content2 = """%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 38
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+(Different Content) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000200 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+288
+%%EOF"""
+            temp_file2.write(pdf_content2.encode())
+            temp_file2.flush()
+            
+            try:
+                different_hash = service.calculate_content_hash(temp_file2.name)
+                assert hash_result != different_hash
+            finally:
+                try:
+                    os.unlink(temp_file2.name)
+                except (PermissionError, OSError):
+                    pass
 
 
 class TestImportStructure:

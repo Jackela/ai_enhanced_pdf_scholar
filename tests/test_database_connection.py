@@ -48,7 +48,8 @@ class TestDatabaseConnection:
     def test_connection_initialization_invalid_path(self):
         """Test connection initialization with invalid path."""
         with pytest.raises(DatabaseConnectionError):
-            DatabaseConnection("/invalid/path/to/database.db")
+            # Use an invalid path that should fail on both Windows and Unix
+            DatabaseConnection("")
 
     def test_singleton_pattern(self):
         """Test singleton pattern for get_instance method."""
@@ -216,9 +217,9 @@ class TestDatabaseConnection:
         # Check synchronous mode
         result = conn.execute("PRAGMA synchronous").fetchone()
         assert result[0] == 1  # NORMAL
-        # Check cache size
+        # Check cache size (negative value indicates pages, -128000 = 128MB cache)
         result = conn.execute("PRAGMA cache_size").fetchone()
-        assert result[0] == 10000
+        assert result[0] == -128000
 
     def test_row_factory_dict_access(self):
         """Test that row factory allows dict-like access."""

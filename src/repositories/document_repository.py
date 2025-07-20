@@ -100,18 +100,16 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
     def find_by_content_hash(self, content_hash: str) -> DocumentModel | None:
         """
         Find documents by content hash (for duplicate detection).
-        Note: This requires adding content_hash column to database.
         Args:
             content_hash: Content-based hash
         Returns:
-            List of documents with matching content
+            Document model or None if not found
         """
         try:
-            # For now, return None since content_hash column doesn't exist yet
-            # TODO: Add content_hash column in future migration
-            logger.warning(
-                "Content hash search not implemented yet - requires database migration"
-            )
+            query = "SELECT * FROM documents WHERE content_hash = ?"
+            row = self.db.fetch_one(query, (content_hash,))
+            if row:
+                return self.to_model(dict(row))
             return None
         except Exception as e:
             logger.error(f"Failed to find document by content hash {content_hash}: {e}")
@@ -314,41 +312,37 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             stats: dict[str, Any] = {}
             # Total count
             stats["total_documents"] = self.count()
-            # Size statistics
-            size_query = """
+            
+            # Size and page statistics in one query
+            main_query = """
             SELECT
                 COUNT(*) as count,
-                AVG(file_size) as avg_size,
-                MIN(file_size) as min_size,
-                MAX(file_size) as max_size,
-                SUM(file_size) as total_size
+                COALESCE(SUM(file_size), 0) as total_size,
+                COALESCE(AVG(file_size), 0) as avg_size,
+                COALESCE(SUM(page_count), 0) as total_pages,
+                COALESCE(AVG(page_count), 0) as avg_pages,
+                MIN(created_at) as oldest_date,
+                MAX(created_at) as newest_date
             FROM documents
             """
-            size_result = self.db.fetch_one(size_query)
-            if size_result:
-                stats["size_stats"] = dict(size_result)
-            # Page count statistics (if available)
-            page_query = """
-            SELECT
-                COUNT(*) as count,
-                AVG(page_count) as avg_pages,
-                MIN(page_count) as min_pages,
-                MAX(page_count) as max_pages
-            FROM documents
-            WHERE page_count IS NOT NULL
-            """
-            page_result = self.db.fetch_one(page_query)
-            if page_result:
-                stats["page_stats"] = dict(page_result)
-            # Recent activity
-            recent_query = """
-            SELECT COUNT(*) as recent_count
-            FROM documents
-            WHERE last_accessed > datetime('now', '-7 days')
-            """
-            recent_result = self.db.fetch_one(recent_query)
-            if recent_result:
-                stats["recent_activity"] = dict(recent_result)
+            result = self.db.fetch_one(main_query)
+            if result:
+                result_dict = dict(result)
+                stats["total_size_bytes"] = result_dict.get("total_size", 0) or 0
+                stats["average_size_bytes"] = result_dict.get("avg_size", 0) or 0
+                stats["total_pages"] = result_dict.get("total_pages", 0) or 0
+                stats["average_pages"] = result_dict.get("avg_pages", 0) or 0
+                stats["oldest_document_date"] = result_dict.get("oldest_date")
+                stats["newest_document_date"] = result_dict.get("newest_date")
+            else:
+                # Empty database
+                stats["total_size_bytes"] = 0
+                stats["average_size_bytes"] = 0
+                stats["total_pages"] = 0
+                stats["average_pages"] = 0
+                stats["oldest_document_date"] = None
+                stats["newest_document_date"] = None
+                
             return stats
         except Exception as e:
             logger.error(f"Failed to get document statistics: {e}")
@@ -383,20 +377,27 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
 
     def advanced_search(
         self,
-        title_query: str | None = None,
+        title_contains: str | None = None,
         min_size: int | None = None,
         max_size: int | None = None,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+        min_pages: int | None = None,
+        max_pages: int | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
         has_vector_index: bool | None = None,
         limit: int = 50,
+        # Keep old parameter names for backward compatibility
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> list[DocumentModel]:
         """
         Advanced search with multiple criteria.
         Args:
-            title_query: Search term for title
+            title_contains: Search term for title
             min_size: Minimum file size
             max_size: Maximum file size
+            min_pages: Minimum page count
+            max_pages: Maximum page count
             start_date: Start date filter
             end_date: End date filter
             has_vector_index: Filter by vector index existence
@@ -408,9 +409,9 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             conditions: list[str] = []
             params: list[Any] = []
             # Title search
-            if title_query:
+            if title_contains:
                 conditions.append("d.title LIKE ?")
-                params.append(f"%{title_query}%")
+                params.append(f"%{title_contains}%")
             # Size range
             if min_size is not None:
                 conditions.append("d.file_size >= ?")
@@ -418,13 +419,22 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             if max_size is not None:
                 conditions.append("d.file_size <= ?")
                 params.append(max_size)
-            # Date range
-            if start_date is not None:
+            # Page range
+            if min_pages is not None:
+                conditions.append("d.page_count >= ?")
+                params.append(min_pages)
+            if max_pages is not None:
+                conditions.append("d.page_count <= ?")
+                params.append(max_pages)
+            # Date range - prioritize new parameter names
+            start_date_to_use = created_after or start_date
+            end_date_to_use = created_before or end_date
+            if start_date_to_use is not None:
                 conditions.append("d.created_at >= ?")
-                params.append(start_date.isoformat())
-            if end_date is not None:
+                params.append(start_date_to_use.isoformat())
+            if end_date_to_use is not None:
                 conditions.append("d.created_at <= ?")
-                params.append(end_date.isoformat())
+                params.append(end_date_to_use.isoformat())
             # Vector index filter
             base_query = "SELECT d.* FROM documents d"
             if has_vector_index is not None:

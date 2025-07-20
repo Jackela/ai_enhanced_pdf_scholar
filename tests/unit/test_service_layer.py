@@ -169,45 +169,251 @@ class TestContentHashService:
         """Test hash service with large content."""
         service = ContentHashService()
         
-        # Create large content (1MB)
-        large_content = "x" * (1024 * 1024)
-        hash_result = service.calculate_content_hash(large_content)
-        
-        assert hash_result is not None
-        assert len(hash_result) == 64
-        
-        # Test consistency with large content
-        hash_result2 = service.calculate_content_hash(large_content)
-        assert hash_result == hash_result2
+        if IMPORTS_AVAILABLE:
+            # Create large content (1MB) in a temporary PDF file
+            import tempfile
+            import os
+            
+            large_content = "x" * (1024 * 1024)
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+                # Write some basic PDF content with large text
+                pdf_content = f"""%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+/Length {len(large_content) + 20}
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+({large_content}) Tj
+ET
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+{len(large_content) + 400}
+%%EOF"""
+                temp_file.write(pdf_content.encode())
+                temp_file.flush()
+                
+                try:
+                    hash_result = service.calculate_content_hash(temp_file.name)
+                    assert hash_result is not None
+                    assert len(hash_result) == 16  # ContentHashService returns 16-char hash
+                    
+                    # Test consistency with large content
+                    hash_result2 = service.calculate_content_hash(temp_file.name)
+                    assert hash_result == hash_result2
+                finally:
+                    try:
+                        os.unlink(temp_file.name)
+                    except (PermissionError, OSError):
+                        # File may still be in use on Windows - will be cleaned up by OS
+                        pass
+        else:
+            # Mock implementation
+            large_content = "x" * (1024 * 1024)
+            hash_result = service.calculate_content_hash(large_content)
+            assert hash_result is not None
 
     def test_hash_service_with_unicode_content(self):
         """Test hash service with unicode content."""
         service = ContentHashService()
         
-        # Test unicode content
-        unicode_content = "测试内容 🚀 α β γ δ ε"
-        hash_result = service.calculate_content_hash(unicode_content)
-        
-        assert hash_result is not None
-        assert len(hash_result) == 64
-        
-        # Test consistency with unicode
-        hash_result2 = service.calculate_content_hash(unicode_content)
-        assert hash_result == hash_result2
+        if IMPORTS_AVAILABLE:
+            # Create a temporary PDF file with unicode content
+            import tempfile
+            import os
+            
+            unicode_content = "测试内容 🚀 α β γ δ ε"
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+                # Write basic PDF content with unicode text
+                pdf_content = f"""%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+/Length {len(unicode_content.encode('utf-8')) + 20}
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+({unicode_content}) Tj
+ET
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+{len(unicode_content.encode('utf-8')) + 400}
+%%EOF"""
+                temp_file.write(pdf_content.encode('utf-8'))
+                temp_file.flush()
+                
+                try:
+                    hash_result = service.calculate_content_hash(temp_file.name)
+                    assert hash_result is not None
+                    assert len(hash_result) == 16  # ContentHashService returns 16-char hash
+                    
+                    # Test consistency with unicode
+                    hash_result2 = service.calculate_content_hash(temp_file.name)
+                    assert hash_result == hash_result2
+                finally:
+                    try:
+                        os.unlink(temp_file.name)
+                    except (PermissionError, OSError):
+                        # File may still be in use on Windows - will be cleaned up by OS
+                        pass
+        else:
+            # Skip this test if imports are not available
+            pytest.skip("PyPDF2 not available for unicode content testing")
 
     def test_hash_service_performance(self):
         """Test hash service performance."""
         import time
+        import tempfile
+        import os
         
         service = ContentHashService()
-        test_content = "test content" * 100  # Reasonable size
         
-        start_time = time.time()
-        hash_result = service.calculate_content_hash(test_content)
-        duration = time.time() - start_time
-        
-        assert hash_result is not None
-        assert duration < 0.1  # Should be fast for reasonable content size
+        # Create a temporary PDF file for testing
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+            # Create minimal PDF content
+            pdf_content = f"""%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 44
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+(Performance Test Content) Tj
+ET
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000200 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+294
+%%EOF"""
+            temp_file.write(pdf_content.encode())
+            temp_file.flush()
+            
+            try:
+                start_time = time.time()
+                hash_result = service.calculate_content_hash(temp_file.name)
+                duration = time.time() - start_time
+                
+                assert hash_result is not None
+                assert duration < 1.0  # Should be fast for small PDF
+            finally:
+                try:
+                    os.unlink(temp_file.name)
+                except (PermissionError, OSError):
+                    pass
 
     def test_hash_service_batch_processing(self):
         """Test hash service batch processing capability."""

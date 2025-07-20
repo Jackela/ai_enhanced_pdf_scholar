@@ -279,8 +279,8 @@ class TestVectorIndexRepository:
     def test_find_all_with_documents(self):
         """Test finding all vector indexes with document information."""
         # Create multiple documents with indexes
-        doc1_id = self._create_test_document(title="Document 1", file_size=1000)
-        doc2_id = self._create_test_document(title="Document 2", file_size=2000)
+        doc1_id = self._create_test_document(title="Document 1", file_path="/test/path/document1.pdf", file_size=1000)
+        doc2_id = self._create_test_document(title="Document 2", file_path="/test/path/document2.pdf", file_size=2000)
         index1 = self._create_test_vector_index(document_id=doc1_id, chunk_count=10)
         index2 = self._create_test_vector_index(document_id=doc2_id, chunk_count=20)
         self.repository.create(index1)
@@ -321,13 +321,19 @@ class TestVectorIndexRepository:
 
     def test_find_orphaned_indexes_with_orphans(self):
         """Test finding orphaned indexes."""
-        # Create vector index with nonexistent document
-        vector_index = self._create_test_vector_index(document_id=99999)
-        created_index = self.repository.create(vector_index)
-        orphaned = self.repository.find_orphaned_indexes()
-        assert len(orphaned) == 1
-        assert orphaned[0].id == created_index.id
-        assert orphaned[0].document_id == 99999
+        # Temporarily disable foreign keys to create orphaned index
+        self.db.execute("PRAGMA foreign_keys = OFF")
+        try:
+            # Create vector index with nonexistent document
+            vector_index = self._create_test_vector_index(document_id=99999)
+            created_index = self.repository.create(vector_index)
+            orphaned = self.repository.find_orphaned_indexes()
+            assert len(orphaned) == 1
+            assert orphaned[0].id == created_index.id
+            assert orphaned[0].document_id == 99999
+        finally:
+            # Re-enable foreign keys
+            self.db.execute("PRAGMA foreign_keys = ON")
 
     def test_cleanup_orphaned_indexes_none(self):
         """Test cleanup when no orphaned indexes exist."""
@@ -343,11 +349,17 @@ class TestVectorIndexRepository:
         valid_doc_id = self._create_test_document()
         valid_index = self._create_test_vector_index(document_id=valid_doc_id)
         self.repository.create(valid_index)
-        # Create orphaned indexes
-        orphaned1 = self._create_test_vector_index(document_id=99998)
-        orphaned2 = self._create_test_vector_index(document_id=99999)
-        self.repository.create(orphaned1)
-        self.repository.create(orphaned2)
+        # Temporarily disable foreign keys to create orphaned indexes
+        self.db.execute("PRAGMA foreign_keys = OFF")
+        try:
+            # Create orphaned indexes
+            orphaned1 = self._create_test_vector_index(document_id=99998)
+            orphaned2 = self._create_test_vector_index(document_id=99999)
+            self.repository.create(orphaned1)
+            self.repository.create(orphaned2)
+        finally:
+            # Re-enable foreign keys
+            self.db.execute("PRAGMA foreign_keys = ON")
         cleaned_count = self.repository.cleanup_orphaned_indexes()
         assert cleaned_count == 2
         # Verify valid index remains
@@ -389,20 +401,31 @@ class TestVectorIndexRepository:
         cleaned_count = self.repository.cleanup_invalid_indexes()
         assert cleaned_count == 0
 
-    @patch.object(VectorIndexModel, "is_index_available")
-    def test_cleanup_invalid_indexes_with_invalid(self, mock_is_available):
+    def test_cleanup_invalid_indexes_with_invalid(self):
         """Test cleanup of invalid indexes."""
         # Create valid index
-        mock_is_available.return_value = True
         valid_doc_id = self._create_test_document()
         valid_index = self._create_test_vector_index(document_id=valid_doc_id)
         valid_created = self.repository.create(valid_index)
+        
         # Create invalid index
-        mock_is_available.return_value = False
-        invalid_doc_id = self._create_test_document(title="Invalid Doc")
+        invalid_doc_id = self._create_test_document(title="Invalid Doc", file_path="/test/path/invalid_document.pdf")
         invalid_index = self._create_test_vector_index(document_id=invalid_doc_id)
         invalid_created = self.repository.create(invalid_index)
-        cleaned_count = self.repository.cleanup_invalid_indexes()
+        
+        # Create a custom mock that checks the actual instance ID
+        original_method = VectorIndexModel.is_index_available
+        
+        def custom_mock(instance_self):
+            if instance_self.id == valid_created.id:
+                return True  # Valid index
+            else:
+                return False  # Invalid index
+        
+        # Apply the mock
+        with patch.object(VectorIndexModel, 'is_index_available', custom_mock):
+            cleaned_count = self.repository.cleanup_invalid_indexes()
+            
         assert cleaned_count == 1
         # Verify valid index remains
         valid_found = self.repository.find_by_id(valid_created.id)
@@ -443,9 +466,9 @@ class TestVectorIndexRepository:
     def test_get_index_statistics_with_data(self):
         """Test getting statistics with data."""
         # Create documents and indexes
-        doc1_id = self._create_test_document(title="Doc 1")
-        doc2_id = self._create_test_document(title="Doc 2")
-        doc3_id = self._create_test_document(title="Doc 3")  # No index
+        doc1_id = self._create_test_document(title="Doc 1", file_path="/test/path/doc1.pdf")
+        doc2_id = self._create_test_document(title="Doc 2", file_path="/test/path/doc2.pdf")
+        doc3_id = self._create_test_document(title="Doc 3", file_path="/test/path/doc3.pdf")  # No index
         index1 = self._create_test_vector_index(document_id=doc1_id, chunk_count=10)
         index2 = self._create_test_vector_index(document_id=doc2_id, chunk_count=20)
         self.repository.create(index1)
@@ -486,9 +509,15 @@ class TestVectorIndexRepository:
 
     def test_verify_index_integrity_missing_document(self):
         """Test integrity verification when document is missing."""
-        # Create index for nonexistent document
-        vector_index = self._create_test_vector_index(document_id=99999)
-        created_index = self.repository.create(vector_index)
+        # Temporarily disable foreign keys to create index for nonexistent document
+        self.db.execute("PRAGMA foreign_keys = OFF")
+        try:
+            # Create index for nonexistent document
+            vector_index = self._create_test_vector_index(document_id=99999)
+            created_index = self.repository.create(vector_index)
+        finally:
+            # Re-enable foreign keys
+            self.db.execute("PRAGMA foreign_keys = ON")
         with patch.object(VectorIndexModel, "is_index_available", return_value=True):
             result = self.repository.verify_index_integrity(created_index.id)
         assert result["exists"] is True
@@ -557,8 +586,8 @@ class TestVectorIndexRepository:
         """Test cleanup continues when individual index cleanup fails."""
         with patch.object(VectorIndexModel, "is_index_available", return_value=False):
             # Create multiple invalid indexes
-            doc1_id = self._create_test_document(title="Doc 1")
-            doc2_id = self._create_test_document(title="Doc 2")
+            doc1_id = self._create_test_document(title="Doc 1", file_path="/test/path/doc1.pdf")
+            doc2_id = self._create_test_document(title="Doc 2", file_path="/test/path/doc2.pdf")
             index1 = self._create_test_vector_index(document_id=doc1_id)
             index2 = self._create_test_vector_index(document_id=doc2_id)
             created1 = self.repository.create(index1)
@@ -623,7 +652,7 @@ class TestVectorIndexRepository:
         # Create multiple documents and indexes
         docs_and_indexes = []
         for i in range(3):
-            doc_id = self._create_test_document(title=f"Document {i}")
+            doc_id = self._create_test_document(title=f"Document {i}", file_path=f"/test/path/document{i}.pdf")
             index = self._create_test_vector_index(
                 document_id=doc_id, chunk_count=10 * (i + 1), index_hash=f"hash_{i}"
             )

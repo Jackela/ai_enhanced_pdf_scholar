@@ -197,8 +197,13 @@ class TestVectorIndexManager:
         document_id = self._create_test_document()
         index_hash = "same_hash"
         # Mock datetime to ensure same timestamp
+        from unittest.mock import MagicMock
+        mock_dt = MagicMock()
+        mock_dt.strftime.return_value = "20230101_120000"
+        mock_dt.isoformat.return_value = "2023-01-01T12:00:00"
+        
         with patch("src.services.vector_index_manager.datetime") as mock_datetime:
-            mock_datetime.now.return_value.strftime.return_value = "20230101_120000"
+            mock_datetime.now.return_value = mock_dt
             # Create first index
             index1 = self.manager.create_index_storage(
                 document_id=document_id, index_hash=index_hash, chunk_count=5

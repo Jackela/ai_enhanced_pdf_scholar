@@ -2,7 +2,7 @@
 
 ## 概述
 
-AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，支持文档管理、RAG 查询和系统管理功能。所有 API 端点都基于 FastAPI 构建，提供自动文档生成和类型验证。
+AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，支持文档管理、RAG 查询、智能引用分析和系统管理功能。所有 API 端点都基于 FastAPI 构建，提供自动文档生成和类型验证。
 
 **API 基础 URL**: `http://localhost:8000`
 **API 文档**: `http://localhost:8000/api/docs`
@@ -91,7 +91,10 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
     "cache_system": true,
     "websocket_support": true,
     "duplicate_detection": true,
-    "library_management": true
+    "library_management": true,
+    "citation_extraction": true,
+    "citation_network_analysis": true,
+    "citation_export": true
   },
   "limits": {
     "max_file_size_mb": 100,
@@ -473,6 +476,365 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 }
 ```
 
+### 6. 引用管理 (`/api/citations`)
+
+#### 6.1 提取文档引用
+
+**POST** `/api/citations/extract/{document_id}`
+
+从指定文档中提取学术引用。
+
+**路径参数**:
+- `document_id` (int): 文档ID
+
+**请求体示例**:
+```json
+{
+  "text_content": "学术文本内容，包含引用信息...",
+  "force_reparse": false
+}
+```
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "message": "成功提取6个引用",
+  "data": {
+    "citations": [
+      {
+        "id": 1,
+        "raw_text": "Smith, J. (2023). Machine Learning Fundamentals. Journal of AI, 15(3), 123-145.",
+        "authors": "Smith, J.",
+        "title": "Machine Learning Fundamentals",
+        "publication_year": 2023,
+        "journal_or_venue": "Journal of AI",
+        "doi": "10.1000/jai.2023.001",
+        "citation_type": "journal",
+        "confidence_score": 0.95,
+        "created_at": "2025-01-19T10:30:00Z"
+      }
+    ],
+    "total_extracted": 6,
+    "high_confidence_count": 4,
+    "average_confidence": 0.78
+  }
+}
+```
+
+**错误响应**:
+- `404`: 文档不存在
+- `400`: 请求参数无效
+
+#### 6.2 获取文档引用列表
+
+**GET** `/api/citations/document/{document_id}`
+
+获取指定文档的所有引用。
+
+**路径参数**:
+- `document_id` (int): 文档ID
+
+**查询参数**:
+- `page` (int, 可选): 页码，默认1
+- `limit` (int, 可选): 每页数量，默认50
+- `min_confidence` (float, 可选): 最小置信度过滤，默认0.0
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "data": {
+    "citations": [...],
+    "total": 25,
+    "page": 1,
+    "limit": 50,
+    "total_pages": 1
+  }
+}
+```
+
+#### 6.3 搜索引用
+
+**GET** `/api/citations/search`
+
+按多种条件搜索引用。
+
+**查询参数**:
+- `author` (str, 可选): 作者名称（模糊匹配）
+- `title` (str, 可选): 标题关键词（模糊匹配）
+- `year_from` (int, 可选): 起始年份
+- `year_to` (int, 可选): 结束年份
+- `citation_type` (str, 可选): 引用类型（journal/conference/book等）
+- `doi` (str, 可选): DOI精确匹配
+- `min_confidence` (float, 可选): 最小置信度
+- `limit` (int, 可选): 结果数量限制，默认50
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "data": {
+    "citations": [...],
+    "search_params": {
+      "author": "Smith",
+      "year_from": 2020,
+      "limit": 50
+    },
+    "total_found": 12
+  }
+}
+```
+
+#### 6.4 获取引用详情
+
+**GET** `/api/citations/{citation_id}`
+
+获取特定引用的详细信息。
+
+**路径参数**:
+- `citation_id` (int): 引用ID
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "data": {
+    "citation": {
+      "id": 1,
+      "document_id": 5,
+      "raw_text": "Smith, J. (2023). Machine Learning Fundamentals...",
+      "authors": "Smith, J.",
+      "title": "Machine Learning Fundamentals",
+      "publication_year": 2023,
+      "journal_or_venue": "Journal of AI",
+      "doi": "10.1000/jai.2023.001",
+      "page_range": "123-145",
+      "citation_type": "journal",
+      "confidence_score": 0.95,
+      "created_at": "2025-01-19T10:30:00Z",
+      "updated_at": "2025-01-19T10:30:00Z"
+    },
+    "source_document": {
+      "id": 5,
+      "title": "AI Research Overview"
+    }
+  }
+}
+```
+
+#### 6.5 更新引用信息
+
+**PUT** `/api/citations/{citation_id}`
+
+更新引用的字段信息（人工校正）。
+
+**路径参数**:
+- `citation_id` (int): 引用ID
+
+**请求体示例**:
+```json
+{
+  "authors": "Smith, John A.",
+  "title": "Machine Learning Fundamentals: A Comprehensive Guide",
+  "publication_year": 2023,
+  "journal_or_venue": "Journal of Artificial Intelligence",
+  "doi": "10.1000/jai.2023.001",
+  "page_range": "123-145",
+  "citation_type": "journal"
+}
+```
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "message": "引用信息已更新",
+  "data": {
+    "citation": {...}
+  }
+}
+```
+
+#### 6.6 删除引用
+
+**DELETE** `/api/citations/{citation_id}`
+
+删除指定引用。
+
+**路径参数**:
+- `citation_id` (int): 引用ID
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "message": "引用已删除"
+}
+```
+
+#### 6.7 引用统计信息
+
+**GET** `/api/citations/statistics`
+
+获取引用系统的统计信息。
+
+**查询参数**:
+- `document_id` (int, 可选): 特定文档的统计
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "data": {
+    "total_citations": 1250,
+    "complete_citations": 980,
+    "average_confidence_score": 0.82,
+    "by_type": {
+      "journal": 650,
+      "conference": 400,
+      "book": 150,
+      "unknown": 50
+    },
+    "by_year": {
+      "2023": 245,
+      "2022": 180,
+      "2021": 165
+    },
+    "high_confidence_count": 1100,
+    "documents_with_citations": 45
+  }
+}
+```
+
+### 7. 引用网络分析 (`/api/citations/network`)
+
+#### 7.1 构建引用网络
+
+**GET** `/api/citations/network/{document_id}`
+
+构建以指定文档为中心的引用网络。
+
+**路径参数**:
+- `document_id` (int): 中心文档ID
+
+**查询参数**:
+- `depth` (int, 可选): 网络深度，默认1，最大3
+- `min_confidence` (float, 可选): 最小关系置信度，默认0.5
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "data": {
+    "network": {
+      "nodes": [
+        {
+          "id": "doc_5",
+          "type": "document",
+          "title": "AI Research Overview",
+          "citation_count": 15
+        },
+        {
+          "id": "doc_12",
+          "type": "document", 
+          "title": "Machine Learning Trends",
+          "citation_count": 8
+        }
+      ],
+      "edges": [
+        {
+          "source": "doc_5",
+          "target": "doc_12",
+          "type": "cites",
+          "confidence": 0.85,
+          "citation_text": "As demonstrated in recent studies (Brown et al., 2023)..."
+        }
+      ]
+    },
+    "metrics": {
+      "total_nodes": 8,
+      "total_edges": 12,
+      "max_depth_reached": 2,
+      "average_confidence": 0.78
+    }
+  }
+}
+```
+
+#### 7.2 创建引用关系
+
+**POST** `/api/citations/network/relations`
+
+手动创建文档间的引用关系。
+
+**请求体示例**:
+```json
+{
+  "source_document_id": 5,
+  "source_citation_id": 1,
+  "target_document_id": 12,
+  "relation_type": "cites",
+  "confidence_score": 0.9
+}
+```
+
+#### 7.3 获取引用关系
+
+**GET** `/api/citations/network/relations`
+
+查询引用关系。
+
+**查询参数**:
+- `source_document_id` (int, 可选): 源文档ID
+- `target_document_id` (int, 可选): 目标文档ID
+- `relation_type` (str, 可选): 关系类型
+
+### 8. 引用数据导出 (`/api/citations/export`)
+
+#### 8.1 导出引用数据
+
+**GET** `/api/citations/export/{format}`
+
+导出引用数据为指定格式。
+
+**路径参数**:
+- `format` (str): 导出格式（bibtex/endnote/csv/json）
+
+**查询参数**:
+- `document_id` (int, 可选): 特定文档的引用
+- `author` (str, 可选): 按作者过滤
+- `year_from` (int, 可选): 年份范围
+- `year_to` (int, 可选): 年份范围
+
+**响应示例（BibTeX格式）**:
+```
+Content-Type: application/x-bibtex
+
+@article{smith2023ml,
+  title={Machine Learning Fundamentals},
+  author={Smith, John A.},
+  journal={Journal of Artificial Intelligence},
+  volume={15},
+  number={3},
+  pages={123--145},
+  year={2023},
+  doi={10.1000/jai.2023.001}
+}
+```
+
+**JSON响应示例**:
+```json
+{
+  "success": true,
+  "data": {
+    "format": "bibtex",
+    "total_exported": 25,
+    "download_url": "/api/citations/download/export_20250119_103045.bib"
+  }
+}
+```
+
 ## WebSocket 接口
 
 ### 连接端点
@@ -533,6 +895,37 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 {
   "type": "rag_error",
   "error": "错误信息"
+}
+```
+
+5. **citation_extraction_progress** - 引用提取进度
+```json
+{
+  "type": "citation_extraction_progress",
+  "document_id": 1,
+  "progress": 65,
+  "message": "正在解析引用 (12/18)..."
+}
+```
+
+6. **citation_extraction_complete** - 引用提取完成
+```json
+{
+  "type": "citation_extraction_complete",
+  "document_id": 1,
+  "total_extracted": 15,
+  "high_confidence_count": 12,
+  "average_confidence": 0.82
+}
+```
+
+7. **citation_network_updated** - 引用网络更新通知
+```json
+{
+  "type": "citation_network_updated",
+  "document_id": 1,
+  "network_size": 8,
+  "new_relations": 3
 }
 ```
 

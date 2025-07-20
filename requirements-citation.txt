@@ -1,0 +1,27 @@
+# Optional dependencies for enhanced citation parsing
+# These libraries can significantly improve citation extraction accuracy
+
+# CERN's reference extraction library - highly accurate for academic papers
+refextract>=0.3.0
+
+# For API-based citation parsing services
+requests>=2.31.0
+
+# Alternative citation parsing libraries (commented out, install as needed)
+# pybliometrics>=3.0.0      # Scopus API wrapper for bibliometric data
+# scholarly>=1.7.0          # Google Scholar API wrapper
+# crossref-commons>=0.0.7   # Crossref API utilities
+
+# PDF processing enhancements
+PyPDF2>=3.0.1
+pdfplumber>=0.9.0          # Better PDF text extraction
+
+# Text processing enhancements for better accuracy
+unidecode>=1.3.6           # Unicode normalization
+jellyfish>=0.11.2          # String similarity algorithms
+python-Levenshtein>=0.21.1 # Fast string distance calculations
+
+# Machine learning libraries for advanced parsing (optional)
+# scikit-learn>=1.3.0       # For ML-based citation classification
+# transformers>=4.33.0      # For transformer-based NLP models
+# torch>=2.0.0              # PyTorch for deep learning models

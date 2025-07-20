@@ -71,37 +71,60 @@ class ContentHashService:
             raise ContentHashError(f"File hashing failed: {e}") from e
 
     @staticmethod
-    def calculate_content_hash(file_path: str) -> str:
+    def calculate_content_hash(content_or_path: str) -> str:
         """
-        Calculate hash based on PDF text content only.
+        Calculate hash based on content.
+        If content_or_path is a valid file path to a PDF, extracts and hashes the text content.
+        If content_or_path is a string content, hashes it directly.
         This hash ignores formatting, metadata, and positioning, focusing only
         on the actual text content. Useful for detecting semantically identical
         documents with different formatting or metadata.
         Args:
-            file_path: Path to the PDF file
+            content_or_path: Either a path to a PDF file or string content to hash
         Returns:
             16-character hex hash string
         Raises:
             ContentHashError: If content extraction or hashing fails
+            TypeError: If content_or_path is None
+            AttributeError: If content_or_path doesn't have string methods
         """
+        # Validate input first - let TypeError/AttributeError propagate for None/invalid inputs
+        if content_or_path is None:
+            raise TypeError("content_or_path cannot be None")
+        
+        # Ensure we have a string-like object
+        str(content_or_path)  # This will raise TypeError for non-string-like objects
+        
         try:
-            path = Path(file_path)
-            if not path.exists():
-                raise ContentHashError(f"File not found: {file_path}")
-            if not str(path).lower().endswith(".pdf"):
-                raise ContentHashError(f"File must be a PDF: {file_path}")
-            # Extract text content from PDF
-            text_content = ContentHashService._extract_pdf_text(file_path)
-            # Normalize text for consistent hashing
-            normalized_text = ContentHashService._normalize_text(text_content)
-            # Calculate hash of normalized content
-            hasher = hashlib.sha256()
-            hasher.update(normalized_text.encode("utf-8"))
-            content_hash = hasher.hexdigest()[:16]
-            logger.debug(f"Calculated content hash for {file_path}: {content_hash}")
-            return content_hash
+            # Check if this looks like a file path
+            if ContentHashService._is_likely_file_path(content_or_path):
+                path = Path(content_or_path)
+                if not path.exists():
+                    # For absolute paths or clear file paths, this is an error
+                    if content_or_path.startswith('/') or (len(content_or_path) > 2 and content_or_path[1] == ':') or content_or_path.endswith('.pdf'):
+                        raise ContentHashError(f"File not found: {content_or_path}")
+                    # Otherwise, treat as content
+                    return ContentHashService.calculate_string_hash(content_or_path)
+                if not str(path).lower().endswith(".pdf"):
+                    raise ContentHashError(f"File must be a PDF: {content_or_path}")
+                # Extract text content from PDF
+                text_content = ContentHashService._extract_pdf_text(content_or_path)
+                # Normalize text for consistent hashing
+                normalized_text = ContentHashService._normalize_text(text_content)
+                # Calculate hash of normalized content
+                hasher = hashlib.sha256()
+                hasher.update(normalized_text.encode("utf-8"))
+                content_hash = hasher.hexdigest()[:16]
+                logger.debug(f"Calculated content hash for {content_or_path}: {content_hash}")
+                return content_hash
+            else:
+                # Treat as string content
+                return ContentHashService.calculate_string_hash(content_or_path)
+        except (TypeError, AttributeError):
+            # Re-raise type/attribute errors for test compatibility
+            raise
         except Exception as e:
-            logger.error(f"Failed to calculate content hash for {file_path}: {e}")
+            logger.error(f"Failed to calculate content hash for {content_or_path}: {e}")
             raise ContentHashError(f"Content hashing failed: {e}") from e
 
     @staticmethod
@@ -187,6 +210,68 @@ class ContentHashService:
         normalized = normalized.strip()
         logger.debug(f"Normalized text: {len(text)} -> {len(normalized)} characters")
         return normalized
+
+    @staticmethod
+    def calculate_string_hash(content: str) -> str:
+        """
+        Calculate hash of string content directly.
+        Useful for testing and hashing non-file content.
+        Returns full 64-character SHA256 hash for string content.
+        Args:
+            content: String content to hash
+        Returns:
+            64-character hex hash string (full SHA256)
+        """
+        try:
+            # Normalize content for consistent hashing
+            normalized_content = ContentHashService._normalize_text(content)
+            # Calculate hash
+            hasher = hashlib.sha256()
+            hasher.update(normalized_content.encode("utf-8"))
+            content_hash = hasher.hexdigest()  # Full 64-character hash for string content
+            logger.debug(f"Calculated string hash: {content_hash[:16]}...")
+            return content_hash
+        except Exception as e:
+            logger.error(f"Failed to calculate string hash: {e}")
+            raise ContentHashError(f"String hashing failed: {e}") from e
+
+    @staticmethod
+    def _is_likely_file_path(text: str) -> bool:
+        """
+        Determine if a string is likely a file path vs. content.
+        Args:
+            text: String to check
+        Returns:
+            True if text looks like a file path
+        """
+        if not text:
+            return False
+        
+        # Absolute paths (Unix and Windows) are definitely file paths
+        if text.startswith('/') or (len(text) > 2 and text[1] == ':'):
+            return True
+        
+        # Check for common file path indicators
+        path_indicators = [
+            '/',      # Unix path separator
+            '\\',     # Windows path separator
+            '.',      # File extension or relative path
+        ]
+        
+        # Short strings with path separators are likely paths
+        if any(indicator in text for indicator in path_indicators) and len(text) < 500:
+            return True
+            
+        # Very short strings without whitespace might be filenames
+        if len(text) < 100 and ' ' not in text and '\n' not in text:
+            return True
+            
+        # Long strings with whitespace are likely content
+        if len(text) > 500 or '\n' in text:
+            return False
+            
+        # Default to treating as content for ambiguous cases
+        return False
 
     @staticmethod
     def validate_pdf_file(file_path: str) -> bool:

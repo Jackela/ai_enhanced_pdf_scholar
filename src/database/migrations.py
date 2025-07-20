@@ -35,7 +35,7 @@ class DatabaseMigrator:
     Tracks schema version and applies incremental updates.
     """
 
-    CURRENT_VERSION = 2
+    CURRENT_VERSION = 3
 
     def __init__(self, db_connection: DatabaseConnection) -> None:
         """
@@ -55,6 +55,7 @@ class DatabaseMigrator:
         return {
             1: self._migration_001_initial_schema,
             2: self._migration_002_add_content_hash,
+            3: self._migration_003_add_citation_tables,
         }
 
     def get_current_version(self) -> int:
@@ -259,6 +260,75 @@ class DatabaseMigrator:
         logger.info("Created index on content_hash")
         logger.info("Migration 002 completed successfully")
 
+    def _migration_003_add_citation_tables(self) -> None:
+        """
+        Migration 003: Add citation and citation_relations tables.
+        Creates tables for advanced citation extraction and analysis features.
+        """
+        logger.info("Applying migration 003: Add citation tables")
+        
+        # Create citations table
+        citations_sql = """
+        CREATE TABLE citations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id INTEGER NOT NULL,
+            raw_text TEXT NOT NULL,
+            authors TEXT,
+            title TEXT,
+            publication_year INTEGER,
+            journal_or_venue TEXT,
+            doi TEXT,
+            page_range TEXT,
+            citation_type TEXT,
+            confidence_score REAL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE
+        )
+        """
+        self.db.execute(citations_sql)
+        logger.info("Created citations table")
+        
+        # Create citation_relations table
+        citation_relations_sql = """
+        CREATE TABLE citation_relations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_document_id INTEGER NOT NULL,
+            source_citation_id INTEGER NOT NULL,
+            target_document_id INTEGER,
+            target_citation_id INTEGER,
+            relation_type TEXT NOT NULL DEFAULT 'cites',
+            confidence_score REAL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (source_document_id) REFERENCES documents (id) ON DELETE CASCADE,
+            FOREIGN KEY (source_citation_id) REFERENCES citations (id) ON DELETE CASCADE,
+            FOREIGN KEY (target_document_id) REFERENCES documents (id) ON DELETE CASCADE,
+            FOREIGN KEY (target_citation_id) REFERENCES citations (id) ON DELETE CASCADE
+        )
+        """
+        self.db.execute(citation_relations_sql)
+        logger.info("Created citation_relations table")
+        
+        # Create indexes for performance
+        citation_indexes = [
+            "CREATE INDEX idx_citations_document ON citations(document_id)",
+            "CREATE INDEX idx_citations_authors ON citations(authors)",
+            "CREATE INDEX idx_citations_title ON citations(title)",
+            "CREATE INDEX idx_citations_year ON citations(publication_year)",
+            "CREATE INDEX idx_citations_doi ON citations(doi)",
+            "CREATE INDEX idx_citations_type ON citations(citation_type)",
+            "CREATE INDEX idx_citations_confidence ON citations(confidence_score)",
+            "CREATE INDEX idx_citation_relations_source ON citation_relations(source_document_id)",
+            "CREATE INDEX idx_citation_relations_target ON citation_relations(target_document_id)",
+            "CREATE INDEX idx_citation_relations_type ON citation_relations(relation_type)",
+        ]
+        
+        for index_sql in citation_indexes:
+            self.db.execute(index_sql)
+        logger.info("Created citation table indexes")
+        
+        logger.info("Migration 003 completed successfully")
+
     def get_schema_info(self) -> dict[str, Any]:
         """
         Get information about current database schema.
@@ -316,7 +386,7 @@ class DatabaseMigrator:
                 )
                 return False
             # Check required tables exist
-            required_tables = ["documents", "vector_indexes", "tags", "document_tags"]
+            required_tables = ["documents", "vector_indexes", "tags", "document_tags", "citations", "citation_relations"]
             existing_tables = [
                 row["name"]
                 for row in self.db.fetch_all(

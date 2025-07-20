@@ -172,12 +172,14 @@ class TestDocumentRepository:
         # Update the document
         created_doc.title = "Updated Title"
         created_doc.page_count = 15
-        success = self.repository.update(created_doc)
-        assert success is True
-        # Verify the update
-        updated_doc = self.repository.find_by_id(created_doc.id)
+        updated_doc = self.repository.update(created_doc)
+        assert updated_doc is not None
         assert updated_doc.title == "Updated Title"
         assert updated_doc.page_count == 15
+        # Verify the update persisted
+        retrieved_doc = self.repository.find_by_id(created_doc.id)
+        assert retrieved_doc.title == "Updated Title"
+        assert retrieved_doc.page_count == 15
 
     def test_delete_document(self):
         """Test deleting a document."""
@@ -679,11 +681,12 @@ class TestDocumentRepository:
         assert found_doc.title == "Lifecycle Test"
         # Update
         found_doc.title = "Updated Lifecycle Test"
-        update_success = self.repository.update(found_doc)
-        assert update_success is True
-        # Verify update
-        updated_doc = self.repository.find_by_id(created_doc.id)
+        updated_doc = self.repository.update(found_doc)
+        assert updated_doc is not None
         assert updated_doc.title == "Updated Lifecycle Test"
+        # Verify update persisted
+        retrieved_doc = self.repository.find_by_id(created_doc.id)
+        assert retrieved_doc.title == "Updated Lifecycle Test"
         # Delete
         delete_success = self.repository.delete(created_doc.id)
         assert delete_success is True

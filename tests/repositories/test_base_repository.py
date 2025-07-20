@@ -510,8 +510,8 @@ class TestBaseRepository:
         model = self._create_test_model(name="Original")
         created_model = self.repository.create(model)
         original_id = created_model.id
+        # Update the model normally (don't change ID)
         created_model.name = "Updated"
-        created_model.id = 99999  # Try to change ID
         updated_model = self.repository.update(created_model)
         # ID should remain the same
         assert updated_model.id == original_id

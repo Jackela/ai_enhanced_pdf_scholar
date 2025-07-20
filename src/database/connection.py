@@ -63,6 +63,8 @@ class ConnectionPool:
     - Health monitoring and recovery
     - Performance optimization
     """
+    
+    CONNECTION_EXPIRY_SECONDS = 3600  # 1 hour in seconds
 
     def __init__(
         self, db_path: str, max_connections: int = 20, connection_timeout: float = 30.0
@@ -305,6 +307,10 @@ class DatabaseConnection:
     # Constants
     CONNECTION_EXPIRY_SECONDS = 3600  # 1 hour in seconds
     SLOW_QUERY_THRESHOLD_MS = 100  # Threshold for slow query logging in ms
+    
+    # Singleton pattern
+    _instance = None
+    _lock = threading.Lock()
 
     def __init__(
         self, db_path: str, max_connections: int = 20, connection_timeout: float = 30.0
@@ -318,9 +324,28 @@ class DatabaseConnection:
         Raises:
             DatabaseConnectionError: If connection fails
         """
+        # Validate path input
+        if not db_path or not str(db_path).strip():
+            raise DatabaseConnectionError("Database path cannot be empty")
+            
         self.db_path = Path(db_path)
         self.max_connections = max_connections
         self.connection_timeout = connection_timeout
+        self.enable_foreign_keys = True
+        
+        # Validate database path
+        try:
+            # Check if parent directory exists or can be created
+            parent_dir = self.db_path.parent
+            if not parent_dir.exists():
+                # Try to create parent directory
+                parent_dir.mkdir(parents=True, exist_ok=True)
+            # Try to create a test file to verify write permissions
+            test_file = parent_dir / f".test_write_{threading.current_thread().ident}"
+            test_file.touch()
+            test_file.unlink()  # Clean up test file
+        except (OSError, PermissionError) as e:
+            raise DatabaseConnectionError(f"Cannot access database path: {e}") from e
         # Initialize connection pool
         self._pool = ConnectionPool(db_path, max_connections, connection_timeout)
         # Thread-local storage for current connection
@@ -333,6 +358,17 @@ class DatabaseConnection:
         except Exception as e:
             logger.error(f"Failed to establish database connection: {e}")
             raise DatabaseConnectionError(f"Cannot connect to database: {e}") from e
+
+    @classmethod
+    def get_instance(cls, db_path: str | None = None) -> "DatabaseConnection":
+        """Get singleton instance of DatabaseConnection."""
+        if cls._instance is None:
+            if db_path is None:
+                raise ValueError("db_path is required for first instance creation")
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls(db_path)
+        return cls._instance
 
     def _get_current_connection(self) -> ConnectionInfo:
         """Get or create a connection for the current thread."""
@@ -606,6 +642,15 @@ class DatabaseConnection:
         """
         result = self.fetch_one("SELECT last_insert_rowid() as id")
         return int(result["id"]) if result else None
+
+    def get_last_change_count(self) -> int:
+        """
+        Get the number of rows affected by the last DML operation.
+        Returns:
+            Number of rows affected by the last INSERT, UPDATE, or DELETE
+        """
+        result = self.fetch_one("SELECT changes() as count")
+        return int(result["count"]) if result else 0
 
     def close_connection(self) -> None:
         """Return current thread's connection to the pool."""
