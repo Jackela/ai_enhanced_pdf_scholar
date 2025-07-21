@@ -92,7 +92,7 @@ jobs:
 
       - name: 🧪 Run Basic Tests (8% coverage)
         run: |
-          pytest tests/unit -v --cov=src --cov-report=xml --cov-fail-under=8
+          pytest tests/unit -v --cov=src --cov-report=xml --cov-fail-under=8 --override-ini="addopts="
         timeout-minutes: 2
 
   # 📋 简单质量门控
