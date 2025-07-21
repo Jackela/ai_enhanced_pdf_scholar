@@ -1,6 +1,6 @@
 """
 Citation Relation Repository Implementation
-Implements ICitationRelationRepository interface following Repository pattern 
+Implements ICitationRelationRepository interface following Repository pattern
 and SOLID principles.
 Handles all database operations for CitationRelationModel entities.
 """
@@ -23,16 +23,24 @@ class CitationRelationRepository(
     {
         "name": "CitationRelationRepository",
         "version": "1.0.0",
-        "description": "Repository for CitationRelationModel following SOLID principles and Repository pattern.",
-        "dependencies": ["DatabaseConnection", "BaseRepository", "ICitationRelationRepository"],
+        "description": (
+            "Repository for CitationRelationModel following SOLID principles "
+            "and Repository pattern."
+        ),
+        "dependencies": [
+            "DatabaseConnection", "BaseRepository", "ICitationRelationRepository"
+        ],
         "interface": {
             "inputs": ["DatabaseConnection"],
             "outputs": "Citation relation CRUD operations and network analysis"
         }
     }
-    Citation relation repository implementation providing CRUD operations and network analysis.
-    Follows Single Responsibility Principle - handles only citation relationship data access.
-    Implements Interface Segregation Principle - implements only needed relation methods.
+    Citation relation repository implementation providing CRUD operations
+    and network analysis.
+    Follows Single Responsibility Principle - handles only citation
+    relationship data access.
+    Implements Interface Segregation Principle - implements only needed
+    relation methods.
     """
 
     def __init__(self, db_connection: DatabaseConnection) -> None:
@@ -186,7 +194,9 @@ class CitationRelationRepository(
             if success:
                 logger.info(f"Deleted citation relation with ID {relation_id}")
             else:
-                logger.warning(f"Citation relation with ID {relation_id} not found for deletion")
+                logger.warning(
+                    f"Citation relation with ID {relation_id} not found for deletion"
+                )
 
             return success
 
@@ -194,7 +204,9 @@ class CitationRelationRepository(
             logger.error(f"Failed to delete citation relation {relation_id}: {e}")
             raise
 
-    def find_by_source_document(self, source_document_id: int) -> list[CitationRelationModel]:
+    def find_by_source_document(
+        self, source_document_id: int
+    ) -> list[CitationRelationModel]:
         """
         Find all relations where specified document is the source.
 
@@ -212,16 +224,26 @@ class CitationRelationRepository(
             """
             results = self.db.fetch_all(sql, (source_document_id,))
 
-            relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
-            logger.debug(f"Found {len(relations)} relations from source document {source_document_id}")
+            relations = [
+                CitationRelationModel.from_database_row(dict(row)) for row in results
+            ]
+            logger.debug(
+                f"Found {len(relations)} relations from source document "
+                f"{source_document_id}"
+            )
 
             return relations
 
         except Exception as e:
-            logger.error(f"Failed to find relations for source document {source_document_id}: {e}")
+            logger.error(
+                f"Failed to find relations for source document "
+                f"{source_document_id}: {e}"
+            )
             raise
 
-    def find_by_target_document(self, target_document_id: int) -> list[CitationRelationModel]:
+    def find_by_target_document(
+        self, target_document_id: int
+    ) -> list[CitationRelationModel]:
         """
         Find all relations where specified document is the target.
 
@@ -239,13 +261,21 @@ class CitationRelationRepository(
             """
             results = self.db.fetch_all(sql, (target_document_id,))
 
-            relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
-            logger.debug(f"Found {len(relations)} relations to target document {target_document_id}")
+            relations = [
+                CitationRelationModel.from_database_row(dict(row)) for row in results
+            ]
+            logger.debug(
+                f"Found {len(relations)} relations to target document "
+                f"{target_document_id}"
+            )
 
             return relations
 
         except Exception as e:
-            logger.error(f"Failed to find relations for target document {target_document_id}: {e}")
+            logger.error(
+                f"Failed to find relations for target document "
+                f"{target_document_id}: {e}"
+            )
             raise
 
     def find_by_citation(self, citation_id: int) -> list[CitationRelationModel]:
@@ -266,8 +296,12 @@ class CitationRelationRepository(
             """
             results = self.db.fetch_all(sql, (citation_id, citation_id))
 
-            relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
-            logger.debug(f"Found {len(relations)} relations involving citation {citation_id}")
+            relations = [
+                CitationRelationModel.from_database_row(dict(row)) for row in results
+            ]
+            logger.debug(
+                f"Found {len(relations)} relations involving citation {citation_id}"
+            )
 
             return relations
 
@@ -364,7 +398,9 @@ class CitationRelationRepository(
                     }
 
             network = {
-                "nodes": [node_details.get(node_id, {"id": node_id}) for node_id in nodes],
+                "nodes": [
+                    node_details.get(node_id, {"id": node_id}) for node_id in nodes
+                ],
                 "edges": edges,
                 "center_document": document_id,
                 "depth": depth,
@@ -372,11 +408,16 @@ class CitationRelationRepository(
                 "total_edges": len(edges)
             }
 
-            logger.debug(f"Generated citation network for document {document_id} with {len(nodes)} nodes and {len(edges)} edges")
+            logger.debug(
+                f"Generated citation network for document {document_id} with "
+                f"{len(nodes)} nodes and {len(edges)} edges"
+            )
             return network
 
         except Exception as e:
-            logger.error(f"Failed to generate citation network for document {document_id}: {e}")
+            logger.error(
+                f"Failed to generate citation network for document {document_id}: {e}"
+            )
             raise
 
     def get_most_cited_documents(self, limit: int = 10) -> list[dict[str, Any]]:
@@ -464,7 +505,10 @@ class CitationRelationRepository(
             self.db.execute(sql4)
             removed_target_citation = self.db.get_last_change_count()
 
-            total_removed = removed_source + removed_target + removed_source_citation + removed_target_citation
+            total_removed = (
+                removed_source + removed_target +
+                removed_source_citation + removed_target_citation
+            )
 
             logger.info(f"Cleaned up {total_removed} orphaned citation relations")
             return total_removed
@@ -473,7 +517,9 @@ class CitationRelationRepository(
             logger.error(f"Failed to cleanup orphaned relations: {e}")
             raise
 
-    def get_relations_by_source(self, source_document_id: int) -> list[CitationRelationModel]:
+    def get_relations_by_source(
+        self, source_document_id: int
+    ) -> list[CitationRelationModel]:
         """
         Get all citation relations by source document.
 
@@ -491,12 +537,19 @@ class CitationRelationRepository(
             """
             results = self.db.fetch_all(sql, (source_document_id,))
 
-            relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
-            logger.debug(f"Found {len(relations)} relations for source document {source_document_id}")
+            relations = [
+                CitationRelationModel.from_database_row(dict(row)) for row in results
+            ]
+            logger.debug(
+                f"Found {len(relations)} relations for source document "
+                f"{source_document_id}"
+            )
             return relations
 
         except Exception as e:
-            logger.error(f"Failed to get relations by source document {source_document_id}: {e}")
+            logger.error(
+                f"Failed to get relations by source document {source_document_id}: {e}"
+            )
             raise
 
     def get_all_relations(self) -> list[CitationRelationModel]:
@@ -513,7 +566,9 @@ class CitationRelationRepository(
             """
             results = self.db.fetch_all(sql)
 
-            relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
+            relations = [
+                CitationRelationModel.from_database_row(dict(row)) for row in results
+            ]
             logger.debug(f"Retrieved {len(relations)} total citation relations")
             return relations
 
