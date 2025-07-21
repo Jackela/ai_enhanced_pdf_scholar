@@ -101,7 +101,24 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 🔍 阶段2C: 增强质量分析 (8分钟) - 重新启用增强版本
+  # 🔧🧪 阶段2A+2C: 并行构建与质量分析 (8分钟) - 优化并行执行
+  build-optimized:
+    name: 🔧 Optimized Build
+    needs: [detect-changes, quality-lightning]
+    if: |
+      always() && 
+      needs.quality-lightning.result == 'success' &&
+      (needs.detect-changes.outputs.frontend-changed == 'true' || 
+       needs.detect-changes.outputs.backend-changed == 'true' ||
+       needs.detect-changes.outputs.force-full == 'true')
+    uses: ./.github/workflows/build-optimized.yml
+    with:
+      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
+      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
+      force-full: ${{ needs.detect-changes.outputs.force-full }}
+    secrets: inherit
+
+  # 🔍 阶段2C: 增强质量分析 (与构建并行) - 优化依赖链
   quality-enhanced:
     name: 🔍 Quality Enhanced
     needs: [detect-changes, quality-lightning]
@@ -118,24 +135,7 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 🔧 阶段2: 优化构建 (6分钟) - 重新启用优化版本
-  build-optimized:
-    name: 🔧 Optimized Build
-    needs: [detect-changes, quality-enhanced]
-    if: |
-      always() && 
-      needs.quality-enhanced.result == 'success' &&
-      (needs.detect-changes.outputs.frontend-changed == 'true' || 
-       needs.detect-changes.outputs.backend-changed == 'true' ||
-       needs.detect-changes.outputs.force-full == 'true')
-    uses: ./.github/workflows/build-optimized.yml
-    with:
-      frontend-changed: ${{ needs.detect-changes.outputs.frontend-changed }}
-      backend-changed: ${{ needs.detect-changes.outputs.backend-changed }}
-      force-full: ${{ needs.detect-changes.outputs.force-full }}
-    secrets: inherit
-
-  # 🧪 阶段3: 优化测试 (8分钟) - 重新启用优化版本
+  # 🧪 阶段2B: 优化测试 (需要构建完成)
   test-optimized:
     name: 🧪 Optimized Testing
     needs: [detect-changes, build-optimized]
@@ -152,13 +152,14 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 🔗 阶段4: 集成验证 (12分钟) - 重新启用集成测试
+  # 🔗 阶段2D: 集成验证 (需要测试和质量检查完成) - 优化依赖
   integration-validation:
     name: 🔗 Integration Validation
-    needs: [detect-changes, test-optimized]
+    needs: [detect-changes, test-optimized, quality-enhanced]
     if: |
       always() && 
       needs.test-optimized.result == 'success' &&
+      needs.quality-enhanced.result == 'success' &&
       (needs.detect-changes.outputs.frontend-changed == 'true' || 
        needs.detect-changes.outputs.backend-changed == 'true' ||
        needs.detect-changes.outputs.force-full == 'true')
@@ -169,7 +170,7 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 🔒 阶段3B: 高级安全扫描 (12分钟) - Phase 3B实施
+  # 🔒📊 阶段3A+3B: 并行安全与性能扫描 (12分钟) - 优化并行执行
   security-advanced:
     name: 🔒 Security Advanced
     needs: [detect-changes, integration-validation]
@@ -187,7 +188,7 @@ jobs:
       force-full: ${{ needs.detect-changes.outputs.force-full }}
     secrets: inherit
 
-  # 📊 阶段3A: 高级性能基准测试 (10分钟) - Phase 3A实施
+  # 📊 并行执行性能基准测试 (与安全扫描同时进行)
   performance-advanced:
     name: 📊 Performance Advanced
     needs: [detect-changes, integration-validation]
@@ -276,10 +277,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Performance Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total Estimated Duration**: ~90-100 minutes (Complete Phase 3)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Core Pipeline**: ~35 minutes (Phase 2A-2D)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Advanced Analysis**: ~22 minutes (Phase 3A+3B)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Deployment & E2E**: ~33 minutes (Phase 3C+3D)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Estimated Duration**: ~45-55 minutes (Optimized Phase 2)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Core Pipeline**: ~20 minutes (Phase 2A-2D Parallel)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Advanced Analysis**: ~12 minutes (Phase 3A+3B Parallel)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment & E2E**: ~33 minutes (Phase 3C+3D Sequential)" >> $GITHUB_STEP_SUMMARY
           echo "- **Parallel Execution**: ✅ Enabled" >> $GITHUB_STEP_SUMMARY
           echo "- **Smart Caching**: ✅ Enhanced" >> $GITHUB_STEP_SUMMARY
           echo "- **Incremental Processing**: ✅ Optimized" >> $GITHUB_STEP_SUMMARY
