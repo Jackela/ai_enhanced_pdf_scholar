@@ -81,6 +81,11 @@ except ImportError as e:
             # Mock content hash
             import hashlib
             return hashlib.sha256(content.encode()).hexdigest()
+        
+        def calculate_string_hash(self, content):
+            # Mock string hash - returns 64-character hash like real implementation
+            import hashlib
+            return hashlib.sha256(content.encode()).hexdigest()
 
 
 class TestCoreModels:
