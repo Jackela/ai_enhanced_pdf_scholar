@@ -312,7 +312,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             stats: dict[str, Any] = {}
             # Total count
             stats["total_documents"] = self.count()
-            
+
             # Size and page statistics in one query
             main_query = """
             SELECT
@@ -342,7 +342,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
                 stats["average_pages"] = 0
                 stats["oldest_document_date"] = None
                 stats["newest_document_date"] = None
-                
+
             return stats
         except Exception as e:
             logger.error(f"Failed to get document statistics: {e}")

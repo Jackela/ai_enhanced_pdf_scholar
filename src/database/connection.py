@@ -63,7 +63,7 @@ class ConnectionPool:
     - Health monitoring and recovery
     - Performance optimization
     """
-    
+
     CONNECTION_EXPIRY_SECONDS = 3600  # 1 hour in seconds
 
     def __init__(
@@ -307,7 +307,7 @@ class DatabaseConnection:
     # Constants
     CONNECTION_EXPIRY_SECONDS = 3600  # 1 hour in seconds
     SLOW_QUERY_THRESHOLD_MS = 100  # Threshold for slow query logging in ms
-    
+
     # Singleton pattern
     _instance = None
     _lock = threading.Lock()
@@ -327,12 +327,12 @@ class DatabaseConnection:
         # Validate path input
         if not db_path or not str(db_path).strip():
             raise DatabaseConnectionError("Database path cannot be empty")
-            
+
         self.db_path = Path(db_path)
         self.max_connections = max_connections
         self.connection_timeout = connection_timeout
         self.enable_foreign_keys = True
-        
+
         # Validate database path
         try:
             # Check if parent directory exists or can be created

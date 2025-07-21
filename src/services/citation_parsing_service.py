@@ -6,7 +6,7 @@ Enhanced with third-party library integration for improved accuracy.
 
 import logging
 import re
-from typing import Any, Optional
+from typing import Any
 
 # Third-party library imports (optional dependencies)
 try:
@@ -14,12 +14,9 @@ try:
     REFEXTRACT_AVAILABLE = True
 except ImportError:
     REFEXTRACT_AVAILABLE = False
-    
-try:
-    import requests
-    REQUESTS_AVAILABLE = True
-except ImportError:
-    REQUESTS_AVAILABLE = False
+
+# requests not currently used but kept for potential future use
+REQUESTS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +46,12 @@ class CitationParsingService:
             r'([A-Z][a-z]+(?:\s+[A-Z]\.?)+)',   # Smith J.
             r'([A-Z][a-z]+(?:\s*et\s+al\.?))',  # Smith et al.
         ]
-        
+
         self.year_patterns = [
             r'\((\d{4}[a-z]?)\)',  # (2023) or (2023a)
             r'(\d{4}[a-z]?)\.',    # 2023. or 2023a.
         ]
-        
+
         self.doi_patterns = [
             r'https?://doi\.org/([^\s]+)',
             r'DOI:\s*([^\s]+)',
@@ -64,36 +61,36 @@ class CitationParsingService:
     def parse_citations_from_text(self, text_content: str, use_third_party: bool = True) -> list[dict[str, Any]]:
         """
         Parse citations from text content using multiple approaches.
-        
+
         Args:
             text_content: Text to parse citations from
             use_third_party: Whether to use third-party libraries for enhanced accuracy
-            
+
         Returns:
             List of parsed citation dictionaries
         """
         try:
             logger.debug("Starting citation parsing from text")
             citations = []
-            
+
             # Try third-party libraries first for better accuracy
             if use_third_party and REFEXTRACT_AVAILABLE:
                 citations.extend(self._parse_with_refextract(text_content))
-            
+
             # Try AnyStyle API if available and configured
             if use_third_party and REQUESTS_AVAILABLE:
                 anystyle_citations = self._parse_with_anystyle_api(text_content)
                 citations.extend(anystyle_citations)
-            
+
             # Always run our regex-based parser for additional coverage
             fallback_citations = self._parse_with_regex(text_content)
-            
+
             # Merge results, avoiding duplicates
             citations = self._merge_and_deduplicate_citations(citations, fallback_citations)
-            
+
             logger.debug(f"Parsed {len(citations)} citations from text (third-party: {use_third_party})")
             return citations
-            
+
         except Exception as e:
             logger.error(f"Failed to parse citations from text: {e}")
             raise
@@ -103,12 +100,12 @@ class CitationParsingService:
         try:
             if not REFEXTRACT_AVAILABLE:
                 return []
-                
+
             logger.debug("Using refextract for citation parsing")
-            
+
             # refextract expects structured text, so we process it appropriately
             result = refextract.extract_references_from_string(text_content)
-            
+
             citations = []
             for ref_data in result.get('references', []):
                 citation = {
@@ -121,13 +118,13 @@ class CitationParsingService:
                     "citation_type": self._classify_refextract_type(ref_data),
                     "confidence_score": 0.85  # refextract typically has high confidence
                 }
-                
+
                 if citation["raw_text"] and len(citation["raw_text"]) > 10:
                     citations.append(citation)
-            
+
             logger.debug(f"refextract extracted {len(citations)} citations")
             return citations
-            
+
         except Exception as e:
             logger.warning(f"refextract parsing failed: {e}")
             return []
@@ -137,12 +134,12 @@ class CitationParsingService:
         try:
             if not REQUESTS_AVAILABLE:
                 return []
-            
+
             # This would require AnyStyle API configuration
             # For now, return empty list as it needs API setup
             logger.debug("AnyStyle API not configured, skipping")
             return []
-            
+
         except Exception as e:
             logger.warning(f"AnyStyle API parsing failed: {e}")
             return []
@@ -151,7 +148,7 @@ class CitationParsingService:
         """Parse citations using our enhanced regex patterns."""
         try:
             citations = []
-            
+
             # Enhanced citation pattern matching for academic references
             # Focus on patterns that reliably indicate citation starts
             citation_patterns = [
@@ -166,26 +163,26 @@ class CitationParsingService:
                 # Abbreviated format: "LastName F. (Year)"
                 r'(?:^|\s)([A-Z][a-zA-Z]+\s+[A-Z]\.?.*?\(\d{4}[a-z]?\).*?\.)',
             ]
-            
+
             # Pre-filter text to remove obvious non-citation sentences
             filtered_text = self._prefilter_citation_text(text_content)
-            
+
             for pattern in citation_patterns:
                 matches = re.finditer(pattern, filtered_text, re.MULTILINE | re.DOTALL)
                 for match in matches:
                     citation_text = match.group(1).strip()
-                    
+
                     # Enhanced filtering for valid citations
                     if self._is_valid_citation_candidate(citation_text):
                         citation_data = self._parse_single_citation(citation_text)
                         if citation_data and self._validate_citation_quality(citation_data):
                             citations.append(citation_data)
-            
+
             # Remove duplicates and low-quality citations
             citations = self._deduplicate_and_filter_citations(citations)
-            
+
             return citations
-            
+
         except Exception as e:
             logger.warning(f"Regex parsing failed: {e}")
             return []
@@ -203,12 +200,12 @@ class CitationParsingService:
                 "citation_type": self.classify_citation_type(citation_text),
                 "confidence_score": 0.0  # Will be calculated
             }
-            
+
             # Calculate confidence score
             citation_data["confidence_score"] = self.calculate_confidence_score(citation_data)
-            
+
             return citation_data
-            
+
         except Exception as e:
             logger.warning(f"Failed to parse citation '{citation_text[:50]}...': {e}")
             return None
@@ -216,17 +213,17 @@ class CitationParsingService:
     def extract_authors(self, citation_text: str) -> str | None:
         """
         Extract authors from citation text with enhanced accuracy.
-        
+
         Args:
             citation_text: Citation text to extract authors from
-            
+
         Returns:
             Extracted first author or None
         """
         try:
             # Clean the input text
             text = citation_text.strip()
-            
+
             # Strategy 1: Handle complex multi-author citations first
             # Pattern: "FirstAuthor, A., SecondAuthor, B., ... & LastAuthor, Z. (Year)"
             complex_multiauthor = re.search(
@@ -236,28 +233,28 @@ class CitationParsingService:
             if complex_multiauthor:
                 first_author = complex_multiauthor.group(1).strip()
                 return self._normalize_author_name(first_author)
-            
+
             # Strategy 2: Look for standard "Author, F." patterns at the start
             standard_patterns = [
                 # "LastName, F." at start
                 r'^(?:.*?\b)?([A-Z][a-zA-Z]+,\s*[A-Z]\.?)(?=\s*(?:,|\.|&|et\s+al|\())',
-                # "LastName, FirstName" at start  
+                # "LastName, FirstName" at start
                 r'^(?:.*?\b)?([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+)(?=\s*(?:,|\.|&|et\s+al|\())',
                 # "LastName F." format
                 r'^(?:.*?\b)?([A-Z][a-zA-Z]+\s+[A-Z]\.?)(?=\s*(?:,|\.|&|et\s+al|\())',
             ]
-            
+
             for pattern in standard_patterns:
                 match = re.search(pattern, text)
                 if match:
                     author = match.group(1).strip()
                     return self._normalize_author_name(author)
-            
+
             # Strategy 3: Look for author before year marker
             year_match = re.search(r'\(\d{4}[a-z]?\)', text)
             if year_match:
                 before_year = text[:year_match.start()].strip()
-                
+
                 # Extract the last complete author name before the year
                 author_before_year_patterns = [
                     # "LastName, F." format
@@ -269,14 +266,14 @@ class CitationParsingService:
                     # Just "LastName"
                     r'([A-Z][a-zA-Z]+)(?=\s*$|\s*\.$)',
                 ]
-                
+
                 for pattern in author_before_year_patterns:
                     matches = re.findall(pattern, before_year)
                     if matches:
                         # Take the first occurrence (leftmost = first author)
                         author = matches[0].strip()
                         return self._normalize_author_name(author)
-            
+
             # Strategy 4: Extract from the very beginning, assuming citation starts with author
             beginning_patterns = [
                 r'^([A-Z][a-zA-Z]+,\s*[A-Z]\.?)',  # "LastName, F."
@@ -284,16 +281,16 @@ class CitationParsingService:
                 r'^([A-Z][a-zA-Z]+\s+[A-Z]\.?)',   # "LastName F."
                 r'^([A-Z][a-zA-Z]+)',              # Just "LastName"
             ]
-            
+
             for pattern in beginning_patterns:
                 match = re.search(pattern, text)
                 if match:
                     author = match.group(1).strip()
                     if len(author) > 2:  # Avoid single letters
                         return self._normalize_author_name(author)
-            
+
             return None
-            
+
         except Exception as e:
             logger.warning(f"Failed to extract authors from citation: {e}")
             return None
@@ -301,10 +298,10 @@ class CitationParsingService:
     def extract_title(self, citation_text: str) -> str | None:
         """
         Extract title from citation text.
-        
+
         Args:
             citation_text: Citation text to extract title from
-            
+
         Returns:
             Extracted title or None
         """
@@ -313,7 +310,7 @@ class CitationParsingService:
             quoted_title = re.search(r'["""]([^"""]+)["""]', citation_text)
             if quoted_title:
                 return quoted_title.group(1).strip()
-            
+
             # Look for text between author and year
             year_match = re.search(r'\(\d{4}[a-z]?\)', citation_text)
             if year_match:
@@ -325,7 +322,7 @@ class CitationParsingService:
                     potential_title = parts[1].strip()
                     if len(potential_title) > 5:
                         return potential_title
-                        
+
                 # Alternative: look for title after author comma
                 author_end = re.search(r'[A-Z][a-z]+,\s*[A-Z]\.?\s*', before_year)
                 if author_end:
@@ -334,7 +331,7 @@ class CitationParsingService:
                     after_author = re.sub(r'^[.,\s]+', '', after_author)
                     if len(after_author) > 5:
                         return after_author
-            
+
             # Fallback: look for capitalized text that could be a title
             # Look for pattern after author names
             title_pattern = r'[A-Z][a-z]+(?:,\s*[A-Z]\.?\s*)*\s+(.+?)(?:\.|$)'
@@ -343,9 +340,9 @@ class CitationParsingService:
                 potential_title = title_match.group(1).strip()
                 if len(potential_title) > 5 and not re.match(r'^\(\d{4}', potential_title):
                     return potential_title
-            
+
             return None
-            
+
         except Exception as e:
             logger.warning(f"Failed to extract title from citation: {e}")
             return None
@@ -353,10 +350,10 @@ class CitationParsingService:
     def extract_year(self, citation_text: str) -> int | None:
         """
         Extract publication year from citation text.
-        
+
         Args:
             citation_text: Citation text to extract year from
-            
+
         Returns:
             Extracted year or None
         """
@@ -372,9 +369,9 @@ class CitationParsingService:
                         # Validate year range
                         if 1900 <= year <= 2030:
                             return year
-            
+
             return None
-            
+
         except Exception as e:
             logger.warning(f"Failed to extract year from citation: {e}")
             return None
@@ -382,10 +379,10 @@ class CitationParsingService:
     def extract_venue(self, citation_text: str) -> str | None:
         """
         Extract publication venue from citation text.
-        
+
         Args:
             citation_text: Citation text to extract venue from
-            
+
         Returns:
             Extracted venue or None
         """
@@ -396,16 +393,16 @@ class CitationParsingService:
                 after_year = citation_text[year_match.end():].strip()
                 # Remove leading punctuation
                 after_year = re.sub(r'^[.,\s]+', '', after_year)
-                
+
                 # Look for journal/venue name
                 venue_match = re.search(r'^([^,.]+)', after_year)
                 if venue_match:
                     venue = venue_match.group(1).strip()
                     if len(venue) > 3:
                         return venue
-            
+
             return None
-            
+
         except Exception as e:
             logger.warning(f"Failed to extract venue from citation: {e}")
             return None
@@ -413,10 +410,10 @@ class CitationParsingService:
     def extract_doi(self, citation_text: str) -> str | None:
         """
         Extract DOI from citation text.
-        
+
         Args:
             citation_text: Citation text to extract DOI from
-            
+
         Returns:
             Extracted DOI or None
         """
@@ -428,9 +425,9 @@ class CitationParsingService:
                     # Clean up DOI
                     doi = re.sub(r'[.,\s]+$', '', doi)  # Remove trailing punctuation
                     return doi
-            
+
             return None
-            
+
         except Exception as e:
             logger.warning(f"Failed to extract DOI from citation: {e}")
             return None
@@ -438,16 +435,16 @@ class CitationParsingService:
     def classify_citation_type(self, citation_text: str) -> str:
         """
         Classify citation type based on text patterns.
-        
+
         Args:
             citation_text: Citation text to classify
-            
+
         Returns:
             Citation type (journal, conference, book, thesis, etc.)
         """
         try:
             text_lower = citation_text.lower()
-            
+
             # Conference patterns
             conference_indicators = [
                 'proceedings', 'conference', 'workshop', 'symposium',
@@ -455,7 +452,7 @@ class CitationParsingService:
             ]
             if any(indicator in text_lower for indicator in conference_indicators):
                 return "conference"
-            
+
             # Journal patterns
             journal_indicators = [
                 'journal', 'review', 'quarterly', 'annual', 'magazine',
@@ -463,7 +460,7 @@ class CitationParsingService:
             ]
             if any(indicator in text_lower for indicator in journal_indicators):
                 return "journal"
-            
+
             # Book patterns
             book_indicators = [
                 'press', 'publisher', 'edition', 'book', 'handbook',
@@ -471,15 +468,15 @@ class CitationParsingService:
             ]
             if any(indicator in text_lower for indicator in book_indicators):
                 return "book"
-            
+
             # Thesis patterns
             thesis_indicators = ['thesis', 'dissertation', 'phd', 'master']
             if any(indicator in text_lower for indicator in thesis_indicators):
                 return "thesis"
-            
+
             # Default to unknown
             return "unknown"
-            
+
         except Exception as e:
             logger.warning(f"Failed to classify citation type: {e}")
             return "unknown"
@@ -487,17 +484,17 @@ class CitationParsingService:
     def calculate_confidence_score(self, citation_data: dict[str, Any]) -> float:
         """
         Calculate confidence score for parsed citation.
-        
+
         Args:
             citation_data: Parsed citation data
-            
+
         Returns:
             Confidence score between 0.0 and 1.0
         """
         try:
             score = 0.0
             max_score = 0.0
-            
+
             # Authors present and well-formed
             if citation_data.get("authors"):
                 authors = citation_data["authors"]
@@ -508,7 +505,7 @@ class CitationParsingService:
                 max_score += 0.25
             else:
                 max_score += 0.25
-            
+
             # Title present and substantial
             if citation_data.get("title"):
                 title = citation_data["title"]
@@ -519,7 +516,7 @@ class CitationParsingService:
                 max_score += 0.25
             else:
                 max_score += 0.25
-            
+
             # Year present and reasonable
             if citation_data.get("publication_year"):
                 year = citation_data["publication_year"]
@@ -528,30 +525,27 @@ class CitationParsingService:
                 max_score += 0.2
             else:
                 max_score += 0.2
-            
+
             # Venue/journal present
             if citation_data.get("journal_or_venue"):
                 score += 0.15
                 max_score += 0.15
             else:
                 max_score += 0.15
-            
+
             # DOI present (bonus)
             if citation_data.get("doi"):
                 score += 0.15
                 max_score += 0.15
             else:
                 max_score += 0.15
-            
+
             # Normalize score
-            if max_score > 0:
-                final_score = score / max_score
-            else:
-                final_score = 0.1  # Minimum score for having raw text
-            
+            final_score = score / max_score if max_score > 0 else 0.1  # Minimum score for having raw text
+
             # Ensure score is within bounds and not zero
             return max(0.1, min(1.0, final_score))
-            
+
         except Exception as e:
             logger.warning(f"Failed to calculate confidence score: {e}")
             return 0.1  # Low confidence for error cases
@@ -582,7 +576,7 @@ class CitationParsingService:
                     year_str = year_data
                 else:
                     return None
-                
+
                 # Extract numeric year
                 year_match = re.search(r'(\d{4})', str(year_str))
                 if year_match:
@@ -622,27 +616,27 @@ class CitationParsingService:
         """Merge citations from different sources and remove duplicates."""
         try:
             all_citations = list(primary_citations)  # Start with primary results
-            
+
             # Add fallback citations that don't duplicate primary ones
             for fallback_cite in fallback_citations:
                 is_duplicate = False
                 fallback_text = fallback_cite.get("raw_text", "").strip().lower()
-                
+
                 for existing_cite in all_citations:
                     existing_text = existing_cite.get("raw_text", "").strip().lower()
-                    
+
                     # Simple similarity check - if 80% of text matches, consider duplicate
                     if len(fallback_text) > 0 and len(existing_text) > 0:
                         similarity = self._calculate_text_similarity(fallback_text, existing_text)
                         if similarity > 0.8:
                             is_duplicate = True
                             break
-                
+
                 if not is_duplicate:
                     all_citations.append(fallback_cite)
-            
+
             return all_citations
-            
+
         except Exception as e:
             logger.warning(f"Failed to merge citations: {e}")
             return primary_citations + fallback_citations
@@ -652,31 +646,31 @@ class CitationParsingService:
         try:
             if not text1 or not text2:
                 return 0.0
-                
+
             # Simple character-based similarity
             longer = text1 if len(text1) > len(text2) else text2
             shorter = text2 if len(text1) > len(text2) else text1
-            
+
             if len(longer) == 0:
                 return 1.0
-                
+
             # Count matching characters
-            matches = sum(1 for c1, c2 in zip(shorter, longer) if c1 == c2)
+            matches = sum(1 for c1, c2 in zip(shorter, longer, strict=False) if c1 == c2)
             return matches / len(longer)
-            
+
         except Exception:
-            return 0.0    
+            return 0.0
     def _prefilter_citation_text(self, text_content: str) -> str:
         """Pre-filter text to remove obvious non-citation content."""
         try:
             lines = text_content.split('\n')
             filtered_lines = []
-            
+
             for line in lines:
                 line = line.strip()
                 if not line:
                     continue
-                    
+
                 # Skip lines that are clearly not citations
                 skip_patterns = [
                     r'^\s*Abstract\s*:',
@@ -688,33 +682,33 @@ class CitationParsingService:
                     r'^\s*Section\s+\d+',
                     r'^\s*Chapter\s+\d+',
                 ]
-                
+
                 should_skip = any(re.match(pattern, line, re.IGNORECASE) for pattern in skip_patterns)
                 if not should_skip:
                     filtered_lines.append(line)
-            
+
             return '\n'.join(filtered_lines)
-            
+
         except Exception:
             return text_content
-    
+
     def _is_valid_citation_candidate(self, citation_text: str) -> bool:
         """Check if text is a valid citation candidate."""
         try:
             text = citation_text.strip()
-            
+
             # Must have minimum length
             if len(text) < 20:
                 return False
-            
+
             # Must contain a year in parentheses
             if not re.search(r'\(\d{4}[a-z]?\)', text):
                 return False
-            
+
             # Must start with something that looks like an author name
             if not re.search(r'^(?:.*?\b)?[A-Z][a-zA-Z]+', text):
                 return False
-            
+
             # Should not start with common non-citation words
             bad_starts = [
                 'this', 'that', 'these', 'those', 'the', 'a', 'an',
@@ -723,31 +717,28 @@ class CitationParsingService:
                 'object', 'subject', 'method', 'approach', 'technique',
                 'work', 'study', 'research', 'paper', 'article',
             ]
-            
+
             first_word = text.split()[0].lower() if text.split() else ''
             if first_word in bad_starts:
                 return False
-            
+
             # Should have proper punctuation
-            if not text.endswith('.') and not text.endswith('.).'):
-                return False
-            
-            return True
-            
+            return not (not text.endswith('.') and not text.endswith('.).'))
+
         except Exception:
             return False
-    
+
     def _validate_citation_quality(self, citation_data: dict[str, Any]) -> bool:
         """Validate that a parsed citation meets quality standards."""
         try:
             # Must have basic required fields
             if not citation_data.get('raw_text'):
                 return False
-                
+
             # Should have at least authors or title
             if not citation_data.get('authors') and not citation_data.get('title'):
                 return False
-            
+
             # If authors exist, they should look reasonable
             if citation_data.get('authors'):
                 authors = citation_data['authors']
@@ -757,51 +748,51 @@ class CitationParsingService:
                 # Authors shouldn't be just common words
                 if authors.lower() in ['the', 'this', 'that', 'work', 'study', 'research', 'paper']:
                     return False
-            
+
             # Year should be reasonable if present
             if citation_data.get('publication_year'):
                 year = citation_data['publication_year']
                 if not (1900 <= year <= 2030):
                     return False
-            
+
             return True
-            
+
         except Exception:
             return False
-    
+
     def _deduplicate_and_filter_citations(self, citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Remove duplicates and filter low-quality citations."""
         try:
             filtered_citations = []
             seen_texts = set()
-            
+
             for citation in citations:
                 raw_text = citation.get('raw_text', '').strip().lower()
-                
+
                 # Skip if we've seen very similar text
                 is_duplicate = False
                 for seen_text in seen_texts:
                     if self._calculate_text_similarity(raw_text, seen_text) > 0.8:
                         is_duplicate = True
                         break
-                
+
                 if not is_duplicate and self._validate_citation_quality(citation):
                     filtered_citations.append(citation)
                     seen_texts.add(raw_text)
-            
+
             # Sort by confidence score descending
             filtered_citations.sort(key=lambda x: x.get('confidence_score', 0), reverse=True)
-            
+
             return filtered_citations
-            
+
         except Exception:
             return citations
-    
+
     def _normalize_author_name(self, author: str) -> str:
         """Normalize author name to consistent format."""
         try:
             author = author.strip()
-            
+
             # Handle "LastName F." format - convert to "LastName, F."
             if ',' not in author and ' ' in author:
                 parts = author.split()
@@ -812,12 +803,12 @@ class CitationParsingService:
                         last_name = ' '.join(parts[:-1])
                         initial = last_part
                         author = f"{last_name}, {initial}"
-            
+
             # Clean up extra spaces and punctuation
             author = re.sub(r'\s+', ' ', author)
             author = re.sub(r'\s*,\s*', ', ', author)
-            
+
             return author
-            
+
         except Exception:
             return author

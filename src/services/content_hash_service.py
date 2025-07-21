@@ -91,10 +91,10 @@ class ContentHashService:
         # Validate input first - let TypeError/AttributeError propagate for None/invalid inputs
         if content_or_path is None:
             raise TypeError("content_or_path cannot be None")
-        
+
         # Ensure we have a string-like object
         str(content_or_path)  # This will raise TypeError for non-string-like objects
-        
+
         try:
             # Check if this looks like a file path
             if ContentHashService._is_likely_file_path(content_or_path):
@@ -246,30 +246,30 @@ class ContentHashService:
         """
         if not text:
             return False
-        
+
         # Absolute paths (Unix and Windows) are definitely file paths
         if text.startswith('/') or (len(text) > 2 and text[1] == ':'):
             return True
-        
+
         # Check for common file path indicators
         path_indicators = [
             '/',      # Unix path separator
             '\\',     # Windows path separator
             '.',      # File extension or relative path
         ]
-        
+
         # Short strings with path separators are likely paths
         if any(indicator in text for indicator in path_indicators) and len(text) < 500:
             return True
-            
+
         # Very short strings without whitespace might be filenames
         if len(text) < 100 and ' ' not in text and '\n' not in text:
             return True
-            
+
         # Long strings with whitespace are likely content
         if len(text) > 500 or '\n' in text:
             return False
-            
+
         # Default to treating as content for ambiguous cases
         return False
 
