@@ -7,7 +7,12 @@ following the Interface Segregation Principle (ISP).
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from src.database.models import DocumentModel, VectorIndexModel, CitationModel, CitationRelationModel
+from src.database.models import (
+    CitationModel,
+    CitationRelationModel,
+    DocumentModel,
+    VectorIndexModel,
+)
 
 T = TypeVar("T")
 
@@ -157,12 +162,16 @@ class ICitationRelationRepository(IRepository[CitationRelationModel]):
     """
 
     @abstractmethod
-    def find_by_source_document(self, source_document_id: int) -> list[CitationRelationModel]:
+    def find_by_source_document(
+        self, source_document_id: int
+    ) -> list[CitationRelationModel]:
         """Find all relations where document is the source."""
         pass
 
     @abstractmethod
-    def find_by_target_document(self, target_document_id: int) -> list[CitationRelationModel]:
+    def find_by_target_document(
+        self, target_document_id: int
+    ) -> list[CitationRelationModel]:
         """Find all relations where document is the target."""
         pass
 
@@ -182,7 +191,9 @@ class ICitationRelationRepository(IRepository[CitationRelationModel]):
         pass
 
     @abstractmethod
-    def get_relations_by_source(self, source_document_id: int) -> list[CitationRelationModel]:
+    def get_relations_by_source(
+        self, source_document_id: int
+    ) -> list[CitationRelationModel]:
         """Get all relations by source document."""
         pass
 

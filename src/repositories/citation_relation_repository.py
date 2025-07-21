@@ -1,6 +1,7 @@
 """
 Citation Relation Repository Implementation
-Implements ICitationRelationRepository interface following Repository pattern and SOLID principles.
+Implements ICitationRelationRepository interface following Repository pattern 
+and SOLID principles.
 Handles all database operations for CitationRelationModel entities.
 """
 
@@ -15,7 +16,9 @@ from src.repositories.base_repository import BaseRepository
 logger = logging.getLogger(__name__)
 
 
-class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitationRelationRepository):
+class CitationRelationRepository(
+    BaseRepository[CitationRelationModel], ICitationRelationRepository
+):
     """
     {
         "name": "CitationRelationRepository",
@@ -35,7 +38,7 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def __init__(self, db_connection: DatabaseConnection) -> None:
         """
         Initialize citation relation repository.
-        
+
         Args:
             db_connection: Database connection following Dependency Inversion Principle
         """
@@ -57,13 +60,13 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def create(self, relation: CitationRelationModel) -> CitationRelationModel:
         """
         Create a new citation relation in the database.
-        
+
         Args:
             relation: Citation relation model to create
-            
+
         Returns:
             Created relation with assigned ID
-            
+
         Raises:
             DatabaseError: If creation fails
         """
@@ -71,27 +74,27 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
             relation_dict = relation.to_database_dict()
             # Remove id for insertion
             relation_dict.pop("id", None)
-            
+
             # Build SQL dynamically based on provided fields
             columns = list(relation_dict.keys())
             placeholders = ["?" for _ in columns]
             values = [relation_dict[col] for col in columns]
-            
+
             sql = f"""
                 INSERT INTO citation_relations ({', '.join(columns)})
                 VALUES ({', '.join(placeholders)})
             """
-            
+
             self.db.execute(sql, values)
-            
+
             # Get the inserted ID
             result = self.db.fetch_one("SELECT last_insert_rowid() as id")
             if result:
                 relation.id = result["id"]
-            
+
             logger.info(f"Created citation relation with ID {relation.id}")
             return relation
-            
+
         except Exception as e:
             logger.error(f"Failed to create citation relation: {e}")
             raise
@@ -99,22 +102,22 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def get_by_id(self, relation_id: int) -> CitationRelationModel | None:
         """
         Get citation relation by ID.
-        
+
         Args:
             relation_id: Relation ID
-            
+
         Returns:
             Citation relation model or None if not found
         """
         try:
             sql = "SELECT * FROM citation_relations WHERE id = ?"
             result = self.db.fetch_one(sql, (relation_id,))
-            
+
             if result:
                 return CitationRelationModel.from_database_row(result)
-            
+
             return None
-            
+
         except Exception as e:
             logger.error(f"Failed to get citation relation by ID {relation_id}: {e}")
             raise
@@ -122,39 +125,39 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def update(self, relation: CitationRelationModel) -> CitationRelationModel:
         """
         Update an existing citation relation.
-        
+
         Args:
             relation: Citation relation model to update
-            
+
         Returns:
             Updated relation model
-            
+
         Raises:
             ValueError: If relation has no ID
             DatabaseError: If update fails
         """
         if not relation.id:
             raise ValueError("Citation relation must have an ID to update")
-            
+
         try:
             relation_dict = relation.to_database_dict()
             relation_dict.pop("id")  # Don't update the ID
-            
+
             # Build dynamic UPDATE SQL
-            set_clauses = [f"{col} = ?" for col in relation_dict.keys()]
+            set_clauses = [f"{col} = ?" for col in relation_dict]
             values = list(relation_dict.values()) + [relation.id]
-            
+
             sql = f"""
-                UPDATE citation_relations 
+                UPDATE citation_relations
                 SET {', '.join(set_clauses)}
                 WHERE id = ?
             """
-            
+
             self.db.execute(sql, values)
-            
+
             logger.info(f"Updated citation relation with ID {relation.id}")
             return relation
-            
+
         except Exception as e:
             logger.error(f"Failed to update citation relation {relation.id}: {e}")
             raise
@@ -162,31 +165,31 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def delete(self, relation_id: int) -> bool:
         """
         Delete a citation relation by ID.
-        
+
         Args:
             relation_id: Relation ID to delete
-            
+
         Returns:
             True if relation was deleted, False if not found
-            
+
         Raises:
             DatabaseError: If deletion fails
         """
         try:
             sql = "DELETE FROM citation_relations WHERE id = ?"
             self.db.execute(sql, (relation_id,))
-            
+
             # Check if any rows were affected
             rows_affected = self.db.get_last_change_count()
             success = rows_affected > 0
-            
+
             if success:
                 logger.info(f"Deleted citation relation with ID {relation_id}")
             else:
                 logger.warning(f"Citation relation with ID {relation_id} not found for deletion")
-                
+
             return success
-            
+
         except Exception as e:
             logger.error(f"Failed to delete citation relation {relation_id}: {e}")
             raise
@@ -194,26 +197,26 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def find_by_source_document(self, source_document_id: int) -> list[CitationRelationModel]:
         """
         Find all relations where specified document is the source.
-        
+
         Args:
             source_document_id: Source document ID
-            
+
         Returns:
             List of citation relations originating from the document
         """
         try:
             sql = """
-                SELECT * FROM citation_relations 
+                SELECT * FROM citation_relations
                 WHERE source_document_id = ?
                 ORDER BY created_at DESC
             """
             results = self.db.fetch_all(sql, (source_document_id,))
-            
+
             relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
             logger.debug(f"Found {len(relations)} relations from source document {source_document_id}")
-            
+
             return relations
-            
+
         except Exception as e:
             logger.error(f"Failed to find relations for source document {source_document_id}: {e}")
             raise
@@ -221,26 +224,26 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def find_by_target_document(self, target_document_id: int) -> list[CitationRelationModel]:
         """
         Find all relations where specified document is the target.
-        
+
         Args:
             target_document_id: Target document ID
-            
+
         Returns:
             List of citation relations pointing to the document
         """
         try:
             sql = """
-                SELECT * FROM citation_relations 
+                SELECT * FROM citation_relations
                 WHERE target_document_id = ?
                 ORDER BY created_at DESC
             """
             results = self.db.fetch_all(sql, (target_document_id,))
-            
+
             relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
             logger.debug(f"Found {len(relations)} relations to target document {target_document_id}")
-            
+
             return relations
-            
+
         except Exception as e:
             logger.error(f"Failed to find relations for target document {target_document_id}: {e}")
             raise
@@ -248,26 +251,26 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def find_by_citation(self, citation_id: int) -> list[CitationRelationModel]:
         """
         Find all relations involving a specific citation.
-        
+
         Args:
             citation_id: Citation ID
-            
+
         Returns:
             List of citation relations involving the citation
         """
         try:
             sql = """
-                SELECT * FROM citation_relations 
+                SELECT * FROM citation_relations
                 WHERE source_citation_id = ? OR target_citation_id = ?
                 ORDER BY created_at DESC
             """
             results = self.db.fetch_all(sql, (citation_id, citation_id))
-            
+
             relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
             logger.debug(f"Found {len(relations)} relations involving citation {citation_id}")
-            
+
             return relations
-            
+
         except Exception as e:
             logger.error(f"Failed to find relations for citation {citation_id}: {e}")
             raise
@@ -275,11 +278,11 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def get_citation_network(self, document_id: int, depth: int = 1) -> dict[str, Any]:
         """
         Get citation network for a document up to specified depth.
-        
+
         Args:
             document_id: Document ID to start from
             depth: Network depth to traverse
-            
+
         Returns:
             Dictionary containing nodes and edges for network visualization
         """
@@ -287,14 +290,14 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
             nodes = set()
             edges = []
             processed_docs = set()
-            
+
             def _traverse_network(doc_id: int, current_depth: int) -> None:
                 if current_depth > depth or doc_id in processed_docs:
                     return
-                    
+
                 processed_docs.add(doc_id)
                 nodes.add(doc_id)
-                
+
                 # Get outgoing citations (documents this one cites)
                 outgoing_sql = """
                     SELECT cr.*, d.title as target_title
@@ -304,7 +307,7 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                     AND cr.target_document_id IS NOT NULL
                 """
                 outgoing = self.db.fetch_all(outgoing_sql, (doc_id,))
-                
+
                 for relation in outgoing:
                     target_id = relation["target_document_id"]
                     if target_id:
@@ -317,7 +320,7 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                         })
                         if current_depth < depth:
                             _traverse_network(target_id, current_depth + 1)
-                
+
                 # Get incoming citations (documents that cite this one)
                 incoming_sql = """
                     SELECT cr.*, d.title as source_title
@@ -326,7 +329,7 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                     WHERE cr.target_document_id = ?
                 """
                 incoming = self.db.fetch_all(incoming_sql, (doc_id,))
-                
+
                 for relation in incoming:
                     source_id = relation["source_document_id"]
                     nodes.add(source_id)
@@ -338,10 +341,10 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                     })
                     if current_depth < depth:
                         _traverse_network(source_id, current_depth + 1)
-            
+
             # Start traversal
             _traverse_network(document_id, 0)
-            
+
             # Get node details
             node_details = {}
             if nodes:
@@ -352,14 +355,14 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                     WHERE id IN ({placeholders})
                 """
                 node_results = self.db.fetch_all(node_sql, list(nodes))
-                
+
                 for node in node_results:
                     node_details[node["id"]] = {
                         "id": node["id"],
                         "title": node["title"],
                         "created_at": node["created_at"]
                     }
-            
+
             network = {
                 "nodes": [node_details.get(node_id, {"id": node_id}) for node_id in nodes],
                 "edges": edges,
@@ -368,10 +371,10 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                 "total_nodes": len(nodes),
                 "total_edges": len(edges)
             }
-            
+
             logger.debug(f"Generated citation network for document {document_id} with {len(nodes)} nodes and {len(edges)} edges")
             return network
-            
+
         except Exception as e:
             logger.error(f"Failed to generate citation network for document {document_id}: {e}")
             raise
@@ -379,16 +382,16 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def get_most_cited_documents(self, limit: int = 10) -> list[dict[str, Any]]:
         """
         Get most cited documents in the library.
-        
+
         Args:
             limit: Maximum number of results
-            
+
         Returns:
             List of documents with citation counts
         """
         try:
             sql = """
-                SELECT 
+                SELECT
                     d.id as document_id,
                     d.title,
                     d.created_at,
@@ -401,7 +404,7 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                 LIMIT ?
             """
             results = self.db.fetch_all(sql, (limit,))
-            
+
             cited_docs = [
                 {
                     "document_id": row["document_id"],
@@ -411,10 +414,10 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                 }
                 for row in results
             ]
-            
+
             logger.debug(f"Found {len(cited_docs)} most cited documents")
             return cited_docs
-            
+
         except Exception as e:
             logger.error(f"Failed to get most cited documents: {e}")
             raise
@@ -422,7 +425,7 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def cleanup_orphaned_relations(self) -> int:
         """
         Remove relations pointing to non-existent documents or citations.
-        
+
         Returns:
             Number of orphaned relations removed
         """
@@ -434,16 +437,16 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
             """
             self.db.execute(sql1)
             removed_source = self.db.get_last_change_count()
-            
+
             # Remove relations with invalid target documents (if specified)
             sql2 = """
                 DELETE FROM citation_relations
-                WHERE target_document_id IS NOT NULL 
+                WHERE target_document_id IS NOT NULL
                 AND target_document_id NOT IN (SELECT id FROM documents)
             """
             self.db.execute(sql2)
             removed_target = self.db.get_last_change_count()
-            
+
             # Remove relations with invalid source citations
             sql3 = """
                 DELETE FROM citation_relations
@@ -451,21 +454,21 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
             """
             self.db.execute(sql3)
             removed_source_citation = self.db.get_last_change_count()
-            
+
             # Remove relations with invalid target citations (if specified)
             sql4 = """
                 DELETE FROM citation_relations
-                WHERE target_citation_id IS NOT NULL 
+                WHERE target_citation_id IS NOT NULL
                 AND target_citation_id NOT IN (SELECT id FROM citations)
             """
             self.db.execute(sql4)
             removed_target_citation = self.db.get_last_change_count()
-            
+
             total_removed = removed_source + removed_target + removed_source_citation + removed_target_citation
-            
+
             logger.info(f"Cleaned up {total_removed} orphaned citation relations")
             return total_removed
-            
+
         except Exception as e:
             logger.error(f"Failed to cleanup orphaned relations: {e}")
             raise
@@ -473,10 +476,10 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def get_relations_by_source(self, source_document_id: int) -> list[CitationRelationModel]:
         """
         Get all citation relations by source document.
-        
+
         Args:
             source_document_id: Source document ID
-            
+
         Returns:
             List of citation relations
         """
@@ -487,11 +490,11 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                 ORDER BY created_at DESC
             """
             results = self.db.fetch_all(sql, (source_document_id,))
-            
+
             relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
             logger.debug(f"Found {len(relations)} relations for source document {source_document_id}")
             return relations
-            
+
         except Exception as e:
             logger.error(f"Failed to get relations by source document {source_document_id}: {e}")
             raise
@@ -499,7 +502,7 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
     def get_all_relations(self) -> list[CitationRelationModel]:
         """
         Get all citation relations in the system.
-        
+
         Returns:
             List of all citation relations
         """
@@ -509,11 +512,11 @@ class CitationRelationRepository(BaseRepository[CitationRelationModel], ICitatio
                 ORDER BY created_at DESC
             """
             results = self.db.fetch_all(sql)
-            
+
             relations = [CitationRelationModel.from_database_row(dict(row)) for row in results]
             logger.debug(f"Retrieved {len(relations)} total citation relations")
             return relations
-            
+
         except Exception as e:
             logger.error(f"Failed to get all citation relations: {e}")
             raise
