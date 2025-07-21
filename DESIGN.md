@@ -1,53 +1,58 @@
-# AI-Enhanced PDF Scholar - Design Document (Post-Refactoring)
+# AI-Enhanced PDF Scholar - Design Document (Web Architecture)
 
 ## 1. Introduction
 
-This document outlines the architectural design for the AI-Enhanced PDF Scholar application. The architecture is designed to be modular, testable, and maintainable, following SOLID principles to ensure robustness and flexibility.
+This document outlines the modern Web-based architectural design for the AI-Enhanced PDF Scholar application. The architecture follows a clean separation between Frontend (React TypeScript) and Backend (FastAPI Python), designed to be modular, testable, and maintainable, following SOLID principles to ensure robustness and flexibility.
+
+**Note: This project has completely migrated from desktop PyQt to a modern web stack.**
 
 ## 2. Architectural Principles
 
 The design is strictly guided by the following principles:
 
-*   **Model-View-Controller (MVC) Pattern:** The application is loosely structured around an MVC-like pattern.
-    *   **Model:** The `PDFDocument` class represents the data and core logic, completely independent of the UI.
-    *   **View:** The `PDFViewer` class is a pure view component, responsible for displaying data and capturing raw user input.
-    *   **Controller:** The `MainWindow` acts as the central controller/orchestrator, responding to user actions, interacting with models and services, and updating views.
+*   **Layered Web Architecture:** The application follows a modern web architecture pattern.
+    *   **Frontend (React/TypeScript):** React components handle UI presentation and user interaction
+    *   **Backend API (FastAPI):** RESTful API endpoints handle business logic and data operations
+    *   **Database Layer:** SQLite with Repository pattern for data persistence
+    *   **Service Layer:** Business logic services (RAG, Document Management, Citation Analysis)
 *   **SOLID Principles:** All five SOLID principles are applied, with a strong emphasis on:
     *   **Single Responsibility Principle (SRP):** Each class has a single, well-defined purpose (e.g., `PDFViewer` only views, `AnnotationManager` only manages annotations).
     *   **Dependency Inversion Principle (DIP):** High-level components like `MainWindow` depend on abstractions (`LLMService`), not on concrete implementations.
-*   **High Cohesion, Low Coupling:** Communication between components is minimized and managed via Qt's signal and slot mechanism, preventing direct dependencies.
+*   **High Cohesion, Low Coupling:** Communication between frontend and backend is managed via RESTful APIs and WebSocket connections, preventing direct dependencies.
 *   **Dependency Injection:** Dependencies (like services and managers) are passed into constructors, making components easy to test with mocks.
 
 ## 3. Core Modules and Their Refactored Responsibilities
 
 The application is structured around the following decoupled modules:
 
-### 3.1. `MainWindow` (The Orchestrator)
-*   **File:** `main.py`
-*   **Description:** Acts as the central controller. It initializes all other components (`PDFViewer`, `AnnotationManager`, `LLMService`) and connects their signals to its handler slots. It manages the entire application lifecycle.
+### 3.1. `Backend API` (The Orchestrator)
+*   **File:** `backend/api/main.py`
+*   **Description:** FastAPI application that acts as the central controller. It initializes all services and manages the entire backend lifecycle.
 
-### 3.2. `PDFDocument` (The Model)
-*   **File:** `src/pdf_document.py`
-*   **Description:** A UI-agnostic class that encapsulates all `PyMuPDF` (fitz) logic.
-*   **Responsibilities:** Loading PDFs, rendering pages to raw pixel data, and extracting text from coordinates. It knows nothing about PyQt.
+### 3.2. `Document Models` (The Data Layer)
+*   **File:** `src/database/models.py`
+*   **Description:** SQLAlchemy-like data models that encapsulate document metadata and relationships.
+*   **Responsibilities:** Data validation, serialization, and database mapping. Completely UI-agnostic.
 
-### 3.3. `PDFViewer` (The View)
-*   **File:** `src/pdf_viewer.py`
-*   **Description:** A pure view component responsible only for displaying a rendered PDF page and capturing user mouse input for text selection.
+### 3.3. `React Frontend` (The View Layer)
+*   **File:** `frontend/src/components/`
+*   **Description:** React TypeScript components responsible for UI presentation and user interaction.
 *   **Responsibilities:**
-    *   Displays a `QImage` of the PDF page.
-    *   Captures `mousePress`, `mouseMove`, `mouseRelease` events to define a selection rectangle.
-    *   Emits a `text_selection_finished` signal with coordinates and text when a selection is made.
-    *   Emits a `view_changed` signal when resized or a new page is shown.
-    *   **It does not create other UI elements or manage annotations.**
+    *   Document list display and management
+    *   PDF viewing and interaction
+    *   Real-time updates via WebSocket
+    *   Responsive design with Tailwind CSS
+    *   **Completely decoupled from backend logic**
 
-### 3.4. `AnnotationManager` (Annotation Controller)
-*   **File:** `src/annotation_manager.py`
-*   **Description:** Manages the entire lifecycle of `Annotation` widgets.
+### 3.4. `Service Layer` (Business Logic)
+*   **File:** `src/services/`
+*   **Description:** Manages business logic for various domain areas.
 *   **Responsibilities:**
-    *   Creates new `Annotation` instances.
-    *   Listens for the `pdf_viewer.view_changed` signal to update the position and visibility of annotations.
-    *   Keeps a record of all annotations by page.
+    *   Document library management
+    *   RAG query processing  
+    *   Citation extraction and analysis
+    *   Content hashing and deduplication
+    *   Vector index management
 
 ### 3.5. `LLMService` & `LLMWorker` (Service Layer)
 *   **Files:** `src/llm_service.py`, `src/llm_worker.py`

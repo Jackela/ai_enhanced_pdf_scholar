@@ -266,7 +266,7 @@ class DatabaseMigrator:
         Creates tables for advanced citation extraction and analysis features.
         """
         logger.info("Applying migration 003: Add citation tables")
-        
+
         # Create citations table
         citations_sql = """
         CREATE TABLE citations (
@@ -288,7 +288,7 @@ class DatabaseMigrator:
         """
         self.db.execute(citations_sql)
         logger.info("Created citations table")
-        
+
         # Create citation_relations table
         citation_relations_sql = """
         CREATE TABLE citation_relations (
@@ -300,15 +300,19 @@ class DatabaseMigrator:
             relation_type TEXT NOT NULL DEFAULT 'cites',
             confidence_score REAL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (source_document_id) REFERENCES documents (id) ON DELETE CASCADE,
-            FOREIGN KEY (source_citation_id) REFERENCES citations (id) ON DELETE CASCADE,
-            FOREIGN KEY (target_document_id) REFERENCES documents (id) ON DELETE CASCADE,
-            FOREIGN KEY (target_citation_id) REFERENCES citations (id) ON DELETE CASCADE
+            FOREIGN KEY (source_document_id)
+                REFERENCES documents (id) ON DELETE CASCADE,
+            FOREIGN KEY (source_citation_id)
+                REFERENCES citations (id) ON DELETE CASCADE,
+            FOREIGN KEY (target_document_id)
+                REFERENCES documents (id) ON DELETE CASCADE,
+            FOREIGN KEY (target_citation_id)
+                REFERENCES citations (id) ON DELETE CASCADE
         )
         """
         self.db.execute(citation_relations_sql)
         logger.info("Created citation_relations table")
-        
+
         # Create indexes for performance
         citation_indexes = [
             "CREATE INDEX idx_citations_document ON citations(document_id)",
@@ -317,16 +321,20 @@ class DatabaseMigrator:
             "CREATE INDEX idx_citations_year ON citations(publication_year)",
             "CREATE INDEX idx_citations_doi ON citations(doi)",
             "CREATE INDEX idx_citations_type ON citations(citation_type)",
-            "CREATE INDEX idx_citations_confidence ON citations(confidence_score)",
-            "CREATE INDEX idx_citation_relations_source ON citation_relations(source_document_id)",
-            "CREATE INDEX idx_citation_relations_target ON citation_relations(target_document_id)",
-            "CREATE INDEX idx_citation_relations_type ON citation_relations(relation_type)",
+            ("CREATE INDEX idx_citations_confidence "
+             "ON citations(confidence_score)"),
+            ("CREATE INDEX idx_citation_relations_source "
+             "ON citation_relations(source_document_id)"),
+            ("CREATE INDEX idx_citation_relations_target "
+             "ON citation_relations(target_document_id)"),
+            ("CREATE INDEX idx_citation_relations_type "
+             "ON citation_relations(relation_type)"),
         ]
-        
+
         for index_sql in citation_indexes:
             self.db.execute(index_sql)
         logger.info("Created citation table indexes")
-        
+
         logger.info("Migration 003 completed successfully")
 
     def get_schema_info(self) -> dict[str, Any]:
@@ -382,11 +390,15 @@ class DatabaseMigrator:
             current_version = self.get_current_version()
             if current_version != self.CURRENT_VERSION:
                 logger.warning(
-                    f"Schema mismatch: {current_version} != {self.CURRENT_VERSION}"
+                    f"Schema mismatch: {current_version} != "
+                    f"{self.CURRENT_VERSION}"
                 )
                 return False
             # Check required tables exist
-            required_tables = ["documents", "vector_indexes", "tags", "document_tags", "citations", "citation_relations"]
+            required_tables = [
+                "documents", "vector_indexes", "tags",
+                "document_tags", "citations", "citation_relations"
+            ]
             existing_tables = [
                 row["name"]
                 for row in self.db.fetch_all(

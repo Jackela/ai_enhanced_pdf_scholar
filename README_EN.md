@@ -1,11 +1,13 @@
 # AI Enhanced PDF Scholar
 
-[![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://python.org)
-[![PyQt6](https://img.shields.io/badge/PyQt6-6.0%2B-green)](https://www.riverbankcomputing.com/software/pyqt/)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/react-%2320232a.svg?logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-500%2B%20passing-brightgreen)](tests/)
 
-🚀 **An AI-enhanced PDF academic reading tool with dual UI architecture: PyQt6 desktop version and modern Web version, making academic reading more efficient through intelligent conversation**
+🚀 **A modern Web-based AI-enhanced PDF academic reading platform with React frontend and FastAPI backend, making academic research more efficient through intelligent document management and conversation**
 
 ## ⚠️ Disclaimer
 
@@ -19,11 +21,11 @@
 
 ## ✨ Features
 
-### 🌐 Dual UI Architecture Support
-- **Desktop Version**: Full-featured traditional desktop app based on PyQt6
-- **Web Version**: Modern web interface supporting access from any device
-- **Unified Architecture**: Both versions share the same core business logic
-- **Seamless Switching**: Choose the appropriate usage method based on needs
+### 🌐 Modern Web Architecture
+- **React Frontend**: Modern TypeScript-based user interface with responsive design
+- **FastAPI Backend**: High-performance Python API with automatic documentation
+- **Real-time Updates**: WebSocket support for live document processing status
+- **Cross-Platform**: Access from any device with a modern web browser
 
 ### 🤖 AI-Powered Conversations
 - **One-Click AI Q&A**: Select any text in PDF and ask AI for intelligent explanations
@@ -52,8 +54,9 @@
 ## 🚀 Quick Start
 
 ### Requirements
-- Python 3.12+
-- PyQt6 6.9.1+
+- Python 3.11+
+- Node.js 18+
+- Modern web browser (Chrome, Firefox, Safari, Edge)
 - Supported OS: Windows 10+, macOS 10.15+, Linux
 
 ### Installation
@@ -66,7 +69,13 @@ cd ai_enhanced_pdf_scholar
 
 2. **Install Dependencies**
 ```bash
+# Backend dependencies
 pip install -r requirements.txt
+
+# Frontend dependencies
+cd frontend
+npm install
+cd ..
 ```
 
 3. **Configure AI Service**
@@ -75,18 +84,24 @@ pip install -r requirements.txt
 
 4. **Start Application**
 
-**Desktop Version (PyQt6)**:
+**Development Mode (Recommended)**:
 ```bash
-python main.py
+# Start backend server
+uvicorn web_main:app --reload --host 0.0.0.0 --port 8000
+
+# In another terminal, start frontend dev server
+cd frontend
+npm run dev
 ```
+Then open your browser and visit: http://localhost:5173
 
-**Web Version**:
+**Production Mode**:
 ```bash
-# Development mode
-python web_main.py --debug
+# Build frontend
+cd frontend && npm run build && cd ..
 
-# Production mode
-python web_main.py --host 0.0.0.0 --port 8000
+# Start backend with static file serving
+uvicorn web_main:app --host 0.0.0.0 --port 8000
 ```
 Then open your browser and visit: http://localhost:8000
 

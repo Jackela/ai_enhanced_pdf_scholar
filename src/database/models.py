@@ -121,19 +121,25 @@ class DocumentModel:
             DocumentModel instance
         """
         # Parse timestamps - handle both dict and Row objects
+        created_at_str = safe_get(row, "created_at")
         created_at = (
-            datetime.fromisoformat(safe_get(row, "created_at")) if safe_get(row, "created_at") else None
+            datetime.fromisoformat(created_at_str)
+            if created_at_str else None
         )
+        updated_at_str = safe_get(row, "updated_at")
         updated_at = (
-            datetime.fromisoformat(safe_get(row, "updated_at")) if safe_get(row, "updated_at") else None
+            datetime.fromisoformat(updated_at_str)
+            if updated_at_str else None
         )
+        last_accessed_str = safe_get(row, "last_accessed")
         last_accessed = (
-            datetime.fromisoformat(safe_get(row, "last_accessed"))
-            if safe_get(row, "last_accessed")
+            datetime.fromisoformat(last_accessed_str)
+            if last_accessed_str
             else None
         )
         # Parse metadata JSON
-        metadata = json.loads(safe_get(row, "metadata")) if safe_get(row, "metadata") else {}
+        metadata_str = safe_get(row, "metadata")
+        metadata = json.loads(metadata_str) if metadata_str else {}
         return cls(
             id=row["id"],
             title=row["title"],
@@ -282,11 +288,14 @@ class VectorIndexModel:
         Returns:
             VectorIndexModel instance
         """
+        created_at_str = safe_get(row, "created_at")
         created_at = (
-            datetime.fromisoformat(safe_get(row, "created_at")) if safe_get(row, "created_at") else None
+            datetime.fromisoformat(created_at_str)
+            if created_at_str else None
         )
         # Parse metadata JSON
-        metadata = json.loads(safe_get(row, "metadata")) if safe_get(row, "metadata") else {}
+        metadata_str = safe_get(row, "metadata")
+        metadata = json.loads(metadata_str) if metadata_str else {}
         return cls(
             id=row["id"],
             document_id=row["document_id"],
@@ -388,11 +397,16 @@ class CitationModel:
     """
     {
         "name": "CitationModel",
-        "version": "1.0.0", 
-        "description": "Pure data model representing a citation extracted from a document.",
+        "version": "1.0.0",
+        "description": (
+            "Pure data model representing a citation extracted from a document."
+        ),
         "dependencies": ["DocumentModel"],
         "interface": {
-            "inputs": ["document_id", "raw_text", "authors", "title", "publication_year"],
+            "inputs": [
+                "document_id", "raw_text", "authors",
+                "title", "publication_year"
+            ],
             "outputs": "Citation data object with parsed metadata"
         }
     }
@@ -428,21 +442,22 @@ class CitationModel:
                 self.created_at = datetime.now()
             if self.updated_at is None:
                 self.updated_at = self.created_at
-        
+
         # Validate required fields
         if self.document_id <= 0:
             raise ValueError("Document ID must be positive")
         if not self.raw_text.strip():
             raise ValueError("Raw citation text cannot be empty")
-        
+
         # Validate optional fields
-        if self.publication_year is not None:
-            if self.publication_year < 1000 or self.publication_year > datetime.now().year + 1:
-                raise ValueError(f"Invalid publication year: {self.publication_year}")
-        
-        if self.confidence_score is not None:
-            if not 0.0 <= self.confidence_score <= 1.0:
-                raise ValueError("Confidence score must be between 0.0 and 1.0")
+        current_year = datetime.now().year
+        if (self.publication_year is not None and
+            (self.publication_year < 1000 or self.publication_year > current_year + 1)):
+            raise ValueError(f"Invalid publication year: {self.publication_year}")
+
+        if (self.confidence_score is not None and
+            not 0.0 <= self.confidence_score <= 1.0):
+            raise ValueError("Confidence score must be between 0.0 and 1.0")
 
     @classmethod
     def from_database_row(cls, row: dict[str, Any]) -> "CitationModel":
@@ -454,13 +469,17 @@ class CitationModel:
             CitationModel instance
         """
         # Parse timestamps - handle both dict and Row objects
+        created_at_str = safe_get(row, "created_at")
         created_at = (
-            datetime.fromisoformat(safe_get(row, "created_at")) if safe_get(row, "created_at") else None
+            datetime.fromisoformat(created_at_str)
+            if created_at_str else None
         )
+        updated_at_str = safe_get(row, "updated_at")
         updated_at = (
-            datetime.fromisoformat(safe_get(row, "updated_at")) if safe_get(row, "updated_at") else None
+            datetime.fromisoformat(updated_at_str)
+            if updated_at_str else None
         )
-        
+
         return cls(
             id=row["id"],
             document_id=row["document_id"],
@@ -589,10 +608,15 @@ class CitationRelationModel:
     {
         "name": "CitationRelationModel",
         "version": "1.0.0",
-        "description": "Pure data model representing relationships between citations and documents.",
+        "description": (
+            "Pure data model representing relationships between citations "
+            "and documents."
+        ),
         "dependencies": ["DocumentModel", "CitationModel"],
         "interface": {
-            "inputs": ["source_document_id", "source_citation_id", "target_document_id"],
+            "inputs": [
+                "source_document_id", "source_citation_id", "target_document_id"
+            ],
             "outputs": "Citation relationship data object"
         }
     }
@@ -617,22 +641,22 @@ class CitationRelationModel:
         # Set default timestamp
         if self.created_at is None:
             self.created_at = datetime.now()
-        
+
         # Validate required fields
         if self.source_document_id <= 0:
             raise ValueError("Source document ID must be positive")
         if self.source_citation_id <= 0:
             raise ValueError("Source citation ID must be positive")
-        
+
         # Validate optional fields
         if self.target_document_id is not None and self.target_document_id <= 0:
             raise ValueError("Target document ID must be positive")
         if self.target_citation_id is not None and self.target_citation_id <= 0:
             raise ValueError("Target citation ID must be positive")
-        
-        if self.confidence_score is not None:
-            if not 0.0 <= self.confidence_score <= 1.0:
-                raise ValueError("Confidence score must be between 0.0 and 1.0")
+
+        if (self.confidence_score is not None and
+            not 0.0 <= self.confidence_score <= 1.0):
+            raise ValueError("Confidence score must be between 0.0 and 1.0")
 
     @classmethod
     def from_database_row(cls, row: dict[str, Any]) -> "CitationRelationModel":
@@ -646,7 +670,7 @@ class CitationRelationModel:
         created_at = (
             datetime.fromisoformat(row["created_at"]) if row.get("created_at") else None
         )
-        
+
         return cls(
             id=row["id"],
             source_document_id=row["source_document_id"],

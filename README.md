@@ -1,6 +1,6 @@
 # AI-Enhanced PDF Scholar
 
-An intelligent document library platform with persistent RAG database and advanced duplicate detection for academic literature management.
+A modern Web-based intelligent document library platform with persistent RAG database, RESTful API, and React frontend for academic literature management.
 
 ## 📖 Project Goal & Motivation
 
@@ -14,27 +14,30 @@ This project aims to create an intelligent platform that streamlines the laborio
 *   **🏷️ Smart Import System**: Automatic metadata extraction, hash-based deduplication, and integrity verification
 *   **📊 Comprehensive Statistics**: Document library analytics, health monitoring, and cleanup tools
 *   **🧪 Production-Grade Architecture**: Repository pattern, service layers, and comprehensive test coverage
+*   **🌐 Modern Web Architecture**: FastAPI backend + React TypeScript frontend with WebSocket support
 *   **🚀 Enterprise CI/CD Pipeline**: Complete Phase 3 advanced CI/CD with performance monitoring, security scanning, deployment automation, and E2E validation
 
 ## 🏗️ Architecture & Technical Highlights
 
-*   **Layered Architecture**: Clean separation with Database → Repository → Service → UI layers following SOLID principles
+*   **Layered Architecture**: Clean separation with Database → Repository → Service → API → Frontend layers following SOLID principles
 *   **Thread-Safe Database**: SQLite with connection pooling, transaction management, and migration system
 *   **Repository Pattern**: Generic data access layer with specialized repositories for documents and vector indexes
 *   **Content Hashing**: MD5-based file and content hashing for intelligent duplicate detection
-*   **Decoupled System**: Serves both **PyQt6** desktop and **FastAPI** web interfaces from unified backend
+*   **Modern Web Stack**: **FastAPI** RESTful backend with **React TypeScript** frontend
 *   **Retrieval-Augmented Generation (RAG)**: **LlamaIndex**-powered RAG with persistent vector storage
-*   **Asynchronous Processing**: Non-blocking `QThreads` for responsive user experience
-*   **Comprehensive Testing**: Unit tests, integration tests, and performance benchmarks
+*   **Real-time Communication**: WebSocket support for live updates and notifications
+*   **Comprehensive Testing**: Unit tests, integration tests, E2E tests, and performance benchmarks
 
 ## 🛠️ Tech Stack
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
-![PyQt6](https://img.io/badge/PyQt6-41CD52?style=for-the-badge&logo=qt)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
 ![LlamaIndex](https://img.shields.io/badge/LlamaIndex-6B45BC?style=for-the-badge)
-![PyMuPDF](https://img.shields.io/badge/PyMuPDF-FF6B6B?style=for-the-badge)
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Pytest](https://img.shields.io/badge/pytest-0A9B71?style=for-the-badge&logo=pytest)
 
 ## 🚀 Installation & Usage
@@ -42,6 +45,7 @@ This project aims to create an intelligent platform that streamlines the laborio
 ### Prerequisites
 
 - Python 3.11 or higher
+- Node.js 18+ and npm/pnpm
 - Git
 - Miniconda/Anaconda (recommended)
 
@@ -59,8 +63,13 @@ cd ai_enhanced_pdf_scholar
 conda create -n pdf_scholar python=3.11 -y
 conda activate pdf_scholar
 
-# Install dependencies
+# Install backend dependencies
 pip install -r requirements.txt
+
+# Install frontend dependencies
+cd frontend
+npm install
+cd ..
 ```
 
 **Alternative: Virtual Environment**
@@ -94,13 +103,30 @@ Refer to `API_KEY_SETUP.md` for instructions on configuring your API keys.
 
 ### 5. Run the Application
 
-*   **PyQt6 Desktop App:**
+*   **Backend API Server:**
     ```bash
-    python main.py
+    # Development mode
+    uvicorn web_main:app --reload --host 0.0.0.0 --port 8000
+    
+    # Or using the backend entry point
+    cd backend
+    python -m api.main
     ```
-*   **FastAPI Web App:**
+    
+*   **Frontend Development Server:**
     ```bash
-    uvicorn web_main:app --reload
+    cd frontend
+    npm run dev
+    # Frontend will be available at http://localhost:5173
+    ```
+    
+*   **Full Stack (Production):**
+    ```bash
+    # Build frontend
+    cd frontend && npm run build && cd ..
+    
+    # Run backend with static file serving
+    uvicorn web_main:app --host 0.0.0.0 --port 8000
     ```
 
 ## 📚 Document Library Features
@@ -293,7 +319,7 @@ This project features a comprehensive **Phase 3 Enterprise-grade CI/CD framework
 - **Quality Gates**: Multi-tier validation with configurable thresholds
 - **Artifact Management**: Tiered retention policies (7-30 days)
 
-**Total Pipeline Capabilities**: 90-100 minutes for complete enterprise validation, optimized to 13s when only configuration changes are detected.
+**Total Pipeline Capabilities**: Complete enterprise validation with intelligent optimization for configuration-only changes.
 
 ## 📄 License
 

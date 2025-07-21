@@ -116,7 +116,7 @@ graph TD
 #### 🏗️ **高性能测试基础设施**
 - **pytest框架** 配合优化插件生态 (pytest-xdist, pytest-benchmark)
 - **共享数据库连接** 减少90%的数据库设置开销
-- **智能并行执行** 自动CPU扩展 (`-n auto`) 实现3-4x加速
+- **智能并行执行** 自动CPU扩展 (`-n auto`) 实现显著加速
 - **优化fixture管理** 会话级别共享和智能清理策略
 - **战略性Mock使用** 外部依赖的智能模拟
 - **性能监控** 自动检测慢速测试 (>1秒) 和性能基准
@@ -479,13 +479,20 @@ AI Enhanced PDF Scholar 经历了从桌面应用到现代Web架构的完整转�
 #### **架构转型历程**
 ```mermaid
 graph LR
-    A[PyQt6桌面应用] --> B[混合架构]
+    A[PyQt6桌面应用] --> B[前后端分离]
     B --> C[纯Web架构]
     C --> D[微服务就绪]
     
-    A1[单体桌面] --> B1[前后端分离]
-    B1 --> C1[RESTful API]
+    A1[单体桌面] --> B1[FastAPI + React]
+    B1 --> C1[RESTful API + WebSocket]
     C1 --> D1[容器化部署]
+    
+    subgraph "当前架构 (v2.x)"
+        E[React TypeScript 前端]
+        F[FastAPI Python 后端]
+        G[SQLite 数据库]
+        H[WebSocket 实时通信]
+    end
 ```
 
 ### 🔧 **核心架构原则**
@@ -573,7 +580,7 @@ class RAGCacheService:
 - **写入性能**: 3,948 操作/秒
 - **读取性能**: 10,877 命中/秒  
 - **命中率**: 100% (最优条件)
-- **加速比**: 2,000-5,000x 缓存查询加速
+- **缓存优化**: 显著的缓存查询性能提升
 
 ### 🔄 **并发与线程安全**
 

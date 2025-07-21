@@ -1066,7 +1066,8 @@ function connectWebSocket(clientId) {
 ## 更新历史
 
 - **v2.0.0**: 完全基于 Web 的架构，移除所有 PyQt6 依赖
-- **v1.x**: 混合桌面/Web 架构（已废弃）
+- **v1.x**: PyQt桌面架构（已废弃）
+- **v2.x**: 现代Web架构（当前版本）
 
 ---
 
