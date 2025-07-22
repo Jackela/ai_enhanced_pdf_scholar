@@ -214,6 +214,13 @@ graph TB
 - **Code Quality**: Security-focused code review processes
 - **Regular Updates**: Automated dependency updates and security patches
 
+## 🔄 CI/CD Workflows
+
+This repository leverages **GitHub Actions** to automate testing, quality checks and deployments.
+
+- `main-pipeline.yml` – full enterprise pipeline with build, tests, security scanning and deployment phases.
+- `pre-commit.yml` – runs pre-commit hooks on every pull request to ensure code style and lint rules are satisfied.
+
 ## 🚀 Getting Help
 
 ### Support Channels

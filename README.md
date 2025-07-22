@@ -321,6 +321,10 @@ This project features a comprehensive **Phase 3 Enterprise-grade CI/CD framework
 
 **Total Pipeline Capabilities**: Complete enterprise validation with intelligent optimization for configuration-only changes.
 
+### 🧹 Pre-commit Workflow
+
+All pull requests trigger a dedicated **pre-commit** workflow. It runs every hook defined in `.pre-commit-config.yaml` to enforce consistent code quality across Python, TypeScript and documentation files. The workflow is located at `.github/workflows/pre-commit.yml` and executes automatically on pushes to `main` and all pull requests.
+
 ## 📄 License
 
 This project is licensed under the MIT License.
