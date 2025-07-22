@@ -26,6 +26,8 @@ This document summarizes the comprehensive documentation update to reflect the p
 4. **API_ENDPOINTS.md** - API documentation
    - ✅ Updated version history (v1.x PyQt → v2.x Web)
    - ✅ Already correctly documented FastAPI endpoints
+5. **pre-commit.yml** - New CI workflow
+   - ✅ Runs all pre-commit hooks on pull requests
 
 ### Design Documentation
 5. **DESIGN.md** - Architectural design document
@@ -105,6 +107,6 @@ This document summarizes the comprehensive documentation update to reflect the p
 
 ---
 
-**Update Date**: 2025-07-21  
-**Updated By**: Claude Code Assistant  
+**Update Date**: 2025-08-30
+**Updated By**: Claude Code Assistant
 **Architecture Version**: v2.x (Pure Web)
