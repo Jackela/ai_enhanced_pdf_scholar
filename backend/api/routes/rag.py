@@ -24,6 +24,13 @@ from backend.api.models import (
     RAGQueryRequest,
     RAGQueryResponse,
 )
+from backend.api.error_handling import (
+    ResourceNotFoundException,
+    BusinessLogicException,
+    SystemException,
+    ErrorTemplates,
+    ErrorDetail
+)
 from src.controllers.library_controller import LibraryController
 from src.services.enhanced_rag_service import EnhancedRAGService
 
@@ -44,10 +51,7 @@ async def query_document(
         # Check if document has a valid index
         index_status = controller.get_index_status(query_request.document_id)
         if not index_status.get("can_query", False):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Document does not have a valid vector index. Please build index first.",
-            )
+            raise ErrorTemplates.index_not_ready(query_request.document_id)
         # Perform query with timing
         start_time = time.time()
         # Check cache first if enabled
@@ -73,9 +77,9 @@ async def query_document(
             )
         processing_time = (time.time() - start_time) * 1000  # Convert to milliseconds
         if response is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="RAG query failed",
+            raise SystemException(
+                message="RAG query processing failed",
+                error_type="external_service"
             )
         return RAGQueryResponse(
             query=query_request.query,
@@ -88,9 +92,9 @@ async def query_document(
         raise
     except Exception as e:
         logger.error(f"RAG query failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Query failed: {str(e)}",
+        raise SystemException(
+            message="RAG query processing failed",
+            error_type="external_service"
         )
 
 
@@ -119,9 +123,9 @@ async def build_index(
         # Start index building (this should be async in production)
         success = controller.build_index_for_document(build_request.document_id)
         if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to start index building",
+            raise SystemException(
+                message="Failed to start vector index building",
+                error_type="general"
             )
         return IndexBuildResponse(
             document_id=build_request.document_id,
@@ -132,9 +136,9 @@ async def build_index(
         raise
     except Exception as e:
         logger.error(f"Index build failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Index build failed: {str(e)}",
+        raise SystemException(
+            message="Vector index building failed",
+            error_type="general"
         )
 
 
@@ -161,9 +165,9 @@ async def get_index_status(
         raise
     except Exception as e:
         logger.error(f"Failed to get index status: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get index status: {str(e)}",
+        raise SystemException(
+            message="Failed to retrieve index status",
+            error_type="general"
         )
 
 
@@ -180,9 +184,9 @@ async def delete_index(
         # Check if index exists
         index_status = controller.get_index_status(document_id)
         if not index_status.get("has_index", False):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No index found for this document",
+            raise ResourceNotFoundException(
+                resource_type="vector_index",
+                message=f"No vector index found for document {document_id}"
             )
         # Delete index (this would need to be implemented in the controller)
         # For now, we'll return a success message
@@ -191,9 +195,9 @@ async def delete_index(
         raise
     except Exception as e:
         logger.error(f"Failed to delete index: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Index deletion failed: {str(e)}",
+        raise SystemException(
+            message="Vector index deletion failed",
+            error_type="general"
         )
 
 
@@ -221,8 +225,9 @@ async def get_cache_stats(
     try:
         stats = controller.get_cache_statistics()
         if "error" in stats:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=stats["error"]
+            raise SystemException(
+                message=f"Cache service error: {stats['error']}",
+                error_type="general"
             )
         return CacheStatsResponse(
             total_entries=stats.get("total_entries", 0),
@@ -234,9 +239,9 @@ async def get_cache_stats(
         raise
     except Exception as e:
         logger.error(f"Failed to get cache stats: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache statistics: {str(e)}",
+        raise SystemException(
+            message="Failed to retrieve cache statistics",
+            error_type="general"
         )
 
 
@@ -246,9 +251,9 @@ async def clear_cache(controller: LibraryController = Depends(get_library_contro
     try:
         success = controller.clear_cache()
         if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Cache clear operation failed",
+            raise SystemException(
+                message="Cache clear operation failed",
+                error_type="general"
             )
         return CacheClearResponse(
             entries_cleared=0,  # Would need to track this
@@ -258,9 +263,9 @@ async def clear_cache(controller: LibraryController = Depends(get_library_contro
         raise
     except Exception as e:
         logger.error(f"Failed to clear cache: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Cache clear failed: {str(e)}",
+        raise SystemException(
+            message="Cache clear operation failed",
+            error_type="general"
         )
 
 
@@ -278,7 +283,7 @@ async def clear_document_cache(
         raise
     except Exception as e:
         logger.error(f"Failed to clear document cache: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Cache clear failed: {str(e)}",
+        raise SystemException(
+            message="Document cache clear operation failed",
+            error_type="general"
         )

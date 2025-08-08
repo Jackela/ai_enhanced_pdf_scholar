@@ -1,4 +1,4 @@
-// React import removed
+import { useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   Library,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { cn } from '../lib/utils.ts'
+import { createPreloadHandler, smartPreloader } from '../utils/preload'
 
 interface SidebarProps {
   isOpen: boolean
@@ -20,9 +21,9 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: 'Library', href: '/library', icon: Library },
-  { name: 'Chat', href: '/chat', icon: MessageSquare },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Library', href: '/library', icon: Library, preloadRoute: 'library' as const },
+  { name: 'Chat', href: '/chat', icon: MessageSquare, preloadRoute: 'chat' as const },
+  { name: 'Settings', href: '/settings', icon: Settings, preloadRoute: 'settings' as const },
 ]
 
 const quickActions = [
@@ -33,6 +34,22 @@ const quickActions = [
 
 export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const location = useLocation()
+  
+  // Track navigation for smart preloading
+  useEffect(() => {
+    const currentPath = location.pathname
+    const routeName = currentPath.split('/')[1] || 'library'
+    
+    // Track navigation pattern
+    const previousPath = sessionStorage.getItem('previousPath')
+    if (previousPath) {
+      const previousRoute = previousPath.split('/')[1] || 'library'
+      smartPreloader.trackNavigation(previousRoute, routeName)
+      smartPreloader.predictAndPreload(routeName)
+    }
+    
+    sessionStorage.setItem('previousPath', currentPath)
+  }, [location.pathname])
 
   return (
     <div className='flex flex-col h-full'>
@@ -67,6 +84,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   isActive && 'bg-accent text-accent-foreground',
                   !isOpen && 'justify-center'
                 )}
+                data-preload-route={item.preloadRoute}
+                {...createPreloadHandler(item.preloadRoute)}
               >
                 <Icon className='h-5 w-5 flex-shrink-0' />
                 {isOpen && <span>{item.name}</span>}

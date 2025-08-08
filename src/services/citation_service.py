@@ -3,8 +3,10 @@ Citation Service Implementation
 Implements business logic for citation management following SOLID principles.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from src.database.models import CitationModel, CitationRelationModel, DocumentModel
 from src.interfaces.repository_interfaces import (
@@ -44,10 +46,10 @@ class CitationService:
             citation_repository: Citation repository interface
             relation_repository: Citation relation repository interface
         """
-        self.citation_repo = citation_repository
-        self.relation_repo = relation_repository
+        self.citation_repo: ICitationRepository = citation_repository
+        self.relation_repo: ICitationRelationRepository = relation_repository
 
-    def extract_citations_from_document(self, document: DocumentModel) -> list[CitationModel]:
+    def extract_citations_from_document(self, document: DocumentModel) -> List[CitationModel]:
         """
         Extract citations from a document.
 
@@ -87,7 +89,7 @@ class CitationService:
             logger.error(f"Failed to extract citations from document {document.id}: {e}")
             raise
 
-    def get_citations_for_document(self, document_id: int) -> list[CitationModel]:
+    def get_citations_for_document(self, document_id: int) -> List[CitationModel]:
         """
         Get all citations for a specific document.
 

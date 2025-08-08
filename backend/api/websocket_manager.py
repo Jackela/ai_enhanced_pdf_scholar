@@ -182,6 +182,120 @@ class WebSocketManager:
             message["data"] = data
         await self.broadcast_json(message)
 
+    async def send_upload_progress(self, client_id: str, progress_data: dict):
+        """Send streaming upload progress update to client."""
+        await self.send_personal_json(
+            {
+                "type": "upload_progress",
+                "data": progress_data,
+            },
+            client_id,
+        )
+
+    async def send_upload_status(
+        self, client_id: str, session_id: str, status: str, message: str = None
+    ):
+        """Send upload status update to client."""
+        data = {
+            "type": "upload_status",
+            "session_id": session_id,
+            "status": status,
+        }
+        if message:
+            data["message"] = message
+        await self.send_personal_json(data, client_id)
+
+    async def send_upload_error(
+        self, client_id: str, session_id: str, error: str, error_code: str = None
+    ):
+        """Send upload error to client."""
+        data = {
+            "type": "upload_error",
+            "session_id": session_id,
+            "error": error,
+        }
+        if error_code:
+            data["error_code"] = error_code
+        await self.send_personal_json(data, client_id)
+
+    async def send_upload_completed(
+        self, client_id: str, session_id: str, document_data: dict = None
+    ):
+        """Send upload completion notification."""
+        data = {
+            "type": "upload_completed",
+            "session_id": session_id,
+        }
+        if document_data:
+            data["document"] = document_data
+        await self.send_personal_json(data, client_id)
+
+    async def join_upload_room(self, client_id: str, session_id: str):
+        """Add client to an upload-specific room for progress tracking."""
+        room_name = f"upload_{session_id}"
+        await self.join_room(client_id, room_name)
+
+    async def leave_upload_room(self, client_id: str, session_id: str):
+        """Remove client from upload-specific room."""
+        room_name = f"upload_{session_id}"
+        await self.leave_room(client_id, room_name)
+
+    async def broadcast_to_upload_room(
+        self, session_id: str, message_type: str, data: dict
+    ):
+        """Broadcast message to all clients watching an upload."""
+        room_name = f"upload_{session_id}"
+        message_data = {
+            "type": message_type,
+            "session_id": session_id,
+            "data": data,
+        }
+        await self.send_json_to_room(message_data, room_name)
+
+    async def send_memory_warning(self, client_id: str, memory_stats: dict):
+        """Send memory usage warning to client."""
+        await self.send_personal_json(
+            {
+                "type": "memory_warning",
+                "data": memory_stats,
+            },
+            client_id,
+        )
+
+    async def send_chunk_progress(
+        self,
+        client_id: str,
+        session_id: str,
+        chunk_id: int,
+        chunks_uploaded: int,
+        total_chunks: int,
+        bytes_uploaded: int,
+        total_bytes: int,
+        upload_speed: float = None,
+    ):
+        """Send detailed chunk upload progress."""
+        progress_percentage = (bytes_uploaded / total_bytes) * 100 if total_bytes > 0 else 0
+        
+        data = {
+            "type": "chunk_progress",
+            "session_id": session_id,
+            "chunk_id": chunk_id,
+            "chunks_uploaded": chunks_uploaded,
+            "total_chunks": total_chunks,
+            "bytes_uploaded": bytes_uploaded,
+            "total_bytes": total_bytes,
+            "progress_percentage": round(progress_percentage, 2),
+        }
+        
+        if upload_speed:
+            data["upload_speed_bps"] = upload_speed
+            if upload_speed > 0:
+                remaining_bytes = total_bytes - bytes_uploaded
+                eta_seconds = remaining_bytes / upload_speed
+                data["eta_seconds"] = int(eta_seconds)
+        
+        await self.send_personal_json(data, client_id)
+
     def get_stats(self) -> dict:
         """Get WebSocket connection statistics."""
         return {

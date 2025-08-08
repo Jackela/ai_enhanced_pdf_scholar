@@ -19,6 +19,7 @@ from backend.api.models import (
     DuplicatesResponse,
     LibraryStatsResponse,
 )
+from backend.api.error_handling import SystemException, ErrorTemplates
 from src.controllers.library_controller import LibraryController
 
 logger = logging.getLogger(__name__)
@@ -33,8 +34,9 @@ async def get_library_statistics(
     try:
         stats = controller.get_library_statistics()
         if "error" in stats:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=stats["error"]
+            raise SystemException(
+                message=f"Failed to get library statistics: {stats['error']}",
+                error_type="general"
             )
         return LibraryStatsResponse(
             documents=stats.get("documents", {}),
@@ -47,9 +49,9 @@ async def get_library_statistics(
         raise
     except Exception as e:
         logger.error(f"Failed to get library statistics: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get library statistics: {str(e)}",
+        raise SystemException(
+            message="Failed to retrieve library statistics",
+            error_type="database"
         )
 
 
@@ -78,9 +80,9 @@ async def find_duplicate_documents(
         )
     except Exception as e:
         logger.error(f"Failed to find duplicates: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Duplicate detection failed: {str(e)}",
+        raise SystemException(
+            message="Duplicate detection failed",
+            error_type="general"
         )
 
 
@@ -93,9 +95,9 @@ async def cleanup_library(
     try:
         results = controller.cleanup_library()
         if "error" in results:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=results["error"],
+            raise SystemException(
+                message=f"Library cleanup failed: {results['error']}",
+                error_type="general"
             )
         return CleanupResponse(
             orphaned_removed=results.get("orphaned_indexes_cleaned", 0),
@@ -108,9 +110,9 @@ async def cleanup_library(
         raise
     except Exception as e:
         logger.error(f"Library cleanup failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Cleanup failed: {str(e)}",
+        raise SystemException(
+            message="Library cleanup operation failed",
+            error_type="general"
         )
 
 
@@ -137,9 +139,9 @@ async def check_library_health(
             return BaseResponse(message="Library is healthy")
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Health check failed: {str(e)}",
+        raise SystemException(
+            message="Library health check failed",
+            error_type="general"
         )
 
 
@@ -152,9 +154,9 @@ async def optimize_library(
         # This could include various optimization operations
         results = controller.cleanup_library()
         if "error" in results:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=results["error"],
+            raise SystemException(
+                message=f"Library optimization failed: {results['error']}",
+                error_type="general"
             )
         optimizations = []
         if results.get("orphaned_indexes_cleaned", 0) > 0:
@@ -182,9 +184,9 @@ async def optimize_library(
         raise
     except Exception as e:
         logger.error(f"Library optimization failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Optimization failed: {str(e)}",
+        raise SystemException(
+            message="Library optimization operation failed",
+            error_type="general"
         )
 
 
@@ -208,9 +210,9 @@ async def search_documents(
         )
     except Exception as e:
         logger.error(f"Search failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Search failed: {str(e)}",
+        raise SystemException(
+            message="Document search failed",
+            error_type="database"
         )
 
 
@@ -233,7 +235,7 @@ async def get_recent_documents(
         )
     except Exception as e:
         logger.error(f"Failed to get recent documents: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get recent documents: {str(e)}",
+        raise SystemException(
+            message="Failed to retrieve recent documents",
+            error_type="database"
         )

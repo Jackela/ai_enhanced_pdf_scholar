@@ -171,6 +171,18 @@ class VectorIndexRepository(BaseRepository[VectorIndexModel]):
             logger.error(f"Failed to find invalid vector indexes: {e}")
             raise
 
+    def get_all_indexes(self) -> list[VectorIndexModel]:
+        """
+        Get all vector indexes from the database.
+        Returns:
+            List of all vector indexes
+        """
+        try:
+            return self.find_all()
+        except Exception as e:
+            logger.error(f"Failed to get all vector indexes: {e}")
+            raise
+
     def cleanup_orphaned_indexes(self) -> int:
         """
         Remove orphaned vector indexes from database.

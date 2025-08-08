@@ -28,7 +28,7 @@ interface UploadOptions {
   custom_title?: string
 }
 
-export function DocumentUpload({ onClose, onSuccess }: DocumentUploadProps) {
+function DocumentUpload({ onClose, onSuccess }: DocumentUploadProps) {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [checkDuplicates, setCheckDuplicates] = useState(true)
   const [autoBuildIndex, setAutoBuildIndex] = useState(true)
@@ -301,3 +301,9 @@ export function DocumentUpload({ onClose, onSuccess }: DocumentUploadProps) {
     </div>
   )
 }
+
+// Default export for lazy loading
+export default DocumentUpload
+
+// Named export for backward compatibility
+export { DocumentUpload }

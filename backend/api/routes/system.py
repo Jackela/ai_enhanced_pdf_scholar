@@ -16,6 +16,7 @@ from backend.api.models import (
     ConfigurationResponse,
     SystemHealthResponse,
 )
+from backend.api.error_handling import SystemException
 from config import Config
 from src.database.connection import DatabaseConnection
 from src.services.enhanced_rag_service import EnhancedRAGService
@@ -82,9 +83,9 @@ async def get_system_health(
         )
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Health check failed: {str(e)}",
+        raise SystemException(
+            message="System health check failed",
+            error_type="general"
         )
 
 
@@ -115,9 +116,9 @@ async def get_configuration(config: dict = Depends(get_api_config)):
         )
     except Exception as e:
         logger.error(f"Failed to get configuration: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Configuration retrieval failed: {str(e)}",
+        raise SystemException(
+            message="Configuration retrieval failed",
+            error_type="configuration"
         )
 
 
@@ -135,9 +136,9 @@ async def get_system_info():
         return BaseResponse(message="System information retrieved", data=info)
     except Exception as e:
         logger.error(f"Failed to get system info: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"System info retrieval failed: {str(e)}",
+        raise SystemException(
+            message="System information retrieval failed",
+            error_type="general"
         )
 
 
@@ -158,9 +159,9 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
         if migrator.needs_migration():
             success = migrator.migrate()
             if not success:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Database migration failed",
+                raise SystemException(
+                    message="Database migration failed",
+                    error_type="database"
                 )
         # Create necessary directories
         base_dir = Path.home() / ".ai_pdf_scholar"
@@ -178,9 +179,9 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"System initialization failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Initialization failed: {str(e)}",
+        raise SystemException(
+            message="System initialization failed",
+            error_type="configuration"
         )
 
 
@@ -223,9 +224,9 @@ async def get_storage_info():
         return BaseResponse(message="Storage information retrieved", data=storage_info)
     except Exception as e:
         logger.error(f"Failed to get storage info: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Storage info retrieval failed: {str(e)}",
+        raise SystemException(
+            message="Storage information retrieval failed",
+            error_type="general"
         )
 
 
@@ -258,7 +259,7 @@ async def run_maintenance():
         return BaseResponse(message=message)
     except Exception as e:
         logger.error(f"Maintenance failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Maintenance failed: {str(e)}",
+        raise SystemException(
+            message="System maintenance failed",
+            error_type="general"
         )

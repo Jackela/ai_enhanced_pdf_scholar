@@ -4,11 +4,13 @@ Business logic layer for document management. Provides high-level operations
 for document importing, organization, and lifecycle management.
 """
 
+from __future__ import annotations
+
 import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Tuple
 
 from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel
@@ -61,14 +63,14 @@ class DocumentLibraryService:
             documents_dir: Directory for permanent document storage
                 (defaults to ~/.ai_pdf_scholar/documents)
         """
-        self.db = db_connection
-        self.document_repo = DocumentRepository(db_connection)
-        self.vector_repo = VectorIndexRepository(db_connection)
+        self.db: DatabaseConnection = db_connection
+        self.document_repo: DocumentRepository = DocumentRepository(db_connection)
+        self.vector_repo: VectorIndexRepository = VectorIndexRepository(db_connection)
         # Set up managed documents directory
         if documents_dir:
-            self.documents_dir = Path(documents_dir)
+            self.documents_dir: Path = Path(documents_dir)
         else:
-            self.documents_dir = Path.home() / ".ai_pdf_scholar" / "documents"
+            self.documents_dir: Path = Path.home() / ".ai_pdf_scholar" / "documents"
         self.documents_dir.mkdir(parents=True, exist_ok=True)
 
     def _create_managed_file_path(self, file_hash: str, original_filename: str) -> Path:
@@ -112,7 +114,7 @@ class DocumentLibraryService:
             raise DocumentImportError(f"Invalid PDF file: {file_path}")
         return file_path_obj
 
-    def _calculate_file_hashes(self, file_path: str) -> tuple[str, str]:
+    def _calculate_file_hashes(self, file_path: str) -> Tuple[str, str]:
         """Calculate file and content hashes."""
         try:
             file_hash, content_hash = ContentHashService.calculate_combined_hashes(
@@ -245,14 +247,14 @@ class DocumentLibraryService:
         offset: int = 0,
         sort_by: str = "created_at",
         sort_order: str = "desc",
-    ) -> list[DocumentModel]:
+    ) -> List[DocumentModel]:
         """
         Get documents with optional search and pagination.
         Args:
             search_query: Search term for title
             limit: Maximum number of documents
             offset: Number of documents to skip
-            sort_by: Field to sort by
+            sort_by: Field to sort by (created_at, updated_at, last_accessed, title, file_size)
             sort_order: Sort direction (asc/desc)
         Returns:
             List of document models
@@ -261,14 +263,13 @@ class DocumentLibraryService:
             if search_query:
                 return self.document_repo.search_by_title(search_query, limit)
             else:
-                # For now, use simple pagination
-                # TODO: Implement proper sorting in repository
-                return self.document_repo.find_all(limit, offset)
+                # Use repository-level sorting with secure validation
+                return self.document_repo.get_all(limit, offset, sort_by, sort_order)
         except Exception as e:
             logger.error(f"Failed to get documents: {e}")
             raise
 
-    def get_recent_documents(self, limit: int = 20) -> list[DocumentModel]:
+    def get_recent_documents(self, limit: int = 20) -> List[DocumentModel]:
         """
         Get recently accessed documents.
         Args:
@@ -354,26 +355,136 @@ class DocumentLibraryService:
             logger.error(f"Failed to delete document {document_id}: {e}")
             raise
 
-    def find_duplicate_documents(self) -> list[tuple[str, list[DocumentModel]]]:
+    def find_duplicate_documents(
+        self, 
+        include_content_hash: bool = True,
+        include_title_similarity: bool = True,
+        title_similarity_threshold: float = 0.8
+    ) -> List[Tuple[str, List[DocumentModel]]]:
         """
-        Find potential duplicate documents.
+        Find potential duplicate documents using multiple detection methods.
+        Args:
+            include_content_hash: Check for exact content duplicates
+            include_title_similarity: Check for similar titles
+            title_similarity_threshold: Minimum similarity score for title matching
         Returns:
             List of tuples (criteria, list_of_duplicates)
         """
         try:
             duplicates = []
-            # Find duplicates by file size and similar names
+            
+            # 1. Exact content duplicates (highest priority)
+            if include_content_hash:
+                content_duplicates = self.document_repo.find_duplicates_by_content_hash()
+                for content_hash, docs in content_duplicates:
+                    criteria = f"Exact content match (hash: {content_hash[:16]}...)"
+                    duplicates.append((criteria, docs))
+                    logger.info(f"Found {len(docs)} documents with exact content match")
+            
+            # 2. File size and similar names (medium priority)
             size_duplicates = self.document_repo.find_duplicates_by_size_and_name()
             for file_size, docs in size_duplicates:
-                duplicates.append((f"File size: {file_size} bytes", docs))
-            # TODO: Add content-based duplicate detection when content_hash
-            # field is available
+                # Only include if not already found as content duplicates
+                if not self._already_in_duplicates(docs, duplicates):
+                    duplicates.append((f"File size: {file_size} bytes", docs))
+            
+            # 3. Similar titles (lower priority)
+            if include_title_similarity:
+                title_duplicates = self.document_repo.find_similar_documents_by_title(
+                    title_similarity_threshold
+                )
+                for criteria, docs in title_duplicates:
+                    # Only include if not already found
+                    if not self._already_in_duplicates(docs, duplicates):
+                        duplicates.append((criteria, docs))
+            
+            logger.info(f"Found {len(duplicates)} groups of potential duplicate documents")
             return duplicates
+            
         except Exception as e:
             logger.error(f"Failed to find duplicate documents: {e}")
             raise
 
-    def get_library_statistics(self) -> dict[str, Any]:
+    def _already_in_duplicates(
+        self, 
+        docs: List[DocumentModel], 
+        existing_duplicates: List[Tuple[str, List[DocumentModel]]]
+    ) -> bool:
+        """
+        Check if documents are already included in existing duplicate groups.
+        Args:
+            docs: Documents to check
+            existing_duplicates: Existing duplicate groups
+        Returns:
+            True if any document is already in a duplicate group
+        """
+        doc_ids = {doc.id for doc in docs}
+        for _, existing_docs in existing_duplicates:
+            existing_ids = {doc.id for doc in existing_docs}
+            if doc_ids.intersection(existing_ids):
+                return True
+        return False
+
+    def resolve_duplicate_documents(
+        self, 
+        duplicate_group: List[DocumentModel], 
+        keep_document_id: int,
+        remove_files: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Resolve a group of duplicate documents by keeping one and removing others.
+        Args:
+            duplicate_group: List of duplicate documents
+            keep_document_id: ID of document to keep
+            remove_files: Whether to remove managed files of duplicates
+        Returns:
+            Dictionary with resolution results
+        """
+        try:
+            result = {
+                "kept_document_id": keep_document_id,
+                "removed_documents": [],
+                "errors": []
+            }
+            
+            # Validate that keep_document_id is in the group
+            keep_doc = None
+            for doc in duplicate_group:
+                if doc.id == keep_document_id:
+                    keep_doc = doc
+                    break
+            
+            if not keep_doc:
+                raise ValueError(f"Document ID {keep_document_id} not found in duplicate group")
+            
+            # Remove other documents
+            for doc in duplicate_group:
+                if doc.id != keep_document_id:
+                    try:
+                        success = self.delete_document(doc.id, remove_vector_index=True)
+                        if success:
+                            result["removed_documents"].append({
+                                "id": doc.id,
+                                "title": doc.title,
+                                "file_path": doc.file_path
+                            })
+                        else:
+                            result["errors"].append(f"Failed to delete document {doc.id}")
+                    except Exception as e:
+                        result["errors"].append(f"Error deleting document {doc.id}: {e}")
+                        logger.error(f"Error deleting duplicate document {doc.id}: {e}")
+            
+            logger.info(
+                f"Resolved duplicate group: kept document {keep_document_id}, "
+                f"removed {len(result['removed_documents'])} duplicates"
+            )
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to resolve duplicate documents: {e}")
+            raise
+
+    def get_library_statistics(self) -> Dict[str, Any]:
         """
         Get comprehensive library statistics.
         Returns:
@@ -400,33 +511,265 @@ class DocumentLibraryService:
             logger.error(f"Failed to get library statistics: {e}")
             raise
 
-    def cleanup_library(self) -> dict[str, int]:
+    def cleanup_library(
+        self,
+        remove_missing_files: bool = True,
+        remove_orphaned_files: bool = True,
+        optimize_database: bool = True,
+        cleanup_temp_files: bool = True,
+        verify_integrity: bool = False
+    ) -> Dict[str, Any]:
         """
-        Perform library cleanup operations.
+        Perform comprehensive library cleanup operations.
+        Args:
+            remove_missing_files: Remove document records for missing files
+            remove_orphaned_files: Remove files in documents directory not in database
+            optimize_database: Run database optimization
+            cleanup_temp_files: Clean up temporary files
+            verify_integrity: Verify and report integrity issues
         Returns:
             Dictionary with cleanup results
         """
         try:
-            results = {}
-            # Cleanup orphaned vector indexes
-            orphaned_cleaned = self.vector_repo.cleanup_orphaned_indexes()
-            results["orphaned_indexes_cleaned"] = orphaned_cleaned
-            # Cleanup invalid vector indexes
-            invalid_cleaned = self.vector_repo.cleanup_invalid_indexes(
-                remove_files=True
+            results = {
+                "orphaned_indexes_cleaned": 0,
+                "invalid_indexes_cleaned": 0,
+                "missing_file_documents_removed": 0,
+                "orphaned_files_removed": 0,
+                "temp_files_cleaned": 0,
+                "database_optimized": False,
+                "integrity_issues_found": 0,
+                "errors": []
+            }
+            
+            # 1. Cleanup orphaned vector indexes
+            try:
+                orphaned_cleaned = self.vector_repo.cleanup_orphaned_indexes()
+                results["orphaned_indexes_cleaned"] = orphaned_cleaned
+                logger.debug(f"Cleaned {orphaned_cleaned} orphaned vector indexes")
+            except Exception as e:
+                results["errors"].append(f"Vector index cleanup error: {e}")
+                logger.warning(f"Failed to cleanup orphaned vector indexes: {e}")
+            
+            # 2. Cleanup invalid vector indexes
+            try:
+                invalid_cleaned = self.vector_repo.cleanup_invalid_indexes(remove_files=True)
+                results["invalid_indexes_cleaned"] = invalid_cleaned
+                logger.debug(f"Cleaned {invalid_cleaned} invalid vector indexes")
+            except Exception as e:
+                results["errors"].append(f"Invalid index cleanup error: {e}")
+                logger.warning(f"Failed to cleanup invalid vector indexes: {e}")
+            
+            # 3. Remove documents with missing files
+            if remove_missing_files:
+                try:
+                    missing_removed = self._cleanup_documents_with_missing_files()
+                    results["missing_file_documents_removed"] = missing_removed
+                    logger.debug(f"Removed {missing_removed} documents with missing files")
+                except Exception as e:
+                    results["errors"].append(f"Missing file cleanup error: {e}")
+                    logger.warning(f"Failed to cleanup documents with missing files: {e}")
+            
+            # 4. Remove orphaned files in documents directory
+            if remove_orphaned_files:
+                try:
+                    orphaned_removed = self._cleanup_orphaned_files()
+                    results["orphaned_files_removed"] = orphaned_removed
+                    logger.debug(f"Removed {orphaned_removed} orphaned files")
+                except Exception as e:
+                    results["errors"].append(f"Orphaned file cleanup error: {e}")
+                    logger.warning(f"Failed to cleanup orphaned files: {e}")
+            
+            # 5. Clean up temporary files
+            if cleanup_temp_files:
+                try:
+                    temp_cleaned = self._cleanup_temp_files()
+                    results["temp_files_cleaned"] = temp_cleaned
+                    logger.debug(f"Cleaned {temp_cleaned} temporary files")
+                except Exception as e:
+                    results["errors"].append(f"Temp file cleanup error: {e}")
+                    logger.warning(f"Failed to cleanup temporary files: {e}")
+            
+            # 6. Database optimization
+            if optimize_database:
+                try:
+                    self._optimize_database()
+                    results["database_optimized"] = True
+                    logger.debug("Database optimization completed")
+                except Exception as e:
+                    results["errors"].append(f"Database optimization error: {e}")
+                    logger.warning(f"Failed to optimize database: {e}")
+            
+            # 7. Integrity verification (optional)
+            if verify_integrity:
+                try:
+                    integrity_issues = self._verify_library_integrity()
+                    results["integrity_issues_found"] = integrity_issues
+                    logger.debug(f"Found {integrity_issues} integrity issues")
+                except Exception as e:
+                    results["errors"].append(f"Integrity verification error: {e}")
+                    logger.warning(f"Failed to verify library integrity: {e}")
+            
+            # Summary
+            total_items_cleaned = (
+                results["orphaned_indexes_cleaned"] +
+                results["invalid_indexes_cleaned"] +
+                results["missing_file_documents_removed"] +
+                results["orphaned_files_removed"] +
+                results["temp_files_cleaned"]
             )
-            results["invalid_indexes_cleaned"] = invalid_cleaned
-            # TODO: Add more cleanup operations
-            # - Remove documents with missing files
-            # - Clean up unused tags
-            # - Optimize database
-            logger.info(f"Library cleanup completed: {results}")
+            
+            logger.info(
+                f"Library cleanup completed: {total_items_cleaned} items cleaned, "
+                f"{len(results['errors'])} errors"
+            )
+            
             return results
+            
         except Exception as e:
             logger.error(f"Failed to cleanup library: {e}")
             raise
 
-    def verify_document_integrity(self, document_id: int) -> dict[str, Any]:
+    def _cleanup_documents_with_missing_files(self) -> int:
+        """
+        Remove document records where the referenced file no longer exists.
+        Returns:
+            Number of documents removed
+        """
+        count = 0
+        try:
+            # Get all documents
+            documents = self.document_repo.find_all()
+            for doc in documents:
+                if doc.file_path and not Path(doc.file_path).exists():
+                    try:
+                        if self.document_repo.delete(doc.id):
+                            count += 1
+                            logger.debug(f"Removed document {doc.id} with missing file: {doc.file_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to remove document {doc.id}: {e}")
+        except Exception as e:
+            logger.error(f"Error during missing file cleanup: {e}")
+            raise
+        return count
+
+    def _cleanup_orphaned_files(self) -> int:
+        """
+        Remove files in documents directory that are not referenced in database.
+        Returns:
+            Number of files removed
+        """
+        count = 0
+        try:
+            if not self.documents_dir.exists():
+                return 0
+            
+            # Get all file paths from database
+            db_files = set()
+            documents = self.document_repo.find_all()
+            for doc in documents:
+                if doc.file_path:
+                    db_files.add(Path(doc.file_path).name)
+            
+            # Check files in documents directory
+            for file_path in self.documents_dir.iterdir():
+                if file_path.is_file() and file_path.name not in db_files:
+                    try:
+                        file_path.unlink()
+                        count += 1
+                        logger.debug(f"Removed orphaned file: {file_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to remove orphaned file {file_path}: {e}")
+        except Exception as e:
+            logger.error(f"Error during orphaned file cleanup: {e}")
+            raise
+        return count
+
+    def _cleanup_temp_files(self) -> int:
+        """
+        Clean up temporary files in various locations.
+        Returns:
+            Number of temporary files cleaned
+        """
+        count = 0
+        temp_patterns = [
+            "*.tmp", "*.temp", "*~", ".DS_Store", "Thumbs.db",
+            "*.bak", "*.swp", "*.swo"
+        ]
+        
+        try:
+            # Clean temp files from documents directory
+            if self.documents_dir.exists():
+                for pattern in temp_patterns:
+                    for temp_file in self.documents_dir.glob(pattern):
+                        try:
+                            temp_file.unlink()
+                            count += 1
+                            logger.debug(f"Removed temp file: {temp_file}")
+                        except Exception as e:
+                            logger.warning(f"Failed to remove temp file {temp_file}: {e}")
+            
+            # Clean temp files from system temp directory
+            import tempfile
+            temp_dir = Path(tempfile.gettempdir())
+            ai_temp_pattern = "ai_pdf_scholar_*"
+            for temp_item in temp_dir.glob(ai_temp_pattern):
+                try:
+                    if temp_item.is_file():
+                        temp_item.unlink()
+                        count += 1
+                    elif temp_item.is_dir():
+                        shutil.rmtree(temp_item)
+                        count += 1
+                    logger.debug(f"Removed temp item: {temp_item}")
+                except Exception as e:
+                    logger.warning(f"Failed to remove temp item {temp_item}: {e}")
+                    
+        except Exception as e:
+            logger.error(f"Error during temp file cleanup: {e}")
+            raise
+        return count
+
+    def _optimize_database(self) -> None:
+        """
+        Perform database optimization operations.
+        """
+        try:
+            # Run VACUUM to reclaim space and defragment
+            self.db.execute("VACUUM")
+            logger.debug("Database VACUUM completed")
+            
+            # Run ANALYZE to update query planner statistics
+            self.db.execute("ANALYZE")
+            logger.debug("Database ANALYZE completed")
+            
+            # Optionally rebuild indexes if needed
+            # This is usually not necessary unless corruption is suspected
+            
+        except Exception as e:
+            logger.error(f"Database optimization failed: {e}")
+            raise
+
+    def _verify_library_integrity(self) -> int:
+        """
+        Verify overall library integrity and return issue count.
+        Returns:
+            Number of integrity issues found
+        """
+        issue_count = 0
+        try:
+            documents = self.document_repo.find_all()
+            for doc in documents:
+                integrity_result = self.verify_document_integrity(doc.id)
+                if not integrity_result.get("is_healthy", False):
+                    issue_count += 1
+                    logger.warning(f"Integrity issue found for document {doc.id}: {integrity_result.get('errors', [])}")
+        except Exception as e:
+            logger.error(f"Integrity verification failed: {e}")
+            raise
+        return issue_count
+
+    def verify_document_integrity(self, document_id: int) -> Dict[str, Any]:
         """
         Verify the integrity of a document and its associated data.
         Args:
@@ -435,7 +778,7 @@ class DocumentLibraryService:
             Dictionary with integrity check results
         """
         try:
-            result: dict[str, Any] = {
+            result: Dict[str, Any] = {
                 "document_id": document_id,
                 "exists": False,
                 "file_exists": False,
@@ -499,7 +842,7 @@ class DocumentLibraryService:
             logger.error(f"Failed to verify document integrity for {document_id}: {e}")
             return {"document_id": document_id, "error": str(e)}
 
-    def advanced_search(self, **kwargs: Any) -> list[DocumentModel]:
+    def advanced_search(self, **kwargs: Any) -> List[DocumentModel]:
         """
         Perform advanced search with multiple criteria.
         Args:

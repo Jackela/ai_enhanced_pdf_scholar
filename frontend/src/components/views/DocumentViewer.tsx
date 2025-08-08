@@ -13,7 +13,7 @@ interface Document {
   updated_at: string
 }
 
-export function DocumentViewer() {
+function DocumentViewer() {
   const { id } = useParams<{ id: string }>()
   const [document, setDocument] = useState<Document | null>(null)
   const [loading, setLoading] = useState(true)
@@ -89,3 +89,9 @@ export function DocumentViewer() {
     </div>
   )
 }
+
+// Default export for lazy loading
+export default DocumentViewer
+
+// Named export for backward compatibility
+export { DocumentViewer }

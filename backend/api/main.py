@@ -30,6 +30,11 @@ from fastapi.staticfiles import StaticFiles
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+from backend.api.cors_config import get_cors_config
+from backend.api.rate_limit_config import get_rate_limit_config, get_env_override_config
+from backend.api.middleware.rate_limiting import RateLimitMiddleware
+from backend.api.middleware.error_handling import setup_comprehensive_error_handling
+from backend.api.middleware.security_headers import setup_security_headers, SecurityHeadersConfig
 
 # Models are used in individual route modules
 from backend.api.routes import settings
@@ -50,24 +55,33 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure comprehensive error handling
+setup_comprehensive_error_handling(app, include_debug_info=False)
+
+# Configure security headers middleware (must be before other middleware)
+security_headers_config = SecurityHeadersConfig()
+setup_security_headers(app, security_headers_config)
+
+# Configure rate limiting middleware
+rate_limit_config = get_env_override_config(get_rate_limit_config())
+app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
+
+# Configure secure CORS based on environment
+cors_config = get_cors_config()
+app.add_middleware(CORSMiddleware, **cors_config.get_middleware_config())
 # WebSocket manager
 websocket_manager = WebSocketManager()
 # Include API routes
-from backend.api.routes import documents, library, rag, system
+from backend.api.routes import documents, library, rag, system, rate_limit_admin
+from backend.api.auth import routes as auth_routes
 
+app.include_router(auth_routes.router, prefix="/api", tags=["authentication"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
 app.include_router(library.router, prefix="/api/library", tags=["library"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
 app.include_router(settings.router, prefix="/api")
+app.include_router(rate_limit_admin.router, prefix="/api/admin", tags=["rate-limiting"])
 # Serve static files for frontend
 frontend_dist = project_root / "frontend" / "dist"
 if frontend_dist.exists():
@@ -172,6 +186,25 @@ async def startup_event() -> None:
     """Initialize services on startup."""
     try:
         logger.info("Starting AI Enhanced PDF Scholar API...")
+        
+        # Log CORS security configuration
+        cors_config.log_security_info()
+        
+        # Log security headers configuration
+        logger.info(f"Security headers initialized:")
+        logger.info(f"  - Environment: {security_headers_config.environment.value}")
+        logger.info(f"  - CSP: {'Enabled' if security_headers_config.csp_enabled else 'Disabled'}")
+        logger.info(f"  - CSP Mode: {'Report-Only' if security_headers_config.csp_report_only else 'Enforcing'}")
+        logger.info(f"  - HSTS: {'Enabled' if security_headers_config.strict_transport_security_enabled else 'Disabled'}")
+        logger.info(f"  - Nonce-based CSP: {'Enabled' if security_headers_config.nonce_enabled else 'Disabled'}")
+        
+        # Log rate limiting configuration
+        logger.info(f"Rate limiting initialized:")
+        logger.info(f"  - Default limit: {rate_limit_config.default_limit.requests} requests/{rate_limit_config.default_limit.window}s")
+        logger.info(f"  - Global IP limit: {rate_limit_config.global_ip_limit.requests} requests/{rate_limit_config.global_ip_limit.window}s")
+        logger.info(f"  - Storage backend: {'Redis' if rate_limit_config.redis_url else 'In-Memory'}")
+        logger.info(f"  - Environment: {os.getenv('ENVIRONMENT', 'development')}")
+        
         # Initialize database
         db_dir = Path.home() / ".ai_pdf_scholar"
         db_dir.mkdir(exist_ok=True)
@@ -183,6 +216,7 @@ async def startup_event() -> None:
             logger.info("Running database migrations...")
             migrator.migrate()
         logger.info("API startup completed successfully")
+        logger.info("Unified error handling system active")
     except Exception as e:
         logger.error(f"Startup failed: {e}")
         raise

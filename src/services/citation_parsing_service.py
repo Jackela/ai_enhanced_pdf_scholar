@@ -4,9 +4,11 @@ Implements text parsing algorithms for citation extraction following SOLID princ
 Enhanced with third-party library integration for improved accuracy.
 """
 
+from __future__ import annotations
+
 import logging
 import re
-from typing import Any
+from typing import Any, Dict, List, Set
 
 # Third-party library imports (optional dependencies)
 try:
@@ -15,8 +17,10 @@ try:
 except ImportError:
     REFEXTRACT_AVAILABLE = False
 
+REFEXTRACT_AVAILABLE: bool = REFEXTRACT_AVAILABLE
+
 # requests not currently used but kept for potential future use
-REQUESTS_AVAILABLE = False
+REQUESTS_AVAILABLE: bool = False
 
 logger = logging.getLogger(__name__)
 
@@ -41,24 +45,24 @@ class CitationParsingService:
     def __init__(self) -> None:
         """Initialize citation parsing service."""
         # Common citation patterns
-        self.author_patterns = [
+        self.author_patterns: List[str] = [
             r'([A-Z][a-z]+(?:,\s*[A-Z]\.?)+)',  # Smith, J.
             r'([A-Z][a-z]+(?:\s+[A-Z]\.?)+)',   # Smith J.
             r'([A-Z][a-z]+(?:\s*et\s+al\.?))',  # Smith et al.
         ]
 
-        self.year_patterns = [
+        self.year_patterns: List[str] = [
             r'\((\d{4}[a-z]?)\)',  # (2023) or (2023a)
             r'(\d{4}[a-z]?)\.',    # 2023. or 2023a.
         ]
 
-        self.doi_patterns = [
+        self.doi_patterns: List[str] = [
             r'https?://doi\.org/([^\s]+)',
             r'DOI:\s*([^\s]+)',
             r'doi:\s*([^\s]+)',
         ]
 
-    def parse_citations_from_text(self, text_content: str, use_third_party: bool = True) -> list[dict[str, Any]]:
+    def parse_citations_from_text(self, text_content: str, use_third_party: bool = True) -> List[Dict[str, Any]]:
         """
         Parse citations from text content using multiple approaches.
 

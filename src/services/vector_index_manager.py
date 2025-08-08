@@ -4,12 +4,14 @@ This module provides comprehensive vector index persistence management,
 including index lifecycle, integrity verification, and optimization.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from src.database.connection import DatabaseConnection
 from src.database.models import VectorIndexModel
@@ -60,15 +62,15 @@ class VectorIndexManager:
             db_connection: Database connection instance
             storage_base_dir: Base directory for vector index storage
         """
-        self.db = db_connection
-        self.vector_repo = VectorIndexRepository(db_connection)
+        self.db: DatabaseConnection = db_connection
+        self.vector_repo: VectorIndexRepository = VectorIndexRepository(db_connection)
         # Storage configuration
-        self.storage_base_dir = Path(storage_base_dir)
+        self.storage_base_dir: Path = Path(storage_base_dir)
         self.storage_base_dir.mkdir(exist_ok=True)
         # Create subdirectories for organization
-        self.active_dir = self.storage_base_dir / "active"
-        self.backup_dir = self.storage_base_dir / "backup"
-        self.temp_dir = self.storage_base_dir / "temp"
+        self.active_dir: Path = self.storage_base_dir / "active"
+        self.backup_dir: Path = self.storage_base_dir / "backup"
+        self.temp_dir: Path = self.storage_base_dir / "temp"
         for directory in [self.active_dir, self.backup_dir, self.temp_dir]:
             directory.mkdir(exist_ok=True)
         logger.info(

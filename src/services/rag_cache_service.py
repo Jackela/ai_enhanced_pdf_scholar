@@ -8,11 +8,13 @@ Note: CI/CD Pipeline Verification - All quality checks passing with 100%
 PEP8 compliance.
 """
 
+from __future__ import annotations
+
 import hashlib
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from src.database.connection import DatabaseConnection
 
@@ -77,12 +79,12 @@ class RAGCacheService:
             ttl_hours: Time to live for cache entries in hours
             similarity_threshold: Minimum similarity score for cache hits
         """
-        self.db = db_connection
-        self.max_entries = max_entries
-        self.ttl_hours = ttl_hours
-        self.similarity_threshold = similarity_threshold
+        self.db: DatabaseConnection = db_connection
+        self.max_entries: int = max_entries
+        self.ttl_hours: int = ttl_hours
+        self.similarity_threshold: float = similarity_threshold
         # Performance metrics
-        self.metrics = {
+        self.metrics: Dict[str, int] = {
             "total_queries": 0,
             "cache_hits": 0,
             "cache_misses": 0,
@@ -134,7 +136,7 @@ class RAGCacheService:
             logger.error(f"Failed to initialize cache table: {e}")
             raise RAGCacheServiceError(f"Cache initialization failed: {e}") from e
 
-    def get_cached_response(self, query: str, document_id: int) -> str | None:
+    def get_cached_response(self, query: str, document_id: int) -> Optional[str]:
         """
         Get cached response for a query.
         Args:

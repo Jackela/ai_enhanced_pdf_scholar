@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import App from './App.tsx'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { WebSocketProvider } from './contexts/WebSocketContext'
+import { initializePreloading, addResourceHints } from './utils/preload'
 import './index.css'
 
 // Configure React Query
@@ -21,6 +22,9 @@ const queryClient = new QueryClient({
   },
 })
 
+// Initialize performance optimizations
+addResourceHints()
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -33,3 +37,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>
 )
+
+// Initialize preloading after app mount
+setTimeout(initializePreloading, 100)

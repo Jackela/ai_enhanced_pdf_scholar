@@ -155,24 +155,32 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
     ) -> list[DocumentModel]:
         """Interface method - get all documents with pagination and sorting."""
         try:
-            # Validate sort_by parameter
-            valid_sort_fields = [
-                "created_at",
-                "updated_at",
-                "last_accessed",
-                "title",
-                "file_size",
-            ]
-            if sort_by not in valid_sort_fields:
-                sort_by = "created_at"
-            # Validate sort_order
-            if sort_order.lower() not in ["asc", "desc"]:
-                sort_order = "desc"
+            # Secure whitelist-based validation for sort_by parameter
+            valid_sort_fields = {
+                "created_at": "created_at",
+                "updated_at": "updated_at", 
+                "last_accessed": "last_accessed",
+                "title": "title",
+                "file_size": "file_size",
+            }
+            
+            # Use whitelist lookup to prevent injection
+            safe_sort_by = valid_sort_fields.get(sort_by.lower(), "created_at")
+            
+            # Secure validation for sort_order using whitelist
+            valid_sort_orders = {"asc": "ASC", "desc": "DESC"}
+            safe_sort_order = valid_sort_orders.get(sort_order.lower(), "DESC")
+            
+            # Use parameterized query - build safe SQL using whitelisted values
             query = f"""
             SELECT * FROM documents
-            ORDER BY {sort_by} {sort_order.upper()}
+            ORDER BY {safe_sort_by} {safe_sort_order}
             LIMIT ? OFFSET ?
             """
+            
+            # Log the safe query for security auditing
+            logger.debug(f"Executing secure query with sort_by='{safe_sort_by}', sort_order='{safe_sort_order}'")
+            
             rows = self.db.fetch_all(query, (limit, offset))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:
@@ -374,6 +382,103 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         except Exception as e:
             logger.error(f"Failed to find duplicate documents: {e}")
             raise
+
+    def find_duplicates_by_content_hash(self) -> list[tuple[str, list[DocumentModel]]]:
+        """
+        Find exact content duplicates based on content hash.
+        Returns:
+            List of tuples (content_hash, list_of_documents)
+        """
+        try:
+            # Find documents with same content hash (excluding NULL values)
+            query = """
+            SELECT content_hash, COUNT(*) as count
+            FROM documents
+            WHERE content_hash IS NOT NULL AND content_hash != ''
+            GROUP BY content_hash
+            HAVING count > 1
+            ORDER BY content_hash
+            """
+            hash_groups = self.db.fetch_all(query)
+            duplicates = []
+            for group in hash_groups:
+                content_hash = group["content_hash"]
+                docs = self.find_by_field("content_hash", content_hash)
+                if len(docs) > 1:
+                    duplicates.append((content_hash, docs))
+            return duplicates
+        except Exception as e:
+            logger.error(f"Failed to find content-based duplicate documents: {e}")
+            raise
+
+    def find_similar_documents_by_title(self, similarity_threshold: float = 0.8) -> list[tuple[str, list[DocumentModel]]]:
+        """
+        Find documents with similar titles using simple similarity matching.
+        Args:
+            similarity_threshold: Minimum similarity score (0.0 to 1.0)
+        Returns:
+            List of tuples (similarity_reason, list_of_documents)
+        """
+        try:
+            # Get all documents
+            all_docs = self.find_all()
+            similar_groups = []
+            processed_ids = set()
+
+            for i, doc1 in enumerate(all_docs):
+                if doc1.id in processed_ids:
+                    continue
+                
+                similar_docs = [doc1]
+                for j, doc2 in enumerate(all_docs[i+1:], i+1):
+                    if doc2.id in processed_ids:
+                        continue
+                    
+                    # Simple title similarity check
+                    similarity = self._calculate_title_similarity(doc1.title, doc2.title)
+                    if similarity >= similarity_threshold:
+                        similar_docs.append(doc2)
+                        processed_ids.add(doc2.id)
+                
+                if len(similar_docs) > 1:
+                    processed_ids.add(doc1.id)
+                    similar_groups.append((f"Similar titles (>{similarity_threshold*100}% match)", similar_docs))
+            
+            return similar_groups
+        except Exception as e:
+            logger.error(f"Failed to find similar documents by title: {e}")
+            raise
+
+    def _calculate_title_similarity(self, title1: str, title2: str) -> float:
+        """
+        Calculate simple similarity between two titles.
+        Uses basic string similarity metrics.
+        Args:
+            title1: First title
+            title2: Second title
+        Returns:
+            Similarity score between 0.0 and 1.0
+        """
+        # Normalize titles (lowercase, strip whitespace)
+        t1 = title1.lower().strip()
+        t2 = title2.lower().strip()
+        
+        if t1 == t2:
+            return 1.0
+        if not t1 or not t2:
+            return 0.0
+        
+        # Simple Jaccard similarity using word sets
+        words1 = set(t1.split())
+        words2 = set(t2.split())
+        
+        if not words1 or not words2:
+            return 0.0
+        
+        intersection = len(words1.intersection(words2))
+        union = len(words1.union(words2))
+        
+        return intersection / union if union > 0 else 0.0
 
     def advanced_search(
         self,

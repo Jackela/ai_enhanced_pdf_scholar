@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
-import { LibraryView } from './views/LibraryView'
-import { DocumentViewer } from './views/DocumentViewer'
-import { ChatView } from './views/ChatView'
-import { SettingsView } from './views/SettingsView'
 import { SystemStatus } from './SystemStatus'
+import { LoadingFallback } from './ui/LoadingFallback'
+
+// Route-based code splitting with React.lazy
+const LibraryView = lazy(() => import('./views/LibraryView'))
+const DocumentViewer = lazy(() => import('./views/DocumentViewer'))
+const ChatView = lazy(() => import('./views/ChatView'))
+const SettingsView = lazy(() => import('./views/SettingsView'))
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -25,14 +28,16 @@ export function Layout() {
         <Header />
 
         <main className='flex-1 overflow-hidden'>
-          <Routes>
-            <Route path='/' element={<LibraryView />} />
-            <Route path='/library' element={<LibraryView />} />
-            <Route path='/document/:id' element={<DocumentViewer />} />
-            <Route path='/chat' element={<ChatView />} />
-            <Route path='/chat/:documentId' element={<ChatView />} />
-            <Route path='/settings' element={<SettingsView />} />
-          </Routes>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path='/' element={<LibraryView />} />
+              <Route path='/library' element={<LibraryView />} />
+              <Route path='/document/:id' element={<DocumentViewer />} />
+              <Route path='/chat' element={<ChatView />} />
+              <Route path='/chat/:documentId' element={<ChatView />} />
+              <Route path='/settings' element={<SettingsView />} />
+            </Routes>
+          </Suspense>
         </main>
 
         {/* System status bar */}

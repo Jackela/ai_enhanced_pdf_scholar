@@ -1,14 +1,17 @@
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Filter, Grid, List, Upload } from 'lucide-react'
 import { api } from '../../lib/api.ts'
 import { DocumentCard } from '../DocumentCard'
-import { DocumentUpload } from '../DocumentUpload'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { LoadingFallback } from '../ui/LoadingFallback'
 import type { SearchFilters, Document } from '../../types'
 
-export function LibraryView() {
+// Lazy load heavy DocumentUpload component
+const DocumentUpload = lazy(() => import('../DocumentUpload'))
+
+function LibraryView() {
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     page: 1,
     per_page: 20,
@@ -199,14 +202,22 @@ export function LibraryView() {
 
       {/* Upload Modal */}
       {showUpload && (
-        <DocumentUpload
-          onClose={() => setShowUpload(false)}
-          onSuccess={() => {
-            setShowUpload(false)
-            refetch()
-          }}
-        />
+        <Suspense fallback={<LoadingFallback message="Loading upload interface..." size="lg" />}>
+          <DocumentUpload
+            onClose={() => setShowUpload(false)}
+            onSuccess={() => {
+              setShowUpload(false)
+              refetch()
+            }}
+          />
+        </Suspense>
       )}
     </div>
   )
 }
+
+// Default export for lazy loading
+export default LibraryView
+
+// Named export for backward compatibility  
+export { LibraryView }

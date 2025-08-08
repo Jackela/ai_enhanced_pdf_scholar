@@ -10,9 +10,19 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+
+from backend.api.error_handling import SystemException
+from pydantic import BaseModel, Field, field_validator
 
 from backend.api.dependencies import get_db
+from backend.api.models import (
+    SecurityValidationError, 
+    validate_against_patterns, 
+    DANGEROUS_SQL_PATTERNS, 
+    XSS_PATTERNS,
+    sanitize_html_content,
+    log_security_event
+)
 from src.database.connection import DatabaseConnection
 
 logger = logging.getLogger(__name__)
@@ -20,21 +30,82 @@ router = APIRouter(prefix="/system", tags=["system"])
 
 
 class ApiKeyRequest(BaseModel):
-    api_key: str = Field(..., description="API key to test")
+    """API key test request with security validation."""
+    api_key: str = Field(..., min_length=10, max_length=200, 
+                        description="API key to test")
+    
+    @field_validator('api_key')
+    @classmethod
+    def validate_api_key(cls, v: str) -> str:
+        """Validate API key format and security."""
+        # Basic validation against injection attacks
+        validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'api_key', 'sql_injection')
+        validate_against_patterns(v, XSS_PATTERNS, 'api_key', 'xss_attempt')
+        
+        # API key format validation
+        if not v.strip():
+            raise SecurityValidationError('api_key', 'API key cannot be empty')
+        
+        # Check for suspicious patterns
+        suspicious_patterns = [
+            r'\s',  # No whitespace allowed in API keys
+            r'[<>"\']',  # No HTML/quote characters
+            r'javascript:',  # No JS protocol
+            r'data:',  # No data protocol
+        ]
+        
+        validate_against_patterns(v, suspicious_patterns, 'api_key', 'suspicious_pattern')
+        
+        return v.strip()
 
 
 class SettingsRequest(BaseModel):
-    gemini_api_key: Optional[str] = Field(None, description="Google Gemini API key")
+    """Settings update request with security validation."""
+    gemini_api_key: Optional[str] = Field(None, min_length=10, max_length=200,
+                                         description="Google Gemini API key")
     rag_enabled: bool = Field(False, description="Enable RAG functionality")
+    
+    @field_validator('gemini_api_key')
+    @classmethod
+    def validate_gemini_api_key(cls, v: Optional[str]) -> Optional[str]:
+        """Validate Gemini API key."""
+        if v is None:
+            return v
+            
+        # Skip validation if it's a masked value (contains bullets)
+        if '●' in v:
+            return v
+        
+        # Basic validation against injection attacks
+        validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'gemini_api_key', 'sql_injection')
+        validate_against_patterns(v, XSS_PATTERNS, 'gemini_api_key', 'xss_attempt')
+        
+        # API key format validation
+        if not v.strip():
+            raise SecurityValidationError('gemini_api_key', 'API key cannot be empty')
+        
+        # Check for suspicious patterns
+        suspicious_patterns = [
+            r'\s',  # No whitespace allowed in API keys
+            r'[<>"\']',  # No HTML/quote characters
+            r'javascript:',  # No JS protocol
+            r'data:',  # No data protocol
+        ]
+        
+        validate_against_patterns(v, suspicious_patterns, 'gemini_api_key', 'suspicious_pattern')
+        
+        return v.strip()
 
 
 class SettingsResponse(BaseModel):
+    """Settings response model."""
     gemini_api_key: str = Field("", description="Masked API key")
     rag_enabled: bool = Field(False, description="RAG enabled status")
     has_api_key: bool = Field(False, description="Whether API key is configured")
 
 
 class ApiKeyTestResponse(BaseModel):
+    """API key test response model."""
     valid: bool = Field(..., description="Whether API key is valid")
     error: Optional[str] = Field(None, description="Error message if invalid")
 
@@ -157,7 +228,10 @@ async def get_settings(
         )
     except Exception as e:
         logger.error(f"Failed to get settings: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve settings")
+        raise SystemException(
+            message="Failed to retrieve system settings",
+            error_type="database"
+        )
 
 
 @router.post("/settings")
@@ -180,7 +254,10 @@ async def update_settings(
         return {"message": "Settings updated successfully"}
     except Exception as e:
         logger.error(f"Failed to update settings: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update settings")
+        raise SystemException(
+            message="Failed to update system settings",
+            error_type="database"
+        )
 
 
 @router.post("/test-api-key", response_model=ApiKeyTestResponse)
@@ -271,4 +348,7 @@ async def get_system_status(
         }
     except Exception as e:
         logger.error(f"Failed to get system status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve system status")
+        raise SystemException(
+            message="Failed to retrieve system status",
+            error_type="general"
+        )

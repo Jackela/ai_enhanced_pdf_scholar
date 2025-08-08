@@ -4,10 +4,12 @@ Provides content-based hashing for intelligent document deduplication.
 Supports both file-level and content-level hashing for different use cases.
 """
 
+from __future__ import annotations
+
 import hashlib
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, Tuple
 
 import fitz  # PyMuPDF
 
@@ -36,7 +38,7 @@ class ContentHashService:
     Supports multiple hashing strategies for different use cases.
     """
 
-    CHUNK_SIZE = 1024 * 1024  # 1MB chunks for large file processing
+    CHUNK_SIZE: int = 1024 * 1024  # 1MB chunks for large file processing
 
     @staticmethod
     def calculate_file_hash(file_path: str) -> str:
@@ -128,7 +130,7 @@ class ContentHashService:
             raise ContentHashError(f"Content hashing failed: {e}") from e
 
     @staticmethod
-    def calculate_combined_hashes(file_path: str) -> tuple[str, str]:
+    def calculate_combined_hashes(file_path: str) -> Tuple[str, str]:
         """
         Calculate both file and content hashes in one operation.
         More efficient than calling both methods separately for the same file.
@@ -302,7 +304,7 @@ class ContentHashService:
             return False
 
     @staticmethod
-    def get_file_info(file_path: str) -> dict[str, Any]:
+    def get_file_info(file_path: str) -> Dict[str, Any]:
         """
         Get comprehensive file information for debugging and logging.
         Args:

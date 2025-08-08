@@ -8,7 +8,7 @@ interface ApiSettings {
   rag_enabled: boolean
 }
 
-export function SettingsView() {
+function SettingsView() {
   const [settings, setSettings] = useState<ApiSettings>({
     gemini_api_key: '',
     rag_enabled: false,
@@ -287,3 +287,9 @@ export function SettingsView() {
     </div>
   )
 }
+
+// Default export for lazy loading
+export default SettingsView
+
+// Named export for backward compatibility
+export { SettingsView }

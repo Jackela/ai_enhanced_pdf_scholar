@@ -10,6 +10,8 @@ from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 
+from backend.api.error_handling import ResourceNotFoundException, SystemException
+
 from config import Config
 from src.controllers.library_controller import LibraryController
 from src.database.connection import DatabaseConnection
@@ -124,13 +126,24 @@ def validate_document_access(
     document_id: int, controller: LibraryController = Depends(get_library_controller)
 ):
     """Validate that document exists and is accessible."""
-    document = controller.get_document_by_id(document_id)
-    if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document {document_id} not found",
+    try:
+        document = controller.get_document_by_id(document_id)
+        if not document:
+            raise ResourceNotFoundException(
+                resource_type="document",
+                resource_id=str(document_id)
+            )
+        return document
+    except Exception as e:
+        if "not found" in str(e).lower():
+            raise ResourceNotFoundException(
+                resource_type="document",
+                resource_id=str(document_id)
+            )
+        raise SystemException(
+            message="Failed to validate document access",
+            error_type="database"
         )
-    return document
 
 
 # Configuration helpers
