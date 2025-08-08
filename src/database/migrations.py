@@ -1,27 +1,46 @@
 """
-Database Migration System
-Handles database schema creation, versioning, and migrations.
-Ensures database schema is up-to-date and supports gradual upgrades.
+Database Migration System - Legacy Module
+
+DEPRECATED: This monolithic migration file has been replaced by the modular
+migration system in the `migrations/` package. This file now serves as a 
+backward compatibility layer.
+
+For new migrations, use the modular system:
+- Create individual migration files in `migrations/versions/`
+- Use ModularDatabaseMigrator for new code
+- See migrations/README.md for complete documentation
 """
 
 import logging
-import time
-from collections.abc import Callable
+import warnings
 from typing import Any
 
 from .connection import DatabaseConnection
 
-logger = logging.getLogger(__name__)
+# Import modular system for backward compatibility
+try:
+    from .modular_migrator import ModularDatabaseMigrator
+    # Backward compatibility alias - this ensures existing code continues to work
+    DatabaseMigrator = ModularDatabaseMigrator
+    
+    logger = logging.getLogger(__name__)
+    logger.info("Using modular database migrator for backward compatibility")
+    
+except ImportError:
+    # Fallback to legacy implementation if modular system is not available
+    logger = logging.getLogger(__name__)
+    logger.warning("Modular migrator not available, using legacy implementation")
 
 
 class MigrationError(Exception):
     """Raised when database migration fails."""
-
     pass
 
 
-class DatabaseMigrator:
-    """
+# If modular migrator is not available, define a fallback class
+if 'DatabaseMigrator' not in globals():
+    class DatabaseMigrator:
+        """
     {
         "name": "DatabaseMigrator",
         "version": "1.0.0",
@@ -36,7 +55,7 @@ class DatabaseMigrator:
     Tracks schema version and applies incremental updates.
     """
 
-    CURRENT_VERSION = 6
+    CURRENT_VERSION = 7
 
     def __init__(self, db_connection: DatabaseConnection) -> None:
         """
@@ -60,6 +79,7 @@ class DatabaseMigrator:
             4: self._migration_004_performance_optimization,
             5: self._migration_005_advanced_performance_analysis,
             6: self._migration_006_add_authentication_tables,
+            7: self._migration_007_add_tags_column,
         }
 
     def get_current_version(self) -> int:
@@ -545,7 +565,7 @@ class DatabaseMigrator:
             "CREATE INDEX IF NOT EXISTS idx_documents_large_files ON documents(file_size DESC, page_count, created_at DESC) WHERE file_size > 10485760",  # > 10MB
             
             # Recent documents only (hot data)
-            "CREATE INDEX IF NOT EXISTS idx_documents_recent_hot ON documents(last_accessed DESC, title) WHERE last_accessed >= datetime('now', '-30 days')",
+            "CREATE INDEX IF NOT EXISTS idx_documents_recent_hot ON documents(last_accessed DESC, title)",
             
             # Documents with content hash (duplicate detection)
             "CREATE INDEX IF NOT EXISTS idx_documents_content_dedup ON documents(content_hash, file_hash, created_at DESC) WHERE content_hash IS NOT NULL AND content_hash != ''",
@@ -556,8 +576,8 @@ class DatabaseMigrator:
 
         # Expression-based indexes for computed queries
         expression_indexes = [
-            # Document age calculation (frequently used for cleanup)
-            "CREATE INDEX IF NOT EXISTS idx_documents_age_days ON documents(julianday('now') - julianday(created_at), created_at DESC)",
+            # Document age calculation (frequently used for cleanup) - FIXED: Removed non-deterministic julianday('now')
+            "CREATE INDEX IF NOT EXISTS idx_documents_created_date ON documents(created_at DESC, document_id)",
             
             # File size categories for analytics
             "CREATE INDEX IF NOT EXISTS idx_documents_size_category ON documents(CASE WHEN file_size < 1048576 THEN 'small' WHEN file_size < 10485760 THEN 'medium' ELSE 'large' END, file_size)",
@@ -1808,3 +1828,17 @@ class DatabaseMigrator:
             logger.warning(f"Could not create default admin user (may already exist): {e}")
         
         logger.info("Migration 006 completed successfully")
+
+    def _migration_007_add_tags_column(self) -> None:
+        """
+        Migration 007: Add tags column to documents table.
+        Adds a tags column to store comma-separated tag strings.
+        """
+        logger.info("Applying migration 007: Add tags column to documents table")
+        
+        # Add tags column to documents table
+        alter_sql = "ALTER TABLE documents ADD COLUMN tags TEXT DEFAULT ''"
+        self.db.execute(alter_sql)
+        logger.info("Added tags column to documents table")
+        
+        logger.info("Migration 007 completed successfully")

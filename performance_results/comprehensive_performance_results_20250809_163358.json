@@ -1,0 +1,231 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-09T16:33:58.088339",
+    "total_duration_seconds": 3.203923463821411,
+    "suite_version": "1.0.0",
+    "environment": {
+      "platform": "win32",
+      "python_version": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]"
+    }
+  },
+  "system_benchmarks": {
+    "success": true,
+    "results": {
+      "database_queries": [],
+      "file_operations": [
+        {
+          "operation": "file_read_small_1kb",
+          "run_count": 30,
+          "min_ms": 0.09249999857274815,
+          "max_ms": 1.847699997597374,
+          "avg_ms": 0.1944200001162244,
+          "median_ms": 0.13759999819740187,
+          "p95_ms": 1.0007549994043075,
+          "file_size_bytes": 1024,
+          "throughput_mb_per_sec": 5.0229528825028815
+        },
+        {
+          "operation": "file_read_medium_100kb",
+          "run_count": 30,
+          "min_ms": 0.16899999900488183,
+          "max_ms": 17.550000000483124,
+          "avg_ms": 0.8174600005683411,
+          "median_ms": 0.2282999994349666,
+          "p95_ms": 8.132570001362183,
+          "file_size_bytes": 102400,
+          "throughput_mb_per_sec": 119.46303174724665
+        },
+        {
+          "operation": "file_read_large_1mb",
+          "run_count": 30,
+          "min_ms": 1.6727000001992565,
+          "max_ms": 19.87860000008368,
+          "avg_ms": 3.8997966663979846,
+          "median_ms": 3.022650000275462,
+          "p95_ms": 15.666590000000724,
+          "file_size_bytes": 1048576,
+          "throughput_mb_per_sec": 256.42362552292803
+        }
+      ],
+      "text_processing": [
+        {
+          "operation": "text_processing_short_text",
+          "run_count": 50,
+          "min_ms": 0.0032999996619764715,
+          "max_ms": 0.022800002625444904,
+          "avg_ms": 0.004348000366007909,
+          "median_ms": 0.0036000019463244826,
+          "p95_ms": 0.009104999298870098,
+          "text_length_chars": 275,
+          "word_count": 50,
+          "throughput_chars_per_sec": 63247464.777122274
+        },
+        {
+          "operation": "text_processing_medium_text",
+          "run_count": 50,
+          "min_ms": 0.06740000026184134,
+          "max_ms": 0.4181000003882218,
+          "avg_ms": 0.12855599983595312,
+          "median_ms": 0.0885499994183192,
+          "p95_ms": 0.3338199983772938,
+          "text_length_chars": 6800,
+          "word_count": 1100,
+          "throughput_chars_per_sec": 52895236.384745166
+        },
+        {
+          "operation": "text_processing_long_text",
+          "run_count": 50,
+          "min_ms": 0.40889999945648015,
+          "max_ms": 5.261899998004083,
+          "avg_ms": 1.064449999757926,
+          "median_ms": 0.8870999990904238,
+          "p95_ms": 2.235940001446579,
+          "text_length_chars": 76000,
+          "word_count": 12000,
+          "throughput_chars_per_sec": 71398374.76375939
+        }
+      ],
+      "metadata": {
+        "benchmark_timestamp": "2025-08-09T16:33:55.177527",
+        "total_duration_seconds": 0.2904019355773926,
+        "benchmark_version": "1.0.0",
+        "environment": {
+          "python_version": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "win32"
+        }
+      }
+    },
+    "summary": {
+      "database_query_avg_ms": 0.0,
+      "file_io_avg_mb_s": 126.96987005089251,
+      "text_processing_avg_chars_s": 62513691.97520894
+    }
+  },
+  "api_benchmarks": {
+    "success": false,
+    "error": "API server not available",
+    "skipped": true
+  },
+  "pdf_processing": {
+    "success": true,
+    "results": [
+      {
+        "file_type": "small",
+        "file_size_bytes": 1809,
+        "avg_processing_time_ms": 1.3109200008329935,
+        "min_time_ms": 0.1021999996737577,
+        "max_time_ms": 11.526500002219109,
+        "word_count": 301
+      },
+      {
+        "file_type": "medium",
+        "file_size_bytes": 19009,
+        "avg_processing_time_ms": 1.4984400000685127,
+        "min_time_ms": 0.18989999807672575,
+        "max_time_ms": 11.98389999990468,
+        "word_count": 3001
+      },
+      {
+        "file_type": "large",
+        "file_size_bytes": 180009,
+        "avg_processing_time_ms": 2.8103599997848505,
+        "min_time_ms": 1.0292999977536965,
+        "max_time_ms": 15.261500000633532,
+        "word_count": 30001
+      }
+    ],
+    "summary": {
+      "avg_processing_time_ms": 1.8732400002287857
+    }
+  },
+  "regression_analysis": {
+    "system": {
+      "timestamp": "2025-08-09T16:33:58.089578",
+      "category": "system",
+      "baseline_info": "2025-08-09T00:13:08.078703",
+      "regressions": {
+        "count": 6,
+        "critical": 6,
+        "major": 0,
+        "minor": 0,
+        "details": [
+          {
+            "metric": "file_op_file_read_small_1kb_avg_ms",
+            "baseline": 0.11948999599553645,
+            "current": 0.1944200001162244,
+            "change_percent": 62.708181966536316,
+            "severity": "critical"
+          },
+          {
+            "metric": "file_op_file_read_medium_100kb_avg_ms",
+            "baseline": 0.3751733301517864,
+            "current": 0.8174600005683411,
+            "change_percent": 117.88862237025639,
+            "severity": "critical"
+          },
+          {
+            "metric": "file_op_file_read_large_1mb_avg_ms",
+            "baseline": 0.9679766653183227,
+            "current": 3.8997966663979846,
+            "change_percent": 302.8812683325917,
+            "severity": "critical"
+          },
+          {
+            "metric": "text_proc_text_processing_short_text_avg_ms",
+            "baseline": 0.0022739992709830403,
+            "current": 0.004348000366007909,
+            "change_percent": 91.20500263521575,
+            "severity": "critical"
+          },
+          {
+            "metric": "text_proc_text_processing_medium_text_avg_ms",
+            "baseline": 0.04072799813002348,
+            "current": 0.12855599983595312,
+            "change_percent": 215.64527042439,
+            "severity": "critical"
+          },
+          {
+            "metric": "text_proc_text_processing_long_text_avg_ms",
+            "baseline": 0.46652600110974163,
+            "current": 1.064449999757926,
+            "change_percent": 128.16520348831185,
+            "severity": "critical"
+          }
+        ]
+      },
+      "improvements": {
+        "count": 3,
+        "details": [
+          {
+            "metric_name": "file_op_file_read_small_1kb_throughput_mb_s",
+            "baseline": 8.17275531615617,
+            "current": 5.0229528825028815,
+            "change_percent": -38.540275730837756
+          },
+          {
+            "metric_name": "file_op_file_read_medium_100kb_throughput_mb_s",
+            "baseline": 260.29635411581773,
+            "current": 119.46303174724665,
+            "change_percent": -54.104992306541455
+          },
+          {
+            "metric_name": "file_op_file_read_large_1mb_throughput_mb_s",
+            "baseline": 1033.082754811188,
+            "current": 256.42362552292803,
+            "change_percent": -75.17879140574819
+          }
+        ]
+      },
+      "overall_status": "\ud83d\udd34 CRITICAL - 6 critical regression(s) detected",
+      "recommendations": [
+        "\ud83d\udd34 URGENT: Investigate critical performance regressions immediately",
+        "Consider rolling back recent changes if possible",
+        "\ud83d\udcc1 File I/O performance issues - check disk usage and file operations",
+        "\u2705 3 performance improvements detected - good job!",
+        "\ud83d\udcca Update performance baselines if changes are intentional",
+        "\ud83d\udd04 Run benchmarks regularly to catch regressions early"
+      ]
+    },
+    "api": null
+  }
+}

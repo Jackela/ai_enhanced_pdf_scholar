@@ -1,0 +1,328 @@
+# ============================================================================
+# Vertical Pod Autoscaler Configuration
+# Right-sizing containers for optimal resource utilization and cost efficiency
+# Integrates with HPA for comprehensive scaling strategy
+# ============================================================================
+
+# VPA for AI PDF Scholar Backend
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: ai-pdf-scholar-backend-vpa
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: autoscaling
+  annotations:
+    vpa.kubernetes.io/resource-policy: |
+      containerPolicies:
+      - containerName: backend
+        minAllowed:
+          memory: "512Mi"
+          cpu: "250m"
+        maxAllowed:
+          memory: "4Gi"
+          cpu: "2000m"
+        controlledResources: ["cpu", "memory"]
+        controlledValues: RequestsAndLimits
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-pdf-scholar-backend
+  
+  # VPA Policy Configuration
+  updatePolicy:
+    # Auto mode: VPA will automatically apply resource recommendations
+    # Options: Off, Initial, Auto
+    updateMode: "Auto"
+    
+    # Minimum time between applying updates (prevents thrashing)
+    minReplicas: 2
+  
+  # Resource Policy
+  resourcePolicy:
+    containerPolicies:
+    - containerName: backend
+      # Minimum resources (never go below)
+      minAllowed:
+        memory: "512Mi"   # Minimum for FastAPI + ML models
+        cpu: "250m"       # Quarter CPU minimum
+      
+      # Maximum resources (cost control)
+      maxAllowed:
+        memory: "4Gi"     # Maximum memory per pod
+        cpu: "2000m"      # Maximum 2 CPU cores per pod
+      
+      # Control both requests and limits
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      
+      # Resource scaling factor (how aggressively to recommend changes)
+      mode: Auto
+
+---
+# VPA for Frontend
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: ai-pdf-scholar-frontend-vpa
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-pdf-scholar-frontend
+  
+  updatePolicy:
+    updateMode: "Auto"
+  
+  resourcePolicy:
+    containerPolicies:
+    - containerName: frontend
+      minAllowed:
+        memory: "128Mi"
+        cpu: "100m"
+      maxAllowed:
+        memory: "1Gi"
+        cpu: "500m"
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      mode: Auto
+
+---
+# VPA for PostgreSQL
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: postgresql-vpa
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: postgresql
+  
+  updatePolicy:
+    updateMode: "Auto"
+    # For StatefulSets, be more conservative with updates
+    minReplicas: 1
+  
+  resourcePolicy:
+    containerPolicies:
+    - containerName: postgresql
+      minAllowed:
+        memory: "1Gi"      # Database needs substantial memory
+        cpu: "500m"        # Minimum for database operations
+      maxAllowed:
+        memory: "8Gi"      # Maximum database memory
+        cpu: "4000m"       # Maximum 4 CPU cores
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      mode: Auto
+
+---
+# VPA for Redis Cache
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: redis-cache-vpa
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: redis-cache
+  
+  updatePolicy:
+    updateMode: "Auto"
+  
+  resourcePolicy:
+    containerPolicies:
+    - containerName: redis
+      minAllowed:
+        memory: "256Mi"    # Redis needs memory for caching
+        cpu: "100m"        # Lightweight CPU usage
+      maxAllowed:
+        memory: "2Gi"      # Maximum cache memory
+        cpu: "1000m"       # Maximum 1 CPU core
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      mode: Auto
+
+---
+# VPA for Prometheus
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: prometheus-vpa
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: prometheus
+  
+  updatePolicy:
+    # Use Initial mode for Prometheus to avoid disruptions
+    updateMode: "Initial"
+  
+  resourcePolicy:
+    containerPolicies:
+    - containerName: prometheus
+      minAllowed:
+        memory: "2Gi"      # Prometheus needs significant memory
+        cpu: "1000m"       # Minimum for metrics processing
+      maxAllowed:
+        memory: "8Gi"      # Maximum for large deployments
+        cpu: "4000m"       # Maximum 4 CPU cores
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+      mode: Auto
+
+---
+# VPA Recommender Custom Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vpa-recommender-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: recommender
+data:
+  # VPA Recommender configuration for AI workloads
+  recommender-config.yaml: |
+    # Memory recommendation settings optimized for AI workloads
+    memory:
+      # AI models typically have high memory baseline
+      safetyMarginFraction: 0.15  # 15% safety margin
+      # Confidence multiplier for memory recommendations
+      confidenceMultiplier: 1.0
+      # Minimum memory bump (useful for ML models)
+      minBumpUp: 0.1  # 10% minimum increase
+      # Maximum memory bump (prevent runaway recommendations)
+      maxBumpUp: 1.0  # 100% maximum increase
+    
+    # CPU recommendation settings
+    cpu:
+      # AI workloads can be CPU-intensive during inference
+      safetyMarginFraction: 0.15  # 15% safety margin
+      confidenceMultiplier: 1.0
+      minBumpUp: 0.1
+      maxBumpUp: 1.0
+    
+    # Recommendation frequency
+    checkpointsPerDay: 24  # Update recommendations hourly
+    
+    # History length for recommendations
+    historyLength: "7d"    # Use 7 days of historical data
+    
+    # Percentile for resource usage analysis
+    targetCPUPercentile: 0.9     # 90th percentile for CPU
+    targetMemoryPercentile: 0.9  # 90th percentile for Memory
+
+---
+# VPA Admission Controller Webhook Configuration
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionWebhook
+metadata:
+  name: vpa-webhook-config-ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: admission-controller
+webhooks:
+- name: vpa-webhook.autoscaling.k8s.io
+  clientConfig:
+    service:
+      name: vpa-webhook
+      namespace: kube-system
+      path: "/"
+  rules:
+  - operations: [ "CREATE", "UPDATE" ]
+    apiGroups: [""]
+    apiVersions: ["v1"]
+    resources: ["pods"]
+  - operations: [ "CREATE", "UPDATE" ]
+    apiGroups: ["apps"]
+    apiVersions: ["v1"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+  
+  # Only apply VPA to our namespace
+  namespaceSelector:
+    matchLabels:
+      name: ai-pdf-scholar
+  
+  # Fail policy - if VPA admission controller is down, still allow pods
+  failurePolicy: Ignore
+  admissionReviewVersions: ["v1", "v1beta1"]
+
+---
+# ServiceAccount for VPA components
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpa-system
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: system
+
+---
+# ClusterRole for VPA system
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vpa-system-ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "limitranges"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch", "create"]
+- apiGroups: [""]
+  resources: ["pods/eviction"]
+  verbs: ["create"]
+- apiGroups: ["autoscaling.k8s.io"]
+  resources: ["verticalpodautoscalers", "verticalpodautoscalers/status"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+
+---
+# ClusterRoleBinding for VPA system
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vpa-system-ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vpa-system-ai-pdf-scholar
+subjects:
+- kind: ServiceAccount
+  name: vpa-system
+  namespace: ai-pdf-scholar

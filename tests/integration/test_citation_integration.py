@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Generator
 
 from src.database.connection import DatabaseConnection
-from src.database.migrations import DatabaseMigrator
+from src.database import DatabaseMigrator
 from src.database.models import DocumentModel, CitationModel
 from src.repositories.citation_repository import CitationRepository
 from src.repositories.citation_relation_repository import CitationRelationRepository

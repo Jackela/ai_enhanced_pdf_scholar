@@ -1,0 +1,1278 @@
+openapi: 3.0.3
+info:
+  title: AI Enhanced PDF Scholar API
+  description: |
+    **Enterprise-grade intelligent document management platform for academic research**
+    
+    This API provides comprehensive functionality for:
+    - 🎯 **Intelligent Document Processing**: Smart import with metadata extraction and duplicate detection
+    - 📊 **Advanced Citation Analysis**: Multi-format parsing with network discovery
+    - 🧠 **RAG (Retrieval-Augmented Generation)**: AI-powered document queries and analysis
+    - 🔐 **Enterprise Security**: JWT authentication with RBAC and XSS protection
+    - ⚡ **Real-time Features**: WebSocket support for streaming operations
+    - 📈 **Performance Monitoring**: APM with metrics and health checks
+    
+    ## Authentication
+    
+    Most endpoints require JWT authentication. Include your token in the Authorization header:
+    ```
+    Authorization: Bearer <your_jwt_token>
+    ```
+    
+    ## Rate Limiting
+    
+    API endpoints are rate-limited to ensure fair usage:
+    - **Default**: 100 requests per minute per IP
+    - **Global IP**: 1000 requests per hour per IP
+    - **Authenticated users**: Higher limits apply
+    
+    ## Error Handling
+    
+    The API uses standard HTTP status codes and provides detailed error information:
+    - `400` - Bad Request (validation errors)
+    - `401` - Unauthorized (authentication required)
+    - `403` - Forbidden (insufficient permissions)
+    - `404` - Not Found (resource not found)
+    - `409` - Conflict (duplicate resource)
+    - `422` - Unprocessable Entity (business logic errors)
+    - `429` - Too Many Requests (rate limited)
+    - `500` - Internal Server Error
+    
+  version: "2.1.0"
+  contact:
+    name: AI Enhanced PDF Scholar
+    url: https://github.com/Jackela/ai_enhanced_pdf_scholar
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.pdf-scholar.com
+    description: Production server
+
+tags:
+  - name: authentication
+    description: User authentication and authorization
+  - name: documents
+    description: Document management and file operations
+  - name: rag
+    description: RAG (Retrieval-Augmented Generation) operations
+  - name: library
+    description: Document library management
+  - name: citations
+    description: Citation analysis and network discovery
+  - name: system
+    description: System health and monitoring
+  - name: rate-limiting
+    description: Rate limiting administration
+  - name: performance
+    description: Performance monitoring and metrics
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Authentication Endpoints
+  /api/auth/login:
+    post:
+      tags: [authentication]
+      summary: User login
+      description: Authenticate user and receive JWT access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  description: Username or email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                  example: "securePassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/auth/refresh:
+    post:
+      tags: [authentication]
+      summary: Refresh JWT token
+      description: Get new access token using refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+                  description: Valid refresh token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Document Management Endpoints
+  /api/documents:
+    get:
+      tags: [documents]
+      summary: List documents
+      description: Get paginated list of documents with filtering options
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of documents per page
+        - name: search_query
+          in: query
+          schema:
+            type: string
+          description: Search term to filter documents
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [title, created_at, updated_at, file_size, file_path]
+            default: created_at
+          description: Field to sort by
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+        - name: show_missing
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include documents with missing files
+      responses:
+        '200':
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+    post:
+      tags: [documents]
+      summary: Upload document
+      description: Upload and process a new document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF, DOCX, or TXT file to upload
+                title:
+                  type: string
+                  description: Document title (auto-extracted if not provided)
+                check_duplicates:
+                  type: boolean
+                  default: true
+                  description: Check for duplicate documents
+                extract_metadata:
+                  type: boolean
+                  default: true
+                  description: Extract metadata from document
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags to associate with document
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentImportResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Duplicate document detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictError'
+        '413':
+          description: File too large
+
+  /api/documents/{document_id}:
+    get:
+      tags: [documents]
+      summary: Get document details
+      description: Retrieve detailed information about a specific document
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Document details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    patch:
+      tags: [documents]
+      summary: Update document
+      description: Update document metadata and properties
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentUpdate'
+      responses:
+        '200':
+          description: Document updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags: [documents]
+      summary: Delete document
+      description: Remove document and associated files
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '204':
+          description: Document deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/documents/{document_id}/download:
+    get:
+      tags: [documents]
+      summary: Download document file
+      description: Download the original document file
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: File download started
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # RAG (Retrieval-Augmented Generation) Endpoints
+  /api/rag/query:
+    post:
+      tags: [rag]
+      summary: Query documents with AI
+      description: |
+        Query documents using RAG (Retrieval-Augmented Generation) for intelligent answers.
+        Supports context-aware queries with semantic search and citation tracking.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  description: Natural language query
+                  example: "What are the main findings about transformer architectures?"
+                document_id:
+                  type: integer
+                  description: Specific document to query (optional)
+                context_window:
+                  type: integer
+                  default: 4000
+                  description: Context window size for query processing
+                include_sources:
+                  type: boolean
+                  default: true
+                  description: Include source citations in response
+                temperature:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  default: 0.1
+                  description: Response creativity (0=factual, 1=creative)
+      responses:
+        '200':
+          description: RAG query completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGQueryResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: Document not found or not indexed
+
+  /api/rag/index/{document_id}:
+    post:
+      tags: [rag]
+      summary: Index document for RAG
+      description: Create or rebuild vector index for document to enable RAG queries
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chunk_size:
+                  type: integer
+                  default: 1000
+                  description: Size of text chunks for indexing
+                chunk_overlap:
+                  type: integer
+                  default: 200
+                  description: Overlap between chunks
+                force_rebuild:
+                  type: boolean
+                  default: false
+                  description: Force rebuild existing index
+      responses:
+        '200':
+          description: Document indexed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexingResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          description: Document format not supported for indexing
+
+  # Citation Analysis Endpoints
+  /api/citations/extract:
+    post:
+      tags: [citations]
+      summary: Extract citations from document
+      description: |
+        Extract and parse citations from a document using multiple format recognition.
+        Supports APA, MLA, Chicago, IEEE, and other academic citation formats.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id]
+              properties:
+                document_id:
+                  type: integer
+                  description: Document to analyze for citations
+                confidence_threshold:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  default: 0.8
+                  description: Minimum confidence score for citation extraction
+                citation_formats:
+                  type: array
+                  items:
+                    type: string
+                    enum: [APA, MLA, Chicago, IEEE, Harvard, Vancouver]
+                  description: Citation formats to recognize
+                  default: [APA, MLA]
+      responses:
+        '200':
+          description: Citations extracted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitationExtractionResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/citations/network/{document_id}:
+    get:
+      tags: [citations]
+      summary: Build citation network
+      description: |
+        Build a citation relationship network showing connections between documents.
+        Useful for understanding research relationships and paper influence.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+            default: 3
+          description: Maximum depth for network traversal
+        - name: min_confidence
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 1
+            default: 0.7
+          description: Minimum confidence for including relationships
+      responses:
+        '200':
+          description: Citation network built successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CitationNetworkResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/citations/export:
+    post:
+      tags: [citations]
+      summary: Export citations
+      description: Export citations in various academic formats (BibTeX, EndNote, etc.)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [document_id, format]
+              properties:
+                document_id:
+                  type: integer
+                  description: Document containing citations to export
+                format:
+                  type: string
+                  enum: [bibtex, endnote, csv, json, ris]
+                  description: Export format
+                filename:
+                  type: string
+                  description: Filename for export (optional)
+      responses:
+        '200':
+          description: Citations exported successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    description: URL to download exported file
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Library Management Endpoints
+  /api/library/stats:
+    get:
+      tags: [library]
+      summary: Get library statistics
+      description: Retrieve comprehensive statistics about the document library
+      responses:
+        '200':
+          description: Library statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryStatsResponse'
+
+  /api/library/health:
+    get:
+      tags: [library]
+      summary: Check library health
+      description: Verify library integrity and check for missing files
+      responses:
+        '200':
+          description: Library health check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LibraryHealthResponse'
+
+  # System Endpoints
+  /api/system/health:
+    get:
+      tags: [system]
+      summary: System health check
+      description: Check overall system health and component status
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: System is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/system/version:
+    get:
+      tags: [system]
+      summary: Get system version
+      description: Retrieve system version and build information
+      security: []
+      responses:
+        '200':
+          description: Version information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+  # Performance Monitoring Endpoints
+  /api/performance/overview:
+    get:
+      tags: [performance]
+      summary: Performance overview
+      description: Get comprehensive performance metrics and system statistics
+      responses:
+        '200':
+          description: Performance overview retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceOverviewResponse'
+
+  /api/performance/cache/analytics:
+    get:
+      tags: [performance]
+      summary: Cache analytics
+      description: Get detailed cache performance analytics and optimization recommendations
+      responses:
+        '200':
+          description: Cache analytics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheAnalyticsResponse'
+
+  # WebSocket endpoint (documented but not OpenAPI standard)
+  /ws/{client_id}:
+    get:
+      tags: [system]
+      summary: WebSocket connection (Not REST)
+      description: |
+        **WebSocket Endpoint - Not a REST API**
+        
+        Connect to real-time WebSocket for streaming operations:
+        - RAG query progress updates
+        - Document processing status
+        - System notifications
+        
+        **Connection URL**: `ws://localhost:8000/ws/{client_id}`
+        
+        **Message Types**:
+        - `ping/pong` - Keep alive
+        - `rag_query` - Submit RAG query
+        - `rag_progress` - Query progress update
+        - `rag_response` - Query result
+        - `rag_error` - Query error
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique client identifier
+      responses:
+        '101':
+          description: WebSocket connection established
+        '400':
+          description: Invalid client ID
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    DocumentId:
+      name: document_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Unique document identifier
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Authentication required"
+            error_code: "UNAUTHORIZED"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Resource not found"
+            error_code: "NOT_FOUND"
+
+  schemas:
+    # Base Response Models
+    BaseResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+          description: Operation success status
+        message:
+          type: string
+          description: Human-readable message
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            error_code:
+              type: string
+              description: Machine-readable error code
+            details:
+              type: object
+              description: Additional error details
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            validation_errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+
+    ConflictError:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            existing_resource:
+              type: object
+              description: Information about existing conflicting resource
+
+    # Authentication Models
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  description: JWT access token
+                refresh_token:
+                  type: string
+                  description: JWT refresh token
+                token_type:
+                  type: string
+                  example: "bearer"
+                expires_in:
+                  type: integer
+                  description: Token expiration time in seconds
+                user:
+                  $ref: '#/components/schemas/UserProfile'
+
+    TokenResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                expires_in:
+                  type: integer
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, user, researcher]
+        permissions:
+          type: array
+          items:
+            type: string
+
+    # Document Models
+    DocumentResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Document'
+
+    DocumentListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                documents:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Document'
+                pagination:
+                  $ref: '#/components/schemas/Pagination'
+
+    DocumentImportResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - $ref: '#/components/schemas/Document'
+                - type: object
+                  properties:
+                    processing_stats:
+                      type: object
+                      properties:
+                        processing_time:
+                          type: number
+                          description: Processing time in seconds
+                        extracted_metadata:
+                          type: boolean
+                        indexed_for_rag:
+                          type: boolean
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique document identifier
+        title:
+          type: string
+          description: Document title
+        file_path:
+          type: string
+          description: File path (relative to upload directory)
+        file_size:
+          type: integer
+          description: File size in bytes
+        content_hash:
+          type: string
+          description: SHA-256 hash of file content
+        mime_type:
+          type: string
+          description: MIME type of the file
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        is_file_available:
+          type: boolean
+          description: Whether the physical file exists
+        metadata:
+          type: object
+          properties:
+            author:
+              type: string
+            subject:
+              type: string
+            keywords:
+              type: array
+              items:
+                type: string
+            page_count:
+              type: integer
+            word_count:
+              type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        rag_indexed:
+          type: boolean
+          description: Whether document is indexed for RAG queries
+
+    DocumentUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+
+    # RAG Models
+    RAGQueryResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Original query
+                answer:
+                  type: string
+                  description: AI-generated answer
+                sources:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      document_id:
+                        type: integer
+                      document_title:
+                        type: string
+                      page_number:
+                        type: integer
+                      confidence:
+                        type: number
+                      excerpt:
+                        type: string
+                processing_time:
+                  type: number
+                  description: Query processing time in seconds
+                context_tokens:
+                  type: integer
+                  description: Number of tokens used for context
+
+    IndexingResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                document_id:
+                  type: integer
+                chunks_created:
+                  type: integer
+                index_size:
+                  type: integer
+                  description: Index size in bytes
+                processing_time:
+                  type: number
+
+    # Citation Models
+    CitationExtractionResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                document_id:
+                  type: integer
+                citations:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Citation'
+                extraction_stats:
+                  type: object
+                  properties:
+                    total_found:
+                      type: integer
+                    confidence_avg:
+                      type: number
+                    formats_detected:
+                      type: array
+                      items:
+                        type: string
+
+    CitationNetworkResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                root_document:
+                  type: integer
+                network:
+                  type: object
+                  properties:
+                    nodes:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          title:
+                            type: string
+                          type:
+                            type: string
+                            enum: [document, citation]
+                    edges:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          from:
+                            type: string
+                          to:
+                            type: string
+                          type:
+                            type: string
+                          confidence:
+                            type: number
+                network_stats:
+                  type: object
+                  properties:
+                    total_nodes:
+                      type: integer
+                    total_edges:
+                      type: integer
+                    max_depth_reached:
+                      type: integer
+
+    Citation:
+      type: object
+      properties:
+        id:
+          type: integer
+        document_id:
+          type: integer
+        citation_text:
+          type: string
+        parsed_title:
+          type: string
+        parsed_authors:
+          type: array
+          items:
+            type: string
+        parsed_year:
+          type: integer
+        parsed_journal:
+          type: string
+        citation_format:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        page_number:
+          type: integer
+
+    # System Models
+    HealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, degraded, unhealthy]
+                components:
+                  type: object
+                  properties:
+                    database:
+                      $ref: '#/components/schemas/ComponentHealth'
+                    rag_service:
+                      $ref: '#/components/schemas/ComponentHealth'
+                    file_system:
+                      $ref: '#/components/schemas/ComponentHealth'
+                uptime:
+                  type: number
+                  description: System uptime in seconds
+
+    ComponentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        message:
+          type: string
+        last_check:
+          type: string
+          format: date-time
+
+    VersionResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                version:
+                  type: string
+                  example: "2.1.0"
+                build_date:
+                  type: string
+                  format: date
+                git_commit:
+                  type: string
+                environment:
+                  type: string
+                  enum: [development, staging, production]
+
+    # Library Models
+    LibraryStatsResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                total_documents:
+                  type: integer
+                total_size:
+                  type: integer
+                  description: Total library size in bytes
+                indexed_documents:
+                  type: integer
+                citation_count:
+                  type: integer
+                file_types:
+                  type: object
+                  additionalProperties:
+                    type: integer
+                recent_activity:
+                  type: object
+                  properties:
+                    uploads_last_30_days:
+                      type: integer
+                    queries_last_30_days:
+                      type: integer
+
+    LibraryHealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                total_documents:
+                  type: integer
+                missing_files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      document_id:
+                        type: integer
+                      title:
+                        type: string
+                      file_path:
+                        type: string
+                corrupted_indexes:
+                  type: array
+                  items:
+                    type: integer
+                health_score:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+
+    # Performance Models
+    PerformanceOverviewResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                system_metrics:
+                  type: object
+                  properties:
+                    cpu_usage:
+                      type: number
+                    memory_usage:
+                      type: number
+                    disk_usage:
+                      type: number
+                api_metrics:
+                  type: object
+                  properties:
+                    requests_per_minute:
+                      type: number
+                    average_response_time:
+                      type: number
+                    error_rate:
+                      type: number
+                database_metrics:
+                  type: object
+                  properties:
+                    query_time_avg:
+                      type: number
+                    connection_count:
+                      type: integer
+                    cache_hit_rate:
+                      type: number
+
+    CacheAnalyticsResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                cache_stats:
+                  type: object
+                  properties:
+                    hit_rate:
+                      type: number
+                    miss_rate:
+                      type: number
+                    total_requests:
+                      type: integer
+                    cache_size:
+                      type: integer
+                optimization_recommendations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      description:
+                        type: string
+                      impact:
+                        type: string
+                        enum: [low, medium, high]
+
+    # Utility Models
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_previous:
+          type: boolean

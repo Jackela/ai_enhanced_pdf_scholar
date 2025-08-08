@@ -1,0 +1,274 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AI PDF Scholar - Business Metrics", 
+    "tags": ["ai-pdf-scholar", "business", "metrics"],
+    "style": "dark",
+    "timezone": "browser", 
+    "refresh": "1m",
+    "schemaVersion": 16,
+    "version": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Document Upload Trends",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "increase(documents_uploaded_total{job=\"ai-pdf-scholar-backend\"}[1h])",
+            "legendFormat": "Documents Uploaded ({{file_type}})",
+            "refId": "A"
+          },
+          {
+            "expr": "documents_total{job=\"ai-pdf-scholar-backend\"}",
+            "legendFormat": "Total Documents",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "RAG Query Analytics",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "rate(rag_queries_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Query Rate ({{query_type}})",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(rag_queries_total{result=\"failure\",job=\"ai-pdf-scholar-backend\"}[5m]) / rate(rag_queries_total{job=\"ai-pdf-scholar-backend\"}[5m]) * 100",
+            "legendFormat": "Failure Rate %",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "User Activity",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(user_activity_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "{{activity_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Activity/sec",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Document Processing Success Rate",
+        "type": "singlestat",
+        "gridPos": {"h": 6, "w": 4, "x": 8, "y": 8},
+        "targets": [
+          {
+            "expr": "(1 - (rate(document_processing_errors_total{job=\"ai-pdf-scholar-backend\"}[5m]) / rate(documents_uploaded_total{job=\"ai-pdf-scholar-backend\"}[5m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percent",
+        "thresholds": "95,99",
+        "colorBackground": true,
+        "colors": ["#d44a3a", "#e24d42", "#299c46"]
+      },
+      {
+        "id": 5,
+        "title": "Average Document Size",
+        "type": "singlestat", 
+        "gridPos": {"h": 6, "w": 4, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(document_size_bytes_bucket{job=\"ai-pdf-scholar-backend\"}[5m])) / 1024 / 1024",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "decbytes",
+        "postfix": "MB"
+      },
+      {
+        "id": 6,
+        "title": "Feature Usage Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 8},
+        "targets": [
+          {
+            "expr": "sum by (feature) (rate(feature_usage_total{job=\"ai-pdf-scholar-backend\"}[1h]))",
+            "legendFormat": "{{feature}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "RAG Performance Metrics",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(rag_query_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))",
+            "legendFormat": "95th percentile duration",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(rag_query_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))", 
+            "legendFormat": "Median duration",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(rag_retrieval_score_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))",
+            "legendFormat": "Median relevance score",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration (sec) / Score",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Vector Index Growth",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+        "targets": [
+          {
+            "expr": "vector_index_size_total{job=\"ai-pdf-scholar-backend\"}",
+            "legendFormat": "Vector Count ({{index_type}})",
+            "refId": "A"
+          },
+          {
+            "expr": "increase(vector_index_size_total{job=\"ai-pdf-scholar-backend\"}[1h])",
+            "legendFormat": "Hourly Growth ({{index_type}})", 
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Security Events",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 22},
+        "targets": [
+          {
+            "expr": "rate(security_events_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "{{event_type}} ({{severity}})",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(failed_login_attempts_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Failed Logins",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Top Error Types",
+        "type": "table",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 22},
+        "targets": [
+          {
+            "expr": "topk(10, sum by (error_type, operation) (rate(document_processing_errors_total{job=\"ai-pdf-scholar-backend\"}[1h])))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "columns": [
+          {
+            "text": "Error Type",
+            "value": "error_type"
+          },
+          {
+            "text": "Operation",
+            "value": "operation"
+          },
+          {
+            "text": "Rate (errors/hour)",
+            "value": "Value"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Cache Performance",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 28},
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total{job=\"ai-pdf-scholar-backend\"}[5m]) / (rate(cache_hits_total{job=\"ai-pdf-scholar-backend\"}[5m]) + rate(cache_misses_total{job=\"ai-pdf-scholar-backend\"}[5m]))",
+            "legendFormat": "Hit Rate ({{cache_type}})",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cache_operations_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))",
+            "legendFormat": "95th percentile latency",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Rate Limiting Events",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 28},
+        "targets": [
+          {
+            "expr": "rate(rate_limit_exceeded_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Rate Limits ({{endpoint}})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "System Health Score",
+        "type": "singlestat",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 28},
+        "targets": [
+          {
+            "expr": "avg(dependency_health{job=\"ai-pdf-scholar-backend\"}) * 100",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percent",
+        "thresholds": "80,95",
+        "colorBackground": true,
+        "colors": ["#d44a3a", "#e24d42", "#299c46"],
+        "sparkline": {
+          "show": true,
+          "full": false,
+          "lineColor": "rgb(31, 120, 193)",
+          "fillColor": "rgba(31, 118, 189, 0.18)"
+        }
+      }
+    ]
+  }
+}

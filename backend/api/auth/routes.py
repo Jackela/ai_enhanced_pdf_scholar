@@ -77,8 +77,20 @@ async def register(
             detail=error
         )
     
-    # TODO: Send verification email
-    # email_service.send_verification_email(user.email, user.email_verification_token)
+    # Send verification email
+    from backend.services.email_service import email_service
+    try:
+        email_sent = email_service.send_verification_email(
+            email=user.email,
+            username=user.username,
+            verification_token=user.email_verification_token,
+            base_url=request.base_url.replace(path="/").rstrip("/")
+        )
+        if not email_sent:
+            logger.warning(f"Failed to send verification email to {user.email}")
+    except Exception as e:
+        logger.error(f"Error sending verification email to {user.email}: {e}")
+        # Don't fail registration if email sending fails
     
     logger.info(f"New user registered: {user.username} from IP: {request.client.host}")
     
@@ -126,7 +138,13 @@ async def login(
         success=user is not None,
         failure_reason=error
     )
-    # TODO: Store login attempt in database or log file
+    # Store login attempt for audit and security monitoring
+    try:
+        auth_service.log_login_attempt(log_entry)
+        logger.debug(f"Logged login attempt for user {credentials.username} from {client_ip}")
+    except Exception as e:
+        logger.error(f"Failed to log login attempt: {e}")
+        # Don't fail authentication if logging fails
     
     if error:
         logger.warning(f"Failed login attempt for {credentials.username} from {client_ip}: {error}")
@@ -282,9 +300,24 @@ async def request_password_reset(
     reset_token, error = auth_service.request_password_reset(reset_data.email)
     
     if reset_token:
-        # TODO: Send password reset email
-        # email_service.send_password_reset_email(reset_data.email, reset_token)
-        logger.info(f"Password reset requested for email: {reset_data.email}")
+        # Send password reset email
+        from backend.services.email_service import email_service
+        try:
+            user = auth_service.get_user_by_email(reset_data.email)
+            if user:
+                email_sent = email_service.send_password_reset_email(
+                    email=reset_data.email,
+                    username=user.username,
+                    reset_token=reset_token,
+                    base_url=str(request.base_url).rstrip("/")
+                )
+                if email_sent:
+                    logger.info(f"Password reset email sent to: {reset_data.email}")
+                else:
+                    logger.warning(f"Failed to send password reset email to: {reset_data.email}")
+        except Exception as e:
+            logger.error(f"Error sending password reset email to {reset_data.email}: {e}")
+            # Don't fail the request if email sending fails
     
     # Always return success (don't reveal if email exists)
     return BaseResponse(
@@ -404,8 +437,21 @@ async def update_user_profile(
         user.is_verified = False  # Require re-verification
         user.email_verification_token = secrets.token_urlsafe(32)
         
-        # TODO: Send new verification email
-        # email_service.send_verification_email(user.email, user.email_verification_token)
+        # Send new verification email for the updated email
+        from backend.services.email_service import email_service
+        try:
+            email_sent = email_service.send_verification_email(
+                email=user.email,
+                username=user.username,
+                verification_token=user.email_verification_token,
+                base_url=str(request.base_url).rstrip("/")
+            )
+            if email_sent:
+                logger.info(f"New verification email sent to updated address: {user.email}")
+            else:
+                logger.warning(f"Failed to send verification email to updated address: {user.email}")
+        except Exception as e:
+            logger.error(f"Error sending verification email to updated address {user.email}: {e}")
     
     user.updated_at = datetime.utcnow()
     db.commit()
@@ -454,6 +500,7 @@ async def change_password(
 
 @router.get("/sessions", response_model=list)
 async def get_active_sessions(
+    request: Request,
     user: UserModel = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> list:
@@ -463,24 +510,59 @@ async def get_active_sessions(
     - Shows all active refresh tokens
     - Includes device information
     - Can be used to manage logged-in devices
+    - Marks current session for identification
     """
     from backend.api.auth.models import RefreshTokenModel
+    from backend.api.auth.jwt_handler import jwt_handler
+    from fastapi.security import HTTPBearer
+    from fastapi import Cookie
+    
+    # Extract current token to identify current session
+    current_token_id = None
+    try:
+        # Get token from Authorization header or cookie
+        authorization = request.headers.get("authorization", "")
+        access_token_cookie = request.cookies.get("access_token")
+        
+        token = None
+        if authorization.startswith("Bearer "):
+            token = authorization[7:]
+        elif access_token_cookie:
+            token = access_token_cookie
+        
+        if token:
+            payload = jwt_handler.decode_token(token, token_type="access")
+            if payload and hasattr(payload, 'jti'):
+                # Use JTI (JWT ID) to correlate with refresh token
+                # This assumes the access token's JTI matches the refresh token ID
+                current_token_id = payload.jti
+    except Exception as e:
+        logger.debug(f"Could not identify current session: {e}")
     
     # Get active refresh tokens
     tokens = db.query(RefreshTokenModel).filter(
         RefreshTokenModel.user_id == user.id,
         RefreshTokenModel.revoked_at.is_(None),
         RefreshTokenModel.expires_at > datetime.utcnow()
-    ).all()
+    ).order_by(RefreshTokenModel.created_at.desc()).all()
     
     sessions = []
     for token in tokens:
+        # Try to identify current session by matching token ID or recent activity
+        is_current = (
+            current_token_id is not None and str(token.id) == str(current_token_id)
+        ) or (
+            # Fallback: most recently created token if no JTI match
+            current_token_id is None and token == tokens[0] if tokens else False
+        )
+        
         sessions.append({
             "id": token.id,
             "device_info": token.device_info,
             "created_at": token.created_at.isoformat(),
             "expires_at": token.expires_at.isoformat(),
-            "is_current": False  # TODO: Detect current session
+            "last_used": token.last_used.isoformat() if hasattr(token, 'last_used') and token.last_used else None,
+            "is_current": is_current
         })
     
     return sessions

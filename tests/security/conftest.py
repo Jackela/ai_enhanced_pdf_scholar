@@ -457,11 +457,7 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("endpoint", endpoints)
 
 
-# Markers for organizing tests
-pytest.mark.security = pytest.mark.mark(name="security")
-pytest.mark.critical = pytest.mark.mark(name="critical")
-pytest.mark.regression = pytest.mark.mark(name="regression")
-pytest.mark.slow = pytest.mark.mark(name="slow")
+# Note: Markers are defined in pytest.ini, not here
 
 
 # Test collection hooks

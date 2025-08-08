@@ -11,9 +11,9 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.api.error_handling import SystemException
 from pydantic import BaseModel, Field, field_validator
 
+from backend.api.error_handling import SystemException
 from backend.api.dependencies import get_db
 from backend.api.models import (
     SecurityValidationError, 
@@ -26,7 +26,7 @@ from backend.api.models import (
 from src.database.connection import DatabaseConnection
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/system", tags=["system"])
+router = APIRouter(prefix="/settings", tags=["settings"])
 
 
 class ApiKeyRequest(BaseModel):

@@ -1,0 +1,21 @@
+{
+  "test_start_time": 1754720945.3138428,
+  "workflow_steps": {
+    "database_init": {
+      "success": true,
+      "duration_ms": 9
+    },
+    "rag_service_init": {
+      "success": true,
+      "duration_ms": 0,
+      "test_mode": true
+    }
+  },
+  "performance_metrics": {},
+  "functionality_verified": {},
+  "errors": [
+    "Critical error: Schema error: no such table: documents",
+    "Cleanup error: Schema error: no such table: documents"
+  ],
+  "overall_success": false
+}

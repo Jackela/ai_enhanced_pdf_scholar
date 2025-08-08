@@ -1,0 +1,376 @@
+# ============================================================================
+# Comprehensive Alert Rules for AI Enhanced PDF Scholar
+# Production-ready alerting for system and application monitoring
+# ============================================================================
+
+groups:
+# ============================================================================
+# Critical System Alerts - Immediate Response Required
+# ============================================================================
+- name: critical-system-alerts
+  interval: 30s
+  rules:
+  
+  # Service availability
+  - alert: ServiceDown
+    expr: up{job=~"ai-pdf-scholar-backend|postgresql|redis|elasticsearch|kibana"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      category: availability
+      runbook_url: "https://runbook.ai-pdf-scholar.com/service-down"
+    annotations:
+      summary: "{{ $labels.job }} service is down"
+      description: "{{ $labels.job }} service on {{ $labels.instance }} has been down for more than 1 minute."
+      impact: "Application functionality may be severely impacted"
+      action: "Investigate service status and restart if necessary"
+
+  # Memory pressure
+  - alert: CriticalMemoryUsage
+    expr: (1 - (node_memory_MemAvailable_bytes{job="node-exporter"} / node_memory_MemTotal_bytes{job="node-exporter"})) * 100 > 95
+    for: 2m
+    labels:
+      severity: critical
+      category: resource
+      runbook_url: "https://runbook.ai-pdf-scholar.com/memory-usage"
+    annotations:
+      summary: "Critical memory usage on {{ $labels.instance }}"
+      description: "Memory usage is above 95% (current: {{ $value | humanizePercentage }}) on {{ $labels.instance }}"
+      impact: "System may become unresponsive, application crashes possible"
+      action: "Check for memory leaks, restart services if necessary"
+
+  # CPU saturation
+  - alert: CriticalCPUUsage
+    expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{job="node-exporter",mode="idle"}[5m])) * 100) > 95
+    for: 2m
+    labels:
+      severity: critical
+      category: resource
+      runbook_url: "https://runbook.ai-pdf-scholar.com/cpu-usage"
+    annotations:
+      summary: "Critical CPU usage on {{ $labels.instance }}"
+      description: "CPU usage is above 95% (current: {{ $value | humanizePercentage }}) on {{ $labels.instance }}"
+      impact: "System performance severely degraded"
+      action: "Identify high CPU processes and optimize or scale"
+
+  # Disk space critical
+  - alert: CriticalDiskSpace
+    expr: (node_filesystem_avail_bytes{job="node-exporter",fstype!="tmpfs"} / node_filesystem_size_bytes{job="node-exporter",fstype!="tmpfs"} * 100) < 5
+    for: 1m
+    labels:
+      severity: critical
+      category: storage
+      runbook_url: "https://runbook.ai-pdf-scholar.com/disk-space"
+    annotations:
+      summary: "Critical disk space on {{ $labels.instance }}"
+      description: "Disk space is below 5% (current: {{ $value | humanizePercentage }}) on {{ $labels.mountpoint }}"
+      impact: "Application may crash, data loss possible"
+      action: "Free up disk space immediately or expand storage"
+
+# ============================================================================
+# Application Performance Alerts
+# ============================================================================
+- name: application-performance-alerts
+  interval: 60s
+  rules:
+
+  # High error rate
+  - alert: HighHTTPErrorRate
+    expr: (sum(rate(http_requests_total{status=~"5..",job="ai-pdf-scholar-backend"}[5m])) / sum(rate(http_requests_total{job="ai-pdf-scholar-backend"}[5m]))) * 100 > 5
+    for: 3m
+    labels:
+      severity: critical
+      category: performance
+      runbook_url: "https://runbook.ai-pdf-scholar.com/error-rate"
+    annotations:
+      summary: "High HTTP error rate detected"
+      description: "HTTP 5xx error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+      impact: "Users experiencing application errors"
+      action: "Check application logs and recent deployments"
+
+  # High response latency
+  - alert: HighResponseLatency
+    expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m])) by (le)) > 2
+    for: 5m
+    labels:
+      severity: warning
+      category: performance
+      runbook_url: "https://runbook.ai-pdf-scholar.com/latency"
+    annotations:
+      summary: "High response latency detected"
+      description: "95th percentile latency is {{ $value }}s for the last 5 minutes"
+      impact: "Poor user experience, potential timeout issues"
+      action: "Investigate slow queries and optimize performance"
+
+  # RAG query performance degradation
+  - alert: RAGQueryPerformanceDegraded
+    expr: histogram_quantile(0.95, sum(rate(rag_query_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m])) by (le)) > 10
+    for: 3m
+    labels:
+      severity: warning
+      category: ai-performance
+      runbook_url: "https://runbook.ai-pdf-scholar.com/rag-performance"
+    annotations:
+      summary: "RAG query performance degraded"
+      description: "95th percentile RAG query duration is {{ $value }}s"
+      impact: "Slow AI responses affecting user experience"
+      action: "Check vector database performance and model response times"
+
+  # High RAG failure rate
+  - alert: HighRAGFailureRate
+    expr: (sum(rate(rag_queries_total{result="failure",job="ai-pdf-scholar-backend"}[5m])) / sum(rate(rag_queries_total{job="ai-pdf-scholar-backend"}[5m]))) * 100 > 5
+    for: 2m
+    labels:
+      severity: critical
+      category: ai-functionality
+      runbook_url: "https://runbook.ai-pdf-scholar.com/rag-failures"
+    annotations:
+      summary: "High RAG query failure rate"
+      description: "RAG query failure rate is {{ $value | humanizePercentage }}"
+      impact: "AI functionality degraded, users cannot get answers"
+      action: "Check AI service health and model availability"
+
+# ============================================================================
+# Database and Storage Alerts
+# ============================================================================
+- name: database-alerts
+  interval: 60s
+  rules:
+
+  # Database connection pool exhaustion
+  - alert: DatabaseConnectionPoolExhaustion
+    expr: db_connections_active{job="ai-pdf-scholar-backend"} > 45
+    for: 2m
+    labels:
+      severity: critical
+      category: database
+      runbook_url: "https://runbook.ai-pdf-scholar.com/db-connections"
+    annotations:
+      summary: "Database connection pool near exhaustion"
+      description: "Active database connections: {{ $value }} (threshold: 45)"
+      impact: "New requests may fail due to connection unavailability"
+      action: "Investigate connection leaks and optimize connection usage"
+
+  # Slow database queries
+  - alert: SlowDatabaseQueries
+    expr: histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m])) by (le)) > 1
+    for: 5m
+    labels:
+      severity: warning
+      category: database
+      runbook_url: "https://runbook.ai-pdf-scholar.com/slow-queries"
+    annotations:
+      summary: "Slow database queries detected"
+      description: "95th percentile database query duration is {{ $value }}s"
+      impact: "Application response times affected"
+      action: "Analyze slow queries and optimize database performance"
+
+  # Database query failure rate
+  - alert: DatabaseQueryFailureRate
+    expr: (sum(rate(db_queries_total{result="failure",job="ai-pdf-scholar-backend"}[5m])) / sum(rate(db_queries_total{job="ai-pdf-scholar-backend"}[5m]))) * 100 > 2
+    for: 2m
+    labels:
+      severity: critical
+      category: database
+      runbook_url: "https://runbook.ai-pdf-scholar.com/db-failures"
+    annotations:
+      summary: "High database query failure rate"
+      description: "Database query failure rate is {{ $value | humanizePercentage }}"
+      impact: "Data operations failing, potential data inconsistency"
+      action: "Check database health and connection status"
+
+# ============================================================================
+# Security and Authentication Alerts
+# ============================================================================
+- name: security-alerts
+  interval: 30s
+  rules:
+
+  # Suspicious login activity
+  - alert: HighFailedLoginAttempts
+    expr: rate(failed_login_attempts_total{job="ai-pdf-scholar-backend"}[5m]) > 5
+    for: 1m
+    labels:
+      severity: warning
+      category: security
+      runbook_url: "https://runbook.ai-pdf-scholar.com/failed-logins"
+    annotations:
+      summary: "High failed login attempts detected"
+      description: "{{ $value }} failed login attempts per second from {{ $labels.ip_address }}"
+      impact: "Possible brute force attack in progress"
+      action: "Investigate IP address and consider blocking if necessary"
+
+  # Rate limiting violations
+  - alert: HighRateLimitViolations
+    expr: rate(rate_limit_exceeded_total{job="ai-pdf-scholar-backend"}[1m]) > 10
+    for: 1m
+    labels:
+      severity: warning
+      category: security
+      runbook_url: "https://runbook.ai-pdf-scholar.com/rate-limiting"
+    annotations:
+      summary: "High rate limit violations"
+      description: "{{ $value }} rate limit violations per second on {{ $labels.endpoint }}"
+      impact: "Possible DoS attack or misbehaving client"
+      action: "Investigate source IP and adjust rate limiting if needed"
+
+  # Security events spike
+  - alert: SecurityEventsSpike
+    expr: rate(security_events_total{job="ai-pdf-scholar-backend"}[5m]) > 1
+    for: 2m
+    labels:
+      severity: critical
+      category: security
+      runbook_url: "https://runbook.ai-pdf-scholar.com/security-events"
+    annotations:
+      summary: "Security events spike detected"
+      description: "{{ $value }} security events per second ({{ $labels.event_type }})"
+      impact: "Potential security breach in progress"
+      action: "Immediate security investigation required"
+
+# ============================================================================
+# Business Logic Alerts
+# ============================================================================
+- name: business-logic-alerts
+  interval: 120s
+  rules:
+
+  # Document processing failure rate
+  - alert: DocumentProcessingFailureRate
+    expr: (sum(rate(document_processing_errors_total{job="ai-pdf-scholar-backend"}[5m])) / sum(rate(documents_uploaded_total{job="ai-pdf-scholar-backend"}[5m]))) * 100 > 10
+    for: 5m
+    labels:
+      severity: warning
+      category: business-logic
+      runbook_url: "https://runbook.ai-pdf-scholar.com/document-processing"
+    annotations:
+      summary: "High document processing failure rate"
+      description: "{{ $value | humanizePercentage }} of documents are failing to process"
+      impact: "Users cannot analyze uploaded documents"
+      action: "Check document processing pipeline and error logs"
+
+  # Vector index growth stalled
+  - alert: VectorIndexGrowthStalled
+    expr: increase(vector_index_size_total{job="ai-pdf-scholar-backend"}[1h]) == 0 and rate(documents_uploaded_total{job="ai-pdf-scholar-backend"}[1h]) > 0
+    for: 2h
+    labels:
+      severity: warning
+      category: business-logic
+      runbook_url: "https://runbook.ai-pdf-scholar.com/vector-indexing"
+    annotations:
+      summary: "Vector index growth has stalled"
+      description: "No vector index growth despite document uploads"
+      impact: "New documents may not be searchable"
+      action: "Check vector indexing process and AI model availability"
+
+  # Cache performance degradation
+  - alert: CacheHitRateLow
+    expr: (rate(cache_hits_total{job="ai-pdf-scholar-backend"}[5m]) / (rate(cache_hits_total{job="ai-pdf-scholar-backend"}[5m]) + rate(cache_misses_total{job="ai-pdf-scholar-backend"}[5m]))) < 0.7
+    for: 10m
+    labels:
+      severity: warning
+      category: performance
+      runbook_url: "https://runbook.ai-pdf-scholar.com/cache-performance"
+    annotations:
+      summary: "Cache hit rate below threshold"
+      description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 70%)"
+      impact: "Increased database load and slower response times"
+      action: "Investigate cache configuration and usage patterns"
+
+# ============================================================================
+# Infrastructure Health Alerts
+# ============================================================================
+- name: infrastructure-health-alerts
+  interval: 60s
+  rules:
+
+  # Pod crash looping
+  - alert: PodCrashLooping
+    expr: rate(kube_pod_container_status_restarts_total{namespace="ai-pdf-scholar"}[15m]) * 60 * 15 > 0
+    for: 0m
+    labels:
+      severity: critical
+      category: infrastructure
+      runbook_url: "https://runbook.ai-pdf-scholar.com/pod-crashes"
+    annotations:
+      summary: "Pod {{ $labels.pod }} is crash looping"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+      impact: "Service instability and potential data loss"
+      action: "Check pod logs and investigate crash cause"
+
+  # Pod not ready
+  - alert: PodNotReady
+    expr: kube_pod_status_ready{condition="false",namespace="ai-pdf-scholar"} == 1
+    for: 5m
+    labels:
+      severity: warning
+      category: infrastructure
+      runbook_url: "https://runbook.ai-pdf-scholar.com/pod-readiness"
+    annotations:
+      summary: "Pod {{ $labels.pod }} is not ready"
+      description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for 5 minutes"
+      impact: "Reduced service capacity"
+      action: "Check pod health checks and resource availability"
+
+  # High load average
+  - alert: HighLoadAverage
+    expr: node_load15{job="node-exporter"} > 2
+    for: 5m
+    labels:
+      severity: warning
+      category: resource
+      runbook_url: "https://runbook.ai-pdf-scholar.com/load-average"
+    annotations:
+      summary: "High system load average"
+      description: "15-minute load average is {{ $value }} on {{ $labels.instance }}"
+      impact: "System performance may be degraded"
+      action: "Investigate high-load processes and optimize or scale"
+
+# ============================================================================
+# Monitoring System Health
+# ============================================================================
+- name: monitoring-system-alerts
+  interval: 60s
+  rules:
+
+  # Prometheus target down
+  - alert: PrometheusTargetDown
+    expr: up == 0
+    for: 2m
+    labels:
+      severity: warning
+      category: monitoring
+      runbook_url: "https://runbook.ai-pdf-scholar.com/prometheus-targets"
+    annotations:
+      summary: "Prometheus target {{ $labels.instance }} is down"
+      description: "{{ $labels.job }} target {{ $labels.instance }} has been down for more than 2 minutes"
+      impact: "Monitoring data incomplete, potential blind spots"
+      action: "Check target health and network connectivity"
+
+  # Alertmanager config reload failure
+  - alert: AlertmanagerConfigReloadFailure
+    expr: alertmanager_config_last_reload_successful{job="alertmanager"} == 0
+    for: 0m
+    labels:
+      severity: warning
+      category: monitoring
+      runbook_url: "https://runbook.ai-pdf-scholar.com/alertmanager-config"
+    annotations:
+      summary: "Alertmanager configuration reload failed"
+      description: "Alertmanager configuration reload has failed on {{ $labels.instance }}"
+      impact: "Alert routing may be incorrect"
+      action: "Check Alertmanager configuration syntax and logs"
+
+  # Prometheus TSDB corruption
+  - alert: PrometheusTSDBCorruption
+    expr: prometheus_tsdb_compactions_failed_total > 0
+    for: 0m
+    labels:
+      severity: critical
+      category: monitoring
+      runbook_url: "https://runbook.ai-pdf-scholar.com/prometheus-tsdb"
+    annotations:
+      summary: "Prometheus TSDB corruption detected"
+      description: "Prometheus TSDB compaction failures detected on {{ $labels.instance }}"
+      impact: "Metrics data may be corrupted or lost"
+      action: "Investigate TSDB health and consider restoration from backup"

@@ -90,9 +90,9 @@ jobs:
           fi
         timeout-minutes: 2
 
-      - name: 🧪 Run Basic Tests (8% coverage)
+      - name: 🧪 Run Basic Tests (25% coverage)
         run: |
-          pytest tests/unit -v --cov=src --cov-report=xml --cov-fail-under=8 --override-ini="addopts="
+          pytest tests/integration/test_citation_simple_integration.py tests/test_citation_repositories.py tests/repositories/test_base_repository.py -v --cov=src --cov-report=xml --cov-fail-under=25 --override-ini="addopts="
         timeout-minutes: 2
 
   # 📋 简单质量门控

@@ -1,0 +1,506 @@
+# ============================================================================
+# Cluster Autoscaler Configuration
+# Cost-optimized cluster autoscaling with intelligent node provisioning
+# Integrates with EKS node groups for automatic scaling
+# ============================================================================
+
+# ServiceAccount for Cluster Autoscaler
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-addon: cluster-autoscaler.addons.k8s.io
+    k8s-app: cluster-autoscaler
+  name: cluster-autoscaler
+  namespace: kube-system
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/ai-pdf-scholar-cluster-autoscaler
+
+---
+# ClusterRole for Cluster Autoscaler
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-autoscaler
+  labels:
+    k8s-addon: cluster-autoscaler.addons.k8s.io
+    k8s-app: cluster-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["events", "endpoints"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["pods/status"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    resourceNames: ["cluster-autoscaler"]
+    verbs: ["get", "update"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["watch", "list", "get", "update"]
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "services", "replicationcontrollers", "persistentvolumeclaims", "persistentvolumes"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["extensions"]
+    resources: ["replicasets", "daemonsets"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets", "replicasets", "daemonsets"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "csinodes", "csistoragecapacities", "csidrivers"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["batch", "extensions"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+  - apiGroups: ["coordination.k8s.io"]
+    resourceNames: ["cluster-autoscaler"]
+    resources: ["leases"]
+    verbs: ["get", "update"]
+
+---
+# ClusterRoleBinding for Cluster Autoscaler
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-autoscaler
+  labels:
+    k8s-addon: cluster-autoscaler.addons.k8s.io
+    k8s-app: cluster-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: cluster-autoscaler
+    namespace: kube-system
+
+---
+# Role for accessing ConfigMaps
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    k8s-addon: cluster-autoscaler.addons.k8s.io
+    k8s-app: cluster-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create","list","watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["cluster-autoscaler-status", "cluster-autoscaler-priority-expander"]
+    verbs: ["delete", "get", "update", "watch"]
+
+---
+# RoleBinding for ConfigMaps
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    k8s-addon: cluster-autoscaler.addons.k8s.io
+    k8s-app: cluster-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cluster-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: cluster-autoscaler
+    namespace: kube-system
+
+---
+# Cluster Autoscaler Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+    k8s-addon: cluster-autoscaler.addons.k8s.io
+    k8s-app: cluster-autoscaler
+  annotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+      annotations:
+        prometheus.io/port: "8085"
+        prometheus.io/scrape: "true"
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+    spec:
+      priorityClassName: system-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: cluster-autoscaler
+      containers:
+        - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.27.2
+          name: cluster-autoscaler
+          resources:
+            limits:
+              cpu: 100m
+              memory: 600Mi
+            requests:
+              cpu: 100m
+              memory: 600Mi
+          command:
+            - ./cluster-autoscaler
+            - --v=4
+            - --stderrthreshold=info
+            - --cloud-provider=aws
+            - --skip-nodes-with-local-storage=false
+            - --expander=priority,least-waste
+            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/ai-pdf-scholar
+            - --balance-similar-node-groups
+            - --scale-down-enabled=true
+            - --scale-down-delay-after-add=10m
+            - --scale-down-unneeded-time=10m
+            - --scale-down-utilization-threshold=0.5
+            - --scale-down-gpu-utilization-threshold=0.5
+            - --scale-down-non-empty-candidates-count=30
+            - --scale-down-max-empty-bulk-delete=10
+            - --max-node-provision-time=15m
+            - --max-graceful-termination-sec=600
+            - --max-empty-bulk-delete=10
+            - --max-nodes-total=100
+            - --cores-total=0:1000
+            - --memory-total=0:1000GiB
+            - --node-autoprovisioning-max-node-provision-time=15m
+            - --ignore-daemonsets-utilization=true
+            - --ignore-mirror-pods-utilization=true
+            - --write-status-configmap=true
+            - --leader-elect=true
+            - --skip-nodes-with-system-pods=false
+            - --daemonset-eviction-for-occupied-nodes=false
+            - --emit-per-nodegroup-metrics=true
+            - --regional=false
+            - --expendable-pods-priority-cutoff=-10
+          env:
+            - name: AWS_REGION
+              value: us-west-2
+            - name: AWS_STS_REGIONAL_ENDPOINTS
+              value: regional
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health-check
+              port: 8085
+            initialDelaySeconds: 600
+            periodSeconds: 300
+            successThreshold: 1
+            timeoutSeconds: 10
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health-check
+              port: 8085
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          ports:
+            - name: http
+              containerPort: 8085
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: ssl-certs
+              mountPath: /etc/ssl/certs/ca-certificates.crt
+              readOnly: true
+      nodeSelector:
+        node.kubernetes.io/lifecycle: on-demand
+      tolerations:
+        - effect: NoSchedule
+          key: node.kubernetes.io/lifecycle
+          operator: Equal
+          value: spot
+        - effect: NoSchedule
+          key: CriticalAddonsOnly
+          operator: Exists
+      volumes:
+        - name: ssl-certs
+          hostPath:
+            path: /etc/ssl/certs/ca-bundle.crt
+
+---
+# ConfigMap for Priority Expander
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-priority-expander
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+data:
+  priorities: |-
+    10:
+      - .*-cost-optimized.*
+      - .*spot.*
+    20:
+      - .*-performance.*
+      - .*on-demand.*
+    5:
+      - .*gpu.*
+
+---
+# PodDisruptionBudget for Cluster Autoscaler
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cluster-autoscaler-pdb
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+
+---
+# Service for Cluster Autoscaler metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: cluster-autoscaler-service
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+  annotations:
+    prometheus.io/port: "8085"
+    prometheus.io/scrape: "true"
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  ports:
+    - name: http
+      port: 8085
+      protocol: TCP
+      targetPort: 8085
+  selector:
+    app: cluster-autoscaler
+  type: ClusterIP
+
+---
+# ServiceMonitor for Prometheus scraping
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+    app.kubernetes.io/name: cluster-autoscaler
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+    honorLabels: true
+
+---
+# VPA for Cluster Autoscaler resource optimization
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: cluster-autoscaler-vpa
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cluster-autoscaler
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: cluster-autoscaler
+      minAllowed:
+        cpu: "50m"
+        memory: "200Mi"
+      maxAllowed:
+        cpu: "200m"
+        memory: "1Gi"
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+
+---
+# NetworkPolicy for Cluster Autoscaler (optional security)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cluster-autoscaler-netpol
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+spec:
+  podSelector:
+    matchLabels:
+      app: cluster-autoscaler
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8085
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 6443
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# Job for initial cluster state validation
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cluster-autoscaler-init-check
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+    component: init-check
+spec:
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+        component: init-check
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: cluster-autoscaler
+      containers:
+      - name: init-check
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Validating cluster autoscaler prerequisites..."
+          
+          # Check if required node groups have proper tags
+          kubectl get nodes -o yaml | grep -E "(k8s.io/cluster-autoscaler|lifecycle)" || {
+            echo "WARNING: Nodes may not have proper autoscaling tags"
+          }
+          
+          # Verify AWS permissions (basic check)
+          if ! kubectl auth can-i create pods/eviction; then
+            echo "ERROR: Cluster autoscaler lacks pod eviction permissions"
+            exit 1
+          fi
+          
+          echo "Basic validation completed successfully"
+          
+          # Create initial metrics
+          kubectl create configmap cluster-autoscaler-init \
+            --from-literal=initialization-time="$(date -Iseconds)" \
+            --from-literal=cluster-name="ai-pdf-scholar" \
+            --from-literal=version="1.27.2" \
+            -n kube-system \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          echo "Cluster autoscaler initialization check completed"
+      nodeSelector:
+        node.kubernetes.io/lifecycle: on-demand
+
+---
+# CronJob for periodic optimization checks
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cluster-optimization-check
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+    component: optimization
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: cluster-autoscaler
+            component: optimization
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: cluster-autoscaler
+          containers:
+          - name: optimization-check
+            image: amazon/aws-cli:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Starting cluster optimization check..."
+              
+              # Get cluster metrics
+              NODES=$(kubectl get nodes --no-headers | wc -l)
+              PODS=$(kubectl get pods --all-namespaces --field-selector=status.phase=Running --no-headers | wc -l)
+              
+              echo "Cluster Status:"
+              echo "  Nodes: $NODES"
+              echo "  Running Pods: $PODS"
+              echo "  Utilization: $(echo "scale=2; $PODS / $NODES" | bc)"
+              
+              # Check for underutilized nodes
+              kubectl top nodes 2>/dev/null || echo "Metrics server not available"
+              
+              # Log optimization opportunities
+              echo "Optimization check completed at $(date)"
+          nodeSelector:
+            node.kubernetes.io/lifecycle: on-demand

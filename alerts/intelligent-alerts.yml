@@ -1,0 +1,516 @@
+# ============================================================================
+# Intelligent Alert Rules for AI Enhanced PDF Scholar
+# Advanced alerting with dynamic thresholds, escalation policies, and 
+# business hours awareness
+# ============================================================================
+
+groups:
+# ============================================================================
+# Critical System Alerts - Immediate Response (24/7)
+# ============================================================================
+- name: critical-system-alerts
+  interval: 30s
+  rules:
+  
+  # Service availability with escalation
+  - alert: ServiceDown
+    expr: up{job=~"ai-pdf-scholar-backend|postgresql|redis|elasticsearch|kibana"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      category: availability
+      escalation_level: "1"
+      business_hours: "false"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/service-down"
+      team: "infrastructure"
+    annotations:
+      summary: "🚨 CRITICAL: {{ $labels.job }} service is completely down"
+      description: |
+        {{ $labels.job }} service on {{ $labels.instance }} has been down for more than 1 minute.
+        
+        **Immediate Actions Required:**
+        1. Check service status and restart if necessary
+        2. Investigate root cause
+        3. Verify dependencies (database, cache, etc.)
+        4. Update incident status
+        
+        **Business Impact:** Application functionality severely compromised
+      impact: "Application unavailable - revenue impact"
+      action: "Immediate investigation and service recovery required"
+      escalation_time: "5m"
+
+  # Memory pressure with dynamic thresholds
+  - alert: CriticalMemoryUsage
+    expr: |
+      (
+        (1 - (node_memory_MemAvailable_bytes{job="node-exporter"} / node_memory_MemTotal_bytes{job="node-exporter"})) * 100 > 95
+        or
+        (1 - (node_memory_MemAvailable_bytes{job="node-exporter"} / node_memory_MemTotal_bytes{job="node-exporter"})) * 100 > 90
+        and
+        rate(node_memory_MemAvailable_bytes{job="node-exporter"}[5m]) < 0
+      )
+    for: 2m
+    labels:
+      severity: critical
+      category: resource
+      escalation_level: "1"
+      auto_remediation: "true"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/memory-usage"
+      team: "platform"
+    annotations:
+      summary: "🚨 CRITICAL: Memory usage critically high ({{ $value | humanizePercentage }})"
+      description: |
+        Memory usage is critically high on {{ $labels.instance }}:
+        - Current usage: {{ $value | humanizePercentage }}
+        - Trend: {{ with query "rate(node_memory_MemAvailable_bytes{instance=\"" }}{{ . }}{{ end }}
+        
+        **Auto-remediation enabled:**
+        - Memory cleanup jobs triggered
+        - Non-essential processes may be terminated
+        - Cache clearing initiated
+        
+        **Manual Actions:**
+        1. Identify memory-intensive processes
+        2. Check for memory leaks
+        3. Consider scaling resources
+      impact: "System instability imminent - possible crashes"
+      action: "Auto-remediation in progress - monitor effectiveness"
+      escalation_time: "3m"
+
+  # CPU saturation with business hours awareness
+  - alert: CriticalCPUUsage
+    expr: |
+      (
+        100 - (avg by(instance) (irate(node_cpu_seconds_total{job="node-exporter",mode="idle"}[5m])) * 100) > 95
+        and
+        ON() hour() >= 9 < 18  # Business hours (9 AM to 6 PM)
+      ) or (
+        100 - (avg by(instance) (irate(node_cpu_seconds_total{job="node-exporter",mode="idle"}[5m])) * 100) > 98
+        and
+        ON() (hour() < 9 or hour() >= 18)  # Off-hours - higher threshold
+      )
+    for: 2m
+    labels:
+      severity: critical
+      category: resource
+      escalation_level: "1"
+      business_hours: |
+        {{ if and (ge (query "hour()") 9) (lt (query "hour()") 18) }}true{{ else }}false{{ end }}
+      runbook_url: "https://runbook.ai-pdf-scholar.com/cpu-usage"
+      team: "platform"
+    annotations:
+      summary: "🚨 CRITICAL: CPU usage critically high ({{ $value | humanizePercentage }})"
+      description: |
+        CPU usage is critically high on {{ $labels.instance }}:
+        - Current usage: {{ $value | humanizePercentage }}
+        - Business hours impact: {{ $labels.business_hours }}
+        - Load average: {{ with query "node_load1{instance=\"" }}{{ . }}{{ end }}
+        
+        **Actions:**
+        1. Check for runaway processes
+        2. Review recent deployments
+        3. Consider immediate scaling
+        4. Monitor system responsiveness
+      impact: "System performance severely degraded"
+      action: "Immediate investigation required"
+      escalation_time: |
+        {{ if eq $labels.business_hours "true" }}2m{{ else }}5m{{ end }}
+
+# ============================================================================
+# Warning Level Alerts - Degraded Performance (30min Response)
+# ============================================================================
+- name: warning-system-alerts
+  interval: 60s
+  rules:
+
+  # Dynamic memory warning based on historical trends
+  - alert: HighMemoryUsage
+    expr: |
+      (
+        (1 - (node_memory_MemAvailable_bytes{job="node-exporter"} / node_memory_MemTotal_bytes{job="node-exporter"})) * 100 > 75
+        and
+        increase(node_memory_MemAvailable_bytes{job="node-exporter"}[10m]) <= 0
+      )
+    for: 5m
+    labels:
+      severity: warning
+      category: resource
+      escalation_level: "2"
+      auto_remediation: "false"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/memory-monitoring"
+      team: "platform"
+    annotations:
+      summary: "⚠️ WARNING: Memory usage elevated ({{ $value | humanizePercentage }})"
+      description: |
+        Memory usage is elevated and trending upward on {{ $labels.instance }}:
+        - Current usage: {{ $value | humanizePercentage }}
+        - 10m trend: no improvement detected
+        - Predicted exhaustion: {{ with query "predict_linear(node_memory_MemAvailable_bytes[30m], 3600)" }}{{ if lt . 0 }}< 1 hour{{ else }}> 1 hour{{ end }}{{ end }}
+        
+        **Recommended Actions:**
+        1. Monitor memory growth patterns
+        2. Identify potential memory leaks
+        3. Plan for scaling if trend continues
+        4. Review cache configurations
+      impact: "Performance degradation possible"
+      action: "Monitor trend and plan preventive measures"
+      escalation_time: "30m"
+
+  # Database performance degradation
+  - alert: SlowDatabaseQueries
+    expr: |
+      (
+        histogram_quantile(0.95, rate(ai_pdf_scholar_db_query_duration_seconds_bucket[5m])) > 1.0
+        or
+        rate(ai_pdf_scholar_db_query_duration_seconds_sum[5m]) / rate(ai_pdf_scholar_db_query_duration_seconds_count[5m]) > 0.5
+      )
+    for: 5m
+    labels:
+      severity: warning
+      category: performance
+      escalation_level: "2"
+      component: "database"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/database-performance"
+      team: "backend"
+    annotations:
+      summary: "⚠️ WARNING: Database queries running slowly"
+      description: |
+        Database performance is degraded:
+        - 95th percentile query time: {{ with query "histogram_quantile(0.95, rate(ai_pdf_scholar_db_query_duration_seconds_bucket[5m]))" }}{{ . }}{{ end }}s
+        - Average query time: {{ with query "rate(ai_pdf_scholar_db_query_duration_seconds_sum[5m]) / rate(ai_pdf_scholar_db_query_duration_seconds_count[5m])" }}{{ . }}{{ end }}s
+        - Query rate: {{ with query "rate(ai_pdf_scholar_db_query_duration_seconds_count[5m])" }}{{ . }}{{ end }}/sec
+        
+        **Investigation Steps:**
+        1. Check slow query log
+        2. Review query execution plans  
+        3. Monitor database connections
+        4. Check index usage
+      impact: "User experience degradation"
+      action: "Database performance optimization needed"
+      escalation_time: "45m"
+
+  # API response time degradation with correlation analysis
+  - alert: SlowAPIResponses
+    expr: |
+      (
+        histogram_quantile(0.95, rate(ai_pdf_scholar_http_request_duration_seconds_bucket[5m])) > 5.0
+        and
+        rate(ai_pdf_scholar_http_requests_total[5m]) > 1.0  # Only alert if we have traffic
+      )
+    for: 3m
+    labels:
+      severity: warning
+      category: performance
+      escalation_level: "2"
+      component: "api"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/api-performance"
+      team: "backend"
+    annotations:
+      summary: "⚠️ WARNING: API response times elevated"
+      description: |
+        API performance is degraded:
+        - 95th percentile response: {{ with query "histogram_quantile(0.95, rate(ai_pdf_scholar_http_request_duration_seconds_bucket[5m]))" }}{{ . }}{{ end }}s
+        - Request rate: {{ with query "rate(ai_pdf_scholar_http_requests_total[5m])" }}{{ . }}{{ end }}/sec
+        - Error rate: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=~\"5..\"}[5m]) / rate(ai_pdf_scholar_http_requests_total[5m]) * 100" }}{{ . }}{{ end }}%
+        
+        **Correlation Analysis:**
+        - Database health: {{ with query "ai_pdf_scholar_db_health" }}{{ if eq . 1.0 }}Healthy{{ else }}Degraded{{ end }}{{ end }}
+        - Memory pressure: {{ with query "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100" }}{{ . }}{{ end }}%
+        - CPU usage: {{ with query "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)" }}{{ . }}{{ end }}%
+      impact: "User experience degradation"
+      action: "Performance investigation and optimization"
+      escalation_time: "30m"
+
+# ============================================================================
+# Cache Performance Alerts
+# ============================================================================
+- name: cache-performance-alerts
+  interval: 60s
+  rules:
+
+  # Redis cache hit rate degradation with predictive alerting
+  - alert: LowCacheHitRate
+    expr: |
+      (
+        rate(ai_pdf_scholar_cache_hits_total[10m]) / (rate(ai_pdf_scholar_cache_hits_total[10m]) + rate(ai_pdf_scholar_cache_misses_total[10m])) * 100 < 70
+        and
+        rate(ai_pdf_scholar_cache_requests_total[5m]) > 0.5  # Only if we have cache traffic
+      )
+    for: 5m
+    labels:
+      severity: warning
+      category: performance
+      escalation_level: "2"
+      component: "cache"
+      auto_remediation: "cache_warming"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/cache-optimization"
+      team: "platform"
+    annotations:
+      summary: "⚠️ WARNING: Cache hit rate below optimal ({{ $value | humanizePercentage }})"
+      description: |
+        Cache performance is suboptimal:
+        - Hit rate: {{ $value | humanizePercentage }}
+        - Miss rate: {{ with query "rate(ai_pdf_scholar_cache_misses_total[10m]) / (rate(ai_pdf_scholar_cache_hits_total[10m]) + rate(ai_pdf_scholar_cache_misses_total[10m])) * 100" }}{{ . }}{{ end }}%
+        - Request rate: {{ with query "rate(ai_pdf_scholar_cache_requests_total[5m])" }}{{ . }}{{ end }}/sec
+        
+        **Auto-remediation:**
+        - Cache warming process initiated
+        - Popular queries being pre-cached
+        
+        **Manual Actions:**
+        1. Review cache key patterns
+        2. Analyze eviction policies
+        3. Consider cache size increase
+        4. Check Redis memory usage
+      impact: "Increased database load and response times"
+      action: "Cache optimization and warming in progress"
+      escalation_time: "20m"
+
+# ============================================================================
+# Application Health Alerts
+# ============================================================================
+- name: application-health-alerts
+  interval: 60s
+  rules:
+
+  # RAG service availability with dependency tracking
+  - alert: RAGServiceUnavailable
+    expr: ai_pdf_scholar_rag_availability == 0
+    for: 2m
+    labels:
+      severity: warning
+      category: feature
+      escalation_level: "2"
+      component: "rag_service"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/rag-service"
+      team: "ai"
+    annotations:
+      summary: "⚠️ WARNING: RAG service is unavailable"
+      description: |
+        RAG (Retrieval Augmented Generation) service is not responding:
+        - Service status: Unavailable
+        - Last successful check: {{ with query "time() - ai_pdf_scholar_rag_last_success" }}{{ . }}{{ end }} seconds ago
+        - API key configured: {{ with query "ai_pdf_scholar_api_key_configured" }}{{ if eq . 1.0 }}Yes{{ else }}No{{ end }}{{ end }}
+        
+        **Impact Analysis:**
+        - Document querying disabled
+        - Vector search unavailable
+        - Core AI functionality impacted
+        
+        **Dependencies to check:**
+        1. Google Gemini API connectivity
+        2. Vector index availability
+        3. Embedding service health
+        4. API key configuration
+      impact: "AI features unavailable - core functionality affected"
+      action: "Check RAG service dependencies and configuration"
+      escalation_time: "15m"
+
+  # Error rate spike detection with pattern analysis
+  - alert: HighErrorRate
+    expr: |
+      (
+        rate(ai_pdf_scholar_http_requests_total{status=~"5.."}[5m]) / rate(ai_pdf_scholar_http_requests_total[5m]) * 100 > 5
+        and
+        rate(ai_pdf_scholar_http_requests_total[5m]) > 0.1  # Only if we have traffic
+      )
+    for: 3m
+    labels:
+      severity: warning
+      category: reliability
+      escalation_level: "2"
+      component: "api"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/error-analysis"
+      team: "backend"
+    annotations:
+      summary: "⚠️ WARNING: Elevated error rate ({{ $value | humanizePercentage }})"
+      description: |
+        API error rate is elevated:
+        - Current error rate: {{ $value | humanizePercentage }}
+        - Request rate: {{ with query "rate(ai_pdf_scholar_http_requests_total[5m])" }}{{ . }}{{ end }}/sec
+        - 5xx errors/min: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=~\"5..\"}[5m]) * 60" }}{{ . }}{{ end }}
+        
+        **Error Breakdown:**
+        - 500 errors: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=\"500\"}[5m]) * 60" }}{{ . }}{{ end }}/min
+        - 502 errors: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=\"502\"}[5m]) * 60" }}{{ . }}{{ end }}/min
+        - 503 errors: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=\"503\"}[5m]) * 60" }}{{ . }}{{ end }}/min
+        
+        **Investigation Priority:**
+        1. Check application logs for error patterns
+        2. Verify upstream service health
+        3. Review recent deployments
+        4. Monitor database connectivity
+      impact: "User requests failing - user experience degraded"
+      action: "Error pattern analysis and troubleshooting"
+      escalation_time: "20m"
+
+# ============================================================================
+# Storage and Disk Space Alerts
+# ============================================================================
+- name: storage-alerts
+  interval: 120s  # Less frequent for disk space
+  rules:
+
+  # Predictive disk space alerting
+  - alert: DiskSpaceLow
+    expr: |
+      (
+        (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        or
+        (
+          predict_linear(node_filesystem_avail_bytes{mountpoint="/"}[2h], 24*3600) < 0  # Will run out in 24h
+          and
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 25
+        )
+      )
+    for: 5m
+    labels:
+      severity: warning
+      category: storage
+      escalation_level: "2"
+      auto_remediation: "cleanup"
+      runbook_url: "https://runbook.ai-pdf-scholar.com/disk-space"
+      team: "infrastructure"
+    annotations:
+      summary: "⚠️ WARNING: Disk space running low ({{ $value | humanizePercentage }} free)"
+      description: |
+        Disk space is critically low on {{ $labels.instance }}:
+        - Available space: {{ with query "node_filesystem_avail_bytes{mountpoint=\"/\"}" }}{{ . | humanizeBytes }}{{ end }}
+        - Total space: {{ with query "node_filesystem_size_bytes{mountpoint=\"/\"}" }}{{ . | humanizeBytes }}{{ end }}
+        - Usage trend: {{ with query "rate(node_filesystem_avail_bytes{mountpoint=\"/\"}[1h])" }}{{ if lt . 0 }}Decreasing{{ else }}Stable{{ end }}{{ end }}
+        - Predicted exhaustion: {{ with query "predict_linear(node_filesystem_avail_bytes{mountpoint=\"/\"}[2h], 24*3600)" }}{{ if lt . 0 }}< 24 hours{{ else }}> 24 hours{{ end }}{{ end }}
+        
+        **Auto-remediation initiated:**
+        - Log rotation triggered
+        - Temporary file cleanup started
+        - Cache optimization enabled
+        
+        **Manual Actions:**
+        1. Identify large files/directories
+        2. Archive old logs and data
+        3. Consider storage expansion
+        4. Review data retention policies
+      impact: "System may become unstable or fail"
+      action: "Immediate disk space cleanup and expansion planning"
+      escalation_time: "30m"
+
+# ============================================================================
+# Alert Suppression Rules
+# ============================================================================
+- name: alert-suppression
+  interval: 30s
+  rules:
+
+  # Maintenance mode suppression
+  - alert: MaintenanceMode
+    expr: ai_pdf_scholar_maintenance_mode == 1
+    for: 0s
+    labels:
+      severity: info
+      category: maintenance
+      suppress_alerts: "true"
+    annotations:
+      summary: "ℹ️ INFO: System in maintenance mode"
+      description: |
+        System is currently in maintenance mode.
+        All non-critical alerts are suppressed.
+        
+        Maintenance started: {{ with query "ai_pdf_scholar_maintenance_start_time" }}{{ . | humanizeTimestamp }}{{ end }}
+        Expected duration: {{ with query "ai_pdf_scholar_maintenance_duration" }}{{ . }} minutes{{ end }}
+
+  # Deployment suppression window
+  - alert: DeploymentInProgress
+    expr: increase(ai_pdf_scholar_deployments_total[5m]) > 0
+    for: 0s
+    labels:
+      severity: info
+      category: deployment
+      suppress_alerts: "performance,cache"
+    annotations:
+      summary: "ℹ️ INFO: Deployment in progress"
+      description: |
+        Application deployment is in progress.
+        Performance and cache-related alerts are temporarily suppressed.
+        
+        **Suppressed alert types:** performance, cache
+        **Suppression duration:** 10 minutes post-deployment
+        **Deployment version:** {{ with query "ai_pdf_scholar_version_info" }}{{ .version }}{{ end }}
+
+# ============================================================================
+# Business Hours and Escalation Policies
+# ============================================================================
+escalation_policies:
+  critical:
+    level_1:
+      timeout: "5m"
+      notify: ["oncall-primary", "slack-critical"]
+    level_2:
+      timeout: "10m"
+      notify: ["oncall-secondary", "pagerduty", "management"]
+    level_3:
+      timeout: "20m"
+      notify: ["all-engineering", "executive-team"]
+
+  warning:
+    level_1:
+      timeout: "30m"
+      notify: ["team-leads", "slack-alerts"]
+    level_2:
+      timeout: "60m"
+      notify: ["oncall-primary", "engineering-managers"]
+
+  business_hours_override:
+    - day: "Mon-Fri"
+      start: "09:00"
+      end: "18:00"
+      timezone: "UTC"
+      critical_timeout_reduction: "50%"
+      warning_timeout_reduction: "25%"
+
+  suppression_rules:
+    maintenance_mode:
+      suppress: ["warning", "info"]
+      allow: ["critical"]
+    deployment_window:
+      duration: "10m"
+      suppress: ["performance", "cache"]
+      post_deployment: true
+
+# ============================================================================
+# Alert Routing and Notification Configuration  
+# ============================================================================
+notification_config:
+  default_receiver: "team-alerts"
+  
+  receivers:
+    - name: "critical-alerts"
+      integrations:
+        - type: "pagerduty"
+          service_key: "${PAGERDUTY_SERVICE_KEY}"
+          severity: "critical"
+        - type: "slack"
+          webhook_url: "${SLACK_CRITICAL_WEBHOOK}"
+          channel: "#incidents"
+        - type: "email"
+          to: ["oncall@ai-pdf-scholar.com"]
+
+    - name: "warning-alerts"
+      integrations:
+        - type: "slack"
+          webhook_url: "${SLACK_ALERTS_WEBHOOK}"
+          channel: "#monitoring"
+        - type: "email"
+          to: ["team-leads@ai-pdf-scholar.com"]
+
+  routing:
+    - match:
+        severity: "critical"
+      receiver: "critical-alerts"
+      continue: false
+    - match:
+        severity: "warning"
+      receiver: "warning-alerts"
+      continue: false
+    - match_re:
+        category: "(info|maintenance)"
+      receiver: "team-alerts"

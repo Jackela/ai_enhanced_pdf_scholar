@@ -1,0 +1,650 @@
+---
+# Disaster Recovery Namespace Configuration
+# Dedicated namespace for disaster recovery operations and resources
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-pdf-scholar-dr
+  labels:
+    name: ai-pdf-scholar-dr
+    purpose: disaster-recovery
+    environment: production
+    managed-by: terraform
+    backup-tier: critical
+  annotations:
+    disaster-recovery.ai-pdf-scholar.com/created-at: "2025-01-17"
+    disaster-recovery.ai-pdf-scholar.com/rto-target: "60-minutes"
+    disaster-recovery.ai-pdf-scholar.com/rpo-target: "15-minutes"
+    disaster-recovery.ai-pdf-scholar.com/description: "Namespace for disaster recovery operations, backup validation, and emergency deployments"
+
+---
+# Network Policy for DR Namespace
+# Restricts network traffic to essential disaster recovery operations
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dr-network-policy
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  ingress:
+  # Allow ingress from main namespace for health checks
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ai-pdf-scholar
+    ports:
+    - protocol: TCP
+      port: 8080  # Health check port
+    - protocol: TCP
+      port: 9090  # Metrics port
+  
+  # Allow ingress from monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  
+  # Allow internal communication within DR namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ai-pdf-scholar-dr
+
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  
+  # Allow HTTPS for external APIs and backup storage
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  
+  # Allow database access
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+  
+  # Allow internal communication within DR namespace
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: ai-pdf-scholar-dr
+
+---
+# Resource Quota for DR Namespace
+# Limits resource consumption for disaster recovery operations
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dr-resource-quota
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+spec:
+  hard:
+    # Compute resources
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+    
+    # Storage resources
+    requests.storage: 100Gi
+    persistentvolumeclaims: "10"
+    
+    # Object counts
+    pods: "20"
+    services: "10"
+    secrets: "20"
+    configmaps: "20"
+    
+    # Service-specific limits
+    services.loadbalancers: "2"
+    services.nodeports: "0"  # Security: No NodePorts allowed
+
+---
+# Limit Range for DR Namespace
+# Sets default and maximum resource limits for pods
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: dr-limit-range
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: 200m
+      memory: 256Mi
+    defaultRequest:
+      cpu: 100m
+      memory: 128Mi
+    max:
+      cpu: "2"
+      memory: 4Gi
+    min:
+      cpu: 50m
+      memory: 64Mi
+  
+  - type: Pod
+    max:
+      cpu: "4"
+      memory: 8Gi
+  
+  - type: PersistentVolumeClaim
+    max:
+      storage: 50Gi
+    min:
+      storage: 1Gi
+
+---
+# Service Account for DR Operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: disaster-recovery-sa
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+  annotations:
+    disaster-recovery.ai-pdf-scholar.com/purpose: "Service account for disaster recovery operations and automation"
+
+---
+# Role for DR Operations within namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ai-pdf-scholar-dr
+  name: disaster-recovery-role
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/status"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["services", "endpoints"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Cluster Role for cross-namespace DR operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: disaster-recovery-cluster-role
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+rules:
+# Read access to main namespace for replication
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+  resourceNames: []
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+# Node and cluster information
+- apiGroups: [""]
+  resources: ["nodes", "nodes/status"]
+  verbs: ["get", "list", "watch"]
+# Metrics access
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+
+---
+# Role Binding for DR Operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: disaster-recovery-role-binding
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+subjects:
+- kind: ServiceAccount
+  name: disaster-recovery-sa
+  namespace: ai-pdf-scholar-dr
+roleRef:
+  kind: Role
+  name: disaster-recovery-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Cluster Role Binding for DR Operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: disaster-recovery-cluster-role-binding
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+subjects:
+- kind: ServiceAccount
+  name: disaster-recovery-sa
+  namespace: ai-pdf-scholar-dr
+roleRef:
+  kind: ClusterRole
+  name: disaster-recovery-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Priority Class for DR workloads
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: disaster-recovery-priority
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+value: 1000
+globalDefault: false
+description: "Priority class for disaster recovery workloads"
+
+---
+# Storage Class for DR operations (fast SSD)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: dr-fast-ssd
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+  encrypted: "true"
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+
+---
+# ConfigMap for DR configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dr-config
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+data:
+  disaster-recovery.yaml: |
+    disaster_recovery:
+      rto_target_minutes: 60
+      rpo_target_minutes: 15
+      
+      regions:
+        primary: us-west-2
+        secondary: us-east-1
+        tertiary: eu-west-1
+      
+      backup_sources:
+        - name: postgres-main
+          type: database
+          tier: critical
+          backup_interval: 15m
+        - name: redis-cache
+          type: database
+          tier: high
+          backup_interval: 1h
+        - name: documents
+          type: filesystem
+          tier: high
+          backup_interval: 1h
+        - name: vector-indexes
+          type: filesystem
+          tier: high
+          backup_interval: 1h
+        - name: application-logs
+          type: filesystem
+          tier: low
+          backup_interval: 24h
+      
+      validation:
+        enabled: true
+        schedule: "0 */6 * * *"  # Every 6 hours
+        timeout: 1800  # 30 minutes
+        levels:
+          - basic
+          - structural
+          - referential
+      
+      alerts:
+        slack_webhook: ${SLACK_WEBHOOK_URL}
+        email_recipients:
+          - ops@company.com
+          - security@company.com
+        escalation_delay: 300  # 5 minutes
+      
+      automation:
+        auto_failover_enabled: false  # Manual approval required
+        failover_threshold: 3  # Consecutive failures
+        rollback_timeout: 3600  # 1 hour
+
+  backup-retention.yaml: |
+    retention_policies:
+      critical:
+        daily: 7
+        weekly: 4
+        monthly: 12
+        yearly: 7
+      high:
+        daily: 7
+        weekly: 4
+        monthly: 6
+        yearly: 2
+      medium:
+        daily: 3
+        weekly: 2
+        monthly: 3
+        yearly: 1
+      low:
+        daily: 1
+        weekly: 1
+        monthly: 1
+        yearly: 0
+
+  validation-checks.yaml: |
+    validation_checks:
+      database:
+        - name: connectivity
+          type: basic
+          timeout: 30
+        - name: schema_integrity
+          type: structural
+          timeout: 120
+        - name: referential_integrity
+          type: referential
+          timeout: 300
+        - name: data_counts
+          type: content
+          timeout: 180
+      
+      filesystem:
+        - name: path_accessibility
+          type: basic
+          timeout: 30
+        - name: directory_structure
+          type: structural
+          timeout: 60
+        - name: file_integrity
+          type: content
+          timeout: 600
+      
+      application:
+        - name: configuration
+          type: basic
+          timeout: 30
+        - name: service_health
+          type: basic
+          timeout: 120
+
+---
+# Secret template for DR credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dr-secrets
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+  annotations:
+    disaster-recovery.ai-pdf-scholar.com/managed-by: "secrets-manager"
+type: Opaque
+stringData:
+  # Database connections (managed by secrets manager)
+  PRIMARY_DATABASE_URL: ""
+  SECONDARY_DATABASE_URL: ""
+  REDIS_URL: ""
+  
+  # AWS credentials for cross-region operations
+  AWS_ACCESS_KEY_ID: ""
+  AWS_SECRET_ACCESS_KEY: ""
+  AWS_SESSION_TOKEN: ""
+  
+  # Backup encryption keys
+  BACKUP_ENCRYPTION_KEY: ""
+  BACKUP_SIGNING_KEY: ""
+  
+  # Monitoring and alerting
+  SLACK_WEBHOOK_URL: ""
+  EMAIL_SMTP_PASSWORD: ""
+  
+  # Application secrets for DR deployment
+  JWT_SECRET_KEY: ""
+  API_ENCRYPTION_KEY: ""
+
+---
+# PersistentVolumeClaim for DR data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dr-data-pvc
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+  annotations:
+    disaster-recovery.ai-pdf-scholar.com/backup-schedule: "daily"
+    disaster-recovery.ai-pdf-scholar.com/retention: "30-days"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: dr-fast-ssd
+  resources:
+    requests:
+      storage: 50Gi
+  volumeMode: Filesystem
+
+---
+# PersistentVolumeClaim for DR logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dr-logs-pvc
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: dr-fast-ssd
+  resources:
+    requests:
+      storage: 10Gi
+  volumeMode: Filesystem
+
+---
+# Service Monitor for Prometheus (if using Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dr-service-monitor
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+spec:
+  selector:
+    matchLabels:
+      disaster-recovery.ai-pdf-scholar.com/monitor: "true"
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+  namespaceSelector:
+    matchNames:
+    - ai-pdf-scholar-dr
+
+---
+# Pod Disruption Budget for DR services
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dr-pod-disruption-budget
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ai-pdf-scholar
+      tier: disaster-recovery
+
+---
+# Horizontal Pod Autoscaler for DR workloads
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: dr-hpa
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dr-orchestrator
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+
+---
+# Service for DR operations
+apiVersion: v1
+kind: Service
+metadata:
+  name: dr-orchestrator-service
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+    disaster-recovery.ai-pdf-scholar.com/monitor: "true"
+spec:
+  selector:
+    app: ai-pdf-scholar
+    component: dr-orchestrator
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Ingress for DR operations (optional, for external access)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dr-orchestrator-ingress
+  namespace: ai-pdf-scholar-dr
+  labels:
+    app: ai-pdf-scholar
+    component: disaster-recovery
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: dr-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Disaster Recovery Operations'
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - dr.ai-pdf-scholar.com
+    secretName: dr-tls-secret
+  rules:
+  - host: dr.ai-pdf-scholar.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dr-orchestrator-service
+            port:
+              number: 8080

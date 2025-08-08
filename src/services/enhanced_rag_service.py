@@ -186,22 +186,26 @@ class EnhancedRAGService:
         )
 
     def _initialize_llama_index(self) -> None:
-        """Initialize LlamaIndex components with Gemini integration."""
+        """Initialize LlamaIndex components with Google Gemini integration."""
         try:
             import os
 
             os.environ["GOOGLE_API_KEY"] = self.api_key
             from llama_index.core import Settings
-            from llama_index.embeddings.gemini import GeminiEmbedding
-            from llama_index.llms.gemini import Gemini
+            from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
+            from llama_index.llms.google_genai import GoogleGenAI
 
             # Configure LLM
-            Settings.llm = Gemini(model="models/gemini-1.5-pro", api_key=self.api_key)
-            # Configure embeddings
-            Settings.embed_model = GeminiEmbedding(
-                model_name="models/embedding-001", api_key=self.api_key
+            Settings.llm = GoogleGenAI(
+                model_name="gemini-1.5-flash",
+                api_key=self.api_key
             )
-            logger.info("LlamaIndex initialized with Gemini integration")
+            # Configure embeddings
+            Settings.embed_model = GoogleGenAIEmbedding(
+                model_name="models/embedding-001", 
+                api_key=self.api_key
+            )
+            logger.info("LlamaIndex initialized with Google Gemini integration")
         except ImportError as e:
             logger.error(f"Failed to import LlamaIndex components: {e}")
             raise RAGServiceError(f"LlamaIndex dependencies not available: {e}") from e

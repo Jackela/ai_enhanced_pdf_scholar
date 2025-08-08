@@ -1,0 +1,166 @@
+{
+  "objects": [
+    {
+      "id": "ai-pdf-scholar-application-logs",
+      "type": "dashboard",
+      "attributes": {
+        "title": "AI PDF Scholar - Application Logs",
+        "description": "Comprehensive application log analysis and monitoring",
+        "panelsJSON": "[{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":8,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":8,\"i\":\"2\"},\"panelIndex\":\"2\",\"embeddableConfig\":{},\"panelRefName\":\"panel_2\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":8,\"w\":16,\"h\":8,\"i\":\"3\"},\"panelIndex\":\"3\",\"embeddableConfig\":{},\"panelRefName\":\"panel_3\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":16,\"y\":8,\"w\":16,\"h\":8,\"i\":\"4\"},\"panelIndex\":\"4\",\"embeddableConfig\":{},\"panelRefName\":\"panel_4\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":32,\"y\":8,\"w\":16,\"h\":8,\"i\":\"5\"},\"panelIndex\":\"5\",\"embeddableConfig\":{},\"panelRefName\":\"panel_5\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":16,\"w\":48,\"h\":12,\"i\":\"6\"},\"panelIndex\":\"6\",\"embeddableConfig\":{},\"panelRefName\":\"panel_6\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":28,\"w\":24,\"h\":8,\"i\":\"7\"},\"panelIndex\":\"7\",\"embeddableConfig\":{},\"panelRefName\":\"panel_7\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":24,\"y\":28,\"w\":24,\"h\":8,\"i\":\"8\"},\"panelIndex\":\"8\",\"embeddableConfig\":{},\"panelRefName\":\"panel_8\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"syncColors\":false,\"hidePanelTitles\":false}",
+        "version": 1,
+        "timeRestore": true,
+        "timeTo": "now",
+        "timeFrom": "now-1h",
+        "refreshInterval": {
+          "pause": false,
+          "value": 30000
+        },
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"match_all\":{}},\"filter\":[]}"
+        }
+      },
+      "references": [
+        {
+          "id": "log-volume-timeline",
+          "type": "visualization",
+          "name": "panel_1"
+        },
+        {
+          "id": "log-level-distribution",
+          "type": "visualization", 
+          "name": "panel_2"
+        },
+        {
+          "id": "error-rate-timeline",
+          "type": "visualization",
+          "name": "panel_3"
+        },
+        {
+          "id": "top-error-messages",
+          "type": "visualization",
+          "name": "panel_4"
+        },
+        {
+          "id": "response-time-distribution",
+          "type": "visualization",
+          "name": "panel_5"
+        },
+        {
+          "id": "recent-application-logs",
+          "type": "search",
+          "name": "panel_6"
+        },
+        {
+          "id": "pod-log-distribution",
+          "type": "visualization",
+          "name": "panel_7"
+        },
+        {
+          "id": "log-categories",
+          "type": "visualization",
+          "name": "panel_8"
+        }
+      ]
+    },
+    {
+      "id": "log-volume-timeline",
+      "type": "visualization",
+      "attributes": {
+        "title": "Log Volume Timeline",
+        "visState": "{\"title\":\"Log Volume Timeline\",\"type\":\"histogram\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"min_doc_count\":1},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"logs-*\",\"query\":{\"match\":{\"service\":\"ai-pdf-scholar-backend\"}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "log-level-distribution",
+      "type": "visualization",
+      "attributes": {
+        "title": "Log Level Distribution",
+        "visState": "{\"title\":\"Log Level Distribution\",\"type\":\"pie\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"log_level\",\"size\":10,\"order\":\"desc\"},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"logs-*\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "error-rate-timeline",
+      "type": "visualization",
+      "attributes": {
+        "title": "Error Rate Timeline",
+        "visState": "{\"title\":\"Error Rate Timeline\",\"type\":\"line\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"min_doc_count\":0},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"error-logs-*\",\"query\":{\"bool\":{\"must\":[{\"match\":{\"log_level\":\"ERROR\"}}]}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "top-error-messages",
+      "type": "visualization",
+      "attributes": {
+        "title": "Top Error Messages",
+        "visState": "{\"title\":\"Top Error Messages\",\"type\":\"table\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"error_message.keyword\",\"size\":10,\"order\":\"desc\"},\"schema\":\"bucket\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"error-logs-*\",\"query\":{\"match_all\":{}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "response-time-distribution",
+      "type": "visualization",
+      "attributes": {
+        "title": "Response Time Distribution",
+        "visState": "{\"title\":\"Response Time Distribution\",\"type\":\"histogram\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"histogram\",\"params\":{\"field\":\"duration_ms\",\"interval\":\"auto\"},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"performance-logs-*\",\"query\":{\"exists\":{\"field\":\"duration_ms\"}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "recent-application-logs",
+      "type": "search",
+      "attributes": {
+        "title": "Recent Application Logs",
+        "description": "Latest application logs from AI PDF Scholar backend",
+        "hits": 0,
+        "columns": ["@timestamp", "log_level", "k8s_pod", "logger_name", "message"],
+        "sort": [["@timestamp", "desc"]],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"logs-*\",\"query\":{\"match\":{\"service\":\"ai-pdf-scholar-backend\"}},\"filter\":[],\"highlightAll\":true,\"version\":true}"
+        }
+      }
+    },
+    {
+      "id": "pod-log-distribution",
+      "type": "visualization",
+      "attributes": {
+        "title": "Pod Log Distribution",
+        "visState": "{\"title\":\"Pod Log Distribution\",\"type\":\"pie\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"k8s_pod.keyword\",\"size\":10,\"order\":\"desc\"},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"logs-*\",\"query\":{\"match\":{\"k8s_namespace\":\"ai-pdf-scholar\"}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "log-categories",
+      "type": "visualization",
+      "attributes": {
+        "title": "Log Categories",
+        "visState": "{\"title\":\"Log Categories\",\"type\":\"horizontal_bar\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"log_category.keyword\",\"size\":10,\"order\":\"desc\"},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"logs-*\",\"query\":{\"exists\":{\"field\":\"log_category\"}},\"filter\":[]}"
+        }
+      }
+    }
+  ],
+  "version": "8.11.0"
+}

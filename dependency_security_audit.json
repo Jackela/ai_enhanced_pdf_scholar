@@ -1,0 +1,84 @@
+{
+  "audit_timestamp": "2025-01-19T10:00:00Z",
+  "audit_command": "npm ci --audit",
+  "project": {
+    "name": "ai-enhanced-pdf-scholar-frontend",
+    "version": "2.0.0",
+    "dependencies_installed": 1149,
+    "funding_requests": 332
+  },
+  "security_assessment": {
+    "vulnerabilities_found": 0,
+    "critical_vulnerabilities": 0,
+    "high_vulnerabilities": 0,
+    "moderate_vulnerabilities": 0,
+    "low_vulnerabilities": 0,
+    "info_vulnerabilities": 0,
+    "status": "PASSED"
+  },
+  "deprecation_warnings": [
+    {
+      "package": "inflight@1.0.6",
+      "reason": "This module is not supported, and leaks memory",
+      "recommendation": "Use lru-cache for async request coalescing",
+      "severity": "moderate"
+    },
+    {
+      "package": "@humanwhocodes/config-array@0.13.0",
+      "reason": "Deprecated ESLint configuration array",
+      "recommendation": "Use @eslint/config-array instead",
+      "severity": "low"
+    },
+    {
+      "package": "rimraf@3.0.2",
+      "reason": "Versions prior to v4 are no longer supported",
+      "recommendation": "Upgrade to rimraf v4+",
+      "severity": "low"
+    },
+    {
+      "package": "glob@7.2.3",
+      "reason": "Versions prior to v9 are no longer supported",
+      "recommendation": "Upgrade to glob v9+",
+      "severity": "low"
+    },
+    {
+      "package": "@humanwhocodes/object-schema@2.0.3",
+      "reason": "Deprecated ESLint object schema",
+      "recommendation": "Use @eslint/object-schema instead",
+      "severity": "low"
+    },
+    {
+      "package": "sourcemap-codec@1.4.8",
+      "reason": "Deprecated sourcemap codec",
+      "recommendation": "Use @jridgewell/sourcemap-codec instead",
+      "severity": "low"
+    },
+    {
+      "package": "eslint@8.57.1",
+      "reason": "This version is no longer supported",
+      "recommendation": "Upgrade to supported ESLint version",
+      "severity": "moderate"
+    }
+  ],
+  "security_overrides": {
+    "applied": true,
+    "packages": [
+      "nanoid@5.0.8",
+      "prismjs@1.30.0",
+      "tar-fs@3.0.9",
+      "ws@8.18.0",
+      "puppeteer-core@23.8.0",
+      "highlight.js@11.10.0"
+    ],
+    "purpose": "Security vulnerability mitigation through explicit version pinning"
+  },
+  "key_findings": {
+    "overall_security_status": "EXCELLENT",
+    "immediate_action_required": false,
+    "recommended_actions": [
+      "Consider upgrading ESLint to v9+ for ongoing security support",
+      "Update deprecated packages during next maintenance window",
+      "Monitor inflight package usage and consider alternatives"
+    ]
+  }
+}

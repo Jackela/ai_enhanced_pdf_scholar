@@ -426,7 +426,7 @@ class ErrorLogger:
             "correlation_id": correlation_id,
             "timestamp": datetime.now().isoformat(),
             "exception_type": type(exception).__name__,
-            "message": str(exception)
+            "error_message": str(exception)
         }
         
         if isinstance(exception, APIException):

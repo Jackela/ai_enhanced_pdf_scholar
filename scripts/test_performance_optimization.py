@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from src.database.connection import DatabaseConnection
-    from src.database.migrations import DatabaseMigrator
+    from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
     from src.database.models import DocumentModel
     from src.repositories.document_repository import DocumentRepository
 except ImportError as e:

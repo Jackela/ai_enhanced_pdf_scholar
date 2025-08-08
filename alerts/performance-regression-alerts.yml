@@ -1,0 +1,395 @@
+# Performance Regression Alert Rules
+# Alert configuration for Prometheus AlertManager
+# Monitors performance baselines and triggers alerts on regression
+
+groups:
+  - name: performance_baseline_alerts
+    rules:
+      # Database Performance Alerts
+      - alert: DatabasePerformanceRegression
+        expr: |
+          (
+            (db_query_select_p95_milliseconds / db_baseline_select_p95_milliseconds - 1) * 100 > 20
+            or
+            (db_query_insert_p95_milliseconds / db_baseline_insert_p95_milliseconds - 1) * 100 > 20
+            or  
+            (db_query_complex_p95_milliseconds / db_baseline_complex_p95_milliseconds - 1) * 100 > 20
+          )
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+          alert_type: performance_regression
+        annotations:
+          summary: "Database performance regression detected"
+          description: |
+            Database query performance has regressed by more than 20%:
+            - SELECT p95: {{ $value }}ms (baseline: {{ $labels.baseline }}ms)
+            - Current regression: {{ printf "%.1f" $value }}%
+            - Threshold: 20% regression
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/database-performance"
+
+      - alert: DatabasePerformanceCritical
+        expr: |
+          (
+            db_query_select_p95_milliseconds > 50
+            or
+            db_query_insert_p95_milliseconds > 50
+            or
+            db_query_complex_p95_milliseconds > 50
+          )
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          alert_type: performance_threshold
+        annotations:
+          summary: "Database performance exceeds critical threshold"
+          description: |
+            Database query performance exceeds critical threshold of 50ms:
+            - Current p95: {{ $value }}ms
+            - Critical threshold: 50ms
+            - Immediate action required
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/database-critical"
+
+      # API Performance Alerts
+      - alert: APIPerformanceRegression
+        expr: |
+          (
+            (api_response_health_avg_milliseconds / api_baseline_health_avg_milliseconds - 1) * 100 > 20
+            or
+            (api_response_documents_avg_milliseconds / api_baseline_documents_avg_milliseconds - 1) * 100 > 20
+          )
+        for: 3m
+        labels:
+          severity: warning
+          component: api
+          alert_type: performance_regression
+        annotations:
+          summary: "API response time regression detected"
+          description: |
+            API endpoint performance has regressed by more than 20%:
+            - Current avg response time: {{ $value }}ms
+            - Regression threshold: 20%
+            - Affected endpoints: {{ $labels.endpoint }}
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/api-performance"
+
+      - alert: APIPerformanceCritical
+        expr: |
+          (
+            api_response_health_avg_milliseconds > 200
+            or
+            api_response_documents_avg_milliseconds > 200
+          )
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+          alert_type: performance_threshold
+        annotations:
+          summary: "API response time exceeds critical threshold"
+          description: |
+            API response time exceeds critical threshold of 200ms:
+            - Current avg: {{ $value }}ms
+            - Critical threshold: 200ms
+            - Endpoint: {{ $labels.endpoint }}
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/api-critical"
+
+      # Memory Usage Alerts  
+      - alert: MemoryUsageRegression
+        expr: |
+          (memory_usage_process_megabytes / memory_baseline_process_megabytes - 1) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+          component: memory
+          alert_type: performance_regression
+        annotations:
+          summary: "Memory usage regression detected"
+          description: |
+            Memory usage has increased by more than 20% from baseline:
+            - Current usage: {{ $value }}MB
+            - Baseline: {{ $labels.baseline }}MB
+            - Regression: {{ printf "%.1f" $value }}%
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/memory-regression"
+
+      - alert: MemoryLeakDetected
+        expr: |
+          memory_growth_rate_mb_per_hour > 5
+        for: 10m
+        labels:
+          severity: critical
+          component: memory
+          alert_type: memory_leak
+        annotations:
+          summary: "Memory leak detected"
+          description: |
+            Memory usage is growing continuously:
+            - Growth rate: {{ $value }}MB/hour
+            - Leak threshold: 5MB/hour
+            - Duration: 10+ minutes
+            - Immediate investigation required
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/memory-leak"
+
+      - alert: MemoryUsageCritical
+        expr: |
+          memory_usage_process_megabytes > 500
+        for: 1m
+        labels:
+          severity: critical
+          component: memory
+          alert_type: resource_threshold
+        annotations:
+          summary: "Memory usage exceeds critical threshold"
+          description: |
+            Process memory usage exceeds critical threshold:
+            - Current usage: {{ $value }}MB
+            - Critical threshold: 500MB
+            - Risk of OOM error
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/memory-critical"
+
+      # RAG Performance Alerts
+      - alert: RAGPerformanceRegression
+        expr: |
+          (
+            (rag_document_indexing_avg_seconds / rag_baseline_indexing_avg_seconds - 1) * 100 > 20
+            or
+            (rag_query_processing_p90_seconds / rag_baseline_query_p90_seconds - 1) * 100 > 20
+          )
+        for: 5m
+        labels:
+          severity: warning
+          component: rag
+          alert_type: performance_regression
+        annotations:
+          summary: "RAG processing performance regression"
+          description: |
+            RAG performance has regressed by more than 20%:
+            - Current processing time: {{ $value }}s
+            - Regression threshold: 20%
+            - Operation: {{ $labels.operation }}
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/rag-performance"
+
+      - alert: RAGPerformanceCritical
+        expr: |
+          (
+            rag_document_indexing_avg_seconds > 10
+            or
+            rag_query_processing_p90_seconds > 2
+          )
+        for: 2m
+        labels:
+          severity: critical
+          component: rag
+          alert_type: performance_threshold
+        annotations:
+          summary: "RAG processing exceeds critical threshold"
+          description: |
+            RAG operation exceeds critical performance threshold:
+            - Current time: {{ $value }}s
+            - Critical thresholds: Indexing 10s, Query 2s
+            - Operation: {{ $labels.operation }}
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/rag-critical"
+
+      # System Resource Alerts
+      - alert: SystemResourcesHigh
+        expr: |
+          (
+            system_cpu_utilization_percentage > 80
+            or
+            system_memory_utilization_percentage > 85
+          )
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+          alert_type: resource_utilization
+        annotations:
+          summary: "High system resource utilization"
+          description: |
+            System resources are running high:
+            - CPU: {{ $labels.cpu }}%
+            - Memory: {{ $labels.memory }}%
+            - Thresholds: CPU 80%, Memory 85%
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/system-resources"
+
+      - alert: SystemResourcesCritical
+        expr: |
+          (
+            system_cpu_utilization_percentage > 95
+            or
+            system_memory_utilization_percentage > 95
+          )
+        for: 1m
+        labels:
+          severity: critical
+          component: system
+          alert_type: resource_critical
+        annotations:
+          summary: "Critical system resource utilization"
+          description: |
+            System resources at critical levels:
+            - CPU: {{ $labels.cpu }}%
+            - Memory: {{ $labels.memory }}%
+            - Risk of system instability
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/system-critical"
+
+  - name: performance_baseline_maintenance
+    rules:
+      # Baseline Maintenance Alerts
+      - alert: BaselineDataStale
+        expr: |
+          time() - performance_baseline_last_updated_timestamp > 86400 * 7
+        for: 1h
+        labels:
+          severity: info
+          component: monitoring
+          alert_type: maintenance
+        annotations:
+          summary: "Performance baseline data is stale"
+          description: |
+            Performance baseline data has not been updated in over 7 days:
+            - Last update: {{ $value | humanizeTimestamp }}
+            - Recommended: Update baselines weekly
+            - Consider running baseline establishment script
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/baseline-maintenance"
+
+      - alert: BaselineValidationFailed
+        expr: |
+          performance_baseline_validation_status != 1
+        for: 5m
+        labels:
+          severity: warning
+          component: monitoring
+          alert_type: validation
+        annotations:
+          summary: "Performance baseline validation failed"
+          description: |
+            Performance baseline validation is failing:
+            - Validation status: {{ $value }}
+            - Expected: 1 (passing)
+            - Check baseline integrity and data quality
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/baseline-validation"
+
+      # Load Test Alerts
+      - alert: LoadTestFailure
+        expr: |
+          load_test_success_rate_percentage < 95
+        for: 1m
+        labels:
+          severity: warning
+          component: load_testing
+          alert_type: quality
+        annotations:
+          summary: "Load test success rate below threshold"
+          description: |
+            Load test is showing poor success rate:
+            - Success rate: {{ $value }}%
+            - Threshold: 95%
+            - Scenario: {{ $labels.scenario }}
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/load-test-failure"
+
+  - name: production_readiness_alerts
+    rules:
+      # Production Readiness Monitoring
+      - alert: ProductionReadinessScoreLow
+        expr: |
+          production_readiness_score_percentage < 85
+        for: 10m
+        labels:
+          severity: warning
+          component: production
+          alert_type: readiness
+        annotations:
+          summary: "Production readiness score below threshold"
+          description: |
+            Overall production readiness score is below acceptable threshold:
+            - Current score: {{ $value }}%
+            - Minimum threshold: 85%
+            - Review failed performance criteria
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/production-readiness"
+
+      - alert: ProductionReadinessCritical  
+        expr: |
+          production_readiness_score_percentage < 70
+        for: 5m
+        labels:
+          severity: critical
+          component: production
+          alert_type: readiness
+        annotations:
+          summary: "Production readiness critically low"
+          description: |
+            Production readiness score is critically low:
+            - Current score: {{ $value }}%
+            - Critical threshold: 70%
+            - Production deployment not recommended
+            - Immediate remediation required
+          runbook_url: "https://docs.ai-pdf-scholar.com/alerts/production-critical"
+
+# Alert routing and notification configuration
+route:
+  group_by: ['alertname', 'component']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 15m
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      repeat_interval: 1h
+    - match:
+        alert_type: performance_regression
+      receiver: 'performance-team'
+      repeat_interval: 30m
+
+receivers:
+  - name: 'web.hook'
+    webhook_configs:
+      - url: 'http://alertmanager-webhook:5001/webhook'
+
+  - name: 'critical-alerts'
+    webhook_configs:
+      - url: 'http://alertmanager-webhook:5001/critical'
+    # Add additional notification channels for critical alerts
+    # slack_configs:
+    #   - api_url: '{{ .SlackWebhookURL }}'
+    #     channel: '#critical-alerts'
+    # email_configs:
+    #   - to: 'oncall@company.com'
+    #     subject: 'CRITICAL: {{ .GroupLabels.alertname }}'
+
+  - name: 'warning-alerts'
+    webhook_configs:
+      - url: 'http://alertmanager-webhook:5001/warning'
+    # slack_configs:
+    #   - api_url: '{{ .SlackWebhookURL }}'
+    #     channel: '#performance-alerts'
+
+  - name: 'performance-team'
+    webhook_configs:
+      - url: 'http://alertmanager-webhook:5001/performance'
+    # Additional performance team notifications
+    # email_configs:
+    #   - to: 'performance-team@company.com'
+    #     subject: 'Performance Regression: {{ .GroupLabels.alertname }}'
+
+# Inhibition rules to reduce noise
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'component']
+
+  - source_match:
+      alert_type: 'performance_threshold'
+    target_match:
+      alert_type: 'performance_regression'  
+    equal: ['component']

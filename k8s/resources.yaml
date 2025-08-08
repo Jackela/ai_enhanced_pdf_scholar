@@ -1,0 +1,549 @@
+"""
+Production Kubernetes Resource Management Configuration
+Comprehensive resource allocation, limits, and optimization for production deployment.
+"""
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: production-resource-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: configuration
+    app.kubernetes.io/part-of: production-config
+data:
+  # Production resource allocation guidelines
+  resource-guidelines.yaml: |
+    # Resource allocation guidelines for AI PDF Scholar production deployment
+    
+    # Backend Service Resources
+    backend:
+      requests:
+        memory: "1Gi"      # Increased from 512Mi for production workloads
+        cpu: "500m"        # Increased from 250m for better performance
+        ephemeral-storage: "2Gi"
+      limits:
+        memory: "2Gi"      # Maximum memory per pod
+        cpu: "1500m"       # Allow burst to 1.5 CPU cores
+        ephemeral-storage: "4Gi"
+      
+      # HPA Configuration
+      horizontal_scaling:
+        min_replicas: 3    # Minimum production replicas
+        max_replicas: 12   # Maximum replicas for high traffic
+        target_cpu: 70     # Scale up at 70% CPU
+        target_memory: 75  # Scale up at 75% memory
+        
+      # VPA Configuration (if available)
+      vertical_scaling:
+        update_mode: "Auto"
+        min_cpu: "250m"
+        max_cpu: "2000m"
+        min_memory: "512Mi"
+        max_memory: "4Gi"
+    
+    # Database Resources
+    postgresql:
+      requests:
+        memory: "2Gi"      # PostgreSQL needs substantial memory
+        cpu: "1000m"       # Full CPU core for database
+        ephemeral-storage: "1Gi"
+      limits:
+        memory: "4Gi"      # Allow up to 4GB for caching
+        cpu: "2000m"       # Allow burst to 2 CPU cores
+        ephemeral-storage: "2Gi"
+      
+      # Persistent storage
+      storage:
+        size: "100Gi"      # Production database storage
+        class: "fast-ssd"  # Use SSD storage class
+        
+    # Redis Cache Resources  
+    redis:
+      requests:
+        memory: "1Gi"      # Redis memory allocation
+        cpu: "250m"        # Light CPU usage
+        ephemeral-storage: "512Mi"
+      limits:
+        memory: "2Gi"      # Maximum cache size
+        cpu: "500m"        # Allow some burst
+        ephemeral-storage: "1Gi"
+      
+      # Redis cluster configuration
+      cluster:
+        enabled: true
+        replicas: 3        # Redis cluster with 3 nodes
+        memory_per_node: "1Gi"
+    
+    # Frontend Resources
+    frontend:
+      requests:
+        memory: "128Mi"    # Lightweight nginx
+        cpu: "50m"         # Minimal CPU
+        ephemeral-storage: "512Mi"
+      limits:
+        memory: "256Mi"    # Maximum for nginx
+        cpu: "200m"        # Allow some burst
+        ephemeral-storage: "1Gi"
+    
+    # Monitoring Stack Resources
+    prometheus:
+      requests:
+        memory: "2Gi"      # Prometheus needs memory for time series
+        cpu: "500m"        # Steady CPU for scraping
+        ephemeral-storage: "2Gi"
+      limits:
+        memory: "4Gi"      # Maximum memory
+        cpu: "1000m"       # Allow burst for queries
+        ephemeral-storage: "4Gi"
+      storage:
+        size: "50Gi"       # Time series data storage
+        retention: "30d"   # Keep 30 days of data
+    
+    grafana:
+      requests:
+        memory: "256Mi"    # Grafana memory
+        cpu: "100m"        # Light CPU usage
+        ephemeral-storage: "512Mi"
+      limits:
+        memory: "512Mi"    # Maximum memory
+        cpu: "500m"        # Allow burst for dashboard rendering
+        ephemeral-storage: "1Gi"
+
+  # Node affinity and scheduling rules
+  scheduling-rules.yaml: |
+    # Node scheduling and affinity rules
+    
+    # Backend pods should prefer compute-optimized nodes
+    backend_affinity:
+      node_affinity:
+        preferred:
+          - weight: 100
+            preference:
+              match_expressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values: ["c5.xlarge", "c5.2xlarge", "c6i.xlarge"]
+          - weight: 80
+            preference:
+              match_expressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values: ["amd64"]
+      
+      # Spread across availability zones
+      pod_anti_affinity:
+        preferred:
+          - weight: 100
+            pod_affinity_term:
+              topology_key: topology.kubernetes.io/zone
+              label_selector:
+                match_labels:
+                  app.kubernetes.io/component: backend
+    
+    # Database should prefer memory-optimized nodes
+    database_affinity:
+      node_affinity:
+        preferred:
+          - weight: 100
+            preference:
+              match_expressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values: ["r5.large", "r5.xlarge", "r6i.large"]
+      
+      # Database pods should not be co-located
+      pod_anti_affinity:
+        required:
+          - topology_key: kubernetes.io/hostname
+            label_selector:
+              match_labels:
+                app.kubernetes.io/component: postgresql
+
+  # Quality of Service configurations
+  qos-policies.yaml: |
+    # Quality of Service policies for different workload types
+    
+    # Guaranteed QoS for critical components
+    guaranteed_qos:
+      components:
+        - database
+        - redis
+      configuration:
+        requests_equal_limits: true
+        burstable_allowed: false
+    
+    # Burstable QoS for application components  
+    burstable_qos:
+      components:
+        - backend
+        - frontend
+      configuration:
+        requests_less_than_limits: true
+        burst_ratio: 2.0  # Limits are 2x requests
+    
+    # Best Effort for monitoring (non-critical)
+    besteffort_qos:
+      components:
+        - monitoring-exporters
+        - log-collectors
+      configuration:
+        no_requests_or_limits: true
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: production-limits
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: resource-management
+spec:
+  limits:
+  # Default limits for pods without resource specifications
+  - type: Pod
+    default:
+      memory: "1Gi"
+      cpu: "500m"
+      ephemeral-storage: "2Gi"
+    defaultRequest:
+      memory: "256Mi" 
+      cpu: "100m"
+      ephemeral-storage: "512Mi"
+    max:
+      memory: "8Gi"
+      cpu: "4000m"
+      ephemeral-storage: "10Gi"
+    min:
+      memory: "64Mi"
+      cpu: "50m"
+      ephemeral-storage: "100Mi"
+  
+  # Container-level limits
+  - type: Container
+    default:
+      memory: "512Mi"
+      cpu: "250m"
+      ephemeral-storage: "1Gi"
+    defaultRequest:
+      memory: "128Mi"
+      cpu: "50m"
+      ephemeral-storage: "256Mi"
+    max:
+      memory: "4Gi"
+      cpu: "2000m"
+      ephemeral-storage: "8Gi"
+    min:
+      memory: "32Mi"
+      cpu: "25m"
+      ephemeral-storage: "50Mi"
+  
+  # PVC limits
+  - type: PersistentVolumeClaim
+    max:
+      storage: "1Ti"
+    min:
+      storage: "1Gi"
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: production-quota
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: resource-management
+spec:
+  hard:
+    # Compute resources
+    requests.cpu: "10000m"     # 10 CPU cores worth of requests
+    requests.memory: "20Gi"    # 20GB memory requests
+    limits.cpu: "20000m"       # 20 CPU cores worth of limits
+    limits.memory: "40Gi"      # 40GB memory limits
+    
+    # Storage resources
+    requests.storage: "500Gi"  # Total storage requests
+    persistentvolumeclaims: "20"  # Maximum PVCs
+    
+    # Object counts
+    pods: "50"                 # Maximum pods
+    services: "10"             # Maximum services
+    secrets: "20"              # Maximum secrets
+    configmaps: "30"           # Maximum configmaps
+    
+    # Load balancers and ingresses
+    services.loadbalancers: "3"
+    services.nodeports: "5"
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: backend
+spec:
+  minAvailable: 2  # Always keep at least 2 backend pods running
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-pdf-scholar
+      app.kubernetes.io/component: backend
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget  
+metadata:
+  name: database-pdb
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: postgresql
+spec:
+  minAvailable: 1  # Always keep at least 1 database pod running
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-pdf-scholar
+      app.kubernetes.io/component: postgresql
+
+---
+apiVersion: autoscaling/v2
+kind: VerticalPodAutoscaler
+metadata:
+  name: backend-vpa
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: backend
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-pdf-scholar-backend
+  updatePolicy:
+    updateMode: "Auto"  # Automatically apply recommendations
+  resourcePolicy:
+    containerPolicies:
+    - containerName: backend
+      minAllowed:
+        cpu: "250m"
+        memory: "512Mi"
+      maxAllowed:
+        cpu: "2000m"
+        memory: "4Gi"
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resource-monitoring-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: monitoring
+data:
+  # Prometheus alerting rules for resource monitoring
+  resource-alerts.yaml: |
+    groups:
+    - name: resource-utilization
+      rules:
+      # High memory usage alert
+      - alert: HighMemoryUsage
+        expr: |
+          (container_memory_working_set_bytes{namespace="ai-pdf-scholar"} / 
+           container_spec_memory_limit_bytes{namespace="ai-pdf-scholar"}) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: "{{ $labels.container }}"
+        annotations:
+          summary: "High memory usage in {{ $labels.container }}"
+          description: "Container {{ $labels.container }} is using {{ $value }}% of memory limit"
+      
+      # High CPU usage alert
+      - alert: HighCPUUsage
+        expr: |
+          rate(container_cpu_usage_seconds_total{namespace="ai-pdf-scholar"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: "{{ $labels.container }}"
+        annotations:
+          summary: "High CPU usage in {{ $labels.container }}"
+          description: "Container {{ $labels.container }} is using {{ $value }}% CPU"
+      
+      # Pod restart alert
+      - alert: PodRestartingFrequently
+        expr: |
+          rate(kube_pod_container_status_restarts_total{namespace="ai-pdf-scholar"}[1h]) * 3600 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is restarting frequently"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last hour"
+      
+      # Storage usage alert
+      - alert: HighStorageUsage
+        expr: |
+          (kubelet_volume_stats_used_bytes{namespace="ai-pdf-scholar"} / 
+           kubelet_volume_stats_capacity_bytes{namespace="ai-pdf-scholar"}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High storage usage in volume {{ $labels.persistentvolumeclaim }}"
+          description: "Volume {{ $labels.persistentvolumeclaim }} is {{ $value }}% full"
+
+  # Resource optimization recommendations
+  optimization-guide.yaml: |
+    # Resource optimization recommendations for production
+    
+    performance_tuning:
+      backend:
+        - "Consider increasing CPU requests if response times are high"
+        - "Monitor memory usage and adjust limits based on actual consumption"
+        - "Use readiness probes to prevent traffic to unready pods"
+        - "Implement graceful shutdown to handle SIGTERM properly"
+      
+      database:
+        - "Tune PostgreSQL shared_buffers to 25% of available memory"
+        - "Set effective_cache_size to 75% of available memory"
+        - "Monitor connection pool usage and adjust max_connections"
+        - "Use connection pooling (PgBouncer) for better resource utilization"
+      
+      redis:
+        - "Configure Redis maxmemory-policy appropriately for cache usage"
+        - "Monitor memory fragmentation and restart if needed"
+        - "Use Redis cluster mode for high availability and scaling"
+        - "Enable persistence only if required for your use case"
+    
+    cost_optimization:
+      - "Use spot instances for non-critical workloads"
+      - "Implement cluster autoscaling to reduce idle resources"
+      - "Review and right-size resource requests regularly"
+      - "Use appropriate storage classes for different data types"
+      - "Monitor unused PVCs and clean up orphaned resources"
+    
+    scaling_strategies:
+      horizontal:
+        - "Use HPA for automatic scaling based on metrics"
+        - "Configure proper scaling policies to avoid flapping"
+        - "Monitor scaling events and adjust thresholds as needed"
+        - "Use custom metrics for more accurate scaling decisions"
+      
+      vertical:
+        - "Enable VPA in recommendation mode initially"
+        - "Review VPA recommendations before enabling auto-mode"
+        - "Set appropriate min/max bounds for VPA"
+        - "Monitor VPA events for resource adjustments"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resource-metrics
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: monitoring
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: resource-monitor
+
+---
+# Network Policies for resource isolation
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: production-network-policy
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ai-pdf-scholar
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  ingress:
+  # Allow ingress from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  
+  # Allow metrics scraping from monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  
+  # Allow inter-service communication within namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ai-pdf-scholar
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+  
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  
+  # Allow HTTPS outbound for API calls
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  
+  # Allow database connections
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: postgresql
+    ports:
+    - protocol: TCP
+      port: 5432
+  
+  # Allow Redis connections
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: redis
+    ports:
+    - protocol: TCP
+      port: 6379

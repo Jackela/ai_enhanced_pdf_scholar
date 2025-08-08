@@ -1,0 +1,546 @@
+name: 📊 Performance Regression Detection
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run performance benchmarks daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      benchmark_suite:
+        description: 'Benchmark suite to run'
+        required: false
+        default: 'standard'
+        type: choice
+        options: ['quick', 'standard', 'comprehensive', 'stress']
+      baseline_branch:
+        description: 'Baseline branch for comparison'
+        required: false
+        default: 'main'
+        type: string
+      performance_threshold:
+        description: 'Performance regression threshold (%)'
+        required: false
+        default: '15'
+        type: string
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '22.17.0'
+  BENCHMARK_SUITE: ${{ github.event.inputs.benchmark_suite || 'standard' }}
+  BASELINE_BRANCH: ${{ github.event.inputs.baseline_branch || 'main' }}
+  REGRESSION_THRESHOLD: ${{ github.event.inputs.performance_threshold || '15' }}
+
+concurrency:
+  group: performance-regression-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 🏗️ Setup Performance Testing Environment
+  setup-environment:
+    name: 🏗️ Setup Performance Environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      baseline-exists: ${{ steps.baseline.outputs.exists }}
+      test-config: ${{ steps.config.outputs.test-config }}
+    steps:
+      - name: 📥 Checkout Current Branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Check Baseline Branch
+        id: baseline
+        run: |
+          if git show-ref --verify --quiet refs/remotes/origin/${{ env.BASELINE_BRANCH }}; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Baseline branch '${{ env.BASELINE_BRANCH }}' found"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Baseline branch '${{ env.BASELINE_BRANCH }}' not found"
+          fi
+
+      - name: 🎯 Generate Test Configuration
+        id: config
+        run: |
+          case "${{ env.BENCHMARK_SUITE }}" in
+            "quick")
+              config='{"duration": 30, "iterations": 5, "load_levels": [1, 5], "metrics": ["response_time", "throughput"]}'
+              ;;
+            "standard") 
+              config='{"duration": 60, "iterations": 10, "load_levels": [1, 5, 10], "metrics": ["response_time", "throughput", "memory", "cpu"]}'
+              ;;
+            "comprehensive")
+              config='{"duration": 120, "iterations": 15, "load_levels": [1, 5, 10, 20], "metrics": ["response_time", "throughput", "memory", "cpu", "db_queries"]}'
+              ;;
+            "stress")
+              config='{"duration": 300, "iterations": 20, "load_levels": [1, 10, 25, 50], "metrics": ["response_time", "throughput", "memory", "cpu", "db_queries", "error_rate"]}'
+              ;;
+          esac
+          echo "test-config=$config" >> $GITHUB_OUTPUT
+          echo "Generated config for ${{ env.BENCHMARK_SUITE }} suite: $config"
+
+  # 📊 Baseline Performance Measurement
+  baseline-benchmark:
+    name: 📊 Baseline Benchmark
+    needs: setup-environment
+    if: needs.setup-environment.outputs.baseline-exists == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 📥 Checkout Baseline
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASELINE_BRANCH }}
+          fetch-depth: 1
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-benchmark psutil memory-profiler
+
+      - name: 🏃 Run Baseline Benchmarks
+        run: |
+          echo "📊 Running baseline performance benchmarks..."
+          
+          # Create benchmark configuration
+          cat > benchmark_config.json << 'EOF'
+          ${{ needs.setup-environment.outputs.test-config }}
+          EOF
+          
+          # Run comprehensive benchmarks
+          python scripts/comprehensive_performance_suite.py \
+            --config benchmark_config.json \
+            --output baseline-results.json \
+            --format json
+
+      - name: 📦 Cache Baseline Results
+        uses: actions/cache@v4
+        with:
+          path: baseline-results.json
+          key: baseline-perf-${{ env.BASELINE_BRANCH }}-${{ hashFiles('**/*.py', 'requirements*.txt') }}
+
+      - name: 📊 Upload Baseline Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-performance
+          path: baseline-results.json
+          retention-days: 90
+
+  # 🚀 Current Branch Performance Measurement
+  current-benchmark:
+    name: 🚀 Current Branch Benchmark
+    needs: setup-environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 📥 Checkout Current Branch
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-benchmark psutil memory-profiler
+
+      - name: 🏃 Run Current Benchmarks
+        run: |
+          echo "📊 Running current branch performance benchmarks..."
+          
+          # Create benchmark configuration
+          cat > benchmark_config.json << 'EOF'
+          ${{ needs.setup-environment.outputs.test-config }}
+          EOF
+          
+          # Run comprehensive benchmarks
+          python scripts/comprehensive_performance_suite.py \
+            --config benchmark_config.json \
+            --output current-results.json \
+            --format json
+
+      - name: 📊 Upload Current Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-performance
+          path: current-results.json
+          retention-days: 90
+
+  # 📈 API Performance Benchmarks
+  api-performance:
+    name: 📈 API Performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:latest
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install locust httpx
+
+      - name: 🚀 Start API Server
+        run: |
+          cd backend/api
+          python main.py &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          sleep 10  # Allow server to start
+
+      - name: 🏥 Health Check
+        run: |
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: 📊 API Load Testing
+        run: |
+          echo "🔥 Running API performance tests..."
+          
+          # Create Locust performance test
+          cat > api_performance_test.py << 'EOF'
+          import json
+          from locust import HttpUser, task, between
+          
+          class APIUser(HttpUser):
+              wait_time = between(1, 3)
+              
+              def on_start(self):
+                  """Setup for each user"""
+                  pass
+              
+              @task(3)
+              def test_health_check(self):
+                  self.client.get("/health")
+              
+              @task(2)
+              def test_system_status(self):
+                  self.client.get("/api/v1/system/status")
+              
+              @task(1)
+              def test_settings(self):
+                  self.client.get("/api/v1/settings")
+          EOF
+          
+          # Run load test based on suite type
+          case "${{ env.BENCHMARK_SUITE }}" in
+            "quick")
+              locust -f api_performance_test.py --headless \
+                --users 5 --spawn-rate 1 --run-time 30s \
+                --host http://localhost:8000 \
+                --csv api_performance
+              ;;
+            "standard"|"comprehensive")
+              locust -f api_performance_test.py --headless \
+                --users 10 --spawn-rate 2 --run-time 60s \
+                --host http://localhost:8000 \
+                --csv api_performance
+              ;;
+            "stress")
+              locust -f api_performance_test.py --headless \
+                --users 25 --spawn-rate 5 --run-time 120s \
+                --host http://localhost:8000 \
+                --csv api_performance
+              ;;
+          esac
+
+      - name: 🛑 Stop API Server
+        if: always()
+        run: |
+          if [ ! -z "$APP_PID" ]; then
+            kill $APP_PID || true
+          fi
+
+      - name: 📊 Upload API Performance Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-performance
+          path: api_performance_*.csv
+          retention-days: 30
+
+  # 💾 Database Performance Testing
+  database-performance:
+    name: 💾 Database Performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-benchmark
+
+      - name: 💾 Database Benchmarks
+        run: |
+          echo "💾 Running database performance benchmarks..."
+          python scripts/database_performance_benchmark.py \
+            --suite ${{ env.BENCHMARK_SUITE }} \
+            --output db-performance.json
+
+      - name: 📊 Upload Database Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-performance
+          path: db-performance.json
+          retention-days: 30
+
+  # 🔄 Performance Regression Analysis
+  regression-analysis:
+    name: 🔄 Regression Analysis
+    needs: [setup-environment, baseline-benchmark, current-benchmark, api-performance, database-performance]
+    if: always() && needs.setup-environment.outputs.baseline-exists == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📊 Download Performance Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-performance*"
+          merge-multiple: true
+
+      - name: 🔍 Create Regression Analyzer
+        run: |
+          cat > performance_regression_analyzer.py << 'EOF'
+          import json
+          import sys
+          from pathlib import Path
+          
+          def analyze_regression(baseline_file, current_file, threshold):
+              """Analyze performance regression between baseline and current results"""
+              
+              try:
+                  with open(baseline_file) as f:
+                      baseline = json.load(f)
+              except FileNotFoundError:
+                  print(f"⚠️ Baseline file {baseline_file} not found")
+                  return False, "No baseline available"
+              
+              try:
+                  with open(current_file) as f:
+                      current = json.load(f)
+              except FileNotFoundError:
+                  print(f"⚠️ Current file {current_file} not found")
+                  return False, "No current results available"
+              
+              regressions = []
+              improvements = []
+              
+              # Compare metrics
+              for metric in ['response_time', 'throughput', 'memory_usage', 'cpu_usage']:
+                  if metric in baseline and metric in current:
+                      baseline_val = baseline[metric]
+                      current_val = current[metric]
+                      
+                      if baseline_val > 0:
+                          change_pct = ((current_val - baseline_val) / baseline_val) * 100
+                          
+                          if abs(change_pct) > threshold:
+                              if change_pct > 0 and metric in ['response_time', 'memory_usage', 'cpu_usage']:
+                                  regressions.append({
+                                      'metric': metric,
+                                      'baseline': baseline_val,
+                                      'current': current_val,
+                                      'change_pct': change_pct
+                                  })
+                              elif change_pct < 0 and metric == 'throughput':
+                                  regressions.append({
+                                      'metric': metric,
+                                      'baseline': baseline_val,
+                                      'current': current_val,
+                                      'change_pct': abs(change_pct)
+                                  })
+                              else:
+                                  improvements.append({
+                                      'metric': metric,
+                                      'baseline': baseline_val,
+                                      'current': current_val,
+                                      'change_pct': abs(change_pct)
+                                  })
+              
+              return len(regressions) == 0, {
+                  'regressions': regressions,
+                  'improvements': improvements,
+                  'threshold': threshold
+              }
+          
+          if __name__ == "__main__":
+              threshold = float(sys.argv[1])
+              success, results = analyze_regression(
+                  'baseline-results.json', 
+                  'current-results.json', 
+                  threshold
+              )
+              
+              print(json.dumps(results, indent=2))
+              sys.exit(0 if success else 1)
+          EOF
+
+      - name: 📊 Run Regression Analysis
+        id: analysis
+        run: |
+          echo "📊 Analyzing performance regression..."
+          
+          python performance_regression_analyzer.py ${{ env.REGRESSION_THRESHOLD }} > regression-report.json
+          ANALYSIS_RESULT=$?
+          
+          echo "analysis-result=$ANALYSIS_RESULT" >> $GITHUB_OUTPUT
+          
+          # Generate human-readable report
+          python -c "
+import json
+with open('regression-report.json') as f:
+    data = json.load(f)
+
+print('# 📊 Performance Regression Analysis')
+print()
+print(f'**Regression Threshold:** {data.get(\"threshold\", \"N/A\")}%')
+print()
+
+regressions = data.get('regressions', [])
+improvements = data.get('improvements', [])
+
+if regressions:
+    print('## ⚠️ Performance Regressions Detected')
+    print()
+    for reg in regressions:
+        print(f'- **{reg[\"metric\"]}**: {reg[\"change_pct\"]:.1f}% regression')
+        print(f'  - Baseline: {reg[\"baseline\"]}')
+        print(f'  - Current: {reg[\"current\"]}')
+    print()
+
+if improvements:
+    print('## ✅ Performance Improvements')
+    print()
+    for imp in improvements:
+        print(f'- **{imp[\"metric\"]}**: {imp[\"change_pct\"]:.1f}% improvement')
+        print(f'  - Baseline: {imp[\"baseline\"]}')
+        print(f'  - Current: {imp[\"current\"]}')
+    print()
+
+if not regressions and not improvements:
+    print('## ✅ No Significant Performance Changes')
+    print()
+    print('Performance metrics are within acceptable thresholds.')
+" > performance-report.md
+
+      - name: 📋 Generate Summary Report
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 📊 Performance Regression Detection Results
+          
+          ## 🎯 Test Configuration
+          
+          - **Benchmark Suite**: ${{ env.BENCHMARK_SUITE }}
+          - **Baseline Branch**: ${{ env.BASELINE_BRANCH }}
+          - **Regression Threshold**: ${{ env.REGRESSION_THRESHOLD }}%
+          - **Test Status**: ${{ steps.analysis.outputs.analysis-result == '0' && 'PASSED' || 'FAILED' }}
+          
+          ## 📈 Performance Analysis
+          
+          EOF
+          
+          # Append performance report
+          if [ -f performance-report.md ]; then
+            cat performance-report.md >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          
+          ## 🔍 Benchmark Coverage
+          
+          | Test Type | Status | Duration |
+          |-----------|---------|----------|
+          | 📊 Baseline Benchmark | ${{ needs.baseline-benchmark.result }} | ~10-15 min |
+          | 🚀 Current Benchmark | ${{ needs.current-benchmark.result }} | ~10-15 min |
+          | 📈 API Performance | ${{ needs.api-performance.result }} | ~8-12 min |
+          | 💾 Database Performance | ${{ needs.database-performance.result }} | ~5-8 min |
+          
+          EOF
+
+      - name: 📊 Upload Regression Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-analysis
+          path: |
+            regression-report.json
+            performance-report.md
+          retention-days: 90
+
+      - name: ❌ Fail on Regression
+        if: steps.analysis.outputs.analysis-result != '0'
+        run: |
+          echo "❌ Performance regression detected!"
+          echo "Review the regression analysis report for details."
+          exit 1
+
+  # 🚨 Performance Alert
+  performance-alert:
+    name: 🚨 Performance Alert
+    needs: regression-analysis
+    if: always() && failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: 🚨 Alert on Regression
+        run: |
+          echo "🚨 PERFORMANCE REGRESSION DETECTED!"
+          echo "======================================"
+          echo ""
+          echo "Performance has degraded beyond acceptable thresholds."
+          echo "Please review the regression analysis and optimize accordingly."
+          echo ""
+          echo "Threshold: ${{ env.REGRESSION_THRESHOLD }}%"
+          echo "Baseline: ${{ env.BASELINE_BRANCH }}"
+          echo "Current: ${{ github.ref_name }}"
+          
+          # Here you could integrate with alerting systems
+          # Slack, email, PagerDuty, etc.

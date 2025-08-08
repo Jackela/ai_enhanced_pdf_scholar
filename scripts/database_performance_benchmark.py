@@ -18,8 +18,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 try:
+    # Add parent directory to path
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    
     from src.database.connection import DatabaseConnection
-    from src.database.migrations import DatabaseMigrator
+    from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
     from src.database.models import DocumentModel, CitationModel, VectorIndexModel
     from src.repositories.document_repository import DocumentRepository
     from src.repositories.citation_repository import CitationRepository

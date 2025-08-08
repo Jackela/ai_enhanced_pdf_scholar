@@ -131,7 +131,7 @@ async def get_documents(
         documents = controller.get_documents(
             search_query=params.search_query,
             limit=params.per_page * params.page,  # Simple pagination for now
-            sort_by=params.sort_by.value,  # Use enum value
+            sort_by=params.sort_by,  # Enum inherits from str, so no .value needed
         )
         
         # Apply additional filters
@@ -206,7 +206,8 @@ async def upload_document(
             )
         
         # Validate file type (additional check)
-        if not file.filename.lower().endswith(".pdf"):
+        filename = file.filename or ""
+        if not filename.lower().endswith(".pdf"):
             raise ErrorTemplates.invalid_file_type(
                 provided_type=file.content_type or "unknown",
                 allowed_types=["application/pdf"]
@@ -234,7 +235,7 @@ async def upload_document(
             # Import document (this will copy file to managed storage)
             success = controller.import_document(
                 file_path=temp_path,
-                title=title or Path(file.filename).stem,
+                title=title or Path(filename or "uploaded_document").stem,
                 check_duplicates=check_duplicates,
                 auto_build_index=auto_build_index,
             )
@@ -261,7 +262,7 @@ async def upload_document(
         except DuplicateDocumentError as e:
             # Clean up temp file on duplicate error
             Path(temp_path).unlink(missing_ok=True)
-            raise ErrorTemplates.duplicate_document(file.filename or "uploaded file")
+            raise ErrorTemplates.duplicate_document(filename or "uploaded file")
         except Exception as e:
             # Clean up temp file on any error
             Path(temp_path).unlink(missing_ok=True)

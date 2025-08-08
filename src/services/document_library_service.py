@@ -16,21 +16,21 @@ from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.vector_repository import VectorIndexRepository
-from src.services.content_hash_service import ContentHashError, ContentHashService
+from src.services.content_hash_service import ContentHashService
+from src.exceptions import (
+    DocumentImportError,
+    DuplicateDocumentError,
+    DocumentNotFoundError,
+    DocumentValidationError,
+    ContentHashError,
+    StorageError,
+    DatabaseError,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class DocumentImportError(Exception):
-    """Raised when document import fails."""
-
-    pass
-
-
-class DuplicateDocumentError(DocumentImportError):
-    """Raised when attempting to import a duplicate document."""
-
-    pass
+# Exception classes now imported from src.exceptions
 
 
 class DocumentLibraryService:
@@ -109,9 +109,17 @@ class DocumentLibraryService:
         """Validate file for import."""
         file_path_obj = Path(file_path)
         if not file_path_obj.exists():
-            raise DocumentImportError(f"File not found: {file_path}")
+            raise DocumentImportError(
+                f"File not found: {file_path}",
+                file_path=file_path,
+                reason="File does not exist"
+            )
         if not ContentHashService.validate_pdf_file(file_path):
-            raise DocumentImportError(f"Invalid PDF file: {file_path}")
+            raise DocumentValidationError(
+                f"Invalid PDF file: {file_path}",
+                file_path=file_path,
+                validation_issue="Not a valid PDF format"
+            )
         return file_path_obj
 
     def _calculate_file_hashes(self, file_path: str) -> Tuple[str, str]:
@@ -521,113 +529,49 @@ class DocumentLibraryService:
     ) -> Dict[str, Any]:
         """
         Perform comprehensive library cleanup operations.
+        
+        This method orchestrates various cleanup operations to maintain library health.
+        Each operation is performed independently and failures in one operation do not
+        prevent others from completing.
+        
         Args:
             remove_missing_files: Remove document records for missing files
             remove_orphaned_files: Remove files in documents directory not in database
-            optimize_database: Run database optimization
-            cleanup_temp_files: Clean up temporary files
+            optimize_database: Run database optimization (VACUUM/ANALYZE)
+            cleanup_temp_files: Clean up temporary files in various locations
             verify_integrity: Verify and report integrity issues
+            
         Returns:
-            Dictionary with cleanup results
+            Dictionary with cleanup results and error summary
+            
+        Raises:
+            Exception: If critical cleanup coordination fails
         """
         try:
-            results = {
-                "orphaned_indexes_cleaned": 0,
-                "invalid_indexes_cleaned": 0,
-                "missing_file_documents_removed": 0,
-                "orphaned_files_removed": 0,
-                "temp_files_cleaned": 0,
-                "database_optimized": False,
-                "integrity_issues_found": 0,
-                "errors": []
-            }
+            results = self._initialize_cleanup_results()
             
-            # 1. Cleanup orphaned vector indexes
-            try:
-                orphaned_cleaned = self.vector_repo.cleanup_orphaned_indexes()
-                results["orphaned_indexes_cleaned"] = orphaned_cleaned
-                logger.debug(f"Cleaned {orphaned_cleaned} orphaned vector indexes")
-            except Exception as e:
-                results["errors"].append(f"Vector index cleanup error: {e}")
-                logger.warning(f"Failed to cleanup orphaned vector indexes: {e}")
+            # Execute cleanup operations in order of importance
+            self._cleanup_vector_indexes(results)
             
-            # 2. Cleanup invalid vector indexes
-            try:
-                invalid_cleaned = self.vector_repo.cleanup_invalid_indexes(remove_files=True)
-                results["invalid_indexes_cleaned"] = invalid_cleaned
-                logger.debug(f"Cleaned {invalid_cleaned} invalid vector indexes")
-            except Exception as e:
-                results["errors"].append(f"Invalid index cleanup error: {e}")
-                logger.warning(f"Failed to cleanup invalid vector indexes: {e}")
-            
-            # 3. Remove documents with missing files
             if remove_missing_files:
-                try:
-                    missing_removed = self._cleanup_documents_with_missing_files()
-                    results["missing_file_documents_removed"] = missing_removed
-                    logger.debug(f"Removed {missing_removed} documents with missing files")
-                except Exception as e:
-                    results["errors"].append(f"Missing file cleanup error: {e}")
-                    logger.warning(f"Failed to cleanup documents with missing files: {e}")
+                self._cleanup_missing_documents(results)
             
-            # 4. Remove orphaned files in documents directory
             if remove_orphaned_files:
-                try:
-                    orphaned_removed = self._cleanup_orphaned_files()
-                    results["orphaned_files_removed"] = orphaned_removed
-                    logger.debug(f"Removed {orphaned_removed} orphaned files")
-                except Exception as e:
-                    results["errors"].append(f"Orphaned file cleanup error: {e}")
-                    logger.warning(f"Failed to cleanup orphaned files: {e}")
+                self._cleanup_orphaned_files_operation(results)
             
-            # 5. Clean up temporary files
             if cleanup_temp_files:
-                try:
-                    temp_cleaned = self._cleanup_temp_files()
-                    results["temp_files_cleaned"] = temp_cleaned
-                    logger.debug(f"Cleaned {temp_cleaned} temporary files")
-                except Exception as e:
-                    results["errors"].append(f"Temp file cleanup error: {e}")
-                    logger.warning(f"Failed to cleanup temporary files: {e}")
+                self._cleanup_temporary_files_operation(results)
             
-            # 6. Database optimization
             if optimize_database:
-                try:
-                    self._optimize_database()
-                    results["database_optimized"] = True
-                    logger.debug("Database optimization completed")
-                except Exception as e:
-                    results["errors"].append(f"Database optimization error: {e}")
-                    logger.warning(f"Failed to optimize database: {e}")
+                self._perform_database_optimization(results)
             
-            # 7. Integrity verification (optional)
             if verify_integrity:
-                try:
-                    integrity_issues = self._verify_library_integrity()
-                    results["integrity_issues_found"] = integrity_issues
-                    logger.debug(f"Found {integrity_issues} integrity issues")
-                except Exception as e:
-                    results["errors"].append(f"Integrity verification error: {e}")
-                    logger.warning(f"Failed to verify library integrity: {e}")
+                self._perform_integrity_verification(results)
             
-            # Summary
-            total_items_cleaned = (
-                results["orphaned_indexes_cleaned"] +
-                results["invalid_indexes_cleaned"] +
-                results["missing_file_documents_removed"] +
-                results["orphaned_files_removed"] +
-                results["temp_files_cleaned"]
-            )
-            
-            logger.info(
-                f"Library cleanup completed: {total_items_cleaned} items cleaned, "
-                f"{len(results['errors'])} errors"
-            )
-            
-            return results
+            return self._finalize_cleanup_results(results)
             
         except Exception as e:
-            logger.error(f"Failed to cleanup library: {e}")
+            logger.error(f"Critical failure during library cleanup coordination: {e}")
             raise
 
     def _cleanup_documents_with_missing_files(self) -> int:
@@ -855,3 +799,8 @@ class DocumentLibraryService:
         except Exception as e:
             logger.error(f"Failed to perform advanced search: {e}")
             raise
+    
+    # Additional cleanup helper methods added for better code organization
+    
+    def _initialize_cleanup_results(self) -> Dict[str, Any]:
+        \"\"\"Initialize cleanup results dictionary with default values.\"\"\"\n        return {\n            \"orphaned_indexes_cleaned\": 0,\n            \"invalid_indexes_cleaned\": 0,\n            \"missing_file_documents_removed\": 0,\n            \"orphaned_files_removed\": 0,\n            \"temp_files_cleaned\": 0,\n            \"database_optimized\": False,\n            \"integrity_issues_found\": 0,\n            \"errors\": [],\n            \"operation_start_time\": datetime.now().isoformat()\n        }\n    \n    def _cleanup_vector_indexes(self, results: Dict[str, Any]) -> None:\n        \"\"\"\n        Clean up orphaned and invalid vector indexes.\n        \n        Args:\n            results: Results dictionary to update with cleanup statistics\n        \"\"\"\n        # Clean orphaned vector indexes (indexes without corresponding documents)\n        try:\n            orphaned_cleaned = self.vector_repo.cleanup_orphaned_indexes()\n            results[\"orphaned_indexes_cleaned\"] = orphaned_cleaned\n            logger.debug(f\"Cleaned {orphaned_cleaned} orphaned vector indexes\")\n        except Exception as e:\n            error_msg = f\"Vector index orphan cleanup error: {e}\"\n            results[\"errors\"].append(error_msg)\n            logger.warning(f\"Failed to cleanup orphaned vector indexes: {e}\")\n        \n        # Clean invalid vector indexes (corrupted or inaccessible indexes)\n        try:\n            invalid_cleaned = self.vector_repo.cleanup_invalid_indexes(remove_files=True)\n            results[\"invalid_indexes_cleaned\"] = invalid_cleaned\n            logger.debug(f\"Cleaned {invalid_cleaned} invalid vector indexes\")\n        except Exception as e:\n            error_msg = f\"Invalid vector index cleanup error: {e}\"\n            results[\"errors\"].append(error_msg)\n            logger.warning(f\"Failed to cleanup invalid vector indexes: {e}\")\n    \n    def _cleanup_missing_documents(self, results: Dict[str, Any]) -> None:\n        \"\"\"\n        Remove database records for documents whose files no longer exist.\n        \n        Args:\n            results: Results dictionary to update with cleanup statistics\n        \"\"\"\n        try:\n            missing_removed = self._cleanup_documents_with_missing_files()\n            results[\"missing_file_documents_removed\"] = missing_removed\n            logger.debug(f\"Removed {missing_removed} documents with missing files\")\n        except Exception as e:\n            error_msg = f\"Missing file document cleanup error: {e}\"\n            results[\"errors\"].append(error_msg)\n            logger.warning(f\"Failed to cleanup documents with missing files: {e}\")\n    \n    def _cleanup_orphaned_files_operation(self, results: Dict[str, Any]) -> None:\n        \"\"\"\n        Remove files in documents directory that are not referenced in database.\n        \n        Args:\n            results: Results dictionary to update with cleanup statistics\n        \"\"\"\n        try:\n            orphaned_removed = self._cleanup_orphaned_files()\n            results[\"orphaned_files_removed\"] = orphaned_removed\n            logger.debug(f\"Removed {orphaned_removed} orphaned files\")\n        except Exception as e:\n            error_msg = f\"Orphaned file cleanup error: {e}\"\n            results[\"errors\"].append(error_msg)\n            logger.warning(f\"Failed to cleanup orphaned files: {e}\")\n    \n    def _cleanup_temporary_files_operation(self, results: Dict[str, Any]) -> None:\n        \"\"\"\n        Clean up temporary files from various system locations.\n        \n        Args:\n            results: Results dictionary to update with cleanup statistics\n        \"\"\"\n        try:\n            temp_cleaned = self._cleanup_temp_files()\n            results[\"temp_files_cleaned\"] = temp_cleaned\n            logger.debug(f\"Cleaned {temp_cleaned} temporary files\")\n        except Exception as e:\n            error_msg = f\"Temporary file cleanup error: {e}\"\n            results[\"errors\"].append(error_msg)\n            logger.warning(f\"Failed to cleanup temporary files: {e}\")\n    \n    def _perform_database_optimization(self, results: Dict[str, Any]) -> None:\n        \"\"\"\n        Perform database optimization operations (VACUUM, ANALYZE).\n        \n        Args:\n            results: Results dictionary to update with optimization status\n        \"\"\"\n        try:\n            self._optimize_database()\n            results[\"database_optimized\"] = True\n            logger.debug(\"Database optimization completed successfully\")\n        except Exception as e:\n            error_msg = f\"Database optimization error: {e}\"\n            results[\"errors\"].append(error_msg)\n            logger.warning(f\"Failed to optimize database: {e}\")\n    \n    def _perform_integrity_verification(self, results: Dict[str, Any]) -> None:\n        \"\"\"\n        Perform comprehensive library integrity verification.\n        \n        Args:\n            results: Results dictionary to update with integrity check results\n        \"\"\"\n        try:\n            integrity_issues = self._verify_library_integrity()\n            results[\"integrity_issues_found\"] = integrity_issues\n            if integrity_issues > 0:\n                logger.warning(f\"Found {integrity_issues} integrity issues during cleanup verification\")\n            else:\n                logger.debug(\"Library integrity verification completed - no issues found\")\n        except Exception as e:\n            error_msg = f\"Integrity verification error: {e}\"\n            results[\"errors\"].append(error_msg)\n            logger.warning(f\"Failed to verify library integrity: {e}\")\n    \n    def _finalize_cleanup_results(self, results: Dict[str, Any]) -> Dict[str, Any]:\n        \"\"\"\n        Finalize cleanup results with summary statistics and completion timestamp.\n        \n        Args:\n            results: Populated results dictionary\n            \n        Returns:\n            Finalized results dictionary with summary information\n        \"\"\"\n        # Calculate total items cleaned\n        total_items_cleaned = (\n            results[\"orphaned_indexes_cleaned\"] +\n            results[\"invalid_indexes_cleaned\"] +\n            results[\"missing_file_documents_removed\"] +\n            results[\"orphaned_files_removed\"] +\n            results[\"temp_files_cleaned\"]\n        )\n        \n        # Add summary information\n        results[\"total_items_cleaned\"] = total_items_cleaned\n        results[\"error_count\"] = len(results[\"errors\"])\n        results[\"operation_end_time\"] = datetime.now().isoformat()\n        results[\"success\"] = results[\"error_count\"] == 0\n        \n        # Log completion summary\n        if results[\"success\"]:\n            logger.info(\n                f\"Library cleanup completed successfully: {total_items_cleaned} items cleaned, \"\n                f\"database optimization: {results['database_optimized']}\"\n            )\n        else:\n            logger.warning(\n                f\"Library cleanup completed with issues: {total_items_cleaned} items cleaned, \"\n                f\"{results['error_count']} errors encountered\"\n            )\n        \n        return results

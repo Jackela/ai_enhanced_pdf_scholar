@@ -1,0 +1,512 @@
+# ============================================================================
+# Filebeat Configuration for Comprehensive Log Collection
+# Production-ready log shipping with Kubernetes integration
+# ============================================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: filebeat
+    app.kubernetes.io/component: logging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: filebeat
+  labels:
+    app.kubernetes.io/name: filebeat
+    app.kubernetes.io/component: logging
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
+  - nodes
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["apps"]
+  resources:
+  - replicasets
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: filebeat
+  labels:
+    app.kubernetes.io/name: filebeat
+    app.kubernetes.io/component: logging
+subjects:
+- kind: ServiceAccount
+  name: filebeat
+  namespace: ai-pdf-scholar
+roleRef:
+  kind: ClusterRole
+  name: filebeat
+  apiGroup: rbac.authorization.k8s.io
+---
+# Filebeat ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: filebeat
+    app.kubernetes.io/component: logging
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+    # ========================================================================
+    # Kubernetes Container Logs
+    # ========================================================================
+    - type: kubernetes
+      node: ${NODE_NAME}
+      hints.enabled: true
+      hints.default_config:
+        type: container
+        paths:
+          - /var/log/containers/*${data.kubernetes.container.id}.log
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+          matchers:
+          - logs_path:
+              logs_path: "/var/log/containers/"
+      - drop_event:
+          when:
+            and:
+            - not:
+                or:
+                - contains:
+                    kubernetes.namespace: "ai-pdf-scholar"
+                - contains:
+                    kubernetes.namespace: "kube-system"
+                - contains:
+                    kubernetes.namespace: "monitoring"
+    
+    # ========================================================================
+    # AI PDF Scholar Application Logs
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/containers/*ai-pdf-scholar-backend*.log
+      fields:
+        service: ai-pdf-scholar-backend
+        log_type: application
+      fields_under_root: true
+      multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+      multiline.negate: true
+      multiline.match: after
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+      - decode_json_fields:
+          fields: ["message"]
+          target: ""
+          overwrite_keys: true
+    
+    # ========================================================================
+    # Security and Authentication Logs
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/containers/*ai-pdf-scholar-backend*.log
+      include_lines: ['login', 'authentication', 'auth', 'security', 'unauthorized', 'forbidden']
+      fields:
+        service: security
+        log_category: security
+      fields_under_root: true
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+    
+    # ========================================================================
+    # Database Logs (if applicable)
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/containers/*postgresql*.log
+      fields:
+        service: postgresql
+        log_type: database
+      fields_under_root: true
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+    
+    # ========================================================================
+    # Redis Logs
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/containers/*redis*.log
+      fields:
+        service: redis
+        log_type: cache
+      fields_under_root: true
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+    
+    # ========================================================================
+    # Nginx/Ingress Logs
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/containers/*nginx*.log
+      fields:
+        service: nginx
+        log_type: access
+      fields_under_root: true
+      processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+    
+    # ========================================================================
+    # System Logs
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/syslog
+        - /var/log/messages
+        - /var/log/kern.log
+      fields:
+        service: system
+        log_type: system
+      fields_under_root: true
+      exclude_lines: ['^\s*$', '^#']
+    
+    # ========================================================================
+    # Docker Logs
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/lib/docker/containers/*/*.log
+      fields:
+        service: docker
+        log_type: container
+      fields_under_root: true
+      json.keys_under_root: true
+      json.add_error_key: true
+      processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+    
+    # ========================================================================
+    # Kubernetes Audit Logs
+    # ========================================================================
+    - type: log
+      enabled: true
+      paths:
+        - /var/log/audit/audit.log
+        - /var/log/kubernetes/apiserver/audit.log
+      fields:
+        service: kubernetes
+        log_type: audit
+      fields_under_root: true
+      json.keys_under_root: true
+      json.add_error_key: true
+    
+    # ========================================================================
+    # Global Processors
+    # ========================================================================
+    processors:
+    # Add host metadata
+    - add_host_metadata:
+        when.not.contains.tags: forwarded
+    
+    # Add Docker metadata
+    - add_docker_metadata: ~
+    
+    # Add Kubernetes metadata
+    - add_kubernetes_metadata:
+        host: ${NODE_NAME}
+        matchers:
+        - logs_path:
+            logs_path: "/var/log/containers/"
+    
+    # Parse timestamps
+    - timestamp:
+        field: "@timestamp"
+        layouts:
+          - '2006-01-02T15:04:05.000Z'
+          - '2006-01-02T15:04:05Z'
+          - '2006-01-02 15:04:05'
+        test:
+          - '2023-01-01T12:00:00.000Z'
+          - '2023-01-01 12:00:00'
+    
+    # Extract log levels
+    - script:
+        lang: javascript
+        source: >
+          function process(event) {
+            var message = event.Get("message");
+            if (!message) return;
+            
+            // Extract log level
+            var levelMatch = message.match(/\b(DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE)\b/i);
+            if (levelMatch) {
+              event.Put("log_level", levelMatch[1].toUpperCase());
+            }
+            
+            // Extract HTTP status codes
+            var statusMatch = message.match(/\b(1\d\d|2\d\d|3\d\d|4\d\d|5\d\d)\b/);
+            if (statusMatch) {
+              event.Put("http_status", parseInt(statusMatch[1]));
+            }
+            
+            // Extract IP addresses
+            var ipMatch = message.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/);
+            if (ipMatch) {
+              event.Put("client_ip", ipMatch[0]);
+            }
+            
+            // Extract execution time/duration
+            var durationMatch = message.match(/(?:duration|time|took)[:\s]*(\d+(?:\.\d+)?)\s*(ms|s|seconds?|milliseconds?)/i);
+            if (durationMatch) {
+              var value = parseFloat(durationMatch[1]);
+              var unit = durationMatch[2].toLowerCase();
+              if (unit.startsWith('ms') || unit.startsWith('milli')) {
+                event.Put("duration_ms", value);
+              } else {
+                event.Put("duration_ms", value * 1000);
+              }
+            }
+          }
+    
+    # Drop empty or irrelevant logs
+    - drop_event:
+        when:
+          or:
+          - equals:
+              message: ""
+          - regexp:
+              message: '^\s*$'
+          - contains:
+              message: "kube-probe"
+          - contains:
+              message: "health-check"
+    
+    # ========================================================================
+    # Output Configuration
+    # ========================================================================
+    output.logstash:
+      hosts: ["logstash:5044"]
+      compression_level: 3
+      worker: 2
+      bulk_max_size: 2048
+      template.name: "filebeat"
+      template.pattern: "filebeat-*"
+    
+    # ========================================================================
+    # Logging Configuration
+    # ========================================================================
+    logging.level: info
+    logging.to_stderr: true
+    logging.to_syslog: false
+    logging.metrics.enabled: true
+    logging.metrics.period: 30s
+    
+    # ========================================================================
+    # Monitoring Configuration
+    # ========================================================================
+    monitoring.enabled: true
+    monitoring.elasticsearch:
+      hosts: ["elasticsearch:9200"]
+      username: ""
+      password: ""
+    
+    http.enabled: true
+    http.host: 0.0.0.0
+    http.port: 5066
+    
+    # ========================================================================
+    # Performance Tuning
+    # ========================================================================
+    queue.mem:
+      events: 4096
+      flush.min_events: 512
+      flush.timeout: 5s
+    
+    # ========================================================================
+    # Security Configuration
+    # ========================================================================
+    setup.ilm.enabled: false
+    setup.template.enabled: false
+    
+    # ========================================================================
+    # Module Configuration
+    # ========================================================================
+    filebeat.modules:
+    - module: system
+      syslog:
+        enabled: true
+      auth:
+        enabled: true
+    
+    - module: nginx
+      access:
+        enabled: true
+        var.paths: ["/var/log/containers/*nginx*access*.log"]
+      error:
+        enabled: true
+        var.paths: ["/var/log/containers/*nginx*error*.log"]
+    
+    - module: docker
+      container:
+        enabled: true
+---
+# Filebeat DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: filebeat
+    app.kubernetes.io/component: logging
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: filebeat
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: filebeat
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5066"
+        prometheus.io/path: "/stats"
+    spec:
+      serviceAccountName: filebeat
+      terminationGracePeriodSeconds: 30
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: filebeat
+        image: docker.elastic.co/beats/filebeat:8.11.0
+        args: [
+          "-c", "/etc/filebeat.yml",
+          "-e",
+        ]
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ELASTICSEARCH_HOST
+          value: elasticsearch
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        - name: LOGSTASH_HOST
+          value: logstash
+        - name: LOGSTASH_PORT
+          value: "5044"
+        securityContext:
+          runAsUser: 0
+          # If using Red Hat OpenShift uncomment this:
+          #privileged: true
+        resources:
+          limits:
+            memory: 200Mi
+            cpu: 100m
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/filebeat.yml
+          readOnly: true
+          subPath: filebeat.yml
+        - name: data
+          mountPath: /usr/share/filebeat/data
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        - name: varlibdockerruntime
+          mountPath: /var/lib/docker/runtime
+          readOnly: true
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              #!/usr/bin/env bash -e
+              curl --fail 127.0.0.1:5066
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              #!/usr/bin/env bash -e
+              filebeat test output
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 0640
+          name: filebeat-config
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockerruntime
+        hostPath:
+          path: /var/lib/docker/runtime
+      # data folder stores a registry of read status for all files, so we don't send everything again on a Filebeat pod restart
+      - name: data
+        hostPath:
+          # When filebeat runs as non-root user, this directory needs to be writable by group (g+w).
+          path: /var/lib/filebeat-data
+          type: DirectoryOrCreate
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+---
+# Filebeat Service for monitoring
+apiVersion: v1
+kind: Service
+metadata:
+  name: filebeat
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: filebeat
+    app.kubernetes.io/component: logging
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: filebeat
+  ports:
+  - name: monitoring
+    port: 5066
+    targetPort: 5066

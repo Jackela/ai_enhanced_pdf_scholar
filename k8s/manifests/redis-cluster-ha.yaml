@@ -1,0 +1,729 @@
+---
+# Redis High Availability Cluster Deployment
+# Includes Redis Cluster, Sentinel, and monitoring components
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-cluster
+  labels:
+    name: redis-cluster
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: cache
+
+---
+# ConfigMap for Redis configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-cluster-config
+  namespace: redis-cluster
+data:
+  redis.conf: |
+    # Redis Cluster Configuration
+    port 6379
+    cluster-enabled yes
+    cluster-config-file nodes-6379.conf
+    cluster-node-timeout 15000
+    cluster-announce-hostname yes
+    
+    # Memory and persistence
+    maxmemory 1gb
+    maxmemory-policy allkeys-lru
+    
+    # Persistence (AOF + RDB)
+    appendonly yes
+    appendfsync everysec
+    save 900 1
+    save 300 10
+    save 60 10000
+    
+    # Security
+    requirepass ${REDIS_PASSWORD}
+    masterauth ${REDIS_PASSWORD}
+    
+    # Logging
+    loglevel notice
+    logfile /var/log/redis/redis.log
+    
+    # Network
+    bind 0.0.0.0
+    protected-mode no
+    tcp-keepalive 300
+    
+    # Performance
+    timeout 300
+    tcp-backlog 511
+    databases 16
+    
+  sentinel.conf: |
+    # Redis Sentinel Configuration
+    port 26379
+    sentinel announce-ip ${POD_IP}
+    sentinel announce-port 26379
+    
+    # Monitor master
+    sentinel monitor mymaster redis-master-0.redis-master 6379 2
+    sentinel auth-pass mymaster ${REDIS_PASSWORD}
+    
+    # Failover timing
+    sentinel down-after-milliseconds mymaster 30000
+    sentinel parallel-syncs mymaster 1
+    sentinel failover-timeout mymaster 180000
+    
+    # Logging
+    loglevel notice
+    logfile /var/log/sentinel/sentinel.log
+
+---
+# Secret for Redis authentication
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-auth
+  namespace: redis-cluster
+type: Opaque
+stringData:
+  password: "your-secure-redis-password-here"  # Change this!
+  
+---
+# Service Account for Redis pods
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: redis-cluster
+  namespace: redis-cluster
+
+---
+# ClusterRole for Redis cluster operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: redis-cluster
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: redis-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: redis-cluster
+subjects:
+- kind: ServiceAccount
+  name: redis-cluster
+  namespace: redis-cluster
+
+---
+# Redis Master StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-master
+  namespace: redis-cluster
+  labels:
+    app: redis
+    role: master
+spec:
+  serviceName: redis-master
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+      role: master
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: master
+    spec:
+      serviceAccountName: redis-cluster
+      securityContext:
+        fsGroup: 999
+      initContainers:
+      - name: config-init
+        image: redis:7-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          # Copy config files and substitute environment variables
+          cp /config/redis.conf /data/redis.conf
+          envsubst < /config/redis.conf > /data/redis.conf
+          
+          # Set proper permissions
+          chmod 644 /data/redis.conf
+          chown 999:999 /data/redis.conf
+          
+          # Create log directory
+          mkdir -p /var/log/redis
+          chown 999:999 /var/log/redis
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: redis-data
+          mountPath: /data
+        - name: log-volume
+          mountPath: /var/log/redis
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - /data/redis.conf
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: log-volume
+          mountPath: /var/log/redis
+      volumes:
+      - name: config
+        configMap:
+          name: redis-cluster-config
+      - name: log-volume
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: fast-ssd  # Adjust based on your storage class
+
+---
+# Redis Master Service (Headless)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-master
+  namespace: redis-cluster
+  labels:
+    app: redis
+    role: master
+spec:
+  clusterIP: None
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  selector:
+    app: redis
+    role: master
+
+---
+# Redis Replica StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-replica
+  namespace: redis-cluster
+  labels:
+    app: redis
+    role: replica
+spec:
+  serviceName: redis-replica
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+      role: replica
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: replica
+    spec:
+      serviceAccountName: redis-cluster
+      securityContext:
+        fsGroup: 999
+      initContainers:
+      - name: config-init
+        image: redis:7-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          # Copy config and add replica-specific settings
+          cp /config/redis.conf /data/redis.conf
+          envsubst < /config/redis.conf > /data/redis.conf
+          
+          # Add replica settings
+          echo "replicaof redis-master-0.redis-master 6379" >> /data/redis.conf
+          echo "replica-read-only yes" >> /data/redis.conf
+          
+          # Set permissions
+          chmod 644 /data/redis.conf
+          chown 999:999 /data/redis.conf
+          
+          # Create log directory
+          mkdir -p /var/log/redis
+          chown 999:999 /var/log/redis
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: redis-data
+          mountPath: /data
+        - name: log-volume
+          mountPath: /var/log/redis
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - /data/redis.conf
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "125m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        - name: log-volume
+          mountPath: /var/log/redis
+      volumes:
+      - name: config
+        configMap:
+          name: redis-cluster-config
+      - name: log-volume
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: fast-ssd
+
+---
+# Redis Replica Service (Headless)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-replica
+  namespace: redis-cluster
+  labels:
+    app: redis
+    role: replica
+spec:
+  clusterIP: None
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  selector:
+    app: redis
+    role: replica
+
+---
+# Redis Sentinel StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-sentinel
+  namespace: redis-cluster
+  labels:
+    app: redis-sentinel
+spec:
+  serviceName: redis-sentinel
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-sentinel
+  template:
+    metadata:
+      labels:
+        app: redis-sentinel
+    spec:
+      serviceAccountName: redis-cluster
+      securityContext:
+        fsGroup: 999
+      initContainers:
+      - name: config-init
+        image: redis:7-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          # Prepare sentinel config
+          cp /config/sentinel.conf /data/sentinel.conf
+          envsubst < /config/sentinel.conf > /data/sentinel.conf
+          
+          # Set permissions
+          chmod 644 /data/sentinel.conf
+          chown 999:999 /data/sentinel.conf
+          
+          # Create log directory
+          mkdir -p /var/log/sentinel
+          chown 999:999 /var/log/sentinel
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: sentinel-data
+          mountPath: /data
+        - name: log-volume
+          mountPath: /var/log/sentinel
+      containers:
+      - name: sentinel
+        image: redis:7-alpine
+        ports:
+        - containerPort: 26379
+          name: sentinel
+        command:
+        - redis-sentinel
+        - /data/sentinel.conf
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+        livenessProbe:
+          tcpSocket:
+            port: 26379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 26379
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+        - name: sentinel-data
+          mountPath: /data
+        - name: log-volume
+          mountPath: /var/log/sentinel
+      volumes:
+      - name: config
+        configMap:
+          name: redis-cluster-config
+      - name: log-volume
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: sentinel-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: fast-ssd
+
+---
+# Redis Sentinel Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel
+  namespace: redis-cluster
+  labels:
+    app: redis-sentinel
+spec:
+  ports:
+  - port: 26379
+    targetPort: 26379
+    name: sentinel
+  selector:
+    app: redis-sentinel
+
+---
+# Redis External Service (LoadBalancer)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-external
+  namespace: redis-cluster
+  labels:
+    app: redis
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  - port: 26379
+    targetPort: 26379
+    name: sentinel
+  selector:
+    app: redis
+    role: master
+
+---
+# PodDisruptionBudget for Redis Masters
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-master-pdb
+  namespace: redis-cluster
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: redis
+      role: master
+
+---
+# PodDisruptionBudget for Redis Sentinels
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-sentinel-pdb
+  namespace: redis-cluster
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: redis-sentinel
+
+---
+# NetworkPolicy for Redis cluster
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-cluster-netpol
+  namespace: redis-cluster
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic within Redis cluster
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: redis-cluster
+    ports:
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 26379
+  # Allow traffic from application namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: default  # Adjust to your app namespace
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  # Allow DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow Redis cluster communication
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: redis-cluster
+    ports:
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 26379
+
+---
+# ServiceMonitor for Prometheus (if using Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-cluster
+  namespace: redis-cluster
+  labels:
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  endpoints:
+  - port: redis
+    interval: 30s
+    path: /metrics
+    
+---
+# Redis Exporter Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-exporter
+  namespace: redis-cluster
+  labels:
+    app: redis-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-exporter
+  template:
+    metadata:
+      labels:
+        app: redis-exporter
+    spec:
+      containers:
+      - name: redis-exporter
+        image: oliver006/redis_exporter:latest
+        ports:
+        - containerPort: 9121
+          name: metrics
+        env:
+        - name: REDIS_ADDR
+          value: "redis://redis-master:6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-auth
+              key: password
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "25m"
+          limits:
+            memory: "128Mi"
+            cpu: "50m"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9121
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9121
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+---
+# Redis Exporter Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-exporter
+  namespace: redis-cluster
+  labels:
+    app: redis-exporter
+spec:
+  ports:
+  - port: 9121
+    targetPort: 9121
+    name: metrics
+  selector:
+    app: redis-exporter

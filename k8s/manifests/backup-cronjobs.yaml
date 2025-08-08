@@ -1,0 +1,717 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-config
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+data:
+  backup-config.yaml: |
+    backup:
+      # Backup intervals (cron expressions)
+      critical_interval: "*/15 * * * *"    # Every 15 minutes
+      high_interval: "0 * * * *"           # Every hour
+      medium_interval: "0 2 * * *"         # Daily at 2 AM
+      low_interval: "0 3 * * 0"           # Weekly on Sunday at 3 AM
+      
+      # Retention policies
+      retention:
+        daily: 7
+        weekly: 4
+        monthly: 12
+        yearly: 7
+      
+      # Storage configuration
+      storage:
+        primary: "s3"
+        bucket: "ai-pdf-scholar-backups"
+        region: "us-west-2"
+        encryption: true
+      
+      # Sources configuration
+      sources:
+        - name: "postgres-main"
+          type: "postgresql"
+          tier: "critical"
+          connection_secret: "postgres-credentials"
+        - name: "redis-cache"
+          type: "redis"
+          tier: "high"
+          connection_secret: "redis-credentials"
+        - name: "documents"
+          type: "filesystem"
+          tier: "high"
+          path: "/app/data/documents"
+        - name: "vector-indexes"
+          type: "filesystem"
+          tier: "high"
+          path: "/app/data/vector_indexes"
+        - name: "uploads"
+          type: "filesystem"
+          tier: "medium"
+          path: "/app/uploads"
+        - name: "application-logs"
+          type: "filesystem"
+          tier: "low"
+          path: "/app/logs"
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-service-account
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ai-pdf-scholar
+  name: backup-role
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+rules:
+- apiGroups: [""]
+  resources: ["secrets", "configmaps", "persistentvolumeclaims", "pods"]
+  verbs: ["get", "list", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-role-binding
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+subjects:
+- kind: ServiceAccount
+  name: backup-service-account
+  namespace: ai-pdf-scholar
+roleRef:
+  kind: Role
+  name: backup-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Critical Backup CronJob - Every 15 minutes
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-critical
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+    tier: critical
+spec:
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 600  # 10 minutes
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 900  # 15 minutes timeout
+      template:
+        metadata:
+          labels:
+            app: ai-pdf-scholar
+            component: backup
+            tier: critical
+        spec:
+          serviceAccountName: backup-service-account
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          initContainers:
+          - name: backup-pre-check
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_pre_check.py"]
+            args: ["--tier", "critical"]
+            env:
+            - name: BACKUP_TIER
+              value: "critical"
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            volumeMounts:
+            - name: backup-config
+              mountPath: /etc/backup-config
+              readOnly: true
+            - name: backup-storage
+              mountPath: /var/backups
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+          containers:
+          - name: backup-executor
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_orchestrator.py"]
+            args: ["--tier", "critical", "--type", "incremental"]
+            env:
+            - name: BACKUP_TIER
+              value: "critical"
+            - name: BACKUP_TYPE
+              value: "incremental"
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: AWS_REGION
+              value: "us-west-2"
+            envFrom:
+            - secretRef:
+                name: backup-secrets
+            volumeMounts:
+            - name: backup-config
+              mountPath: /etc/backup-config
+              readOnly: true
+            - name: backup-storage
+              mountPath: /var/backups
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+              readOnly: true
+            - name: redis-data
+              mountPath: /var/lib/redis
+              readOnly: true
+            - name: app-data
+              mountPath: /app/data
+              readOnly: true
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "250m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+          volumes:
+          - name: backup-config
+            configMap:
+              name: backup-config
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          - name: postgres-data
+            persistentVolumeClaim:
+              claimName: postgres-data-pvc
+          - name: redis-data
+            persistentVolumeClaim:
+              claimName: redis-data-pvc
+          - name: app-data
+            persistentVolumeClaim:
+              claimName: app-data-pvc
+          nodeSelector:
+            node-role: backup
+          tolerations:
+          - key: "backup-node"
+            operator: "Equal"
+            value: "true"
+            effect: "NoSchedule"
+
+---
+# High Priority Backup CronJob - Every hour
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-high
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+    tier: high
+spec:
+  schedule: "0 * * * *"  # Every hour
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 900  # 15 minutes
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600  # 1 hour timeout
+      template:
+        metadata:
+          labels:
+            app: ai-pdf-scholar
+            component: backup
+            tier: high
+        spec:
+          serviceAccountName: backup-service-account
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          containers:
+          - name: backup-executor
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_orchestrator.py"]
+            args: ["--tier", "high", "--type", "incremental"]
+            env:
+            - name: BACKUP_TIER
+              value: "high"
+            - name: BACKUP_TYPE
+              value: "incremental"
+            envFrom:
+            - secretRef:
+                name: backup-secrets
+            volumeMounts:
+            - name: backup-config
+              mountPath: /etc/backup-config
+              readOnly: true
+            - name: backup-storage
+              mountPath: /var/backups
+            - name: app-data
+              mountPath: /app/data
+              readOnly: true
+            - name: uploads-data
+              mountPath: /app/uploads
+              readOnly: true
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "250m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+          volumes:
+          - name: backup-config
+            configMap:
+              name: backup-config
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          - name: app-data
+            persistentVolumeClaim:
+              claimName: app-data-pvc
+          - name: uploads-data
+            persistentVolumeClaim:
+              claimName: uploads-pvc
+
+---
+# Daily Backup CronJob - 2 AM daily
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-daily
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+    tier: medium
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 3600  # 1 hour
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 7200  # 2 hour timeout
+      template:
+        metadata:
+          labels:
+            app: ai-pdf-scholar
+            component: backup
+            tier: medium
+        spec:
+          serviceAccountName: backup-service-account
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          containers:
+          - name: backup-executor
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_orchestrator.py"]
+            args: ["--tier", "medium", "--type", "full", "--retention", "daily"]
+            env:
+            - name: BACKUP_TIER
+              value: "medium"
+            - name: BACKUP_TYPE
+              value: "full"
+            - name: RETENTION_TYPE
+              value: "daily"
+            envFrom:
+            - secretRef:
+                name: backup-secrets
+            volumeMounts:
+            - name: backup-config
+              mountPath: /etc/backup-config
+              readOnly: true
+            - name: backup-storage
+              mountPath: /var/backups
+            - name: app-data
+              mountPath: /app/data
+              readOnly: true
+            - name: uploads-data
+              mountPath: /app/uploads
+              readOnly: true
+            - name: logs-data
+              mountPath: /app/logs
+              readOnly: true
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+          volumes:
+          - name: backup-config
+            configMap:
+              name: backup-config
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          - name: app-data
+            persistentVolumeClaim:
+              claimName: app-data-pvc
+          - name: uploads-data
+            persistentVolumeClaim:
+              claimName: uploads-pvc
+          - name: logs-data
+            persistentVolumeClaim:
+              claimName: logs-pvc
+
+---
+# Weekly Backup CronJob - Sunday at 3 AM
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-weekly
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+    tier: low
+spec:
+  schedule: "0 3 * * 0"  # Sunday at 3 AM
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  startingDeadlineSeconds: 7200  # 2 hours
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 14400  # 4 hour timeout
+      template:
+        metadata:
+          labels:
+            app: ai-pdf-scholar
+            component: backup
+            tier: low
+        spec:
+          serviceAccountName: backup-service-account
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          initContainers:
+          - name: backup-cleanup
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_cleanup.py"]
+            args: ["--retention-check", "--dry-run"]
+            envFrom:
+            - secretRef:
+                name: backup-secrets
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /var/backups
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "200m"
+          containers:
+          - name: backup-executor
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_orchestrator.py"]
+            args: ["--tier", "low", "--type", "full", "--retention", "weekly", "--include-validation"]
+            env:
+            - name: BACKUP_TIER
+              value: "low"
+            - name: BACKUP_TYPE
+              value: "full"
+            - name: RETENTION_TYPE
+              value: "weekly"
+            - name: INCLUDE_VALIDATION
+              value: "true"
+            envFrom:
+            - secretRef:
+                name: backup-secrets
+            volumeMounts:
+            - name: backup-config
+              mountPath: /etc/backup-config
+              readOnly: true
+            - name: backup-storage
+              mountPath: /var/backups
+            - name: app-data
+              mountPath: /app/data
+              readOnly: true
+            - name: uploads-data
+              mountPath: /app/uploads
+              readOnly: true
+            - name: logs-data
+              mountPath: /app/logs
+              readOnly: true
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "4Gi"
+                cpu: "1500m"
+          volumes:
+          - name: backup-config
+            configMap:
+              name: backup-config
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          - name: app-data
+            persistentVolumeClaim:
+              claimName: app-data-pvc
+          - name: uploads-data
+            persistentVolumeClaim:
+              claimName: uploads-pvc
+          - name: logs-data
+            persistentVolumeClaim:
+              claimName: logs-pvc
+
+---
+# Monthly Backup CronJob - 1st of month at 4 AM
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-monthly
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+    tier: monthly
+spec:
+  schedule: "0 4 1 * *"  # 1st of month at 4 AM
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 12
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 10800  # 3 hours
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 21600  # 6 hour timeout
+      template:
+        metadata:
+          labels:
+            app: ai-pdf-scholar
+            component: backup
+            tier: monthly
+        spec:
+          serviceAccountName: backup-service-account
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          containers:
+          - name: backup-executor
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_orchestrator.py"]
+            args: [
+              "--tier", "all",
+              "--type", "full",
+              "--retention", "monthly",
+              "--include-validation",
+              "--include-encryption-check",
+              "--cross-region-replication"
+            ]
+            env:
+            - name: BACKUP_TIER
+              value: "all"
+            - name: BACKUP_TYPE
+              value: "full"
+            - name: RETENTION_TYPE
+              value: "monthly"
+            - name: COMPREHENSIVE_BACKUP
+              value: "true"
+            envFrom:
+            - secretRef:
+                name: backup-secrets
+            volumeMounts:
+            - name: backup-config
+              mountPath: /etc/backup-config
+              readOnly: true
+            - name: backup-storage
+              mountPath: /var/backups
+            - name: app-data
+              mountPath: /app/data
+              readOnly: true
+            - name: uploads-data
+              mountPath: /app/uploads
+              readOnly: true
+            - name: logs-data
+              mountPath: /app/logs
+              readOnly: true
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "1000m"
+              limits:
+                memory: "8Gi"
+                cpu: "2000m"
+          volumes:
+          - name: backup-config
+            configMap:
+              name: backup-config
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          - name: app-data
+            persistentVolumeClaim:
+              claimName: app-data-pvc
+          - name: uploads-data
+            persistentVolumeClaim:
+              claimName: uploads-pvc
+          - name: logs-data
+            persistentVolumeClaim:
+              claimName: logs-pvc
+
+---
+# Backup Storage PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-storage-pvc
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3-ssd
+  resources:
+    requests:
+      storage: 1Ti
+  volumeMode: Filesystem
+
+---
+# Backup Secrets Template (to be filled by secrets manager)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backup-secrets
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+type: Opaque
+stringData:
+  # AWS credentials for S3 backup storage
+  AWS_ACCESS_KEY_ID: ""
+  AWS_SECRET_ACCESS_KEY: ""
+  AWS_SESSION_TOKEN: ""
+  
+  # Database connection URLs
+  POSTGRES_CONNECTION_URL: ""
+  REDIS_CONNECTION_URL: ""
+  
+  # Backup encryption keys (managed by encryption service)
+  BACKUP_ENCRYPTION_KEY: ""
+  BACKUP_SIGNING_KEY: ""
+  
+  # Cross-region replication settings
+  BACKUP_SECONDARY_REGION: "us-east-1"
+  BACKUP_TERTIARY_REGION: "eu-west-1"
+  
+  # Notification settings
+  SLACK_WEBHOOK_URL: ""
+  EMAIL_SMTP_PASSWORD: ""
+
+---
+# Backup Validation CronJob - Every 6 hours
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-validation
+  namespace: ai-pdf-scholar
+  labels:
+    app: ai-pdf-scholar
+    component: backup
+    type: validation
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  timeZone: "UTC"
+  concurrencyPolicy: Allow
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 4
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800  # 30 minutes timeout
+      template:
+        metadata:
+          labels:
+            app: ai-pdf-scholar
+            component: backup
+            type: validation
+        spec:
+          serviceAccountName: backup-service-account
+          restartPolicy: Never
+          containers:
+          - name: backup-validator
+            image: ai-pdf-scholar/backup:latest
+            command: ["/app/scripts/backup_validator.py"]
+            args: ["--validate-recent", "--check-integrity", "--verify-encryption"]
+            envFrom:
+            - secretRef:
+                name: backup-secrets
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /var/backups
+              readOnly: true
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "250m"
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc

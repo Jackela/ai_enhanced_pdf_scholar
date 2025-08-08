@@ -32,6 +32,14 @@ DANGEROUS_SQL_PATTERNS = [
     r'\balter\b.*\btable\b',  # Alter statements
     r'\bgrant\b',  # Grant statements
     r'\brevoke\b',  # Revoke statements
+    r"'\s*(or|and)\s*['\"]\d+['\"]\s*=\s*['\"]\d+['\"]",  # Classic OR/AND injection
+    r"'\s*(or|and)\s*\d+\s*=\s*\d+",  # Numeric OR/AND injection  
+    r"\bor\b\s+\d+\s*=\s*\d+",  # OR 1=1 style attacks
+    r"\band\b\s+\d+\s*=\s*\d+",  # AND 1=1 style attacks
+    r"'\s*or\s*'",  # Single quote OR attacks
+    r'"\s*or\s*"',  # Double quote OR attacks
+    r"'\s*and\s*'",  # Single quote AND attacks
+    r'"\s*and\s*"',  # Double quote AND attacks
 ]
 
 XSS_PATTERNS = [

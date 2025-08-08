@@ -1,0 +1,114 @@
+{
+  "failed_tests_analysis": {
+    "analysis_timestamp": "2025-08-09T05:00:00Z",
+    "total_failures": 50,
+    "total_errors": 45,
+    "failure_categories": {
+      "schema_mismatches": {
+        "count": 7,
+        "severity": "HIGH",
+        "tests": [
+          "test_document_model_creation_with_all_fields - AttributeError: 'DocumentModel' object has no attribute 'file_hash_hash'",
+          "test_document_model_default_values - AssertionError: file_size validation failed",
+          "test_document_model_with_unicode_content - TypeError: unexpected keyword argument 'content'",
+          "test_document_model_serialization - TypeError: unexpected keyword argument 'document_id'",
+          "test_citation_model_creation_with_all_fields - TypeError: unexpected keyword argument 'citation_id'"
+        ],
+        "root_cause": "Database model schemas evolved but test expectations not updated",
+        "fix_complexity": "MEDIUM"
+      },
+      "missing_dependencies": {
+        "count": 25,
+        "severity": "CRITICAL",
+        "tests": [
+          "All RAG module tests - ModuleNotFoundError: No module named 'src.services.rag.interfaces'",
+          "Citation integration tests - Import errors for citation services",
+          "Real PDF processing tests - External service dependencies unavailable"
+        ],
+        "root_cause": "Missing interface implementations and external service mocks",
+        "fix_complexity": "HIGH"
+      },
+      "security_validation_failures": {
+        "count": 16,
+        "severity": "HIGH",
+        "tests": [
+          "test_sql_injection_detection",
+          "test_html_sanitization",
+          "test_filename_validation",
+          "test_xss_prevention (multiple variants)"
+        ],
+        "root_cause": "Security validation logic not properly implemented or configured",
+        "fix_complexity": "MEDIUM"
+      },
+      "content_hash_normalization": {
+        "count": 2,
+        "severity": "MEDIUM",
+        "tests": [
+          "test_newline_variations_in_content - Hash normalization too aggressive",
+          "test_whitespace_sensitivity - Content normalization removing intended differences"
+        ],
+        "root_cause": "Content hash service normalizing content when it should preserve differences",
+        "fix_complexity": "LOW"
+      }
+    },
+    "error_patterns": {
+      "import_errors": {
+        "count": 20,
+        "primary_cause": "Missing interface modules and service dependencies",
+        "affected_suites": ["RAG", "Citation Integration", "Real PDF Processing"]
+      },
+      "configuration_errors": {
+        "count": 15,
+        "primary_cause": "Test environment configuration mismatch with production",
+        "affected_suites": ["API Integration", "Security"]
+      },
+      "type_errors": {
+        "count": 10,
+        "primary_cause": "Model schema evolution without test updates",
+        "affected_suites": ["Unit Tests"]
+      }
+    },
+    "most_critical_failures": [
+      {
+        "test_suite": "RAG Module Tests",
+        "failure_type": "BLOCKED",
+        "impact": "Cannot validate 800+ RAG tests that address user's primary concern",
+        "urgency": "IMMEDIATE",
+        "estimated_fix_time": "4-6 hours",
+        "fix_approach": "Implement missing interface modules and RAG service abstractions"
+      },
+      {
+        "test_suite": "Security Tests",
+        "failure_type": "VULNERABILITY_RISK",
+        "impact": "Application potentially vulnerable to XSS and SQL injection",
+        "urgency": "HIGH",
+        "estimated_fix_time": "2-3 hours",
+        "fix_approach": "Fix validation logic and implement proper input sanitization"
+      },
+      {
+        "test_suite": "Citation Integration",
+        "failure_type": "FEATURE_BROKEN",
+        "impact": "Citation extraction and analysis features non-functional",
+        "urgency": "MEDIUM",
+        "estimated_fix_time": "3-4 hours",
+        "fix_approach": "Debug service dependencies and fix import paths"
+      }
+    ],
+    "test_stability_metrics": {
+      "flaky_tests": [
+        "test_hash_service_with_large_content - Extremely slow execution (44s)",
+        "Real PDF processing tests - Dependent on external services"
+      ],
+      "consistently_failing": [
+        "RAG interface import errors",
+        "Citation model schema mismatches",
+        "Security validation logic"
+      ]
+    },
+    "regression_indicators": [
+      "Model schema changes broke existing unit tests",
+      "RAG module refactoring incomplete",
+      "Security implementation gaps from recent updates"
+    ]
+  }
+}

@@ -1,0 +1,201 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-pdf-scholar
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: serviceaccount
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ai-pdf-scholar-role
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: rbac
+rules:
+# Pod and deployment management
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/status"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+# ConfigMap and Secret access (read-only)
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+# Service discovery
+- apiGroups: [""]
+  resources: ["services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+# Events for debugging
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+# Metrics and monitoring
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ai-pdf-scholar-rolebinding
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: rbac
+subjects:
+- kind: ServiceAccount
+  name: ai-pdf-scholar
+  namespace: ai-pdf-scholar
+roleRef:
+  kind: Role
+  name: ai-pdf-scholar-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Network Policies for Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-pdf-scholar-netpol
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ai-pdf-scholar
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow ingress from nginx
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: nginx
+    ports:
+    - protocol: TCP
+      port: 8000  # Backend
+    - protocol: TCP
+      port: 3000  # Frontend
+  # Allow ingress from monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8001  # Metrics
+  # Allow internal communication
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 3000
+  egress:
+  # Allow egress to database
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow egress to redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: cache
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow egress to external services (DNS, API calls)
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+  # Allow egress to monitoring services
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9200  # Elasticsearch
+    - protocol: TCP
+      port: 14268 # Jaeger
+    - protocol: TCP
+      port: 9090  # Prometheus
+---
+# Pod Security Policy (if enabled in cluster)
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ai-pdf-scholar-psp
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: security
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ai-pdf-scholar-psp-user
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: security
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs: ['use']
+  resourceNames:
+  - ai-pdf-scholar-psp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ai-pdf-scholar-psp-binding
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: security
+roleRef:
+  kind: ClusterRole
+  name: ai-pdf-scholar-psp-user
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: ai-pdf-scholar
+  namespace: ai-pdf-scholar

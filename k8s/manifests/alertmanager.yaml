@@ -1,0 +1,509 @@
+# ============================================================================
+# AlertManager Deployment for Production Alerting
+# Multi-channel notification routing with high availability
+# ============================================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alertmanager
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alerting
+---
+# AlertManager Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alerting
+data:
+  alertmanager.yml: |
+    global:
+      # Global notification settings
+      smtp_smarthost: 'localhost:587'
+      smtp_from: 'alerts@ai-pdf-scholar.com'
+      smtp_auth_username: ''
+      smtp_auth_password: ''
+      slack_api_url: ''
+      
+    # Notification templates
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
+    
+    # Route configuration for different alert types
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: 'default-receiver'
+      
+      routes:
+      # Critical alerts - immediate notification
+      - match:
+          severity: critical
+        receiver: 'critical-alerts'
+        group_wait: 10s
+        group_interval: 1m
+        repeat_interval: 5m
+        
+      # Database issues - dedicated channel
+      - match_re:
+          alertname: '(DatabaseConnectionsHigh|InstanceDown)'
+        receiver: 'database-team'
+        group_wait: 30s
+        repeat_interval: 30m
+        
+      # Security alerts - security team
+      - match_re:
+          alertname: '(HighFailedLoginAttempts|RateLimitExceeded|SecurityIncident)'
+        receiver: 'security-team'
+        group_wait: 10s
+        repeat_interval: 15m
+        
+      # Performance alerts - engineering team
+      - match_re:
+          alertname: '(HighLatency|HighErrorRate|RAGQueryFailureRate)'
+        receiver: 'engineering-team'
+        group_wait: 2m
+        repeat_interval: 1h
+        
+      # Infrastructure alerts - ops team
+      - match_re:
+          alertname: '(HighMemoryUsage|HighCPUUsage|DiskSpaceLow)'
+        receiver: 'ops-team'
+        group_wait: 1m
+        repeat_interval: 2h
+    
+    # Inhibit rules - prevent spam
+    inhibit_rules:
+    # Inhibit non-critical alerts when critical ones are firing
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'instance']
+    
+    # Inhibit specific combinations
+    - source_match:
+        alertname: 'InstanceDown'
+      target_match_re:
+        alertname: '(HighMemoryUsage|HighCPUUsage|DatabaseConnectionsHigh)'
+      equal: ['instance']
+    
+    # Notification receivers
+    receivers:
+    # Default receiver for unmatched alerts
+    - name: 'default-receiver'
+      email_configs:
+      - to: 'alerts@ai-pdf-scholar.com'
+        subject: '[AI-PDF-Scholar] Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}: {{ .Value }}{{ end }}
+          {{ end }}
+        headers:
+          Priority: 'normal'
+    
+    # Critical alerts - multiple channels
+    - name: 'critical-alerts'
+      email_configs:
+      - to: 'critical@ai-pdf-scholar.com'
+        subject: '🚨 [CRITICAL] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          🚨 CRITICAL ALERT
+          
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          
+          Severity: {{ .Labels.severity }}
+          Instance: {{ .Labels.instance }}
+          Job: {{ .Labels.job }}
+          
+          Time: {{ .StartsAt }}
+          
+          Labels: {{ range .Labels.SortedPairs }}
+          • {{ .Name }}: {{ .Value }}{{ end }}
+          {{ end }}
+        headers:
+          Priority: 'high'
+          
+      slack_configs:
+      - api_url: '${SLACK_API_URL}'
+        channel: '#critical-alerts'
+        title: '🚨 Critical Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        color: 'danger'
+        
+      pagerduty_configs:
+      - routing_key: '${PAGERDUTY_ROUTING_KEY}'
+        description: 'Critical alert in AI PDF Scholar: {{ .GroupLabels.alertname }}'
+        severity: 'critical'
+    
+    # Database team alerts
+    - name: 'database-team'
+      email_configs:
+      - to: 'database-team@ai-pdf-scholar.com'
+        subject: '[DB] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
+        body: |
+          Database Alert Notification
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          {{ end }}
+          
+      slack_configs:
+      - api_url: '${SLACK_API_URL}'
+        channel: '#database-alerts'
+        title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        color: 'warning'
+    
+    # Security team alerts
+    - name: 'security-team'
+      email_configs:
+      - to: 'security@ai-pdf-scholar.com'
+        subject: '🔒 [SECURITY] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
+        body: |
+          Security Alert Notification
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          
+          Security Event Details:
+          {{ range .Labels.SortedPairs }}• {{ .Name }}: {{ .Value }}
+          {{ end }}
+          {{ end }}
+        headers:
+          Priority: 'high'
+          
+      slack_configs:
+      - api_url: '${SLACK_API_URL}'
+        channel: '#security-alerts'
+        title: '🔒 Security Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        color: 'danger'
+    
+    # Engineering team alerts
+    - name: 'engineering-team'
+      email_configs:
+      - to: 'engineering@ai-pdf-scholar.com'
+        subject: '[ENG] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
+        body: |
+          Performance/Engineering Alert
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+          
+      slack_configs:
+      - api_url: '${SLACK_API_URL}'
+        channel: '#engineering-alerts'
+        title: '⚡ Performance Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+        color: 'warning'
+    
+    # Operations team alerts
+    - name: 'ops-team'
+      email_configs:
+      - to: 'ops@ai-pdf-scholar.com'
+        subject: '[OPS] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
+        body: |
+          Infrastructure/Operations Alert
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          {{ end }}
+          
+      slack_configs:
+      - api_url: '${SLACK_API_URL}'
+        channel: '#ops-alerts'
+        title: '🖥️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        color: 'warning'
+
+  # Alert notification templates
+  notification.tmpl: |
+    {{ define "custom.title" }}
+    [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.SortedPairs.Values | join " " }} {{ if gt (len .CommonLabels) (len .GroupLabels) }}({{ with .CommonLabels.Remove .GroupLabels.Names }}{{ .Values | join " " }}{{ end }}){{ end }}
+    {{ end }}
+    
+    {{ define "custom.slack.text" }}
+    {{ range .Alerts }}
+    {{ if .Annotations.summary }}*Summary:* {{ .Annotations.summary }}{{ end }}
+    {{ if .Annotations.description }}*Description:* {{ .Annotations.description }}{{ end }}
+    *Severity:* {{ .Labels.severity | default "unknown" }}
+    *Instance:* {{ .Labels.instance | default "unknown" }}
+    {{ if .Labels.runbook_url }}*Runbook:* <{{ .Labels.runbook_url }}|View>{{ end }}
+    {{ end }}
+    {{ end }}
+    
+    {{ define "custom.slack.color" }}
+    {{ if eq .Status "firing" }}
+    {{ if eq .GroupLabels.severity "critical" }}danger{{ else }}warning{{ end }}
+    {{ else }}good{{ end }}
+    {{ end }}
+
+---
+# AlertManager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alerting
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9093"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9093
+      targetPort: 9093
+      protocol: TCP
+    - name: cluster
+      port: 9094
+      targetPort: 9094
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alerting
+---
+# AlertManager StatefulSet for High Availability
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alertmanager
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alerting
+spec:
+  serviceName: alertmanager
+  replicas: 2  # High availability
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager
+      app.kubernetes.io/component: alerting
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alertmanager
+        app.kubernetes.io/component: alerting
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9093"
+    spec:
+      serviceAccountName: alertmanager
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.25.0
+        args:
+          - --config.file=/etc/alertmanager/alertmanager.yml
+          - --storage.path=/alertmanager
+          - --data.retention=120h
+          - --web.listen-address=0.0.0.0:9093
+          - --web.external-url=http://localhost:9093
+          - --cluster.listen-address=0.0.0.0:9094
+          - --cluster.peer=alertmanager-0.alertmanager.ai-pdf-scholar.svc.cluster.local:9094
+          - --cluster.peer=alertmanager-1.alertmanager.ai-pdf-scholar.svc.cluster.local:9094
+          - --log.level=info
+        ports:
+        - name: http
+          containerPort: 9093
+        - name: cluster
+          containerPort: 9094
+        env:
+        - name: SLACK_API_URL
+          valueFrom:
+            secretKeyRef:
+              name: alertmanager-secrets
+              key: slack-api-url
+              optional: true
+        - name: PAGERDUTY_ROUTING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: alertmanager-secrets
+              key: pagerduty-routing-key
+              optional: true
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9093
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+          periodSeconds: 30
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9093
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          periodSeconds: 5
+          failureThreshold: 1
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alertmanager
+        - name: alertmanager-data
+          mountPath: /alertmanager
+      volumes:
+      - name: config
+        configMap:
+          name: alertmanager-config
+  volumeClaimTemplates:
+  - metadata:
+      name: alertmanager-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 10Gi
+---
+# Webhook receiver for custom integrations
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-webhook
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: alertmanager-webhook
+    app.kubernetes.io/component: alerting
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager-webhook
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alertmanager-webhook
+    spec:
+      containers:
+      - name: webhook
+        image: prom/alertmanager:v0.25.0
+        args:
+        - --web.listen-address=0.0.0.0:8080
+        - --log.level=info
+        ports:
+        - containerPort: 8080
+          name: webhook
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+# Webhook Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-webhook
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: alertmanager-webhook
+    app.kubernetes.io/component: alerting
+spec:
+  type: ClusterIP
+  ports:
+    - name: webhook
+      port: 8080
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: alertmanager-webhook
+---
+# Grafana notification channel ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-notification-channels
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: alerting
+data:
+  notification-channels.yaml: |
+    notifiers:
+    - name: alertmanager
+      type: prometheus-alertmanager
+      uid: alertmanager
+      settings:
+        url: http://alertmanager:9093
+        basicAuth: false
+    
+    - name: slack-critical
+      type: slack
+      uid: slack-critical
+      settings:
+        url: ${SLACK_WEBHOOK_URL}
+        channel: '#critical-alerts'
+        title: 'Grafana Alert'
+        text: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+    
+    - name: email-team
+      type: email
+      uid: email-team
+      settings:
+        addresses: alerts@ai-pdf-scholar.com
+        subject: '[Grafana] AI PDF Scholar Alert'

@@ -9,7 +9,7 @@
  * @version 2.1.0
  */
 
-import { useMemo, useCallback, useRef, useEffect } from 'react'
+import { useMemo, useCallback, useRef, useEffect, useState } from 'react'
 import { 
   sanitizeText, 
   sanitizeHTML, 
@@ -83,9 +83,18 @@ export function useXSSDetection(content: string) {
  * Hook for secure input handling with real-time validation
  */
 export function useSecureInput(initialValue = '', options: SecurityConfig = DEFAULT_SECURITY_CONFIG) {
+  // Initialize sanitized value and XSS check for initial value
+  const initialSanitized = useMemo(() => {
+    return options.stripAllHTML ? sanitizeText(initialValue) : sanitizeHTML(initialValue, options)
+  }, [initialValue, options])
+  
+  const initialHasXSS = useMemo(() => {
+    return detectXSSAttempt(initialValue).isDetected
+  }, [initialValue])
+
   const [value, setValue] = useState(initialValue)
-  const [sanitizedValue, setSanitizedValue] = useState('')
-  const [hasXSS, setHasXSS] = useState(false)
+  const [sanitizedValue, setSanitizedValue] = useState(initialSanitized)
+  const [hasXSS, setHasXSS] = useState(initialHasXSS)
   const previousValueRef = useRef(initialValue)
 
   // Sanitize value whenever it changes
@@ -176,8 +185,12 @@ export function useChatMessageSecurity(message: string, role: 'user' | 'assistan
   }, [role, xssDetection.isDetected, textContent, sanitizedContent])
 
   const shouldRenderAsHTML = useMemo(() => {
-    return role === 'assistant' && isHTML && !xssDetection.isDetected
-  }, [role, isHTML, xssDetection.isDetected])
+    // For assistant messages, render as HTML if it's either HTML content or markdown content
+    if (role === 'assistant' && !xssDetection.isDetected) {
+      return isHTML || securityConfig.allowMarkdown
+    }
+    return false
+  }, [role, isHTML, xssDetection.isDetected, securityConfig.allowMarkdown])
 
   return {
     displayContent,
@@ -270,5 +283,3 @@ export function useSecurityMonitoring() {
   }
 }
 
-// Import useState for useSecureInput
-import { useState } from 'react'

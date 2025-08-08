@@ -69,7 +69,18 @@ class ConnectionPool:
     def __init__(
         self, db_path: str, max_connections: int = 20, connection_timeout: float = 30.0
     ) -> None:
-        self.db_path = Path(db_path)
+        # Handle special cases for database paths
+        self.is_memory_db = DatabaseConnection._is_memory_database_url(db_path)
+        if self.is_memory_db:
+            # For memory databases, use the actual SQLite memory syntax
+            self.db_path_str = ":memory:"
+            self.db_path = None  # No file path for memory databases
+        else:
+            # Remove sqlite:// prefix if present for file databases
+            clean_path = db_path.replace("sqlite://", "").lstrip("/")
+            self.db_path = Path(clean_path)
+            self.db_path_str = str(self.db_path)
+        
         self.max_connections = max_connections
         self.connection_timeout = connection_timeout
         # Thread-safe connection management
@@ -86,17 +97,20 @@ class ConnectionPool:
         import atexit
 
         atexit.register(self.close_all)
-        # Ensure database directory exists
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Only ensure database directory exists for file databases
+        if not self.is_memory_db and self.db_path:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        
         logger.info(
-            f"Connection pool initialized: {self.db_path} (max: {max_connections})"
+            f"Connection pool initialized: {self.db_path_str} (max: {max_connections})"
         )
 
     def _create_connection(self) -> sqlite3.Connection:
         """Create a new SQLite connection with advanced performance optimizations."""
         try:
             conn = sqlite3.connect(
-                str(self.db_path),
+                self.db_path_str,
                 check_same_thread=False,
                 timeout=self.connection_timeout,
                 isolation_level=None,  # Autocommit mode for manual transaction control
@@ -303,6 +317,32 @@ class DatabaseConnection:
     - Comprehensive error handling
     - Connection health monitoring
     """
+    
+    @staticmethod
+    def _is_memory_database_url(db_path: str) -> bool:
+        """
+        Check if the database path refers to an in-memory database.
+        
+        Args:
+            db_path: Database path/URL to check
+            
+        Returns:
+            True if the path refers to a memory database, False otherwise
+        """
+        if not db_path:
+            return False
+            
+        # Normalize the path for comparison
+        normalized_path = db_path.strip().lower()
+        
+        # Check various memory database URL formats
+        return (
+            normalized_path == ":memory:" or
+            normalized_path == "sqlite:///:memory:" or
+            normalized_path == "sqlite://:memory:" or
+            # Handle URLs like sqlite://localhost/:memory:
+            (normalized_path.startswith("sqlite://") and normalized_path.endswith(":memory:"))
+        )
 
     # Constants
     CONNECTION_EXPIRY_SECONDS = 3600  # 1 hour in seconds
@@ -318,7 +358,7 @@ class DatabaseConnection:
         """
         Initialize enhanced database connection manager.
         Args:
-            db_path: Path to SQLite database file
+            db_path: Path to SQLite database file or special URL (e.g., :memory:, sqlite:///:memory:)
             max_connections: Maximum number of connections in pool
             connection_timeout: Connection timeout in seconds
         Raises:
@@ -328,33 +368,46 @@ class DatabaseConnection:
         if not db_path or not str(db_path).strip():
             raise DatabaseConnectionError("Database path cannot be empty")
 
-        self.db_path = Path(db_path)
+        # Handle special cases for database paths
+        self.is_memory_db = self._is_memory_database_url(db_path)
+        if self.is_memory_db:
+            # For memory databases, use the actual SQLite memory syntax
+            self.db_path_str = ":memory:"
+            self.db_path = None  # No file path for memory databases
+        else:
+            # Remove sqlite:// prefix if present for file databases
+            clean_path = db_path.replace("sqlite://", "").lstrip("/")
+            self.db_path = Path(clean_path)
+            self.db_path_str = str(self.db_path)
+
         self.max_connections = max_connections
         self.connection_timeout = connection_timeout
         self.enable_foreign_keys = True
 
-        # Validate database path
-        try:
-            # Check if parent directory exists or can be created
-            parent_dir = self.db_path.parent
-            if not parent_dir.exists():
-                # Try to create parent directory
-                parent_dir.mkdir(parents=True, exist_ok=True)
-            # Try to create a test file to verify write permissions
-            test_file = parent_dir / f".test_write_{threading.current_thread().ident}"
-            test_file.touch()
-            test_file.unlink()  # Clean up test file
-        except (OSError, PermissionError) as e:
-            raise DatabaseConnectionError(f"Cannot access database path: {e}") from e
-        # Initialize connection pool
-        self._pool = ConnectionPool(db_path, max_connections, connection_timeout)
+        # Validate database path (only for file databases)
+        if not self.is_memory_db:
+            try:
+                # Check if parent directory exists or can be created
+                parent_dir = self.db_path.parent
+                if not parent_dir.exists():
+                    # Try to create parent directory
+                    parent_dir.mkdir(parents=True, exist_ok=True)
+                # Try to create a test file to verify write permissions
+                test_file = parent_dir / f".test_write_{threading.current_thread().ident}"
+                test_file.touch()
+                test_file.unlink()  # Clean up test file
+            except (OSError, PermissionError) as e:
+                raise DatabaseConnectionError(f"Cannot access database path: {e}") from e
+        
+        # Initialize connection pool with the processed path
+        self._pool = ConnectionPool(self.db_path_str, max_connections, connection_timeout)
         # Thread-local storage for current connection
         self._local = threading.local()
         # Test connection
         try:
             conn_info = self._pool.get_connection()
             self._pool.return_connection(conn_info)
-            logger.info(f"Enhanced database connection established: {self.db_path}")
+            logger.info(f"Enhanced database connection established: {self.db_path_str}")
         except Exception as e:
             logger.error(f"Failed to establish database connection: {e}")
             raise DatabaseConnectionError(f"Cannot connect to database: {e}") from e
@@ -681,13 +734,22 @@ class DatabaseConnection:
             Dictionary with database metadata
         """
         try:
-            info = {
-                "database_path": str(self.db_path),
-                "database_exists": self.db_path.exists(),
-                "database_size": (
-                    self.db_path.stat().st_size if self.db_path.exists() else 0
-                ),
-            }
+            if self.is_memory_db:
+                info = {
+                    "database_path": self.db_path_str,
+                    "database_exists": True,  # Memory database always exists when connected
+                    "database_size": 0,  # Memory database size is not measurable
+                    "database_type": "memory"
+                }
+            else:
+                info = {
+                    "database_path": str(self.db_path),
+                    "database_exists": self.db_path.exists() if self.db_path else False,
+                    "database_size": (
+                        self.db_path.stat().st_size if self.db_path and self.db_path.exists() else 0
+                    ),
+                    "database_type": "file"
+                }
             # Get table information
             tables = self.fetch_all("SELECT name FROM sqlite_master WHERE type='table'")
             info["tables"] = [table["name"] for table in tables]

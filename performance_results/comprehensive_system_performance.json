@@ -1,0 +1,346 @@
+{
+  "metadata": {
+    "assessment_start_time": 1754721367.4382265,
+    "assessment_duration_seconds": 34.202980756759644,
+    "timestamp": "2025-08-09T16:36:41.641218",
+    "database_path": "E:\\Code\\ai_enhanced_pdf_scholar\\data\\library.db",
+    "system_platform": "win32",
+    "python_version": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]"
+  },
+  "system_resource_monitoring": {
+    "monitoring_duration_seconds": 30,
+    "total_measurements": 15,
+    "cpu_stats": {
+      "avg_percent": 21.266666666666666,
+      "min_percent": 6.2,
+      "max_percent": 39.8,
+      "std_dev": 10.234372523627473
+    },
+    "memory_stats": {
+      "avg_percent": 43.00666666666667,
+      "min_percent": 42.9,
+      "max_percent": 43.1,
+      "avg_used_mb": 28123.904427083333,
+      "peak_used_mb": 28197.1171875
+    },
+    "raw_metrics": [
+      {
+        "cpu_percent": 10.7,
+        "memory_percent": 42.9,
+        "memory_used_mb": 28083.6328125,
+        "memory_available_mb": 37304.42578125,
+        "disk_io_read_mb": 127644.974609375,
+        "disk_io_write_mb": 137841.63037109375,
+        "network_sent_mb": 550.5790672302246,
+        "network_recv_mb": 10768.620175361633,
+        "process_count": 417,
+        "timestamp": 1754721367.5666695
+      },
+      {
+        "cpu_percent": 23.2,
+        "memory_percent": 43.1,
+        "memory_used_mb": 28197.1171875,
+        "memory_available_mb": 37190.94140625,
+        "disk_io_read_mb": 127667.21826171875,
+        "disk_io_write_mb": 137866.46240234375,
+        "network_sent_mb": 550.6004476547241,
+        "network_recv_mb": 10768.649092674255,
+        "process_count": 417,
+        "timestamp": 1754721369.6952388
+      },
+      {
+        "cpu_percent": 25.5,
+        "memory_percent": 43.1,
+        "memory_used_mb": 28176.03515625,
+        "memory_available_mb": 37212.0234375,
+        "disk_io_read_mb": 127667.34326171875,
+        "disk_io_write_mb": 137918.16552734375,
+        "network_sent_mb": 550.6045436859131,
+        "network_recv_mb": 10768.653503417969,
+        "process_count": 417,
+        "timestamp": 1754721371.8187766
+      },
+      {
+        "cpu_percent": 6.2,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28088.04296875,
+        "memory_available_mb": 37300.015625,
+        "disk_io_read_mb": 127667.34326171875,
+        "disk_io_write_mb": 137947.38427734375,
+        "network_sent_mb": 550.607871055603,
+        "network_recv_mb": 10768.658276557922,
+        "process_count": 417,
+        "timestamp": 1754721373.9423451
+      },
+      {
+        "cpu_percent": 12.0,
+        "memory_percent": 42.9,
+        "memory_used_mb": 28043.98046875,
+        "memory_available_mb": 37344.078125,
+        "disk_io_read_mb": 127667.34326171875,
+        "disk_io_write_mb": 137948.24755859375,
+        "network_sent_mb": 550.6103677749634,
+        "network_recv_mb": 10768.661635398865,
+        "process_count": 417,
+        "timestamp": 1754721376.0672958
+      },
+      {
+        "cpu_percent": 25.3,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28125.6796875,
+        "memory_available_mb": 37262.37890625,
+        "disk_io_read_mb": 127667.44140625,
+        "disk_io_write_mb": 137948.81005859375,
+        "network_sent_mb": 550.6138019561768,
+        "network_recv_mb": 10768.665263175964,
+        "process_count": 417,
+        "timestamp": 1754721378.1933582
+      },
+      {
+        "cpu_percent": 36.7,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28117.984375,
+        "memory_available_mb": 37270.07421875,
+        "disk_io_read_mb": 127667.6103515625,
+        "disk_io_write_mb": 137985.97802734375,
+        "network_sent_mb": 550.6164112091064,
+        "network_recv_mb": 10768.668678283691,
+        "process_count": 417,
+        "timestamp": 1754721380.321351
+      },
+      {
+        "cpu_percent": 18.4,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28126.32421875,
+        "memory_available_mb": 37261.734375,
+        "disk_io_read_mb": 127667.6728515625,
+        "disk_io_write_mb": 138038.03662109375,
+        "network_sent_mb": 550.6335353851318,
+        "network_recv_mb": 10768.68675327301,
+        "process_count": 416,
+        "timestamp": 1754721382.4477618
+      },
+      {
+        "cpu_percent": 33.9,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28093.15234375,
+        "memory_available_mb": 37294.90625,
+        "disk_io_read_mb": 127667.6728515625,
+        "disk_io_write_mb": 138051.04052734375,
+        "network_sent_mb": 550.6517705917358,
+        "network_recv_mb": 10768.700170516968,
+        "process_count": 416,
+        "timestamp": 1754721384.581507
+      },
+      {
+        "cpu_percent": 7.2,
+        "memory_percent": 42.9,
+        "memory_used_mb": 28080.140625,
+        "memory_available_mb": 37307.91796875,
+        "disk_io_read_mb": 127667.6728515625,
+        "disk_io_write_mb": 138052.36865234375,
+        "network_sent_mb": 550.6712989807129,
+        "network_recv_mb": 10768.718071937561,
+        "process_count": 412,
+        "timestamp": 1754721386.7059247
+      },
+      {
+        "cpu_percent": 21.0,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28135.76953125,
+        "memory_available_mb": 37252.2890625,
+        "disk_io_read_mb": 127667.6767578125,
+        "disk_io_write_mb": 138052.80224609375,
+        "network_sent_mb": 550.6926498413086,
+        "network_recv_mb": 10768.733275413513,
+        "process_count": 411,
+        "timestamp": 1754721388.8301342
+      },
+      {
+        "cpu_percent": 24.8,
+        "memory_percent": 43.1,
+        "memory_used_mb": 28149.7734375,
+        "memory_available_mb": 37238.28515625,
+        "disk_io_read_mb": 127667.6767578125,
+        "disk_io_write_mb": 138053.35693359375,
+        "network_sent_mb": 550.7015190124512,
+        "network_recv_mb": 10768.740696907043,
+        "process_count": 411,
+        "timestamp": 1754721390.954087
+      },
+      {
+        "cpu_percent": 39.8,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28142.55859375,
+        "memory_available_mb": 37245.5,
+        "disk_io_read_mb": 127667.6767578125,
+        "disk_io_write_mb": 138054.10693359375,
+        "network_sent_mb": 550.7129487991333,
+        "network_recv_mb": 10768.753860473633,
+        "process_count": 413,
+        "timestamp": 1754721393.0881076
+      },
+      {
+        "cpu_percent": 14.9,
+        "memory_percent": 43.0,
+        "memory_used_mb": 28119.2109375,
+        "memory_available_mb": 37268.84765625,
+        "disk_io_read_mb": 127667.6923828125,
+        "disk_io_write_mb": 138055.37255859375,
+        "network_sent_mb": 550.7404823303223,
+        "network_recv_mb": 10768.787680625916,
+        "process_count": 415,
+        "timestamp": 1754721395.2130094
+      },
+      {
+        "cpu_percent": 19.4,
+        "memory_percent": 43.1,
+        "memory_used_mb": 28179.1640625,
+        "memory_available_mb": 37208.89453125,
+        "disk_io_read_mb": 127687.9150390625,
+        "disk_io_write_mb": 138055.70458984375,
+        "network_sent_mb": 550.7614812850952,
+        "network_recv_mb": 10768.818490028381,
+        "process_count": 415,
+        "timestamp": 1754721397.340355
+      }
+    ]
+  },
+  "database_performance": {
+    "query_count": 200,
+    "avg_query_time_ms": 0.00809788703918457,
+    "min_query_time_ms": 0.0057220458984375,
+    "max_query_time_ms": 0.07033348083496094,
+    "total_time_ms": 4.050970077514648,
+    "errors": 0,
+    "concurrent_connections": 1,
+    "database_size_mb": 0.53125,
+    "timestamp": 1754721399.3457336
+  },
+  "memory_leak_tests": {
+    "database_operations": {
+      "initial_memory_mb": 55.625,
+      "peak_memory_mb": 55.625,
+      "final_memory_mb": 88.87109375,
+      "memory_growth_mb": 33.24609375,
+      "operations_performed": 500,
+      "duration_seconds": 0.6949505805969238,
+      "leak_detected": true,
+      "growth_rate_mb_per_operation": 0.0664921875
+    },
+    "file_operations": {
+      "initial_memory_mb": 88.87109375,
+      "peak_memory_mb": 88.8984375,
+      "final_memory_mb": 88.8984375,
+      "memory_growth_mb": 0.02734375,
+      "operations_performed": 300,
+      "duration_seconds": 0.1914997100830078,
+      "leak_detected": false,
+      "growth_rate_mb_per_operation": 9.114583333333334e-05
+    },
+    "text_processing": {
+      "initial_memory_mb": 88.8984375,
+      "peak_memory_mb": 89.5234375,
+      "final_memory_mb": 89.5234375,
+      "memory_growth_mb": 0.625,
+      "operations_performed": 1000,
+      "duration_seconds": 0.18294644355773926,
+      "leak_detected": false,
+      "growth_rate_mb_per_operation": 0.000625
+    }
+  },
+  "concurrent_load_tests": {
+    "light_load": {
+      "concurrent_users": 5,
+      "total_operations": 100,
+      "successful_operations": 100,
+      "failed_operations": 0,
+      "avg_response_time_ms": 3.8415908813476562,
+      "min_response_time_ms": 0.9694099426269531,
+      "max_response_time_ms": 56.74386024475098,
+      "operations_per_second": 1078.8124149602997,
+      "error_rate_percent": 0.0,
+      "duration_seconds": 0.09269452095031738
+    },
+    "moderate_load": {
+      "concurrent_users": 10,
+      "total_operations": 300,
+      "successful_operations": 300,
+      "failed_operations": 0,
+      "avg_response_time_ms": 8.71849775314331,
+      "min_response_time_ms": 0.9469985961914062,
+      "max_response_time_ms": 169.31796073913574,
+      "operations_per_second": 973.1751967362092,
+      "error_rate_percent": 0.0,
+      "duration_seconds": 0.3082692623138428
+    },
+    "heavy_load": {
+      "concurrent_users": 20,
+      "total_operations": 500,
+      "successful_operations": 500,
+      "failed_operations": 0,
+      "avg_response_time_ms": 19.382967948913574,
+      "min_response_time_ms": 0.9057521820068359,
+      "max_response_time_ms": 419.18325424194336,
+      "operations_per_second": 904.0036657558315,
+      "error_rate_percent": 0.0,
+      "duration_seconds": 0.5530951023101807
+    }
+  },
+  "reliability_tests": [
+    {
+      "test_name": "database_connection_resilience",
+      "iterations": 50,
+      "successful_iterations": 50,
+      "failed_iterations": 0,
+      "avg_recovery_time_ms": 0.10840892791748047,
+      "max_recovery_time_ms": 0.24771690368652344,
+      "reliability_score": 1.0,
+      "error_messages": []
+    },
+    {
+      "test_name": "resource_exhaustion_recovery",
+      "iterations": 20,
+      "successful_iterations": 20,
+      "failed_iterations": 0,
+      "avg_recovery_time_ms": 13.15382719039917,
+      "max_recovery_time_ms": 17.105817794799805,
+      "reliability_score": 1.0,
+      "error_messages": []
+    }
+  ],
+  "performance_summary": {
+    "overall_score": 87.26,
+    "performance_rating": "GOOD",
+    "component_scores": {
+      "system_resources": 67.86,
+      "database_performance": 100,
+      "memory_management": 70,
+      "concurrent_load": 98.44,
+      "reliability": 100.0
+    },
+    "production_readiness": {
+      "ready": false,
+      "issues": [
+        "Memory leaks detected",
+        "High memory usage (>2GB)"
+      ],
+      "recommendations": [
+        "Investigate and fix memory leaks in application code",
+        "Implement proper resource cleanup in all code paths",
+        "Optimize memory usage, consider implementing data streaming for large files",
+        "Monitor memory usage in production and set up alerts",
+        "Set up comprehensive monitoring and alerting for production deployment",
+        "Implement health check endpoints for load balancer integration",
+        "Consider implementing caching layers for frequently accessed data",
+        "Establish performance baselines and regression testing in CI/CD pipeline"
+      ]
+    },
+    "key_metrics": {
+      "avg_query_time_ms": 0.00809788703918457,
+      "peak_memory_mb": 28197.1171875,
+      "max_concurrent_users_supported": 20,
+      "system_reliability_percent": 100.0
+    }
+  }
+}

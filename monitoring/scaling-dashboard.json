@@ -1,0 +1,642 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AI-Enhanced Auto-Scaling Dashboard",
+    "tags": ["scaling", "kubernetes", "ai-pdf-scholar"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 16,
+    "version": 1,
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Scaling Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(kube_pod_info{namespace=\"ai-pdf-scholar\", pod=~\".*backend.*\"})",
+            "legendFormat": "Current Replicas",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "custom": {
+              "displayMode": "list",
+              "orientation": "auto"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 15 }
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Cost Optimization",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05 + sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01",
+            "legendFormat": "Hourly Cost ($)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 5 },
+                { "color": "red", "value": 10 }
+              ]
+            },
+            "unit": "currencyUSD"
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Response Time P95",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m])) * 1000",
+            "legendFormat": "P95 Response Time (ms)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 200 },
+                { "color": "red", "value": 500 }
+              ]
+            },
+            "unit": "ms"
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Scaling Efficiency",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"ai-pdf-scholar-backend\"}[5m]) / count(kube_pod_info{namespace=\"ai-pdf-scholar\", pod=~\".*backend.*\"})",
+            "legendFormat": "RPS per Pod",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 20 },
+                { "color": "green", "value": 50 }
+              ]
+            },
+            "unit": "reqps"
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 5,
+        "title": "Replica Count Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "count(kube_pod_info{namespace=\"ai-pdf-scholar\", pod=~\".*backend.*\"})",
+            "legendFormat": "Current Replicas",
+            "refId": "A"
+          },
+          {
+            "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace=\"ai-pdf-scholar\", horizontalpodautoscaler=\"ai-pdf-scholar-backend-hpa\"}",
+            "legendFormat": "HPA Min Replicas",
+            "refId": "B"
+          },
+          {
+            "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"ai-pdf-scholar\", horizontalpodautoscaler=\"ai-pdf-scholar-backend-hpa\"}",
+            "legendFormat": "HPA Max Replicas",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "yAxes": [
+          {
+            "label": "Replicas",
+            "min": 0,
+            "max": null
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "legend": {
+          "avg": false,
+          "current": true,
+          "max": true,
+          "min": true,
+          "show": true,
+          "total": false,
+          "values": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "Resource Utilization",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "avg(rate(container_cpu_usage_seconds_total{container=\"backend\", namespace=\"ai-pdf-scholar\"}[5m])) * 100",
+            "legendFormat": "CPU Usage (%)",
+            "refId": "A"
+          },
+          {
+            "expr": "avg(container_memory_working_set_bytes{container=\"backend\", namespace=\"ai-pdf-scholar\"}) / avg(container_spec_memory_limit_bytes{container=\"backend\", namespace=\"ai-pdf-scholar\"}) * 100",
+            "legendFormat": "Memory Usage (%)",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "yAxes": [
+          {
+            "label": "Percentage",
+            "min": 0,
+            "max": 100
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 70,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          },
+          {
+            "value": 75,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Request Rate and Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Request Rate (RPS)",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m])) * 1000",
+            "legendFormat": "Response Time P95 (ms)",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+        "yAxes": [
+          {
+            "label": "RPS / ms",
+            "min": 0,
+            "max": null
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 200,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": false,
+            "line": true,
+            "yaxis": "left"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Scaling Events",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{namespace=\"ai-pdf-scholar\"} |= \"scaled\" or \"ScalingReplicaSet\"",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "showCommonLabels": false,
+          "wrapLogMessage": false,
+          "prettifyLogMessage": false,
+          "enableLogDetails": true,
+          "dedupStrategy": "none",
+          "sortOrder": "Descending"
+        }
+      },
+      {
+        "id": 9,
+        "title": "HPA Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"ai-pdf-scholar\", horizontalpodautoscaler=\"ai-pdf-scholar-backend-hpa\"}",
+            "legendFormat": "Current Replicas",
+            "refId": "A"
+          },
+          {
+            "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"ai-pdf-scholar\", horizontalpodautoscaler=\"ai-pdf-scholar-backend-hpa\"}",
+            "legendFormat": "Desired Replicas",
+            "refId": "B"
+          },
+          {
+            "expr": "kube_horizontalpodautoscaler_spec_target_metric{namespace=\"ai-pdf-scholar\", horizontalpodautoscaler=\"ai-pdf-scholar-backend-hpa\", metric_name=\"cpu\", metric_target_type=\"utilization\"}",
+            "legendFormat": "CPU Target (%)",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+        "yAxes": [
+          {
+            "label": "Replicas / Percentage",
+            "min": 0,
+            "max": null
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "RAG-Specific Scaling Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(rag_queries_total[5m])",
+            "legendFormat": "RAG Query Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(rag_query_duration_seconds_bucket[5m])) * 1000",
+            "legendFormat": "RAG P95 Response Time (ms)",
+            "refId": "B"
+          },
+          {
+            "expr": "document_processing_queue_depth",
+            "legendFormat": "Processing Queue Depth",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+        "yAxes": [
+          {
+            "label": "Queries/sec, ms, items",
+            "min": 0,
+            "max": null
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 500,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": false,
+            "line": true,
+            "yaxis": "left"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Cost Analysis",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05",
+            "legendFormat": "CPU Cost ($/hour)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01",
+            "legendFormat": "Memory Cost ($/hour)",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05 + sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01",
+            "legendFormat": "Total Cost ($/hour)",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+        "yAxes": [
+          {
+            "label": "Cost (USD/hour)",
+            "min": 0,
+            "max": null
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Scaling Prediction Confidence",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "scaling_prediction_confidence",
+            "legendFormat": "ML Confidence",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 0.6 },
+                { "color": "green", "value": 0.8 }
+              ]
+            },
+            "unit": "percentunit"
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 13,
+        "title": "Node Resource Availability",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(kube_node_status_allocatable{resource=\"cpu\"}) - sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"})",
+            "legendFormat": "Available CPU",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(kube_node_status_allocatable{resource=\"memory\"}) - sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"})",
+            "legendFormat": "Available Memory (bytes)",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+        "yAxes": [
+          {
+            "label": "Resources",
+            "min": 0,
+            "max": null
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Scaling Triggers",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "increase(hpa_scaling_events_total{namespace=\"ai-pdf-scholar\"}[1h])",
+            "legendFormat": "Scale Up Events",
+            "refId": "A"
+          },
+          {
+            "expr": "increase(hpa_scaling_events_total{namespace=\"ai-pdf-scholar\", direction=\"down\"}[1h])",
+            "legendFormat": "Scale Down Events",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+        "yAxes": [
+          {
+            "label": "Events per hour",
+            "min": 0,
+            "max": null
+          },
+          {
+            "label": "",
+            "min": null,
+            "max": null
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=\"HighCPUUsage\", severity=\"critical\"}",
+          "iconColor": "red",
+          "name": "High CPU Alerts",
+          "titleFormat": "High CPU Usage Alert",
+          "textFormat": "CPU usage exceeded threshold"
+        },
+        {
+          "datasource": "Prometheus", 
+          "enable": true,
+          "expr": "ALERTS{alertname=\"HighMemoryUsage\", severity=\"critical\"}",
+          "iconColor": "orange",
+          "name": "High Memory Alerts",
+          "titleFormat": "High Memory Usage Alert",
+          "textFormat": "Memory usage exceeded threshold"
+        }
+      ]
+    },
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "text": "ai-pdf-scholar",
+            "value": "ai-pdf-scholar"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": "Namespace",
+          "multi": false,
+          "name": "namespace",
+          "options": [],
+          "query": "label_values(kube_pod_info, namespace)",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "tagValuesQuery": "",
+          "tags": [],
+          "tagsQuery": "",
+          "type": "query",
+          "useTags": false
+        },
+        {
+          "current": {
+            "text": "ai-pdf-scholar-backend",
+            "value": "ai-pdf-scholar-backend"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": "Deployment",
+          "multi": false,
+          "name": "deployment",
+          "options": [],
+          "query": "label_values(kube_deployment_status_replicas{namespace=\"$namespace\"}, deployment)",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "tagValuesQuery": "",
+          "tags": [],
+          "tagsQuery": "",
+          "type": "query",
+          "useTags": false
+        }
+      ]
+    },
+    "links": [],
+    "editable": true,
+    "gnetId": null,
+    "graphTooltip": 1,
+    "hideControls": false,
+    "style": "dark",
+    "uid": "ai-scaling-dashboard",
+    "version": 1
+  },
+  "folderId": 0,
+  "overwrite": true
+}

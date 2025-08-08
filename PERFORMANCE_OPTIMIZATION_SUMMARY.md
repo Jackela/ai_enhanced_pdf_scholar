@@ -167,21 +167,23 @@ index_analysis = migrator.analyze_index_effectiveness()
 
 ### Query Performance
 - **Hash lookups**: Sub-millisecond performance for duplicate detection
-- **Document listing**: 10x improvement in pagination queries
-- **Search operations**: 5x improvement in title/content search
-- **JOIN operations**: 3x improvement in citation analysis queries
+- **Document listing**: Improved pagination query performance
+- **Search operations**: Enhanced title/content search efficiency
+- **JOIN operations**: Optimized citation analysis queries
 
 ### Index Effectiveness
-- **75 specialized indexes** covering all major query patterns
-- **95%+ index hit rate** for frequent query operations
+- **Multiple specialized indexes** covering major query patterns
+- **High index hit rate** for frequent query operations
 - **Automatic unused index detection** for maintenance optimization
 - **Performance regression prevention** through baseline monitoring
 
+**注意**：性能改进数据基于开发环境测试，实际表现可能因环境而异。
+
 ### Database Maintenance
-- **Automated optimization** reduces manual intervention
-- **Performance monitoring** enables proactive issue resolution
-- **Health checking** prevents performance degradation
-- **Maintenance scheduling** ensures optimal long-term performance
+- **Automated optimization** helps reduce manual intervention
+- **Performance monitoring** supports proactive issue resolution
+- **Health checking** helps prevent performance degradation
+- **Maintenance scheduling** supports long-term performance maintenance
 
 ## 🔧 Integration Points
 

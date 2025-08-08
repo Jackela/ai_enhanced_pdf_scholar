@@ -1,0 +1,1804 @@
+{
+  "metadata": {
+    "test_start_time": 1754721503.7510843,
+    "total_test_duration_seconds": 842.3907489776611,
+    "timestamp": "2025-08-09T16:52:26.142606",
+    "scenarios_tested": 5
+  },
+  "scenario_results": {
+    "light_load_small_docs": {
+      "scenario_name": "light_load_small_docs",
+      "total_documents": 30,
+      "successful_documents": 30,
+      "failed_documents": 0,
+      "avg_processing_time_ms": 31.207386652628582,
+      "min_processing_time_ms": 7.212162017822266,
+      "max_processing_time_ms": 86.95387840270996,
+      "throughput_docs_per_second": 13.11083825761649,
+      "peak_memory_mb": 85.6171875,
+      "error_rate_percent": 0.0,
+      "duration_seconds": 2.2881832122802734,
+      "concurrent_users": 3,
+      "individual_results": [
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 26.7946720123291,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 63.24609375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721503.823345
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 86.95387840270996,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 76.4375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721504.1145966
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 9.306669235229492,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 44.51171875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721504.3274918
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 45.09997367858887,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 57.48828125,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721504.5031734
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 44.42787170410156,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 67.00390625,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721504.671611
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 18.657922744750977,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 53.7734375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721504.951709
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 54.26907539367676,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 56.03125,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721505.1364923
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 44.16847229003906,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 54.55859375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721505.3713768
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 14.803409576416016,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 47.3359375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721505.54181
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 19.83332633972168,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 57.54296875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721505.7324069
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 13.124465942382812,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 52.57421875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721503.8422067
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 66.57075881958008,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 76.45703125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721504.1824493
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 32.39607810974121,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 53.328125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721504.3751366
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 28.502702713012695,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 65.078125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721504.692331
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 30.086517333984375,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 45.04296875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721504.8437371
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 50.14848709106445,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 57.03515625,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721505.0866923
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 7.212162017822266,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 44.16796875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721505.2585719
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 31.737565994262695,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 57.53515625,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721505.4939253
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 7.574319839477539,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 45.3671875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721505.642095
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 18.58830451965332,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 55.47265625,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721505.829734
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 17.93384552001953,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 55.31640625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721503.8344212
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 26.88288688659668,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 57.578125,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721504.2284534
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 12.001276016235352,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 46.38671875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721504.3996844
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 77.6669979095459,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 85.6171875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721504.6340954
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 20.45917510986328,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 44.78125,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721504.8835995
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 22.678613662719727,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 65.08203125,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721505.1632786
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 35.218238830566406,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 43.5390625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721505.3024204
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 15.708446502685547,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 55.640625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721505.5619564
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 40.68160057067871,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 63.90625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721505.706481
+        },
+        {
+          "file_size_mb": 2.0,
+          "processing_time_ms": 16.733884811401367,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 53.3046875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721505.9174178
+        }
+      ]
+    },
+    "moderate_load_mixed_docs": {
+      "scenario_name": "moderate_load_mixed_docs",
+      "total_documents": 40,
+      "successful_documents": 40,
+      "failed_documents": 0,
+      "avg_processing_time_ms": 126.58294439315796,
+      "min_processing_time_ms": 10.64300537109375,
+      "max_processing_time_ms": 295.75347900390625,
+      "throughput_docs_per_second": 1.810350913074342,
+      "peak_memory_mb": 195.921875,
+      "error_rate_percent": 0.0,
+      "duration_seconds": 22.095163822174072,
+      "concurrent_users": 5,
+      "individual_results": [
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 10.64300537109375,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 51.640625,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721511.1332593
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 139.27006721496582,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 106.48828125,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721512.3467624
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 123.79312515258789,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 193.3046875,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721517.589771
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 144.1633701324463,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 94.11328125,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721517.8475375
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 90.37280082702637,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 142.203125,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721519.4222574
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 108.61039161682129,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 179.9453125,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721525.4895124
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 36.14306449890137,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 85.16015625,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721525.7349877
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 190.3398036956787,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 133.71484375,
+          "concurrent_user_id": 4,
+          "timestamp": 1754721527.2685623
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 24.866104125976562,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 52.7734375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721511.0537338
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 146.42930030822754,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 159.00390625,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721512.9554894
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 187.31999397277832,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 193.13671875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721520.7537687
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 198.07171821594238,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 174.2421875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721521.3317952
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 127.78258323669434,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 123.5546875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721523.6013777
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 107.22994804382324,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 184.37890625,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721529.3918164
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 98.43134880065918,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 85.87109375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721529.634997
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 146.08454704284668,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 115.75390625,
+          "concurrent_user_id": 0,
+          "timestamp": 1754721531.3196335
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 17.910242080688477,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 46.69921875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721511.0910547
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 158.77461433410645,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 109.0546875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721512.7741027
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 213.7439250946045,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 195.921875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721520.495248
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 21.875381469726562,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 91.171875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721521.0732942
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 295.1171398162842,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 172.91796875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721523.155272
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 171.5090274810791,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 177.828125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721530.5689554
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 86.27867698669434,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 166.578125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721531.026028
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 63.08102607727051,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 95.4921875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754721532.413218
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 25.631189346313477,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 54.5625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721511.0712612
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 178.45773696899414,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 116.125,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721513.466704
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 217.44179725646973,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 182.109375,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721521.1224582
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 130.68699836730957,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 77.4609375,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721521.4778345
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 295.75347900390625,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 160.5546875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721523.3873703
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 268.6750888824463,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 175.59765625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721530.7795758
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 47.101497650146484,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 68.66796875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721531.4960213
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 76.64227485656738,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 91.3515625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754721532.7724192
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 25.020837783813477,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 53.43359375,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721511.1155276
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 295.4378128051758,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 120.53515625,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721512.9920182
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 112.89143562316895,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 177.921875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721523.043679
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 67.10600852966309,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 118.55078125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721523.2913437
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 208.07147026062012,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 126.73046875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721525.2192287
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 139.73474502563477,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 150.6796875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721531.6039338
+        },
+        {
+          "file_size_mb": 1.0,
+          "processing_time_ms": 25.319337844848633,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 52.95703125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721531.920398
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 41.504859924316406,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 86.6796875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754721532.9821777
+        }
+      ]
+    },
+    "heavy_load_large_docs": {
+      "error": "10 (of 10) futures unfinished",
+      "scenario_name": "heavy_load_large_docs"
+    },
+    "stress_test_maximum_load": {
+      "error": "20 (of 20) futures unfinished",
+      "scenario_name": "stress_test_maximum_load"
+    },
+    "sustained_load_test": {
+      "scenario_name": "sustained_load_test",
+      "total_documents": 120,
+      "successful_documents": 120,
+      "failed_documents": 0,
+      "avg_processing_time_ms": 336.14717324574787,
+      "min_processing_time_ms": 60.09817123413086,
+      "max_processing_time_ms": 1719.905138015747,
+      "throughput_docs_per_second": 0.847761867247547,
+      "peak_memory_mb": 374.36328125,
+      "error_rate_percent": 0.0,
+      "duration_seconds": 141.54918336868286,
+      "concurrent_users": 8,
+      "individual_results": [
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 241.90592765808105,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 182.2890625,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722202.3796399
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 677.725076675415,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 253.9765625,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722214.6082013
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 61.591148376464844,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 189.41015625,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722216.7696786
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 113.05046081542969,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 277.63671875,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722226.2646983
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 207.44609832763672,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 198.45703125,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722228.263248
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 214.52951431274414,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 236.31640625,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722239.3551452
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 151.16024017333984,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 277.34765625,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722242.0682223
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 405.1477909088135,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 282.3984375,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722253.3121254
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 177.06656455993652,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 316.46875,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722256.6873665
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 219.91705894470215,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 261.2734375,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722266.9857016
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 182.07097053527832,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 182.51953125,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722270.8154154
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 199.12099838256836,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 236.19140625,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722282.4911811
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 547.3780632019043,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 190.1171875,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722285.989615
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 314.67437744140625,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 232.30859375,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722296.0458086
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 188.5213851928711,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 180.3046875,
+          "concurrent_user_id": 5,
+          "timestamp": 1754722300.3235686
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 136.89470291137695,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 132.984375,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722201.6497774
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 458.02879333496094,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 237.79296875,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722212.0719419
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 314.30840492248535,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 202.828125,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722216.0385294
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 618.4794902801514,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 275.32421875,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722227.2332084
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 243.65830421447754,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 269.3828125,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722230.5504973
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 248.74305725097656,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 241.5859375,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722241.1847768
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 85.10923385620117,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 185.87890625,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722244.5261612
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 404.45685386657715,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 222.4296875,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722255.8932989
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 352.94246673583984,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 183.74609375,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722259.1228075
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 445.96385955810547,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 231.05078125,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722272.481897
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 154.205322265625,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 179.4140625,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722275.83261
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 138.94224166870117,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 234.44140625,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722286.815584
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 163.62309455871582,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 190.390625,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722290.4352052
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 236.4654541015625,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 218.08984375,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722302.2678537
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 75.59776306152344,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 177.109375,
+          "concurrent_user_id": 4,
+          "timestamp": 1754722306.0102258
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 340.12651443481445,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 235.0546875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722203.1114526
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 292.01483726501465,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 343.578125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722214.7619138
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 471.52018547058105,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 280.90625,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722218.5640993
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 493.0152893066406,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 224.3125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722230.4540086
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 176.61690711975098,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 276.6171875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722233.6419935
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 245.3911304473877,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 334.44921875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722246.8696458
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 212.24141120910645,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 185.46875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722251.0180671
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 171.3111400604248,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 328.25,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722264.3240337
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 242.94304847717285,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 284.33203125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722266.845782
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 243.41344833374023,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 232.13671875,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722280.8309262
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 303.35521697998047,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 192.6328125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722284.8153875
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 570.1758861541748,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 234.8828125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722297.300451
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 317.0783519744873,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 173.3125,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722301.66507
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 296.0975170135498,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 211.859375,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722316.0643895
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 121.26970291137695,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 161.62109375,
+          "concurrent_user_id": 3,
+          "timestamp": 1754722319.0551686
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 181.85830116271973,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 191.1171875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722203.376881
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 263.72456550598145,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 245.86328125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722216.4765236
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 683.2678318023682,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 275.7265625,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722219.7518313
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 236.44709587097168,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 253.35546875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722233.6745007
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 560.9130859375,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 186.6328125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722237.988957
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 133.60977172851562,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 374.36328125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722253.5581133
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 692.9707527160645,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 176.7734375,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722256.374212
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 1087.7976417541504,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 231.58984375,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722271.2267256
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 381.284236907959,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 223.765625,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722276.4704018
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 138.37480545043945,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 236.11328125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722290.9215384
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 158.82396697998047,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 196.3671875,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722293.953704
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 171.34499549865723,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 211.203125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722308.702901
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 85.85143089294434,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 166.59375,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722313.24223
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 124.725341796875,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 197.91015625,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722322.7031782
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 77.8043270111084,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 155.0703125,
+          "concurrent_user_id": 2,
+          "timestamp": 1754722324.3143556
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 855.9548854827881,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 233.1796875,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722202.4261434
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 337.4507427215576,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 237.3984375,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722217.2319179
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 314.007043838501,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 171.296875,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722221.339974
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 169.79503631591797,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 235.12890625,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722235.273276
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 601.2485027313232,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 191.6640625,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722238.5976815
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 352.581262588501,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 270.9765625,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722256.527055
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 587.3193740844727,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 184.73828125,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722260.8431394
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 386.14964485168457,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 271.1953125,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722276.2175145
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 192.61670112609863,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 224.77734375,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722279.1709366
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 673.9144325256348,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 231.62890625,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722299.1280234
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 310.64414978027344,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 165.91796875,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722307.6162448
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 203.09162139892578,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 202.609375,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722322.469237
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 76.202392578125,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 140.7890625,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722324.486833
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 170.5913543701172,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 186.828125,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722329.947537
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 62.330007553100586,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 142.0859375,
+          "concurrent_user_id": 6,
+          "timestamp": 1754722331.8434064
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 60.09817123413086,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 166.95703125,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722205.5087564
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 296.0693836212158,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 273.71484375,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722220.2442827
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 668.4362888336182,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 192.6015625,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722224.5819037
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 312.175989151001,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 237.1796875,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722243.4939418
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 236.03415489196777,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 222.62890625,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722248.4904854
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 170.17292976379395,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 235.1953125,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722262.7646596
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 454.6527862548828,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 180.06640625,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722268.0242026
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 479.8130989074707,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 240.12890625,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722288.1548324
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 478.5318374633789,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 227.73828125,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722294.4835966
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 187.9563331604004,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 215.9296875,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722310.9595842
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 215.8353328704834,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 162.67578125,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722317.336403
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 354.3822765350342,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 182.7421875,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722325.4071012
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 78.7205696105957,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 136.3203125,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722327.0895529
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 123.60739707946777,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 181.4375,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722332.4335825
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 103.19232940673828,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 125.40234375,
+          "concurrent_user_id": 7,
+          "timestamp": 1754722333.7713215
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 638.9284133911133,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 192.4140625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722202.872932
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 1719.905138015747,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 367.5546875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722218.6681046
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 833.9967727661133,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 184.86328125,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722225.5897949
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 631.744384765625,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 233.76171875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722241.833026
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 478.4095287322998,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 177.1015625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722248.2902708
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 648.1795310974121,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 236.58203125,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722264.1410124
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 937.5026226043701,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 181.40234375,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722269.5939949
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 222.29766845703125,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 238.0390625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722289.8831222
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 895.0834274291992,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 208.0,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722294.4352238
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 339.6306037902832,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 207.46484375,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722316.9342527
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 106.60576820373535,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 152.6796875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722321.4141128
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 214.7848606109619,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 188.76171875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722330.1630955
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 61.957597732543945,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 126.28515625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722332.6970015
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 122.95222282409668,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 164.84765625,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722337.4542482
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 77.66246795654297,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 114.6875,
+          "concurrent_user_id": 1,
+          "timestamp": 1754722339.010671
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 263.95535469055176,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 166.91796875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722203.5228152
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 345.1521396636963,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 236.28125,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722222.8806052
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 977.3612022399902,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 225.546875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722227.396909
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 814.932107925415,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 241.91015625,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722246.4069993
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 773.5576629638672,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 184.109375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722253.2547185
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 384.9356174468994,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 234.31640625,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722273.7107797
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 440.0768280029297,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 179.484375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722279.0006108
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 168.43128204345703,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 241.0234375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722292.2745736
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 158.6441993713379,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 182.44140625,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722298.2898858
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 217.77057647705078,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 204.375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722320.4237516
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 431.7488670349121,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 135.52734375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722324.6679406
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 172.12271690368652,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 162.6796875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722333.996402
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 62.1333122253418,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 113.703125,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722335.4817743
+        },
+        {
+          "file_size_mb": 10.0,
+          "processing_time_ms": 165.54880142211914,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 153.2109375,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722339.767424
+        },
+        {
+          "file_size_mb": 5.0,
+          "processing_time_ms": 63.9796257019043,
+          "success": true,
+          "error_message": null,
+          "memory_used_mb": 101.6171875,
+          "concurrent_user_id": 0,
+          "timestamp": 1754722340.959935
+        }
+      ]
+    }
+  },
+  "comprehensive_analysis": {
+    "overall_assessment": "EXCELLENT",
+    "performance_metrics": {
+      "avg_throughput_docs_per_sec": 5.26,
+      "avg_error_rate_percent": 0.0,
+      "avg_processing_time_ms": 164.65,
+      "peak_memory_usage_mb": 374.36
+    },
+    "capacity_planning": {
+      "max_concurrent_users_tested": 8,
+      "recommended_max_concurrent_users": 8,
+      "recommended_document_size_limit_mb": 50.0,
+      "estimated_documents_per_hour": 18923.0
+    },
+    "recommendations": [
+      "Recommended maximum concurrent users: 8",
+      "Recommended document size limit: 50.0MB",
+      "Implement queue-based processing for high-load scenarios",
+      "Set up monitoring and alerting for production deployment"
+    ],
+    "production_readiness": {
+      "ready_for_production": true,
+      "critical_issues": [],
+      "performance_bottlenecks": [
+        "Throughput bottleneck in sustained_load_test: 0.85 docs/sec"
+      ]
+    }
+  }
+}

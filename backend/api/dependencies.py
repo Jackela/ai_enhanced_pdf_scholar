@@ -61,14 +61,37 @@ def get_enhanced_rag(
             if not api_key:
                 logger.warning("No Gemini API key configured, RAG service unavailable")
                 return None
+                
+            # Check if it's a test/placeholder API key
+            test_api_keys = [
+                "your_gemini_api_key_here",
+                "your_actual_gemini_api_key_here", 
+                "test_api_key_for_local_testing",
+                "test-api-key"
+            ]
+            
+            is_test_mode = api_key in test_api_keys or api_key.startswith("test")
+            
+            if is_test_mode:
+                logger.warning(
+                    f"Test/placeholder API key detected: {api_key[:10]}... "
+                    "Initializing RAG service in test mode"
+                )
+            
             # Initialize enhanced RAG service
             vector_storage_dir = Path.home() / ".ai_pdf_scholar" / "vector_indexes"
             _enhanced_rag_service = EnhancedRAGService(
                 api_key=api_key,
                 db_connection=db,
                 vector_storage_dir=str(vector_storage_dir),
+                test_mode=is_test_mode,
             )
-            logger.info("Enhanced RAG service initialized")
+            
+            if is_test_mode:
+                logger.info("Enhanced RAG service initialized in TEST MODE")
+            else:
+                logger.info("Enhanced RAG service initialized with valid API key")
+                
         except Exception as e:
             logger.error(f"Failed to initialize enhanced RAG service: {e}")
             return None

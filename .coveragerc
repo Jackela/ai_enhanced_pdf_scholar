@@ -13,8 +13,10 @@ omit =
 # Enable branch coverage for better test quality
 branch = True
 
-# Coverage data storage
+# Coverage data storage - Fixed for parallel execution
 data_file = .coverage
+parallel = True
+concurrency = multiprocessing
 
 [report]
 # Set minimum coverage threshold

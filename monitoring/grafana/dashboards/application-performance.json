@@ -1,0 +1,206 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AI PDF Scholar - Application Performance",
+    "tags": ["ai-pdf-scholar", "application", "performance"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 16,
+    "version": 1,
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Request Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{job=\"ai-pdf-scholar-backend\"}[5m])) by (method, endpoint)",
+            "legendFormat": "{{method}} {{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "min": 0
+          }
+        ],
+        "xAxis": {
+          "show": true
+        },
+        "legend": {
+          "show": true,
+          "values": true,
+          "current": true
+        }
+      },
+      {
+        "id": 2,
+        "title": "Response Time Distribution",
+        "type": "graph", 
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m])) by (le))",
+            "legendFormat": "95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m])) by (le))",
+            "legendFormat": "50th percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m])) by (le))",
+            "legendFormat": "99th percentile",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time (seconds)",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "singlestat",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\",job=\"ai-pdf-scholar-backend\"}[5m])) / sum(rate(http_requests_total{job=\"ai-pdf-scholar-backend\"}[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percent",
+        "thresholds": "5,10",
+        "colorBackground": true,
+        "colors": ["#299c46", "#e24d42", "#d44a3a"]
+      },
+      {
+        "id": 4,
+        "title": "Active Sessions",
+        "type": "singlestat",
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 8},
+        "targets": [
+          {
+            "expr": "active_sessions_total{job=\"ai-pdf-scholar-backend\"}",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current"
+      },
+      {
+        "id": 5,
+        "title": "RAG Query Performance",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "targets": [
+          {
+            "expr": "rate(rag_queries_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Query Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(rag_query_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))",
+            "legendFormat": "95th percentile duration",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Queries/sec | Duration (sec)",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Document Processing Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "targets": [
+          {
+            "expr": "rate(documents_uploaded_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Upload Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(document_processing_errors_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Error Rate", 
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Database Connections",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 20},
+        "targets": [
+          {
+            "expr": "db_connections_active{job=\"ai-pdf-scholar-backend\"}",
+            "legendFormat": "Active Connections",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Connections",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 20},
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total{job=\"ai-pdf-scholar-backend\"}[5m]) / (rate(cache_hits_total{job=\"ai-pdf-scholar-backend\"}[5m]) + rate(cache_misses_total{job=\"ai-pdf-scholar-backend\"}[5m]))",
+            "legendFormat": "Hit Rate",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Hit Rate %",
+            "min": 0,
+            "max": 1
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Authentication Events",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 20},
+        "targets": [
+          {
+            "expr": "rate(auth_attempts_total{result=\"success\",job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Successful Logins",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(auth_attempts_total{result=\"failure\",job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Failed Logins",
+            "refId": "B"
+          }
+        ]
+      }
+    ]
+  }
+}

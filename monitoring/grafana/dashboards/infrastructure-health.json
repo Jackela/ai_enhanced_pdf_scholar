@@ -1,0 +1,266 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AI PDF Scholar - Infrastructure Health",
+    "tags": ["ai-pdf-scholar", "infrastructure", "health"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 16,
+    "version": 1,
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Memory Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"})) * 100",
+            "legendFormat": "Memory Usage %",
+            "refId": "A"
+          },
+          {
+            "expr": "memory_usage_bytes{type=\"process\",job=\"ai-pdf-scholar-backend\"} / 1024 / 1024",
+            "legendFormat": "App Memory (MB)",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Usage %",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "last"},
+              "evaluator": {"params": [90], "type": "gt"}
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "2m",
+          "frequency": "30s",
+          "handler": 1,
+          "name": "High Memory Usage",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 2,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\",job=\"node-exporter\"}[5m])) * 100)",
+            "legendFormat": "System CPU Usage %",
+            "refId": "A"
+          },
+          {
+            "expr": "cpu_usage_percent{job=\"ai-pdf-scholar-backend\"}",
+            "legendFormat": "App CPU Usage %",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Usage %",
+            "min": 0,
+            "max": 100
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Disk Usage",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "(1 - node_filesystem_avail_bytes{fstype!=\"tmpfs\",job=\"node-exporter\"} / node_filesystem_size_bytes{fstype!=\"tmpfs\",job=\"node-exporter\"}) * 100",
+            "legendFormat": "Disk Usage % {{mountpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Usage %",
+            "min": 0,
+            "max": 100
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Network I/O",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 8},
+        "targets": [
+          {
+            "expr": "irate(node_network_receive_bytes_total{job=\"node-exporter\",device!=\"lo\"}[5m]) * 8",
+            "legendFormat": "Receive {{device}}",
+            "refId": "A"
+          },
+          {
+            "expr": "irate(node_network_transmit_bytes_total{job=\"node-exporter\",device!=\"lo\"}[5m]) * 8",
+            "legendFormat": "Transmit {{device}}",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "bits/sec",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Service Health Status",
+        "type": "table",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 8},
+        "targets": [
+          {
+            "expr": "up{job=~\"ai-pdf-scholar-backend|postgresql|redis|elasticsearch|kibana\"}",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "columns": [
+          {
+            "text": "Service",
+            "value": "job"
+          },
+          {
+            "text": "Instance", 
+            "value": "instance"
+          },
+          {
+            "text": "Status",
+            "value": "Value"
+          }
+        ],
+        "styles": [
+          {
+            "alias": "Status",
+            "colorMode": "cell",
+            "colors": ["#d44a3a", "#299c46"],
+            "thresholds": [0.5, 1],
+            "type": "string",
+            "valueMaps": [
+              {"text": "DOWN", "value": "0"},
+              {"text": "UP", "value": "1"}
+            ]
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Database Performance",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+        "targets": [
+          {
+            "expr": "rate(db_queries_total{job=\"ai-pdf-scholar-backend\"}[5m])",
+            "legendFormat": "Query Rate - {{operation}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))",
+            "legendFormat": "95th percentile duration",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Redis Performance",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+        "targets": [
+          {
+            "expr": "redis_connected_clients{job=\"redis\"}",
+            "legendFormat": "Connected Clients",
+            "refId": "A"
+          },
+          {
+            "expr": "irate(redis_total_commands_processed_total{job=\"redis\"}[5m])",
+            "legendFormat": "Commands/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "redis_memory_used_bytes{job=\"redis\"} / 1024 / 1024",
+            "legendFormat": "Memory Usage (MB)",
+            "refId": "C"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Container Resources",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name=~\"ai-pdf-scholar.*\",name!=\"POD\"}[5m]) * 100",
+            "legendFormat": "CPU: {{name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "container_memory_working_set_bytes{name=~\"ai-pdf-scholar.*\",name!=\"POD\"} / 1024 / 1024",
+            "legendFormat": "Memory (MB): {{name}}",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Pod Restart Count",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 30},
+        "targets": [
+          {
+            "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"ai-pdf-scholar\"}[1h])",
+            "legendFormat": "Restarts: {{pod}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Load Average",
+        "type": "graph",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 30},
+        "targets": [
+          {
+            "expr": "node_load1{job=\"node-exporter\"}",
+            "legendFormat": "1m load avg",
+            "refId": "A"
+          },
+          {
+            "expr": "node_load5{job=\"node-exporter\"}",
+            "legendFormat": "5m load avg",
+            "refId": "B"
+          },
+          {
+            "expr": "node_load15{job=\"node-exporter\"}",
+            "legendFormat": "15m load avg",
+            "refId": "C"
+          }
+        ]
+      }
+    ]
+  }
+}

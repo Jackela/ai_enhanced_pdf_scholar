@@ -14,10 +14,13 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+
+from backend.api.auth.dependencies import get_admin_user
+from backend.api.auth.models import UserModel
 
 logger = logging.getLogger(__name__)
 security_logger = logging.getLogger("security.headers")
@@ -794,11 +797,19 @@ def setup_security_headers(app: FastAPI, config: Optional[SecurityHeadersConfig]
     
     # Add CSP violations summary endpoint (admin only)
     @app.get("/api/admin/security/csp-violations", include_in_schema=False)
-    async def get_csp_violations() -> JSONResponse:
+    async def get_csp_violations(
+        _admin_user: UserModel = Depends(get_admin_user)
+    ) -> JSONResponse:
         """Get summary of CSP violations (admin endpoint)."""
-        # TODO: Add proper authentication check here
-        summary = csp_violation_handler.get_summary()
-        return JSONResponse(content=summary)
+        try:
+            summary = csp_violation_handler.get_summary()
+            return JSONResponse(content=summary)
+        except Exception as e:
+            logger.error(f"Failed to get CSP violations summary: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve CSP violations summary"
+            )
     
     # Add security.txt endpoint
     @app.get("/.well-known/security.txt", include_in_schema=False)

@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Enhanced PDF Scholar - RAG Query Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 40px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2d3748;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .document-selector {
+            margin-bottom: 20px;
+        }
+        
+        .document-selector h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .document-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .document-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f7fafc;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .document-item:hover {
+            background: #f7fafc;
+        }
+        
+        .document-item.selected {
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            border-left: 4px solid #667eea;
+        }
+        
+        .document-item:last-child {
+            border-bottom: none;
+        }
+        
+        .document-title {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.9rem;
+        }
+        
+        .document-meta {
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        .status-indicator {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .status-online {
+            background: #f0fff4;
+            color: #38a169;
+            border: 1px solid #c6f6d5;
+        }
+        
+        .status-offline {
+            background: #fffaf0;
+            color: #dd6b20;
+            border: 1px solid #fbd38d;
+        }
+        
+        .query-interface {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-container {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: #f7fafc;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .chat-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .clear-chat {
+            background: none;
+            border: none;
+            color: #718096;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+        
+        .clear-chat:hover {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+        }
+        
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        
+        .message.assistant {
+            align-self: flex-start;
+        }
+        
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .message.assistant .message-avatar {
+            background: #f7fafc;
+            color: #2d3748;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .message-content {
+            background: #f7fafc;
+            padding: 12px 16px;
+            border-radius: 15px;
+            position: relative;
+            line-height: 1.5;
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .message.assistant .message-content {
+            background: white;
+            border: 1px solid #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .message-sources {
+            margin-top: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .source-item {
+            background: #f0f4f8;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 6px 0;
+            position: relative;
+        }
+        
+        .source-score {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: #667eea;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        
+        .query-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+        
+        .query-input {
+            flex: 1;
+            min-height: 50px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 25px;
+            resize: none;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .query-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .send-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .send-button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .loading-indicator {
+            display: none;
+            padding: 15px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        .quick-questions {
+            margin-top: 15px;
+        }
+        
+        .quick-questions h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .question-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .question-button {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #4a5568;
+        }
+        
+        .question-button:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .demo-controls {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-controls h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-group label {
+            font-size: 0.85rem;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #667eea;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            accent-color: #667eea;
+        }
+        
+        .range-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #718096;
+            margin: 40px 0;
+            font-style: italic;
+        }
+        
+        .api-status {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .api-status.configured {
+            background: #f0fff4;
+            color: #2f855a;
+            border: 1px solid #c6f6d5;
+        }
+        
+        .api-status.not-configured {
+            background: #fffaf0;
+            color: #c05621;
+            border: 1px solid #fbd38d;
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .sidebar {
+                position: relative;
+                top: auto;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .message {
+                max-width: 95%;
+            }
+            
+            .question-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="status-indicator" id="serverStatus">
+                🔄 Checking connection...
+            </div>
+            
+            <div class="api-status" id="apiStatus">
+                🔍 Checking API configuration...
+            </div>
+            
+            <div class="document-selector">
+                <h3>📚 Select Document</h3>
+                <div class="document-list" id="documentList">
+                    <div class="empty-state">Loading documents...</div>
+                </div>
+            </div>
+            
+            <div class="demo-controls">
+                <h4>⚙️ Query Settings</h4>
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="includeSourcesCheck" checked>
+                        Include source citations
+                    </label>
+                </div>
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="enhanceQueryCheck">
+                        Enhance query with context
+                    </label>
+                </div>
+                <div class="control-group">
+                    <label for="maxSourcesRange">
+                        Max sources: <span class="range-value" id="maxSourcesValue">5</span>
+                    </label>
+                    <input type="range" id="maxSourcesRange" min="1" max="10" value="5">
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>🧠 RAG Query Demo</h1>
+                <p>Ask questions about your documents using AI-powered retrieval</p>
+            </div>
+            
+            <div class="query-interface">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <span class="chat-title">💬 Conversation</span>
+                        <button class="clear-chat" onclick="clearChat()">🗑️ Clear</button>
+                    </div>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="empty-state">
+                            Select a document and start asking questions!<br>
+                            <small>Try questions like "What is this document about?" or "What are the key findings?"</small>
+                        </div>
+                    </div>
+                    
+                    <div class="loading-indicator" id="loadingIndicator">
+                        🤖 AI is thinking<span class="loading-dots"></span>
+                    </div>
+                </div>
+                
+                <div class="query-input-container">
+                    <textarea 
+                        id="queryInput" 
+                        class="query-input" 
+                        placeholder="Ask a question about the selected document..."
+                        rows="2"
+                    ></textarea>
+                    <button class="send-button" id="sendButton" onclick="sendQuery()" disabled>
+                        ▶️
+                    </button>
+                </div>
+                
+                <div class="quick-questions" id="quickQuestions">
+                    <h4>💡 Quick Questions</h4>
+                    <div class="question-buttons">
+                        <button class="question-button" onclick="setQuery('What is this document about?')">What is this document about?</button>
+                        <button class="question-button" onclick="setQuery('What are the key findings?')">What are the key findings?</button>
+                        <button class="question-button" onclick="setQuery('What methodology was used?')">What methodology was used?</button>
+                        <button class="question-button" onclick="setQuery('Who are the main authors mentioned?')">Who are the main authors mentioned?</button>
+                        <button class="question-button" onclick="setQuery('What are the limitations mentioned?')">What are the limitations?</button>
+                        <button class="question-button" onclick="setQuery('Summarize the main contributions')">Summarize contributions</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class RAGQueryDemo {
+            constructor() {
+                this.API_BASE = 'http://localhost:8000';
+                this.selectedDocumentId = null;
+                this.documents = [];
+                this.conversationHistory = [];
+                
+                this.initializeEventListeners();
+                this.checkServerStatus();
+                this.loadDocuments();
+            }
+            
+            initializeEventListeners() {
+                // Query input
+                const queryInput = document.getElementById('queryInput');
+                queryInput.addEventListener('input', () => {
+                    this.updateSendButton();
+                });
+                
+                queryInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendQuery();
+                    }
+                });
+                
+                // Range input
+                const maxSourcesRange = document.getElementById('maxSourcesRange');
+                maxSourcesRange.addEventListener('input', (e) => {
+                    document.getElementById('maxSourcesValue').textContent = e.target.value;
+                });
+            }
+            
+            async checkServerStatus() {
+                const statusElement = document.getElementById('serverStatus');
+                const apiStatusElement = document.getElementById('apiStatus');
+                
+                try {
+                    // Check server health
+                    const healthResponse = await fetch(`${this.API_BASE}/api/system/health`);
+                    const healthData = await healthResponse.json();
+                    
+                    if (healthData.status === 'healthy') {
+                        statusElement.className = 'status-indicator status-online';
+                        statusElement.innerHTML = '🟢 Server Online';
+                    } else {
+                        statusElement.className = 'status-indicator status-offline';
+                        statusElement.innerHTML = '🟡 Server Degraded';
+                    }
+                    
+                    // Check API configuration
+                    if (healthData.rag_service_available && healthData.api_key_configured) {
+                        apiStatusElement.className = 'api-status configured';
+                        apiStatusElement.innerHTML = '✅ RAG Service Ready';
+                    } else {
+                        apiStatusElement.className = 'api-status not-configured';
+                        apiStatusElement.innerHTML = '⚠️ Configure Gemini API key in Settings to enable RAG features';
+                    }
+                    
+                } catch (error) {
+                    statusElement.className = 'status-indicator status-offline';
+                    statusElement.innerHTML = '🔴 Server Offline';
+                    
+                    apiStatusElement.className = 'api-status not-configured';
+                    apiStatusElement.innerHTML = '❌ Cannot connect to server';
+                }
+            }
+            
+            async loadDocuments() {
+                const documentList = document.getElementById('documentList');
+                
+                try {
+                    const response = await fetch(`${this.API_BASE}/api/documents/`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.documents.length > 0) {
+                        this.documents = data.documents;
+                        this.renderDocumentList();
+                    } else {
+                        documentList.innerHTML = `
+                            <div class="empty-state">
+                                No documents found.<br>
+                                <small>Upload some PDFs first to start querying!</small>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    documentList.innerHTML = `
+                        <div class="empty-state">
+                            Failed to load documents.<br>
+                            <small>Is the server running?</small>
+                        </div>
+                    `;
+                }
+            }
+            
+            renderDocumentList() {
+                const documentList = document.getElementById('documentList');
+                
+                const documentsHTML = this.documents.map(doc => `
+                    <div class="document-item" onclick="demo.selectDocument(${doc.id})">
+                        <div class="document-title">${doc.title}</div>
+                        <div class="document-meta">
+                            ${doc.page_count} pages • ${this.formatFileSize(doc.file_size)}
+                            ${doc.has_vector_index ? '• 🧠 AI Ready' : '• ⚡ Build index for AI'}
+                        </div>
+                    </div>
+                `).join('');
+                
+                documentList.innerHTML = documentsHTML;
+            }
+            
+            selectDocument(documentId) {
+                this.selectedDocumentId = documentId;
+                
+                // Update UI
+                document.querySelectorAll('.document-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                event.target.closest('.document-item').classList.add('selected');
+                
+                // Update send button state
+                this.updateSendButton();
+                
+                // Clear previous conversation
+                this.conversationHistory = [];
+                this.renderConversation();
+                
+                // Show document-specific quick questions
+                this.updateQuickQuestions(documentId);
+            }
+            
+            updateSendButton() {
+                const queryInput = document.getElementById('queryInput');
+                const sendButton = document.getElementById('sendButton');
+                
+                const hasQuery = queryInput.value.trim().length > 0;
+                const hasDocument = this.selectedDocumentId !== null;
+                
+                sendButton.disabled = !hasQuery || !hasDocument;
+            }
+            
+            updateQuickQuestions(documentId) {
+                const doc = this.documents.find(d => d.id === documentId);
+                if (!doc) return;
+                
+                // Customize questions based on document type (could be enhanced with ML)
+                const questions = [
+                    "What is this document about?",
+                    "What are the key findings?",
+                    "What methodology was used?",
+                    "Who are the main authors mentioned?",
+                    "What are the limitations?",
+                    "Summarize the main contributions"
+                ];
+                
+                const quickQuestions = document.getElementById('quickQuestions');
+                const buttonsHTML = questions.map(q => 
+                    `<button class="question-button" onclick="demo.setQuery('${q}')">${q}</button>`
+                ).join('');
+                
+                quickQuestions.querySelector('.question-buttons').innerHTML = buttonsHTML;
+            }
+            
+            setQuery(question) {
+                const queryInput = document.getElementById('queryInput');
+                queryInput.value = question;
+                queryInput.focus();
+                this.updateSendButton();
+            }
+            
+            async sendQuery() {
+                const queryInput = document.getElementById('queryInput');
+                const query = queryInput.value.trim();
+                
+                if (!query || !this.selectedDocumentId) return;
+                
+                // Add user message to conversation
+                this.addMessage('user', query);
+                
+                // Clear input
+                queryInput.value = '';
+                this.updateSendButton();
+                
+                // Show loading
+                this.showLoading(true);
+                
+                try {
+                    const requestBody = {
+                        query: query,
+                        document_id: this.selectedDocumentId,
+                        include_sources: document.getElementById('includeSourcesCheck').checked,
+                        max_sources: parseInt(document.getElementById('maxSourcesRange').value),
+                        enhance_query: document.getElementById('enhanceQueryCheck').checked
+                    };
+                    
+                    const response = await fetch(`${this.API_BASE}/api/rag/query`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        this.addMessage('assistant', result.answer, result.sources);
+                    } else {
+                        this.addMessage('assistant', `❌ Error: ${result.detail || 'Query failed'}`, null, true);
+                    }
+                    
+                } catch (error) {
+                    this.addMessage('assistant', `❌ Network error: ${error.message}. Is the server running?`, null, true);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+            
+            addMessage(role, content, sources = null, isError = false) {
+                const message = {
+                    role,
+                    content,
+                    sources,
+                    timestamp: new Date(),
+                    isError
+                };
+                
+                this.conversationHistory.push(message);
+                this.renderConversation();
+            }
+            
+            renderConversation() {
+                const chatMessages = document.getElementById('chatMessages');
+                
+                if (this.conversationHistory.length === 0) {
+                    chatMessages.innerHTML = `
+                        <div class="empty-state">
+                            Select a document and start asking questions!<br>
+                            <small>Try questions like "What is this document about?" or "What are the key findings?"</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const messagesHTML = this.conversationHistory.map(msg => {
+                    const avatar = msg.role === 'user' ? '👤' : '🤖';
+                    const sourcesHTML = msg.sources ? this.renderSources(msg.sources) : '';
+                    
+                    return `
+                        <div class="message ${msg.role}">
+                            <div class="message-avatar">${avatar}</div>
+                            <div class="message-content">
+                                ${msg.content}
+                                ${sourcesHTML}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                chatMessages.innerHTML = messagesHTML;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            renderSources(sources) {
+                if (!sources || sources.length === 0) return '';
+                
+                const sourcesHTML = sources.map((source, index) => `
+                    <div class="source-item">
+                        <div class="source-score">${(source.score * 100).toFixed(0)}%</div>
+                        <strong>Source ${index + 1}:</strong><br>
+                        ${source.content.substring(0, 200)}${source.content.length > 200 ? '...' : ''}
+                    </div>
+                `).join('');
+                
+                return `
+                    <div class="message-sources">
+                        <strong>📚 Sources:</strong>
+                        ${sourcesHTML}
+                    </div>
+                `;
+            }
+            
+            showLoading(show) {
+                const loadingIndicator = document.getElementById('loadingIndicator');
+                loadingIndicator.style.display = show ? 'block' : 'none';
+                
+                if (show) {
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+        
+        // Global functions for event handlers
+        let demo;
+        
+        function clearChat() {
+            demo.conversationHistory = [];
+            demo.renderConversation();
+        }
+        
+        function sendQuery() {
+            demo.sendQuery();
+        }
+        
+        function setQuery(question) {
+            demo.setQuery(question);
+        }
+        
+        // Initialize demo when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            demo = new RAGQueryDemo();
+            
+            // Expose demo instance to global scope for event handlers
+            window.demo = demo;
+        });
+        
+        // Add demo enhancements
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add keyboard shortcuts info
+            const shortcutsInfo = document.createElement('div');
+            shortcutsInfo.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-size: 0.8rem;
+                opacity: 0.7;
+                z-index: 1000;
+            `;
+            shortcutsInfo.innerHTML = `
+                💡 <strong>Tips:</strong><br>
+                • Enter to send, Shift+Enter for new line<br>
+                • Build vector index for better AI responses<br>
+                • Try different question types for varied results
+            `;
+            document.body.appendChild(shortcutsInfo);
+            
+            // Hide tips after 10 seconds
+            setTimeout(() => {
+                shortcutsInfo.style.opacity = '0';
+                shortcutsInfo.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => shortcutsInfo.remove(), 500);
+            }, 10000);
+        });
+    </script>
+</body>
+</html>

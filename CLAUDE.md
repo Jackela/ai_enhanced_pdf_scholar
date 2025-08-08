@@ -371,4 +371,42 @@ alias: [
 2. npm run build         # 本地标准构建
 3. npm run build:ci      # 本地CI模拟构建
 4. git commit && git push # 触发实际CI验证
+
+
+After each code modification or feature addition, you must update or create a project documentation file named `PROJECT_DOCS.md` at the root of the project. This file is crucial for maintaining context across sessions.
+
+Your primary goal is to create documentation that allows future AI sessions to understand the project's architecture, key components, and logic without needing to read the entire codebase.
+
+**Documentation Structure and Content:**
+
+1.  **Project Overview:**
+    * Start with a brief, high-level summary of the project's purpose and main functionality.
+
+2.  **Project Structure (`Project Structure`):**
+    * Use a Mermaid.js `graph TD` (top-down) diagram to visualize the project's directory and file structure.
+    * Focus on key files and directories, omitting trivial ones (e.g., `node_modules`, `.git`).
+    * Update this diagram whenever files or directories are added, removed, or renamed.
+
+3.  **Core Components & Logic (`Core Components & Logic`):**
+    * Document the most important classes, functions, methods, and components.
+    * For each component, provide:
+        * **Name:** The name of the class, function, or component.
+        * **Purpose:** A concise explanation of what it does.
+        * **Parameters/Props:** A list of its inputs, their types, and a brief description.
+        * **Returns:** What it outputs, if applicable.
+        * **Example Usage:** A short code snippet showing how to use it.
+
+4.  **Interaction and Data Flow Diagrams (`Interaction and Data Flow`):**
+    * Use Mermaid.js diagrams extensively to illustrate relationships and processes. This is critical for avoiding ambiguity.
+    * **Sequence Diagrams (`sequenceDiagram`):** Use these to show the sequence of calls between different functions or components for a specific user action (e.g., "User Login Sequence").
+    * **Class Diagrams (`classDiagram`):** Use these to model the relationships between classes, including inheritance and composition.
+    * **Flowcharts (`flowchart TD`):** Use these to describe complex logic, algorithms, or data flow within a function or across the application.
+
+**Updating the Documentation:**
+
+* **Reflect All Changes:** After you modify, add, or delete any code, you MUST immediately update the relevant sections in `PROJECT_DOCS.md`.
+* **Update Diagrams:** If a code change affects the project structure, class relationships, or interaction flows, the corresponding Mermaid diagrams must be updated to reflect the new state accurately.
+* **Be Concise and Clear:** The documentation should be easy to parse. Use clear headings, bullet points, and code blocks. Avoid jargon where simpler terms suffice.
+
+By strictly following this rule, you will ensure that project knowledge is preserved and readily available, enabling consistent and context-aware assistance across all future interactions.
 ```

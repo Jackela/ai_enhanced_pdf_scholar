@@ -11,7 +11,7 @@ import time
 sys.path.insert(0, '.')
 
 from src.database.connection import DatabaseConnection
-from src.database.migrations import DatabaseMigrator
+from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
 from src.repositories.document_repository import DocumentRepository
 from src.database.models import DocumentModel
 

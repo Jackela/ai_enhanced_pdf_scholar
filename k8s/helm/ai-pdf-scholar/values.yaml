@@ -1,0 +1,333 @@
+# Default values for ai-pdf-scholar
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: "fast-ssd"
+
+# Application configuration
+app:
+  name: ai-pdf-scholar
+  version: "2.0.0"
+  environment: production
+
+# Image configuration
+image:
+  registry: docker.io
+  repository: ai-pdf-scholar
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion
+  tag: ""
+
+backend:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: ai-pdf-scholar/backend
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 8000
+    metricsPort: 8001
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  # Environment variables
+  env:
+    LOG_LEVEL: INFO
+    DEBUG: false
+    # Database settings are injected from dependencies
+    POSTGRES_POOL_SIZE: "20"
+    POSTGRES_MAX_OVERFLOW: "40"
+    # Redis settings are injected from dependencies
+    REDIS_MAX_CONNECTIONS: "50"
+    # Cache settings
+    CACHE_DEFAULT_TTL: "3600"
+    CACHE_MAX_TTL: "86400"
+    # Security settings
+    JWT_ALGORITHM: "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+    BCRYPT_ROUNDS: "12"
+    # File upload
+    MAX_UPLOAD_SIZE: "104857600"  # 100MB
+    # GDPR
+    DATA_RETENTION_DAYS: "730"
+  # Secret environment variables
+  secrets:
+    # These should be provided via external secret management
+    POSTGRES_PASSWORD: ""
+    JWT_SECRET_KEY: ""
+    ENCRYPTION_KEY: ""
+    GOOGLE_API_KEY: ""
+
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ai-pdf-scholar/frontend
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+nginx:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: nginx
+    tag: "1.25-alpine"
+  service:
+    type: LoadBalancer
+    port: 80
+    httpsPort: 443
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # TLS configuration
+  tls:
+    enabled: false
+    secretName: tls-secret
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteMany
+  size: 50Gi
+  # For uploads and shared data
+  uploads:
+    enabled: true
+    size: 50Gi
+    storageClass: "shared-storage"
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# Ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ai-pdf-scholar.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Network Policies
+networkPolicy:
+  enabled: true
+  # Additional network policies can be defined here
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Node selection
+nodeSelector: {}
+tolerations: []
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - ai-pdf-scholar
+        topologyKey: kubernetes.io/hostname
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+  prometheusRule:
+    enabled: true
+
+# Dependency configurations
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "change-me"
+    username: "ai_pdf_scholar"
+    password: "change-me"
+    database: "ai_pdf_scholar"
+  architecture: standalone
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+      requests:
+        memory: 512Mi
+        cpu: 250m
+    configuration: |
+      shared_buffers = 256MB
+      effective_cache_size = 1GB
+      work_mem = 16MB
+      maintenance_work_mem = 128MB
+      checkpoint_completion_target = 0.7
+      wal_buffers = 16MB
+      max_connections = 200
+      log_min_duration_statement = 1000
+      # Replication settings
+      wal_level = replica
+      max_wal_senders = 3
+      max_replication_slots = 3
+      hot_standby = on
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+    password: ""
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 500m
+      requests:
+        memory: 256Mi
+        cpu: 100m
+    configuration: |
+      maxmemory 512mb
+      maxmemory-policy allkeys-lru
+      save 900 1
+      save 300 10
+      save 60 10000
+      appendonly yes
+      appendfsync everysec
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+elasticsearch:
+  enabled: true
+  replicas: 1
+  minimumMasterNodes: 1
+  esMajorVersion: ""
+  clusterName: "ai-pdf-scholar-es"
+  nodeGroup: "master"
+  esConfig:
+    elasticsearch.yml: |
+      xpack.security.enabled: false
+      xpack.monitoring.collection.enabled: true
+  volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    storageClassName: "fast-ssd" 
+    resources:
+      requests:
+        storage: 20Gi
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  esJavaOpts: "-Xmx512m -Xms512m"
+
+kibana:
+  enabled: true
+  replicas: 1
+  elasticsearchHosts: "http://elasticsearch-master:9200"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  service:
+    type: ClusterIP
+    port: 5601
+
+# Jaeger for distributed tracing
+jaeger:
+  enabled: true
+  strategy: allInOne
+  allInOne:
+    image: jaegertracing/all-in-one:1.50
+    resources:
+      limits:
+        cpu: 250m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+# RBAC
+rbac:
+  create: true
+
+# Pod Security Policy
+podSecurityPolicy:
+  enabled: false

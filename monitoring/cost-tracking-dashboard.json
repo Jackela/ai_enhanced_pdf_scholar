@@ -1,0 +1,711 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AI PDF Scholar - Cost Optimization Dashboard",
+    "tags": ["cost", "optimization", "aws", "eks", "ai-pdf-scholar"],
+    "timezone": "browser",
+    "refresh": "1m",
+    "schemaVersion": 16,
+    "version": 1,
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["1m", "5m", "15m", "30m", "1h", "2h", "6h", "12h", "1d"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Current Hourly Cost",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05 + sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01",
+            "legendFormat": "Current Cost ($/hour)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 2 },
+                { "color": "red", "value": 5 }
+              ]
+            },
+            "unit": "currencyUSD",
+            "decimals": 3
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Monthly Cost Projection",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "(sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05 + sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01) * 24 * 30",
+            "legendFormat": "Monthly Projection",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1000 },
+                { "color": "red", "value": 2000 }
+              ]
+            },
+            "unit": "currencyUSD",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Cost Optimization Potential",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "cost_optimization_potential_percent",
+            "legendFormat": "Savings Potential (%)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 20 },
+                { "color": "green", "value": 40 }
+              ]
+            },
+            "unit": "percent",
+            "max": 100,
+            "min": 0
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Efficiency Score",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "avg(instance_efficiency_score)",
+            "legendFormat": "Overall Efficiency",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 60 },
+                { "color": "green", "value": 80 }
+              ]
+            },
+            "unit": "percent",
+            "max": 100,
+            "min": 0
+          }
+        },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 5,
+        "title": "Cost Breakdown by Resource Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05",
+            "legendFormat": "CPU Cost",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01",
+            "legendFormat": "Memory Cost",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(kube_persistentvolume_capacity_bytes) / 1024 / 1024 / 1024 * 0.001",
+            "legendFormat": "Storage Cost",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 8, "x": 0, "y": 4 },
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"],
+            "fields": ""
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          },
+          "legend": {
+            "displayMode": "visible",
+            "placement": "right"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Cost by Instance Type",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "sum by (instance_type) (instance_cost_per_hour * on(instance) group_left(instance_type) kube_node_info)",
+            "legendFormat": "{{instance_type}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 8, "x": 8, "y": 4 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "unit": "currencyUSD"
+          }
+        },
+        "options": {
+          "orientation": "auto",
+          "barWidth": 0.6,
+          "groupWidth": 0.7,
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Spot vs On-Demand Cost Distribution",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(instance_cost_per_hour{lifecycle=\"spot\"})",
+            "legendFormat": "Spot Cost ($/hour)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(instance_cost_per_hour{lifecycle=\"on-demand\"})",
+            "legendFormat": "On-Demand Cost ($/hour)",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 8, "x": 16, "y": 4 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 3 }
+              ]
+            },
+            "unit": "currencyUSD"
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Resource Utilization vs Cost",
+        "type": "scatterchart",
+        "targets": [
+          {
+            "expr": "avg by (instance) (rate(container_cpu_usage_seconds_total{container=\"backend\"}[5m])) * 100",
+            "legendFormat": "CPU Utilization (%)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum by (instance) (instance_cost_per_hour * on(instance) group_left() kube_node_info)",
+            "legendFormat": "Cost ($/hour)",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Cost Optimization Recommendations",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "group by (instance, instance_type, recommendation) (instance_optimization_recommendation)",
+            "format": "table",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "transparent", "value": null }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": { "id": "byName", "options": "recommendation" },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "thresholds",
+                    "thresholds": {
+                      "steps": [
+                        { "color": "green", "value": null },
+                        { "color": "yellow", "value": 1 },
+                        { "color": "red", "value": 2 }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "desc": true,
+              "displayName": "instance"
+            }
+          ]
+        }
+      },
+      {
+        "id": 10,
+        "title": "Cost Trend Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05 + sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01",
+            "legendFormat": "Total Cost ($/hour)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(instance_cost_per_hour{lifecycle=\"spot\"})",
+            "legendFormat": "Spot Instance Cost",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(instance_cost_per_hour{lifecycle=\"on-demand\"})",
+            "legendFormat": "On-Demand Instance Cost",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+        "yAxes": [
+          {
+            "label": "Cost (USD/hour)",
+            "min": 0
+          }
+        ],
+        "legend": {
+          "avg": true,
+          "current": true,
+          "max": true,
+          "min": true,
+          "show": true,
+          "total": false,
+          "values": true
+        },
+        "thresholds": [
+          {
+            "value": 5,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": false,
+            "line": true,
+            "yaxis": "left"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Instance Efficiency Scores",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "instance_efficiency_score",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "continuous-GrYlRd" },
+            "min": 0,
+            "max": 100
+          }
+        },
+        "options": {
+          "calculation": {
+            "xBuckets": {
+              "mode": "size",
+              "value": "1h"
+            },
+            "yBuckets": {
+              "mode": "size",
+              "value": "10"
+            }
+          },
+          "cellGap": 2,
+          "cellValues": {},
+          "color": {
+            "exponent": 0.5,
+            "fill": "dark-orange",
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "exponential",
+            "scheme": "RdYlGn",
+            "steps": 64
+          },
+          "yAxis": {
+            "axisPlacement": "left",
+            "reverse": false
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Reserved Instance Opportunities",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "sum by (instance_type) (instance_stable_hours{lifecycle=\"on-demand\"} > 168)",
+            "format": "table",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 2 },
+                { "color": "red", "value": 5 }
+              ]
+            }
+          }
+        },
+        "options": {
+          "showHeader": true
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {},
+              "renameByName": {
+                "instance_type": "Instance Type",
+                "Value": "RI Candidates"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Cost Per Request",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "(sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) * 0.05 + sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) / 1024 / 1024 / 1024 * 0.01) / rate(http_requests_total{namespace=\"ai-pdf-scholar\"}[5m])",
+            "legendFormat": "Cost per Request ($/req)",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+        "yAxes": [
+          {
+            "label": "Cost per Request (USD)",
+            "min": 0
+          }
+        ],
+        "legend": {
+          "avg": true,
+          "current": true,
+          "max": true,
+          "min": true,
+          "show": true,
+          "total": false,
+          "values": true
+        }
+      },
+      {
+        "id": 14,
+        "title": "Resource Waste Detection",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=\"ai-pdf-scholar\"}) - sum(rate(container_cpu_usage_seconds_total{namespace=\"ai-pdf-scholar\"}[5m]))",
+            "legendFormat": "CPU Waste (cores)",
+            "refId": "A"
+          },
+          {
+            "expr": "(sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"ai-pdf-scholar\"}) - sum(container_memory_working_set_bytes{namespace=\"ai-pdf-scholar\"})) / 1024 / 1024 / 1024",
+            "legendFormat": "Memory Waste (GB)",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+        "yAxes": [
+          {
+            "label": "Wasted Resources",
+            "min": 0
+          }
+        ],
+        "legend": {
+          "avg": true,
+          "current": true,
+          "max": true,
+          "min": true,
+          "show": true,
+          "total": false,
+          "values": true
+        },
+        "thresholds": [
+          {
+            "value": 1,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true,
+            "yaxis": "left"
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Cost Optimization Actions",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{job=\"cost-optimizer\"} |= \"optimization\" or \"recommendation\"",
+            "refId": "A"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "showCommonLabels": false,
+          "wrapLogMessage": false,
+          "prettifyLogMessage": false,
+          "enableLogDetails": true,
+          "dedupStrategy": "none",
+          "sortOrder": "Descending"
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "current": {
+            "text": "ai-pdf-scholar",
+            "value": "ai-pdf-scholar"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "label": "Namespace",
+          "multi": false,
+          "name": "namespace",
+          "options": [],
+          "query": "label_values(kube_pod_info, namespace)",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "tagValuesQuery": "",
+          "tags": [],
+          "tagsQuery": "",
+          "type": "query",
+          "useTags": false
+        },
+        {
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "label": "Instance Type",
+          "multi": true,
+          "name": "instance_type",
+          "options": [],
+          "query": "label_values(kube_node_info, instance_type)",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "tagValuesQuery": "",
+          "tags": [],
+          "tagsQuery": "",
+          "type": "query",
+          "useTags": false
+        },
+        {
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "label": "Lifecycle",
+          "multi": true,
+          "name": "lifecycle",
+          "options": [],
+          "query": "label_values(instance_cost_per_hour, lifecycle)",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "tagValuesQuery": "",
+          "tags": [],
+          "tagsQuery": "",
+          "type": "query",
+          "useTags": false
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=\"HighInfrastructureCost\"}",
+          "iconColor": "red",
+          "name": "Cost Alerts",
+          "titleFormat": "High Infrastructure Cost",
+          "textFormat": "Cost threshold exceeded"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "increase(cost_optimization_actions_total[1h]) > 0",
+          "iconColor": "green",
+          "name": "Optimization Actions",
+          "titleFormat": "Cost Optimization Applied",
+          "textFormat": "Optimization action executed"
+        }
+      ]
+    },
+    "links": [
+      {
+        "type": "link",
+        "title": "AWS Cost Explorer",
+        "url": "https://console.aws.amazon.com/cost-management/home#/cost-explorer",
+        "targetBlank": true
+      },
+      {
+        "type": "link", 
+        "title": "EKS Console",
+        "url": "https://console.aws.amazon.com/eks/home#/clusters",
+        "targetBlank": true
+      }
+    ],
+    "editable": true,
+    "gnetId": null,
+    "graphTooltip": 1,
+    "hideControls": false,
+    "style": "dark",
+    "uid": "cost-optimization-dashboard",
+    "version": 1
+  },
+  "folderId": 0,
+  "overwrite": true
+}

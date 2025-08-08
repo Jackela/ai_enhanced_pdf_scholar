@@ -25,17 +25,19 @@ export interface SecurityConfig {
 
 // XSS attack patterns to detect and prevent
 const XSS_PATTERNS = {
-  SCRIPT_TAGS: /<script[^>]*>[\s\S]*?<\/script>/gi,
+  SCRIPT_TAGS: /<script[^>]*>[\s\S]*?<\/script>|<script[^>]*>/gi,
   JAVASCRIPT_URLS: /javascript:[^"']*/gi,
   VBSCRIPT_URLS: /vbscript:[^"']*/gi,
   DATA_URLS_WITH_SCRIPT: /data:[^;]*;[^,]*,.*(<script|javascript:)/gi,
-  EVENT_HANDLERS: /\son\w+\s*=\s*["'][^"']*["']/gi,
+  EVENT_HANDLERS: /\s?on\w+\s*=\s*[^>\s]*/gi,
   STYLE_WITH_EXPRESSION: /style\s*=\s*["'][^"']*expression\s*\([^"']*["']/gi,
-  IFRAME_TAGS: /<iframe[^>]*>[\s\S]*?<\/iframe>/gi,
+  IFRAME_TAGS: /<iframe[^>]*>[\s\S]*?<\/iframe>|<iframe[^>]*>/gi,
   OBJECT_EMBED_TAGS: /<(object|embed)[^>]*>[\s\S]*?<\/(object|embed)>/gi,
   META_REFRESH: /<meta[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi,
   BASE_TAGS: /<base[^>]*>/gi,
   LINK_STYLESHEET: /<link[^>]*rel\s*=\s*["']?stylesheet["']?[^>]*>/gi,
+  // HTML entity encoded patterns
+  ENCODED_JAVASCRIPT: /&#[0-9]+;/gi, // Basic pattern for HTML entities - will check decoded content
 }
 
 // Safe HTML tags and attributes whitelist
@@ -62,53 +64,78 @@ const SAFE_ATTRIBUTES = {
  * DOMPurify configuration builder
  */
 function createDOMPurifyConfig(options: SecurityConfig = {}) {
-  const allowedTags = [...SAFE_TAGS.BASIC_FORMATTING]
-  const allowedAttributes: { [key: string]: string[] } = {
-    '*': SAFE_ATTRIBUTES.GLOBAL
-  }
+  let allowedTags = [...SAFE_TAGS.BASIC_FORMATTING]
+  const allowedAttributes: { [key: string]: string[] } = {}
+
+  // Always allow global attributes on all elements
+  allowedTags.forEach(tag => {
+    allowedAttributes[tag] = [...SAFE_ATTRIBUTES.GLOBAL]
+  })
 
   // Build allowed tags based on options
   if (options.allowBasicFormatting !== false) {
-    allowedTags.push(...SAFE_TAGS.LISTS, ...SAFE_TAGS.HEADINGS)
+    const additionalTags = [...SAFE_TAGS.LISTS, ...SAFE_TAGS.HEADINGS]
+    allowedTags.push(...additionalTags)
+    additionalTags.forEach(tag => {
+      allowedAttributes[tag] = [...SAFE_ATTRIBUTES.GLOBAL]
+    })
   }
 
   if (options.allowLinks) {
     allowedTags.push(...SAFE_TAGS.LINKS)
-    allowedAttributes.a = SAFE_ATTRIBUTES.LINKS
+    allowedAttributes.a = [...SAFE_ATTRIBUTES.GLOBAL, ...SAFE_ATTRIBUTES.LINKS]
   }
 
   if (options.allowImages) {
     allowedTags.push(...SAFE_TAGS.IMAGES)
-    allowedAttributes.img = SAFE_ATTRIBUTES.IMAGES
+    allowedAttributes.img = [...SAFE_ATTRIBUTES.GLOBAL, ...SAFE_ATTRIBUTES.IMAGES]
   }
 
   if (options.allowTables) {
     allowedTags.push(...SAFE_TAGS.TABLES)
-    Object.assign(allowedAttributes, {
-      td: SAFE_ATTRIBUTES.TABLES,
-      th: SAFE_ATTRIBUTES.TABLES
+    SAFE_TAGS.TABLES.forEach(tag => {
+      allowedAttributes[tag] = [...SAFE_ATTRIBUTES.GLOBAL, ...(SAFE_ATTRIBUTES.TABLES || [])]
     })
   }
 
   if (options.allowCodeBlocks) {
     allowedTags.push(...SAFE_TAGS.CODE)
-    allowedAttributes.code = SAFE_ATTRIBUTES.CODE
-    allowedAttributes.pre = SAFE_ATTRIBUTES.CODE
+    SAFE_TAGS.CODE.forEach(tag => {
+      allowedAttributes[tag] = [...SAFE_ATTRIBUTES.GLOBAL, ...SAFE_ATTRIBUTES.CODE]
+    })
   }
 
   if (options.allowMarkdown) {
     allowedTags.push(...SAFE_TAGS.MARKDOWN_EXTRAS)
+    SAFE_TAGS.MARKDOWN_EXTRAS.forEach(tag => {
+      allowedAttributes[tag] = [...SAFE_ATTRIBUTES.GLOBAL]
+    })
   }
 
-  return {
-    ALLOWED_TAGS: allowedTags,
-    ALLOWED_ATTR: allowedAttributes as any,
-    KEEP_CONTENT: false,
-    ALLOW_DATA_ATTR: false,
-    ALLOW_UNKNOWN_PROTOCOLS: false,
-    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'link', 'style', 'meta', 'base'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout', 'onfocus', 'onblur', 'onchange', 'onsubmit', 'onreset', 'onkeydown', 'onkeyup', 'onkeypress'],
+  // Build list of forbidden tags, excluding allowed ones
+  const forbiddenTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button', 'link', 'style', 'meta', 'base']
+  if (options.allowLinks) {
+    const linkIndex = forbiddenTags.indexOf('link')
+    if (linkIndex > -1) forbiddenTags.splice(linkIndex, 1)
   }
+
+  // Create a flat list of all allowed attributes
+  const allAllowedAttributes = new Set<string>()
+  Object.values(allowedAttributes).forEach(attrs => {
+    attrs.forEach(attr => allAllowedAttributes.add(attr))
+  })
+
+  const dompurifyConfig: any = {
+    ALLOWED_TAGS: allowedTags,
+    ALLOWED_ATTR: Array.from(allAllowedAttributes),
+    KEEP_CONTENT: true, // Keep text content even if tags are removed
+    ALLOW_DATA_ATTR: false,
+    FORBID_TAGS: forbiddenTags,
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout', 'onfocus', 'onblur', 'onchange', 'onsubmit', 'onreset', 'onkeydown', 'onkeyup', 'onkeypress'],
+    ALLOW_UNKNOWN_PROTOCOLS: false
+  }
+
+  return dompurifyConfig
 }
 
 /**
@@ -119,20 +146,20 @@ export function sanitizeText(text: string): string {
     return ''
   }
 
-  // Remove all HTML tags and decode HTML entities
-  const textOnly = DOMPurify.sanitize(text, { 
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-    KEEP_CONTENT: true 
-  })
+  // First pass: remove dangerous tags but preserve inner content
+  let cleaned = text
+    .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '$1') // Keep script content as text
+    .replace(/<[^>]+>/g, '') // Remove all HTML tags
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'") // Decode basic entities
 
-  // Additional cleaning for potential XSS vectors
-  return textOnly
-    .replace(/javascript:/gi, '')
-    .replace(/vbscript:/gi, '')
-    .replace(/data:/gi, '')
+  // Remove dangerous protocol prefixes but preserve the rest
+  cleaned = cleaned
+    .replace(/javascript:\s*/gi, '') // Remove javascript: protocol but keep following text
+    .replace(/vbscript:\s*/gi, '') // Remove vbscript: protocol but keep following text  
     .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
     .trim()
+
+  return cleaned
 }
 
 /**
@@ -150,17 +177,16 @@ export function sanitizeHTML(html: string, options: SecurityConfig = {}): string
 
   const config = createDOMPurifyConfig(options)
   
-  // Pre-processing: Remove known dangerous patterns
-  let cleanHTML = html
-  Object.values(XSS_PATTERNS).forEach(pattern => {
-    cleanHTML = cleanHTML.replace(pattern, '')
-  })
+  // DOMPurify sanitization - let it handle most of the work
+  let sanitized = DOMPurify.sanitize(html, config)
 
-  // DOMPurify sanitization
-  const sanitized = DOMPurify.sanitize(cleanHTML, config)
-
-  // Post-processing: Additional security checks
-  return postProcessSanitization(sanitized, options)
+  // Post-processing: Additional security checks  
+  let processedSanitized = postProcessSanitization(sanitized.toString(), options)
+  
+  // Final pass: remove any remaining dangerous protocols that might have escaped
+  processedSanitized = processedSanitized.replace(/javascript:\s*/gi, '').replace(/vbscript:\s*/gi, '')
+  
+  return processedSanitized
 }
 
 /**
@@ -270,7 +296,26 @@ export function detectXSSAttempt(content: string): {
   const detectedPatterns: string[] = []
   let highestSeverity: 'low' | 'medium' | 'high' | 'critical' = 'low'
 
-  // Check for various XSS patterns
+  // Decode HTML entities to check for encoded XSS - handle various formats including malformed ones
+  const decodedContent = content
+    // Handle standard decimal entities with semicolon (&#106; or &#0000106;)
+    .replace(/&#0*(\d+);/g, (_, dec) => {
+      const num = parseInt(dec, 10)
+      return num > 0 && num < 1114112 ? String.fromCharCode(num) : ''
+    })
+    // Handle malformed decimal entities without semicolon in img tags and similar contexts  
+    .replace(/&#0*(\d+)(?=[^0-9;]|$)/g, (_, dec) => {
+      const num = parseInt(dec, 10)
+      return num > 0 && num < 1114112 ? String.fromCharCode(num) : ''
+    })
+    // Handle hex entities
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+      const num = parseInt(hex, 16)
+      return num > 0 && num < 1114112 ? String.fromCharCode(num) : ''
+    })
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+
+  // Check for various XSS patterns in both original and decoded content
   const patternChecks = [
     { pattern: XSS_PATTERNS.SCRIPT_TAGS, name: 'Script Tags', severity: 'critical' as const },
     { pattern: XSS_PATTERNS.JAVASCRIPT_URLS, name: 'JavaScript URLs', severity: 'critical' as const },
@@ -285,13 +330,45 @@ export function detectXSSAttempt(content: string): {
   ]
 
   patternChecks.forEach(({ pattern, name, severity }) => {
-    if (pattern.test(content)) {
+    // Reset regex lastIndex to ensure consistent matching
+    pattern.lastIndex = 0
+    // Check both original and decoded content
+    if (pattern.test(content) || pattern.test(decodedContent)) {
       detectedPatterns.push(name)
       if (severityLevel(severity) > severityLevel(highestSeverity)) {
         highestSeverity = severity
       }
     }
   })
+
+  // Additional check for encoded patterns - check if content has HTML entities at all
+  if (content.includes('&#') || content.includes('&')) {
+    // Check if decoded content contains dangerous patterns
+    const decodedLower = decodedContent.toLowerCase()
+    if (decodedLower.includes('javascript:') || 
+        decodedLower.includes('vbscript:') || 
+        decodedLower.includes('alert') ||
+        decodedLower.includes('<script') ||
+        decodedLower.includes('onerror') ||
+        decodedLower.includes('onload')) {
+      detectedPatterns.push('HTML Entity Encoded XSS')
+      if (severityLevel('critical') > severityLevel(highestSeverity)) {
+        highestSeverity = 'critical'
+      }
+    }
+    
+    // Additional check: look for dangerous tags with external sources
+    if ((decodedLower.includes('<img') || decodedLower.includes('<iframe') || decodedLower.includes('<script')) && (
+        decodedLower.includes('javascript:') || 
+        decodedLower.includes('vbscript:') ||
+        decodedLower.includes('onerror') ||
+        decodedLower.includes('src=http'))) {
+      detectedPatterns.push('External Resource XSS')
+      if (severityLevel('critical') > severityLevel(highestSeverity)) {
+        highestSeverity = 'critical'
+      }
+    }
+  }
 
   return {
     isDetected: detectedPatterns.length > 0,
@@ -332,8 +409,8 @@ export function escapeHTML(text: string): string {
  */
 export const CSP_POLICIES = {
   STRICT: {
-    'default-src': "'self'",
-    'script-src': "'self' 'unsafe-inline'", // Note: Consider removing 'unsafe-inline' for production
+    'default-src': "'none'",
+    'script-src': "'self'",
     'style-src': "'self' 'unsafe-inline' https://fonts.googleapis.com",
     'font-src': "'self' https://fonts.gstatic.com",
     'img-src': "'self' data: https:",
@@ -363,7 +440,8 @@ export const CSP_POLICIES = {
  */
 export function generateCSPHeader(policy: { [key: string]: string }): string {
   return Object.entries(policy)
-    .map(([directive, value]) => `${directive} ${value}`)
+    .filter(([_, value]) => value !== undefined && value !== null)
+    .map(([directive, value]) => value === '' ? directive : `${directive} ${value}`)
     .join('; ')
 }
 
@@ -386,7 +464,6 @@ export function validateFile(file: File, options: FileValidationOptions = {}): {
   // Sanitize filename
   const sanitizedName = file.name
     .replace(/[^a-zA-Z0-9.-]/g, '_')
-    .replace(/_{2,}/g, '_')
     .substring(0, 255)
 
   // Check file type

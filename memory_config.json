@@ -1,0 +1,17 @@
+{
+  "memory_settings": {
+    "max_memory_mb": 2048,
+    "warning_threshold_mb": 1024,
+    "gc_threshold": [
+      400,
+      5,
+      5
+    ],
+    "monitoring_enabled": true
+  },
+  "database_settings": {
+    "max_connections": 10,
+    "connection_timeout": 30,
+    "connection_pool_cleanup": true
+  }
+}

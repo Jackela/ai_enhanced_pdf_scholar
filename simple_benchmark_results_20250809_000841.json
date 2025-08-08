@@ -1,0 +1,131 @@
+{
+  "database_queries": [
+    {
+      "operation": "count_documents",
+      "run_count": 50,
+      "min_ms": 0.008100003469735384,
+      "max_ms": 0.0990999978967011,
+      "avg_ms": 0.010985999251715839,
+      "median_ms": 0.008400005754083395,
+      "p95_ms": 0.017205014592036605
+    },
+    {
+      "operation": "count_citations",
+      "run_count": 50,
+      "min_ms": 0.008099974365904927,
+      "max_ms": 0.05360000068321824,
+      "avg_ms": 0.00952000031247735,
+      "median_ms": 0.008349990821443498,
+      "p95_ms": 0.012539979070425034
+    },
+    {
+      "operation": "count_vector_indexes",
+      "run_count": 50,
+      "min_ms": 0.008100003469735384,
+      "max_ms": 0.04369998350739479,
+      "avg_ms": 0.009221999207511544,
+      "median_ms": 0.008349990821443498,
+      "p95_ms": 0.010615009523462504
+    },
+    {
+      "operation": "get_all_documents",
+      "run_count": 50,
+      "min_ms": 0.008300004992634058,
+      "max_ms": 0.08429997251369059,
+      "avg_ms": 0.0117759988643229,
+      "median_ms": 0.008700008038431406,
+      "p95_ms": 0.03602499782573432
+    },
+    {
+      "operation": "get_recent_documents",
+      "run_count": 50,
+      "min_ms": 0.008700008038431406,
+      "max_ms": 0.08219998562708497,
+      "avg_ms": 0.010695999953895807,
+      "median_ms": 0.00899998121894896,
+      "p95_ms": 0.013169999874662608
+    }
+  ],
+  "file_operations": [
+    {
+      "operation": "file_read_small_1kb",
+      "run_count": 30,
+      "min_ms": 0.08960001287050545,
+      "max_ms": 1.1577000259421766,
+      "avg_ms": 0.13381333362000683,
+      "median_ms": 0.09204998787026852,
+      "p95_ms": 0.6206800186191685,
+      "file_size_bytes": 1024,
+      "throughput_mb_per_sec": 7.297946128247352
+    },
+    {
+      "operation": "file_read_medium_100kb",
+      "run_count": 30,
+      "min_ms": 0.11779999476857483,
+      "max_ms": 7.911599997896701,
+      "avg_ms": 0.391493336064741,
+      "median_ms": 0.1252000074600801,
+      "p95_ms": 3.6711549953906797,
+      "file_size_bytes": 102400,
+      "throughput_mb_per_sec": 249.44549754443494
+    },
+    {
+      "operation": "file_read_large_1mb",
+      "run_count": 30,
+      "min_ms": 0.7384000055026263,
+      "max_ms": 10.09130000602454,
+      "avg_ms": 1.1993000041305397,
+      "median_ms": 0.8430999878328294,
+      "p95_ms": 5.332645011367276,
+      "file_size_bytes": 1048576,
+      "throughput_mb_per_sec": 833.8197253029888
+    }
+  ],
+  "text_processing": [
+    {
+      "operation": "text_processing_short_text",
+      "run_count": 50,
+      "min_ms": 0.0018999853637069464,
+      "max_ms": 0.009000010322779417,
+      "avg_ms": 0.0029600015841424465,
+      "median_ms": 0.00200001522898674,
+      "p95_ms": 0.005529999907594174,
+      "text_length_chars": 275,
+      "word_count": 50,
+      "throughput_chars_per_sec": 92905355.68401437
+    },
+    {
+      "operation": "text_processing_medium_text",
+      "run_count": 50,
+      "min_ms": 0.03789999755099416,
+      "max_ms": 0.0737000082153827,
+      "avg_ms": 0.04123999911826104,
+      "median_ms": 0.03860000288113952,
+      "p95_ms": 0.06446998886531219,
+      "text_length_chars": 6800,
+      "word_count": 1100,
+      "throughput_chars_per_sec": 164888461.33337975
+    },
+    {
+      "operation": "text_processing_long_text",
+      "run_count": 50,
+      "min_ms": 0.40469999657943845,
+      "max_ms": 0.8818000205792487,
+      "avg_ms": 0.5452520021935925,
+      "median_ms": 0.4504999960772693,
+      "p95_ms": 0.8554350075428374,
+      "text_length_chars": 76000,
+      "word_count": 12000,
+      "throughput_chars_per_sec": 139385091.1032805
+    }
+  ],
+  "metadata": {
+    "benchmark_timestamp": "2025-08-09T00:08:41.216990",
+    "total_duration_seconds": 0.3510417938232422,
+    "benchmark_version": "1.0.0",
+    "environment": {
+      "python_version": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]",
+      "platform": "win32"
+    }
+  }
+}

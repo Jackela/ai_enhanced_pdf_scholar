@@ -1,0 +1,489 @@
+name: 🔒 Advanced Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily security scans at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      scan_intensity:
+        description: 'Security scan intensity level'
+        required: false
+        default: 'standard'
+        type: choice
+        options: ['quick', 'standard', 'comprehensive']
+      include_dast:
+        description: 'Include Dynamic Application Security Testing'
+        required: false
+        default: false
+        type: boolean
+      send_alerts:
+        description: 'Send security alerts to team'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '22.17.0'
+  SCAN_INTENSITY: ${{ github.event.inputs.scan_intensity || 'standard' }}
+
+concurrency:
+  group: security-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 🕵️ Static Application Security Testing (SAST)
+  sast-analysis:
+    name: 🕵️ SAST Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: ['bandit', 'semgrep', 'safety', 'eslint-security']
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: 🐍 Setup Python
+        if: contains(fromJSON('["bandit", "semgrep", "safety"]'), matrix.tool)
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Setup Node.js
+        if: matrix.tool == 'eslint-security'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      # Bandit - Python security issues
+      - name: 🛡️ Bandit Security Scan
+        if: matrix.tool == 'bandit'
+        run: |
+          pip install bandit[toml]
+          echo "🔍 Running Bandit security analysis..."
+          bandit -r src backend \
+            -f json \
+            -o bandit-report.json \
+            --severity-level medium \
+            --exclude "*/tests/*,*/test_*" \
+            || echo "Bandit scan completed with findings"
+          
+          # Generate human-readable report
+          bandit -r src backend \
+            -f txt \
+            -o bandit-report.txt \
+            --severity-level medium \
+            --exclude "*/tests/*,*/test_*" \
+            || echo "Bandit text report generated"
+
+      # Semgrep - Advanced static analysis
+      - name: 🔎 Semgrep Security Scan
+        if: matrix.tool == 'semgrep'
+        run: |
+          pip install semgrep
+          echo "🔍 Running Semgrep security analysis..."
+          semgrep --config=auto \
+            --json \
+            --output=semgrep-report.json \
+            --severity=WARNING \
+            --severity=ERROR \
+            src/ backend/ \
+            || echo "Semgrep scan completed with findings"
+          
+          # Additional Python-specific rules
+          semgrep --config=p/python \
+            --json \
+            --output=semgrep-python-report.json \
+            src/ backend/ \
+            || echo "Semgrep Python rules completed"
+
+      # Safety - Python dependency vulnerabilities
+      - name: 🔒 Safety Vulnerability Check
+        if: matrix.tool == 'safety'
+        run: |
+          pip install safety
+          echo "🔍 Running Safety dependency scan..."
+          
+          # Check requirements files
+          safety check \
+            --json \
+            --output safety-report.json \
+            || echo "Safety scan completed with findings"
+          
+          # Generate audit report
+          safety review \
+            --output safety-audit.txt \
+            || echo "Safety audit completed"
+
+      # ESLint Security - Frontend security
+      - name: 🛡️ ESLint Security Scan
+        if: matrix.tool == 'eslint-security'
+        working-directory: frontend
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm install eslint-plugin-security
+          echo "🔍 Running ESLint security analysis..."
+          
+          # Create security-focused ESLint config
+          cat > .eslintrc.security.js << 'EOF'
+          module.exports = {
+            extends: ['.eslintrc.js'],
+            plugins: ['security'],
+            rules: {
+              'security/detect-buffer-noassert': 'error',
+              'security/detect-child-process': 'warn',
+              'security/detect-disable-mustache-escape': 'error',
+              'security/detect-eval-with-expression': 'error',
+              'security/detect-no-csrf-before-method-override': 'error',
+              'security/detect-non-literal-fs-filename': 'warn',
+              'security/detect-non-literal-regexp': 'warn',
+              'security/detect-non-literal-require': 'warn',
+              'security/detect-object-injection': 'error',
+              'security/detect-possible-timing-attacks': 'warn',
+              'security/detect-pseudoRandomBytes': 'error',
+              'security/detect-unsafe-regex': 'error'
+            }
+          };
+          EOF
+          
+          npx eslint src/ --config .eslintrc.security.js \
+            --format json \
+            --output-file ../eslint-security-report.json \
+            || echo "ESLint security scan completed with findings"
+
+      - name: 📊 Upload SAST Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-results-${{ matrix.tool }}
+          path: |
+            *-report.json
+            *-report.txt
+            *-audit.txt
+          retention-days: 30
+
+  # 🕸️ Dynamic Application Security Testing (DAST)
+  dast-analysis:
+    name: 🕸️ DAST Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event.inputs.include_dast == 'true' || (github.event_name == 'schedule' && github.ref == 'refs/heads/main')
+    services:
+      # Temporary test environment for DAST
+      app:
+        image: python:3.11
+        ports:
+          - 8000:8000
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 🚀 Start Test Application
+        run: |
+          # Install and start application for testing
+          pip install -r requirements.txt
+          # Start app in background for DAST testing
+          cd backend/api && python main.py &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          sleep 10  # Allow app to start
+
+      - name: 🏥 Health Check
+        run: |
+          # Verify app is running
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: 🕷️ OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: 'http://localhost:8000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -j -m 5 -T 15'
+          allow_issue_writing: false
+
+      - name: 🕷️ OWASP ZAP Full Scan
+        if: env.SCAN_INTENSITY == 'comprehensive'
+        uses: zaproxy/action-full-scan@v0.8.0
+        with:
+          target: 'http://localhost:8000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -j -m 10 -T 30'
+          allow_issue_writing: false
+
+      - name: 🛑 Stop Test Application
+        if: always()
+        run: |
+          if [ ! -z "$APP_PID" ]; then
+            kill $APP_PID || true
+          fi
+
+      - name: 📊 Upload DAST Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-results
+          path: report_*.*
+          retention-days: 30
+
+  # 🔍 Dependency Vulnerability Assessment
+  dependency-security:
+    name: 🔍 Dependency Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        ecosystem: ['python', 'javascript']
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      # Python Dependencies
+      - name: 🐍 Python Dependency Security
+        if: matrix.ecosystem == 'python'
+        run: |
+          pip install pip-audit cyclonedx-bom
+          
+          echo "🔍 Running pip-audit for Python dependencies..."
+          pip-audit \
+            --requirement requirements.txt \
+            --requirement requirements-test.txt \
+            --format=json \
+            --output=pip-audit-report.json \
+            || echo "pip-audit completed with findings"
+          
+          echo "📋 Generating Software Bill of Materials (SBOM)..."
+          cyclonedx-bom \
+            --requirement requirements.txt \
+            --output python-sbom.json
+
+      # JavaScript Dependencies  
+      - name: 📦 JavaScript Dependency Security
+        if: matrix.ecosystem == 'javascript'
+        working-directory: frontend
+        run: |
+          npm ci --prefer-offline --no-audit
+          
+          echo "🔍 Running npm audit for JavaScript dependencies..."
+          npm audit \
+            --audit-level=moderate \
+            --json > ../npm-audit-report.json || true
+          
+          echo "📋 Generating JavaScript SBOM..."
+          npx @cyclonedx/cyclonedx-npm \
+            --output-file ../javascript-sbom.json
+
+      - name: 📊 Upload Dependency Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-security-${{ matrix.ecosystem }}
+          path: |
+            *-audit-report.json
+            *-sbom.json
+          retention-days: 90
+
+  # 🔐 Infrastructure Security Checks
+  infrastructure-security:
+    name: 🔐 Infrastructure Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Docker Security with Trivy
+        run: |
+          # Install Trivy
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          
+          # Scan Dockerfiles if they exist
+          if [ -f Dockerfile ]; then
+            echo "🔍 Scanning Dockerfile for security issues..."
+            trivy config --format json --output dockerfile-security.json Dockerfile
+          fi
+          
+          if [ -f docker-compose.yml ]; then
+            echo "🔍 Scanning docker-compose.yml for security issues..."
+            trivy config --format json --output docker-compose-security.json docker-compose.yml
+          fi
+
+      - name: 📝 GitHub Actions Security
+        run: |
+          echo "🔍 Analyzing GitHub Actions workflows for security issues..."
+          # Check for common security anti-patterns in workflows
+          find .github/workflows -name "*.yml" -o -name "*.yaml" | while read file; do
+            echo "Checking $file"
+            
+            # Check for secrets in plain text
+            if grep -i "password\|token\|key\|secret" "$file" | grep -v "\${{"; then
+              echo "⚠️ Potential hardcoded secret in $file"
+            fi
+            
+            # Check for dangerous permissions
+            if grep -i "write-all\|admin" "$file"; then
+              echo "⚠️ Potentially excessive permissions in $file"
+            fi
+          done > github-actions-security.txt
+
+      - name: 📊 Upload Infrastructure Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-security
+          path: |
+            *-security.json
+            *-security.txt
+          retention-days: 30
+
+  # 📊 Security Report Aggregation
+  security-report:
+    name: 📊 Security Report
+    needs: [sast-analysis, dependency-security, infrastructure-security]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 Download All Security Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-results*"
+          merge-multiple: true
+
+      - name: 🔍 Aggregate Security Findings
+        run: |
+          echo "🔒 Security Scan Summary" > security-summary.md
+          echo "========================" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          # Count findings from each tool
+          critical_count=0
+          high_count=0
+          medium_count=0
+          low_count=0
+          
+          # Process Bandit results
+          if [ -f bandit-report.json ]; then
+            echo "## 🛡️ Bandit Results" >> security-summary.md
+            python3 -c "
+import json, sys
+try:
+    with open('bandit-report.json', 'r') as f:
+        data = json.load(f)
+    high = len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH'])
+    medium = len([r for r in data.get('results', []) if r.get('issue_severity') == 'MEDIUM'])
+    low = len([r for r in data.get('results', []) if r.get('issue_severity') == 'LOW'])
+    print(f'- High: {high}')
+    print(f'- Medium: {medium}') 
+    print(f'- Low: {low}')
+    sys.exit(high)
+except: pass
+" >> security-summary.md
+            bandit_high=$?
+            high_count=$((high_count + bandit_high))
+          fi
+          
+          # Process Safety results
+          if [ -f safety-report.json ]; then
+            echo "## 🔒 Safety Results" >> security-summary.md
+            python3 -c "
+import json
+try:
+    with open('safety-report.json', 'r') as f:
+        data = json.load(f)
+    vulns = len(data.get('vulnerabilities', []))
+    print(f'- Vulnerabilities: {vulns}')
+except: pass
+" >> security-summary.md
+          fi
+          
+          # Process npm audit results
+          if [ -f npm-audit-report.json ]; then
+            echo "## 📦 NPM Audit Results" >> security-summary.md
+            python3 -c "
+import json
+try:
+    with open('npm-audit-report.json', 'r') as f:
+        data = json.load(f)
+    meta = data.get('metadata', {})
+    vulns = meta.get('vulnerabilities', {})
+    print(f'- Critical: {vulns.get(\"critical\", 0)}')
+    print(f'- High: {vulns.get(\"high\", 0)}')
+    print(f'- Medium: {vulns.get(\"moderate\", 0)}')
+    print(f'- Low: {vulns.get(\"low\", 0)}')
+except: pass
+" >> security-summary.md
+          fi
+          
+          echo "" >> security-summary.md
+          echo "## 🎯 Risk Assessment" >> security-summary.md
+          
+          # Determine overall risk level
+          if [ $high_count -gt 0 ] || [ $critical_count -gt 0 ]; then
+            echo "**Risk Level: HIGH** ⚠️" >> security-summary.md
+            echo "Immediate attention required for critical/high severity findings." >> security-summary.md
+          elif [ $medium_count -gt 5 ]; then
+            echo "**Risk Level: MEDIUM** ⚡" >> security-summary.md
+            echo "Multiple medium-risk issues should be addressed." >> security-summary.md
+          else
+            echo "**Risk Level: LOW** ✅" >> security-summary.md
+            echo "No critical security issues found." >> security-summary.md
+          fi
+
+      - name: 📋 Generate Summary Report
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 🔒 Advanced Security Scanning Results
+          
+          ## 📊 Scan Coverage
+          
+          | Security Test | Status | Findings |
+          |---------------|--------|----------|
+          | 🛡️ SAST (Bandit) | ${{ needs.sast-analysis.result }} | See artifacts |
+          | 🔎 SAST (Semgrep) | ${{ needs.sast-analysis.result }} | See artifacts |
+          | 🔒 Dependencies | ${{ needs.dependency-security.result }} | See artifacts |
+          | 🔐 Infrastructure | ${{ needs.infrastructure-security.result }} | See artifacts |
+          | 🕸️ DAST | ${{ needs.dast-analysis.result || 'Skipped' }} | See artifacts |
+          
+          ## 🎯 Security Posture
+          
+          - **Scan Intensity**: ${{ env.SCAN_INTENSITY }}
+          - **SAST Tools**: Bandit, Semgrep, ESLint Security
+          - **Dependency Scans**: pip-audit, npm audit
+          - **SBOM Generated**: Python & JavaScript
+          - **Infrastructure**: Docker, GitHub Actions
+          
+          EOF
+          
+          # Append security summary if available
+          if [ -f security-summary.md ]; then
+            cat security-summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📊 Upload Final Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-final-report
+          path: |
+            security-summary.md
+          retention-days: 90
+
+      # Alert on critical findings (if enabled)
+      - name: 🚨 Security Alert
+        if: github.event.inputs.send_alerts == 'true' && failure()
+        run: |
+          echo "🚨 Critical security findings detected!"
+          echo "Review the security artifacts and take immediate action."
+          # Here you could integrate with Slack, email, or other alert systems

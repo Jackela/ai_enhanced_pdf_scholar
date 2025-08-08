@@ -1,0 +1,183 @@
+{
+  "objects": [
+    {
+      "id": "ai-pdf-scholar-security-analysis",
+      "type": "dashboard",
+      "attributes": {
+        "title": "AI PDF Scholar - Security Analysis",
+        "description": "Security event monitoring and threat detection dashboard",
+        "panelsJSON": "[{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":8,\"i\":\"1\"},\"panelIndex\":\"1\",\"embeddableConfig\":{},\"panelRefName\":\"panel_1\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":8,\"i\":\"2\"},\"panelIndex\":\"2\",\"embeddableConfig\":{},\"panelRefName\":\"panel_2\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":8,\"w\":16,\"h\":8,\"i\":\"3\"},\"panelIndex\":\"3\",\"embeddableConfig\":{},\"panelRefName\":\"panel_3\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":16,\"y\":8,\"w\":16,\"h\":8,\"i\":\"4\"},\"panelIndex\":\"4\",\"embeddableConfig\":{},\"panelRefName\":\"panel_4\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":32,\"y\":8,\"w\":16,\"h\":8,\"i\":\"5\"},\"panelIndex\":\"5\",\"embeddableConfig\":{},\"panelRefName\":\"panel_5\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":16,\"w\":24,\"h\":12,\"i\":\"6\"},\"panelIndex\":\"6\",\"embeddableConfig\":{},\"panelRefName\":\"panel_6\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":24,\"y\":16,\"w\":24,\"h\":12,\"i\":\"7\"},\"panelIndex\":\"7\",\"embeddableConfig\":{},\"panelRefName\":\"panel_7\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":0,\"y\":28,\"w\":24,\"h\":8,\"i\":\"8\"},\"panelIndex\":\"8\",\"embeddableConfig\":{},\"panelRefName\":\"panel_8\"},{\"version\":\"8.11.0\",\"gridData\":{\"x\":24,\"y\":28,\"w\":24,\"h\":8,\"i\":\"9\"},\"panelIndex\":\"9\",\"embeddableConfig\":{},\"panelRefName\":\"panel_9\"}]",
+        "optionsJSON": "{\"useMargins\":true,\"syncColors\":false,\"hidePanelTitles\":false}",
+        "version": 1,
+        "timeRestore": true,
+        "timeTo": "now",
+        "timeFrom": "now-24h",
+        "refreshInterval": {
+          "pause": false,
+          "value": 60000
+        },
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"query\":{\"match_all\":{}},\"filter\":[]}"
+        }
+      },
+      "references": [
+        {
+          "id": "security-events-timeline",
+          "type": "visualization",
+          "name": "panel_1"
+        },
+        {
+          "id": "authentication-events",
+          "type": "visualization",
+          "name": "panel_2"
+        },
+        {
+          "id": "failed-login-attempts",
+          "type": "visualization",
+          "name": "panel_3"
+        },
+        {
+          "id": "suspicious-ip-addresses",
+          "type": "visualization",
+          "name": "panel_4"
+        },
+        {
+          "id": "security-event-types",
+          "type": "visualization",
+          "name": "panel_5"
+        },
+        {
+          "id": "geographical-login-distribution",
+          "type": "visualization",
+          "name": "panel_6"
+        },
+        {
+          "id": "recent-security-logs",
+          "type": "search",
+          "name": "panel_7"
+        },
+        {
+          "id": "authorization-failures",
+          "type": "visualization",
+          "name": "panel_8"
+        },
+        {
+          "id": "rate-limit-violations",
+          "type": "visualization",
+          "name": "panel_9"
+        }
+      ]
+    },
+    {
+      "id": "security-events-timeline",
+      "type": "visualization",
+      "attributes": {
+        "title": "Security Events Timeline",
+        "visState": "{\"title\":\"Security Events Timeline\",\"type\":\"line\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"min_doc_count\":0},\"schema\":\"segment\"},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"security_event.keyword\",\"size\":5,\"order\":\"desc\"},\"schema\":\"group\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"match\":{\"log_category\":\"security\"}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "authentication-events",
+      "type": "visualization",
+      "attributes": {
+        "title": "Authentication Events",
+        "visState": "{\"title\":\"Authentication Events\",\"type\":\"pie\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"security_event.keyword\",\"size\":10,\"order\":\"desc\"},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"bool\":{\"must\":[{\"match\":{\"security_event\":\"authentication\"}}]}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "failed-login-attempts",
+      "type": "visualization",
+      "attributes": {
+        "title": "Failed Login Attempts",
+        "visState": "{\"title\":\"Failed Login Attempts\",\"type\":\"histogram\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"min_doc_count\":0},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"bool\":{\"must\":[{\"match\":{\"message\":\"failed\"}},{\"match\":{\"message\":\"login\"}}]}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "suspicious-ip-addresses",
+      "type": "visualization",
+      "attributes": {
+        "title": "Top Suspicious IP Addresses",
+        "visState": "{\"title\":\"Top Suspicious IP Addresses\",\"type\":\"table\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"client_ip\",\"size\":15,\"order\":\"desc\"},\"schema\":\"bucket\"},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"security_event.keyword\",\"size\":5,\"order\":\"desc\"},\"schema\":\"bucket\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"bool\":{\"must\":[{\"exists\":{\"field\":\"client_ip\"}},{\"range\":{\"@timestamp\":{\"gte\":\"now-24h\"}}}]}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "security-event-types",
+      "type": "visualization",
+      "attributes": {
+        "title": "Security Event Types",
+        "visState": "{\"title\":\"Security Event Types\",\"type\":\"horizontal_bar\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"params\":{\"field\":\"security_event.keyword\",\"size\":10,\"order\":\"desc\"},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"exists\":{\"field\":\"security_event\"}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "geographical-login-distribution",
+      "type": "visualization",
+      "attributes": {
+        "title": "Geographical Login Distribution",
+        "visState": "{\"title\":\"Geographical Login Distribution\",\"type\":\"tile_map\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"geohash_grid\",\"params\":{\"field\":\"geoip.location\",\"autoPrecision\":true,\"precision\":2},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"bool\":{\"must\":[{\"match\":{\"security_event\":\"authentication\"}},{\"exists\":{\"field\":\"geoip.location\"}}]}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "recent-security-logs",
+      "type": "search",
+      "attributes": {
+        "title": "Recent Security Logs",
+        "description": "Latest security events and alerts",
+        "hits": 0,
+        "columns": ["@timestamp", "security_event", "client_ip", "logger_name", "message"],
+        "sort": [["@timestamp", "desc"]],
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"match\":{\"log_category\":\"security\"}},\"filter\":[],\"highlightAll\":true,\"version\":true}"
+        }
+      }
+    },
+    {
+      "id": "authorization-failures",
+      "type": "visualization",
+      "attributes": {
+        "title": "Authorization Failures",
+        "visState": "{\"title\":\"Authorization Failures\",\"type\":\"line\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"min_doc_count\":0},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"bool\":{\"should\":[{\"match\":{\"message\":\"unauthorized\"}},{\"match\":{\"message\":\"forbidden\"}},{\"match\":{\"message\":\"access_denied\"}}]}},\"filter\":[]}"
+        }
+      }
+    },
+    {
+      "id": "rate-limit-violations",
+      "type": "visualization",
+      "attributes": {
+        "title": "Rate Limit Violations",
+        "visState": "{\"title\":\"Rate Limit Violations\",\"type\":\"histogram\",\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"params\":{},\"schema\":\"metric\"},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"min_doc_count\":0},\"schema\":\"segment\"}]}",
+        "uiStateJSON": "{}",
+        "kibanaSavedObjectMeta": {
+          "searchSourceJSON": "{\"index\":\"security-logs-*\",\"query\":{\"bool\":{\"should\":[{\"match\":{\"message\":\"rate limit\"}},{\"match\":{\"message\":\"too many requests\"}}]}},\"filter\":[]}"
+        }
+      }
+    }
+  ],
+  "version": "8.11.0"
+}

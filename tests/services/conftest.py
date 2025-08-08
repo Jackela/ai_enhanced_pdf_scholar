@@ -1,13 +1,19 @@
+"""
+Optimized Service Layer Test Configuration
+Uses shared test utilities for better performance.
+"""
+
 import pytest
 
-from src.database.connection import DatabaseConnection
-from src.database.migrations import DatabaseMigrator
+# Import optimized test utilities instead of creating duplicate fixtures
+from tests.test_utils import db_manager
 
 
 @pytest.fixture
-def db_connection():
-    db = DatabaseConnection(db_path=":memory:")
-    migrator = DatabaseMigrator(db)
-    migrator.create_tables_if_not_exist()
+def db_connection(request):
+    """Optimized database connection for service tests."""
+    test_name = f"service_{request.node.name}"
+    db = db_manager.get_test_db(test_name)
+    db_manager.clean_test_db(test_name)
     yield db
-    db.close_connection()
+    # Cleanup handled by session-level cleanup

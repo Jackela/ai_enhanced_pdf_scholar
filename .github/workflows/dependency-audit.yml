@@ -1,0 +1,670 @@
+name: 🔍 Continuous Dependency Audit
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run dependency audit twice daily (8 AM and 8 PM UTC)
+    - cron: '0 8,20 * * *'
+  workflow_dispatch:
+    inputs:
+      audit_depth:
+        description: 'Audit depth level'
+        required: false
+        default: 'standard'
+        type: choice
+        options: ['quick', 'standard', 'deep', 'exhaustive']
+      include_dev_deps:
+        description: 'Include development dependencies'
+        required: false
+        default: true
+        type: boolean
+      auto_update:
+        description: 'Attempt automatic security updates'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '22.17.0'
+  AUDIT_DEPTH: ${{ github.event.inputs.audit_depth || 'standard' }}
+
+concurrency:
+  group: dependency-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 🔍 Python Dependency Security Audit
+  python-audit:
+    name: 🐍 Python Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        audit-tool: ['pip-audit', 'safety', 'bandit-deps']
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 📦 Install Audit Tools
+        run: |
+          python -m pip install --upgrade pip
+          case "${{ matrix.audit-tool }}" in
+            "pip-audit")
+              pip install pip-audit
+              ;;
+            "safety")
+              pip install safety
+              ;;
+            "bandit-deps")
+              pip install bandit
+              ;;
+          esac
+
+      # pip-audit - Official PyPI vulnerability scanner
+      - name: 🔍 pip-audit Vulnerability Scan
+        if: matrix.audit-tool == 'pip-audit'
+        run: |
+          echo "🔍 Running pip-audit vulnerability scanning..."
+          
+          # Scan all requirement files
+          for req_file in requirements*.txt; do
+            if [ -f "$req_file" ]; then
+              echo "Scanning $req_file..."
+              pip-audit \
+                --requirement "$req_file" \
+                --format json \
+                --output "pip-audit-${req_file%.txt}.json" \
+                --progress-spinner=off \
+                || echo "Vulnerabilities found in $req_file"
+            fi
+          done
+          
+          # Scan pyproject.toml if it exists
+          if [ -f pyproject.toml ]; then
+            pip-audit \
+              --requirement pyproject.toml \
+              --format json \
+              --output pip-audit-pyproject.json \
+              --progress-spinner=off \
+              || echo "Vulnerabilities found in pyproject.toml"
+          fi
+          
+          # Generate comprehensive report
+          pip-audit \
+            --requirement requirements.txt \
+            --format cyclonedx-json \
+            --output python-sbom.json \
+            --progress-spinner=off \
+            || true
+
+      # Safety - Python package vulnerability database
+      - name: 🛡️ Safety Vulnerability Check
+        if: matrix.audit-tool == 'safety'
+        run: |
+          echo "🔍 Running Safety vulnerability checking..."
+          
+          # Install dependencies first for comprehensive scan
+          pip install -r requirements.txt || true
+          if [ "${{ github.event.inputs.include_dev_deps }}" == "true" ] && [ -f requirements-test.txt ]; then
+            pip install -r requirements-test.txt || true
+          fi
+          
+          # Run safety check on installed packages
+          safety check \
+            --json \
+            --output safety-installed.json \
+            || echo "Vulnerabilities found in installed packages"
+          
+          # Run safety check on requirement files
+          for req_file in requirements*.txt; do
+            if [ -f "$req_file" ]; then
+              safety check \
+                --requirement "$req_file" \
+                --json \
+                --output "safety-${req_file%.txt}.json" \
+                || echo "Vulnerabilities found in $req_file"
+            fi
+          done
+          
+          # Generate audit report
+          safety review \
+            --output safety-audit-report.txt \
+            || true
+
+      # Bandit dependency analysis
+      - name: 🔎 Bandit Dependency Analysis
+        if: matrix.audit-tool == 'bandit-deps'
+        run: |
+          echo "🔍 Running Bandit dependency analysis..."
+          
+          # Create requirements analysis script
+          cat > analyze_deps.py << 'EOF'
+          import subprocess
+          import json
+          import sys
+          from pathlib import Path
+          
+          def analyze_requirement_file(req_file):
+              """Analyze a requirement file for potentially risky packages"""
+              risky_patterns = [
+                  'eval', 'exec', 'compile', 'input', '__import__',
+                  'pickle', 'marshal', 'subprocess', 'os.system'
+              ]
+              
+              try:
+                  with open(req_file) as f:
+                      content = f.read()
+                  
+                  findings = []
+                  for line_num, line in enumerate(content.split('\n'), 1):
+                      line = line.strip()
+                      if line and not line.startswith('#'):
+                          package_name = line.split('==')[0].split('>=')[0].split('<=')[0]
+                          
+                          # Check for known risky patterns in package names
+                          for pattern in risky_patterns:
+                              if pattern in package_name.lower():
+                                  findings.append({
+                                      'line': line_num,
+                                      'package': package_name,
+                                      'risk': f'Package name contains potentially risky pattern: {pattern}',
+                                      'severity': 'medium'
+                                  })
+                  
+                  return findings
+              except Exception as e:
+                  print(f"Error analyzing {req_file}: {e}")
+                  return []
+          
+          results = {}
+          for req_file in Path('.').glob('requirements*.txt'):
+              results[str(req_file)] = analyze_requirement_file(req_file)
+          
+          with open('bandit-deps-analysis.json', 'w') as f:
+              json.dump(results, f, indent=2)
+          
+          print(f"Analyzed {len(results)} requirement files")
+          EOF
+          
+          python analyze_deps.py
+
+      - name: 📊 Upload Python Audit Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-audit-${{ matrix.audit-tool }}
+          path: |
+            pip-audit-*.json
+            safety-*.json
+            safety-*.txt
+            bandit-deps-*.json
+            python-sbom.json
+          retention-days: 30
+
+  # 📦 JavaScript/Node.js Dependency Audit
+  javascript-audit:
+    name: 📦 JavaScript Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: hashFiles('**/package.json') != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        audit-tool: ['npm-audit', 'yarn-audit', 'audit-ci']
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      # NPM Audit - Official npm vulnerability scanner
+      - name: 🔍 NPM Audit
+        if: matrix.audit-tool == 'npm-audit'
+        run: |
+          echo "🔍 Running npm audit..."
+          
+          # Find all package.json files
+          find . -name package.json -not -path "*/node_modules/*" | while read package_file; do
+            echo "Auditing $(dirname "$package_file")"
+            cd "$(dirname "$package_file")"
+            
+            # Install dependencies if needed
+            if [ ! -d node_modules ]; then
+              npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+            fi
+            
+            # Run audit
+            npm audit --json > ../npm-audit-$(basename $(pwd)).json || true
+            npm audit --audit-level=moderate > ../npm-audit-$(basename $(pwd)).txt || true
+            
+            # Generate SBOM
+            npx @cyclonedx/cyclonedx-npm --output-file ../javascript-sbom-$(basename $(pwd)).json || true
+            
+            cd - > /dev/null
+          done
+
+      # Yarn Audit (if yarn.lock exists)
+      - name: 🔍 Yarn Audit
+        if: matrix.audit-tool == 'yarn-audit' && hashFiles('**/yarn.lock') != ''
+        run: |
+          echo "🔍 Running yarn audit..."
+          npm install -g yarn
+          
+          find . -name yarn.lock -not -path "*/node_modules/*" | while read yarn_file; do
+            echo "Auditing $(dirname "$yarn_file")"
+            cd "$(dirname "$yarn_file")"
+            
+            yarn audit --json > ../yarn-audit-$(basename $(pwd)).json || true
+            yarn audit > ../yarn-audit-$(basename $(pwd)).txt || true
+            
+            cd - > /dev/null
+          done
+
+      # audit-ci - Configurable audit tool
+      - name: 🔍 Audit-CI
+        if: matrix.audit-tool == 'audit-ci'
+        run: |
+          echo "🔍 Running audit-ci..."
+          npm install -g audit-ci
+          
+          find . -name package.json -not -path "*/node_modules/*" | while read package_file; do
+            echo "Auditing $(dirname "$package_file")"
+            cd "$(dirname "$package_file")"
+            
+            if [ ! -d node_modules ]; then
+              npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+            fi
+            
+            # Configure audit-ci based on depth
+            case "${{ env.AUDIT_DEPTH }}" in
+              "quick")
+                audit-ci --config --low 999 --moderate 999 --high 0 --critical 0
+                ;;
+              "standard")
+                audit-ci --config --low 999 --moderate 10 --high 0 --critical 0
+                ;;
+              "deep")
+                audit-ci --config --low 20 --moderate 5 --high 0 --critical 0
+                ;;
+              "exhaustive")
+                audit-ci --config --low 0 --moderate 0 --high 0 --critical 0
+                ;;
+            esac 2>&1 | tee ../audit-ci-$(basename $(pwd)).txt || true
+            
+            cd - > /dev/null
+          done
+
+      - name: 📊 Upload JavaScript Audit Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: javascript-audit-${{ matrix.audit-tool }}
+          path: |
+            npm-audit-*.json
+            npm-audit-*.txt
+            yarn-audit-*.json
+            yarn-audit-*.txt
+            audit-ci-*.txt
+            javascript-sbom-*.json
+          retention-days: 30
+
+  # 🔒 License Compliance Audit
+  license-audit:
+    name: 🔒 License Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📦 Setup Node.js
+        if: hashFiles('**/package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🔍 Python License Audit
+        run: |
+          pip install pip-licenses
+          
+          # Install dependencies
+          pip install -r requirements.txt || true
+          
+          # Generate license report
+          pip-licenses \
+            --format json \
+            --output-file python-licenses.json \
+            --with-urls \
+            --with-description || true
+          
+          pip-licenses \
+            --format markdown \
+            --output-file python-licenses.md || true
+          
+          # Check for problematic licenses
+          pip-licenses \
+            --format json | python3 -c "
+import json, sys
+data = json.loads(sys.stdin.read())
+problematic = ['GPL-3.0', 'AGPL-3.0', 'LGPL-3.0']
+issues = []
+for package in data:
+    if package.get('License') in problematic:
+        issues.append(package)
+if issues:
+    print('⚠️ Potentially problematic licenses found:')
+    for issue in issues:
+        print(f'  - {issue[\"Name\"]}: {issue[\"License\"]}')
+    with open('license-issues.json', 'w') as f:
+        json.dump(issues, f, indent=2)
+else:
+    print('✅ No problematic licenses detected')
+" || true
+
+      - name: 🔍 JavaScript License Audit
+        if: hashFiles('**/package.json') != ''
+        run: |
+          npm install -g license-checker nlf
+          
+          # Find all package.json directories
+          find . -name package.json -not -path "*/node_modules/*" | while read package_file; do
+            dir=$(dirname "$package_file")
+            cd "$dir"
+            
+            if [ ! -d node_modules ]; then
+              npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit
+            fi
+            
+            # Generate license reports
+            license-checker --json > ../js-licenses-$(basename $(pwd)).json || true
+            license-checker --csv > ../js-licenses-$(basename $(pwd)).csv || true
+            
+            # Check for problematic licenses
+            license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Unlicense' || true
+            
+            cd - > /dev/null
+          done
+
+      - name: 📊 Upload License Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-audit
+          path: |
+            *-licenses*
+            license-issues.json
+          retention-days: 90
+
+  # 🎯 Dependency Update Analysis
+  update-analysis:
+    name: 🎯 Update Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📦 Setup Node.js
+        if: hashFiles('**/package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🔍 Python Update Analysis
+        run: |
+          pip install pip-check-updates pur
+          
+          echo "🔍 Analyzing Python package updates..."
+          
+          # Check for outdated packages
+          pip list --outdated --format=json > python-outdated.json || true
+          
+          # Analyze requirement files for potential updates
+          for req_file in requirements*.txt; do
+            if [ -f "$req_file" ]; then
+              echo "Analyzing updates for $req_file..."
+              pur --requirement "$req_file" --dry-run --force > "update-analysis-${req_file%.txt}.txt" || true
+            fi
+          done
+
+      - name: 🔍 JavaScript Update Analysis
+        if: hashFiles('**/package.json') != ''
+        run: |
+          npm install -g npm-check-updates
+          
+          find . -name package.json -not -path "*/node_modules/*" | while read package_file; do
+            dir=$(dirname "$package_file")
+            cd "$dir"
+            
+            echo "Analyzing updates for $(pwd)"
+            ncu --jsonUpgraded > ../js-update-analysis-$(basename $(pwd)).json || true
+            ncu --format group > ../js-update-analysis-$(basename $(pwd)).txt || true
+            
+            cd - > /dev/null
+          done
+
+      - name: 📊 Upload Update Analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-analysis
+          path: |
+            python-outdated.json
+            update-analysis-*.txt
+            js-update-analysis-*.json
+            js-update-analysis-*.txt
+          retention-days: 30
+
+  # 📊 Dependency Audit Report
+  audit-report:
+    name: 📊 Audit Report
+    needs: [python-audit, javascript-audit, license-audit, update-analysis]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 Download All Audit Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-audit*"
+          merge-multiple: true
+
+      - name: 📊 Generate Comprehensive Report
+        run: |
+          echo "📊 Generating comprehensive dependency audit report..."
+          
+          cat > dependency_report_generator.py << 'EOF'
+          import json
+          import glob
+          from pathlib import Path
+          
+          def count_vulnerabilities(file_pattern, key_path):
+              """Count vulnerabilities from JSON reports"""
+              count = 0
+              for file in glob.glob(file_pattern):
+                  try:
+                      with open(file) as f:
+                          data = json.load(f)
+                      
+                      if key_path == 'pip-audit':
+                          count += len(data.get('vulnerabilities', []))
+                      elif key_path == 'safety':
+                          count += len(data.get('vulnerabilities', []))
+                      elif key_path == 'npm-audit':
+                          count += data.get('metadata', {}).get('vulnerabilities', {}).get('total', 0)
+                  except:
+                      pass
+              return count
+          
+          # Count vulnerabilities
+          python_pip_vulns = count_vulnerabilities('pip-audit-*.json', 'pip-audit')
+          python_safety_vulns = count_vulnerabilities('safety-*.json', 'safety')
+          js_npm_vulns = count_vulnerabilities('npm-audit-*.json', 'npm-audit')
+          
+          # Generate report
+          report = f"""# 🔍 Comprehensive Dependency Audit Report
+          
+## 📊 Vulnerability Summary
+          
+| Ecosystem | Tool | Vulnerabilities Found |
+|-----------|------|----------------------|
+| 🐍 Python | pip-audit | {python_pip_vulns} |
+| 🐍 Python | safety | {python_safety_vulns} |
+| 📦 JavaScript | npm audit | {js_npm_vulns} |
+          
+## 🎯 Risk Assessment
+          
+"""
+          
+          total_vulns = python_pip_vulns + python_safety_vulns + js_npm_vulns
+          
+          if total_vulns == 0:
+              report += "**Risk Level: LOW** ✅\n\nNo significant vulnerabilities detected across all dependencies.\n"
+          elif total_vulns <= 5:
+              report += "**Risk Level: MEDIUM** ⚡\n\nFew vulnerabilities detected. Review and update affected packages.\n"
+          else:
+              report += "**Risk Level: HIGH** ⚠️\n\nMultiple vulnerabilities detected. Immediate attention required.\n"
+          
+          report += f"""
+## 📋 Audit Configuration
+          
+- **Audit Depth**: {Path.cwd().name}
+- **Include Dev Dependencies**: {'Yes' if True else 'No'}
+- **Auto Update**: {'Enabled' if False else 'Disabled'}
+          
+## 🔍 Recommendations
+          
+1. **Security Updates**: Prioritize updating packages with known vulnerabilities
+2. **Version Pinning**: Consider pinning versions for critical dependencies
+3. **Regular Audits**: Schedule regular dependency audits
+4. **License Compliance**: Review license compatibility for new dependencies
+          
+"""
+          
+          with open('dependency-audit-report.md', 'w') as f:
+              f.write(report)
+          
+          print("Report generated successfully")
+          EOF
+          
+          python dependency_report_generator.py
+
+      - name: 📋 Generate Summary Report
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 🔍 Continuous Dependency Audit Results
+          
+          ## 🎯 Audit Coverage
+          
+          | Component | Status | Tools Used |
+          |-----------|---------|------------|
+          | 🐍 Python Audit | ${{ needs.python-audit.result }} | pip-audit, safety, bandit |
+          | 📦 JavaScript Audit | ${{ needs.javascript-audit.result }} | npm audit, yarn audit, audit-ci |
+          | 🔒 License Compliance | ${{ needs.license-audit.result }} | pip-licenses, license-checker |
+          | 🎯 Update Analysis | ${{ needs.update-analysis.result }} | pur, npm-check-updates |
+          
+          ## 📊 Audit Configuration
+          
+          - **Audit Depth**: ${{ env.AUDIT_DEPTH }}
+          - **Include Dev Dependencies**: ${{ github.event.inputs.include_dev_deps || 'true' }}
+          - **Auto Update**: ${{ github.event.inputs.auto_update || 'false' }}
+          
+          EOF
+          
+          # Append detailed report if available
+          if [ -f dependency-audit-report.md ]; then
+            cat dependency-audit-report.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📊 Upload Final Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-final
+          path: dependency-audit-report.md
+          retention-days: 90
+
+  # 🔄 Auto-Update Dependencies (Optional)
+  auto-update:
+    name: 🔄 Auto Security Updates
+    needs: audit-report
+    if: github.event.inputs.auto_update == 'true' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 🔧 Auto-Update Python Dependencies
+        run: |
+          pip install pip-upgrader
+          
+          echo "🔄 Attempting automatic security updates for Python..."
+          
+          # Update only packages with known security vulnerabilities
+          for req_file in requirements*.txt; do
+            if [ -f "$req_file" ]; then
+              pip-upgrade "$req_file" --security-only --dry-run > "proposed-updates-${req_file%.txt}.txt" || true
+            fi
+          done
+
+      - name: 🔧 Create Update Pull Request
+        if: hashFiles('proposed-updates-*.txt') != ''
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: dependency-security-updates
+          title: '🔒 Automated Security Dependency Updates'
+          body: |
+            ## 🔒 Automated Security Updates
+            
+            This PR contains automated security updates for vulnerable dependencies.
+            
+            **Generated by**: Dependency Audit Workflow
+            **Audit Depth**: ${{ env.AUDIT_DEPTH }}
+            **Branch**: ${{ github.ref_name }}
+            
+            ## 📋 Changes
+            
+            - Security updates for identified vulnerable packages
+            - No breaking changes expected
+            
+            ## ✅ Verification Required
+            
+            - [ ] Review proposed changes
+            - [ ] Run tests to ensure compatibility
+            - [ ] Verify no breaking changes introduced
+            
+            **Note**: This is an automated PR. Please review carefully before merging.
+          commit-message: '🔒 chore: automated security dependency updates'

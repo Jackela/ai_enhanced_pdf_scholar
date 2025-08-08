@@ -685,6 +685,42 @@ class AuthenticationService:
             self.db.rollback()
             logger.error(f"Failed to update user activity: {str(e)}")
     
+    def log_login_attempt(self, login_attempt: 'LoginAttemptLog') -> bool:
+        """
+        Log a login attempt for audit and security monitoring.
+        
+        Args:
+            login_attempt: Login attempt information
+            
+        Returns:
+            True if logged successfully, False otherwise
+        """
+        try:
+            # For now, just log to the application log
+            # In a production system, you might store this in a separate audit table
+            log_message = (
+                f"Login attempt - Username: {login_attempt.username}, "
+                f"IP: {login_attempt.ip_address}, "
+                f"Success: {login_attempt.success}, "
+                f"User Agent: {login_attempt.user_agent}"
+            )
+            
+            if login_attempt.success:
+                logger.info(f"[AUDIT] {log_message}")
+            else:
+                logger.warning(f"[SECURITY] Failed {log_message}, Reason: {login_attempt.failure_reason}")
+            
+            # TODO: In production, store in dedicated audit log table
+            # audit_record = LoginAuditModel(**login_attempt.dict())
+            # self.db.add(audit_record)
+            # self.db.commit()
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to log login attempt: {e}")
+            return False
+    
     def cleanup_expired_tokens(self) -> int:
         """
         Clean up expired refresh tokens.

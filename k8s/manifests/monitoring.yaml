@@ -1,0 +1,716 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/component: logging
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200
+    - name: transport
+      port: 9300
+      targetPort: 9300
+  selector:
+    app.kubernetes.io/name: elasticsearch
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/component: logging
+spec:
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: elasticsearch
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: elasticsearch
+    spec:
+      initContainers:
+      - name: increase-vm-max-map
+        image: busybox:1.35
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
+        env:
+        - name: discovery.type
+          value: "single-node"
+        - name: ES_JAVA_OPTS
+          value: "-Xmx512m -Xms512m"
+        - name: xpack.security.enabled
+          value: "false"
+        - name: xpack.monitoring.collection.enabled
+          value: "true"
+        volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /usr/share/elasticsearch/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+          initialDelaySeconds: 15
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: elasticsearch-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: kibana
+    app.kubernetes.io/component: logging
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5601
+      targetPort: 5601
+  selector:
+    app.kubernetes.io/name: kibana
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: kibana
+    app.kubernetes.io/component: logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kibana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:8.11.0
+        ports:
+        - containerPort: 5601
+          name: http
+        env:
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch:9200"
+        - name: SERVER_NAME
+          value: "kibana"
+        - name: SERVER_HOST
+          value: "0.0.0.0"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: tracing
+spec:
+  type: ClusterIP
+  ports:
+    - name: jaeger-collector-http
+      port: 14268
+      targetPort: 14268
+    - name: jaeger-collector-grpc
+      port: 14250
+      targetPort: 14250
+  selector:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: collector
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-query
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: tracing
+spec:
+  type: ClusterIP
+  ports:
+    - name: jaeger-query-http
+      port: 16686
+      targetPort: 16686
+  selector:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: query
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: tracing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jaeger
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: collector
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:1.50
+        ports:
+        - containerPort: 16686
+          name: jaeger-ui
+        - containerPort: 14268
+          name: jaeger-collector
+        - containerPort: 14250
+          name: jaeger-grpc
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
+        - name: SPAN_STORAGE_TYPE
+          value: "memory"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 16686
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 16686
+          initialDelaySeconds: 15
+          periodSeconds: 5
+---
+# ============================================================================
+# Enhanced ELK Stack Configuration
+# ============================================================================
+
+# Logstash ConfigMap for log processing
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: logstash
+    app.kubernetes.io/component: logging
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+    pipeline.workers: 2
+    pipeline.batch.size: 125
+    pipeline.batch.delay: 50
+    xpack.monitoring.enabled: false
+    
+  pipelines.yml: |
+    - pipeline.id: main
+      path.config: "/usr/share/logstash/pipeline/logstash.conf"
+      
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+        host => "0.0.0.0"
+      }
+      
+      # HTTP input for application logs
+      http {
+        port => 8080
+        host => "0.0.0.0"
+        codec => json
+      }
+    }
+    
+    filter {
+      # Parse timestamp
+      if [timestamp] {
+        date {
+          match => [ "timestamp", "ISO8601" ]
+        }
+      }
+      
+      # Parse log level
+      if [level] {
+        mutate {
+          uppercase => [ "level" ]
+        }
+      }
+      
+      # Kubernetes metadata enrichment
+      if [kubernetes] {
+        mutate {
+          add_field => {
+            "k8s_namespace" => "%{[kubernetes][namespace]}"
+            "k8s_pod" => "%{[kubernetes][pod_name]}"
+            "k8s_container" => "%{[kubernetes][container_name]}"
+          }
+        }
+      }
+      
+      # Application-specific parsing
+      if [fields][service] == "ai-pdf-scholar-backend" {
+        # Parse FastAPI logs
+        if [message] =~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}/ {
+          grok {
+            match => { 
+              "message" => "%{TIMESTAMP_ISO8601:log_timestamp} %{LOGLEVEL:log_level} %{DATA:logger_name}: %{GREEDYDATA:log_message}" 
+            }
+          }
+        }
+        
+        # Parse HTTP access logs
+        if [message] =~ /^\d+\.\d+\.\d+\.\d+ - - \[/ {
+          grok {
+            match => { 
+              "message" => "%{COMBINEDAPACHELOG}" 
+            }
+          }
+          
+          mutate {
+            add_field => { "log_type" => "access" }
+            convert => { "bytes" => "integer" }
+            convert => { "response" => "integer" }
+          }
+        }
+        
+        # Parse JSON structured logs
+        if [message] =~ /^\{.*\}$/ {
+          json {
+            source => "message"
+          }
+          
+          # Extract metrics from JSON logs
+          if [metrics] {
+            mutate {
+              add_field => { "log_type" => "metrics" }
+            }
+          }
+          
+          # Extract error details
+          if [error] {
+            mutate {
+              add_field => { 
+                "error_type" => "%{[error][type]}"
+                "error_message" => "%{[error][message]}"
+                "log_type" => "error"
+              }
+            }
+          }
+        }
+      }
+      
+      # Security log parsing
+      if [fields][service] == "security" or [logger_name] =~ /security|auth|login/ {
+        mutate {
+          add_field => { "log_category" => "security" }
+        }
+        
+        # Parse authentication events
+        if [message] =~ /login|authentication|auth/ {
+          mutate {
+            add_field => { "security_event" => "authentication" }
+          }
+          
+          # Extract IP addresses
+          grok {
+            match => { 
+              "message" => "%{IP:client_ip}" 
+            }
+          }
+        }
+        
+        # Parse authorization events
+        if [message] =~ /authorization|permission|access_denied/ {
+          mutate {
+            add_field => { "security_event" => "authorization" }
+          }
+        }
+      }
+      
+      # Performance log parsing
+      if [message] =~ /duration|latency|response_time/ {
+        mutate {
+          add_field => { "log_category" => "performance" }
+        }
+        
+        # Extract timing information
+        grok {
+          match => { 
+            "message" => "duration[:|=]%{NUMBER:duration:float}" 
+          }
+        }
+        
+        grok {
+          match => { 
+            "message" => "response_time[:|=]%{NUMBER:response_time:float}" 
+          }
+        }
+      }
+      
+      # Error log enrichment
+      if [log_level] == "ERROR" or [level] == "error" {
+        mutate {
+          add_field => { "log_category" => "error" }
+          add_tag => [ "alert_candidate" ]
+        }
+        
+        # Extract stack trace
+        if [message] =~ /Traceback|Exception|Error:/ {
+          mutate {
+            add_field => { "has_stacktrace" => "true" }
+          }
+        }
+      }
+      
+      # Add processing timestamp
+      mutate {
+        add_field => { "processed_at" => "%{@timestamp}" }
+      }
+      
+      # Clean up temporary fields
+      mutate {
+        remove_field => [ "host", "agent", "ecs" ]
+      }
+    }
+    
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch:9200"]
+        index => "logs-%{+YYYY.MM.dd}"
+        
+        # Dynamic index routing based on log type
+        if [log_category] == "security" {
+          index => "security-logs-%{+YYYY.MM.dd}"
+        } else if [log_category] == "error" {
+          index => "error-logs-%{+YYYY.MM.dd}"
+        } else if [log_category] == "performance" {
+          index => "performance-logs-%{+YYYY.MM.dd}"
+        } else if [log_type] == "access" {
+          index => "access-logs-%{+YYYY.MM.dd}"
+        }
+        
+        template_name => "ai-pdf-scholar"
+        template_pattern => ["logs-*", "security-logs-*", "error-logs-*", "performance-logs-*", "access-logs-*"]
+        template => {
+          "index_patterns" => ["logs-*", "security-logs-*", "error-logs-*", "performance-logs-*", "access-logs-*"]
+          "settings" => {
+            "number_of_shards" => 1
+            "number_of_replicas" => 1
+            "index.refresh_interval" => "5s"
+            "index.lifecycle.name" => "ai-pdf-scholar-policy"
+          }
+          "mappings" => {
+            "properties" => {
+              "@timestamp" => { "type" => "date" }
+              "message" => { "type" => "text", "analyzer" => "standard" }
+              "level" => { "type" => "keyword" }
+              "log_level" => { "type" => "keyword" }
+              "logger_name" => { "type" => "keyword" }
+              "log_category" => { "type" => "keyword" }
+              "log_type" => { "type" => "keyword" }
+              "k8s_namespace" => { "type" => "keyword" }
+              "k8s_pod" => { "type" => "keyword" }
+              "k8s_container" => { "type" => "keyword" }
+              "client_ip" => { "type" => "ip" }
+              "duration" => { "type" => "float" }
+              "response_time" => { "type" => "float" }
+              "error_type" => { "type" => "keyword" }
+              "error_message" => { "type" => "text" }
+              "security_event" => { "type" => "keyword" }
+            }
+          }
+        }
+      }
+      
+      # Debug output (remove in production)
+      stdout {
+        codec => rubydebug
+      }
+    }
+---
+# Logstash Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: logstash
+    app.kubernetes.io/component: logging
+spec:
+  type: ClusterIP
+  ports:
+    - name: beats
+      port: 5044
+      targetPort: 5044
+      protocol: TCP
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: logstash
+---
+# Logstash Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: logstash
+    app.kubernetes.io/component: logging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: logstash
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: logstash
+    spec:
+      containers:
+      - name: logstash
+        image: docker.elastic.co/logstash/logstash:8.11.0
+        ports:
+        - containerPort: 5044
+          name: beats
+        - containerPort: 8080
+          name: http
+        env:
+        - name: LS_JAVA_OPTS
+          value: "-Xmx1g -Xms1g"
+        - name: ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch:9200"
+        volumeMounts:
+        - name: config
+          mountPath: /usr/share/logstash/config/logstash.yml
+          subPath: logstash.yml
+        - name: config
+          mountPath: /usr/share/logstash/config/pipelines.yml
+          subPath: pipelines.yml
+        - name: pipeline
+          mountPath: /usr/share/logstash/pipeline/logstash.conf
+          subPath: logstash.conf
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9600
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: logstash-config
+      - name: pipeline
+        configMap:
+          name: logstash-config
+---
+# ServiceMonitor for Prometheus scraping
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ai-pdf-scholar-backend
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: ai-pdf-scholar
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-pdf-scholar
+      app.kubernetes.io/component: backend
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/component: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+    
+    rule_files:
+      - "alert_rules.yml"
+    
+    scrape_configs:
+    - job_name: 'ai-pdf-scholar-backend'
+      static_configs:
+      - targets: ['ai-pdf-scholar-backend:8001']
+      metrics_path: /metrics
+      scrape_interval: 30s
+    
+    - job_name: 'postgresql'
+      static_configs:
+      - targets: ['postgresql-service:5432']
+      metrics_path: /metrics
+      scrape_interval: 60s
+    
+    - job_name: 'redis'
+      static_configs:
+      - targets: ['redis-service:6379']
+      metrics_path: /metrics
+      scrape_interval: 60s
+    
+    - job_name: 'kubernetes-pods'
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+    
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
+  
+  alert_rules.yml: |
+    groups:
+    - name: ai-pdf-scholar
+      rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 10% for 5 minutes"
+      
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "95th percentile latency is above 2 seconds"
+      
+      - alert: DatabaseConnectionsHigh
+        expr: db_connections_active / 50 > 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database connections high"
+          description: "Database connection usage is above 80%"
+      
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod is crash looping"
+          description: "Pod {{ $labels.pod }} is crash looping"

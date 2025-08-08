@@ -1,0 +1,93 @@
+{
+  "structure": {
+    "total_test_files": 59,
+    "total_conftest_files": 3,
+    "conftest_analysis": [
+      {
+        "file": "tests\\conftest.py",
+        "lines": 281,
+        "fixtures": 13,
+        "complexity": "high"
+      },
+      {
+        "file": "tests\\security\\conftest.py",
+        "lines": 482,
+        "fixtures": 28,
+        "complexity": "high"
+      },
+      {
+        "file": "tests\\services\\conftest.py",
+        "lines": 19,
+        "fixtures": 1,
+        "complexity": "low"
+      }
+    ],
+    "test_categories": {
+      "unit": 7,
+      "integration": 10,
+      "e2e": 1,
+      "security": 12,
+      "performance": 3,
+      "repository": 5,
+      "service": 9,
+      "other": 12
+    }
+  },
+  "dependencies": {
+    "common_imports": {
+      "from src.repositories.citation_repository import CitationRepository": 12,
+      "import pytest": 10,
+      "from src.services.citation_service import CitationService": 9,
+      "import time": 7,
+      "from src.services.citation_parsing_service import CitationParsingService": 7,
+      "import tempfile": 7,
+      "from src.repositories.citation_relation_repository import CitationRelationRepository": 6,
+      "from pathlib import Path": 5,
+      "from unittest.mock import MagicMock, patch": 4,
+      "from datetime import datetime": 4
+    },
+    "fixture_dependencies": {},
+    "slow_imports": []
+  },
+  "benchmark": {
+    "subset": "smoke",
+    "execution_time": 10.15,
+    "return_code": 1,
+    "total_tests": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "tests_per_second": 0.49,
+    "stderr": "C:\\Users\\k7407\\AppData\\Roaming\\Python\\Python313\\site-packages\\coverage\\control.py:915: CoverageWarning: No data was collected. (no-data-collected)\n  self._warn(\"No data was collected.\", slug=\"no-data-collected\")\nC:\\Users\\k7407\\AppData\\Roaming\\Python\\Python313\\site-packages\\coverage\\control.py:915: CoverageWarning: No data was collected. (no-data-collected)\n  self._warn(\"No data was collected.\", slug=\"no-data-collected\")\nC:\\Users\\k7407\\AppData\\Roaming\\Python\\Python313\\site-packages\\coverage\\contr"
+  },
+  "recommendations": [
+    {
+      "type": "fixture_optimization",
+      "priority": "high",
+      "title": "Simplify complex conftest.py",
+      "description": "tests\\conftest.py has 281 lines and 13 fixtures. Consider splitting or optimizing.",
+      "action": "Split large conftest.py files and optimize fixture scopes"
+    },
+    {
+      "type": "fixture_optimization",
+      "priority": "high",
+      "title": "Simplify complex conftest.py",
+      "description": "tests\\security\\conftest.py has 482 lines and 28 fixtures. Consider splitting or optimizing.",
+      "action": "Split large conftest.py files and optimize fixture scopes"
+    },
+    {
+      "type": "organization",
+      "priority": "medium",
+      "title": "Improve test organization",
+      "description": "Found 12 uncategorized tests vs 7 unit tests",
+      "action": "Reorganize tests into clear categories (unit, integration, e2e)"
+    },
+    {
+      "type": "performance",
+      "priority": "high",
+      "title": "Improve test execution speed",
+      "description": "Tests running at 0.49 tests/second",
+      "action": "Optimize fixtures, use mocking, and implement connection pooling"
+    }
+  ]
+}

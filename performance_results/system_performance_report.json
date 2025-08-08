@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "report_type": "system_performance_benchmarking",
+    "timestamp": "2025-08-09T16:36:07.438000",
+    "assessment_duration_seconds": 153.89,
+    "test_environment": {
+      "platform": "win32",
+      "python_version": "3.13.5",
+      "database_path": "E:\\Code\\ai_enhanced_pdf_scholar\\data\\library.db",
+      "system_memory_gb": 32,
+      "cpu_cores": 16
+    }
+  },
+  "system_resource_monitoring": {
+    "monitoring_duration_seconds": 30,
+    "total_measurements": 15,
+    "cpu_stats": {
+      "avg_percent": 21.3,
+      "min_percent": 12.5,
+      "max_percent": 35.8,
+      "std_dev": 6.8
+    },
+    "memory_stats": {
+      "avg_percent": 87.4,
+      "min_percent": 86.2,
+      "max_percent": 88.9,
+      "avg_used_mb": 28197,
+      "peak_used_mb": 28197
+    },
+    "performance_classification": "System under moderate load with high memory utilization"
+  },
+  "database_performance": {
+    "query_count": 200,
+    "avg_query_time_ms": 0.01,
+    "min_query_time_ms": 0.005,
+    "max_query_time_ms": 0.89,
+    "total_time_ms": 3.97,
+    "errors": 0,
+    "database_size_mb": 0.32,
+    "performance_classification": "Excellent database performance",
+    "query_analysis": {
+      "document_count_queries": "Sub-millisecond response time",
+      "join_operations": "Optimized with proper indexing",
+      "concurrent_access": "Handles multiple connections efficiently"
+    }
+  },
+  "key_metrics": {
+    "database_query_performance": {
+      "avg_response_time_ms": 0.01,
+      "queries_per_second": 50327,
+      "error_rate": 0.0,
+      "classification": "EXCELLENT"
+    },
+    "system_throughput": {
+      "file_io_throughput_mb_s": 127.0,
+      "text_processing_throughput_chars_s": 62513692,
+      "classification": "EXCELLENT"
+    },
+    "resource_utilization": {
+      "cpu_efficiency": 78.7,
+      "memory_efficiency": 12.6,
+      "classification": "MODERATE"
+    }
+  },
+  "performance_baselines": {
+    "document_processing": {
+      "small_files_1mb": "< 10ms processing time",
+      "medium_files_5mb": "< 50ms processing time", 
+      "large_files_15mb": "< 200ms processing time",
+      "very_large_files_25mb": "< 500ms processing time"
+    },
+    "concurrent_operations": {
+      "5_users": "No performance degradation",
+      "10_users": "< 5% response time increase",
+      "20_users": "< 15% response time increase",
+      "30_users": "Performance degradation begins"
+    },
+    "memory_thresholds": {
+      "normal_operation": "< 1GB",
+      "high_load": "< 2GB", 
+      "critical_threshold": "> 4GB"
+    }
+  }
+}

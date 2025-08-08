@@ -1,0 +1,531 @@
+# ============================================================================
+# Custom Metrics API Server Configuration
+# Enables Kubernetes to consume business-specific metrics for auto-scaling
+# Integrates with Prometheus and provides metrics for HPA scaling decisions
+# ============================================================================
+
+# Custom Metrics API Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-metrics-apiserver
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: metrics
+spec:
+  replicas: 2  # High availability
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: custom-metrics-apiserver
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: custom-metrics-apiserver
+        app.kubernetes.io/component: metrics
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "6443"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: custom-metrics-apiserver
+      containers:
+      - name: custom-metrics-apiserver
+        image: k8s.gcr.io/prometheus-adapter/prometheus-adapter:v0.11.0
+        args:
+        - --secure-port=6443
+        - --tls-cert-file=/var/run/serving-cert/tls.crt
+        - --tls-private-key-file=/var/run/serving-cert/tls.key
+        - --logtostderr=true
+        - --prometheus-url=http://prometheus.ai-pdf-scholar.svc.cluster.local:9090/
+        - --metrics-relist-interval=1m
+        - --v=4
+        - --config=/etc/adapter/config.yaml
+        ports:
+        - containerPort: 6443
+          name: https
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: volume-serving-cert
+          mountPath: /var/run/serving-cert
+          readOnly: true
+        - name: config
+          mountPath: /etc/adapter/
+          readOnly: true
+        - name: tmp-vol
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: volume-serving-cert
+        secret:
+          secretName: cm-adapter-serving-certs
+      - name: config
+        configMap:
+          name: adapter-config
+      - name: tmp-vol
+        emptyDir: {}
+
+---
+# Custom Metrics API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: custom-metrics-apiserver
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: metrics
+spec:
+  ports:
+  - name: https
+    port: 443
+    targetPort: 6443
+    protocol: TCP
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: custom-metrics-apiserver
+
+---
+# ServiceAccount for Custom Metrics API Server
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: custom-metrics-apiserver
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: metrics
+
+---
+# ClusterRole for Custom Metrics API Server
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: custom-metrics-apiserver
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "nodes/stats"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["deployments/scale", "replicasets/scale"]
+  verbs: ["get", "update"]
+
+---
+# ClusterRoleBinding for Custom Metrics API Server
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: custom-metrics-apiserver
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: custom-metrics-apiserver
+subjects:
+- kind: ServiceAccount
+  name: custom-metrics-apiserver
+  namespace: ai-pdf-scholar
+
+---
+# ClusterRole for accessing custom metrics
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: custom-metrics-server-resources
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: rbac
+rules:
+- apiGroups: ["custom.metrics.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+# ClusterRoleBinding for custom metrics access
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hpa-controller-custom-metrics
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: custom-metrics-server-resources
+subjects:
+- kind: ServiceAccount
+  name: horizontal-pod-autoscaler
+  namespace: kube-system
+
+---
+# APIService for Custom Metrics
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.custom.metrics.k8s.io
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: apiservice
+spec:
+  service:
+    name: custom-metrics-apiserver
+    namespace: ai-pdf-scholar
+    port: 443
+  group: custom.metrics.k8s.io
+  version: v1beta1
+  insecureSkipTLSVerify: true
+  groupPriorityMinimum: 100
+  versionPriority: 100
+
+---
+# APIService for External Metrics
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.external.metrics.k8s.io
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: apiservice
+spec:
+  service:
+    name: custom-metrics-apiserver
+    namespace: ai-pdf-scholar
+    port: 443
+  group: external.metrics.k8s.io
+  version: v1beta1
+  insecureSkipTLSVerify: true
+  groupPriorityMinimum: 100
+  versionPriority: 100
+
+---
+# Certificate for Custom Metrics API Server
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cm-adapter-serving-certs
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: certificates
+type: kubernetes.io/tls
+data:
+  # These would be generated by cert-manager or similar
+  # For demo purposes, these are placeholder values
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLnBsYWNlaG9sZGVyIGNlcnRpZmljYXRlLi4uCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCi4uLnBsYWNlaG9sZGVyIHByaXZhdGUga2V5Li4uCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K
+
+---
+# ConfigMap for Custom Metrics Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adapter-config
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: configuration
+data:
+  config.yaml: |
+    rules:
+    # AI PDF Scholar specific metrics
+    - seriesQuery: 'http_requests_per_second{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^(.*)_per_second$
+        as: "${1}_per_second"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    - seriesQuery: 'http_request_duration_p95_seconds{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^(.*)_p95_seconds$
+        as: "${1}_p95_seconds"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # RAG-specific metrics
+    - seriesQuery: 'rag_queries_per_second{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^rag_(.*)_per_second$
+        as: "rag_${1}_per_second"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    - seriesQuery: 'rag_query_duration_p95_seconds{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^rag_(.*)_p95_seconds$
+        as: "rag_${1}_p95_seconds"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # Document processing metrics
+    - seriesQuery: 'document_processing_queue_depth{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^document_(.*)_depth$
+        as: "document_${1}_depth"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    - seriesQuery: 'document_processing_rate_per_minute{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^document_(.*)_per_minute$
+        as: "document_${1}_per_minute"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # User activity metrics
+    - seriesQuery: 'active_user_sessions{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^active_(.*)_sessions$
+        as: "active_${1}_sessions"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    - seriesQuery: 'concurrent_users{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^concurrent_(.*)$
+        as: "concurrent_${1}"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # Efficiency metrics
+    - seriesQuery: 'memory_efficiency_ratio{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^(.*)_efficiency_ratio$
+        as: "${1}_efficiency_ratio"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    - seriesQuery: 'cpu_efficiency_ratio{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^(.*)_efficiency_ratio$
+        as: "${1}_efficiency_ratio"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # Quality metrics
+    - seriesQuery: 'service_quality_score{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^(.*)_quality_score$
+        as: "${1}_quality_score"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    - seriesQuery: 'rag_cache_hit_rate{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^(.*)_hit_rate$
+        as: "${1}_hit_rate"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # Business metrics
+    - seriesQuery: 'business_value_score{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^business_(.*)_score$
+        as: "business_${1}_score"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    - seriesQuery: 'peak_hour_indicator{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^peak_(.*)_indicator$
+        as: "peak_${1}_indicator"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # Cost metrics
+    - seriesQuery: 'cost_per_request{namespace!="",pod!=""}'
+      seriesFilters:
+      - isNot: __name__
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: ^cost_per_(.*)$
+        as: "cost_per_${1}"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+    # External metrics (not pod-specific)
+    externalRules:
+    - seriesQuery: 'scaling_prediction_confidence'
+      metricsQuery: '<<.Series>>'
+      name:
+        matches: ^scaling_(.*)_confidence$
+        as: "scaling_${1}_confidence"
+
+    - seriesQuery: 'predicted_load_next_15min'
+      metricsQuery: '<<.Series>>'
+      name:
+        matches: ^predicted_(.*)_next_15min$
+        as: "predicted_${1}_next_15min"
+
+    # Database metrics (external)
+    - seriesQuery: 'database_size_mb'
+      metricsQuery: '<<.Series>>'
+      name:
+        matches: ^database_(.*)_mb$
+        as: "database_${1}_mb"
+
+    - seriesQuery: 'db_active_connections'
+      metricsQuery: '<<.Series>>'
+      name:
+        matches: ^db_(.*)_connections$
+        as: "db_${1}_connections"
+
+---
+# ServiceMonitor for Custom Metrics API Server
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: custom-metrics-apiserver
+  namespace: ai-pdf-scholar
+  labels:
+    app.kubernetes.io/name: custom-metrics-apiserver
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: custom-metrics-apiserver
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+    honorLabels: true

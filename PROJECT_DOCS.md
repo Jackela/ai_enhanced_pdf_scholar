@@ -94,29 +94,31 @@ graph TD
 
 ### 综合测试覆盖率
 
-项目实现了较为完善的测试覆盖：
+项目实现了基础的测试覆盖：
 
 | 组件 | 测试覆盖 | 状态 |
 |------|----------|------|
-| **BaseRepository** | 基础功能 | ✅ 已测试 |
-| **DocumentRepository** | 核心CRUD | ✅ 已测试 |
-| **VectorIndexRepository** | 索引管理 | ✅ 已测试 |
-| **CitationRepository** | 引用数据访问 | ✅ 已测试 |
-| **CitationRelationRepository** | 引用关系管理 | ✅ 已测试 |
-| **EnhancedRAGService** | RAG功能 | ✅ 已测试 |
-| **CitationService** | 引用业务逻辑 | ✅ 已测试 |
-| **CitationParsingService** | 引用解析算法 | ✅ 已测试 |
-| **Database层** | 连接管理 | ✅ 已优化 |
-| **Citation Models** | 数据模型 | ✅ 已测试 |
-| **Citation Integration** | 集成工作流 | ✅ 已测试 |
-| **Citation E2E** | 端到端验证 | 🔄 基本完成 |
+| **BaseRepository** | 基础功能 | 🚧 基本完成 |
+| **DocumentRepository** | 核心CRUD | 🚧 基本完成 |
+| **VectorIndexRepository** | 索引管理 | 🚧 基本完成 |
+| **CitationRepository** | 引用数据访问 | 🚧 基本完成 |
+| **CitationRelationRepository** | 引用关系管理 | 🚧 基本完成 |
+| **EnhancedRAGService** | RAG功能 | 🚧 基本完成 |
+| **CitationService** | 引用业务逻辑 | 🚧 基本完成 |
+| **CitationParsingService** | 引用解析算法 | 🚧 基本完成 |
+| **Database层** | 连接管理 | 🔧 已改进 |
+| **Citation Models** | 数据模型 | 🚧 基本完成 |
+| **Citation Integration** | 集成工作流 | 🚧 基本完成 |
+| **Citation E2E** | 端到端验证 | 🔄 开发中 |
+
+**注意**：测试状态基于开发环境验证，生产环境表现可能有所不同。
 
 ### 测试架构特征
 
 #### 🏗️ **高性能测试基础设施**
 - **pytest框架** 配合优化插件生态 (pytest-xdist, pytest-benchmark)
-- **共享数据库连接** 减少90%的数据库设置开销
-- **智能并行执行** 自动CPU扩展 (`-n auto`) 实现显著加速
+- **共享数据库连接** 优化了数据库设置开销
+- **智能并行执行** 使用自动CPU扩展 (`-n auto`) 改进测试速度
 - **优化fixture管理** 会话级别共享和智能清理策略
 - **战略性Mock使用** 外部依赖的智能模拟
 - **性能监控** 自动检测慢速测试 (>1秒) 和性能基准

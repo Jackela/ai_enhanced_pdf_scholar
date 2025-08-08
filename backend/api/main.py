@@ -23,7 +23,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 # Add project root to path for imports
@@ -41,12 +41,16 @@ from backend.api.routes import settings
 from backend.api.websocket_manager import WebSocketManager
 from src.controllers.library_controller import LibraryController
 from src.database.connection import DatabaseConnection
-from src.database.migrations import DatabaseMigrator
+from src.database import DatabaseMigrator
 from src.services.enhanced_rag_service import EnhancedRAGService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize metrics collector
+from backend.services.metrics_collector import get_metrics_collector
+metrics_collector = get_metrics_collector()
 # Create FastAPI app
 app = FastAPI(
     title="AI Enhanced PDF Scholar API",
@@ -69,10 +73,15 @@ app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
 # Configure secure CORS based on environment
 cors_config = get_cors_config()
 app.add_middleware(CORSMiddleware, **cors_config.get_middleware_config())
+
+# Add metrics collection middleware
+from backend.services.metrics_service import FastAPIMetricsMiddleware
+app.add_middleware(FastAPIMetricsMiddleware, app, metrics_collector.metrics_service)
+
 # WebSocket manager
 websocket_manager = WebSocketManager()
 # Include API routes
-from backend.api.routes import documents, library, rag, system, rate_limit_admin
+from backend.api.routes import documents, library, rag, system, settings, rate_limit_admin, cache_admin
 from backend.api.auth import routes as auth_routes
 
 app.include_router(auth_routes.router, prefix="/api", tags=["authentication"])
@@ -82,6 +91,46 @@ app.include_router(library.router, prefix="/api/library", tags=["library"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
 app.include_router(settings.router, prefix="/api")
 app.include_router(rate_limit_admin.router, prefix="/api/admin", tags=["rate-limiting"])
+app.include_router(cache_admin.router, prefix="/api/admin", tags=["cache-admin"])
+
+# ============================================================================
+# Monitoring Endpoints
+# ============================================================================
+
+@app.get("/metrics")
+async def get_metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        metrics_data, content_type = metrics_collector.get_metrics_response()
+        return Response(content=metrics_data, media_type=content_type)
+    except Exception as e:
+        logger.error(f"Failed to generate metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate metrics")
+
+@app.get("/health")
+async def health_check():
+    """Comprehensive health check endpoint."""
+    try:
+        health_status = await metrics_collector.check_comprehensive_health()
+        return health_status
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "healthy": False,
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+@app.get("/metrics/dashboard")
+async def get_dashboard_metrics():
+    """Get formatted metrics for custom dashboard."""
+    try:
+        dashboard_data = metrics_collector.get_dashboard_metrics()
+        return dashboard_data
+    except Exception as e:
+        logger.error(f"Failed to get dashboard metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get dashboard metrics")
+
 # Serve static files for frontend
 frontend_dist = project_root / "frontend" / "dist"
 if frontend_dist.exists():
@@ -215,6 +264,17 @@ async def startup_event() -> None:
         if migrator.needs_migration():
             logger.info("Running database migrations...")
             migrator.migrate()
+        # Initialize cache system
+        try:
+            from backend.services.cache_service_integration import initialize_application_cache
+            cache_initialized = await initialize_application_cache(metrics=metrics_collector.metrics_service)
+            if cache_initialized:
+                logger.info("Multi-layer cache system initialized")
+            else:
+                logger.info("Cache system disabled or initialization failed")
+        except Exception as cache_error:
+            logger.warning(f"Cache system initialization failed: {cache_error}")
+        
         logger.info("API startup completed successfully")
         logger.info("Unified error handling system active")
     except Exception as e:
@@ -226,7 +286,17 @@ async def startup_event() -> None:
 async def shutdown_event() -> None:
     """Cleanup on shutdown."""
     logger.info("Shutting down AI Enhanced PDF Scholar API...")
-    # Add cleanup logic here if needed
+    
+    # Shutdown cache system
+    try:
+        from backend.services.cache_service_integration import shutdown_application_cache
+        await shutdown_application_cache()
+        logger.info("Cache system shutdown completed")
+    except Exception as cache_error:
+        logger.warning(f"Cache system shutdown error: {cache_error}")
+    
+    # Add other cleanup logic here if needed
+    logger.info("API shutdown completed")
 
 
 if __name__ == "__main__":

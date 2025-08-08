@@ -1,0 +1,6 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting redis
+  Downloading redis-6.4.0-py3-none-any.whl.metadata (10 kB)
+Downloading redis-6.4.0-py3-none-any.whl (279 kB)
+Installing collected packages: redis
+Successfully installed redis-6.4.0

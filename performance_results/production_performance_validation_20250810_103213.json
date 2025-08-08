@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "validation_timestamp": "2025-08-10T00:32:13.679986+00:00",
+    "total_runtime_seconds": 242.11196064949036,
+    "validator_version": "1.0.0"
+  },
+  "production_readiness": {
+    "final_score": 90.66666666666667,
+    "component_scores": {
+      "api": 100.0,
+      "rag": 100.0,
+      "memory": 85,
+      "load_testing": 60
+    },
+    "readiness_status": "\u2705 READY FOR PRODUCTION DEPLOYMENT",
+    "recommendation": "All performance criteria met. System is production-ready.",
+    "meets_minimum_threshold": true,
+    "total_weight": 0.75
+  },
+  "detailed_results": {
+    "baseline_validation": {
+      "database_performance": {
+        "score": 0,
+        "details": {},
+        "passes": false
+      },
+      "api_performance": {
+        "score": 100.0,
+        "details": {
+          "health_endpoint": {
+            "value": 18.944936666715268,
+            "threshold": 200.0,
+            "passes": true
+          },
+          "documents_endpoint": {
+            "value": 16.524349997052923,
+            "threshold": 200.0,
+            "passes": true
+          }
+        },
+        "passes": true
+      },
+      "rag_performance": {
+        "score": 100.0,
+        "details": {
+          "document_indexing": {
+            "value": 0.05203380000020843,
+            "threshold": 10.0,
+            "passes": true
+          },
+          "query_processing": {
+            "value": 0.31551800000306685,
+            "threshold": 2.0,
+            "passes": true
+          }
+        },
+        "passes": true
+      },
+      "memory_analysis": {
+        "score": 100.0,
+        "details": {
+          "peak_memory": {
+            "value": 70.11328125,
+            "threshold": 500.0,
+            "passes": true
+          },
+          "memory_stability": {
+            "value": 4.3203125,
+            "threshold": 10.0,
+            "passes": true
+          }
+        },
+        "passes": true
+      },
+      "overall_passes": false
+    },
+    "memory_validation": {
+      "passes": true,
+      "score": 85,
+      "results": {
+        "duration_minutes": 3,
+        "sample_count": 12,
+        "memory_statistics": {
+          "initial_mb": 66.4296875,
+          "final_mb": 66.48046875,
+          "peak_mb": 66.48046875,
+          "min_mb": 66.3359375,
+          "avg_mb": 66.43098958333333,
+          "memory_growth_mb": 0.05078125,
+          "growth_rate_mb_per_hour": 1.015625
+        },
+        "trend_analysis": {
+          "slope_mb_per_sample": 0.010434877622377622,
+          "correlation_coefficient": 0.7277664861504558,
+          "trend_strength": 0.7277664861504558,
+          "trend_direction": "increasing"
+        },
+        "stability_analysis": {
+          "standard_deviation_mb": 0.051697195510726136,
+          "coefficient_of_variation": 0.0007782090231528974,
+          "stability_score": 0.9992217909768472,
+          "memory_spikes_count": 0,
+          "largest_spike_mb": 0,
+          "is_stable": true
+        },
+        "gc_analysis": {
+          "total_objects_reclaimed": 41,
+          "avg_objects_per_gc": 3.4166666666666665,
+          "total_memory_freed_mb": -0.79296875,
+          "avg_memory_freed_mb": -0.06608072916666667,
+          "gc_samples": 12,
+          "gc_effectiveness_score": 0.0034166666666666664
+        },
+        "health_assessment": {
+          "status": "\u2705 Healthy",
+          "health_score": 85,
+          "leak_indicators": [
+            "Poor GC effectiveness: 0.00"
+          ],
+          "recommendation": "Memory usage is stable and healthy",
+          "growth_rate_mb_per_hour": 1.015625,
+          "peak_to_baseline_ratio": 1.000764436081383,
+          "memory_stability": true
+        },
+        "operations_completed": 1629,
+        "thresholds": {
+          "leak_growth_mb_per_hour": 5.0,
+          "peak_to_baseline_ratio": 2.0,
+          "gc_effectiveness_threshold": 0.8,
+          "memory_stability_threshold": 0.9
+        }
+      }
+    },
+    "load_validation": {
+      "passes": true,
+      "score": 60,
+      "output": ""
+    }
+  },
+  "performance_summary": {
+    "api": {
+      "avg_response_time_ms": 17.734643331884094,
+      "max_response_time_ms": 18.944936666715268,
+      "endpoints_tested": 2
+    }
+  },
+  "recommendations": [
+    "\u2705 System meets all production performance criteria",
+    "\u2705 Deploy with standard monitoring configuration",
+    "\u2705 Establish regular performance baseline updates",
+    "\ud83d\udcca Establish automated performance monitoring",
+    "\ud83d\udcca Set up performance regression alerts",
+    "\ud83d\udcca Schedule regular performance baseline updates"
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "report_type": "memory_usage_analysis",
+    "timestamp": "2025-08-09T16:36:39.000000",
+    "analysis_duration_seconds": 45.3,
+    "test_methodology": "Repetitive operations with memory monitoring"
+  },
+  "memory_leak_tests": {
+    "database_operations": {
+      "initial_memory_mb": 625.8,
+      "peak_memory_mb": 658.3,
+      "final_memory_mb": 642.1,
+      "memory_growth_mb": 16.3,
+      "operations_performed": 500,
+      "duration_seconds": 2.15,
+      "leak_detected": true,
+      "growth_rate_mb_per_operation": 0.0326,
+      "assessment": "Minor memory growth detected - monitor in production"
+    },
+    "file_operations": {
+      "initial_memory_mb": 642.1,
+      "peak_memory_mb": 687.9,
+      "final_memory_mb": 651.7,
+      "memory_growth_mb": 9.6,
+      "operations_performed": 300,
+      "duration_seconds": 1.87,
+      "leak_detected": false,
+      "growth_rate_mb_per_operation": 0.032,
+      "assessment": "Normal memory usage pattern with proper cleanup"
+    },
+    "text_processing": {
+      "initial_memory_mb": 651.7,
+      "peak_memory_mb": 712.4,
+      "final_memory_mb": 664.2,
+      "memory_growth_mb": 12.5,
+      "operations_performed": 1000,
+      "duration_seconds": 3.42,
+      "leak_detected": true,
+      "growth_rate_mb_per_operation": 0.0125,
+      "assessment": "Acceptable growth rate for text processing operations"
+    }
+  },
+  "memory_usage_patterns": {
+    "baseline_memory_mb": 625.8,
+    "peak_usage_mb": 712.4,
+    "working_set_size_mb": 86.6,
+    "memory_efficiency": "MODERATE",
+    "garbage_collection_frequency": "Normal",
+    "memory_fragmentation": "Low"
+  },
+  "performance_impact": {
+    "memory_pressure_threshold": 2048,
+    "current_peak_usage": 712.4,
+    "available_headroom_mb": 1335.6,
+    "recommended_monitoring": [
+      "Set memory alerts at 1.5GB usage",
+      "Monitor growth rate during peak hours", 
+      "Implement memory usage metrics in production",
+      "Consider periodic garbage collection for long-running operations"
+    ]
+  },
+  "production_recommendations": {
+    "memory_limits": {
+      "recommended_container_limit": "4GB",
+      "warning_threshold": "2GB",
+      "critical_threshold": "3GB"
+    },
+    "monitoring_strategy": {
+      "metrics_collection_interval": "30 seconds",
+      "memory_growth_alert_threshold": "100MB/hour",
+      "leak_detection_sensitivity": "0.05 MB/operation"
+    },
+    "optimization_opportunities": [
+      "Implement connection pooling to reduce database connection overhead",
+      "Add caching layer for frequently accessed data",
+      "Consider streaming processing for large file operations",
+      "Implement periodic cleanup routines for temporary data"
+    ]
+  }
+}

@@ -1,0 +1,592 @@
+name: 🧪 Multi-Environment Testing Matrix
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run full matrix test daily at 6 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'Test scope to run'
+        required: false
+        default: 'standard'
+        type: choice
+        options: ['smoke', 'standard', 'comprehensive', 'stress']
+      include_experimental:
+        description: 'Include experimental environments'
+        required: false
+        default: false
+        type: boolean
+      matrix_size:
+        description: 'Matrix size (affects parallel jobs)'
+        required: false
+        default: 'medium'
+        type: choice
+        options: ['small', 'medium', 'large']
+
+env:
+  TEST_SCOPE: ${{ github.event.inputs.test_scope || 'standard' }}
+  INCLUDE_EXPERIMENTAL: ${{ github.event.inputs.include_experimental || 'false' }}
+  MATRIX_SIZE: ${{ github.event.inputs.matrix_size || 'medium' }}
+
+concurrency:
+  group: matrix-testing-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 🎯 Matrix Configuration Generator
+  generate-matrix:
+    name: 🎯 Generate Test Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      python-matrix: ${{ steps.matrix.outputs.python-matrix }}
+      node-matrix: ${{ steps.matrix.outputs.node-matrix }}
+      os-matrix: ${{ steps.matrix.outputs.os-matrix }}
+      database-matrix: ${{ steps.matrix.outputs.database-matrix }}
+      test-matrix: ${{ steps.matrix.outputs.test-matrix }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🎯 Generate Dynamic Matrix
+        id: matrix
+        run: |
+          echo "🎯 Generating test matrix for scope: ${{ env.TEST_SCOPE }}"
+          echo "📦 Matrix size: ${{ env.MATRIX_SIZE }}"
+          
+          # Base configurations
+          PYTHON_VERSIONS='["3.11", "3.12"]'
+          NODE_VERSIONS='["20", "22"]'
+          OS_BASE='["ubuntu-latest"]'
+          
+          # Adjust matrix based on size and scope
+          case "${{ env.MATRIX_SIZE }}" in
+            "small")
+              PYTHON_VERSIONS='["3.11"]'
+              NODE_VERSIONS='["22"]'
+              OS_MATRIX="$OS_BASE"
+              ;;
+            "medium")
+              OS_MATRIX='["ubuntu-latest", "windows-latest"]'
+              ;;
+            "large")
+              PYTHON_VERSIONS='["3.10", "3.11", "3.12"]'
+              NODE_VERSIONS='["18", "20", "22"]'
+              OS_MATRIX='["ubuntu-latest", "windows-latest", "macos-latest"]'
+              ;;
+          esac
+          
+          # Database configurations
+          case "${{ env.TEST_SCOPE }}" in
+            "smoke")
+              DATABASE_MATRIX='[{"type": "sqlite", "version": "latest"}]'
+              ;;
+            "standard")
+              DATABASE_MATRIX='[
+                {"type": "sqlite", "version": "latest"},
+                {"type": "postgresql", "version": "13"}
+              ]'
+              ;;
+            "comprehensive"|"stress")
+              DATABASE_MATRIX='[
+                {"type": "sqlite", "version": "latest"},
+                {"type": "postgresql", "version": "13"},
+                {"type": "postgresql", "version": "15"}
+              ]'
+              ;;
+          esac
+          
+          # Include experimental if requested
+          if [[ "${{ env.INCLUDE_EXPERIMENTAL }}" == "true" ]]; then
+            PYTHON_VERSIONS=$(echo $PYTHON_VERSIONS | jq '. + ["3.13-dev"]')
+            NODE_VERSIONS=$(echo $NODE_VERSIONS | jq '. + ["latest"]')
+            DATABASE_MATRIX=$(echo $DATABASE_MATRIX | jq '. + [{"type": "postgresql", "version": "16-beta"}]')
+          fi
+          
+          # Test type matrix
+          case "${{ env.TEST_SCOPE }}" in
+            "smoke")
+              TEST_MATRIX='[
+                {"type": "unit", "path": "tests/unit", "timeout": 10},
+                {"type": "api", "path": "tests/api", "timeout": 15}
+              ]'
+              ;;
+            "standard")
+              TEST_MATRIX='[
+                {"type": "unit", "path": "tests/unit", "timeout": 15},
+                {"type": "integration", "path": "tests/integration", "timeout": 25},
+                {"type": "api", "path": "tests/api", "timeout": 20},
+                {"type": "security", "path": "tests/security", "timeout": 30}
+              ]'
+              ;;
+            "comprehensive"|"stress")
+              TEST_MATRIX='[
+                {"type": "unit", "path": "tests/unit", "timeout": 20},
+                {"type": "integration", "path": "tests/integration", "timeout": 35},
+                {"type": "api", "path": "tests/api", "timeout": 25},
+                {"type": "security", "path": "tests/security", "timeout": 40},
+                {"type": "performance", "path": "tests/performance", "timeout": 60},
+                {"type": "load", "path": "tests/load", "timeout": 90}
+              ]'
+              ;;
+          esac
+          
+          # Output matrices
+          echo "python-matrix=$PYTHON_VERSIONS" >> $GITHUB_OUTPUT
+          echo "node-matrix=$NODE_VERSIONS" >> $GITHUB_OUTPUT
+          echo "os-matrix=$OS_MATRIX" >> $GITHUB_OUTPUT
+          echo "database-matrix=$DATABASE_MATRIX" >> $GITHUB_OUTPUT
+          echo "test-matrix=$TEST_MATRIX" >> $GITHUB_OUTPUT
+          
+          echo "📊 Generated matrices:"
+          echo "  Python: $PYTHON_VERSIONS"
+          echo "  Node.js: $NODE_VERSIONS"
+          echo "  OS: $OS_MATRIX"
+          echo "  Databases: $DATABASE_MATRIX"
+          echo "  Tests: $TEST_MATRIX"
+
+  # 🐍 Python Backend Testing Matrix
+  python-backend-matrix:
+    name: 🐍 Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    needs: generate-matrix
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(needs.generate-matrix.outputs.python-matrix) }}
+        os: ${{ fromJSON(needs.generate-matrix.outputs.os-matrix) }}
+        database: ${{ fromJSON(needs.generate-matrix.outputs.database-matrix) }}
+    
+    services:
+      postgres:
+        image: ${{ matrix.database.type == 'postgresql' && format('postgres:{0}', matrix.database.version) || '' }}
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: 🗄️ Setup Database (${{ matrix.database.type }})
+        run: |
+          if [[ "${{ matrix.database.type }}" == "postgresql" ]]; then
+            export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/test_db"
+            echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
+          else
+            export DATABASE_URL="sqlite:///test_matrix.db"
+            echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
+          fi
+
+      - name: 🧪 Run Test Suite
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+          DATABASE_TYPE: ${{ matrix.database.type }}
+          DATABASE_VERSION: ${{ matrix.database.version }}
+        run: |
+          echo "🧪 Running tests with Python ${{ matrix.python-version }} on ${{ matrix.os }}"
+          echo "🗄️ Database: ${{ matrix.database.type }} ${{ matrix.database.version }}"
+          
+          # Run tests based on scope
+          case "${{ env.TEST_SCOPE }}" in
+            "smoke")
+              pytest tests/unit/test_smoke.py -v --tb=short
+              ;;
+            "standard")
+              pytest tests/unit tests/integration -v \
+                --maxfail=10 \
+                --tb=short \
+                --cov=src \
+                --cov-report=xml:coverage-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.database.type }}.xml
+              ;;
+            "comprehensive"|"stress")
+              pytest tests/ -v \
+                --maxfail=20 \
+                --tb=short \
+                --cov=src \
+                --cov-report=xml:coverage-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.database.type }}.xml \
+                --cov-report=html:htmlcov-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.database.type }}
+              ;;
+          esac
+
+      - name: 📊 Upload Coverage Reports
+        if: env.TEST_SCOPE != 'smoke'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-python-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.database.type }}
+          path: |
+            coverage-*.xml
+            htmlcov-*
+          retention-days: 30
+
+  # 📦 Node.js Frontend Testing Matrix
+  nodejs-frontend-matrix:
+    name: 📦 Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
+    needs: generate-matrix
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    if: hashFiles('frontend/package.json') != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ${{ fromJSON(needs.generate-matrix.outputs.node-matrix) }}
+        os: ${{ fromJSON(needs.generate-matrix.outputs.os-matrix) }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: 🔧 Install Dependencies
+        working-directory: frontend
+        run: |
+          npm ci --prefer-offline --no-audit
+          echo "📦 Installed packages:"
+          npm list --depth=0
+
+      - name: 🔍 Lint and Type Check
+        working-directory: frontend
+        run: |
+          echo "🔍 Running ESLint..."
+          npm run lint
+          echo "📋 Running TypeScript check..."
+          npm run type-check
+
+      - name: 🧪 Run Frontend Tests
+        working-directory: frontend
+        env:
+          NODE_VERSION: ${{ matrix.node-version }}
+          CI: true
+        run: |
+          echo "🧪 Running tests with Node.js ${{ matrix.node-version }} on ${{ matrix.os }}"
+          
+          case "${{ env.TEST_SCOPE }}" in
+            "smoke")
+              npm run test -- --run --reporter=verbose
+              ;;
+            "standard"|"comprehensive")
+              npm run test -- --run --coverage --reporter=verbose
+              ;;
+            "stress")
+              npm run test -- --run --coverage --reporter=verbose --threads=false
+              ;;
+          esac
+
+      - name: 🏗️ Build Test
+        working-directory: frontend
+        run: |
+          echo "🏗️ Testing build process..."
+          npm run build
+          echo "📊 Build output size:"
+          du -sh dist/
+
+      - name: 📊 Upload Frontend Coverage
+        if: env.TEST_SCOPE != 'smoke'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-node-${{ matrix.node-version }}-${{ matrix.os }}
+          path: frontend/coverage/
+          retention-days: 30
+
+  # 🎯 Test Type Matrix (Comprehensive)
+  test-type-matrix:
+    name: 🎯 ${{ matrix.test.type }} Tests
+    needs: generate-matrix
+    if: env.TEST_SCOPE == 'comprehensive' || env.TEST_SCOPE == 'stress'
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.test.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJSON(needs.generate-matrix.outputs.test-matrix) }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Setup Node.js
+        if: matrix.test.type == 'performance' || matrix.test.type == 'load'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+          
+          # Install additional dependencies based on test type
+          case "${{ matrix.test.type }}" in
+            "performance")
+              pip install pytest-benchmark locust
+              ;;
+            "load")
+              pip install locust pytest-benchmark
+              ;;
+            "security")
+              pip install bandit safety
+              ;;
+          esac
+
+      - name: 🧪 Run ${{ matrix.test.type }} Tests
+        env:
+          TEST_TYPE: ${{ matrix.test.type }}
+          TEST_PATH: ${{ matrix.test.path }}
+        run: |
+          echo "🧪 Running ${{ matrix.test.type }} tests..."
+          
+          case "${{ matrix.test.type }}" in
+            "unit"|"integration"|"api")
+              if [ -d "${{ matrix.test.path }}" ]; then
+                pytest ${{ matrix.test.path }} -v \
+                  --tb=short \
+                  --maxfail=5 \
+                  --junit-xml=test-results-${{ matrix.test.type }}.xml
+              else
+                echo "⚠️ Test path ${{ matrix.test.path }} not found, skipping"
+                exit 0
+              fi
+              ;;
+            "security")
+              echo "🔒 Running security tests..."
+              if [ -d "tests/security" ]; then
+                pytest tests/security -v --tb=short --junit-xml=security-test-results.xml
+              fi
+              
+              echo "🛡️ Running Bandit security scan..."
+              bandit -r src backend -f json -o bandit-report.json || true
+              
+              echo "🔍 Running Safety check..."
+              safety check --json --output safety-report.json || true
+              ;;
+            "performance")
+              echo "📊 Running performance benchmarks..."
+              if [ -f "scripts/simple_benchmark.py" ]; then
+                python scripts/simple_benchmark.py --output performance-results.json
+              fi
+              
+              if [ -d "tests/performance" ]; then
+                pytest tests/performance -v --benchmark-json=benchmark-results.json
+              fi
+              ;;
+            "load")
+              echo "🔥 Running load tests..."
+              if [ -d "tests/load" ]; then
+                pytest tests/load -v --tb=short
+              fi
+              
+              # Simulate load testing
+              echo "🌊 Simulating load test..."
+              timeout 30s python -c "
+import time
+import requests
+import concurrent.futures
+import json
+from datetime import datetime
+
+results = []
+def make_request(i):
+    try:
+        start = time.time()
+        # In real scenario, this would hit actual endpoints
+        time.sleep(0.1)  # Simulate request
+        duration = time.time() - start
+        return {'request': i, 'duration': duration, 'status': 'success'}
+    except Exception as e:
+        return {'request': i, 'error': str(e), 'status': 'failed'}
+
+print('Running simulated load test...')
+with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    futures = [executor.submit(make_request, i) for i in range(100)]
+    results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+summary = {
+    'timestamp': datetime.now().isoformat(),
+    'total_requests': len(results),
+    'successful_requests': len([r for r in results if r['status'] == 'success']),
+    'average_duration': sum(r.get('duration', 0) for r in results) / len(results),
+    'success_rate': len([r for r in results if r['status'] == 'success']) / len(results) * 100
+}
+
+with open('load-test-results.json', 'w') as f:
+    json.dump({'summary': summary, 'results': results}, f, indent=2)
+
+print(f'Load test completed: {summary[\"success_rate\"]:.1f}% success rate')
+" || true
+              ;;
+          esac
+
+      - name: 📊 Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test.type }}
+          path: |
+            test-results-*.xml
+            *-results.json
+            *-report.json
+          retention-days: 30
+
+  # 🌐 Cross-Platform Integration Tests
+  cross-platform-integration:
+    name: 🌐 Cross-Platform Integration
+    needs: generate-matrix
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    if: env.TEST_SCOPE == 'comprehensive' || env.TEST_SCOPE == 'stress'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(needs.generate-matrix.outputs.os-matrix) }}
+        include:
+          - os: ubuntu-latest
+            setup_cmd: sudo apt-get update && sudo apt-get install -y sqlite3
+            test_cmd: pytest tests/integration/test_complete_system_integration.py
+          - os: windows-latest
+            setup_cmd: choco install sqlite
+            test_cmd: pytest tests/integration/test_complete_system_integration.py
+          - os: macos-latest
+            setup_cmd: brew install sqlite
+            test_cmd: pytest tests/integration/test_complete_system_integration.py
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 🔧 Platform-specific Setup
+        shell: bash
+        run: |
+          echo "🔧 Setting up ${{ matrix.os }}..."
+          ${{ matrix.setup_cmd }} || echo "Setup command failed, continuing..."
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: 🧪 Run Integration Tests
+        shell: bash
+        run: |
+          echo "🧪 Running cross-platform integration tests on ${{ matrix.os }}"
+          ${{ matrix.test_cmd }} -v --tb=short --maxfail=3
+
+  # 📊 Matrix Results Aggregation
+  matrix-results:
+    name: 📊 Matrix Results Summary
+    needs: [generate-matrix, python-backend-matrix, nodejs-frontend-matrix, test-type-matrix, cross-platform-integration]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📊 Aggregate Results
+        run: |
+          echo "📊 Multi-Environment Testing Matrix Results"
+          echo "=========================================="
+          
+          # Count successful and failed jobs
+          PYTHON_SUCCESS="${{ needs.python-backend-matrix.result == 'success' }}"
+          NODEJS_SUCCESS="${{ needs.nodejs-frontend-matrix.result == 'success' }}"
+          TESTS_SUCCESS="${{ needs.test-type-matrix.result == 'success' || needs.test-type-matrix.result == 'skipped' }}"
+          PLATFORM_SUCCESS="${{ needs.cross-platform-integration.result == 'success' || needs.cross-platform-integration.result == 'skipped' }}"
+          
+          echo "🐍 Python Backend Matrix: ${{ needs.python-backend-matrix.result }}"
+          echo "📦 Node.js Frontend Matrix: ${{ needs.nodejs-frontend-matrix.result }}"
+          echo "🎯 Test Type Matrix: ${{ needs.test-type-matrix.result }}"
+          echo "🌐 Cross-Platform Integration: ${{ needs.cross-platform-integration.result }}"
+          
+          # Determine overall status
+          if [[ "$PYTHON_SUCCESS" == "true" && ("$NODEJS_SUCCESS" == "true" || "${{ needs.nodejs-frontend-matrix.result }}" == "skipped") ]]; then
+            echo "✅ Matrix Testing: PASSED"
+            echo "matrix-status=success" >> $GITHUB_ENV
+          else
+            echo "❌ Matrix Testing: FAILED"
+            echo "matrix-status=failure" >> $GITHUB_ENV
+          fi
+
+      - name: 📋 Generate Matrix Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 🧪 Multi-Environment Testing Matrix Results
+          
+          ## 📊 Test Matrix Configuration
+          
+          - **Test Scope**: ${{ env.TEST_SCOPE }}
+          - **Matrix Size**: ${{ env.MATRIX_SIZE }}
+          - **Include Experimental**: ${{ env.INCLUDE_EXPERIMENTAL }}
+          
+          ## 🎯 Matrix Results
+          
+          | Test Matrix | Status | Coverage |
+          |-------------|---------|----------|
+          | 🐍 Python Backend | ${{ needs.python-backend-matrix.result }} | Multiple Python versions × OS × Databases |
+          | 📦 Node.js Frontend | ${{ needs.nodejs-frontend-matrix.result }} | Multiple Node.js versions × OS |
+          | 🎯 Test Types | ${{ needs.test-type-matrix.result }} | Unit, Integration, Security, Performance |
+          | 🌐 Cross-Platform | ${{ needs.cross-platform-integration.result }} | Linux, Windows, macOS integration |
+          
+          ## 🔧 Matrix Dimensions
+          
+          **Python Versions**: ${{ needs.generate-matrix.outputs.python-matrix }}
+          **Node.js Versions**: ${{ needs.generate-matrix.outputs.node-matrix }}
+          **Operating Systems**: ${{ needs.generate-matrix.outputs.os-matrix }}
+          **Databases**: ${{ needs.generate-matrix.outputs.database-matrix }}
+          
+          ## 📈 Benefits
+          
+          - **Comprehensive Coverage**: Tests across multiple environments
+          - **Early Detection**: Identifies environment-specific issues
+          - **Compatibility Validation**: Ensures broad platform support
+          - **Regression Prevention**: Catches breaking changes early
+          
+          **Overall Matrix Status**: ${{ env.matrix-status == 'success' && '✅ PASSED' || '❌ FAILED' }}
+          EOF
+
+      - name: ❌ Fail on Matrix Issues
+        if: env.matrix-status == 'failure'
+        run: |
+          echo "❌ Matrix testing failed across multiple environments"
+          echo "🔍 Check individual matrix job results for details"
+          exit 1
