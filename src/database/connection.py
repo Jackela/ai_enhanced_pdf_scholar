@@ -650,9 +650,6 @@ class ConnectionPool:
             # Close the connection
             self._close_connection(conn_info)
 
-            # Log the forced closure
-            self._leak_detector.alert_potential_leak(conn_info, "force_closed")
-
         except Exception as e:
             logger.error(
                 f"Error during force close of connection {conn_info.connection_id}: {e}"
@@ -661,6 +658,10 @@ class ConnectionPool:
     def _handle_connection_leak(self, connection_id: str, reason: str) -> None:
         """Handle connection leak detection alert."""
         logger.warning(f"Connection leak detected: {connection_id}, reason: {reason}")
+
+        # Prevent recursive handling by checking reason
+        if reason == "force_closed":
+            return  # Already being handled, avoid recursion
 
         # Try to force close the leaked connection
         with self._lock:
