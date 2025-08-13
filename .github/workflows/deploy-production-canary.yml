@@ -462,12 +462,12 @@ jobs:
           
           # Extract error rate for output
           ERROR_RATE=$(python -c "
-import json
-with open('monitoring_results.json') as f:
-    data = json.load(f)
-error_rate = (data['canary_errors'] / max(1, data['canary_requests'])) * 100
-print(f'{error_rate:.2f}')
-")
+          import json
+          with open('monitoring_results.json') as f:
+              data = json.load(f)
+          error_rate = (data['canary_errors'] / max(1, data['canary_requests'])) * 100
+          print(f'{error_rate:.2f}')
+          ")
           echo "error_rate=$ERROR_RATE" >> $GITHUB_OUTPUT
 
       - name: 📊 Upload Monitoring Results

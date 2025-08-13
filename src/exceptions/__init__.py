@@ -3,63 +3,57 @@ Exception Hierarchy for AI Enhanced PDF Scholar
 Provides standardized error handling with consistent exception types.
 """
 
-from .base import (
-    PDFScholarError,
-    ValidationError,
-    ConfigurationError,
-    ServiceError,
-    RepositoryError,
-)
-
-from .document import (
-    DocumentError,
-    DocumentNotFoundError,
-    DocumentImportError,
-    DuplicateDocumentError,
-    DocumentValidationError,
-    DocumentProcessingError,
-)
-
 from .auth import (
+    AccountError,
     AuthenticationError,
     AuthorizationError,
-    TokenError,
-    AccountError,
     PasswordError,
     SessionError,
+    TokenError,
 )
-
-from .storage import (
-    StorageError,
-    FileNotFoundError,
-    FileAccessError,
-    DatabaseError,
-    ConnectionError,
+from .base import (
+    ConfigurationError,
+    PDFScholarError,
+    RepositoryError,
+    ServiceError,
+    ValidationError,
 )
-
+from .document import (
+    DocumentError,
+    DocumentImportError,
+    DocumentNotFoundError,
+    DocumentProcessingError,
+    DocumentValidationError,
+    DuplicateDocumentError,
+)
 from .service import (
-    RAGServiceError,
-    VectorIndexError,
     ContentHashError,
     EmailServiceError,
+    RAGServiceError,
+    VectorIndexError,
+)
+from .storage import (
+    ConnectionError,
+    DatabaseError,
+    FileAccessError,
+    FileNotFoundError,
+    StorageError,
 )
 
 __all__ = [
     # Base exceptions
     "PDFScholarError",
-    "ValidationError", 
+    "ValidationError",
     "ConfigurationError",
     "ServiceError",
     "RepositoryError",
-    
     # Document exceptions
     "DocumentError",
     "DocumentNotFoundError",
     "DocumentImportError",
-    "DuplicateDocumentError", 
+    "DuplicateDocumentError",
     "DocumentValidationError",
     "DocumentProcessingError",
-    
     # Authentication exceptions
     "AuthenticationError",
     "AuthorizationError",
@@ -67,17 +61,15 @@ __all__ = [
     "AccountError",
     "PasswordError",
     "SessionError",
-    
     # Storage exceptions
     "StorageError",
     "FileNotFoundError",
     "FileAccessError",
     "DatabaseError",
     "ConnectionError",
-    
     # Service exceptions
     "RAGServiceError",
-    "VectorIndexError", 
+    "VectorIndexError",
     "ContentHashError",
     "EmailServiceError",
 ]

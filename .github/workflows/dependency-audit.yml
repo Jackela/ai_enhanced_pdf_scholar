@@ -363,22 +363,22 @@ jobs:
           # Check for problematic licenses
           pip-licenses \
             --format json | python3 -c "
-import json, sys
-data = json.loads(sys.stdin.read())
-problematic = ['GPL-3.0', 'AGPL-3.0', 'LGPL-3.0']
-issues = []
-for package in data:
-    if package.get('License') in problematic:
-        issues.append(package)
-if issues:
-    print('⚠️ Potentially problematic licenses found:')
-    for issue in issues:
-        print(f'  - {issue[\"Name\"]}: {issue[\"License\"]}')
-    with open('license-issues.json', 'w') as f:
-        json.dump(issues, f, indent=2)
-else:
-    print('✅ No problematic licenses detected')
-" || true
+          import json, sys
+          data = json.loads(sys.stdin.read())
+          problematic = ['GPL-3.0', 'AGPL-3.0', 'LGPL-3.0']
+          issues = []
+          for package in data:
+              if package.get('License') in problematic:
+                  issues.append(package)
+          if issues:
+              print('⚠️ Potentially problematic licenses found:')
+              for issue in issues:
+                  print(f'  - {issue[\"Name\"]}: {issue[\"License\"]}')
+              with open('license-issues.json', 'w') as f:
+                  json.dump(issues, f, indent=2)
+          else:
+              print('✅ No problematic licenses detected')
+          " || true
 
       - name: 🔍 JavaScript License Audit
         if: hashFiles('**/package.json') != ''
@@ -524,19 +524,16 @@ else:
           js_npm_vulns = count_vulnerabilities('npm-audit-*.json', 'npm-audit')
           
           # Generate report
-          report = f"""# 🔍 Comprehensive Dependency Audit Report
+          report_header = "# 🔍 Comprehensive Dependency Audit Report\n\n"
+          report_header += "## 📊 Vulnerability Summary\n\n"
+          report_header += "| Ecosystem | Tool | Vulnerabilities Found |\n"
+          report_header += "|-----------|------|----------------------|\n"
+          report_header += f"| 🐍 Python | pip-audit | {python_pip_vulns} |\n"
+          report_header += f"| 🐍 Python | safety | {python_safety_vulns} |\n"
+          report_header += f"| 📦 JavaScript | npm audit | {js_npm_vulns} |\n\n"
+          report_header += "## 🎯 Risk Assessment\n\n"
           
-## 📊 Vulnerability Summary
-          
-| Ecosystem | Tool | Vulnerabilities Found |
-|-----------|------|----------------------|
-| 🐍 Python | pip-audit | {python_pip_vulns} |
-| 🐍 Python | safety | {python_safety_vulns} |
-| 📦 JavaScript | npm audit | {js_npm_vulns} |
-          
-## 🎯 Risk Assessment
-          
-"""
+          report = report_header
           
           total_vulns = python_pip_vulns + python_safety_vulns + js_npm_vulns
           
@@ -547,21 +544,15 @@ else:
           else:
               report += "**Risk Level: HIGH** ⚠️\n\nMultiple vulnerabilities detected. Immediate attention required.\n"
           
-          report += f"""
-## 📋 Audit Configuration
-          
-- **Audit Depth**: {Path.cwd().name}
-- **Include Dev Dependencies**: {'Yes' if True else 'No'}
-- **Auto Update**: {'Enabled' if False else 'Disabled'}
-          
-## 🔍 Recommendations
-          
-1. **Security Updates**: Prioritize updating packages with known vulnerabilities
-2. **Version Pinning**: Consider pinning versions for critical dependencies
-3. **Regular Audits**: Schedule regular dependency audits
-4. **License Compliance**: Review license compatibility for new dependencies
-          
-"""
+          report += "\n## 📋 Audit Configuration\n\n"
+          report += f"- **Audit Depth**: {Path.cwd().name}\n"
+          report += "- **Include Dev Dependencies**: Yes\n"
+          report += "- **Auto Update**: Disabled\n\n"
+          report += "## 🔍 Recommendations\n\n"
+          report += "1. **Security Updates**: Prioritize updating packages with known vulnerabilities\n"
+          report += "2. **Version Pinning**: Consider pinning versions for critical dependencies\n"
+          report += "3. **Regular Audits**: Schedule regular dependency audits\n"
+          report += "4. **License Compliance**: Review license compatibility for new dependencies\n\n"
           
           with open('dependency-audit-report.md', 'w') as f:
               f.write(report)

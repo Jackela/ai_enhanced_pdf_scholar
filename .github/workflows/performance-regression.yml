@@ -436,41 +436,41 @@ jobs:
           
           # Generate human-readable report
           python -c "
-import json
-with open('regression-report.json') as f:
-    data = json.load(f)
-
-print('# 📊 Performance Regression Analysis')
-print()
-print(f'**Regression Threshold:** {data.get(\"threshold\", \"N/A\")}%')
-print()
-
-regressions = data.get('regressions', [])
-improvements = data.get('improvements', [])
-
-if regressions:
-    print('## ⚠️ Performance Regressions Detected')
-    print()
-    for reg in regressions:
-        print(f'- **{reg[\"metric\"]}**: {reg[\"change_pct\"]:.1f}% regression')
-        print(f'  - Baseline: {reg[\"baseline\"]}')
-        print(f'  - Current: {reg[\"current\"]}')
-    print()
-
-if improvements:
-    print('## ✅ Performance Improvements')
-    print()
-    for imp in improvements:
-        print(f'- **{imp[\"metric\"]}**: {imp[\"change_pct\"]:.1f}% improvement')
-        print(f'  - Baseline: {imp[\"baseline\"]}')
-        print(f'  - Current: {imp[\"current\"]}')
-    print()
-
-if not regressions and not improvements:
-    print('## ✅ No Significant Performance Changes')
-    print()
-    print('Performance metrics are within acceptable thresholds.')
-" > performance-report.md
+          import json
+          with open('regression-report.json') as f:
+              data = json.load(f)
+          
+          print('# 📊 Performance Regression Analysis')
+          print()
+          print(f'**Regression Threshold:** {data.get(\"threshold\", \"N/A\")}%')
+          print()
+          
+          regressions = data.get('regressions', [])
+          improvements = data.get('improvements', [])
+          
+          if regressions:
+              print('## ⚠️ Performance Regressions Detected')
+              print()
+              for reg in regressions:
+                  print(f'- **{reg[\"metric\"]}**: {reg[\"change_pct\"]:.1f}% regression')
+                  print(f'  - Baseline: {reg[\"baseline\"]}')
+                  print(f'  - Current: {reg[\"current\"]}')
+              print()
+          
+          if improvements:
+              print('## ✅ Performance Improvements')
+              print()
+              for imp in improvements:
+                  print(f'- **{imp[\"metric\"]}**: {imp[\"change_pct\"]:.1f}% improvement')
+                  print(f'  - Baseline: {imp[\"baseline\"]}')
+                  print(f'  - Current: {imp[\"current\"]}')
+              print()
+          
+          if not regressions and not improvements:
+              print('## ✅ No Significant Performance Changes')
+              print()
+              print('Performance metrics are within acceptable thresholds.')
+          " > performance-report.md
 
       - name: 📋 Generate Summary Report
         run: |

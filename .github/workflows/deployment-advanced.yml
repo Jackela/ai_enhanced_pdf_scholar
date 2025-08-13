@@ -334,7 +334,7 @@ jobs:
           
           # Simulate deployment steps
           echo "Installing dependencies..."
-          pip install --quiet -r backend/requirements-test.txt 2>/dev/null || pip install --quiet fastapi pydantic
+          pip install --quiet -r requirements-test.txt 2>/dev/null || pip install --quiet fastapi pydantic
           
           # Basic import test
           echo "Testing basic imports..."

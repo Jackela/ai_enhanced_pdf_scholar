@@ -88,7 +88,7 @@ jobs:
     
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.browser }}
         path: |
@@ -158,7 +158,7 @@ jobs:
           --html tests_e2e/reports/locust_report.html
     
     - name: Upload performance results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: performance-results
         path: tests_e2e/reports/
@@ -208,7 +208,7 @@ jobs:
         safety check --json > tests_e2e/reports/safety_report.json || true
     
     - name: Upload security results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-results
         path: tests_e2e/reports/
@@ -251,7 +251,7 @@ jobs:
     
     - name: Upload visual regression results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: visual-regression-results
         path: |

@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict, List, Set
+from typing import Any
 
 # Third-party library imports (optional dependencies)
 try:
     import refextract
+
     REFEXTRACT_AVAILABLE = True
 except ImportError:
     REFEXTRACT_AVAILABLE = False
@@ -45,24 +46,26 @@ class CitationParsingService:
     def __init__(self) -> None:
         """Initialize citation parsing service."""
         # Common citation patterns
-        self.author_patterns: List[str] = [
-            r'([A-Z][a-z]+(?:,\s*[A-Z]\.?)+)',  # Smith, J.
-            r'([A-Z][a-z]+(?:\s+[A-Z]\.?)+)',   # Smith J.
-            r'([A-Z][a-z]+(?:\s*et\s+al\.?))',  # Smith et al.
+        self.author_patterns: list[str] = [
+            r"([A-Z][a-z]+(?:,\s*[A-Z]\.?)+)",  # Smith, J.
+            r"([A-Z][a-z]+(?:\s+[A-Z]\.?)+)",  # Smith J.
+            r"([A-Z][a-z]+(?:\s*et\s+al\.?))",  # Smith et al.
         ]
 
-        self.year_patterns: List[str] = [
-            r'\((\d{4}[a-z]?)\)',  # (2023) or (2023a)
-            r'(\d{4}[a-z]?)\.',    # 2023. or 2023a.
+        self.year_patterns: list[str] = [
+            r"\((\d{4}[a-z]?)\)",  # (2023) or (2023a)
+            r"(\d{4}[a-z]?)\.",  # 2023. or 2023a.
         ]
 
-        self.doi_patterns: List[str] = [
-            r'https?://doi\.org/([^\s]+)',
-            r'DOI:\s*([^\s]+)',
-            r'doi:\s*([^\s]+)',
+        self.doi_patterns: list[str] = [
+            r"https?://doi\.org/([^\s]+)",
+            r"DOI:\s*([^\s]+)",
+            r"doi:\s*([^\s]+)",
         ]
 
-    def parse_citations_from_text(self, text_content: str, use_third_party: bool = True) -> List[Dict[str, Any]]:
+    def parse_citations_from_text(
+        self, text_content: str, use_third_party: bool = True
+    ) -> list[dict[str, Any]]:
         """
         Parse citations from text content using multiple approaches.
 
@@ -90,9 +93,13 @@ class CitationParsingService:
             fallback_citations = self._parse_with_regex(text_content)
 
             # Merge results, avoiding duplicates
-            citations = self._merge_and_deduplicate_citations(citations, fallback_citations)
+            citations = self._merge_and_deduplicate_citations(
+                citations, fallback_citations
+            )
 
-            logger.debug(f"Parsed {len(citations)} citations from text (third-party: {use_third_party})")
+            logger.debug(
+                f"Parsed {len(citations)} citations from text (third-party: {use_third_party})"
+            )
             return citations
 
         except Exception as e:
@@ -111,16 +118,20 @@ class CitationParsingService:
             result = refextract.extract_references_from_string(text_content)
 
             citations = []
-            for ref_data in result.get('references', []):
+            for ref_data in result.get("references", []):
                 citation = {
-                    "raw_text": ref_data.get('raw_ref', ''),
+                    "raw_text": ref_data.get("raw_ref", ""),
                     "authors": self._extract_refextract_authors(ref_data),
-                    "title": ref_data.get('title', {}).get('title') if ref_data.get('title') else None,
+                    "title": ref_data.get("title", {}).get("title")
+                    if ref_data.get("title")
+                    else None,
                     "publication_year": self._extract_refextract_year(ref_data),
                     "journal_or_venue": self._extract_refextract_journal(ref_data),
-                    "doi": ref_data.get('doi', {}).get('value') if ref_data.get('doi') else None,
+                    "doi": ref_data.get("doi", {}).get("value")
+                    if ref_data.get("doi")
+                    else None,
                     "citation_type": self._classify_refextract_type(ref_data),
-                    "confidence_score": 0.85  # refextract typically has high confidence
+                    "confidence_score": 0.85,  # refextract typically has high confidence
                 }
 
                 if citation["raw_text"] and len(citation["raw_text"]) > 10:
@@ -157,15 +168,15 @@ class CitationParsingService:
             # Focus on patterns that reliably indicate citation starts
             citation_patterns = [
                 # Multi-author with complex punctuation: "Author, A., Author, B., ... & Author, Z. (Year)"
-                r'(?:^|\s)([A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)+(?:,\s*[A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)*)*.*?(?:&|and)\s*[A-Z][a-zA-Z]+.*?\(\d{4}[a-z]?\).*?\.)',
+                r"(?:^|\s)([A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)+(?:,\s*[A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)*)*.*?(?:&|and)\s*[A-Z][a-zA-Z]+.*?\(\d{4}[a-z]?\).*?\.)",
                 # Standard academic citation: "Author, F. (Year). Title. Journal."
-                r'(?:^|\s)([A-Z][a-zA-Z]+,\s*[A-Z]\.?.*?\(\d{4}[a-z]?\).*?\.)',
+                r"(?:^|\s)([A-Z][a-zA-Z]+,\s*[A-Z]\.?.*?\(\d{4}[a-z]?\).*?\.)",
                 # Multiple authors with et al: "Author, F. et al. (Year). Title."
-                r'(?:^|\s)([A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)?\s*et\s+al\.?.*?\(\d{4}[a-z]?\).*?\.)',
+                r"(?:^|\s)([A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)?\s*et\s+al\.?.*?\(\d{4}[a-z]?\).*?\.)",
                 # Full name format: "LastName, FirstName (Year)"
-                r'(?:^|\s)([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+.*?\(\d{4}[a-z]?\).*?\.)',
+                r"(?:^|\s)([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+.*?\(\d{4}[a-z]?\).*?\.)",
                 # Abbreviated format: "LastName F. (Year)"
-                r'(?:^|\s)([A-Z][a-zA-Z]+\s+[A-Z]\.?.*?\(\d{4}[a-z]?\).*?\.)',
+                r"(?:^|\s)([A-Z][a-zA-Z]+\s+[A-Z]\.?.*?\(\d{4}[a-z]?\).*?\.)",
             ]
 
             # Pre-filter text to remove obvious non-citation sentences
@@ -179,7 +190,9 @@ class CitationParsingService:
                     # Enhanced filtering for valid citations
                     if self._is_valid_citation_candidate(citation_text):
                         citation_data = self._parse_single_citation(citation_text)
-                        if citation_data and self._validate_citation_quality(citation_data):
+                        if citation_data and self._validate_citation_quality(
+                            citation_data
+                        ):
                             citations.append(citation_data)
 
             # Remove duplicates and low-quality citations
@@ -202,11 +215,13 @@ class CitationParsingService:
                 "journal_or_venue": self.extract_venue(citation_text),
                 "doi": self.extract_doi(citation_text),
                 "citation_type": self.classify_citation_type(citation_text),
-                "confidence_score": 0.0  # Will be calculated
+                "confidence_score": 0.0,  # Will be calculated
             }
 
             # Calculate confidence score
-            citation_data["confidence_score"] = self.calculate_confidence_score(citation_data)
+            citation_data["confidence_score"] = self.calculate_confidence_score(
+                citation_data
+            )
 
             return citation_data
 
@@ -231,8 +246,8 @@ class CitationParsingService:
             # Strategy 1: Handle complex multi-author citations first
             # Pattern: "FirstAuthor, A., SecondAuthor, B., ... & LastAuthor, Z. (Year)"
             complex_multiauthor = re.search(
-                r'^(?:.*?\b)?([A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)+)(?:,\s*[A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)*)*.*?(?:&|and)\s*[A-Z][a-zA-Z]+.*?\(\d{4}[a-z]?\)',
-                text
+                r"^(?:.*?\b)?([A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)+)(?:,\s*[A-Z][a-zA-Z]+(?:,\s*[A-Z]\.?)*)*.*?(?:&|and)\s*[A-Z][a-zA-Z]+.*?\(\d{4}[a-z]?\)",
+                text,
             )
             if complex_multiauthor:
                 first_author = complex_multiauthor.group(1).strip()
@@ -241,11 +256,11 @@ class CitationParsingService:
             # Strategy 2: Look for standard "Author, F." patterns at the start
             standard_patterns = [
                 # "LastName, F." at start
-                r'^(?:.*?\b)?([A-Z][a-zA-Z]+,\s*[A-Z]\.?)(?=\s*(?:,|\.|&|et\s+al|\())',
+                r"^(?:.*?\b)?([A-Z][a-zA-Z]+,\s*[A-Z]\.?)(?=\s*(?:,|\.|&|et\s+al|\())",
                 # "LastName, FirstName" at start
-                r'^(?:.*?\b)?([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+)(?=\s*(?:,|\.|&|et\s+al|\())',
+                r"^(?:.*?\b)?([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+)(?=\s*(?:,|\.|&|et\s+al|\())",
                 # "LastName F." format
-                r'^(?:.*?\b)?([A-Z][a-zA-Z]+\s+[A-Z]\.?)(?=\s*(?:,|\.|&|et\s+al|\())',
+                r"^(?:.*?\b)?([A-Z][a-zA-Z]+\s+[A-Z]\.?)(?=\s*(?:,|\.|&|et\s+al|\())",
             ]
 
             for pattern in standard_patterns:
@@ -255,20 +270,20 @@ class CitationParsingService:
                     return self._normalize_author_name(author)
 
             # Strategy 3: Look for author before year marker
-            year_match = re.search(r'\(\d{4}[a-z]?\)', text)
+            year_match = re.search(r"\(\d{4}[a-z]?\)", text)
             if year_match:
-                before_year = text[:year_match.start()].strip()
+                before_year = text[: year_match.start()].strip()
 
                 # Extract the last complete author name before the year
                 author_before_year_patterns = [
                     # "LastName, F." format
-                    r'([A-Z][a-zA-Z]+,\s*[A-Z]\.?)(?=\s*$|\s*\.$)',
+                    r"([A-Z][a-zA-Z]+,\s*[A-Z]\.?)(?=\s*$|\s*\.$)",
                     # "LastName, FirstName" format
-                    r'([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+)(?=\s*$|\s*\.$)',
+                    r"([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+)(?=\s*$|\s*\.$)",
                     # "LastName F." format
-                    r'([A-Z][a-zA-Z]+\s+[A-Z]\.?)(?=\s*$|\s*\.$)',
+                    r"([A-Z][a-zA-Z]+\s+[A-Z]\.?)(?=\s*$|\s*\.$)",
                     # Just "LastName"
-                    r'([A-Z][a-zA-Z]+)(?=\s*$|\s*\.$)',
+                    r"([A-Z][a-zA-Z]+)(?=\s*$|\s*\.$)",
                 ]
 
                 for pattern in author_before_year_patterns:
@@ -280,10 +295,10 @@ class CitationParsingService:
 
             # Strategy 4: Extract from the very beginning, assuming citation starts with author
             beginning_patterns = [
-                r'^([A-Z][a-zA-Z]+,\s*[A-Z]\.?)',  # "LastName, F."
-                r'^([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+)',  # "LastName, FirstName"
-                r'^([A-Z][a-zA-Z]+\s+[A-Z]\.?)',   # "LastName F."
-                r'^([A-Z][a-zA-Z]+)',              # Just "LastName"
+                r"^([A-Z][a-zA-Z]+,\s*[A-Z]\.?)",  # "LastName, F."
+                r"^([A-Z][a-zA-Z]+,\s*[A-Z][a-zA-Z]+)",  # "LastName, FirstName"
+                r"^([A-Z][a-zA-Z]+\s+[A-Z]\.?)",  # "LastName F."
+                r"^([A-Z][a-zA-Z]+)",  # Just "LastName"
             ]
 
             for pattern in beginning_patterns:
@@ -316,33 +331,35 @@ class CitationParsingService:
                 return quoted_title.group(1).strip()
 
             # Look for text between author and year
-            year_match = re.search(r'\(\d{4}[a-z]?\)', citation_text)
+            year_match = re.search(r"\(\d{4}[a-z]?\)", citation_text)
             if year_match:
-                before_year = citation_text[:year_match.start()]
+                before_year = citation_text[: year_match.start()]
                 # Try to find title after author name
                 # Look for pattern: Author. Title. or Author (year) Title
-                parts = before_year.split('.')
+                parts = before_year.split(".")
                 if len(parts) >= 2:
                     potential_title = parts[1].strip()
                     if len(potential_title) > 5:
                         return potential_title
 
                 # Alternative: look for title after author comma
-                author_end = re.search(r'[A-Z][a-z]+,\s*[A-Z]\.?\s*', before_year)
+                author_end = re.search(r"[A-Z][a-z]+,\s*[A-Z]\.?\s*", before_year)
                 if author_end:
-                    after_author = before_year[author_end.end():].strip()
+                    after_author = before_year[author_end.end() :].strip()
                     # Remove leading punctuation
-                    after_author = re.sub(r'^[.,\s]+', '', after_author)
+                    after_author = re.sub(r"^[.,\s]+", "", after_author)
                     if len(after_author) > 5:
                         return after_author
 
             # Fallback: look for capitalized text that could be a title
             # Look for pattern after author names
-            title_pattern = r'[A-Z][a-z]+(?:,\s*[A-Z]\.?\s*)*\s+(.+?)(?:\.|$)'
+            title_pattern = r"[A-Z][a-z]+(?:,\s*[A-Z]\.?\s*)*\s+(.+?)(?:\.|$)"
             title_match = re.search(title_pattern, citation_text)
             if title_match:
                 potential_title = title_match.group(1).strip()
-                if len(potential_title) > 5 and not re.match(r'^\(\d{4}', potential_title):
+                if len(potential_title) > 5 and not re.match(
+                    r"^\(\d{4}", potential_title
+                ):
                     return potential_title
 
             return None
@@ -367,7 +384,7 @@ class CitationParsingService:
                 if match:
                     year_str = match.group(1)
                     # Extract just the numeric part
-                    year_num = re.search(r'(\d{4})', year_str)
+                    year_num = re.search(r"(\d{4})", year_str)
                     if year_num:
                         year = int(year_num.group(1))
                         # Validate year range
@@ -392,14 +409,14 @@ class CitationParsingService:
         """
         try:
             # Look for journal patterns after year
-            year_match = re.search(r'\(\d{4}[a-z]?\)', citation_text)
+            year_match = re.search(r"\(\d{4}[a-z]?\)", citation_text)
             if year_match:
-                after_year = citation_text[year_match.end():].strip()
+                after_year = citation_text[year_match.end() :].strip()
                 # Remove leading punctuation
-                after_year = re.sub(r'^[.,\s]+', '', after_year)
+                after_year = re.sub(r"^[.,\s]+", "", after_year)
 
                 # Look for journal/venue name
-                venue_match = re.search(r'^([^,.]+)', after_year)
+                venue_match = re.search(r"^([^,.]+)", after_year)
                 if venue_match:
                     venue = venue_match.group(1).strip()
                     if len(venue) > 3:
@@ -427,7 +444,7 @@ class CitationParsingService:
                 if match:
                     doi = match.group(1).strip()
                     # Clean up DOI
-                    doi = re.sub(r'[.,\s]+$', '', doi)  # Remove trailing punctuation
+                    doi = re.sub(r"[.,\s]+$", "", doi)  # Remove trailing punctuation
                     return doi
 
             return None
@@ -451,30 +468,53 @@ class CitationParsingService:
 
             # Conference patterns
             conference_indicators = [
-                'proceedings', 'conference', 'workshop', 'symposium',
-                'icml', 'nips', 'iclr', 'cvpr', 'acl', 'emnlp'
+                "proceedings",
+                "conference",
+                "workshop",
+                "symposium",
+                "icml",
+                "nips",
+                "iclr",
+                "cvpr",
+                "acl",
+                "emnlp",
             ]
             if any(indicator in text_lower for indicator in conference_indicators):
                 return "conference"
 
             # Journal patterns
             journal_indicators = [
-                'journal', 'review', 'quarterly', 'annual', 'magazine',
-                'nature', 'science', 'cell', 'lancet'
+                "journal",
+                "review",
+                "quarterly",
+                "annual",
+                "magazine",
+                "nature",
+                "science",
+                "cell",
+                "lancet",
             ]
             if any(indicator in text_lower for indicator in journal_indicators):
                 return "journal"
 
             # Book patterns
             book_indicators = [
-                'press', 'publisher', 'edition', 'book', 'handbook',
-                'cambridge', 'oxford', 'springer', 'wiley', 'mit press'
+                "press",
+                "publisher",
+                "edition",
+                "book",
+                "handbook",
+                "cambridge",
+                "oxford",
+                "springer",
+                "wiley",
+                "mit press",
             ]
             if any(indicator in text_lower for indicator in book_indicators):
                 return "book"
 
             # Thesis patterns
-            thesis_indicators = ['thesis', 'dissertation', 'phd', 'master']
+            thesis_indicators = ["thesis", "dissertation", "phd", "master"]
             if any(indicator in text_lower for indicator in thesis_indicators):
                 return "thesis"
 
@@ -502,7 +542,7 @@ class CitationParsingService:
             # Authors present and well-formed
             if citation_data.get("authors"):
                 authors = citation_data["authors"]
-                if len(authors) > 3 and ',' in authors:
+                if len(authors) > 3 and "," in authors:
                     score += 0.25
                 elif len(authors) > 3:
                     score += 0.15
@@ -545,7 +585,9 @@ class CitationParsingService:
                 max_score += 0.15
 
             # Normalize score
-            final_score = score / max_score if max_score > 0 else 0.1  # Minimum score for having raw text
+            final_score = (
+                score / max_score if max_score > 0 else 0.1
+            )  # Minimum score for having raw text
 
             # Ensure score is within bounds and not zero
             return max(0.1, min(1.0, final_score))
@@ -558,13 +600,15 @@ class CitationParsingService:
     def _extract_refextract_authors(self, ref_data: dict) -> str | None:
         """Extract authors from refextract data."""
         try:
-            if 'author' in ref_data:
-                authors = ref_data['author']
+            if "author" in ref_data:
+                authors = ref_data["author"]
                 if isinstance(authors, list) and authors:
                     # Join multiple authors
-                    return ', '.join([a.get('full_name', '') for a in authors if a.get('full_name')])
+                    return ", ".join(
+                        [a.get("full_name", "") for a in authors if a.get("full_name")]
+                    )
                 elif isinstance(authors, dict):
-                    return authors.get('full_name')
+                    return authors.get("full_name")
             return None
         except Exception:
             return None
@@ -572,17 +616,17 @@ class CitationParsingService:
     def _extract_refextract_year(self, ref_data: dict) -> int | None:
         """Extract year from refextract data."""
         try:
-            if 'year' in ref_data:
-                year_data = ref_data['year']
+            if "year" in ref_data:
+                year_data = ref_data["year"]
                 if isinstance(year_data, dict):
-                    year_str = year_data.get('year', '')
+                    year_str = year_data.get("year", "")
                 elif isinstance(year_data, str):
                     year_str = year_data
                 else:
                     return None
 
                 # Extract numeric year
-                year_match = re.search(r'(\d{4})', str(year_str))
+                year_match = re.search(r"(\d{4})", str(year_str))
                 if year_match:
                     return int(year_match.group(1))
             return None
@@ -592,10 +636,10 @@ class CitationParsingService:
     def _extract_refextract_journal(self, ref_data: dict) -> str | None:
         """Extract journal from refextract data."""
         try:
-            if 'journal' in ref_data:
-                journal_data = ref_data['journal']
+            if "journal" in ref_data:
+                journal_data = ref_data["journal"]
                 if isinstance(journal_data, dict):
-                    return journal_data.get('title')
+                    return journal_data.get("title")
                 elif isinstance(journal_data, str):
                     return journal_data
             return None
@@ -605,18 +649,23 @@ class CitationParsingService:
     def _classify_refextract_type(self, ref_data: dict) -> str:
         """Classify citation type from refextract data."""
         try:
-            if 'journal' in ref_data:
+            if "journal" in ref_data:
                 return "journal"
-            elif 'book' in ref_data or 'publisher' in ref_data:
+            elif "book" in ref_data or "publisher" in ref_data:
                 return "book"
-            elif any(conf_word in str(ref_data).lower() for conf_word in ['proceedings', 'conference', 'workshop']):
+            elif any(
+                conf_word in str(ref_data).lower()
+                for conf_word in ["proceedings", "conference", "workshop"]
+            ):
                 return "conference"
             else:
                 return "unknown"
         except Exception:
             return "unknown"
 
-    def _merge_and_deduplicate_citations(self, primary_citations: list, fallback_citations: list) -> list[dict[str, Any]]:
+    def _merge_and_deduplicate_citations(
+        self, primary_citations: list, fallback_citations: list
+    ) -> list[dict[str, Any]]:
         """Merge citations from different sources and remove duplicates."""
         try:
             all_citations = list(primary_citations)  # Start with primary results
@@ -631,7 +680,9 @@ class CitationParsingService:
 
                     # Simple similarity check - if 80% of text matches, consider duplicate
                     if len(fallback_text) > 0 and len(existing_text) > 0:
-                        similarity = self._calculate_text_similarity(fallback_text, existing_text)
+                        similarity = self._calculate_text_similarity(
+                            fallback_text, existing_text
+                        )
                         if similarity > 0.8:
                             is_duplicate = True
                             break
@@ -659,15 +710,18 @@ class CitationParsingService:
                 return 1.0
 
             # Count matching characters
-            matches = sum(1 for c1, c2 in zip(shorter, longer, strict=False) if c1 == c2)
+            matches = sum(
+                1 for c1, c2 in zip(shorter, longer, strict=False) if c1 == c2
+            )
             return matches / len(longer)
 
         except Exception:
             return 0.0
+
     def _prefilter_citation_text(self, text_content: str) -> str:
         """Pre-filter text to remove obvious non-citation content."""
         try:
-            lines = text_content.split('\n')
+            lines = text_content.split("\n")
             filtered_lines = []
 
             for line in lines:
@@ -677,21 +731,23 @@ class CitationParsingService:
 
                 # Skip lines that are clearly not citations
                 skip_patterns = [
-                    r'^\s*Abstract\s*:',
-                    r'^\s*Introduction\s*:',
-                    r'^\s*Conclusion\s*:',
-                    r'^\s*References\s*:',
-                    r'^\s*Figure\s+\d+',
-                    r'^\s*Table\s+\d+',
-                    r'^\s*Section\s+\d+',
-                    r'^\s*Chapter\s+\d+',
+                    r"^\s*Abstract\s*:",
+                    r"^\s*Introduction\s*:",
+                    r"^\s*Conclusion\s*:",
+                    r"^\s*References\s*:",
+                    r"^\s*Figure\s+\d+",
+                    r"^\s*Table\s+\d+",
+                    r"^\s*Section\s+\d+",
+                    r"^\s*Chapter\s+\d+",
                 ]
 
-                should_skip = any(re.match(pattern, line, re.IGNORECASE) for pattern in skip_patterns)
+                should_skip = any(
+                    re.match(pattern, line, re.IGNORECASE) for pattern in skip_patterns
+                )
                 if not should_skip:
                     filtered_lines.append(line)
 
-            return '\n'.join(filtered_lines)
+            return "\n".join(filtered_lines)
 
         except Exception:
             return text_content
@@ -706,28 +762,50 @@ class CitationParsingService:
                 return False
 
             # Must contain a year in parentheses
-            if not re.search(r'\(\d{4}[a-z]?\)', text):
+            if not re.search(r"\(\d{4}[a-z]?\)", text):
                 return False
 
             # Must start with something that looks like an author name
-            if not re.search(r'^(?:.*?\b)?[A-Z][a-zA-Z]+', text):
+            if not re.search(r"^(?:.*?\b)?[A-Z][a-zA-Z]+", text):
                 return False
 
             # Should not start with common non-citation words
             bad_starts = [
-                'this', 'that', 'these', 'those', 'the', 'a', 'an',
-                'recent', 'modern', 'current', 'new', 'old', 'previous',
-                'foundational', 'important', 'significant', 'major',
-                'object', 'subject', 'method', 'approach', 'technique',
-                'work', 'study', 'research', 'paper', 'article',
+                "this",
+                "that",
+                "these",
+                "those",
+                "the",
+                "a",
+                "an",
+                "recent",
+                "modern",
+                "current",
+                "new",
+                "old",
+                "previous",
+                "foundational",
+                "important",
+                "significant",
+                "major",
+                "object",
+                "subject",
+                "method",
+                "approach",
+                "technique",
+                "work",
+                "study",
+                "research",
+                "paper",
+                "article",
             ]
 
-            first_word = text.split()[0].lower() if text.split() else ''
+            first_word = text.split()[0].lower() if text.split() else ""
             if first_word in bad_starts:
                 return False
 
             # Should have proper punctuation
-            return not (not text.endswith('.') and not text.endswith('.).'))
+            return not (not text.endswith(".") and not text.endswith(".)."))
 
         except Exception:
             return False
@@ -736,26 +814,34 @@ class CitationParsingService:
         """Validate that a parsed citation meets quality standards."""
         try:
             # Must have basic required fields
-            if not citation_data.get('raw_text'):
+            if not citation_data.get("raw_text"):
                 return False
 
             # Should have at least authors or title
-            if not citation_data.get('authors') and not citation_data.get('title'):
+            if not citation_data.get("authors") and not citation_data.get("title"):
                 return False
 
             # If authors exist, they should look reasonable
-            if citation_data.get('authors'):
-                authors = citation_data['authors']
+            if citation_data.get("authors"):
+                authors = citation_data["authors"]
                 # Authors should contain letters and basic punctuation
-                if not re.search(r'[A-Za-z]', authors):
+                if not re.search(r"[A-Za-z]", authors):
                     return False
                 # Authors shouldn't be just common words
-                if authors.lower() in ['the', 'this', 'that', 'work', 'study', 'research', 'paper']:
+                if authors.lower() in [
+                    "the",
+                    "this",
+                    "that",
+                    "work",
+                    "study",
+                    "research",
+                    "paper",
+                ]:
                     return False
 
             # Year should be reasonable if present
-            if citation_data.get('publication_year'):
-                year = citation_data['publication_year']
+            if citation_data.get("publication_year"):
+                year = citation_data["publication_year"]
                 if not (1900 <= year <= 2030):
                     return False
 
@@ -764,14 +850,16 @@ class CitationParsingService:
         except Exception:
             return False
 
-    def _deduplicate_and_filter_citations(self, citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _deduplicate_and_filter_citations(
+        self, citations: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """Remove duplicates and filter low-quality citations."""
         try:
             filtered_citations = []
             seen_texts = set()
 
             for citation in citations:
-                raw_text = citation.get('raw_text', '').strip().lower()
+                raw_text = citation.get("raw_text", "").strip().lower()
 
                 # Skip if we've seen very similar text
                 is_duplicate = False
@@ -785,7 +873,9 @@ class CitationParsingService:
                     seen_texts.add(raw_text)
 
             # Sort by confidence score descending
-            filtered_citations.sort(key=lambda x: x.get('confidence_score', 0), reverse=True)
+            filtered_citations.sort(
+                key=lambda x: x.get("confidence_score", 0), reverse=True
+            )
 
             return filtered_citations
 
@@ -798,19 +888,21 @@ class CitationParsingService:
             author = author.strip()
 
             # Handle "LastName F." format - convert to "LastName, F."
-            if ',' not in author and ' ' in author:
+            if "," not in author and " " in author:
                 parts = author.split()
                 if len(parts) >= 2:
                     # Check if the last part looks like an initial
                     last_part = parts[-1]
-                    if len(last_part) <= 3 and (last_part.endswith('.') or len(last_part) == 1):
-                        last_name = ' '.join(parts[:-1])
+                    if len(last_part) <= 3 and (
+                        last_part.endswith(".") or len(last_part) == 1
+                    ):
+                        last_name = " ".join(parts[:-1])
                         initial = last_part
                         author = f"{last_name}, {initial}"
 
             # Clean up extra spaces and punctuation
-            author = re.sub(r'\s+', ' ', author)
-            author = re.sub(r'\s*,\s*', ', ', author)
+            author = re.sub(r"\s+", " ", author)
+            author = re.sub(r"\s*,\s*", ", ", author)
 
             return author
 

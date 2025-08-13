@@ -13,7 +13,7 @@ from typing import Any
 
 def safe_get(row_obj, key):
     """Safely get value from row object (dict or sqlite3.Row)."""
-    if hasattr(row_obj, 'get'):
+    if hasattr(row_obj, "get"):
         return row_obj.get(key)
     else:
         try:
@@ -122,20 +122,12 @@ class DocumentModel:
         """
         # Parse timestamps - handle both dict and Row objects
         created_at_str = safe_get(row, "created_at")
-        created_at = (
-            datetime.fromisoformat(created_at_str)
-            if created_at_str else None
-        )
+        created_at = datetime.fromisoformat(created_at_str) if created_at_str else None
         updated_at_str = safe_get(row, "updated_at")
-        updated_at = (
-            datetime.fromisoformat(updated_at_str)
-            if updated_at_str else None
-        )
+        updated_at = datetime.fromisoformat(updated_at_str) if updated_at_str else None
         last_accessed_str = safe_get(row, "last_accessed")
         last_accessed = (
-            datetime.fromisoformat(last_accessed_str)
-            if last_accessed_str
-            else None
+            datetime.fromisoformat(last_accessed_str) if last_accessed_str else None
         )
         # Parse metadata JSON
         metadata_str = safe_get(row, "metadata")
@@ -289,10 +281,7 @@ class VectorIndexModel:
             VectorIndexModel instance
         """
         created_at_str = safe_get(row, "created_at")
-        created_at = (
-            datetime.fromisoformat(created_at_str)
-            if created_at_str else None
-        )
+        created_at = datetime.fromisoformat(created_at_str) if created_at_str else None
         # Parse metadata JSON
         metadata_str = safe_get(row, "metadata")
         metadata = json.loads(metadata_str) if metadata_str else {}
@@ -451,12 +440,15 @@ class CitationModel:
 
         # Validate optional fields
         current_year = datetime.now().year
-        if (self.publication_year is not None and
-            (self.publication_year < 1000 or self.publication_year > current_year + 1)):
+        if self.publication_year is not None and (
+            self.publication_year < 1000 or self.publication_year > current_year + 1
+        ):
             raise ValueError(f"Invalid publication year: {self.publication_year}")
 
-        if (self.confidence_score is not None and
-            not 0.0 <= self.confidence_score <= 1.0):
+        if (
+            self.confidence_score is not None
+            and not 0.0 <= self.confidence_score <= 1.0
+        ):
             raise ValueError("Confidence score must be between 0.0 and 1.0")
 
     @classmethod
@@ -470,15 +462,9 @@ class CitationModel:
         """
         # Parse timestamps - handle both dict and Row objects
         created_at_str = safe_get(row, "created_at")
-        created_at = (
-            datetime.fromisoformat(created_at_str)
-            if created_at_str else None
-        )
+        created_at = datetime.fromisoformat(created_at_str) if created_at_str else None
         updated_at_str = safe_get(row, "updated_at")
-        updated_at = (
-            datetime.fromisoformat(updated_at_str)
-            if updated_at_str else None
-        )
+        updated_at = datetime.fromisoformat(updated_at_str) if updated_at_str else None
 
         return cls(
             id=row["id"],
@@ -654,8 +640,10 @@ class CitationRelationModel:
         if self.target_citation_id is not None and self.target_citation_id <= 0:
             raise ValueError("Target citation ID must be positive")
 
-        if (self.confidence_score is not None and
-            not 0.0 <= self.confidence_score <= 1.0):
+        if (
+            self.confidence_score is not None
+            and not 0.0 <= self.confidence_score <= 1.0
+        ):
             raise ValueError("Confidence score must be between 0.0 and 1.0")
 
     @classmethod

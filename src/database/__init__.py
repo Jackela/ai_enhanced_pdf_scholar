@@ -5,8 +5,8 @@ for the AI Enhanced PDF Scholar application.
 """
 
 from .connection import DatabaseConnection
-from .modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
 from .models import DocumentModel, VectorIndexModel
+from .modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
 
 __all__ = [
     "DatabaseConnection",

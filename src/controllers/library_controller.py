@@ -6,8 +6,8 @@ from typing import Any
 from src.core.state_manager import StateManager
 from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel
-from src.services.document_library_service import DocumentLibraryService
 from src.exceptions import DocumentImportError, DuplicateDocumentError
+from src.services.document_library_service import DocumentLibraryService
 from src.services.enhanced_rag_service import EnhancedRAGService
 from src.services.service_factory import ServiceFactory, get_service_factory
 
@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 class ILibraryController(ABC):
     """Abstract interface for library controllers."""
-    
+
     @abstractmethod
     def get_all_documents(self, search_query: str | None = None) -> list[DocumentModel]:
         """Get all documents, optionally filtered by search query."""
         pass
-    
+
     @abstractmethod
     def get_documents(
         self,
@@ -31,17 +31,17 @@ class ILibraryController(ABC):
     ) -> list[DocumentModel]:
         """Get documents with filtering and sorting options."""
         pass
-    
+
     @abstractmethod
     def delete_document(self, document_id: int) -> bool:
         """Delete a document from the library."""
         pass
-    
+
     @abstractmethod
     def get_document_by_id(self, document_id: int) -> DocumentModel | None:
         """Get a document by its ID."""
         pass
-    
+
     @abstractmethod
     def get_library_statistics(self) -> dict[str, Any]:
         """Get library statistics."""
@@ -50,13 +50,15 @@ class ILibraryController(ABC):
 
 class BaseLibraryController(ILibraryController):
     """Base controller with common functionality."""
-    
+
     def __init__(self, library_service: DocumentLibraryService):
         """Initialize with library service."""
         if not library_service:
             raise ValueError("library_service is required")
         self.library_service = library_service
-        logger.debug(f"BaseLibraryController initialized with {type(library_service).__name__}")
+        logger.debug(
+            f"BaseLibraryController initialized with {type(library_service).__name__}"
+        )
 
     def get_all_documents(self, search_query: str | None = None) -> list[DocumentModel]:
         """Get all documents, optionally filtered by search query."""
@@ -100,7 +102,7 @@ class BaseLibraryController(ILibraryController):
 
 class WebAPILibraryController(BaseLibraryController):
     """Web API-specific library controller with enhanced functionality."""
-    
+
     def __init__(
         self,
         db_connection: DatabaseConnection,
@@ -112,31 +114,35 @@ class WebAPILibraryController(BaseLibraryController):
         """Initialize web API controller with managed dependencies."""
         if not db_connection:
             raise ValueError("db_connection is required for web API initialization")
-        
+
         # Set up managed documents directory
         if documents_dir:
             managed_documents_dir = documents_dir
         else:
             managed_documents_dir = str(Path.home() / ".ai_pdf_scholar" / "documents")
-        
+
         # Initialize library service using factory if available
         if service_factory:
             library_service = service_factory.create_service(
-                DocumentLibraryService,
-                documents_dir=managed_documents_dir
+                DocumentLibraryService, documents_dir=managed_documents_dir
             )
             logger.debug("Library service created via ServiceFactory")
         else:
             # Fallback to direct instantiation
-            library_service = DocumentLibraryService(db_connection, managed_documents_dir)
+            library_service = DocumentLibraryService(
+                db_connection, managed_documents_dir
+            )
             logger.debug("Library service created directly (fallback)")
-        
+
         super().__init__(library_service)
-        
+
         self.enhanced_rag_service = enhanced_rag_service
         self.state_manager = state_manager
-        logger.info(f"WebAPILibraryController initialized with documents dir: {managed_documents_dir}")
-    
+        logger.info(
+            f"WebAPILibraryController initialized with documents dir: "
+            f"{managed_documents_dir}"
+        )
+
     @classmethod
     def create_with_factory(
         cls,
@@ -147,21 +153,21 @@ class WebAPILibraryController(BaseLibraryController):
     ) -> "WebAPILibraryController":
         """
         Create controller using the global or provided service factory.
-        
+
         Args:
             service_factory: Optional service factory (uses global if None)
             enhanced_rag_service: Optional RAG service instance
             state_manager: Optional state manager instance
             documents_dir: Optional documents directory path
-            
+
         Returns:
             Configured WebAPILibraryController instance
         """
         factory = service_factory or get_service_factory()
-        
+
         # Get database connection from factory
         db_connection = factory.db_connection
-        
+
         # Create enhanced services via factory if not provided
         if not enhanced_rag_service:
             try:
@@ -169,13 +175,13 @@ class WebAPILibraryController(BaseLibraryController):
             except Exception as e:
                 logger.warning(f"Could not create EnhancedRAGService via factory: {e}")
                 enhanced_rag_service = None
-        
+
         return cls(
             db_connection=db_connection,
             enhanced_rag_service=enhanced_rag_service,
             state_manager=state_manager,
             documents_dir=documents_dir,
-            service_factory=factory
+            service_factory=factory,
         )
 
     def get_all_documents(self, search_query: str | None = None) -> list[DocumentModel]:
@@ -219,16 +225,17 @@ class WebAPILibraryController(BaseLibraryController):
         """
         try:
             document = self.library_service.import_document(
-                file_path, title, 
-                check_duplicates=check_duplicates, 
-                overwrite_duplicates=not check_duplicates
+                file_path,
+                title,
+                check_duplicates=check_duplicates,
+                overwrite_duplicates=not check_duplicates,
             )
-            
+
             # TODO: Implement auto_build_index when requested
             if auto_build_index and self.enhanced_rag_service and document:
                 logger.debug(f"Auto-building index for document {document.id}")
                 # Future enhancement: Build vector index automatically
-                
+
             return document is not None
         except (DocumentImportError, DuplicateDocumentError):
             raise  # Re-raise for proper API error handling
@@ -285,12 +292,12 @@ class WebAPILibraryController(BaseLibraryController):
         """
         if not self.enhanced_rag_service:
             raise ValueError("Enhanced RAG service not available for document querying")
-            
+
         # Validate document exists
         document = self.get_document_by_id(document_id)
         if not document:
             raise ValueError(f"Document with ID {document_id} not found")
-        
+
         # Load or build document index
         success = self.enhanced_rag_service.load_index_for_document(document_id)
         if not success:
@@ -299,9 +306,9 @@ class WebAPILibraryController(BaseLibraryController):
             if not success:
                 raise ValueError(
                     f"Failed to build or load vector index for document {document_id}. "
-                    "Check document file accessibility and vector service configuration."
+                    "Check document file accessibility and vector service config."
                 )
-        
+
         # Execute query
         try:
             return self.enhanced_rag_service.query(query)
@@ -312,7 +319,7 @@ class WebAPILibraryController(BaseLibraryController):
 
 class DesktopLibraryController(BaseLibraryController):
     """Desktop application-specific library controller (legacy support)."""
-    
+
     def __init__(
         self,
         library_service: DocumentLibraryService,
@@ -322,7 +329,7 @@ class DesktopLibraryController(BaseLibraryController):
         super().__init__(library_service)
         self.state_manager = state_manager
         logger.info("DesktopLibraryController initialized (legacy mode)")
-    
+
     def import_document_legacy(
         self,
         file_path: str,
@@ -342,9 +349,10 @@ class DesktopLibraryController(BaseLibraryController):
             DuplicateDocumentError: If duplicate found and overwrite_duplicates=False
         """
         return self.library_service.import_document(
-            file_path, title, 
+            file_path,
+            title,
             check_duplicates=not overwrite_duplicates,
-            overwrite_duplicates=overwrite_duplicates
+            overwrite_duplicates=overwrite_duplicates,
         )
 
 

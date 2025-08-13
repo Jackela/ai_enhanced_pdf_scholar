@@ -20,15 +20,15 @@ This architecture provides:
 """
 
 from .coordinator import RAGCoordinator
+from .file_manager import RAGFileManager
 from .index_builder import RAGIndexBuilder
 from .query_engine import RAGQueryEngine
 from .recovery_service import RAGRecoveryService
-from .file_manager import RAGFileManager
 
 __all__ = [
-    'RAGCoordinator',
-    'RAGIndexBuilder', 
-    'RAGQueryEngine',
-    'RAGRecoveryService',
-    'RAGFileManager'
+    "RAGCoordinator",
+    "RAGIndexBuilder",
+    "RAGQueryEngine",
+    "RAGRecoveryService",
+    "RAGFileManager",
 ]

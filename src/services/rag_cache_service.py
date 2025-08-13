@@ -14,7 +14,7 @@ import hashlib
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from src.database.connection import DatabaseConnection
 
@@ -84,7 +84,7 @@ class RAGCacheService:
         self.ttl_hours: int = ttl_hours
         self.similarity_threshold: float = similarity_threshold
         # Performance metrics
-        self.metrics: Dict[str, int] = {
+        self.metrics: dict[str, int] = {
             "total_queries": 0,
             "cache_hits": 0,
             "cache_misses": 0,

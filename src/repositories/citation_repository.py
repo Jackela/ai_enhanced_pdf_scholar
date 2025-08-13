@@ -78,8 +78,8 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
             values = [citation_dict[col] for col in columns]
 
             sql = f"""
-                INSERT INTO citations ({', '.join(columns)})
-                VALUES ({', '.join(placeholders)})
+                INSERT INTO citations ({", ".join(columns)})
+                VALUES ({", ".join(placeholders)})
             """
 
             self.db.execute(sql, values)
@@ -146,7 +146,7 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
 
             sql = f"""
                 UPDATE citations
-                SET {', '.join(set_clauses)}
+                SET {", ".join(set_clauses)}
                 WHERE id = ?
             """
 
@@ -323,12 +323,16 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
             results = self.db.fetch_all(sql, (start_year, end_year))
 
             citations = [CitationModel.from_database_row(row) for row in results]
-            logger.debug(f"Found {len(citations)} citations between {start_year}-{end_year}")
+            logger.debug(
+                f"Found {len(citations)} citations between {start_year}-{end_year}"
+            )
 
             return citations
 
         except Exception as e:
-            logger.error(f"Failed to find citations in year range {start_year}-{end_year}: {e}")
+            logger.error(
+                f"Failed to find citations in year range {start_year}-{end_year}: {e}"
+            )
             raise
 
     def get_by_type(self, citation_type: str) -> list[CitationModel]:
@@ -387,7 +391,9 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
                 FROM citations
                 WHERE confidence_score IS NOT NULL
             """)
-            stats["avg_confidence_score"] = result["avg_confidence"] if result and result["avg_confidence"] else 0.0
+            stats["avg_confidence_score"] = (
+                result["avg_confidence"] if result and result["avg_confidence"] else 0.0
+            )
 
             # Citation types breakdown
             type_results = self.db.fetch_all("""
@@ -397,7 +403,9 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
                 GROUP BY citation_type
                 ORDER BY count DESC
             """)
-            stats["citation_types"] = {row["citation_type"]: row["count"] for row in type_results}
+            stats["citation_types"] = {
+                row["citation_type"]: row["count"] for row in type_results
+            }
 
             # Years breakdown (last 10 years)
             year_results = self.db.fetch_all("""
@@ -408,14 +416,18 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
                 GROUP BY publication_year
                 ORDER BY publication_year DESC
             """)
-            stats["years_breakdown"] = {row["publication_year"]: row["count"] for row in year_results}
+            stats["years_breakdown"] = {
+                row["publication_year"]: row["count"] for row in year_results
+            }
 
             # Document coverage
             result = self.db.fetch_one("""
                 SELECT COUNT(DISTINCT document_id) as docs_with_citations
                 FROM citations
             """)
-            stats["documents_with_citations"] = result["docs_with_citations"] if result else 0
+            stats["documents_with_citations"] = (
+                result["docs_with_citations"] if result else 0
+            )
 
             logger.debug("Generated citation statistics")
             return stats

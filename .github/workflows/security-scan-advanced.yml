@@ -378,19 +378,19 @@ jobs:
           if [ -f bandit-report.json ]; then
             echo "## 🛡️ Bandit Results" >> security-summary.md
             python3 -c "
-import json, sys
-try:
-    with open('bandit-report.json', 'r') as f:
-        data = json.load(f)
-    high = len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH'])
-    medium = len([r for r in data.get('results', []) if r.get('issue_severity') == 'MEDIUM'])
-    low = len([r for r in data.get('results', []) if r.get('issue_severity') == 'LOW'])
-    print(f'- High: {high}')
-    print(f'- Medium: {medium}') 
-    print(f'- Low: {low}')
-    sys.exit(high)
-except: pass
-" >> security-summary.md
+            import json, sys
+            try:
+                with open('bandit-report.json', 'r') as f:
+                    data = json.load(f)
+                high = len([r for r in data.get('results', []) if r.get('issue_severity') == 'HIGH'])
+                medium = len([r for r in data.get('results', []) if r.get('issue_severity') == 'MEDIUM'])
+                low = len([r for r in data.get('results', []) if r.get('issue_severity') == 'LOW'])
+                print(f'- High: {high}')
+                print(f'- Medium: {medium}') 
+                print(f'- Low: {low}')
+                sys.exit(high)
+            except: pass
+            " >> security-summary.md
             bandit_high=$?
             high_count=$((high_count + bandit_high))
           fi
@@ -399,32 +399,32 @@ except: pass
           if [ -f safety-report.json ]; then
             echo "## 🔒 Safety Results" >> security-summary.md
             python3 -c "
-import json
-try:
-    with open('safety-report.json', 'r') as f:
-        data = json.load(f)
-    vulns = len(data.get('vulnerabilities', []))
-    print(f'- Vulnerabilities: {vulns}')
-except: pass
-" >> security-summary.md
+            import json
+            try:
+                with open('safety-report.json', 'r') as f:
+                    data = json.load(f)
+                vulns = len(data.get('vulnerabilities', []))
+                print(f'- Vulnerabilities: {vulns}')
+            except: pass
+            " >> security-summary.md
           fi
           
           # Process npm audit results
           if [ -f npm-audit-report.json ]; then
             echo "## 📦 NPM Audit Results" >> security-summary.md
             python3 -c "
-import json
-try:
-    with open('npm-audit-report.json', 'r') as f:
-        data = json.load(f)
-    meta = data.get('metadata', {})
-    vulns = meta.get('vulnerabilities', {})
-    print(f'- Critical: {vulns.get(\"critical\", 0)}')
-    print(f'- High: {vulns.get(\"high\", 0)}')
-    print(f'- Medium: {vulns.get(\"moderate\", 0)}')
-    print(f'- Low: {vulns.get(\"low\", 0)}')
-except: pass
-" >> security-summary.md
+            import json
+            try:
+                with open('npm-audit-report.json', 'r') as f:
+                    data = json.load(f)
+                meta = data.get('metadata', {})
+                vulns = meta.get('vulnerabilities', {})
+                print(f'- Critical: {vulns.get(\"critical\", 0)}')
+                print(f'- High: {vulns.get(\"high\", 0)}')
+                print(f'- Medium: {vulns.get(\"moderate\", 0)}')
+                print(f'- Low: {vulns.get(\"low\", 0)}')
+            except: pass
+            " >> security-summary.md
           fi
           
           echo "" >> security-summary.md

@@ -9,13 +9,13 @@ Creates the foundational database schema including:
 """
 
 import logging
-from typing import Any
 
 try:
     from ..base import BaseMigration
 except ImportError:
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path(__file__).parent.parent))
     from base import BaseMigration
 
@@ -25,68 +25,63 @@ logger = logging.getLogger(__name__)
 class InitialSchemaMigration(BaseMigration):
     """
     Creates the initial database schema for the AI Enhanced PDF Scholar system.
-    
+
     This migration establishes the core tables and indexes needed for:
     - Document storage and metadata management
     - Vector indexing for RAG functionality
     - Tag-based document organization
     - Performance optimization
     """
-    
+
     @property
     def version(self) -> int:
         return 1
-        
+
     @property
     def description(self) -> str:
         return "Create initial database schema with documents, vector_indexes, and tags tables"
-        
+
     @property
     def rollback_supported(self) -> bool:
         return True
-        
+
     def up(self) -> None:
         """Apply the initial schema migration."""
         logger.info("Creating initial database schema")
-        
+
         # Create documents table
         self._create_documents_table()
-        
-        # Create vector_indexes table  
+
+        # Create vector_indexes table
         self._create_vector_indexes_table()
-        
+
         # Create tags system
         self._create_tags_tables()
-        
+
         # Create performance indexes
         self._create_performance_indexes()
-        
+
         # Insert default tags
         self._insert_default_tags()
-        
+
         logger.info("Initial schema migration completed successfully")
-        
+
     def down(self) -> None:
         """Rollback the initial schema migration."""
         logger.info("Rolling back initial schema migration")
-        
+
         # Drop tables in reverse order (respecting foreign keys)
-        tables_to_drop = [
-            "document_tags",
-            "tags", 
-            "vector_indexes",
-            "documents"
-        ]
-        
+        tables_to_drop = ["document_tags", "tags", "vector_indexes", "documents"]
+
         for table in tables_to_drop:
             try:
                 self.execute_sql(f"DROP TABLE IF EXISTS {table}")
                 logger.info(f"Dropped table: {table}")
             except Exception as e:
                 logger.warning(f"Could not drop table {table}: {e}")
-                
+
         logger.info("Initial schema rollback completed")
-        
+
     def _create_documents_table(self) -> None:
         """Create the documents table."""
         documents_sql = """
@@ -105,7 +100,7 @@ class InitialSchemaMigration(BaseMigration):
         """
         self.execute_sql(documents_sql)
         logger.info("Created documents table")
-        
+
     def _create_vector_indexes_table(self) -> None:
         """Create the vector_indexes table."""
         vector_indexes_sql = """
@@ -121,7 +116,7 @@ class InitialSchemaMigration(BaseMigration):
         """
         self.execute_sql(vector_indexes_sql)
         logger.info("Created vector_indexes table")
-        
+
     def _create_tags_tables(self) -> None:
         """Create the tags and document_tags tables."""
         # Tags table
@@ -134,7 +129,7 @@ class InitialSchemaMigration(BaseMigration):
         """
         self.execute_sql(tags_sql)
         logger.info("Created tags table")
-        
+
         # Document-tags junction table
         document_tags_sql = """
         CREATE TABLE document_tags (
@@ -147,7 +142,7 @@ class InitialSchemaMigration(BaseMigration):
         """
         self.execute_sql(document_tags_sql)
         logger.info("Created document_tags table")
-        
+
     def _create_performance_indexes(self) -> None:
         """Create indexes for optimal query performance."""
         indexes = [
@@ -159,15 +154,15 @@ class InitialSchemaMigration(BaseMigration):
             "CREATE INDEX idx_vector_indexes_hash ON vector_indexes(index_hash)",
             "CREATE INDEX idx_tags_name ON tags(name)",
         ]
-        
+
         for index_sql in indexes:
             try:
                 self.execute_sql(index_sql)
             except Exception as e:
                 logger.warning(f"Could not create index: {e}")
-                
+
         logger.info("Created database indexes")
-        
+
     def _insert_default_tags(self) -> None:
         """Insert default tags for document organization."""
         default_tags = [
@@ -176,23 +171,23 @@ class InitialSchemaMigration(BaseMigration):
             ("reference", "#ff8c00"),
             ("important", "#d13438"),
         ]
-        
+
         tag_insert_sql = "INSERT INTO tags (name, color) VALUES (?, ?)"
-        
+
         for tag_name, tag_color in default_tags:
             try:
                 self.execute_sql(tag_insert_sql, (tag_name, tag_color))
             except Exception as e:
                 # Ignore duplicate tag errors
                 logger.debug(f"Could not insert default tag {tag_name}: {e}")
-                
+
         logger.info("Inserted default tags")
-        
+
     def pre_migrate_checks(self) -> bool:
         """Perform pre-migration validation."""
         if not super().pre_migrate_checks():
             return False
-            
+
         # Check if any tables already exist
         existing_tables = []
         try:
@@ -202,35 +197,35 @@ class InitialSchemaMigration(BaseMigration):
             existing_tables = [row["name"] for row in results]
         except Exception as e:
             logger.warning(f"Could not check existing tables: {e}")
-            
+
         if existing_tables:
             logger.warning(f"Some tables already exist: {existing_tables}")
             # Could choose to skip or fail here depending on requirements
-            
+
         return True
-        
+
     def post_migrate_checks(self) -> bool:
         """Validate migration completed successfully."""
         required_tables = ["documents", "vector_indexes", "tags", "document_tags"]
-        
+
         try:
             for table in required_tables:
                 result = self.db.fetch_one(
                     "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                    (table,)
+                    (table,),
                 )
                 if not result:
                     logger.error(f"Required table {table} was not created")
                     return False
-                    
+
             # Check that default tags were inserted
             tag_count = self.db.fetch_one("SELECT COUNT(*) as count FROM tags")
             if not tag_count or tag_count["count"] == 0:
                 logger.warning("No default tags were inserted")
-                
+
             logger.info("Post-migration validation passed")
             return True
-            
+
         except Exception as e:
             logger.error(f"Post-migration validation failed: {e}")
             return False

@@ -6,7 +6,7 @@ Implements business logic for citation management following SOLID principles.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from src.database.models import CitationModel, CitationRelationModel, DocumentModel
 from src.interfaces.repository_interfaces import (
@@ -37,7 +37,7 @@ class CitationService:
     def __init__(
         self,
         citation_repository: ICitationRepository,
-        relation_repository: ICitationRelationRepository
+        relation_repository: ICitationRelationRepository,
     ) -> None:
         """
         Initialize citation service.
@@ -49,7 +49,9 @@ class CitationService:
         self.citation_repo: ICitationRepository = citation_repository
         self.relation_repo: ICitationRelationRepository = relation_repository
 
-    def extract_citations_from_document(self, document: DocumentModel) -> List[CitationModel]:
+    def extract_citations_from_document(
+        self, document: DocumentModel
+    ) -> list[CitationModel]:
         """
         Extract citations from a document.
 
@@ -76,20 +78,24 @@ class CitationService:
                 authors="Sample Author",
                 title="Sample Title",
                 publication_year=2023,
-                confidence_score=0.8
+                confidence_score=0.8,
             )
 
             # Create the citation in the repository
             created_citation = self.citation_repo.create(sample_citation)
 
-            logger.info(f"Successfully extracted and created citation {created_citation.id}")
+            logger.info(
+                f"Successfully extracted and created citation {created_citation.id}"
+            )
             return [created_citation]
 
         except Exception as e:
-            logger.error(f"Failed to extract citations from document {document.id}: {e}")
+            logger.error(
+                f"Failed to extract citations from document {document.id}: {e}"
+            )
             raise
 
-    def get_citations_for_document(self, document_id: int) -> List[CitationModel]:
+    def get_citations_for_document(self, document_id: int) -> list[CitationModel]:
         """
         Get all citations for a specific document.
 
@@ -109,7 +115,9 @@ class CitationService:
             logger.error(f"Failed to get citations for document {document_id}: {e}")
             raise
 
-    def search_citations_by_author(self, author: str, limit: int = 50) -> list[CitationModel]:
+    def search_citations_by_author(
+        self, author: str, limit: int = 50
+    ) -> list[CitationModel]:
         """
         Search citations by author name.
 
@@ -147,7 +155,9 @@ class CitationService:
             logger.error(f"Failed to get citation statistics: {e}")
             raise
 
-    def build_citation_network(self, document_id: int, depth: int = 1) -> dict[str, Any]:
+    def build_citation_network(
+        self, document_id: int, depth: int = 1
+    ) -> dict[str, Any]:
         """
         Build comprehensive citation network for a document with enhanced analytics.
 
@@ -159,7 +169,9 @@ class CitationService:
             Enhanced citation network data with metrics and analysis
         """
         try:
-            logger.debug(f"Building citation network for document {document_id} with depth {depth}")
+            logger.debug(
+                f"Building citation network for document {document_id} with depth {depth}"
+            )
 
             # Validate depth parameter
             if not 1 <= depth <= 3:
@@ -172,16 +184,22 @@ class CitationService:
             network = self._enhance_network_with_metrics(network)
 
             # Add citation density analysis
-            network['analytics'] = self._calculate_network_analytics(network)
+            network["analytics"] = self._calculate_network_analytics(network)
 
             # Add influential documents identification
-            network['influential_documents'] = self._identify_influential_documents(network)
+            network["influential_documents"] = self._identify_influential_documents(
+                network
+            )
 
-            logger.debug(f"Successfully built enhanced citation network with {network.get('total_nodes', 0)} nodes")
+            logger.debug(
+                f"Successfully built enhanced citation network with {network.get('total_nodes', 0)} nodes"
+            )
             return network
 
         except Exception as e:
-            logger.error(f"Failed to build citation network for document {document_id}: {e}")
+            logger.error(
+                f"Failed to build citation network for document {document_id}: {e}"
+            )
             raise
 
     def create_citation_relation(
@@ -191,7 +209,7 @@ class CitationService:
         target_document_id: Optional[int] = None,
         target_citation_id: Optional[int] = None,
         relation_type: str = "cites",
-        confidence_score: float = 1.0
+        confidence_score: float = 1.0,
     ) -> CitationRelationModel:
         """
         Create a citation relation between documents or citations.
@@ -208,7 +226,9 @@ class CitationService:
             Created citation relation
         """
         try:
-            logger.debug(f"Creating citation relation from doc {source_document_id} to doc {target_document_id}")
+            logger.debug(
+                f"Creating citation relation from doc {source_document_id} to doc {target_document_id}"
+            )
 
             relation = CitationRelationModel(
                 source_document_id=source_document_id,
@@ -216,7 +236,7 @@ class CitationService:
                 target_document_id=target_document_id,
                 target_citation_id=target_citation_id,
                 relation_type=relation_type,
-                confidence_score=confidence_score
+                confidence_score=confidence_score,
             )
 
             created_relation = self.relation_repo.create(relation)
@@ -285,42 +305,42 @@ class CitationService:
             Enhanced network with metrics
         """
         try:
-            nodes = network.get('nodes', [])
-            edges = network.get('edges', [])
+            nodes = network.get("nodes", [])
+            edges = network.get("edges", [])
 
             # Calculate node degrees (in-degree, out-degree, total degree)
             node_metrics = {}
 
             for node in nodes:
-                node_id = node.get('id')
+                node_id = node.get("id")
                 if node_id is None:
                     continue
 
-                in_degree = len([e for e in edges if e.get('target') == node_id])
-                out_degree = len([e for e in edges if e.get('source') == node_id])
+                in_degree = len([e for e in edges if e.get("target") == node_id])
+                out_degree = len([e for e in edges if e.get("source") == node_id])
 
                 node_metrics[node_id] = {
-                    'in_degree': in_degree,
-                    'out_degree': out_degree,
-                    'total_degree': in_degree + out_degree,
-                    'citing_documents': in_degree,  # Documents that cite this one
-                    'cited_documents': out_degree   # Documents this one cites
+                    "in_degree": in_degree,
+                    "out_degree": out_degree,
+                    "total_degree": in_degree + out_degree,
+                    "citing_documents": in_degree,  # Documents that cite this one
+                    "cited_documents": out_degree,  # Documents this one cites
                 }
 
                 # Add metrics to node data
-                node['metrics'] = node_metrics[node_id]
+                node["metrics"] = node_metrics[node_id]
 
             # Calculate edge weights and confidence distribution
             if edges:
-                confidences = [e.get('confidence', 0.0) for e in edges]
-                network['edge_metrics'] = {
-                    'avg_confidence': sum(confidences) / len(confidences),
-                    'min_confidence': min(confidences),
-                    'max_confidence': max(confidences),
-                    'high_confidence_count': len([c for c in confidences if c >= 0.8])
+                confidences = [e.get("confidence", 0.0) for e in edges]
+                network["edge_metrics"] = {
+                    "avg_confidence": sum(confidences) / len(confidences),
+                    "min_confidence": min(confidences),
+                    "max_confidence": max(confidences),
+                    "high_confidence_count": len([c for c in confidences if c >= 0.8]),
                 }
 
-            network['node_metrics'] = node_metrics
+            network["node_metrics"] = node_metrics
             return network
 
         except Exception as e:
@@ -338,19 +358,19 @@ class CitationService:
             Network analytics dictionary
         """
         try:
-            nodes = network.get('nodes', [])
-            edges = network.get('edges', [])
+            nodes = network.get("nodes", [])
+            edges = network.get("edges", [])
             total_nodes = len(nodes)
             total_edges = len(edges)
 
             analytics = {
-                'network_size': total_nodes,
-                'connection_count': total_edges,
-                'density': 0.0,
-                'avg_degree': 0.0,
-                'citation_patterns': {},
-                'temporal_analysis': {},
-                'centrality_measures': {}
+                "network_size": total_nodes,
+                "connection_count": total_edges,
+                "density": 0.0,
+                "avg_degree": 0.0,
+                "citation_patterns": {},
+                "temporal_analysis": {},
+                "centrality_measures": {},
             }
 
             if total_nodes == 0:
@@ -359,30 +379,36 @@ class CitationService:
             # Calculate network density
             max_possible_edges = total_nodes * (total_nodes - 1)
             if max_possible_edges > 0:
-                analytics['density'] = total_edges / max_possible_edges
+                analytics["density"] = total_edges / max_possible_edges
 
             # Calculate average degree
-            node_metrics = network.get('node_metrics', {})
+            node_metrics = network.get("node_metrics", {})
             if node_metrics:
-                total_degrees = sum(metrics.get('total_degree', 0) for metrics in node_metrics.values())
-                analytics['avg_degree'] = total_degrees / total_nodes
+                total_degrees = sum(
+                    metrics.get("total_degree", 0) for metrics in node_metrics.values()
+                )
+                analytics["avg_degree"] = total_degrees / total_nodes
 
             # Analyze citation patterns
-            analytics['citation_patterns'] = self._analyze_citation_patterns(edges)
+            analytics["citation_patterns"] = self._analyze_citation_patterns(edges)
 
             # Temporal analysis (if node dates are available)
-            analytics['temporal_analysis'] = self._analyze_temporal_patterns(nodes)
+            analytics["temporal_analysis"] = self._analyze_temporal_patterns(nodes)
 
             # Calculate centrality measures
-            analytics['centrality_measures'] = self._calculate_centrality_measures(network)
+            analytics["centrality_measures"] = self._calculate_centrality_measures(
+                network
+            )
 
             return analytics
 
         except Exception as e:
             logger.warning(f"Failed to calculate network analytics: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
-    def _identify_influential_documents(self, network: dict[str, Any]) -> list[dict[str, Any]]:
+    def _identify_influential_documents(
+        self, network: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """
         Identify most influential documents in the network.
 
@@ -393,38 +419,40 @@ class CitationService:
             List of influential documents with influence scores
         """
         try:
-            nodes = network.get('nodes', [])
-            node_metrics = network.get('node_metrics', {})
+            nodes = network.get("nodes", [])
+            node_metrics = network.get("node_metrics", {})
 
             influential_docs = []
 
             for node in nodes:
-                node_id = node.get('id')
+                node_id = node.get("id")
                 if node_id is None or node_id not in node_metrics:
                     continue
 
                 metrics = node_metrics[node_id]
 
                 # Calculate influence score based on multiple factors
-                in_degree = metrics.get('in_degree', 0)
-                out_degree = metrics.get('out_degree', 0)
+                in_degree = metrics.get("in_degree", 0)
+                out_degree = metrics.get("out_degree", 0)
 
                 # Influence score: higher weight for being cited (in_degree)
                 # but also consider citing others (out_degree) as scholarly engagement
                 influence_score = (in_degree * 2.0) + (out_degree * 0.5)
 
-                influential_docs.append({
-                    'document_id': node_id,
-                    'title': node.get('title', f'Document {node_id}'),
-                    'influence_score': influence_score,
-                    'times_cited': in_degree,
-                    'documents_cited': out_degree,
-                    'created_at': node.get('created_at'),
-                    'metrics': metrics
-                })
+                influential_docs.append(
+                    {
+                        "document_id": node_id,
+                        "title": node.get("title", f"Document {node_id}"),
+                        "influence_score": influence_score,
+                        "times_cited": in_degree,
+                        "documents_cited": out_degree,
+                        "created_at": node.get("created_at"),
+                        "metrics": metrics,
+                    }
+                )
 
             # Sort by influence score descending
-            influential_docs.sort(key=lambda x: x['influence_score'], reverse=True)
+            influential_docs.sort(key=lambda x: x["influence_score"], reverse=True)
 
             # Return top 10 or all if fewer
             return influential_docs[:10]
@@ -445,36 +473,40 @@ class CitationService:
         """
         try:
             if not edges:
-                return {'pattern_count': 0}
+                return {"pattern_count": 0}
 
             # Analyze relation types
             relation_types = {}
-            confidence_distribution = {'high': 0, 'medium': 0, 'low': 0}
+            confidence_distribution = {"high": 0, "medium": 0, "low": 0}
 
             for edge in edges:
                 # Count relation types
-                rel_type = edge.get('type', 'unknown')
+                rel_type = edge.get("type", "unknown")
                 relation_types[rel_type] = relation_types.get(rel_type, 0) + 1
 
                 # Categorize confidence levels
-                confidence = edge.get('confidence', 0.0)
+                confidence = edge.get("confidence", 0.0)
                 if confidence >= 0.8:
-                    confidence_distribution['high'] += 1
+                    confidence_distribution["high"] += 1
                 elif confidence >= 0.5:
-                    confidence_distribution['medium'] += 1
+                    confidence_distribution["medium"] += 1
                 else:
-                    confidence_distribution['low'] += 1
+                    confidence_distribution["low"] += 1
 
             return {
-                'pattern_count': len(edges),
-                'relation_types': relation_types,
-                'confidence_distribution': confidence_distribution,
-                'dominant_relation_type': max(relation_types.items(), key=lambda x: x[1])[0] if relation_types else 'none'
+                "pattern_count": len(edges),
+                "relation_types": relation_types,
+                "confidence_distribution": confidence_distribution,
+                "dominant_relation_type": max(
+                    relation_types.items(), key=lambda x: x[1]
+                )[0]
+                if relation_types
+                else "none",
             }
 
         except Exception as e:
             logger.warning(f"Failed to analyze citation patterns: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     def _analyze_temporal_patterns(self, nodes: list[dict[str, Any]]) -> dict[str, Any]:
         """
@@ -488,17 +520,17 @@ class CitationService:
         """
         try:
             if not nodes:
-                return {'temporal_span': 0}
+                return {"temporal_span": 0}
 
             # Extract creation dates
             dates = []
             for node in nodes:
-                created_at = node.get('created_at')
+                created_at = node.get("created_at")
                 if created_at:
                     dates.append(created_at)
 
             if not dates:
-                return {'temporal_span': 0, 'date_coverage': 'unknown'}
+                return {"temporal_span": 0, "date_coverage": "unknown"}
 
             # Basic temporal analysis
             dates.sort()
@@ -506,16 +538,16 @@ class CitationService:
             latest = dates[-1]
 
             return {
-                'temporal_span': len(dates),
-                'earliest_document': earliest,
-                'latest_document': latest,
-                'date_coverage': f"{earliest} to {latest}",
-                'chronological_distribution': len(set(dates))  # Unique dates
+                "temporal_span": len(dates),
+                "earliest_document": earliest,
+                "latest_document": latest,
+                "date_coverage": f"{earliest} to {latest}",
+                "chronological_distribution": len(set(dates)),  # Unique dates
             }
 
         except Exception as e:
             logger.warning(f"Failed to analyze temporal patterns: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     def _calculate_centrality_measures(self, network: dict[str, Any]) -> dict[str, Any]:
         """
@@ -528,10 +560,10 @@ class CitationService:
             Centrality measures
         """
         try:
-            node_metrics = network.get('node_metrics', {})
+            node_metrics = network.get("node_metrics", {})
 
             if not node_metrics:
-                return {'centrality_calculated': False}
+                return {"centrality_calculated": False}
 
             # Degree centrality (normalized)
             max_possible_degree = len(node_metrics) - 1
@@ -539,28 +571,39 @@ class CitationService:
 
             for node_id, metrics in node_metrics.items():
                 if max_possible_degree > 0:
-                    degree_centrality[node_id] = metrics.get('total_degree', 0) / max_possible_degree
+                    degree_centrality[node_id] = (
+                        metrics.get("total_degree", 0) / max_possible_degree
+                    )
                 else:
                     degree_centrality[node_id] = 0.0
 
             # Find most central nodes
-            most_central = sorted(degree_centrality.items(), key=lambda x: x[1], reverse=True)[:5]
+            most_central = sorted(
+                degree_centrality.items(), key=lambda x: x[1], reverse=True
+            )[:5]
 
             return {
-                'centrality_calculated': True,
-                'degree_centrality': degree_centrality,
-                'most_central_nodes': [{'node_id': node_id, 'centrality': centrality}
-                                     for node_id, centrality in most_central],
-                'avg_centrality': sum(degree_centrality.values()) / len(degree_centrality) if degree_centrality else 0.0
+                "centrality_calculated": True,
+                "degree_centrality": degree_centrality,
+                "most_central_nodes": [
+                    {"node_id": node_id, "centrality": centrality}
+                    for node_id, centrality in most_central
+                ],
+                "avg_centrality": sum(degree_centrality.values())
+                / len(degree_centrality)
+                if degree_centrality
+                else 0.0,
             }
 
         except Exception as e:
             logger.warning(f"Failed to calculate centrality measures: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     # Advanced Network Analysis Methods
 
-    def get_citation_recommendations(self, document_id: int, limit: int = 5) -> list[dict[str, Any]]:
+    def get_citation_recommendations(
+        self, document_id: int, limit: int = 5
+    ) -> list[dict[str, Any]]:
         """
         Get citation recommendations based on network analysis.
 
@@ -584,21 +627,27 @@ class CitationService:
             similar_citing_docs = self._find_similar_citing_documents(document_id)
 
             # Get most cited documents by those similar documents
-            recommendations.extend([
-                {
-                    'document_id': similar_doc.get('document_id'),
-                    'title': similar_doc.get('title'),
-                    'recommendation_score': similar_doc.get('similarity_score', 0.0),
-                    'reason': 'cited by similar documents'
-                }
-                for similar_doc in similar_citing_docs[:limit]
-            ])
+            recommendations.extend(
+                [
+                    {
+                        "document_id": similar_doc.get("document_id"),
+                        "title": similar_doc.get("title"),
+                        "recommendation_score": similar_doc.get(
+                            "similarity_score", 0.0
+                        ),
+                        "reason": "cited by similar documents",
+                    }
+                    for similar_doc in similar_citing_docs[:limit]
+                ]
+            )
 
             logger.debug(f"Generated {len(recommendations)} citation recommendations")
             return recommendations
 
         except Exception as e:
-            logger.error(f"Failed to get citation recommendations for document {document_id}: {e}")
+            logger.error(
+                f"Failed to get citation recommendations for document {document_id}: {e}"
+            )
             return []
 
     def _find_similar_citing_documents(self, document_id: int) -> list[dict[str, Any]]:
@@ -617,7 +666,11 @@ class CitationService:
 
             # Get what the current document cites
             current_citations = self.relation_repo.get_relations_by_source(document_id)
-            cited_doc_ids = [rel.target_document_id for rel in current_citations if rel.target_document_id]
+            cited_doc_ids = [
+                rel.target_document_id
+                for rel in current_citations
+                if rel.target_document_id
+            ]
 
             if not cited_doc_ids:
                 return []
@@ -637,7 +690,9 @@ class CitationService:
             logger.warning(f"Failed to find similar citing documents: {e}")
             return []
 
-    def detect_citation_clusters(self, min_cluster_size: int = 3) -> list[dict[str, Any]]:
+    def detect_citation_clusters(
+        self, min_cluster_size: int = 3
+    ) -> list[dict[str, Any]]:
         """
         Detect clusters of highly interconnected documents.
 
@@ -648,7 +703,9 @@ class CitationService:
             List of detected citation clusters
         """
         try:
-            logger.debug(f"Detecting citation clusters with minimum size {min_cluster_size}")
+            logger.debug(
+                f"Detecting citation clusters with minimum size {min_cluster_size}"
+            )
 
             # Get all citation relations
             all_relations = self.relation_repo.get_all_relations()
@@ -665,7 +722,9 @@ class CitationService:
                     adjacency[target_id] = set()
 
                 adjacency[source_id].add(target_id)
-                adjacency[target_id].add(source_id)  # Treat as undirected for clustering
+                adjacency[target_id].add(
+                    source_id
+                )  # Treat as undirected for clustering
 
             # Simple clustering algorithm (connected components)
             visited = set()
@@ -687,12 +746,16 @@ class CitationService:
                     dfs_cluster(doc_id, cluster)
 
                     if len(cluster) >= min_cluster_size:
-                        clusters.append({
-                            'cluster_id': len(clusters) + 1,
-                            'document_ids': cluster,
-                            'size': len(cluster),
-                            'internal_connections': self._count_internal_connections(cluster, all_relations)
-                        })
+                        clusters.append(
+                            {
+                                "cluster_id": len(clusters) + 1,
+                                "document_ids": cluster,
+                                "size": len(cluster),
+                                "internal_connections": self._count_internal_connections(
+                                    cluster, all_relations
+                                ),
+                            }
+                        )
 
             logger.debug(f"Detected {len(clusters)} citation clusters")
             return clusters
@@ -701,7 +764,9 @@ class CitationService:
             logger.error(f"Failed to detect citation clusters: {e}")
             return []
 
-    def _count_internal_connections(self, cluster_docs: list[int], all_relations: list) -> int:
+    def _count_internal_connections(
+        self, cluster_docs: list[int], all_relations: list
+    ) -> int:
         """
         Count internal connections within a cluster.
 
@@ -716,8 +781,10 @@ class CitationService:
         internal_count = 0
 
         for relation in all_relations:
-            if (relation.source_document_id in cluster_set and
-                relation.target_document_id in cluster_set):
+            if (
+                relation.source_document_id in cluster_set
+                and relation.target_document_id in cluster_set
+            ):
                 internal_count += 1
 
         return internal_count

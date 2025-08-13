@@ -11,7 +11,7 @@ Naming Convention:
 
 Example:
 - 001_initial_schema.py
-- 002_add_content_hash.py  
+- 002_add_content_hash.py
 - 003_add_citation_tables.py
 """
 

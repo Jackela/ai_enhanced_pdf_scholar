@@ -89,8 +89,8 @@ class CitationRelationRepository(
             values = [relation_dict[col] for col in columns]
 
             sql = f"""
-                INSERT INTO citation_relations ({', '.join(columns)})
-                VALUES ({', '.join(placeholders)})
+                INSERT INTO citation_relations ({", ".join(columns)})
+                VALUES ({", ".join(placeholders)})
             """
 
             self.db.execute(sql, values)
@@ -157,7 +157,7 @@ class CitationRelationRepository(
 
             sql = f"""
                 UPDATE citation_relations
-                SET {', '.join(set_clauses)}
+                SET {", ".join(set_clauses)}
                 WHERE id = ?
             """
 
@@ -346,12 +346,14 @@ class CitationRelationRepository(
                     target_id = relation["target_document_id"]
                     if target_id:
                         nodes.add(target_id)
-                        edges.append({
-                            "source": doc_id,
-                            "target": target_id,
-                            "type": relation["relation_type"],
-                            "confidence": relation["confidence_score"]
-                        })
+                        edges.append(
+                            {
+                                "source": doc_id,
+                                "target": target_id,
+                                "type": relation["relation_type"],
+                                "confidence": relation["confidence_score"],
+                            }
+                        )
                         if current_depth < depth:
                             _traverse_network(target_id, current_depth + 1)
 
@@ -367,12 +369,14 @@ class CitationRelationRepository(
                 for relation in incoming:
                     source_id = relation["source_document_id"]
                     nodes.add(source_id)
-                    edges.append({
-                        "source": source_id,
-                        "target": doc_id,
-                        "type": relation["relation_type"],
-                        "confidence": relation["confidence_score"]
-                    })
+                    edges.append(
+                        {
+                            "source": source_id,
+                            "target": doc_id,
+                            "type": relation["relation_type"],
+                            "confidence": relation["confidence_score"],
+                        }
+                    )
                     if current_depth < depth:
                         _traverse_network(source_id, current_depth + 1)
 
@@ -394,7 +398,7 @@ class CitationRelationRepository(
                     node_details[node["id"]] = {
                         "id": node["id"],
                         "title": node["title"],
-                        "created_at": node["created_at"]
+                        "created_at": node["created_at"],
                     }
 
             network = {
@@ -405,7 +409,7 @@ class CitationRelationRepository(
                 "center_document": document_id,
                 "depth": depth,
                 "total_nodes": len(nodes),
-                "total_edges": len(edges)
+                "total_edges": len(edges),
             }
 
             logger.debug(
@@ -451,7 +455,7 @@ class CitationRelationRepository(
                     "document_id": row["document_id"],
                     "title": row["title"],
                     "citation_count": row["citation_count"],
-                    "created_at": row["created_at"]
+                    "created_at": row["created_at"],
                 }
                 for row in results
             ]
@@ -506,8 +510,10 @@ class CitationRelationRepository(
             removed_target_citation = self.db.get_last_change_count()
 
             total_removed = (
-                removed_source + removed_target +
-                removed_source_citation + removed_target_citation
+                removed_source
+                + removed_target
+                + removed_source_citation
+                + removed_target_citation
             )
 
             logger.info(f"Cleaned up {total_removed} orphaned citation relations")

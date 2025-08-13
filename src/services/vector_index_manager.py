@@ -11,7 +11,7 @@ import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.database.connection import DatabaseConnection
 from src.database.models import VectorIndexModel
@@ -277,7 +277,7 @@ class VectorIndexManager:
                 for check in result["file_checks"].values()
             )
             result["is_valid"] = all_files_valid and len(result["errors"]) == 0
-            status = 'VALID' if result['is_valid'] else 'INVALID'
+            status = "VALID" if result["is_valid"] else "INVALID"
             logger.debug(f"Index check for {vector_index_id}: {status}")
             return result
         except Exception as e:

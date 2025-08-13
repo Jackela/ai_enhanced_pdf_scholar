@@ -416,41 +416,41 @@ jobs:
               # Simulate load testing
               echo "🌊 Simulating load test..."
               timeout 30s python -c "
-import time
-import requests
-import concurrent.futures
-import json
-from datetime import datetime
-
-results = []
-def make_request(i):
-    try:
-        start = time.time()
-        # In real scenario, this would hit actual endpoints
-        time.sleep(0.1)  # Simulate request
-        duration = time.time() - start
-        return {'request': i, 'duration': duration, 'status': 'success'}
-    except Exception as e:
-        return {'request': i, 'error': str(e), 'status': 'failed'}
-
-print('Running simulated load test...')
-with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-    futures = [executor.submit(make_request, i) for i in range(100)]
-    results = [f.result() for f in concurrent.futures.as_completed(futures)]
-
-summary = {
-    'timestamp': datetime.now().isoformat(),
-    'total_requests': len(results),
-    'successful_requests': len([r for r in results if r['status'] == 'success']),
-    'average_duration': sum(r.get('duration', 0) for r in results) / len(results),
-    'success_rate': len([r for r in results if r['status'] == 'success']) / len(results) * 100
-}
-
-with open('load-test-results.json', 'w') as f:
-    json.dump({'summary': summary, 'results': results}, f, indent=2)
-
-print(f'Load test completed: {summary[\"success_rate\"]:.1f}% success rate')
-" || true
+              import time
+              import requests
+              import concurrent.futures
+              import json
+              from datetime import datetime
+              
+              results = []
+              def make_request(i):
+                  try:
+                      start = time.time()
+                      # In real scenario, this would hit actual endpoints
+                      time.sleep(0.1)  # Simulate request
+                      duration = time.time() - start
+                      return {'request': i, 'duration': duration, 'status': 'success'}
+                  except Exception as e:
+                      return {'request': i, 'error': str(e), 'status': 'failed'}
+              
+              print('Running simulated load test...')
+              with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                  futures = [executor.submit(make_request, i) for i in range(100)]
+                  results = [f.result() for f in concurrent.futures.as_completed(futures)]
+              
+              summary = {
+                  'timestamp': datetime.now().isoformat(),
+                  'total_requests': len(results),
+                  'successful_requests': len([r for r in results if r['status'] == 'success']),
+                  'average_duration': sum(r.get('duration', 0) for r in results) / len(results),
+                  'success_rate': len([r for r in results if r['status'] == 'success']) / len(results) * 100
+              }
+              
+              with open('load-test-results.json', 'w') as f:
+                  json.dump({'summary': summary, 'results': results}, f, indent=2)
+              
+              print(f'Load test completed: {summary[\"success_rate\"]:.1f}% success rate')
+              " || true
               ;;
           esac
 

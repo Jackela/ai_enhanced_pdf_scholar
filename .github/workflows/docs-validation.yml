@@ -53,8 +53,8 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r backend/requirements.txt
-        pip install -r backend/requirements-dev.txt
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
         # Additional tools for documentation validation
         pip install requests jinja2 pyyaml markdownlint-cli2
     
@@ -212,8 +212,7 @@ jobs:
         echo "🔄 Validating API documentation consistency..."
         
         # Start backend server for API validation
-        cd backend
-        python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+        python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 &
         SERVER_PID=$!
         
         # Wait for server to start

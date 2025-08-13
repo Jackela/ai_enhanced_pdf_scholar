@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import fitz  # PyMuPDF
 
@@ -103,7 +103,11 @@ class ContentHashService:
                 path = Path(content_or_path)
                 if not path.exists():
                     # For absolute paths or clear file paths, this is an error
-                    if content_or_path.startswith('/') or (len(content_or_path) > 2 and content_or_path[1] == ':') or content_or_path.endswith('.pdf'):
+                    if (
+                        content_or_path.startswith("/")
+                        or (len(content_or_path) > 2 and content_or_path[1] == ":")
+                        or content_or_path.endswith(".pdf")
+                    ):
                         raise ContentHashError(f"File not found: {content_or_path}")
                     # Otherwise, treat as content
                     return ContentHashService.calculate_string_hash(content_or_path)
@@ -117,7 +121,9 @@ class ContentHashService:
                 hasher = hashlib.sha256()
                 hasher.update(normalized_text.encode("utf-8"))
                 content_hash = hasher.hexdigest()[:16]
-                logger.debug(f"Calculated content hash for {content_or_path}: {content_hash}")
+                logger.debug(
+                    f"Calculated content hash for {content_or_path}: {content_hash}"
+                )
                 return content_hash
             else:
                 # Treat as string content
@@ -130,7 +136,7 @@ class ContentHashService:
             raise ContentHashError(f"Content hashing failed: {e}") from e
 
     @staticmethod
-    def calculate_combined_hashes(file_path: str) -> Tuple[str, str]:
+    def calculate_combined_hashes(file_path: str) -> tuple[str, str]:
         """
         Calculate both file and content hashes in one operation.
         More efficient than calling both methods separately for the same file.
@@ -230,7 +236,9 @@ class ContentHashService:
             # Calculate hash
             hasher = hashlib.sha256()
             hasher.update(normalized_content.encode("utf-8"))
-            content_hash = hasher.hexdigest()  # Full 64-character hash for string content
+            content_hash = (
+                hasher.hexdigest()
+            )  # Full 64-character hash for string content
             logger.debug(f"Calculated string hash: {content_hash[:16]}...")
             return content_hash
         except Exception as e:
@@ -250,14 +258,14 @@ class ContentHashService:
             return False
 
         # Absolute paths (Unix and Windows) are definitely file paths
-        if text.startswith('/') or (len(text) > 2 and text[1] == ':'):
+        if text.startswith("/") or (len(text) > 2 and text[1] == ":"):
             return True
 
         # Check for common file path indicators
         path_indicators = [
-            '/',      # Unix path separator
-            '\\',     # Windows path separator
-            '.',      # File extension or relative path
+            "/",  # Unix path separator
+            "\\",  # Windows path separator
+            ".",  # File extension or relative path
         ]
 
         # Short strings with path separators are likely paths
@@ -265,11 +273,11 @@ class ContentHashService:
             return True
 
         # Very short strings without whitespace might be filenames
-        if len(text) < 100 and ' ' not in text and '\n' not in text:
+        if len(text) < 100 and " " not in text and "\n" not in text:
             return True
 
         # Long strings with whitespace are likely content
-        if len(text) > 500 or '\n' in text:
+        if len(text) > 500 or "\n" in text:
             return False
 
         # Default to treating as content for ambiguous cases
@@ -304,7 +312,7 @@ class ContentHashService:
             return False
 
     @staticmethod
-    def get_file_info(file_path: str) -> Dict[str, Any]:
+    def get_file_info(file_path: str) -> dict[str, Any]:
         """
         Get comprehensive file information for debugging and logging.
         Args:
