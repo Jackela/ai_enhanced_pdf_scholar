@@ -22,6 +22,15 @@ from backend.api.models import (
     SystemHealthResponse,
 )
 from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor
+from backend.services.real_time_metrics_collector import (
+    RealTimeMetricsCollector, 
+    MetricType,
+    SystemMetrics,
+    DatabaseMetrics,
+    WebSocketMetrics,
+    APIMetrics,
+    MemoryLeakMetrics
+)
 from backend.api.error_handling import SystemException
 from backend.core.secrets_vault import ProductionSecretsManager
 from backend.services.secrets_validation_service import (
@@ -37,6 +46,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 # Store startup time for uptime calculation
 startup_time = time.time()
+
+# Global metrics collector instance (will be initialized by main app)
+metrics_collector: Optional[RealTimeMetricsCollector] = None
 
 
 @router.get("/health", response_model=SystemHealthResponse)
@@ -965,3 +977,310 @@ async def get_secrets_audit_log(
             message="Failed to retrieve secrets audit log",
             error_type="secrets_audit"
         )
+
+
+# ============================================================================
+# Real-time Performance Monitoring Endpoints
+# ============================================================================
+
+@router.get("/metrics/current", response_model=BaseResponse)
+async def get_current_metrics():
+    """Get current real-time metrics snapshot."""
+    try:
+        if not metrics_collector:
+            raise HTTPException(
+                status_code=503,
+                detail="Metrics collection not initialized"
+            )
+        
+        current_metrics = metrics_collector.get_current_metrics()
+        system_health = metrics_collector.get_system_health_summary()
+        
+        return BaseResponse(
+            message="Current metrics retrieved successfully",
+            data={
+                "metrics": current_metrics,
+                "health_summary": system_health,
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get current metrics: {e}")
+        raise SystemException(
+            message="Failed to retrieve current metrics",
+            error_type="metrics_collection"
+        )
+
+
+@router.get("/metrics/history/{metric_type}", response_model=BaseResponse)
+async def get_metrics_history(
+    metric_type: str,
+    hours_back: int = 1
+):
+    """Get historical metrics for a specific metric type."""
+    try:
+        if not metrics_collector:
+            raise HTTPException(
+                status_code=503,
+                detail="Metrics collection not initialized"
+            )
+        
+        # Convert string to MetricType enum
+        try:
+            metric_enum = MetricType(metric_type.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid metric type. Valid types: {[t.value for t in MetricType]}"
+            )
+        
+        history = metrics_collector.get_metrics_history(metric_enum, hours_back)
+        
+        return BaseResponse(
+            message=f"Retrieved {len(history)} {metric_type} metrics from last {hours_back} hours",
+            data={
+                "metric_type": metric_type,
+                "hours_back": hours_back,
+                "data_points": len(history),
+                "history": history
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get metrics history for {metric_type}: {e}")
+        raise SystemException(
+            message=f"Failed to retrieve metrics history for {metric_type}",
+            error_type="metrics_history"
+        )
+
+
+@router.get("/metrics/system/detailed", response_model=BaseResponse)
+async def get_detailed_system_metrics():
+    """Get comprehensive system performance metrics with historical context."""
+    try:
+        if not metrics_collector:
+            # Fallback to direct psutil calls if metrics collector not available
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            cpu_percent = psutil.cpu_percent(interval=1)
+            
+            return BaseResponse(
+                message="System metrics retrieved (fallback mode)",
+                data={
+                    "fallback_mode": True,
+                    "cpu_percent": cpu_percent,
+                    "memory_percent": memory.percent,
+                    "disk_percent": round((disk.used / disk.total) * 100, 2),
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
+        
+        # Get current metrics
+        current_metrics = metrics_collector.get_current_metrics()
+        
+        # Get recent history for trending
+        system_history = metrics_collector.get_metrics_history(MetricType.SYSTEM, 1)
+        
+        # Calculate trends if we have enough data
+        trends = {}
+        if len(system_history) >= 2:
+            recent = system_history[-1]
+            previous = system_history[0]
+            
+            trends = {
+                "cpu_trend": recent.get("cpu_percent", 0) - previous.get("cpu_percent", 0),
+                "memory_trend": recent.get("memory_percent", 0) - previous.get("memory_percent", 0),
+                "disk_trend": recent.get("disk_usage_percent", 0) - previous.get("disk_usage_percent", 0)
+            }
+        
+        return BaseResponse(
+            message="Detailed system metrics retrieved successfully",
+            data={
+                "current": current_metrics.get(MetricType.SYSTEM.value, {}),
+                "trends": trends,
+                "history_points": len(system_history),
+                "collection_active": True,
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to get detailed system metrics: {e}")
+        raise SystemException(
+            message="Failed to retrieve detailed system metrics",
+            error_type="system_metrics"
+        )
+
+
+@router.get("/metrics/database/status", response_model=BaseResponse)
+async def get_database_metrics():
+    """Get database performance and connection metrics."""
+    try:
+        if not metrics_collector:
+            # Fallback database check
+            try:
+                from backend.api.dependencies import get_db
+                db = next(get_db())
+                
+                start_time = time.time()
+                result = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
+                query_time = (time.time() - start_time) * 1000
+                
+                return BaseResponse(
+                    message="Database metrics retrieved (fallback mode)",
+                    data={
+                        "fallback_mode": True,
+                        "connection_active": True,
+                        "simple_query_ms": round(query_time, 2),
+                        "timestamp": datetime.now().isoformat()
+                    }
+                )
+            except Exception as e:
+                return BaseResponse(
+                    message="Database metrics unavailable",
+                    data={
+                        "fallback_mode": True,
+                        "connection_active": False,
+                        "error": str(e),
+                        "timestamp": datetime.now().isoformat()
+                    }
+                )
+        
+        current_metrics = metrics_collector.get_current_metrics()
+        db_metrics = current_metrics.get(MetricType.DATABASE.value, {})
+        
+        # Get database history
+        db_history = metrics_collector.get_metrics_history(MetricType.DATABASE, 1)
+        
+        return BaseResponse(
+            message="Database metrics retrieved successfully",
+            data={
+                "current": db_metrics,
+                "history_points": len(db_history),
+                "recent_history": db_history[-10:] if db_history else [],  # Last 10 points
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to get database metrics: {e}")
+        raise SystemException(
+            message="Failed to retrieve database metrics",
+            error_type="database_metrics"
+        )
+
+
+@router.get("/metrics/websocket/status", response_model=BaseResponse)
+async def get_websocket_metrics():
+    """Get WebSocket connection and RAG task metrics."""
+    try:
+        if not metrics_collector:
+            raise HTTPException(
+                status_code=503,
+                detail="Metrics collection not initialized"
+            )
+        
+        current_metrics = metrics_collector.get_current_metrics()
+        ws_metrics = current_metrics.get(MetricType.WEBSOCKET.value, {})
+        
+        # Get WebSocket history
+        ws_history = metrics_collector.get_metrics_history(MetricType.WEBSOCKET, 1)
+        
+        # Calculate activity statistics
+        activity_stats = {}
+        if ws_history:
+            recent_data = ws_history[-10:] if len(ws_history) >= 10 else ws_history
+            
+            activity_stats = {
+                "avg_connections": sum(d.get("active_connections", 0) for d in recent_data) / len(recent_data),
+                "max_connections": max(d.get("active_connections", 0) for d in recent_data),
+                "avg_task_duration": sum(d.get("avg_task_duration_ms", 0) for d in recent_data) / len(recent_data),
+                "total_completed_tasks": sum(d.get("rag_tasks_completed", 0) for d in recent_data)
+            }
+        
+        return BaseResponse(
+            message="WebSocket metrics retrieved successfully",
+            data={
+                "current": ws_metrics,
+                "activity_stats": activity_stats,
+                "history_points": len(ws_history),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get WebSocket metrics: {e}")
+        raise SystemException(
+            message="Failed to retrieve WebSocket metrics",
+            error_type="websocket_metrics"
+        )
+
+
+@router.get("/metrics/memory/leak-detection", response_model=BaseResponse)
+async def get_memory_leak_metrics():
+    """Get memory leak detection metrics and analysis."""
+    try:
+        if not metrics_collector:
+            # Fallback memory check
+            process = psutil.Process()
+            memory_info = process.memory_info()
+            
+            return BaseResponse(
+                message="Memory metrics retrieved (fallback mode)",
+                data={
+                    "fallback_mode": True,
+                    "current_rss_mb": round(memory_info.rss / (1024 * 1024), 2),
+                    "current_vms_mb": round(memory_info.vms / (1024 * 1024), 2),
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
+        
+        current_metrics = metrics_collector.get_current_metrics()
+        memory_metrics = current_metrics.get(MetricType.MEMORY.value, {})
+        
+        # Get memory history for leak detection
+        memory_history = metrics_collector.get_metrics_history(MetricType.MEMORY, 2)
+        
+        # Analyze for potential leaks
+        leak_analysis = {"status": "healthy"}
+        if len(memory_history) >= 10:
+            recent_memory = [m.get("heap_size_mb", 0) for m in memory_history[-10:]]
+            if len(recent_memory) >= 2:
+                growth_rate = (recent_memory[-1] - recent_memory[0]) / len(recent_memory)
+                if growth_rate > 10:  # More than 10MB growth per measurement
+                    leak_analysis = {
+                        "status": "warning",
+                        "message": f"Potential memory leak detected: {growth_rate:.2f}MB/interval growth",
+                        "growth_rate_mb": round(growth_rate, 2)
+                    }
+                elif growth_rate > 50:  # More than 50MB growth per measurement
+                    leak_analysis = {
+                        "status": "critical",
+                        "message": f"Memory leak likely: {growth_rate:.2f}MB/interval growth",
+                        "growth_rate_mb": round(growth_rate, 2)
+                    }
+        
+        return BaseResponse(
+            message="Memory leak detection completed",
+            data={
+                "current": memory_metrics,
+                "leak_analysis": leak_analysis,
+                "history_points": len(memory_history),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to get memory leak metrics: {e}")
+        raise SystemException(
+            message="Failed to retrieve memory leak metrics",
+            error_type="memory_metrics"
+        )
+
+
+def initialize_metrics_collector(collector_instance: RealTimeMetricsCollector):
+    """Initialize the metrics collector instance for dependency injection."""
+    global metrics_collector
+    metrics_collector = collector_instance
+    logger.info("Real-time metrics collector initialized for system API routes")

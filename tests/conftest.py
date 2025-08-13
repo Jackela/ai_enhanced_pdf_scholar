@@ -24,6 +24,12 @@ from tests.test_utils import (
     fixture_manager,
     performance_monitor,
 )
+from tests.parallel_test_utils import (
+    ParallelDatabaseManager,
+    ParallelTestOrchestrator,
+    ConcurrentTestHelper,
+    categorize_test_for_parallel_execution,
+)
 
 
 # =============================================================================
@@ -49,6 +55,78 @@ def session_performance_monitor() -> PerformanceMonitor:
 def mock_factory() -> MockFactory:
     """Session-scoped mock factory for creating test objects."""
     return MockFactory()
+
+
+# =============================================================================
+# Parallel Testing Infrastructure (Enhanced isolation and performance)
+# =============================================================================
+
+@pytest.fixture(scope="session")
+def parallel_db_manager() -> ParallelDatabaseManager:
+    """Session-scoped parallel database manager."""
+    return ParallelDatabaseManager.get_instance()
+
+
+@pytest.fixture(scope="function")
+def parallel_db_connection(request, parallel_db_manager) -> Generator[DatabaseConnection, None, None]:
+    """
+    Enhanced parallel-safe database connection with intelligent isolation.
+    
+    Automatically determines optimal isolation strategy based on test characteristics.
+    """
+    test_name = request.node.name
+    test_func = request.function
+    
+    # Analyze test characteristics
+    characteristics = categorize_test_for_parallel_execution(test_func)
+    
+    # Get database with optimal isolation strategy
+    db, metrics = parallel_db_manager.get_database_for_test(test_name, 
+                                                          parallel_db_manager.get_optimal_isolation_strategy(characteristics))
+    
+    try:
+        yield db
+        # Mark test as successful
+        parallel_db_manager.return_database(test_name, success=True)
+    except Exception as e:
+        # Mark test as failed
+        parallel_db_manager.return_database(test_name, success=False, error=str(e))
+        raise
+
+
+@pytest.fixture(scope="function")
+def parallel_isolated_db(request, parallel_db_manager) -> Generator[DatabaseConnection, None, None]:
+    """
+    Completely isolated database for tests requiring maximum isolation.
+    Creates a new database instance for each test.
+    """
+    test_name = f"{request.node.name}_isolated"
+    
+    # Force per-test isolation
+    db, metrics = parallel_db_manager.get_database_for_test(
+        test_name, 
+        isolation_strategy="per_test", 
+        force_new=True
+    )
+    
+    try:
+        yield db
+        parallel_db_manager.return_database(test_name, success=True)
+    except Exception as e:
+        parallel_db_manager.return_database(test_name, success=False, error=str(e))
+        raise
+
+
+@pytest.fixture(scope="function")
+def concurrent_test_helper() -> ConcurrentTestHelper:
+    """Enhanced concurrent test helper with resource management."""
+    return ConcurrentTestHelper(max_concurrency=8)
+
+
+@pytest.fixture(scope="function")  
+def parallel_test_orchestrator() -> ParallelTestOrchestrator:
+    """Orchestrator for managing parallel test execution."""
+    return ParallelTestOrchestrator()
 
 
 # =============================================================================
@@ -219,6 +297,31 @@ def pytest_sessionfinish(session):
     """Clean up session-wide resources and generate reports."""
     # Cleanup database manager
     db_manager.cleanup_all()
+    
+    # Cleanup parallel database manager
+    try:
+        parallel_db_manager = ParallelDatabaseManager.get_instance()
+        parallel_report = parallel_db_manager.get_performance_report()
+        parallel_db_manager.cleanup_all()
+        
+        # Generate parallel testing report
+        if parallel_report and not parallel_report.get("error"):
+            print(f"\n🚀 Parallel Testing Report:")
+            print(f"   Total tests: {parallel_report['total_tests_run']}")
+            print(f"   Success rate: {parallel_report['success_rate']:.1%}")
+            print(f"   Databases created: {parallel_report['total_databases_created']}")
+            print(f"   Average duration: {parallel_report['avg_duration_ms']:.1f}ms")
+            
+            # Strategy performance
+            if parallel_report.get('strategy_performance'):
+                print("   Isolation Strategy Performance:")
+                for strategy, stats in parallel_report['strategy_performance'].items():
+                    print(f"     - {strategy}: {stats['test_count']} tests, "
+                          f"{stats['avg_duration_ms']:.1f}ms avg, "
+                          f"{stats['success_rate']:.1%} success")
+    
+    except Exception as e:
+        print(f"   Warning: Error in parallel database cleanup: {e}")
     
     # Cleanup fixture manager  
     fixture_manager.cleanup_all()

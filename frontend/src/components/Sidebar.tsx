@@ -10,6 +10,7 @@ import {
   Search,
   Menu,
   X,
+  Activity,
 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { cn } from '../lib/utils.ts'
@@ -23,6 +24,7 @@ interface SidebarProps {
 const navigation = [
   { name: 'Library', href: '/library', icon: Library, preloadRoute: 'library' as const },
   { name: 'Chat', href: '/chat', icon: MessageSquare, preloadRoute: 'chat' as const },
+  { name: 'Monitoring', href: '/monitoring', icon: Activity, preloadRoute: 'monitoring' as const },
   { name: 'Settings', href: '/settings', icon: Settings, preloadRoute: 'settings' as const },
 ]
 

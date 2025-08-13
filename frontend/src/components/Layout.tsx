@@ -10,6 +10,7 @@ const LibraryView = lazy(() => import('./views/LibraryView'))
 const DocumentViewer = lazy(() => import('./views/DocumentViewer'))
 const ChatView = lazy(() => import('./views/ChatView'))
 const SettingsView = lazy(() => import('./views/SettingsView'))
+const MonitoringDashboard = lazy(() => import('./views/MonitoringDashboard'))
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -35,6 +36,7 @@ export function Layout() {
               <Route path='/document/:id' element={<DocumentViewer />} />
               <Route path='/chat' element={<ChatView />} />
               <Route path='/chat/:documentId' element={<ChatView />} />
+              <Route path='/monitoring' element={<MonitoringDashboard />} />
               <Route path='/settings' element={<SettingsView />} />
             </Routes>
           </Suspense>

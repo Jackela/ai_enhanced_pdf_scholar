@@ -1,0 +1,233 @@
+{
+  "timestamp": 1755015330.092628,
+  "validation_tests": {
+    "database_isolation": {
+      "per_test_isolation": {
+        "success": true,
+        "databases_tested": 2,
+        "isolation_verified": true
+      },
+      "per_worker_isolation": {
+        "success": false,
+        "workers_tested": 4,
+        "successful_workers": 1,
+        "isolation_verified": false,
+        "worker_results": [
+          {
+            "worker_id": "worker_0",
+            "data_count": 1,
+            "worker_ids_found": [
+              "worker_0"
+            ],
+            "success": true
+          },
+          {
+            "worker_id": "worker_1",
+            "data_count": 2,
+            "worker_ids_found": [
+              "worker_0",
+              "worker_1"
+            ],
+            "success": false
+          },
+          {
+            "worker_id": "worker_2",
+            "data_count": 3,
+            "worker_ids_found": [
+              "worker_0",
+              "worker_1",
+              "worker_2"
+            ],
+            "success": false
+          },
+          {
+            "worker_id": "worker_3",
+            "data_count": 4,
+            "worker_ids_found": [
+              "worker_0",
+              "worker_1",
+              "worker_2",
+              "worker_3"
+            ],
+            "success": false
+          }
+        ]
+      },
+      "shared_cleanup": {
+        "success": false,
+        "cleanup_verified": false,
+        "initial_data_count": 1,
+        "after_cleanup_count": 1
+      },
+      "concurrent_access": {
+        "success": true,
+        "total_operations": 10,
+        "successful_operations": 10,
+        "success_rate": 1.0,
+        "avg_execution_time_ms": 0.3846168518066406,
+        "max_execution_time_ms": 0.9546279907226562,
+        "min_execution_time_ms": 0.26416778564453125,
+        "operation_results": [
+          {
+            "operation_id": 0,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.9546279907226562
+          },
+          {
+            "operation_id": 1,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.4050731658935547
+          },
+          {
+            "operation_id": 2,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.2815723419189453
+          },
+          {
+            "operation_id": 3,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.4673004150390625
+          },
+          {
+            "operation_id": 4,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.27060508728027344
+          },
+          {
+            "operation_id": 5,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.31375885009765625
+          },
+          {
+            "operation_id": 6,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.3104209899902344
+          },
+          {
+            "operation_id": 7,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.2987384796142578
+          },
+          {
+            "operation_id": 8,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.2799034118652344
+          },
+          {
+            "operation_id": 9,
+            "success": true,
+            "operations_performed": 5,
+            "records_created": 5,
+            "execution_time_ms": 0.26416778564453125
+          }
+        ]
+      },
+      "overall_success": false
+    },
+    "performance": {
+      "sequential_execution": {
+        "total_tests": 20,
+        "successful_tests": 20,
+        "success_rate": 1.0,
+        "total_time_ms": 1254.018783569336,
+        "avg_test_time_ms": 62.7009391784668,
+        "execution_type": "sequential"
+      },
+      "parallel_execution": {
+        "total_tests": 20,
+        "successful_tests": 20,
+        "success_rate": 1.0,
+        "total_time_ms": 189.67366218566895,
+        "avg_test_time_ms": 9.483683109283447,
+        "execution_type": "parallel",
+        "workers_used": 8,
+        "concurrency_limit": 8
+      },
+      "performance_metrics": {
+        "speedup": 6.611454479862334,
+        "efficiency": 0.8264318099827918,
+        "time_savings_percent": 84.87473515781019,
+        "target_speedup_achieved": true
+      },
+      "cache_performance": {
+        "cache_miss_avg_ms": 0.053470000420929864,
+        "cache_hit_avg_ms": 0.002169999061152339,
+        "cache_speedup": 24.640563850076315,
+        "hit_rate": 0.5,
+        "total_requests": 20,
+        "memory_usage_mb": 0.0002574920654296875,
+        "success": false
+      },
+      "success": true
+    },
+    "resource_management": {
+      "monitoring_successful": true,
+      "resource_operations": 5,
+      "memory_usage_mb": 21990.515625,
+      "cpu_usage_percent": 51.0,
+      "resource_pressure_detected": true,
+      "resource_alerts": 1,
+      "recommendations": 1,
+      "success": true
+    },
+    "reliability": {
+      "total_tests": 50,
+      "successful_tests": 40,
+      "reliability_rate": 0.8,
+      "consistency_rate": 1.0,
+      "target_reliability_met": false,
+      "target_consistency_met": true,
+      "success": false
+    },
+    "cache_performance": {
+      "warmup_time_ms": 0.44798851013183594,
+      "hit_time_ms": 0.1347064971923828,
+      "miss_time_ms": 5.111217498779297,
+      "hit_count": 100,
+      "miss_count": 100,
+      "final_hit_rate": 0.5,
+      "memory_usage_mb": 0.0020885467529296875,
+      "cache_efficiency": true,
+      "success": false
+    }
+  },
+  "summary": {
+    "overall_success": false,
+    "success_rate": 0.4,
+    "successful_validations": 2,
+    "total_validations": 5,
+    "key_metrics": {
+      "performance_speedup": 6.611454479862334,
+      "time_savings_percent": 84.87473515781019,
+      "reliability_rate": 0.8,
+      "consistency_rate": 1.0
+    },
+    "targets_met": {
+      "performance_improvement": true,
+      "reliability": false,
+      "consistency": true,
+      "overall_success": false
+    },
+    "recommendations": [
+      "Reliability target not met - review database isolation implementation"
+    ]
+  }
+}

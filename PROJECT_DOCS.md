@@ -621,6 +621,490 @@ class PerformanceMetrics:
 - **RAG服务**: 索引构建时间、查询响应时间
 - **系统资源**: CPU使用率、内存占用、磁盘I/O
 
+## 🔍 实时监控仪表板架构
+
+### 监控系统概览
+
+项目实现了**完整的实时性能监控解决方案**，基于WebSocket实时数据流和React仪表板，提供系统健康状态的全面可视化和自动报警功能。
+
+### 监控架构组件图
+
+```mermaid
+graph TD
+    A[监控仪表板 UI] --> B[WebSocket 客户端]
+    B --> C[度量 WebSocket 端点]
+    C --> D[实时度量收集器]
+    D --> E[系统度量]
+    D --> F[数据库度量]
+    D --> G[WebSocket 度量]
+    D --> H[API 性能度量]
+    
+    I[监控集成服务] --> D
+    I --> J[WebSocket 管理器]
+    I --> K[性能监控器]
+    
+    L[简单告警服务] --> D
+    L --> M[告警规则引擎]
+    L --> N[告警历史]
+    
+    D --> O[度量历史存储]
+    D --> P[系统健康评估]
+    
+    Q[API 路由] --> D
+    Q --> R[/metrics/current]
+    Q --> S[/metrics/history]
+    Q --> T[/metrics/system/detailed]
+```
+
+### 核心监控组件
+
+#### 1. RealTimeMetricsCollector (后端核心)
+
+**职责**: 系统性能数据的实时收集和分发
+**位置**: `backend/services/real_time_metrics_collector.py`
+
+**核心功能**:
+```python
+class RealTimeMetricsCollector:
+    def __init__(self, websocket_manager=None, integrated_monitor=None, collection_interval=1.0):
+        self.websocket_manager = websocket_manager
+        self.collection_interval = collection_interval
+        self.metrics_history: Dict[MetricType, List[Dict[str, Any]]] = {}
+        self.alerting_service = SimpleAlertingService()
+    
+    async def start_collection(self):
+        """启动实时数据收集循环"""
+    
+    def get_system_metrics(self) -> SystemMetrics:
+        """收集CPU、内存、磁盘I/O指标"""
+    
+    def get_database_metrics(self) -> DatabaseMetrics:
+        """收集数据库连接、查询性能指标"""
+    
+    def get_websocket_metrics(self) -> WebSocketMetrics:
+        """收集WebSocket连接和RAG任务指标"""
+```
+
+**度量类型定义**:
+- `SystemMetrics`: CPU使用率、内存占用、磁盘I/O、网络流量
+- `DatabaseMetrics`: 连接数、查询时间、事务状态、连接池利用率
+- `WebSocketMetrics`: 活跃连接数、RAG任务队列、处理时间、失败率
+- `APIMetrics`: 请求计数、响应时间、错误率、吞吐量
+
+#### 2. MonitoringIntegrationService (集成桥梁)
+
+**职责**: 协调现有监控基础设施与新的实时度量系统
+**位置**: `backend/services/monitoring_integration_service.py`
+
+```python
+class MonitoringIntegrationService:
+    def __init__(self, websocket_manager=None, integrated_monitor=None):
+        self.metrics_collector = RealTimeMetricsCollector(
+            websocket_manager=websocket_manager,
+            integrated_monitor=integrated_monitor
+        )
+    
+    async def start_integrated_monitoring(self):
+        """启动集成监控，协调所有监控服务"""
+    
+    async def _integrate_websocket_metrics(self):
+        """集成WebSocket指标，监控RAG任务队列"""
+    
+    async def _integrate_performance_monitor(self):
+        """集成现有性能监控器的数据"""
+```
+
+**集成特性**:
+- **WebSocket集成**: 增强RAG任务监控，队列积压告警
+- **性能监控器集成**: 缓存命中率、APM数据整合
+- **自动告警**: 基于阈值的智能告警路由
+
+#### 3. SimpleAlertingService (告警引擎)
+
+**职责**: 基于阈值规则的自动告警系统
+**位置**: `backend/services/simple_alerting_service.py`
+
+```python
+class SimpleAlertingService:
+    def __init__(self):
+        self.rules: Dict[str, AlertRule] = {}
+        self.active_alerts: Dict[str, Alert] = {}
+        self.alert_history: List[Alert] = []
+        self._initialize_default_rules()
+    
+    def evaluate_metrics(self, metrics_data: Dict[str, Any]):
+        """评估度量数据并触发告警"""
+    
+    def acknowledge_alert(self, alert_id: str, acknowledged_by: str) -> bool:
+        """确认告警"""
+    
+    def resolve_alert(self, alert_id: str) -> bool:
+        """解决告警"""
+```
+
+**默认告警规则**:
+- **CPU高使用率**: >80% 警告, >90% 严重
+- **内存高使用率**: >85% 警告, >95% 严重
+- **磁盘使用率**: >90% 警告
+- **API响应时间**: >1000ms 警告
+- **API错误率**: >5% 错误
+- **WebSocket任务积压**: >10个待处理任务警告
+- **数据库慢查询**: >500ms 平均查询时间警告
+
+### 前端监控仪表板
+
+#### 4. MonitoringDashboard (React组件)
+
+**职责**: 实时监控数据的可视化展示
+**位置**: `frontend/src/components/views/MonitoringDashboard.tsx`
+
+```typescript
+export default function MonitoringDashboard() {
+  const [metricsData, setMetricsData] = useState<MetricsData | null>(null)
+  const [systemHealth, setSystemHealth] = useState<SystemHealthStatus>('healthy')
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  
+  // WebSocket连接管理
+  useEffect(() => {
+    const wsClient = new MetricsWebSocketClient()
+    wsClient.connect()
+    
+    wsClient.onMetricsUpdate = (data) => setMetricsData(data)
+    wsClient.onHealthStatusUpdate = (status) => setSystemHealth(status)
+    wsClient.onAlert = (alert) => setAlerts(prev => [alert, ...prev])
+    
+    return () => wsClient.disconnect()
+  }, [])
+```
+
+**仪表板功能**:
+- **实时图表**: CPU、内存、磁盘I/O的时序图表
+- **系统健康指示器**: 绿色/黄色/红色状态指示
+- **告警面板**: 活跃告警列表和历史记录
+- **全屏模式**: 专用监控显示器支持
+- **自动刷新**: 可配置的自动数据更新
+
+#### 5. SystemMetricsChart (图表组件)
+
+**职责**: 基于Canvas的高性能实时图表渲染
+**位置**: `frontend/src/components/monitoring/SystemMetricsChart.tsx`
+
+```typescript
+export function SystemMetricsChart({ data, metricType }: SystemMetricsChartProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  
+  useEffect(() => {
+    if (!canvasRef.current || !data) return
+    
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')!
+    
+    // 清除画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // 绘制网格线
+    drawGrid(ctx, canvas.width, canvas.height)
+    
+    // 绘制数据线
+    drawDataLine(ctx, data, canvas.width, canvas.height)
+    
+    // 绘制当前值指示器
+    drawCurrentValueIndicator(ctx, data[data.length - 1])
+  }, [data, metricType])
+```
+
+**图表特性**:
+- **Canvas渲染**: 高性能实时数据可视化
+- **50点历史缓冲**: 内存高效的数据窗口
+- **颜色编码状态**: 绿色正常、黄色警告、红色严重
+- **趋势分析**: 上升/下降/稳定趋势指示器
+
+### WebSocket 实时通信
+
+#### 6. MetricsWebSocketClient (客户端)
+
+**职责**: 前端与后端实时度量数据通信
+**位置**: `frontend/src/lib/metricsWebSocket.ts`
+
+```typescript
+export class MetricsWebSocketClient {
+  private ws: WebSocket | null = null
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = 5
+  private reconnectDelay = 1000
+  
+  onMetricsUpdate?: (data: MetricsData) => void
+  onHealthStatusUpdate?: (status: SystemHealthStatus) => void
+  onAlert?: (alert: Alert) => void
+  
+  connect(): void {
+    try {
+      this.ws = new WebSocket(`${WS_BASE_URL}/ws/metrics`)
+      
+      this.ws.onopen = () => {
+        console.log('Metrics WebSocket connected')
+        this.reconnectAttempts = 0
+        this.subscribe(['system', 'database', 'websocket', 'api'])
+      }
+      
+      this.ws.onmessage = (event) => {
+        const data = JSON.parse(event.data)
+        this.handleMessage(data)
+      }
+      
+      this.ws.onclose = () => {
+        this.handleReconnection()
+      }
+    } catch (error) {
+      console.error('WebSocket connection failed:', error)
+      this.handleReconnection()
+    }
+  }
+  
+  private handleReconnection(): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      setTimeout(() => {
+        this.reconnectAttempts++
+        this.connect()
+      }, this.reconnectDelay * Math.pow(2, this.reconnectAttempts))
+    }
+  }
+}
+```
+
+#### 7. 度量WebSocket端点 (后端)
+
+**职责**: WebSocket连接管理和实时度量数据推送
+**位置**: `backend/api/routes/metrics_websocket.py`
+
+```python
+@router.websocket("/ws/metrics")
+async def websocket_metrics_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    client_id = str(uuid.uuid4())
+    connected_clients[client_id] = {
+        'websocket': websocket,
+        'subscriptions': set(),
+        'last_ping': time.time()
+    }
+    
+    try:
+        while True:
+            message = await websocket.receive_text()
+            data = json.loads(message)
+            
+            if data['type'] == 'subscribe':
+                client_info = connected_clients[client_id]
+                client_info['subscriptions'].update(data['metrics'])
+                
+            elif data['type'] == 'ping':
+                connected_clients[client_id]['last_ping'] = time.time()
+                await websocket.send_text(json.dumps({'type': 'pong'}))
+                
+    except WebSocketDisconnect:
+        if client_id in connected_clients:
+            del connected_clients[client_id]
+```
+
+### API 端点增强
+
+#### 8. 系统监控API路由
+
+**位置**: `backend/api/routes/system.py`
+
+```python
+@router.get("/metrics/current")
+async def get_current_metrics(
+    metrics_collector: Optional[RealTimeMetricsCollector] = Depends(get_metrics_collector)
+):
+    """获取当前系统度量数据"""
+    if not metrics_collector:
+        return {"message": "Metrics collector not available", "fallback_data": get_basic_system_info()}
+    
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "system_metrics": metrics_collector.get_system_metrics().__dict__,
+        "database_metrics": metrics_collector.get_database_metrics().__dict__,
+        "websocket_metrics": metrics_collector.get_websocket_metrics().__dict__,
+        "api_metrics": metrics_collector.get_api_metrics().__dict__
+    }
+
+@router.get("/metrics/history/{metric_type}")
+async def get_metrics_history(
+    metric_type: str,
+    hours: int = Query(default=1, ge=1, le=24),
+    metrics_collector: Optional[RealTimeMetricsCollector] = Depends(get_metrics_collector)
+):
+    """获取指定度量类型的历史数据"""
+    if not metrics_collector:
+        return {"message": "Metrics collector not available", "data": []}
+    
+    return {
+        "metric_type": metric_type,
+        "time_range_hours": hours,
+        "data": metrics_collector.get_metrics_history(metric_type, hours)
+    }
+
+@router.get("/metrics/system/detailed")
+async def get_detailed_system_metrics(
+    metrics_collector: Optional[RealTimeMetricsCollector] = Depends(get_metrics_collector)
+):
+    """获取详细的系统度量和健康状态"""
+    if not metrics_collector:
+        return {"message": "Metrics collector not available"}
+    
+    return {
+        "current_metrics": metrics_collector.get_current_metrics(),
+        "system_health": metrics_collector.get_system_health_summary(),
+        "active_alerts": metrics_collector.alerting_service.get_active_alerts(),
+        "alert_statistics": metrics_collector.alerting_service.get_alert_statistics()
+    }
+```
+
+### 监控数据流序列图
+
+```mermaid
+sequenceDiagram
+    participant Dashboard as 监控仪表板
+    participant WSClient as WebSocket客户端
+    participant WSEndpoint as WebSocket端点
+    participant Collector as 度量收集器
+    participant Alerting as 告警服务
+    participant System as 系统资源
+    
+    Dashboard->>WSClient: 初始化连接
+    WSClient->>WSEndpoint: WebSocket连接
+    WSEndpoint-->>WSClient: 连接确认
+    WSClient->>WSEndpoint: 订阅度量类型
+    
+    loop 实时数据收集 (每1秒)
+        Collector->>System: 收集系统度量
+        System-->>Collector: 返回度量数据
+        Collector->>Alerting: 评估告警规则
+        Alerting->>WSEndpoint: 推送告警(如有)
+        Collector->>WSEndpoint: 推送度量数据
+        WSEndpoint->>WSClient: 广播给订阅客户端
+        WSClient->>Dashboard: 更新仪表板数据
+        Dashboard->>Dashboard: 渲染实时图表
+    end
+    
+    alt 告警触发
+        Alerting->>WSEndpoint: 告警通知
+        WSEndpoint->>WSClient: 推送告警
+        WSClient->>Dashboard: 显示告警弹窗
+        Dashboard->>Dashboard: 更新告警列表
+    end
+```
+
+### 系统健康评估算法
+
+```python
+def calculate_system_health_status(self) -> SystemHealthStatus:
+    """基于多维度指标计算系统健康状态"""
+    system_metrics = self.get_system_metrics()
+    health_score = 100.0
+    
+    # CPU健康评分 (权重: 25%)
+    cpu_penalty = max(0, (system_metrics.cpu_percent - 70) * 2)
+    health_score -= cpu_penalty * 0.25
+    
+    # 内存健康评分 (权重: 30%)
+    memory_penalty = max(0, (system_metrics.memory_percent - 80) * 2.5)
+    health_score -= memory_penalty * 0.30
+    
+    # 磁盘健康评分 (权重: 20%)
+    disk_penalty = max(0, (system_metrics.disk_usage_percent - 85) * 3)
+    health_score -= disk_penalty * 0.20
+    
+    # API性能评分 (权重: 15%)
+    api_metrics = self.get_api_metrics()
+    if api_metrics.avg_response_time_ms > 500:
+        api_penalty = (api_metrics.avg_response_time_ms - 500) * 0.1
+        health_score -= api_penalty * 0.15
+    
+    # 活跃告警惩罚 (权重: 10%)
+    active_alerts = len(self.alerting_service.get_active_alerts())
+    health_score -= active_alerts * 5 * 0.10
+    
+    # 健康状态分级
+    if health_score >= 80:
+        return 'healthy'
+    elif health_score >= 60:
+        return 'warning' 
+    else:
+        return 'critical'
+```
+
+### 部署和配置
+
+#### 监控服务初始化
+
+**在FastAPI应用启动时自动初始化**:
+```python
+# backend/api/dependencies.py
+async def initialize_monitoring():
+    """初始化监控服务"""
+    integration_service = initialize_monitoring_integration(
+        websocket_manager=get_websocket_manager(),
+        integrated_monitor=get_performance_monitor()
+    )
+    
+    await integration_service.start_integrated_monitoring()
+    return integration_service
+```
+
+#### 前端路由集成
+
+**监控仪表板已集成到主导航**:
+```typescript
+// frontend/src/components/Sidebar.tsx
+const navigation = [
+  { name: 'Library', href: '/library', icon: Library },
+  { name: 'Chat', href: '/chat', icon: MessageSquare },
+  { name: 'Monitoring', href: '/monitoring', icon: Activity }, // 新增监控页面
+  { name: 'Settings', href: '/settings', icon: Settings },
+]
+
+// frontend/src/components/Layout.tsx
+<Route path='/monitoring' element={<MonitoringDashboard />} />
+```
+
+### 性能优化特性
+
+#### 监控开销控制
+- **采样率控制**: 可配置的数据收集间隔(默认1秒)
+- **历史数据限制**: 自动清理旧数据，防止内存泄漏
+- **WebSocket连接池**: 高效的客户端连接管理
+- **Canvas渲染**: 高性能图表绘制，避免DOM操作开销
+
+#### 容错设计
+- **优雅降级**: 度量收集器不可用时提供基础系统信息
+- **自动重连**: WebSocket连接断开时指数退避重连
+- **告警冷却**: 防止告警风暴的冷却期机制
+- **错误恢复**: 组件级错误边界和恢复策略
+
+### 可扩展性考虑
+
+#### 度量类型扩展
+- **插件化架构**: 新度量类型可通过插件方式添加
+- **自定义告警规则**: 运行时配置和修改告警阈值
+- **度量数据导出**: 支持导出到外部监控系统(Prometheus等)
+- **历史数据持久化**: 可选的数据库存储长期历史数据
+
+#### 集成能力
+- **外部告警通道**: 邮件、Slack、钉钉等通知渠道
+- **APM系统集成**: New Relic、Datadog等专业监控平台
+- **日志聚合**: ELK Stack、Splunk等日志分析系统
+- **自定义仪表板**: 支持用户自定义监控面板布局
+
+---
+
+**监控仪表板更新**: 2025-01-19  
+**功能状态**: ✅ 生产就绪  
+**文档版本**: v2.1.0
+
 ### 🗄️ **数据库架构设计**
 
 #### **引用系统数据架构**
@@ -1101,3 +1585,180 @@ graph TD
 **测试覆盖**: ✅ 核心功能完全测试覆盖 (63个引用系统测试用例)  
 **引用系统**: ✅ TDD开发完成，支持多格式学术引用解析和网络分析  
 **文档状态**: ✅ 与实际代码完全一致  
+
+## 🔄 异步RAG处理架构 (新增)
+
+### 架构概述
+
+AI Enhanced PDF Scholar 现已集成高性能异步WebSocket RAG处理系统，支持实时流式查询、后台任务管理和内存优化处理。
+
+### 核心组件
+
+#### 1. 增强的WebSocket管理器
+- **文件**: `backend/api/websocket_manager.py`
+- **功能**: 实时RAG任务管理、进度跟踪、流式响应
+- **特性**:
+  - 并发任务控制 (最多5个同时执行)
+  - 任务取消和超时管理
+  - 实时进度更新和错误通知
+  - 自动任务清理和内存管理
+
+#### 2. 异步RAG路由
+- **文件**: `backend/api/routes/async_rag.py`
+- **功能**: 异步RAG查询端点和WebSocket流式处理
+- **端点**:
+  - `POST /rag/query/async` - 启动异步RAG查询
+  - `GET /rag/query/async/{task_id}` - 查询任务状态
+  - `DELETE /rag/query/async/{task_id}` - 取消任务
+  - `WS /rag/stream` - WebSocket实时通信
+  - `POST /rag/query/hybrid` - 混合模式 (异步优先，同步后备)
+
+#### 3. 后台任务管理器
+- **文件**: `backend/services/async_task_manager.py`
+- **功能**: 并发任务调度、优先级队列、资源监控
+- **特性**:
+  - 优先级任务队列 (LOW/NORMAL/HIGH/URGENT)
+  - 系统内存监控和压力管控
+  - 任务指标收集和统计分析
+  - 线程池和异步任务协调
+
+#### 4. 内存优化RAG处理器
+- **文件**: `backend/services/memory_efficient_rag.py`
+- **功能**: 内存友好的RAG查询处理和响应流式传输
+- **特性**:
+  - 内存使用监控和限制 (默认512MB)
+  - 响应分块流式传输
+  - 垃圾回收自动触发
+  - 内存压力预警系统
+
+#### 5. 异步错误处理系统
+- **文件**: `backend/services/async_error_handling.py`
+- **功能**: 全面的错误恢复、重试策略、熔断保护
+- **策略**:
+  - 指数退避重试 (最多3次)
+  - 熔断器模式防护
+  - 错误分类和严重性评估
+  - 自动恢复和降级处理
+
+### 系统交互流程
+
+```mermaid
+sequenceDiagram
+    participant C as 客户端
+    participant WS as WebSocket管理器
+    participant AR as 异步RAG路由
+    participant TM as 任务管理器
+    participant RP as RAG处理器
+    participant EH as 错误处理器
+    
+    C->>+AR: POST /rag/query/async
+    AR->>+WS: 创建RAG流式任务
+    WS->>+TM: 提交后台任务
+    TM->>TM: 任务队列调度
+    TM->>+RP: 执行RAG处理
+    
+    loop 处理进度
+        RP->>WS: 发送进度更新
+        WS->>C: 实时进度通知
+    end
+    
+    alt 成功执行
+        RP->>WS: 流式响应分块
+        WS->>C: 分块响应数据
+        RP-->>-TM: 任务完成
+    else 错误处理
+        RP->>+EH: 错误分类和处理
+        EH->>EH: 重试策略评估
+        EH-->>-RP: 恢复或失败
+        RP->>WS: 错误通知
+        WS->>C: 错误信息
+    end
+    
+    TM-->>-WS: 任务结果
+    WS-->>-AR: 响应数据
+    AR-->>-C: 最终响应
+```
+
+### 内存管理策略
+
+```mermaid
+flowchart TD
+    A[启动RAG查询] --> B[内存基线检查]
+    B --> C{内存使用 < 75%?}
+    C --> < /dev/null | 是| D[开始处理]
+    C -->|否| E[等待内存释放]
+    E --> C
+    
+    D --> F[处理阶段监控]
+    F --> G{内存使用 < 85%?}
+    G -->|是| H[继续处理]
+    G -->|否| I[触发垃圾回收]
+    I --> J{回收后 < 85%?}
+    J -->|是| H
+    J -->|否| K[内存压力警告]
+    K --> L[强制任务限制]
+    
+    H --> M[响应流式传输]
+    M --> N[任务完成清理]
+    L --> O[任务失败]
+```
+
+### 错误恢复策略
+
+| 错误类型 | 重试次数 | 退避策略 | 恢复时间 |
+|---------|----------|----------|----------|
+| 网络错误 | 3次 | 指数退避 (1s-8s) | 即时 |
+| 外部服务 | 3次 | 指数退避 (2s-30s) | 30s |
+| 内存压力 | 1次 | 固定延迟 (5s) | 120s |
+| 超时错误 | 2次 | 线性增加 (0.5s-1s) | 即时 |
+| 验证错误 | 0次 | 不重试 | - |
+| 系统错误 | 1次 | 固定延迟 (1s) | 60s |
+
+### 性能指标
+
+- **并发处理能力**: 最多5个同时RAG查询
+- **内存限制**: 每任务512MB，系统总计<85%
+- **响应流式传输**: 512字符分块，20ms间隔
+- **任务超时**: 默认300秒 (5分钟)
+- **错误恢复时间**: <30秒自动重试
+- **WebSocket连接**: 支持多客户端同时连接
+
+### 配置选项
+
+```python
+# WebSocket RAG配置
+RAG_CONFIG = {
+    "max_concurrent_tasks": 5,
+    "progress_update_interval": 0.5,
+    "chunk_size": 512,
+    "task_timeout_seconds": 300,
+    "memory_limit_mb": 512,
+    "enable_streaming": True
+}
+
+# 任务管理器配置  
+TASK_MANAGER_CONFIG = {
+    "max_queue_size": 100,
+    "memory_monitoring": True,
+    "cleanup_interval_minutes": 1,
+    "completed_task_retention_minutes": 10
+}
+```
+
+### 监控和统计
+
+通过 `GET /rag/stream/stats` 端点可获取：
+- 活跃WebSocket连接数
+- 正在处理的RAG任务
+- 系统内存使用状况
+- 任务完成统计和错误率
+- 平均处理时间和吞吐量
+
+---
+
+**异步RAG架构更新**:
+- **项目版本**: 2.2.0 (异步RAG处理架构集成版)
+- **架构增强**: ✅ WebSocket流式RAG查询，内存优化，错误恢复
+- **实时处理**: ✅ 并发任务管理，进度跟踪，流式响应
+- **内存管理**: ✅ 智能内存监控，垃圾回收，压力控制
+- **错误恢复**: ✅ 熔断保护，指数退避，自动重试

@@ -1,8 +1,30 @@
-# 🧪 Act本地CI/CD测试指南
+# 🚀 Act Local CI/CD Testing Guide - Updated
 
-## 📋 概述
+## 📋 Overview
 
-本指南帮助您在本地使用Act工具测试AI Enhanced PDF Scholar的完整CI/CD流水线，确保所有阶段都能正确执行。
+This guide documents how to run and test the GitHub Actions CI/CD pipeline locally using the `act` CLI tool, including issues found and fixes applied.
+
+## ✅ Issues Found and Fixed
+
+### Issue 1: Invalid Cache Configuration File
+**Problem**: `cache-config.yml` was not a valid GitHub Actions workflow but was treated as one by act.
+
+**Fix Applied**:
+```bash
+# Move invalid config file to documentation
+mkdir -p docs/ci-config
+mv .github/workflows/cache-config.yml docs/ci-config/
+```
+
+### Issue 2: Circular Environment Variable Reference  
+**Problem**: `ci-enhanced.yml` had circular reference to `env.TEST_PARALLELISM`.
+
+**Error**: `Line: 464 Column 34: Unknown Variable Access env`
+
+**Fix Applied**: Direct references instead of env variable references
+- Lines 464, 544, 558, 570, 583, 872 updated
+
+**Status**: ✅ All issues resolved
 
 ## 🛠️ 准备工作
 

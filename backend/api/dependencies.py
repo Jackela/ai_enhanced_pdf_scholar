@@ -15,7 +15,7 @@ from backend.api.error_handling import ResourceNotFoundException, SystemExceptio
 from config import Config
 from src.controllers.library_controller import LibraryController
 from src.database.connection import DatabaseConnection
-from src.services.enhanced_rag_service import EnhancedRAGService
+from src.services.enhanced_rag_service import EnhancedRAGService\nfrom backend.api.websocket_manager import WebSocketManager
 
 logger = logging.getLogger(__name__)
 # Global instances
@@ -181,3 +181,23 @@ def get_api_config() -> dict:
         "websocket_enabled": True,
         "version": "2.0.0",
     }
+
+
+# WebSocket Manager dependency
+_websocket_manager: Optional[WebSocketManager] = None
+
+
+def get_websocket_manager() -> WebSocketManager:
+    """Get WebSocket manager dependency."""
+    global _websocket_manager
+    if _websocket_manager is None:
+        try:
+            _websocket_manager = WebSocketManager()
+            logger.info("WebSocket manager initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize WebSocket manager: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="WebSocket manager initialization failed",
+            )
+    return _websocket_manager
