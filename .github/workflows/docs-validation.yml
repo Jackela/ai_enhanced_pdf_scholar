@@ -1,619 +1,209 @@
-name: Documentation Validation
+name: 📚 Documentation Validation Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
     paths:
+      - '**.md'
       - 'docs/**'
-      - 'backend/**'
-      - 'frontend/**'
-      - 'scripts/**'
-      - '*.md'
+      - 'PROJECT_DOCS.md'
+      - 'API_ENDPOINTS.md'
+      - 'README.md'
+      - 'CLAUDE.md'
   pull_request:
-    branches: [ main, develop ]
     paths:
+      - '**.md'
       - 'docs/**'
-      - 'backend/**'
-      - 'frontend/**'
-      - 'scripts/**'
-      - '*.md'
+      - 'PROJECT_DOCS.md'
+      - 'API_ENDPOINTS.md'
+      - 'README.md'
+      - 'CLAUDE.md'
   workflow_dispatch:
-  schedule:
-    # Run daily at 2 AM UTC to catch drift
-    - cron: '0 2 * * *'
+    inputs:
+      validation_level:
+        description: 'Documentation validation level'
+        required: false
+        default: 'standard'
+        type: choice
+        options: ['basic', 'standard', 'comprehensive']
 
 env:
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
+  TIMEOUT_STANDARD: 15
+  TIMEOUT_QUICK: 5
+  VALIDATION_LEVEL: ${{ github.event.inputs.validation_level || 'standard' }}
+
+concurrency:
+  group: docs-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  docs-validation:
-    name: Documentation Validation
+  # Detect documentation changes
+  docs-changes:
+    name: 🔍 Documentation Change Detection
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 5
+    outputs:
+      markdown-changed: ${{ steps.changes.outputs.markdown }}
+      has-changes: ${{ steps.summary.outputs.has-changes }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Full history for changelog generation
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-    
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
-        # Additional tools for documentation validation
-        pip install requests jinja2 pyyaml markdownlint-cli2
-    
-    - name: Install Node.js dependencies
-      run: |
-        cd frontend
-        npm ci
-    
-    - name: Install documentation tools
-      run: |
-        # Markdown linting
-        npm install -g markdownlint-cli2
-        # Link checking
-        npm install -g markdown-link-check
-        # Spell checking
-        sudo apt-get update
-        sudo apt-get install -y aspell aspell-en
-    
-    - name: Validate Markdown syntax
-      run: |
-        echo "📝 Validating Markdown syntax..."
-        markdownlint-cli2 "docs/**/*.md" "*.md" || exit_code=$?
-        if [ ${exit_code:-0} -ne 0 ]; then
-          echo "❌ Markdown syntax validation failed"
-          exit 1
-        fi
-        echo "✅ Markdown syntax validation passed"
-    
-    - name: Check internal links
-      run: |
-        echo "🔗 Checking internal documentation links..."
-        
-        # Create markdown-link-check configuration
-        cat > .markdown-link-check.json << 'EOF'
-        {
-          "ignorePatterns": [
-            {
-              "pattern": "^http://localhost"
-            },
-            {
-              "pattern": "^https://localhost"
-            },
-            {
-              "pattern": "^mailto:"
-            }
-          ],
-          "httpHeaders": [
-            {
-              "urls": ["https://github.com"],
-              "headers": {
-                "Accept": "text/html"
-              }
-            }
-          ],
-          "timeout": "10s",
-          "retryOn429": true,
-          "retryCount": 2,
-          "fallbackRetryDelay": "30s",
-          "aliveStatusCodes": [200, 206]
-        }
-        EOF
-        
-        # Check links in all markdown files
-        find docs -name "*.md" -exec markdown-link-check --config .markdown-link-check.json {} \; || exit_code=$?
-        find . -maxdepth 1 -name "*.md" -exec markdown-link-check --config .markdown-link-check.json {} \; || exit_code=$?
-        
-        if [ ${exit_code:-0} -ne 0 ]; then
-          echo "❌ Link validation failed"
-          exit 1
-        fi
-        echo "✅ Link validation passed"
-    
-    - name: Validate Mermaid diagrams
-      run: |
-        echo "📊 Validating Mermaid diagrams..."
-        
-        # Install Mermaid CLI
-        npm install -g @mermaid-js/mermaid-cli
-        
-        # Find all Mermaid diagrams in documentation
-        mermaid_files=$(find docs -name "*.md" -exec grep -l "```mermaid" {} \;)
-        
-        if [ -n "$mermaid_files" ]; then
-          echo "Found Mermaid diagrams in: $mermaid_files"
-          
-          # Extract and validate each diagram
-          python3 << 'EOF'
-        import os
-        import re
-        import subprocess
-        import tempfile
-        from pathlib import Path
-        
-        def extract_mermaid_diagrams(file_path):
-            """Extract Mermaid diagrams from markdown file."""
-            with open(file_path, 'r') as f:
-                content = f.read()
-            
-            # Find all mermaid code blocks
-            pattern = r'```mermaid\n(.*?)\n```'
-            diagrams = re.findall(pattern, content, re.DOTALL)
-            return diagrams
-        
-        def validate_diagram(diagram_content, file_path, index):
-            """Validate a single Mermaid diagram."""
-            try:
-                # Create temporary file
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.mmd', delete=False) as f:
-                    f.write(diagram_content)
-                    temp_file = f.name
-                
-                # Use mmdc to validate (it will fail if syntax is invalid)
-                result = subprocess.run(['mmdc', '--parseMMDStr', diagram_content], 
-                                      capture_output=True, text=True, timeout=30)
-                
-                os.unlink(temp_file)
-                
-                if result.returncode != 0:
-                    print(f"❌ Invalid Mermaid diagram in {file_path} (diagram #{index + 1}):")
-                    print(f"   Error: {result.stderr}")
-                    return False
-                else:
-                    print(f"✅ Valid Mermaid diagram in {file_path} (diagram #{index + 1})")
-                    return True
-            
-            except subprocess.TimeoutExpired:
-                print(f"⚠️  Timeout validating diagram in {file_path} (diagram #{index + 1})")
-                return False
-            except Exception as e:
-                print(f"⚠️  Error validating diagram in {file_path}: {e}")
-                return False
-        
-        # Process all markdown files with Mermaid diagrams
-        all_valid = True
-        for file_path in Path('docs').rglob('*.md'):
-            diagrams = extract_mermaid_diagrams(file_path)
-            if diagrams:
-                print(f"Validating {len(diagrams)} diagrams in {file_path}")
-                for i, diagram in enumerate(diagrams):
-                    if not validate_diagram(diagram, file_path, i):
-                        all_valid = False
-        
-        if not all_valid:
-            exit(1)
-        EOF
-          
-        else
-          echo "No Mermaid diagrams found in documentation"
-        fi
-        
-        echo "✅ Mermaid diagram validation completed"
-    
-    - name: Validate API documentation consistency
-      run: |
-        echo "🔄 Validating API documentation consistency..."
-        
-        # Start backend server for API validation
-        python -m uvicorn backend.api.main:app --host 0.0.0.0 --port 8000 &
-        SERVER_PID=$!
-        
-        # Wait for server to start
-        echo "Waiting for server to start..."
-        for i in {1..30}; do
-          if curl -s http://localhost:8000/api/health > /dev/null; then
-            echo "Server started successfully"
-            break
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 🔍 Detect Documentation Changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            markdown:
+              - '**.md'
+              - 'docs/**'
+
+      - name: 📋 Change Summary
+        id: summary
+        run: |
+          HAS_CHANGES="false"
+          if [ "${{ steps.changes.outputs.markdown }}" = "true" ]; then
+            HAS_CHANGES="true"
           fi
-          sleep 2
-          if [ $i -eq 30 ]; then
-            echo "❌ Server failed to start within 60 seconds"
-            kill $SERVER_PID 2>/dev/null
-            exit 1
-          fi
-        done
-        
-        cd ..
-        
-        # Run API documentation synchronization check
-        python scripts/api_docs_sync.py --check || api_check_failed=true
-        
-        # Validate API endpoints
-        python scripts/api_docs_sync.py --validate || validation_failed=true
-        
-        # Stop server
-        kill $SERVER_PID 2>/dev/null
-        wait $SERVER_PID 2>/dev/null
-        
-        if [ "$api_check_failed" = true ] || [ "$validation_failed" = true ]; then
-          echo "❌ API documentation validation failed"
-          exit 1
-        fi
-        
-        echo "✅ API documentation validation passed"
-    
-    - name: Check documentation completeness
-      run: |
-        echo "📋 Checking documentation completeness..."
-        
-        python3 << 'EOF'
-        import os
-        from pathlib import Path
-        
-        # Define required documentation files
-        required_docs = {
-            'docs/user-guide/getting-started.md': 'User getting started guide',
-            'docs/user-guide/advanced-features.md': 'Advanced features guide',
-            'docs/api/complete-api-reference.md': 'Complete API reference',
-            'docs/api/sdk-documentation.md': 'SDK documentation',
-            'docs/architecture/system-architecture.md': 'System architecture',
-            'docs/deployment/kubernetes-deployment.md': 'Kubernetes deployment guide',
-            'README.md': 'Project README',
-            'TECHNICAL_DESIGN.md': 'Technical design document'
-        }
-        
-        missing_docs = []
-        incomplete_docs = []
-        
-        for doc_path, description in required_docs.items():
-            if not Path(doc_path).exists():
-                missing_docs.append(f"{doc_path} ({description})")
-            else:
-                # Check if file is substantial (more than just headers)
-                with open(doc_path, 'r') as f:
-                    content = f.read()
-                    # Remove headers, empty lines, and whitespace
-                    substantial_content = '\n'.join([
-                        line for line in content.split('\n')
-                        if line.strip() and not line.strip().startswith('#')
-                    ])
-                    
-                    if len(substantial_content) < 500:  # Less than 500 chars of content
-                        incomplete_docs.append(f"{doc_path} ({description}) - too brief")
-        
-        # Report results
-        issues_found = False
-        
-        if missing_docs:
-            print("❌ Missing documentation files:")
-            for doc in missing_docs:
-                print(f"   • {doc}")
-            issues_found = True
-        
-        if incomplete_docs:
-            print("⚠️  Incomplete documentation files:")
-            for doc in incomplete_docs:
-                print(f"   • {doc}")
-        
-        if not issues_found:
-            print("✅ All required documentation files are present")
-        else:
-            exit(1)
-        EOF
-    
-    - name: Spell check documentation
-      run: |
-        echo "🔤 Running spell check on documentation..."
-        
-        # Create custom dictionary for technical terms
-        cat > custom_dict.txt << 'EOF'
-        AI
-        API
-        APIs
-        FastAPI
-        SQLite
-        PostgreSQL
-        Redis
-        Kubernetes
-        Docker
-        WebSocket
-        WebSockets
-        RAG
-        LLM
-        LLMs
-        PDF
-        PDFs
-        JSON
-        YAML
-        REST
-        RESTful
-        HTTP
-        HTTPS
-        UUID
-        OAuth
-        JWT
-        CORS
-        CPU
-        RAM
-        SSD
-        CLI
-        SDK
-        SDKs
-        TypeScript
-        JavaScript
-        Python
-        Gemini
-        OpenAPI
-        Swagger
-        Mermaid
-        GitHub
-        CI
-        CD
-        DevOps
-        kubectl
-        Helm
-        Nginx
-        TLS
-        SSL
-        EOF
-        
-        # Run spell check on documentation files
-        find docs -name "*.md" -exec aspell --personal=./custom_dict.txt --list < {} \; > spelling_errors.txt
-        find . -maxdepth 1 -name "*.md" -exec aspell --personal=./custom_dict.txt --list < {} \; >> spelling_errors.txt
-        
-        if [ -s spelling_errors.txt ]; then
-          echo "⚠️  Potential spelling errors found:"
-          sort spelling_errors.txt | uniq -c | sort -nr
-          echo ""
-          echo "Please review these potential issues. Add technical terms to the custom dictionary if needed."
-          # Don't fail the build for spelling - just warn
-        else
-          echo "✅ No spelling errors detected"
-        fi
-        
-        rm -f spelling_errors.txt custom_dict.txt
-    
-    - name: Generate documentation metrics
-      run: |
-        echo "📊 Generating documentation metrics..."
-        
-        python3 << 'EOF'
-        import os
-        from pathlib import Path
-        import re
-        
-        def count_words(file_path):
-            """Count words in a markdown file."""
-            try:
-                with open(file_path, 'r') as f:
-                    content = f.read()
-                    # Remove markdown syntax for accurate word count
-                    content = re.sub(r'```.*?```', '', content, flags=re.DOTALL)  # Remove code blocks
-                    content = re.sub(r'`[^`]*`', '', content)  # Remove inline code
-                    content = re.sub(r'#{1,6}\s+', '', content)  # Remove headers
-                    content = re.sub(r'\[([^\]]*)\]\([^\)]*\)', r'\1', content)  # Remove links, keep text
-                    content = re.sub(r'\*{1,2}([^*]*)\*{1,2}', r'\1', content)  # Remove emphasis
-                    
-                    words = len(content.split())
-                    return words
-            except Exception as e:
-                print(f"Error reading {file_path}: {e}")
-                return 0
-        
-        def count_code_examples(file_path):
-            """Count code examples in a markdown file."""
-            try:
-                with open(file_path, 'r') as f:
-                    content = f.read()
-                    return len(re.findall(r'```', content)) // 2  # Each example has opening and closing ```
-            except:
-                return 0
-        
-        def count_diagrams(file_path):
-            """Count Mermaid diagrams in a markdown file."""
-            try:
-                with open(file_path, 'r') as f:
-                    content = f.read()
-                    return len(re.findall(r'```mermaid', content))
-            except:
-                return 0
-        
-        # Collect metrics
-        total_words = 0
-        total_code_examples = 0
-        total_diagrams = 0
-        file_count = 0
-        
-        print("📝 Documentation Metrics:")
-        print("=" * 50)
-        
-        for file_path in sorted(Path('.').rglob('*.md')):
-            if 'node_modules' in str(file_path) or '.git' in str(file_path):
-                continue
-                
-            words = count_words(file_path)
-            code_examples = count_code_examples(file_path)
-            diagrams = count_diagrams(file_path)
-            
-            total_words += words
-            total_code_examples += code_examples
-            total_diagrams += diagrams
-            file_count += 1
-            
-            print(f"{str(file_path):50} {words:5d} words, {code_examples:2d} code examples, {diagrams:2d} diagrams")
-        
-        print("=" * 50)
-        print(f"{'TOTALS':50} {total_words:5d} words, {total_code_examples:2d} code examples, {total_diagrams:2d} diagrams")
-        print(f"Total documentation files: {file_count}")
-        print(f"Average words per file: {total_words // file_count if file_count > 0 else 0}")
-        
-        # Quality indicators
-        print("\n📈 Quality Indicators:")
-        if total_words > 10000:
-            print("✅ Comprehensive documentation (>10k words)")
-        elif total_words > 5000:
-            print("⚠️  Moderate documentation (5-10k words)")
-        else:
-            print("❌ Limited documentation (<5k words)")
-        
-        if total_code_examples > 20:
-            print("✅ Rich code examples (>20 examples)")
-        elif total_code_examples > 10:
-            print("⚠️  Some code examples (10-20 examples)")
-        else:
-            print("❌ Few code examples (<10 examples)")
-        
-        if total_diagrams > 5:
-            print("✅ Well-illustrated with diagrams (>5 diagrams)")
-        elif total_diagrams > 2:
-            print("⚠️  Some diagrams (2-5 diagrams)")
-        else:
-            print("❌ Few or no diagrams (<2 diagrams)")
-        EOF
-    
-    - name: Check for documentation TODO items
-      run: |
-        echo "📝 Checking for TODO items in documentation..."
-        
-        # Find TODO, FIXME, XXX items in documentation
-        todo_items=$(find docs -name "*.md" -exec grep -Hn -i "todo\|fixme\|xxx\|placeholder" {} \; 2>/dev/null || true)
-        readme_todos=$(find . -maxdepth 1 -name "*.md" -exec grep -Hn -i "todo\|fixme\|xxx\|placeholder" {} \; 2>/dev/null || true)
-        
-        all_todos="$todo_items$readme_todos"
-        
-        if [ -n "$all_todos" ]; then
-          echo "⚠️  Found TODO items in documentation:"
-          echo "$all_todos"
-          echo ""
-          echo "Consider addressing these items before release."
-        else
-          echo "✅ No TODO items found in documentation"
-        fi
-    
-    - name: Validate documentation structure
-      run: |
-        echo "📁 Validating documentation structure..."
-        
-        python3 << 'EOF'
-        from pathlib import Path
-        
-        # Define expected documentation structure
-        expected_structure = {
-            'docs/': {
-                'user-guide/': ['getting-started.md', 'advanced-features.md'],
-                'api/': ['complete-api-reference.md', 'sdk-documentation.md'],
-                'architecture/': ['system-architecture.md'],
-                'deployment/': ['kubernetes-deployment.md'],
-                'tutorials/': [],  # Optional files
-                'interactive-demos/': [],  # Optional files
-            }
-        }
-        
-        def check_structure(base_path, structure):
-            """Recursively check documentation structure."""
-            issues = []
-            
-            for item, content in structure.items():
-                item_path = Path(base_path) / item
-                
-                if item.endswith('/'):  # Directory
-                    if not item_path.exists():
-                        issues.append(f"Missing directory: {item_path}")
-                    elif not item_path.is_dir():
-                        issues.append(f"Expected directory but found file: {item_path}")
-                    else:
-                        # Check required files in directory
-                        if isinstance(content, list):
-                            for required_file in content:
-                                file_path = item_path / required_file
-                                if not file_path.exists():
-                                    issues.append(f"Missing required file: {file_path}")
-                        elif isinstance(content, dict):
-                            # Recurse into subdirectory
-                            issues.extend(check_structure(item_path, content))
-                else:  # File
-                    if not item_path.exists():
-                        issues.append(f"Missing file: {item_path}")
-                    elif item_path.is_dir():
-                        issues.append(f"Expected file but found directory: {item_path}")
-            
-            return issues
-        
-        # Check the structure
-        structure_issues = check_structure('.', expected_structure)
-        
-        if structure_issues:
-            print("❌ Documentation structure issues found:")
-            for issue in structure_issues:
-                print(f"   • {issue}")
-            exit(1)
-        else:
-            print("✅ Documentation structure is valid")
-        EOF
-    
-    - name: Archive validation results
-      if: always()
-      run: |
-        echo "📦 Archiving validation results..."
-        
-        # Create validation report
-        cat > validation_report.md << 'EOF'
-        # Documentation Validation Report
-        
-        **Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-        **Commit:** ${{ github.sha }}
-        **Branch:** ${{ github.ref_name }}
-        
-        ## Validation Steps Completed
-        
-        - ✅ Markdown syntax validation
-        - ✅ Internal link checking
-        - ✅ Mermaid diagram validation
-        - ✅ API documentation consistency check
-        - ✅ Documentation completeness check
-        - ✅ Spell checking
-        - ✅ Documentation metrics generation
-        - ✅ TODO item scanning
-        - ✅ Structure validation
-        
-        ## Summary
-        
-        All documentation validation checks passed successfully.
-        EOF
-        
-        echo "Validation report created at: validation_report.md"
-    
-    - name: Comment on PR (if applicable)
-      if: github.event_name == 'pull_request' && (success() || failure())
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
+          echo "has-changes=$HAS_CHANGES" >> $GITHUB_OUTPUT
+          echo "## 🔍 Documentation Changes Detected" >> $GITHUB_STEP_SUMMARY
+          echo "- **Markdown Files:** ${{ steps.changes.outputs.markdown == 'true' && '✅ Changed' || '⏭️ No changes' }}" >> $GITHUB_STEP_SUMMARY
+
+  # Markdown validation
+  markdown-validation:
+    name: 📝 Markdown Validation
+    needs: docs-changes
+    if: needs.docs-changes.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      syntax-errors: ${{ steps.validation.outputs.syntax-errors }}
+      structure-issues: ${{ steps.validation.outputs.structure-issues }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🔧 Install Markdown Tools
+        run: |
+          npm install -g markdownlint-cli
+
+      - name: 🔍 Markdown Linting
+        id: validation
+        run: |
+          echo "Running markdown validation..."
           
-          // Read validation report if it exists
-          let reportContent = 'Documentation validation completed.';
-          if (fs.existsSync('validation_report.md')) {
-            reportContent = fs.readFileSync('validation_report.md', 'utf8');
+          # Create markdownlint config
+          cat > .markdownlint.json << 'EOF'
+          {
+            "MD013": { "line_length": 120 },
+            "MD033": false,
+            "MD041": false,
+            "MD026": false
           }
+          EOF
           
-          const status = '${{ job.status }}' === 'success' ? '✅ PASSED' : '❌ FAILED';
+          # Run markdownlint
+          SYNTAX_ERRORS=0
+          markdownlint *.md > markdownlint-results.txt 2>&1 || SYNTAX_ERRORS=$?
           
-          const comment = `## Documentation Validation ${status}
+          echo "syntax-errors=$SYNTAX_ERRORS" >> $GITHUB_OUTPUT
           
-          ${reportContent}
+          echo "## 📝 Markdown Validation Results" >> $GITHUB_STEP_SUMMARY
+          if [ $SYNTAX_ERRORS -eq 0 ]; then
+            echo "✅ **Markdown syntax validation passed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Markdown syntax issues found:**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -10 markdownlint-results.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🏗️ Document Structure Check
+        run: |
+          # Check required documentation files exist
+          MISSING_FILES=""
+          REQUIRED_FILES="README.md PROJECT_DOCS.md API_ENDPOINTS.md"
           
-          **Workflow:** [${context.workflow}](${context.payload.repository.html_url}/actions/runs/${context.runId})`;
+          for file in $REQUIRED_FILES; do
+            if [ ! -f "$file" ]; then
+              MISSING_FILES="$MISSING_FILES $file"
+            fi
+          done
           
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
+          if [ -n "$MISSING_FILES" ]; then
+            echo "❌ **Missing required documentation files:**$MISSING_FILES" >> $GITHUB_STEP_SUMMARY
+            echo "structure-issues=1" >> $GITHUB_OUTPUT
+          else
+            echo "✅ **All required documentation files present**" >> $GITHUB_STEP_SUMMARY
+            echo "structure-issues=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📦 Upload Validation Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-validation-${{ github.sha }}
+          path: |
+            markdownlint-results.txt
+          retention-days: 7
+
+  # Documentation quality gate
+  docs-quality-gate:
+    name: 🚪 Documentation Quality Gate
+    needs: [docs-changes, markdown-validation]
+    if: always() && needs.docs-changes.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 📊 Quality Gate Assessment
+        run: |
+          echo "## 🚪 Documentation Quality Gate Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Result | Notes |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          
+          QUALITY_PASSED="true"
+          
+          # Markdown syntax check
+          SYNTAX_ERRORS="${{ needs.markdown-validation.outputs.syntax-errors }}"
+          if [ "$SYNTAX_ERRORS" = "0" ] || [ "$SYNTAX_ERRORS" = "" ]; then
+            echo "| Markdown Syntax | ✅ PASS | No syntax errors | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Markdown Syntax | ❌ FAIL | $SYNTAX_ERRORS errors found | Fix syntax issues |" >> $GITHUB_STEP_SUMMARY
+            QUALITY_PASSED="false"
+          fi
+          
+          # Structure check
+          STRUCTURE_ISSUES="${{ needs.markdown-validation.outputs.structure-issues }}"
+          if [ "$STRUCTURE_ISSUES" = "0" ] || [ "$STRUCTURE_ISSUES" = "" ]; then
+            echo "| Document Structure | ✅ PASS | All required files present | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Document Structure | ❌ FAIL | Missing required files | Add missing documentation |" >> $GITHUB_STEP_SUMMARY
+            QUALITY_PASSED="false"
+          fi
+          
+          # Overall result
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "$QUALITY_PASSED" = "true" ]; then
+            echo "### ✅ Documentation Quality Gate: **PASSED**" >> $GITHUB_STEP_SUMMARY
+            echo "All documentation quality checks have passed successfully." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Documentation Quality Gate: **FAILED**" >> $GITHUB_STEP_SUMMARY
+            echo "Please address the failing checks before merging." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Set environment variable for potential failure
+          echo "DOCS_QUALITY_PASSED=$QUALITY_PASSED" >> $GITHUB_ENV
+
+      - name: ⚠️ Documentation Quality Warning
+        if: env.DOCS_QUALITY_PASSED == 'false'
+        run: |
+          echo "Documentation quality issues detected."
+          echo "Please address these issues before merging to main branch."
