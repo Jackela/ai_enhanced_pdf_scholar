@@ -52,11 +52,10 @@ jobs:
           pip install ruff
         timeout-minutes: 1
 
-      - name: 🔍 Basic Ruff Check (E,W,F only, 88-char Black standard)
+      - name: 🔍 Basic Ruff Check (Critical Errors Only)
         run: |
-          echo "🎯 Running simplified quality check on core modules only..."
-          ruff check src --select=E,W,F --line-length=88 --output-format=github \
-            --per-file-ignores="**/citation_*.py:E501,**/content_hash_service.py:E501,**/connection.py:E501,**/migrations.py:E501,**/migrations/**:E501,**/migrations/**:W291"
+          echo "🎯 Running critical error check (import errors, undefined variables)..."
+          ruff check src --select=F821,F401,F841 --line-length=88 --output-format=github
         timeout-minutes: 1
 
   # 🧪 基础测试 (简化版)

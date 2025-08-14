@@ -446,10 +446,8 @@ class EnhancedRAGService:
                 f"Vector index already exists for document {document.id}"
             )
 
-        # Initialize recovery tracking
-        temp_dir_path: Path | None = None
+        # Initialize recovery tracking (placeholder for future cleanup logic)
         vector_index_path: Path | None = None
-        database_operation_started: bool = False
 
         try:
             # Use recovery orchestrator for the entire operation
@@ -523,8 +521,7 @@ class EnhancedRAGService:
     ) -> VectorIndexModel:
         """Build index with full recovery orchestration."""
 
-        # Setup cleanup paths and handlers
-        cleanup_paths: list[Path] = []
+        # Setup cleanup handlers (paths managed by cleanup_manager)
         cleanup_handlers: list[Callable[[], None]] = []
 
         with self.cleanup_manager.cleanup_scope(f"index_build_{document.id}"):
