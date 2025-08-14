@@ -288,7 +288,9 @@ def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dic
     if 'influential_documents' in network:
         influential = network['influential_documents'][:3]  # Top 3
         for i, doc in enumerate(influential, 1):
-            print(f"{i}. {doc.get('title', f'Document {doc.get(\"document_id\")}')}")
+            doc_id = doc.get('document_id')
+            title = doc.get('title', f'Document {doc_id}')
+            print(f"{i}. {title}")
             print(f"   Influence Score: {doc.get('influence_score', 0):.1f}")
             print(f"   Times Cited: {doc.get('times_cited', 0)}")
             print(f"   Documents Cited: {doc.get('documents_cited', 0)}")
