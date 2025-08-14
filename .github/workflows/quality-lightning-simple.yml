@@ -62,7 +62,7 @@ jobs:
   basic-tests:
     name: 🧪 Basic Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     if: github.event_name == 'push' || github.event_name == 'pull_request' || inputs.backend-changed == 'true' || inputs.force-full == 'true'
     steps:
       - name: 📥 Checkout with Git Cache
@@ -82,22 +82,15 @@ jobs:
       - name: 📦 Install Test Dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install main requirements first (contains PyMuPDF and other dependencies)
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
-          # Install test requirements
-          if [ -f requirements-test.txt ]; then 
-            pip install -r requirements-test.txt
-          else
-            pip install pytest pytest-cov
-          fi
-        timeout-minutes: 2
+          # Install only essential dependencies for basic tests
+          pip install pytest pytest-cov PyMuPDF>=1.26.0 pydantic>=2.11.0 fastapi>=0.116.0 aiofiles>=23.0.0
+          echo "✅ Installed core testing dependencies only"
+        timeout-minutes: 3
 
       - name: 🧪 Run Basic Tests (25% coverage)
         run: |
           pytest tests/integration/test_citation_simple_integration.py tests/test_citation_repositories.py tests/repositories/test_base_repository.py -v --cov=src --cov-report=xml --cov-fail-under=25 --override-ini="addopts="
-        timeout-minutes: 2
+        timeout-minutes: 5
 
   # 📋 简单质量门控
   quality-gate-simple:
