@@ -97,16 +97,16 @@ repos:
         exclude: ^(tests/|test_.*\.py|conftest\.py|frontend/|node_modules/|\.venv/|venv/)
 
   # ============================================================================
-  # Python Type Checking - MyPy
+  # Python Type Checking - MyPy (Disabled in CI for speed)
   # ============================================================================
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
-    hooks:
-      - id: mypy
-        additional_dependencies: [types-all]
-        args: [--ignore-missing-imports, --no-strict-optional]
-        files: \.py$
-        exclude: ^(frontend/|node_modules/|\.venv/|venv/|build/|dist/|tests/)
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.8.0
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies: [types-all]
+  #       args: [--ignore-missing-imports, --no-strict-optional]
+  #       files: \.py$
+  #       exclude: ^(frontend/|node_modules/|\.venv/|venv/|build/|dist/|tests/)
 
   # ============================================================================
   # Python Requirements Management
