@@ -387,7 +387,7 @@ class VersionTracker:
             Number of entries removed
         """
         try:
-            result = self.db.execute(
+            self.db.execute(
                 f"DELETE FROM migration_history WHERE completed_at < date('now', '-{days_to_keep} days')"
             )
             deleted_count = self.db.get_last_change_count()

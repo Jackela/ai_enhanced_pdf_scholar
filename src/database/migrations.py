@@ -12,6 +12,8 @@ For new migrations, use the modular system:
 """
 
 import logging
+import time
+from collections.abc import Callable
 from typing import Any
 
 from .connection import DatabaseConnection
@@ -978,7 +980,7 @@ if "DatabaseMigrator" not in globals():
                         )
                         pages = size_result["pages"] if size_result else 0
                         size_bytes = size_result["size"] if size_result else 0
-                    except:
+                    except Exception:
                         pages = 0
                         size_bytes = 0
 
@@ -1408,7 +1410,10 @@ if "DatabaseMigrator" not in globals():
                 complexity_indicators["complex"] += 1
 
         # Determine overall complexity
-        if complexity_indicators["complex"] > 0 or complexity_indicators["moderate"] > 2:
+        if (
+            complexity_indicators["complex"] > 0
+            or complexity_indicators["moderate"] > 2
+        ):
             return "complex"
         elif complexity_indicators["moderate"] > 0:
             return "moderate"
@@ -1673,7 +1678,7 @@ if "DatabaseMigrator" not in globals():
                         )
                         if size_result and size_result["size"]:
                             index_analysis["size_estimate"] = size_result["size"]
-                    except:
+                    except Exception:
                         pass
 
                     # Estimate selectivity by checking if index is on unique or near-unique columns
@@ -1690,7 +1695,7 @@ if "DatabaseMigrator" not in globals():
                                 0.5  # Conservative estimate
                             )
                             index_analysis["effectiveness"] = "medium"
-                    except:
+                    except Exception:
                         pass
 
                     # Analyze index usage patterns based on name

@@ -257,7 +257,7 @@ class MigrationManager:
                 return issues
 
             target = target_version or max(available_versions)
-            current = self.get_current_version()
+            # Note: current version validation could be added here if needed
 
             # Check for gaps in version sequence
             expected_versions = list(range(1, target + 1))

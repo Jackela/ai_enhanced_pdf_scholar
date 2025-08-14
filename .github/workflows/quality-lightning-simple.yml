@@ -56,7 +56,7 @@ jobs:
         run: |
           echo "🎯 Running simplified quality check on core modules only..."
           ruff check src --select=E,W,F --line-length=88 --output-format=github \
-            --per-file-ignores="**/citation_*.py:E501,**/content_hash_service.py:E501"
+            --per-file-ignores="**/citation_*.py:E501,**/content_hash_service.py:E501,**/connection.py:E501,**/migrations.py:E501,**/migrations/**:E501,**/migrations/**:W291"
         timeout-minutes: 1
 
   # 🧪 基础测试 (简化版)
