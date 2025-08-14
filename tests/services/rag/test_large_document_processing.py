@@ -2,7 +2,7 @@
 Large Document Processing and Chunking Strategy Tests
 
 Comprehensive tests for handling large academic documents, including
-memory-efficient processing, intelligent chunking strategies, and 
+memory-efficient processing, intelligent chunking strategies, and
 performance optimization for multi-page PDF documents.
 """
 
@@ -25,7 +25,7 @@ from src.services.rag.large_document_processor import (
 )
 from src.services.rag.chunking_strategies import (
     FixedSizeChunking,
-    SemanticChunking, 
+    SemanticChunking,
     StructureAwareChunking,
     AdaptiveChunking,
     CitationAwareChunking
@@ -70,7 +70,7 @@ class TestLargeDocumentProcessor:
         mock_pdf_extractor = Mock()
         mock_memory_manager = Mock()
         mock_chunk_optimizer = Mock()
-        
+
         return LargeDocumentProcessor(
             pdf_extractor=mock_pdf_extractor,
             memory_manager=mock_memory_manager,
@@ -98,10 +98,10 @@ class TestLargeDocumentProcessor:
         document_processor.pdf_extractor.extract_text_streaming.return_value = self._create_text_stream(
             mock_large_pdf_content["text"]
         )
-        
+
         # Monitor memory usage
         initial_memory = psutil.Process().memory_info().rss
-        
+
         # When
         processing_result = await document_processor.process_document_streaming(
             document_path="/test/large_paper.pdf",
@@ -109,11 +109,11 @@ class TestLargeDocumentProcessor:
             overlap=200,
             memory_threshold_mb=256
         )
-        
+
         # Then
         peak_memory = psutil.Process().memory_info().rss
         memory_increase_mb = (peak_memory - initial_memory) / (1024 * 1024)
-        
+
         assert processing_result["success"] is True
         assert processing_result["chunks_created"] > 0
         assert memory_increase_mb < 100  # Should not increase memory by more than 100MB
@@ -130,7 +130,7 @@ class TestLargeDocumentProcessor:
             max_chunk_size=3000,
             structure_awareness=True
         )
-        
+
         # Mock chunking result
         document_processor.chunk_optimizer.adaptive_chunk.return_value = {
             "chunks": [
@@ -148,14 +148,14 @@ class TestLargeDocumentProcessor:
                 "structure_preserved": True
             }
         }
-        
+
         # When
         chunking_result = await document_processor.process_with_adaptive_chunking(
             content=mock_large_pdf_content["text"],
             sections=mock_large_pdf_content["sections"],
             chunking_strategy=adaptive_chunker
         )
-        
+
         # Then
         assert len(chunking_result["chunks"]) == 6
         assert chunking_result["chunk_statistics"]["structure_preserved"] is True
@@ -172,10 +172,10 @@ class TestLargeDocumentProcessor:
             min_chunk_size=800,
             max_chunk_size=2500
         )
-        
+
         # Mock semantic similarity calculation
         semantic_chunker.embedding_model.encode.return_value = np.random.rand(10, 384)  # Mock embeddings
-        
+
         document_processor.chunk_optimizer.semantic_chunk.return_value = {
             "chunks": [
                 {
@@ -203,13 +203,13 @@ class TestLargeDocumentProcessor:
             "semantic_coherence": 0.85,
             "topic_coverage": 0.92
         }
-        
+
         # When
         semantic_result = await document_processor.process_with_semantic_chunking(
             content="Large document content for semantic analysis",
             chunking_strategy=semantic_chunker
         )
-        
+
         # Then
         assert semantic_result["semantic_coherence"] >= 0.8
         assert semantic_result["topic_coverage"] >= 0.9
@@ -225,7 +225,7 @@ class TestLargeDocumentProcessor:
             citation_context_window=100,
             reference_linking=True
         )
-        
+
         # Mock citation-aware chunking
         document_processor.chunk_optimizer.citation_aware_chunk.return_value = {
             "chunks": [
@@ -248,14 +248,14 @@ class TestLargeDocumentProcessor:
             "citation_coverage": 1.0,
             "reference_completeness": 1.0
         }
-        
+
         # When
         citation_result = await document_processor.process_with_citation_awareness(
             content=mock_large_pdf_content["text"],
             citations=mock_large_pdf_content["citations"],
             chunking_strategy=citation_chunker
         )
-        
+
         # Then
         assert citation_result["total_citations"] == 3
         assert citation_result["citation_coverage"] == 1.0
@@ -273,7 +273,7 @@ class TestLargeDocumentProcessor:
             table_figure_handling=True,
             reference_section_separate=True
         )
-        
+
         # Mock structure-aware processing
         document_processor.chunk_optimizer.structure_aware_chunk.return_value = {
             "chunks": [
@@ -286,7 +286,7 @@ class TestLargeDocumentProcessor:
                 },
                 {
                     "text": "1. Introduction\nMachine learning has revolutionized...",
-                    "section": "introduction", 
+                    "section": "introduction",
                     "heading": "1. Introduction",
                     "structural_type": "content",
                     "importance_score": 0.88
@@ -294,7 +294,7 @@ class TestLargeDocumentProcessor:
                 {
                     "text": "3. Methodology\n3.1 Experimental Design...",
                     "section": "methodology",
-                    "heading": "3. Methodology", 
+                    "heading": "3. Methodology",
                     "structural_type": "content",
                     "importance_score": 0.92
                 },
@@ -310,14 +310,14 @@ class TestLargeDocumentProcessor:
             "structure_preserved": True,
             "heading_extraction_success": 1.0
         }
-        
+
         # When
         structure_result = await document_processor.process_with_structure_awareness(
             content=mock_large_pdf_content["text"],
             sections=mock_large_pdf_content["sections"],
             chunking_strategy=structure_chunker
         )
-        
+
         # Then
         assert structure_result["structure_preserved"] is True
         assert structure_result["section_coverage"] == 8
@@ -331,29 +331,29 @@ class TestLargeDocumentProcessor:
         # Given - simulate documents of different sizes
         document_sizes = [
             {"size_mb": 1, "pages": 5, "word_count": 2500},
-            {"size_mb": 5, "pages": 20, "word_count": 12500}, 
+            {"size_mb": 5, "pages": 20, "word_count": 12500},
             {"size_mb": 10, "pages": 40, "word_count": 25000},
             {"size_mb": 25, "pages": 100, "word_count": 62500},
             {"size_mb": 50, "pages": 200, "word_count": 125000}
         ]
-        
+
         performance_results = []
-        
+
         for doc_size in document_sizes:
             # Mock processing for different sizes
             mock_content = "Document content " * (doc_size["word_count"] // 2)
-            
+
             start_time = time.time()
-            
+
             # When - process document
             result = await document_processor.process_document_benchmark(
                 content=mock_content,
                 size_mb=doc_size["size_mb"],
                 chunk_size=2000
             )
-            
+
             processing_time = time.time() - start_time
-            
+
             performance_results.append({
                 "size_mb": doc_size["size_mb"],
                 "processing_time": processing_time,
@@ -361,17 +361,17 @@ class TestLargeDocumentProcessor:
                 "throughput_mb_per_sec": doc_size["size_mb"] / processing_time if processing_time > 0 else 0,
                 "memory_peak_mb": result.get("memory_peak_mb", 0)
             })
-        
+
         # Then - verify performance scaling
         assert len(performance_results) == 5
-        
+
         # Performance should scale reasonably (not exponentially worse)
         small_doc_throughput = performance_results[0]["throughput_mb_per_sec"]
         large_doc_throughput = performance_results[-1]["throughput_mb_per_sec"]
-        
+
         # Throughput shouldn't degrade by more than 50% for 50x larger documents
         assert large_doc_throughput >= (small_doc_throughput * 0.5)
-        
+
         # Memory usage should remain reasonable
         for result in performance_results:
             assert result["memory_peak_mb"] < 1000  # Less than 1GB peak memory
@@ -384,13 +384,13 @@ class TestLargeDocumentProcessor:
             {"id": i, "size_mb": 10 + i, "content": f"Large document {i} " * 5000}
             for i in range(1, 6)  # 5 documents, 10-14MB each
         ]
-        
+
         # Mock concurrent processing capability
         document_processor.enable_concurrent_processing = True
         document_processor.max_concurrent_documents = 3
-        
+
         start_time = time.time()
-        
+
         # When - process all documents concurrently
         processing_tasks = [
             document_processor.process_document_streaming(
@@ -399,19 +399,19 @@ class TestLargeDocumentProcessor:
             )
             for doc in large_documents
         ]
-        
+
         results = await asyncio.gather(*processing_tasks, return_exceptions=True)
-        
+
         total_time = time.time() - start_time
-        
+
         # Then
         successful_results = [r for r in results if not isinstance(r, Exception)]
         assert len(successful_results) >= 3  # At least 3 should succeed concurrently
-        
+
         # Concurrent processing should be faster than sequential
         estimated_sequential_time = sum(doc["size_mb"] * 0.5 for doc in large_documents)  # Estimate
         assert total_time < estimated_sequential_time
-        
+
         # Verify all successful results have required fields
         for result in successful_results:
             assert result["success"] is True
@@ -423,7 +423,7 @@ class TestLargeDocumentProcessor:
         # Given - simulate memory pressure
         document_processor.memory_manager.get_available_memory.return_value = 50 * 1024 * 1024  # 50MB available
         document_processor.memory_manager.is_memory_pressure.return_value = True
-        
+
         # Mock memory pressure response
         document_processor.memory_manager.handle_memory_pressure.return_value = {
             "strategy": "streaming_mode",
@@ -431,10 +431,10 @@ class TestLargeDocumentProcessor:
             "enable_compression": True,
             "temporary_storage": True
         }
-        
+
         # When
         pressure_response = document_processor.handle_memory_pressure()
-        
+
         # Then
         assert pressure_response["strategy"] == "streaming_mode"
         assert pressure_response["chunk_size_reduction"] == 0.5
@@ -451,19 +451,19 @@ class TestLargeDocumentProcessor:
             {"type": "encoding_error", "error": "Character encoding issues"},
             {"type": "malformed_structure", "error": "Document structure malformed"}
         ]
-        
+
         for scenario in corruption_scenarios:
             # Mock specific error
             document_processor.pdf_extractor.extract_text_streaming.side_effect = Exception(scenario["error"])
-            
+
             # When/Then
             with pytest.raises(RAGProcessingError) as exc_info:
                 await document_processor.process_document_streaming(
                     document_path="/test/corrupted.pdf"
                 )
-            
+
             assert scenario["error"] in str(exc_info.value)
-            
+
             # Reset for next test
             document_processor.pdf_extractor.extract_text_streaming.side_effect = None
 
@@ -477,7 +477,7 @@ class TestLargeDocumentProcessor:
             {"strategy": "semantic", "overlap": "semantic_boundary", "expected_context_score": 0.90},
             {"strategy": "sentence_aware", "overlap": "sentence_boundary", "expected_context_score": 0.88}
         ]
-        
+
         for strategy in overlap_strategies:
             # Mock overlap optimization
             document_processor.chunk_optimizer.optimize_overlap.return_value = {
@@ -491,13 +491,13 @@ class TestLargeDocumentProcessor:
                     "completeness": 0.92
                 }
             }
-            
+
             # When
             overlap_result = await document_processor.optimize_chunk_overlap(
                 content="Test content for overlap optimization",
                 strategy=strategy["strategy"]
             )
-            
+
             # Then
             assert overlap_result["context_preservation_score"] >= strategy["expected_context_score"]
             assert overlap_result["chunks_created"] > 0
@@ -531,10 +531,10 @@ class TestMemoryEfficientProcessor:
             peak_usage_mb=220,
             limit_mb=256
         )
-        
+
         # When
         memory_status = memory_processor.get_memory_status()
-        
+
         # Then
         assert memory_status["current_usage_percent"] > 75  # Above 75%
         assert memory_status["alert_level"] == "warning"
@@ -552,10 +552,10 @@ class TestMemoryEfficientProcessor:
             "compression_enabled": True,
             "memory_freed_mb": 50
         })
-        
+
         # When
         streaming_result = await memory_processor.handle_memory_pressure()
-        
+
         # Then
         assert streaming_result["streaming_activated"] is True
         assert streaming_result["chunk_size_adjusted"] == 1500
@@ -565,10 +565,10 @@ class TestMemoryEfficientProcessor:
         """Test compression efficiency for large text chunks."""
         # Given - large text chunk
         large_chunk = "This is repeated content for compression testing. " * 1000  # ~50KB
-        
+
         # When
         compression_result = memory_processor.compress_chunk(large_chunk)
-        
+
         # Then
         assert compression_result["compressed_size"] < len(large_chunk)
         assert compression_result["compression_ratio"] > 0.5  # At least 50% reduction
@@ -596,35 +596,35 @@ class TestAcademicDocumentProcessor:
         academic_text = """
         Abstract
         This paper presents novel approaches to machine learning.
-        
+
         1. Introduction
         Machine learning has become increasingly important...
-        
+
         2. Literature Review
         Previous work by Smith et al. (2023) has shown...
-        
+
         3. Methodology
         Our experimental design consists of...
-        
+
         4. Results
         The results demonstrate significant improvements...
-        
+
         5. Conclusion
         In conclusion, this research contributes...
-        
+
         References
         [1] Smith, J. et al. (2023). Advanced ML Techniques.
         """
-        
+
         # When
         section_analysis = academic_processor.analyze_section_structure(academic_text)
-        
+
         # Then
         expected_sections = ["abstract", "introduction", "literature_review", "methodology", "results", "conclusion", "references"]
         assert len(section_analysis["detected_sections"]) >= 6
         assert section_analysis["structure_score"] >= 0.8
         assert section_analysis["academic_format_compliance"] >= 0.85
-        
+
         detected_section_types = [section["type"] for section in section_analysis["detected_sections"]]
         assert "abstract" in detected_section_types
         assert "references" in detected_section_types
@@ -633,28 +633,28 @@ class TestAcademicDocumentProcessor:
         """Test citation extraction and reference linking."""
         # Given
         text_with_citations = """
-        Recent advances in deep learning (LeCun et al., 2015; Goodfellow et al., 2016) have 
-        revolutionized computer vision. The transformer architecture (Vaswani et al., 2017) 
+        Recent advances in deep learning (LeCun et al., 2015; Goodfellow et al., 2016) have
+        revolutionized computer vision. The transformer architecture (Vaswani et al., 2017)
         has become the standard for natural language processing tasks.
         """
-        
+
         references = """
         References:
         LeCun, Y., Bengio, Y., & Hinton, G. (2015). Deep learning. Nature, 521(7553), 436-444.
         Goodfellow, I., Bengio, Y., & Courville, A. (2016). Deep Learning. MIT Press.
         Vaswani, A., et al. (2017). Attention is all you need. NIPS.
         """
-        
+
         # When
         citation_analysis = academic_processor.extract_and_link_citations(
             text_with_citations, references
         )
-        
+
         # Then
         assert len(citation_analysis["citations"]) == 3
         assert citation_analysis["citation_coverage"] >= 0.9
         assert citation_analysis["reference_matching_success"] >= 0.9
-        
+
         # Verify specific citations detected
         citation_texts = [cite["text"] for cite in citation_analysis["citations"]]
         assert any("LeCun et al., 2015" in cite for cite in citation_texts)
@@ -664,24 +664,24 @@ class TestAcademicDocumentProcessor:
         """Test detection and handling of figures and tables in academic documents."""
         # Given
         document_with_figures = """
-        The methodology is illustrated in Figure 1. 
-        
+        The methodology is illustrated in Figure 1.
+
         [Figure 1: Neural Network Architecture - Shows the complete architecture]
-        
+
         Table 1 summarizes the experimental results across different datasets.
-        
+
         [Table 1: Performance Comparison
         Method | Accuracy | F1-Score
         CNN    | 0.85     | 0.83
         RNN    | 0.82     | 0.80
         Transformer | 0.91 | 0.89]
-        
+
         As shown in Figure 2, the loss decreases consistently during training.
         """
-        
+
         # When
         visual_element_analysis = academic_processor.detect_figures_and_tables(document_with_figures)
-        
+
         # Then
         assert len(visual_element_analysis["figures"]) == 2
         assert len(visual_element_analysis["tables"]) == 1
@@ -700,10 +700,10 @@ class TestAcademicDocumentProcessor:
             "publication_year": 2023,
             "venue": "International Conference on Machine Learning"
         }
-        
+
         # When
         enhanced_metadata = academic_processor.enhance_metadata(academic_document)
-        
+
         # Then
         assert enhanced_metadata["academic_level"] in ["undergraduate", "graduate", "research"]
         assert enhanced_metadata["research_domain"] is not None

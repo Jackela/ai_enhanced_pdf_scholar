@@ -14,21 +14,21 @@ data:
       high_interval: "0 * * * *"           # Every hour
       medium_interval: "0 2 * * *"         # Daily at 2 AM
       low_interval: "0 3 * * 0"           # Weekly on Sunday at 3 AM
-      
+
       # Retention policies
       retention:
         daily: 7
         weekly: 4
         monthly: 12
         yearly: 7
-      
+
       # Storage configuration
       storage:
         primary: "s3"
         bucket: "ai-pdf-scholar-backups"
         region: "us-west-2"
         encryption: true
-      
+
       # Sources configuration
       sources:
         - name: "postgres-main"
@@ -645,19 +645,19 @@ stringData:
   AWS_ACCESS_KEY_ID: ""
   AWS_SECRET_ACCESS_KEY: ""
   AWS_SESSION_TOKEN: ""
-  
+
   # Database connection URLs
   POSTGRES_CONNECTION_URL: ""
   REDIS_CONNECTION_URL: ""
-  
+
   # Backup encryption keys (managed by encryption service)
   BACKUP_ENCRYPTION_KEY: ""
   BACKUP_SIGNING_KEY: ""
-  
+
   # Cross-region replication settings
   BACKUP_SECONDARY_REGION: "us-east-1"
   BACKUP_TERTIARY_REGION: "eu-west-1"
-  
+
   # Notification settings
   SLACK_WEBHOOK_URL: ""
   EMAIL_SMTP_PASSWORD: ""

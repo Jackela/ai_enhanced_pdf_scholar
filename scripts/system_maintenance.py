@@ -44,7 +44,7 @@ class MaintenanceTask:
     metrics: Dict[str, Any] = None
 
 
-@dataclass 
+@dataclass
 class MaintenanceReport:
     """Comprehensive maintenance report."""
     start_time: datetime
@@ -59,29 +59,29 @@ class MaintenanceReport:
 
 class MaintenanceConfig:
     """Configuration for maintenance operations."""
-    
+
     # General settings
     DRY_RUN = os.getenv("MAINTENANCE_DRY_RUN", "false").lower() == "true"
     FORCE_MAINTENANCE = os.getenv("FORCE_MAINTENANCE", "false").lower() == "true"
     MAX_EXECUTION_TIME = int(os.getenv("MAX_MAINTENANCE_TIME", "3600"))  # 1 hour
-    
+
     # Database settings
     DB_VACUUM_THRESHOLD = float(os.getenv("DB_VACUUM_THRESHOLD", "25.0"))  # 25% fragmentation
     DB_BACKUP_RETENTION = int(os.getenv("DB_BACKUP_RETENTION", "7"))  # days
-    
+
     # Log settings
     LOG_RETENTION_DAYS = int(os.getenv("LOG_RETENTION_DAYS", "30"))
     LOG_COMPRESSION_DAYS = int(os.getenv("LOG_COMPRESSION_DAYS", "7"))
-    
+
     # Cache settings
     CACHE_OPTIMIZATION_THRESHOLD = float(os.getenv("CACHE_OPT_THRESHOLD", "70.0"))  # hit rate %
-    
+
     # Storage settings
     DISK_CLEANUP_THRESHOLD = float(os.getenv("DISK_CLEANUP_THRESHOLD", "80.0"))  # usage %
-    
+
     # Performance baseline settings
     UPDATE_BASELINES = os.getenv("UPDATE_PERFORMANCE_BASELINES", "true").lower() == "true"
-    
+
     # Application paths
     APP_ROOT = Path(os.getenv("APP_ROOT", Path.cwd()))
     DATA_DIR = Path(os.getenv("DATA_DIR", Path.home() / ".ai_pdf_scholar"))
@@ -94,51 +94,51 @@ class MaintenanceConfig:
 
 class SystemMaintenanceEngine:
     """Main maintenance automation engine."""
-    
+
     def __init__(self, config: MaintenanceConfig = None):
         self.config = config or MaintenanceConfig()
         self.tasks_completed: List[MaintenanceTask] = []
         self.start_time = datetime.now()
-        
+
         # System metrics before maintenance
         self.metrics_before = self._capture_system_metrics()
-        
+
         logger.info(f"System Maintenance Engine initialized. Dry run: {self.config.DRY_RUN}")
 
     def run_maintenance(self, task_types: Optional[List[str]] = None) -> MaintenanceReport:
         """Run comprehensive maintenance tasks."""
-        
+
         logger.info("Starting automated system maintenance")
-        
+
         # Define maintenance tasks
         maintenance_tasks = {
             'database': self._database_maintenance,
-            'logs': self._log_maintenance, 
+            'logs': self._log_maintenance,
             'cache': self._cache_maintenance,
             'storage': self._storage_maintenance,
             'performance': self._performance_maintenance,
             'security': self._security_maintenance,
             'health_checks': self._health_verification
         }
-        
+
         # Run selected or all tasks
         if task_types:
             tasks_to_run = {k: v for k, v in maintenance_tasks.items() if k in task_types}
         else:
             tasks_to_run = maintenance_tasks
-        
+
         logger.info(f"Running {len(tasks_to_run)} maintenance task types")
-        
+
         for task_name, task_func in tasks_to_run.items():
             try:
                 logger.info(f"Starting maintenance task: {task_name}")
                 result = task_func()
-                
+
                 if isinstance(result, list):
                     self.tasks_completed.extend(result)
                 else:
                     self.tasks_completed.append(result)
-                    
+
             except Exception as e:
                 logger.error(f"Maintenance task {task_name} failed: {e}")
                 self.tasks_completed.append(MaintenanceTask(
@@ -147,11 +147,11 @@ class SystemMaintenanceEngine:
                     message=f"Task failed with error: {str(e)}",
                     execution_time=0.0
                 ))
-        
+
         # Generate maintenance report
         end_time = datetime.now()
         metrics_after = self._capture_system_metrics()
-        
+
         report = MaintenanceReport(
             start_time=self.start_time,
             end_time=end_time,
@@ -161,7 +161,7 @@ class SystemMaintenanceEngine:
             system_metrics_after=metrics_after,
             recommendations=self._generate_recommendations()
         )
-        
+
         logger.info("System maintenance completed")
         return report
 
@@ -170,7 +170,7 @@ class SystemMaintenanceEngine:
         try:
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
-            
+
             return {
                 'timestamp': datetime.now().isoformat(),
                 'memory_usage_percent': memory.percent,
@@ -188,71 +188,71 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Database Maintenance
     # ============================================================================
-    
+
     def _database_maintenance(self) -> List[MaintenanceTask]:
         """Perform database maintenance operations."""
         tasks = []
-        
+
         # Task 1: Database VACUUM and optimization
         tasks.append(self._database_vacuum())
-        
+
         # Task 2: Database statistics update
         tasks.append(self._database_analyze())
-        
+
         # Task 3: Database integrity check
         tasks.append(self._database_integrity_check())
-        
+
         # Task 4: Database backup
         tasks.append(self._database_backup())
-        
+
         # Task 5: Old backup cleanup
         tasks.append(self._database_backup_cleanup())
-        
+
         return tasks
 
     def _database_vacuum(self) -> MaintenanceTask:
         """Perform SQLite VACUUM operation."""
         start_time = time.time()
-        
+
         try:
             db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
-            
+
             if not db_path.exists():
                 return MaintenanceTask(
                     task_name="database_vacuum",
-                    status="skipped", 
+                    status="skipped",
                     message="Database file not found",
                     execution_time=0.0
                 )
-            
+
             # Get database size before
             size_before = db_path.stat().st_size
-            
+
             if not self.config.DRY_RUN:
                 # Connect and VACUUM
                 with sqlite3.connect(str(db_path)) as conn:
                     cursor = conn.cursor()
-                    
+
                     # Check if VACUUM is needed
                     cursor.execute("PRAGMA freelist_count")
                     free_pages = cursor.fetchone()[0]
-                    
+
                     cursor.execute("PRAGMA page_count")
                     total_pages = cursor.fetchone()[0]
-                    
+
                     if total_pages > 0:
                         fragmentation = (free_pages / total_pages) * 100
                     else:
                         fragmentation = 0
-                    
+
                     if fragmentation > self.config.DB_VACUUM_THRESHOLD or self.config.FORCE_MAINTENANCE:
                         logger.info(f"Database fragmentation: {fragmentation:.2f}% - Running VACUUM")
                         cursor.execute("VACUUM")
                         conn.commit()
-                        
+
                         size_after = db_path.stat().st_size
                         space_saved = size_before - size_after
-                        
+
                         return MaintenanceTask(
                             task_name="database_vacuum",
                             status="success",
@@ -280,7 +280,7 @@ class SystemMaintenanceEngine:
                     message="Database VACUUM simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="database_vacuum",
@@ -292,10 +292,10 @@ class SystemMaintenanceEngine:
     def _database_analyze(self) -> MaintenanceTask:
         """Update database statistics."""
         start_time = time.time()
-        
+
         try:
             db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
-            
+
             if not db_path.exists():
                 return MaintenanceTask(
                     task_name="database_analyze",
@@ -303,26 +303,26 @@ class SystemMaintenanceEngine:
                     message="Database file not found",
                     execution_time=0.0
                 )
-            
+
             if not self.config.DRY_RUN:
                 with sqlite3.connect(str(db_path)) as conn:
                     cursor = conn.cursor()
-                    
+
                     # Update statistics
                     cursor.execute("ANALYZE")
                     conn.commit()
-                    
+
                     # Get table statistics
                     cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
                     tables = cursor.fetchall()
-                    
+
                     table_stats = {}
                     for table in tables:
                         table_name = table[0]
                         cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
                         row_count = cursor.fetchone()[0]
                         table_stats[table_name] = row_count
-                    
+
                     return MaintenanceTask(
                         task_name="database_analyze",
                         status="success",
@@ -337,7 +337,7 @@ class SystemMaintenanceEngine:
                     message="Database ANALYZE simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="database_analyze",
@@ -349,10 +349,10 @@ class SystemMaintenanceEngine:
     def _database_integrity_check(self) -> MaintenanceTask:
         """Perform database integrity check."""
         start_time = time.time()
-        
+
         try:
             db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
-            
+
             if not db_path.exists():
                 return MaintenanceTask(
                     task_name="database_integrity_check",
@@ -360,20 +360,20 @@ class SystemMaintenanceEngine:
                     message="Database file not found",
                     execution_time=0.0
                 )
-            
+
             if not self.config.DRY_RUN:
                 with sqlite3.connect(str(db_path)) as conn:
                     cursor = conn.cursor()
-                    
+
                     # Quick integrity check
                     cursor.execute("PRAGMA quick_check")
                     result = cursor.fetchone()[0]
-                    
+
                     if result == "ok":
                         # Get additional info
                         cursor.execute("PRAGMA foreign_key_check")
                         fk_violations = cursor.fetchall()
-                        
+
                         if fk_violations:
                             return MaintenanceTask(
                                 task_name="database_integrity_check",
@@ -403,7 +403,7 @@ class SystemMaintenanceEngine:
                     message="Database integrity check simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="database_integrity_check",
@@ -415,11 +415,11 @@ class SystemMaintenanceEngine:
     def _database_backup(self) -> MaintenanceTask:
         """Create database backup."""
         start_time = time.time()
-        
+
         try:
             db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
             backup_dir = self.config.DATA_DIR / "backups"
-            
+
             if not db_path.exists():
                 return MaintenanceTask(
                     task_name="database_backup",
@@ -427,21 +427,21 @@ class SystemMaintenanceEngine:
                     message="Database file not found",
                     execution_time=0.0
                 )
-            
+
             if not self.config.DRY_RUN:
                 backup_dir.mkdir(exist_ok=True)
-                
+
                 # Create timestamped backup
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 backup_path = backup_dir / f"ai_pdf_scholar_backup_{timestamp}.db"
-                
+
                 # Copy database file
                 shutil.copy2(db_path, backup_path)
-                
+
                 # Verify backup
                 backup_size = backup_path.stat().st_size
                 original_size = db_path.stat().st_size
-                
+
                 if backup_size == original_size:
                     return MaintenanceTask(
                         task_name="database_backup",
@@ -467,7 +467,7 @@ class SystemMaintenanceEngine:
                     message="Database backup simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="database_backup",
@@ -479,10 +479,10 @@ class SystemMaintenanceEngine:
     def _database_backup_cleanup(self) -> MaintenanceTask:
         """Clean up old database backups."""
         start_time = time.time()
-        
+
         try:
             backup_dir = self.config.DATA_DIR / "backups"
-            
+
             if not backup_dir.exists():
                 return MaintenanceTask(
                     task_name="database_backup_cleanup",
@@ -490,26 +490,26 @@ class SystemMaintenanceEngine:
                     message="Backup directory not found",
                     execution_time=0.0
                 )
-            
+
             # Find old backups
             cutoff_date = datetime.now() - timedelta(days=self.config.DB_BACKUP_RETENTION)
             old_backups = []
-            
+
             for backup_file in backup_dir.glob("ai_pdf_scholar_backup_*.db"):
                 if backup_file.stat().st_mtime < cutoff_date.timestamp():
                     old_backups.append(backup_file)
-            
+
             if old_backups:
                 cleaned_count = 0
                 total_size_freed = 0
-                
+
                 if not self.config.DRY_RUN:
                     for backup_file in old_backups:
                         file_size = backup_file.stat().st_size
                         backup_file.unlink()
                         total_size_freed += file_size
                         cleaned_count += 1
-                
+
                 return MaintenanceTask(
                     task_name="database_backup_cleanup",
                     status="success",
@@ -527,11 +527,11 @@ class SystemMaintenanceEngine:
                     message="No old backups to clean up",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="database_backup_cleanup",
-                status="failed", 
+                status="failed",
                 message=f"Backup cleanup failed: {str(e)}",
                 execution_time=time.time() - start_time
             )
@@ -539,26 +539,26 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Log Maintenance
     # ============================================================================
-    
+
     def _log_maintenance(self) -> List[MaintenanceTask]:
         """Perform log maintenance operations."""
         tasks = []
-        
+
         # Task 1: Log rotation
         tasks.append(self._log_rotation())
-        
+
         # Task 2: Log compression
         tasks.append(self._log_compression())
-        
+
         # Task 3: Log cleanup
         tasks.append(self._log_cleanup())
-        
+
         return tasks
 
     def _log_rotation(self) -> MaintenanceTask:
         """Perform log rotation."""
         start_time = time.time()
-        
+
         try:
             if not self.config.DRY_RUN:
                 # Try system logrotate first
@@ -569,7 +569,7 @@ class SystemMaintenanceEngine:
                         text=True,
                         timeout=300
                     )
-                    
+
                     if result.returncode == 0:
                         return MaintenanceTask(
                             task_name="log_rotation",
@@ -579,7 +579,7 @@ class SystemMaintenanceEngine:
                         )
                 except (FileNotFoundError, subprocess.TimeoutExpired):
                     pass
-                
+
                 # Fallback to manual rotation
                 rotated_count = 0
                 for log_dir in [self.config.LOG_DIR, self.config.DATA_DIR / "logs"]:
@@ -591,7 +591,7 @@ class SystemMaintenanceEngine:
                                 rotated_path = log_file.with_suffix(f".log.{timestamp}")
                                 log_file.rename(rotated_path)
                                 rotated_count += 1
-                
+
                 return MaintenanceTask(
                     task_name="log_rotation",
                     status="success",
@@ -606,7 +606,7 @@ class SystemMaintenanceEngine:
                     message="Log rotation simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="log_rotation",
@@ -618,45 +618,45 @@ class SystemMaintenanceEngine:
     def _log_compression(self) -> MaintenanceTask:
         """Compress old log files."""
         start_time = time.time()
-        
+
         try:
             compress_cutoff = datetime.now() - timedelta(days=self.config.LOG_COMPRESSION_DAYS)
             compressed_count = 0
             total_space_saved = 0
-            
+
             for log_dir in [self.config.LOG_DIR, self.config.DATA_DIR / "logs"]:
                 if not log_dir.exists():
                     continue
-                    
+
                 # Find log files older than compression threshold
                 for log_file in log_dir.rglob("*.log*"):
                     if log_file.suffix == '.gz':  # Already compressed
                         continue
-                        
+
                     if datetime.fromtimestamp(log_file.stat().st_mtime) < compress_cutoff:
                         if not self.config.DRY_RUN:
                             # Compress with gzip
                             original_size = log_file.stat().st_size
-                            
+
                             try:
                                 result = subprocess.run(
                                     ['gzip', str(log_file)],
                                     check=True,
                                     timeout=300
                                 )
-                                
+
                                 compressed_path = log_file.with_suffix(log_file.suffix + '.gz')
                                 if compressed_path.exists():
                                     compressed_size = compressed_path.stat().st_size
                                     space_saved = original_size - compressed_size
                                     total_space_saved += space_saved
                                     compressed_count += 1
-                                    
+
                             except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
                                 logger.warning(f"Failed to compress {log_file}")
                         else:
                             compressed_count += 1
-            
+
             if compressed_count > 0:
                 return MaintenanceTask(
                     task_name="log_compression",
@@ -675,7 +675,7 @@ class SystemMaintenanceEngine:
                     message="No log files need compression",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="log_compression",
@@ -687,16 +687,16 @@ class SystemMaintenanceEngine:
     def _log_cleanup(self) -> MaintenanceTask:
         """Clean up old log files."""
         start_time = time.time()
-        
+
         try:
             cleanup_cutoff = datetime.now() - timedelta(days=self.config.LOG_RETENTION_DAYS)
             deleted_count = 0
             total_space_freed = 0
-            
+
             for log_dir in [self.config.LOG_DIR, self.config.DATA_DIR / "logs"]:
                 if not log_dir.exists():
                     continue
-                    
+
                 # Find old log files
                 for log_file in log_dir.rglob("*.log*"):
                     if datetime.fromtimestamp(log_file.stat().st_mtime) < cleanup_cutoff:
@@ -707,7 +707,7 @@ class SystemMaintenanceEngine:
                             deleted_count += 1
                         else:
                             deleted_count += 1
-            
+
             if deleted_count > 0:
                 return MaintenanceTask(
                     task_name="log_cleanup",
@@ -726,7 +726,7 @@ class SystemMaintenanceEngine:
                     message="No old log files to clean up",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="log_cleanup",
@@ -738,26 +738,26 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Cache Maintenance
     # ============================================================================
-    
+
     def _cache_maintenance(self) -> List[MaintenanceTask]:
         """Perform cache maintenance operations."""
         tasks = []
-        
+
         # Task 1: Redis cache optimization
         tasks.append(self._redis_cache_optimization())
-        
+
         # Task 2: File cache cleanup
         tasks.append(self._file_cache_cleanup())
-        
+
         # Task 3: Cache warming
         tasks.append(self._cache_warming())
-        
+
         return tasks
 
     def _redis_cache_optimization(self) -> MaintenanceTask:
         """Optimize Redis cache."""
         start_time = time.time()
-        
+
         try:
             # Try to connect to Redis
             try:
@@ -770,15 +770,15 @@ class SystemMaintenanceEngine:
                     message="Redis not available",
                     execution_time=time.time() - start_time
                 )
-            
+
             if not self.config.DRY_RUN:
                 # Get Redis info
                 info = r.info()
                 used_memory = info.get('used_memory', 0)
                 max_memory = info.get('maxmemory', 0)
-                
+
                 optimizations = []
-                
+
                 # Clear expired keys
                 expired_count = 0
                 for key in r.scan_iter(match="*", count=1000):
@@ -786,17 +786,17 @@ class SystemMaintenanceEngine:
                     if ttl == -1 and key.decode().startswith('temp:'):  # No TTL on temp keys
                         r.expire(key, 3600)  # Set 1 hour TTL
                         expired_count += 1
-                
+
                 if expired_count > 0:
                     optimizations.append(f"Set TTL on {expired_count} temp keys")
-                
+
                 # Memory defragmentation (Redis 6.0+)
                 try:
                     r.memory_doctor()
                     optimizations.append("Memory analysis completed")
                 except redis.ResponseError:
                     pass  # Feature not available
-                
+
                 # Clean old cache entries
                 cleaned_keys = []
                 for pattern in ['cache:temp:*', 'session:expired:*', 'lock:*']:
@@ -804,10 +804,10 @@ class SystemMaintenanceEngine:
                     if keys:
                         r.delete(*keys)
                         cleaned_keys.extend(keys)
-                
+
                 if cleaned_keys:
                     optimizations.append(f"Cleaned {len(cleaned_keys)} old cache entries")
-                
+
                 return MaintenanceTask(
                     task_name="redis_cache_optimization",
                     status="success",
@@ -827,7 +827,7 @@ class SystemMaintenanceEngine:
                     message="Redis cache optimization simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="redis_cache_optimization",
@@ -839,24 +839,24 @@ class SystemMaintenanceEngine:
     def _file_cache_cleanup(self) -> MaintenanceTask:
         """Clean up file-based caches."""
         start_time = time.time()
-        
+
         try:
             cache_dirs = [
                 self.config.DATA_DIR / "cache",
                 self.config.DATA_DIR / "temp",
                 Path("/tmp") / "ai_pdf_scholar_cache"
             ]
-            
+
             total_cleaned = 0
             total_space_freed = 0
-            
+
             for cache_dir in cache_dirs:
                 if not cache_dir.exists():
                     continue
-                
+
                 # Clean files older than 24 hours
                 cutoff_time = time.time() - (24 * 60 * 60)
-                
+
                 for cache_file in cache_dir.rglob("*"):
                     if cache_file.is_file() and cache_file.stat().st_mtime < cutoff_time:
                         if not self.config.DRY_RUN:
@@ -866,10 +866,10 @@ class SystemMaintenanceEngine:
                             total_cleaned += 1
                         else:
                             total_cleaned += 1
-            
+
             if total_cleaned > 0:
                 return MaintenanceTask(
-                    task_name="file_cache_cleanup", 
+                    task_name="file_cache_cleanup",
                     status="success",
                     message=f"Cleaned up {total_cleaned} cache files. Space freed: {total_space_freed // (1024*1024)} MB",
                     execution_time=time.time() - start_time,
@@ -885,7 +885,7 @@ class SystemMaintenanceEngine:
                     message="No cache files to clean up",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="file_cache_cleanup",
@@ -897,7 +897,7 @@ class SystemMaintenanceEngine:
     def _cache_warming(self) -> MaintenanceTask:
         """Warm up caches with frequently accessed data."""
         start_time = time.time()
-        
+
         try:
             if self.config.DRY_RUN:
                 return MaintenanceTask(
@@ -906,23 +906,23 @@ class SystemMaintenanceEngine:
                     message="Cache warming simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-            
+
             warmed_items = 0
-            
+
             # Warm up database query cache
             try:
                 db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
                 if db_path.exists():
                     with sqlite3.connect(str(db_path)) as conn:
                         cursor = conn.cursor()
-                        
+
                         # Pre-load frequently accessed queries
                         common_queries = [
                             "SELECT COUNT(*) FROM documents",
                             "SELECT * FROM documents ORDER BY created_at DESC LIMIT 10",
                             "SELECT * FROM settings"
                         ]
-                        
+
                         for query in common_queries:
                             try:
                                 cursor.execute(query)
@@ -932,26 +932,26 @@ class SystemMaintenanceEngine:
                                 continue
             except Exception:
                 pass
-            
+
             # Warm up Redis cache with popular data
             try:
                 r = redis.Redis(host='localhost', port=6379, db=0, socket_timeout=5)
                 r.ping()
-                
+
                 # Pre-cache some common configuration
                 cache_items = {
                     'system:version': '2.1.0',
                     'system:features': 'rag,upload,query,indexing',
                     'maintenance:last_run': datetime.now().isoformat()
                 }
-                
+
                 for key, value in cache_items.items():
                     r.setex(key, 3600, value)  # 1 hour TTL
                     warmed_items += 1
-                    
+
             except (redis.ConnectionError, redis.TimeoutError):
                 pass
-            
+
             return MaintenanceTask(
                 task_name="cache_warming",
                 status="success",
@@ -959,7 +959,7 @@ class SystemMaintenanceEngine:
                 execution_time=time.time() - start_time,
                 metrics={'warmed_items': warmed_items}
             )
-            
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="cache_warming",
@@ -971,27 +971,27 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Storage Maintenance
     # ============================================================================
-    
+
     def _storage_maintenance(self) -> List[MaintenanceTask]:
         """Perform storage maintenance operations."""
         tasks = []
-        
+
         # Task 1: Disk cleanup
         tasks.append(self._disk_cleanup())
-        
+
         # Task 2: Directory organization
         tasks.append(self._directory_organization())
-        
+
         return tasks
 
     def _disk_cleanup(self) -> MaintenanceTask:
         """Perform disk cleanup operations."""
         start_time = time.time()
-        
+
         try:
             disk_usage = psutil.disk_usage('/')
             usage_percent = (disk_usage.used / disk_usage.total) * 100
-            
+
             if usage_percent < self.config.DISK_CLEANUP_THRESHOLD and not self.config.FORCE_MAINTENANCE:
                 return MaintenanceTask(
                     task_name="disk_cleanup",
@@ -1000,14 +1000,14 @@ class SystemMaintenanceEngine:
                     execution_time=time.time() - start_time,
                     metrics={'disk_usage_percent': usage_percent}
                 )
-            
+
             total_freed = 0
             cleanup_actions = []
-            
+
             if not self.config.DRY_RUN:
                 # Clean temporary files
                 temp_dirs = ['/tmp', '/var/tmp', str(self.config.DATA_DIR / 'temp')]
-                
+
                 for temp_dir in temp_dirs:
                     temp_path = Path(temp_dir)
                     if temp_path.exists():
@@ -1020,32 +1020,32 @@ class SystemMaintenanceEngine:
                                         total_freed += file_size
                                 except Exception:
                                     continue
-                
+
                 cleanup_actions.append(f"Cleaned temporary files")
-                
+
                 # Clean package caches (if available)
                 try:
-                    result = subprocess.run(['apt-get', 'autoremove', '-y'], 
+                    result = subprocess.run(['apt-get', 'autoremove', '-y'],
                                           capture_output=True, timeout=300)
                     if result.returncode == 0:
                         cleanup_actions.append("Removed unused packages")
                 except (FileNotFoundError, subprocess.TimeoutExpired):
                     pass
-                
+
                 try:
-                    result = subprocess.run(['apt-get', 'autoclean'], 
+                    result = subprocess.run(['apt-get', 'autoclean'],
                                           capture_output=True, timeout=120)
                     if result.returncode == 0:
                         cleanup_actions.append("Cleaned package cache")
                 except (FileNotFoundError, subprocess.TimeoutExpired):
                     pass
-                
+
             else:
                 cleanup_actions = ["Disk cleanup simulated (dry run)"]
-            
+
             return MaintenanceTask(
                 task_name="disk_cleanup",
-                status="success", 
+                status="success",
                 message=f"Disk cleanup completed. Actions: {', '.join(cleanup_actions)}. Space freed: {total_freed // (1024*1024)} MB",
                 execution_time=time.time() - start_time,
                 metrics={
@@ -1054,7 +1054,7 @@ class SystemMaintenanceEngine:
                     'disk_usage_percent': usage_percent
                 }
             )
-            
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="disk_cleanup",
@@ -1066,28 +1066,28 @@ class SystemMaintenanceEngine:
     def _directory_organization(self) -> MaintenanceTask:
         """Organize and clean up directory structure."""
         start_time = time.time()
-        
+
         try:
             # Ensure required directories exist
             required_dirs = [
                 self.config.DATA_DIR / "uploads",
                 self.config.DATA_DIR / "vector_indexes",
                 self.config.DATA_DIR / "vector_indexes" / "active",
-                self.config.DATA_DIR / "vector_indexes" / "backup", 
+                self.config.DATA_DIR / "vector_indexes" / "backup",
                 self.config.DATA_DIR / "cache",
                 self.config.DATA_DIR / "logs",
                 self.config.DATA_DIR / "backups"
             ]
-            
+
             created_dirs = []
             organized_items = 0
-            
+
             if not self.config.DRY_RUN:
                 for required_dir in required_dirs:
                     if not required_dir.exists():
                         required_dir.mkdir(parents=True, exist_ok=True)
                         created_dirs.append(str(required_dir))
-                
+
                 # Move misplaced files to correct locations
                 if self.config.DATA_DIR.exists():
                     for item in self.config.DATA_DIR.iterdir():
@@ -1098,27 +1098,27 @@ class SystemMaintenanceEngine:
                                 log_dir.mkdir(exist_ok=True)
                                 item.rename(log_dir / item.name)
                                 organized_items += 1
-                            
+
                             # Move backup files to backups directory
                             elif 'backup' in item.name.lower():
                                 backup_dir = self.config.DATA_DIR / "backups"
                                 backup_dir.mkdir(exist_ok=True)
                                 item.rename(backup_dir / item.name)
                                 organized_items += 1
-            
+
             message_parts = []
             if created_dirs:
                 message_parts.append(f"Created {len(created_dirs)} directories")
             if organized_items > 0:
                 message_parts.append(f"Organized {organized_items} misplaced files")
-            
+
             if not message_parts:
                 message = "Directory structure already organized"
                 status = "skipped"
             else:
                 message = f"Directory organization completed. {', '.join(message_parts)}"
                 status = "success"
-            
+
             return MaintenanceTask(
                 task_name="directory_organization",
                 status=status,
@@ -1130,7 +1130,7 @@ class SystemMaintenanceEngine:
                     'created_directories': created_dirs
                 }
             )
-            
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="directory_organization",
@@ -1142,23 +1142,23 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Performance Maintenance
     # ============================================================================
-    
+
     def _performance_maintenance(self) -> List[MaintenanceTask]:
         """Perform performance maintenance operations."""
         tasks = []
-        
+
         # Task 1: Performance baseline update
         tasks.append(self._performance_baseline_update())
-        
+
         # Task 2: Index optimization
         tasks.append(self._index_optimization())
-        
+
         return tasks
 
     def _performance_baseline_update(self) -> MaintenanceTask:
         """Update performance baselines."""
         start_time = time.time()
-        
+
         try:
             if not self.config.UPDATE_BASELINES and not self.config.FORCE_MAINTENANCE:
                 return MaintenanceTask(
@@ -1167,7 +1167,7 @@ class SystemMaintenanceEngine:
                     message="Performance baseline updates disabled",
                     execution_time=time.time() - start_time
                 )
-            
+
             if not self.config.DRY_RUN:
                 baseline_data = {
                     'timestamp': datetime.now().isoformat(),
@@ -1175,7 +1175,7 @@ class SystemMaintenanceEngine:
                     'database_performance': {},
                     'cache_performance': {}
                 }
-                
+
                 # Database performance baseline
                 db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
                 if db_path.exists():
@@ -1184,25 +1184,25 @@ class SystemMaintenanceEngine:
                         cursor = conn.cursor()
                         cursor.execute("SELECT COUNT(*) FROM documents")
                         document_count = cursor.fetchone()[0]
-                        
+
                         cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
                         table_count = cursor.fetchone()[0]
-                    
+
                     db_time = time.time() - db_start
                     baseline_data['database_performance'] = {
                         'connection_time_ms': db_time * 1000,
                         'document_count': document_count,
                         'table_count': table_count
                     }
-                
+
                 # Save baseline data
                 baseline_dir = self.config.DATA_DIR / "baselines"
                 baseline_dir.mkdir(exist_ok=True)
-                
+
                 baseline_file = baseline_dir / f"performance_baseline_{datetime.now().strftime('%Y%m%d')}.json"
                 with open(baseline_file, 'w') as f:
                     json.dump(baseline_data, f, indent=2)
-                
+
                 return MaintenanceTask(
                     task_name="performance_baseline_update",
                     status="success",
@@ -1217,7 +1217,7 @@ class SystemMaintenanceEngine:
                     message="Performance baseline update simulated (dry run)",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="performance_baseline_update",
@@ -1229,21 +1229,21 @@ class SystemMaintenanceEngine:
     def _index_optimization(self) -> MaintenanceTask:
         """Optimize database indexes and vector indexes."""
         start_time = time.time()
-        
+
         try:
             optimizations = []
-            
+
             if not self.config.DRY_RUN:
                 # Database index optimization
                 db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
                 if db_path.exists():
                     with sqlite3.connect(str(db_path)) as conn:
                         cursor = conn.cursor()
-                        
+
                         # Reindex all indexes
                         cursor.execute("REINDEX")
                         optimizations.append("Database indexes reindexed")
-                
+
                 # Vector index optimization
                 vector_dir = self.config.DATA_DIR / "vector_indexes"
                 if vector_dir.exists():
@@ -1255,7 +1255,7 @@ class SystemMaintenanceEngine:
                         index_count = len(list(active_dir.glob("*.index")))
                         if index_count > 0:
                             optimizations.append(f"Verified {index_count} vector indexes")
-            
+
             if optimizations:
                 return MaintenanceTask(
                     task_name="index_optimization",
@@ -1271,7 +1271,7 @@ class SystemMaintenanceEngine:
                     message="No indexes to optimize",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="index_optimization",
@@ -1283,27 +1283,27 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Security Maintenance
     # ============================================================================
-    
+
     def _security_maintenance(self) -> List[MaintenanceTask]:
         """Perform security maintenance operations."""
         tasks = []
-        
+
         # Task 1: Permission audit
         tasks.append(self._permission_audit())
-        
+
         # Task 2: Secret rotation check
         tasks.append(self._secret_rotation_check())
-        
+
         return tasks
 
     def _permission_audit(self) -> MaintenanceTask:
         """Audit file and directory permissions."""
         start_time = time.time()
-        
+
         try:
             issues = []
             checked_paths = []
-            
+
             # Check critical application directories
             critical_paths = [
                 self.config.DATA_DIR,
@@ -1311,27 +1311,27 @@ class SystemMaintenanceEngine:
                 self.config.DATA_DIR / "backups",
                 self.config.DATA_DIR / "logs"
             ]
-            
+
             for path in critical_paths:
                 if path.exists():
                     stat_info = path.stat()
                     permissions = oct(stat_info.st_mode)[-3:]
-                    
+
                     checked_paths.append({
                         'path': str(path),
                         'permissions': permissions,
                         'owner_readable': os.access(path, os.R_OK),
                         'owner_writable': os.access(path, os.W_OK)
                     })
-                    
+
                     # Check for overly permissive permissions
                     if permissions in ['777', '666']:
                         issues.append(f"{path}: Overly permissive permissions ({permissions})")
-                    
+
                     # Check for non-readable critical directories
                     if not os.access(path, os.R_OK):
                         issues.append(f"{path}: Not readable")
-            
+
             if issues:
                 return MaintenanceTask(
                     task_name="permission_audit",
@@ -1351,7 +1351,7 @@ class SystemMaintenanceEngine:
                     execution_time=time.time() - start_time,
                     metrics={'checked_paths': checked_paths}
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="permission_audit",
@@ -1363,13 +1363,13 @@ class SystemMaintenanceEngine:
     def _secret_rotation_check(self) -> MaintenanceTask:
         """Check if secrets need rotation."""
         start_time = time.time()
-        
+
         try:
             # This would integrate with your secrets management system
             # For now, we'll do a basic check
-            
+
             rotation_needed = []
-            
+
             # Check environment variables for API keys
             sensitive_env_vars = [
                 'GEMINI_API_KEY',
@@ -1377,12 +1377,12 @@ class SystemMaintenanceEngine:
                 'SECRET_KEY',
                 'JWT_SECRET'
             ]
-            
+
             for env_var in sensitive_env_vars:
                 if env_var in os.environ:
                     # Basic check - in production, you'd check actual rotation dates
                     rotation_needed.append(f"{env_var}: Consider rotation")
-            
+
             if rotation_needed:
                 return MaintenanceTask(
                     task_name="secret_rotation_check",
@@ -1394,11 +1394,11 @@ class SystemMaintenanceEngine:
             else:
                 return MaintenanceTask(
                     task_name="secret_rotation_check",
-                    status="success", 
+                    status="success",
                     message="Secret rotation check completed, no immediate rotation needed",
                     execution_time=time.time() - start_time
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="secret_rotation_check",
@@ -1410,34 +1410,34 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Health Verification
     # ============================================================================
-    
+
     def _health_verification(self) -> List[MaintenanceTask]:
         """Perform final health verification."""
         tasks = []
-        
+
         # Task 1: System health check
         tasks.append(self._system_health_check())
-        
-        # Task 2: Service health check  
+
+        # Task 2: Service health check
         tasks.append(self._service_health_check())
-        
+
         return tasks
 
     def _system_health_check(self) -> MaintenanceTask:
         """Verify system health post-maintenance."""
         start_time = time.time()
-        
+
         try:
             health_checks = []
             warnings = []
-            
+
             # Memory check
             memory = psutil.virtual_memory()
             if memory.percent < 90:
                 health_checks.append(f"Memory usage: {memory.percent:.1f}% (healthy)")
             else:
                 warnings.append(f"High memory usage: {memory.percent:.1f}%")
-            
+
             # Disk check
             disk = psutil.disk_usage('/')
             disk_percent = (disk.used / disk.total) * 100
@@ -1445,14 +1445,14 @@ class SystemMaintenanceEngine:
                 health_checks.append(f"Disk usage: {disk_percent:.1f}% (healthy)")
             else:
                 warnings.append(f"High disk usage: {disk_percent:.1f}%")
-            
+
             # CPU check
             cpu_percent = psutil.cpu_percent(interval=2)
             if cpu_percent < 80:
                 health_checks.append(f"CPU usage: {cpu_percent:.1f}% (healthy)")
             else:
                 warnings.append(f"High CPU usage: {cpu_percent:.1f}%")
-            
+
             if warnings:
                 return MaintenanceTask(
                     task_name="system_health_check",
@@ -1472,7 +1472,7 @@ class SystemMaintenanceEngine:
                     execution_time=time.time() - start_time,
                     metrics={'health_checks': health_checks}
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="system_health_check",
@@ -1484,11 +1484,11 @@ class SystemMaintenanceEngine:
     def _service_health_check(self) -> MaintenanceTask:
         """Verify service health post-maintenance."""
         start_time = time.time()
-        
+
         try:
             service_checks = []
             issues = []
-            
+
             # Database connectivity test
             db_path = self.config.DATA_DIR / "ai_pdf_scholar.db"
             if db_path.exists():
@@ -1502,7 +1502,7 @@ class SystemMaintenanceEngine:
                     issues.append(f"Database: Connection failed - {str(e)}")
             else:
                 issues.append("Database: File not found")
-            
+
             # Redis connectivity test
             try:
                 r = redis.Redis(host='localhost', port=6379, db=0, socket_timeout=5)
@@ -1510,21 +1510,21 @@ class SystemMaintenanceEngine:
                 service_checks.append("Redis: Connected")
             except (redis.ConnectionError, redis.TimeoutError):
                 issues.append("Redis: Connection failed")
-            
+
             # File system access test
             try:
                 test_file = self.config.DATA_DIR / "health_test.tmp"
                 test_file.write_text("health_check")
                 test_content = test_file.read_text()
                 test_file.unlink()
-                
+
                 if test_content == "health_check":
                     service_checks.append("File System: Read/write OK")
                 else:
                     issues.append("File System: Read/write test failed")
             except Exception as e:
                 issues.append(f"File System: Access test failed - {str(e)}")
-            
+
             if issues:
                 return MaintenanceTask(
                     task_name="service_health_check",
@@ -1544,7 +1544,7 @@ class SystemMaintenanceEngine:
                     execution_time=time.time() - start_time,
                     metrics={'service_checks': service_checks}
                 )
-                
+
         except Exception as e:
             return MaintenanceTask(
                 task_name="service_health_check",
@@ -1556,49 +1556,49 @@ class SystemMaintenanceEngine:
     # ============================================================================
     # Reporting and Recommendations
     # ============================================================================
-    
+
     def _generate_recommendations(self) -> List[str]:
         """Generate maintenance recommendations based on task results."""
         recommendations = []
-        
+
         # Analyze task results for patterns
         failed_tasks = [t for t in self.tasks_completed if t.status == "failed"]
         warning_tasks = [t for t in self.tasks_completed if t.status == "warning"]
-        
+
         if failed_tasks:
             recommendations.append(f"Review and retry {len(failed_tasks)} failed tasks")
-            
+
         if warning_tasks:
             recommendations.append(f"Investigate {len(warning_tasks)} tasks with warnings")
-        
+
         # Resource-based recommendations
         current_metrics = self._capture_system_metrics()
-        
+
         if current_metrics.get('memory_usage_percent', 0) > 80:
             recommendations.append("Consider increasing memory or optimizing memory usage")
-        
+
         if current_metrics.get('disk_usage_percent', 0) > 85:
             recommendations.append("Increase disk space or implement more aggressive cleanup policies")
-        
+
         # Task-specific recommendations
         for task in self.tasks_completed:
             if task.task_name == "database_vacuum" and task.status == "success":
                 if task.metrics and task.metrics.get('space_saved_bytes', 0) > 100*1024*1024:  # 100MB
                     recommendations.append("Database had significant fragmentation - consider more frequent VACUUM operations")
-            
+
             elif task.task_name == "log_cleanup" and task.status == "success":
                 if task.metrics and task.metrics.get('files_deleted', 0) > 100:
                     recommendations.append("Large number of old log files - consider adjusting log retention policies")
-        
+
         # Maintenance frequency recommendations
         total_tasks = len(self.tasks_completed)
         successful_tasks = len([t for t in self.tasks_completed if t.status == "success"])
-        
+
         if successful_tasks / total_tasks > 0.9:
             recommendations.append("System maintenance is working well - continue current schedule")
         else:
             recommendations.append("Consider increasing maintenance frequency or investigating recurring issues")
-        
+
         return recommendations
 
 
@@ -1608,23 +1608,23 @@ class SystemMaintenanceEngine:
 
 class MaintenanceReportFormatter:
     """Format maintenance reports for different outputs."""
-    
+
     @staticmethod
     def format_report(report: MaintenanceReport, format_type: str = "text") -> str:
         """Format maintenance report."""
-        
+
         if format_type.lower() == "json":
             return MaintenanceReportFormatter._format_json(report)
         elif format_type.lower() == "html":
             return MaintenanceReportFormatter._format_html(report)
         else:
             return MaintenanceReportFormatter._format_text(report)
-    
+
     @staticmethod
     def _format_text(report: MaintenanceReport) -> str:
         """Format as text report."""
         lines = []
-        
+
         # Header
         lines.append("=" * 60)
         lines.append("AI PDF SCHOLAR - SYSTEM MAINTENANCE REPORT")
@@ -1633,14 +1633,14 @@ class MaintenanceReportFormatter:
         lines.append(f"End Time: {report.end_time}")
         lines.append(f"Duration: {report.total_duration:.2f} seconds")
         lines.append("")
-        
+
         # Summary
         total_tasks = len(report.tasks_completed)
         successful = len([t for t in report.tasks_completed if t.status == "success"])
         failed = len([t for t in report.tasks_completed if t.status == "failed"])
         warnings = len([t for t in report.tasks_completed if t.status == "warning"])
         skipped = len([t for t in report.tasks_completed if t.status == "skipped"])
-        
+
         lines.append("SUMMARY")
         lines.append("-" * 20)
         lines.append(f"Total Tasks: {total_tasks}")
@@ -1649,48 +1649,48 @@ class MaintenanceReportFormatter:
         lines.append(f"Warnings: {warnings}")
         lines.append(f"Skipped: {skipped}")
         lines.append("")
-        
+
         # Task Details
         lines.append("TASK DETAILS")
         lines.append("-" * 20)
-        
+
         for task in report.tasks_completed:
             status_indicator = {
                 "success": "✓",
-                "failed": "✗", 
+                "failed": "✗",
                 "warning": "⚠",
                 "skipped": "○"
             }.get(task.status, "?")
-            
+
             lines.append(f"{status_indicator} {task.task_name.replace('_', ' ').title()}")
             lines.append(f"  Status: {task.status.upper()}")
             lines.append(f"  Message: {task.message}")
             lines.append(f"  Duration: {task.execution_time:.2f}s")
-            
+
             if task.metrics:
                 lines.append("  Metrics:")
                 for key, value in task.metrics.items():
                     lines.append(f"    {key}: {value}")
-            
+
             lines.append("")
-        
+
         # System Metrics Comparison
         if report.system_metrics_before and report.system_metrics_after:
             lines.append("SYSTEM METRICS COMPARISON")
             lines.append("-" * 30)
-            
+
             metrics_to_compare = ['memory_usage_percent', 'disk_usage_percent', 'cpu_usage_percent']
-            
+
             for metric in metrics_to_compare:
                 before = report.system_metrics_before.get(metric, 0)
                 after = report.system_metrics_after.get(metric, 0)
                 change = after - before
-                
+
                 change_indicator = "↑" if change > 0 else "↓" if change < 0 else "→"
                 lines.append(f"{metric.replace('_', ' ').title()}: {before:.1f}% {change_indicator} {after:.1f}% ({change:+.1f}%)")
-            
+
             lines.append("")
-        
+
         # Recommendations
         if report.recommendations:
             lines.append("RECOMMENDATIONS")
@@ -1698,18 +1698,18 @@ class MaintenanceReportFormatter:
             for i, recommendation in enumerate(report.recommendations, 1):
                 lines.append(f"{i}. {recommendation}")
             lines.append("")
-        
+
         lines.append("=" * 60)
         lines.append("Report generated by AI PDF Scholar Maintenance System")
         lines.append("=" * 60)
-        
+
         return "\n".join(lines)
-    
+
     @staticmethod
     def _format_json(report: MaintenanceReport) -> str:
         """Format as JSON."""
         return json.dumps(asdict(report), indent=2, default=str)
-    
+
     @staticmethod
     def _format_html(report: MaintenanceReport) -> str:
         """Format as HTML report."""
@@ -1738,7 +1738,7 @@ class MaintenanceReportFormatter:
         <p><strong>End Time:</strong> {report.end_time}</p>
         <p><strong>Duration:</strong> {report.total_duration:.2f} seconds</p>
     </div>
-    
+
     <div class="summary">
         <h2>Summary</h2>
         <p><strong>Total Tasks:</strong> {len(report.tasks_completed)}</p>
@@ -1747,10 +1747,10 @@ class MaintenanceReportFormatter:
         <p><strong>Warnings:</strong> {len([t for t in report.tasks_completed if t.status == "warning"])}</p>
         <p><strong>Skipped:</strong> {len([t for t in report.tasks_completed if t.status == "skipped"])}</p>
     </div>
-    
+
     <h2>Task Details</h2>
 """
-        
+
         for task in report.tasks_completed:
             status_symbols = {
                 "success": "✓",
@@ -1758,7 +1758,7 @@ class MaintenanceReportFormatter:
                 "warning": "⚠",
                 "skipped": "○"
             }
-            
+
             html += f"""
     <div class="task {task.status}">
         <h3>{status_symbols.get(task.status, '?')} {task.task_name.replace('_', ' ').title()}</h3>
@@ -1766,26 +1766,26 @@ class MaintenanceReportFormatter:
         <p><strong>Message:</strong> {task.message}</p>
         <p><strong>Duration:</strong> {task.execution_time:.2f}s</p>
 """
-            
+
             if task.metrics:
                 html += '<div class="metrics"><strong>Metrics:</strong><ul>'
                 for key, value in task.metrics.items():
                     html += f'<li>{key}: {value}</li>'
                 html += '</ul></div>'
-            
+
             html += '</div>'
-        
+
         if report.recommendations:
             html += '<div class="recommendations"><h2>Recommendations</h2><ol>'
             for recommendation in report.recommendations:
                 html += f'<li>{recommendation}</li>'
             html += '</ol></div>'
-        
+
         html += """
 </body>
 </html>
 """
-        
+
         return html
 
 
@@ -1802,102 +1802,102 @@ def main():
 Examples:
   # Run all maintenance tasks
   python system_maintenance.py
-  
+
   # Run specific maintenance types
   python system_maintenance.py --tasks database,cache,logs
-  
+
   # Dry run to see what would be done
   python system_maintenance.py --dry-run
-  
+
   # Force maintenance regardless of thresholds
   python system_maintenance.py --force
-  
+
   # Generate HTML report
   python system_maintenance.py --format html --output maintenance_report.html
         """
     )
-    
+
     parser.add_argument(
         '--tasks',
         help='Comma-separated list of maintenance types: database,logs,cache,storage,performance,security,health_checks'
     )
-    
+
     parser.add_argument(
         '--dry-run',
         action='store_true',
         help='Show what would be done without making changes'
     )
-    
+
     parser.add_argument(
         '--force',
         action='store_true',
         help='Force maintenance regardless of thresholds'
     )
-    
+
     parser.add_argument(
         '--format',
         choices=['text', 'json', 'html'],
         default='text',
         help='Report output format. Default: text'
     )
-    
+
     parser.add_argument(
         '--output',
         help='Output file path. If not specified, prints to stdout'
     )
-    
+
     parser.add_argument(
         '--verbose',
         action='store_true',
         help='Enable verbose logging'
     )
-    
+
     args = parser.parse_args()
-    
+
     # Set up logging
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    
+
     # Set environment variables based on args
     if args.dry_run:
         os.environ["MAINTENANCE_DRY_RUN"] = "true"
-    
+
     if args.force:
         os.environ["FORCE_MAINTENANCE"] = "true"
-    
+
     # Parse task types
     task_types = None
     if args.tasks:
         task_types = [t.strip() for t in args.tasks.split(',')]
-    
+
     try:
         # Initialize maintenance engine
         engine = SystemMaintenanceEngine()
-        
+
         logger.info("Starting automated system maintenance")
-        
+
         # Run maintenance
         report = engine.run_maintenance(task_types=task_types)
-        
+
         # Format report
         formatted_report = MaintenanceReportFormatter.format_report(report, args.format)
-        
+
         # Output report
         if args.output:
             output_path = Path(args.output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(formatted_report)
-            
+
             logger.info(f"Maintenance report saved to: {output_path}")
         else:
             print(formatted_report)
-        
+
         # Return appropriate exit code
         failed_tasks = [t for t in report.tasks_completed if t.status == "failed"]
         return 1 if failed_tasks else 0
-        
+
     except Exception as e:
         logger.error(f"Maintenance failed: {e}")
         if args.verbose:

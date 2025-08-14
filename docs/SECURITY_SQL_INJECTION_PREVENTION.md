@@ -35,7 +35,7 @@ LIMIT ? OFFSET ?
 # Secure whitelist-based validation for sort_by parameter
 valid_sort_fields = {
     "created_at": "created_at",
-    "updated_at": "updated_at", 
+    "updated_at": "updated_at",
     "last_accessed": "last_accessed",
     "title": "title",
     "file_size": "file_size",
@@ -64,7 +64,7 @@ safe_sort_order = valid_sort_orders.get(sort_order.lower(), "DESC")
 ```python
 class DocumentSortField(str, Enum):
     """Enumeration of valid document sort fields for SQL injection prevention."""
-    
+
     CREATED_AT = "created_at"
     UPDATED_AT = "updated_at"
     LAST_ACCESSED = "last_accessed"
@@ -73,7 +73,7 @@ class DocumentSortField(str, Enum):
 
 class SortOrder(str, Enum):
     """Enumeration of valid sort orders for SQL injection prevention."""
-    
+
     ASC = "asc"
     DESC = "desc"
 ```
@@ -95,19 +95,19 @@ def validate_search_query(cls, v):
     """Validate search query for potential injection attempts."""
     if v is None:
         return v
-    
+
     # Check for potential SQL injection patterns
     dangerous_patterns = [
         '--', ';', '/*', '*/', 'xp_', 'sp_', 'exec', 'execute',
         'union', 'select', 'insert', 'update', 'delete', 'drop',
         'create', 'alter', 'grant', 'revoke'
     ]
-    
+
     v_lower = v.lower()
     for pattern in dangerous_patterns:
         if pattern in v_lower:
             raise ValueError(f"Search query contains potentially dangerous pattern: {pattern}")
-    
+
     return v.strip()
 ```
 
@@ -137,7 +137,7 @@ graph TD
     G --> H[Whitelist Validation]
     H --> I[Safe Query Construction]
     I --> J[Database]
-    
+
     C --> K[Validation Error 422]
     E --> K
     H --> L[Safe Default Values]
@@ -152,7 +152,7 @@ graph TD
 **Coverage**:
 - ✅ Whitelist validation for all valid sort fields
 - ✅ SQL injection payload blocking
-- ✅ Case sensitivity handling  
+- ✅ Case sensitivity handling
 - ✅ Error handling and logging
 - ✅ Boundary condition testing
 
@@ -172,12 +172,12 @@ graph TD
 ```sql
 -- Sort field injection attempts
 "created_at; DROP TABLE documents; --"
-"created_at UNION SELECT * FROM users --" 
+"created_at UNION SELECT * FROM users --"
 "created_at' OR '1'='1"
 "created_at/**/UNION/**/SELECT"
 "title'; DELETE FROM documents; --"
 
--- Sort order injection attempts  
+-- Sort order injection attempts
 "DESC; DROP TABLE documents; --"
 "ASC UNION SELECT * FROM users"
 "DESC' OR '1'='1"
@@ -193,7 +193,7 @@ graph TD
 ### Pre-deployment Security Verification
 
 - [ ] **Repository Tests**: All repository-level security tests pass
-- [ ] **API Tests**: All API-level integration tests pass  
+- [ ] **API Tests**: All API-level integration tests pass
 - [ ] **Parameter Validation**: Enum validation working correctly
 - [ ] **Error Handling**: No sensitive information in error responses
 - [ ] **Logging**: Security audit logs configured
@@ -265,7 +265,7 @@ valid_sort_fields = {
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-01-19  
-**Security Review Date**: 2025-01-19  
+**Document Version**: 1.0
+**Last Updated**: 2025-01-19
+**Security Review Date**: 2025-01-19
 **Next Review Due**: 2025-04-19

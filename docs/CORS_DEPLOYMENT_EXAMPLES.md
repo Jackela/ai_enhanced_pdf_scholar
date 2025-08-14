@@ -28,7 +28,7 @@ services:
       - DEBUG=true
     ports:
       - "8000:8000"
-    
+
   frontend:
     build: ./frontend
     ports:
@@ -51,7 +51,7 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
-    
+
   nginx:
     image: nginx:alpine
     ports:
@@ -87,7 +87,7 @@ docker build --build-arg ENVIRONMENT=development \
              --build-arg CORS_ORIGINS=http://localhost:3000 \
              -t myapp:dev .
 
-# Production  
+# Production
 docker build --build-arg ENVIRONMENT=production \
              --build-arg CORS_ORIGINS=https://app.yourdomain.com \
              -t myapp:prod .
@@ -194,7 +194,7 @@ spec:
 environment: production
 
 cors:
-  origins: 
+  origins:
     - "https://app.yourdomain.com"
     - "https://admin.yourdomain.com"
 
@@ -232,7 +232,7 @@ cors:
           "value": "production"
         },
         {
-          "name": "CORS_ORIGINS", 
+          "name": "CORS_ORIGINS",
           "value": "https://app.yourdomain.com,https://admin.yourdomain.com"
         }
       ],
@@ -446,11 +446,11 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
+
         # CORS headers are handled by the FastAPI app
         # No need to add CORS headers in Nginx
     }
-    
+
     location / {
         # Serve frontend
         root /var/www/frontend/dist;
@@ -469,15 +469,15 @@ server {
 
 <VirtualHost *:443>
     ServerName app.yourdomain.com
-    
+
     SSLEngine on
     SSLCertificateFile /path/to/certificate.crt
     SSLCertificateKeyFile /path/to/private.key
-    
+
     ProxyPreserveHost On
     ProxyPass /api/ http://127.0.0.1:8000/
     ProxyPassReverse /api/ http://127.0.0.1:8000/
-    
+
     DocumentRoot /var/www/frontend/dist
     <Directory /var/www/frontend/dist>
         AllowOverride All
@@ -504,30 +504,30 @@ jobs:
     environment: staging
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Deploy to staging
       run: |
         docker build \
           --build-arg ENVIRONMENT=staging \
           --build-arg CORS_ORIGINS="${{ secrets.STAGING_CORS_ORIGINS }}" \
           -t myapp:staging .
-        
+
         # Deploy to staging environment
-        
+
   deploy-production:
     runs-on: ubuntu-latest
     environment: production
     needs: deploy-staging
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Deploy to production
       run: |
         docker build \
           --build-arg ENVIRONMENT=production \
           --build-arg CORS_ORIGINS="${{ secrets.PRODUCTION_CORS_ORIGINS }}" \
           -t myapp:production .
-        
+
         # Deploy to production environment
 ```
 
@@ -540,7 +540,7 @@ Repository Secrets:
 # .gitlab-ci.yml
 stages:
   - build
-  - deploy-staging  
+  - deploy-staging
   - deploy-production
 
 variables:
@@ -660,7 +660,7 @@ import os
 def test_deployed_cors():
     api_url = os.environ["API_URL"]
     allowed_origin = os.environ["ALLOWED_ORIGIN"]
-    
+
     # Test allowed origin
     response = requests.options(
         f"{api_url}/api/system/health",
@@ -669,18 +669,18 @@ def test_deployed_cors():
             "Access-Control-Request-Method": "GET"
         }
     )
-    
+
     assert response.headers.get("Access-Control-Allow-Origin") == allowed_origin
-    
+
     # Test disallowed origin
     response = requests.options(
-        f"{api_url}/api/system/health", 
+        f"{api_url}/api/system/health",
         headers={
             "Origin": "https://malicious.com",
             "Access-Control-Request-Method": "GET"
         }
     )
-    
+
     assert response.headers.get("Access-Control-Allow-Origin") != "https://malicious.com"
     print("✅ Deployed CORS configuration is secure")
 
@@ -720,5 +720,5 @@ export CORS_ORIGINS="https://app.yourdomain.com"  # Remove wildcard *
 
 **Security Note:** Always test your CORS configuration before deploying to production. Use the provided testing scripts to verify that only intended origins can access your API.
 
-**Last Updated:** 2025-01-19  
+**Last Updated:** 2025-01-19
 **Version:** 2.0.0

@@ -27,9 +27,9 @@ def test_environment_configurations():
     print("=" * 60)
     print("CORS Security Configuration Demonstration")
     print("=" * 60)
-    
+
     from backend.api.cors_config import CORSConfig, Environment
-    
+
     test_cases = [
         {
             "name": "Development Environment",
@@ -38,14 +38,14 @@ def test_environment_configurations():
             "should_pass": True
         },
         {
-            "name": "Testing Environment", 
+            "name": "Testing Environment",
             "env": "testing",
             "origins": "http://localhost:3000",
             "should_pass": True
         },
         {
             "name": "Staging Environment",
-            "env": "staging", 
+            "env": "staging",
             "origins": "https://staging-app.example.com,https://staging-admin.example.com",
             "should_pass": True
         },
@@ -57,7 +57,7 @@ def test_environment_configurations():
         },
         {
             "name": "Production Environment (Wildcard - VULNERABLE)",
-            "env": "production", 
+            "env": "production",
             "origins": "*",
             "should_pass": False
         },
@@ -68,41 +68,41 @@ def test_environment_configurations():
             "should_pass": False
         },
         {
-            "name": "Production Environment (HTTP - VULNERABLE)", 
+            "name": "Production Environment (HTTP - VULNERABLE)",
             "env": "production",
             "origins": "http://app.example.com",
             "should_pass": False
         }
     ]
-    
+
     for i, test_case in enumerate(test_cases, 1):
         print(f"\n{i}. {test_case['name']}")
         print("-" * 40)
-        
+
         # Set environment variables
         os.environ["ENVIRONMENT"] = test_case["env"]
         os.environ["CORS_ORIGINS"] = test_case["origins"]
-        
+
         try:
             config = CORSConfig()
             middleware_config = config.get_middleware_config()
-            
+
             if test_case["should_pass"]:
                 print(f"✅ SUCCESS: Configuration valid")
                 print(f"   Environment: {config.environment.value}")
                 print(f"   Origins: {len(middleware_config['allow_origins'])} configured")
                 print(f"   Credentials: {middleware_config['allow_credentials']}")
                 print(f"   Methods: {', '.join(middleware_config['allow_methods'])}")
-                
+
                 # Log detailed info in development only
                 if config.environment == Environment.DEVELOPMENT:
                     print(f"   Origin Details: {middleware_config['allow_origins']}")
                 else:
                     print(f"   Origin Details: [Hidden for security in {config.environment.value}]")
-                    
+
             else:
                 print(f"❌ UNEXPECTED: Configuration should have failed but passed")
-                
+
         except ValueError as e:
             if not test_case["should_pass"]:
                 print(f"✅ SUCCESS: Security validation correctly blocked vulnerable config")
@@ -118,9 +118,9 @@ def test_origin_validation():
     print("\n" + "=" * 60)
     print("Origin Format Validation Tests")
     print("=" * 60)
-    
+
     from backend.api.cors_config import validate_origin_format
-    
+
     test_origins = [
         ("https://app.example.com", True, "Valid HTTPS origin"),
         ("http://localhost:3000", True, "Valid localhost with port"),
@@ -133,7 +133,7 @@ def test_origin_validation():
         ("", False, "Empty string"),
         ("https://app.example.com:8443", True, "HTTPS with custom port"),
     ]
-    
+
     for i, (origin, expected, description) in enumerate(test_origins, 1):
         result = validate_origin_format(origin)
         status = "✅" if result == expected else "❌"
@@ -146,7 +146,7 @@ def test_security_scenarios():
     print("\n" + "=" * 60)
     print("Security Scenario Tests")
     print("=" * 60)
-    
+
     scenarios = [
         {
             "name": "Subdomain Confusion Attack",
@@ -157,7 +157,7 @@ def test_security_scenarios():
         {
             "name": "Protocol Confusion",
             "origin": "http://app.example.com",
-            "allowed": "https://app.example.com", 
+            "allowed": "https://app.example.com",
             "description": "Should not allow HTTP when HTTPS is configured"
         },
         {
@@ -168,34 +168,34 @@ def test_security_scenarios():
         },
         {
             "name": "Case Sensitivity",
-            "origin": "https://APP.EXAMPLE.COM", 
+            "origin": "https://APP.EXAMPLE.COM",
             "allowed": "https://app.example.com",
             "description": "Should be case sensitive"
         }
     ]
-    
+
     from backend.api.cors_config import CORSConfig
-    
+
     # Set up production environment with specific origin
     os.environ["ENVIRONMENT"] = "production"
-    
+
     for i, scenario in enumerate(scenarios, 1):
         print(f"\n{i}. {scenario['name']}")
         print(f"   {scenario['description']}")
         print(f"   Allowed: {scenario['allowed']}")
         print(f"   Attempting: {scenario['origin']}")
-        
+
         os.environ["CORS_ORIGINS"] = scenario["allowed"]
-        
+
         try:
             config = CORSConfig()
             origins = config.get_middleware_config()["allow_origins"]
-            
+
             if scenario["origin"] in origins:
                 print("   ❌ VULNERABLE: Malicious origin was allowed")
             else:
                 print("   ✅ SECURE: Malicious origin correctly blocked")
-                
+
         except Exception as e:
             print(f"   ❌ ERROR: {e}")
 
@@ -204,32 +204,32 @@ def demonstrate_environment_differences():
     print("\n" + "=" * 60)
     print("Environment-Specific Behavior")
     print("=" * 60)
-    
+
     from backend.api.cors_config import CORSConfig
-    
+
     environments = [
         ("development", "http://localhost:3000"),
-        ("testing", "http://localhost:3000"), 
+        ("testing", "http://localhost:3000"),
         ("staging", "https://staging.example.com"),
         ("production", "https://app.example.com")
     ]
-    
+
     for env, origins in environments:
         print(f"\n{env.upper()} Environment:")
         print("-" * 20)
-        
+
         os.environ["ENVIRONMENT"] = env
         os.environ["CORS_ORIGINS"] = origins
-        
+
         try:
             config = CORSConfig()
             middleware_config = config.get_middleware_config()
-            
+
             print(f"  Allow Credentials: {middleware_config['allow_credentials']}")
             print(f"  Method Count: {len(middleware_config['allow_methods'])}")
             print(f"  Max Age: {middleware_config['max_age']} seconds")
             print(f"  Header Count: {len(middleware_config['allow_headers'])}")
-            
+
         except Exception as e:
             print(f"  ❌ Error: {e}")
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         test_origin_validation()
         test_security_scenarios()
         demonstrate_environment_differences()
-        
+
         print("\n" + "=" * 60)
         print("CORS Security Demonstration Complete")
         print("=" * 60)
@@ -250,7 +250,7 @@ if __name__ == "__main__":
         print("  • Origin format validation")
         print("  • Comprehensive security testing")
         print("  • Detailed security logging")
-        
+
     except KeyboardInterrupt:
         print("\nDemo interrupted by user")
     except Exception as e:

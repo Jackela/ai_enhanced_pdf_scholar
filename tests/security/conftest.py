@@ -86,11 +86,11 @@ def authenticated_client(client):
         "/api/auth/login",
         json={"username": "testuser", "password": "Test123!"}
     )
-    
+
     if response.status_code == 200:
         token = response.json().get("access_token")
         client.headers["Authorization"] = f"Bearer {token}"
-    
+
     return client
 
 
@@ -102,11 +102,11 @@ def admin_client(client):
         "/api/auth/login",
         json={"username": "admin", "password": "Admin123!"}
     )
-    
+
     if response.status_code == 200:
         token = response.json().get("access_token")
         client.headers["Authorization"] = f"Bearer {token}"
-    
+
     return client
 
 
@@ -115,11 +115,11 @@ def db_session():
     """Create database session for testing."""
     engine = create_engine("sqlite:///:memory:")
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
+
     # Create tables
     from backend.database import Base
     Base.metadata.create_all(bind=engine)
-    
+
     session = SessionLocal()
     yield session
     session.close()
@@ -178,7 +178,7 @@ def malicious_files():
 async def async_client(app):
     """Create async test client."""
     from httpx import AsyncClient
-    
+
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
 
@@ -230,13 +230,13 @@ def mock_email_service():
 def mock_cache():
     """Mock cache for testing."""
     cache = {}
-    
+
     mock = MagicMock()
     mock.get = lambda key: cache.get(key)
     mock.set = lambda key, value, ttl=None: cache.update({key: value})
     mock.delete = lambda key: cache.pop(key, None)
     mock.clear = lambda: cache.clear()
-    
+
     return mock
 
 
@@ -253,15 +253,15 @@ def cleanup_after_test():
 def performance_monitor():
     """Monitor test performance."""
     import time
-    
+
     class PerformanceMonitor:
         def __init__(self):
             self.start_time = None
             self.measurements = []
-        
+
         def start(self):
             self.start_time = time.time()
-        
+
         def stop(self, label=""):
             if self.start_time:
                 elapsed = time.time() - self.start_time
@@ -271,14 +271,14 @@ def performance_monitor():
                 })
                 return elapsed
             return 0
-        
+
         def get_report(self):
             return {
                 "total_measurements": len(self.measurements),
                 "measurements": self.measurements,
                 "total_time": sum(m["time"] for m in self.measurements)
             }
-    
+
     return PerformanceMonitor()
 
 
@@ -287,12 +287,12 @@ def performance_monitor():
 def security_baseline():
     """Load security baseline for regression testing."""
     baseline_file = Path("tests/security/security_baseline.json")
-    
+
     if baseline_file.exists():
         import json
         with open(baseline_file, 'r') as f:
             return json.load(f)
-    
+
     # Return default baseline
     return {
         "version": "1.0.0",
@@ -315,7 +315,7 @@ def security_report(request):
     """Generate security test report at end of session."""
     from datetime import datetime
     import json
-    
+
     report = {
         "timestamp": datetime.now().isoformat(),
         "tests": [],
@@ -326,19 +326,19 @@ def security_report(request):
             "skipped": 0
         }
     }
-    
+
     def finalize():
         # Generate final report
         report_dir = Path("tests/security/reports")
         report_dir.mkdir(parents=True, exist_ok=True)
-        
+
         report_file = report_dir / f"security_test_report_{int(time.time())}.json"
         with open(report_file, 'w') as f:
             json.dump(report, f, indent=2)
-        
+
         print(f"\nSecurity test report saved to: {report_file}")
         print(f"Summary: {report['summary']}")
-    
+
     request.addfinalizer(finalize)
     return report
 
@@ -346,23 +346,23 @@ def security_report(request):
 # Custom assertions
 class SecurityAssertions:
     """Custom assertions for security testing."""
-    
+
     @staticmethod
     def assert_no_sql_injection(response, payload):
         """Assert response doesn't indicate SQL injection."""
         assert response.status_code not in [500], \
                f"Server error with SQL payload: {payload}"
-        
+
         error_indicators = [
             "SQL", "syntax", "mysql", "postgresql", "sqlite",
             "ORA-", "DB2", "Microsoft"
         ]
-        
+
         response_text = response.text.lower()
         for indicator in error_indicators:
             assert indicator.lower() not in response_text, \
                    f"SQL error indicator found: {indicator}"
-    
+
     @staticmethod
     def assert_no_xss(response, payload):
         """Assert response doesn't contain XSS."""
@@ -372,19 +372,19 @@ class SecurityAssertions:
                    "&gt;" in response.text or \
                    "\\u003c" in response.text.lower(), \
                    f"Unescaped XSS payload in response: {payload}"
-    
+
     @staticmethod
     def assert_proper_rate_limiting(responses):
         """Assert proper rate limiting behavior."""
         status_codes = [r.status_code for r in responses]
         assert 429 in status_codes, "Rate limiting not triggered"
-        
+
         # Check for proper headers
         limited_response = next(r for r in responses if r.status_code == 429)
         assert "Retry-After" in limited_response.headers or \
                "X-RateLimit-Reset" in limited_response.headers, \
                "Rate limit headers missing"
-    
+
     @staticmethod
     def assert_secure_headers(response):
         """Assert security headers are present."""
@@ -393,7 +393,7 @@ class SecurityAssertions:
             "X-Frame-Options",
             "X-XSS-Protection"
         ]
-        
+
         for header in important_headers:
             assert header in response.headers, \
                    f"Security header missing: {header}"
@@ -410,7 +410,7 @@ def assertions():
 def test_environment():
     """Get test environment configuration."""
     env = os.getenv("TEST_ENV", "local")
-    
+
     configs = {
         "local": {
             "base_url": "http://localhost:8000",
@@ -428,23 +428,23 @@ def test_environment():
             "parallel_tests": 1
         }
     }
-    
+
     return configs.get(env, configs["local"])
 
 
 # Parameterized test data
 def pytest_generate_tests(metafunc):
     """Generate parameterized tests for security testing."""
-    
+
     if "attack_payload" in metafunc.fixturenames:
         # Generate test cases for various attack payloads
         payloads = []
         payloads.extend([("sql", p) for p in PayloadGenerator.SQL_INJECTION_PAYLOADS[:5]])
         payloads.extend([("xss", p) for p in PayloadGenerator.XSS_PAYLOADS[:5]])
         payloads.extend([("path", p) for p in PayloadGenerator.PATH_TRAVERSAL_PAYLOADS[:5]])
-        
+
         metafunc.parametrize("attack_payload", payloads)
-    
+
     if "endpoint" in metafunc.fixturenames:
         # Generate test cases for various endpoints
         endpoints = [
@@ -467,12 +467,12 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "security" in item.nodeid:
             item.add_marker(pytest.mark.security)
-        
+
         if "critical" in item.name or "auth" in item.name:
             item.add_marker(pytest.mark.critical)
-        
+
         if "regression" in item.name:
             item.add_marker(pytest.mark.regression)
-        
+
         if "ddos" in item.name or "brute_force" in item.name:
             item.add_marker(pytest.mark.slow)

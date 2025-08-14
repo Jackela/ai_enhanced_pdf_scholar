@@ -29,12 +29,12 @@ class DatabasePoolConfig:
     pool_pre_ping: bool = True
     pool_recycle: int = 3600
     echo: bool = False
-    
+
     # Performance optimization
     enable_connection_pooling: bool = True
     pool_size: int = 20
     max_overflow: int = 30
-    
+
     # Read/write splitting configuration
     enable_read_write_split: bool = False
     read_replica_urls: List[str] = field(default_factory=list)
@@ -46,27 +46,27 @@ class CacheClusterConfig:
     """Production Redis cluster configuration."""
     cluster_nodes: List[str] = field(default_factory=lambda: ["redis://localhost:6379"])
     enable_cluster: bool = False
-    
+
     # Connection pooling
     connection_pool_max_connections: int = 50
     connection_timeout: float = 2.0
     socket_timeout: float = 2.0
     socket_keepalive: bool = True
-    
+
     # Failover and HA
     enable_sentinel: bool = False
     sentinel_service: str = "mymaster"
     sentinel_nodes: List[str] = field(default_factory=list)
-    
+
     # Memory management
     max_memory: str = "2gb"
     max_memory_policy: str = "allkeys-lru"
-    
+
     # Cache policies
     default_ttl: int = 3600  # 1 hour
     max_ttl: int = 86400    # 24 hours
     compression_threshold: int = 1024  # Compress values > 1KB
-    
+
     # Performance tuning
     pipeline_size: int = 100
     enable_pipelining: bool = True
@@ -89,7 +89,7 @@ class SecurityHardeningConfig:
         "media-src": ["'self'"],
         "frame-src": ["'none'"]
     })
-    
+
     # HTTP Security Headers
     security_headers: Dict[str, str] = field(default_factory=lambda: {
         "X-Content-Type-Options": "nosniff",
@@ -99,19 +99,19 @@ class SecurityHardeningConfig:
         "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
         "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"
     })
-    
+
     # IP Filtering
     enable_ip_whitelist: bool = True
     allowed_ip_ranges: List[str] = field(default_factory=list)
     blocked_ip_ranges: List[str] = field(default_factory=list)
     enable_geoip_filtering: bool = False
     allowed_countries: List[str] = field(default_factory=list)
-    
+
     # Request signing
     enable_request_signing: bool = True
     signature_ttl: int = 300  # 5 minutes
     hmac_algorithm: str = "sha256"
-    
+
     # Rate limiting hardening
     strict_rate_limits: Dict[str, Dict[str, int]] = field(default_factory=lambda: {
         "/api/auth/login": {"requests": 5, "window": 300},
@@ -119,7 +119,7 @@ class SecurityHardeningConfig:
         "/api/rag/query": {"requests": 100, "window": 3600},
         "global": {"requests": 1000, "window": 3600}
     })
-    
+
     # CORS hardening
     strict_cors: bool = True
     allowed_origins: List[str] = field(default_factory=list)
@@ -134,29 +134,29 @@ class PerformanceConfig:
     worker_connections: int = 1000
     keepalive_timeout: int = 65
     client_max_body_size: str = "100M"
-    
+
     # Memory management
     max_memory_mb: int = 2048
     gc_threshold: tuple = (700, 10, 10)
     enable_memory_profiling: bool = False
-    
+
     # Connection limits
     max_concurrent_connections: int = 1000
     connection_limit_per_ip: int = 10
     slow_request_threshold: float = 5.0
-    
+
     # Resource limits
     max_file_size_mb: int = 100
     max_upload_files: int = 10
     max_request_size_mb: int = 200
-    
+
     # Caching optimization
     enable_response_caching: bool = True
     response_cache_ttl: int = 300
     enable_etag_caching: bool = True
     enable_gzip_compression: bool = True
     gzip_min_size: int = 1000
-    
+
     # Database query optimization
     query_timeout: int = 30
     max_query_complexity: int = 1000
@@ -171,7 +171,7 @@ class MonitoringIntegrationConfig:
     enable_prometheus: bool = True
     metrics_port: int = 9090
     metrics_endpoint: str = "/metrics"
-    
+
     # Health checks
     health_check_interval: int = 30
     health_check_timeout: int = 5
@@ -180,13 +180,13 @@ class MonitoringIntegrationConfig:
         "/health/ready",
         "/health/live"
     ])
-    
+
     # Logging integration
     structured_logging: bool = True
     log_level: str = "INFO"
     enable_audit_logs: bool = True
     log_retention_days: int = 90
-    
+
     # Alerting thresholds
     alert_thresholds: Dict[str, Union[int, float]] = field(default_factory=lambda: {
         "error_rate_percent": 5.0,
@@ -196,7 +196,7 @@ class MonitoringIntegrationConfig:
         "disk_usage_percent": 85.0,
         "connection_pool_usage_percent": 90.0
     })
-    
+
     # Tracing
     enable_tracing: bool = True
     tracing_sample_rate: float = 0.1
@@ -208,7 +208,7 @@ class ProductionConfig:
     Comprehensive production configuration with performance optimization,
     security hardening, and monitoring integration.
     """
-    
+
     def __init__(
         self,
         secrets_manager: Optional[ProductionSecretsManager] = None,
@@ -218,23 +218,23 @@ class ProductionConfig:
         self.secrets_manager = secrets_manager
         self.metrics_service = metrics_service
         self.base_config = get_application_config()
-        
+
         # Validate environment
         if not self.base_config.environment.is_production():
             logger.warning("ProductionConfig initialized in non-production environment")
-        
+
         # Initialize configuration components
         self.database = self._load_database_config()
         self.cache = self._load_cache_config()
         self.security = self._load_security_config()
         self.performance = self._load_performance_config()
         self.monitoring = self._load_monitoring_config()
-        
+
         # Validate configuration
         self._validate_configuration()
-        
+
         logger.info("Production configuration initialized successfully")
-    
+
     def _load_database_config(self) -> DatabasePoolConfig:
         """Load database configuration with production optimizations."""
         return DatabasePoolConfig(
@@ -248,11 +248,11 @@ class ProductionConfig:
             read_replica_urls=os.getenv("DB_READ_REPLICA_URLS", "").split(",") if os.getenv("DB_READ_REPLICA_URLS") else [],
             echo=os.getenv("DB_ECHO", "false").lower() == "true"
         )
-    
+
     def _load_cache_config(self) -> CacheClusterConfig:
         """Load Redis cluster configuration."""
         cluster_nodes = os.getenv("REDIS_CLUSTER_NODES", "redis://localhost:6379").split(",")
-        
+
         return CacheClusterConfig(
             cluster_nodes=cluster_nodes,
             enable_cluster=len(cluster_nodes) > 1,
@@ -268,12 +268,12 @@ class ProductionConfig:
             compression_threshold=int(os.getenv("REDIS_COMPRESSION_THRESHOLD", "1024")),
             key_prefix=os.getenv("REDIS_KEY_PREFIX", "ai_pdf_scholar:prod:")
         )
-    
+
     def _load_security_config(self) -> SecurityHardeningConfig:
         """Load security hardening configuration."""
         allowed_origins = os.getenv("PROD_CORS_ORIGINS", "").split(",") if os.getenv("PROD_CORS_ORIGINS") else []
         allowed_ip_ranges = os.getenv("ALLOWED_IP_RANGES", "").split(",") if os.getenv("ALLOWED_IP_RANGES") else []
-        
+
         return SecurityHardeningConfig(
             enable_csp=os.getenv("ENABLE_CSP", "true").lower() == "true",
             enable_ip_whitelist=os.getenv("ENABLE_IP_WHITELIST", "true").lower() == "true",
@@ -283,7 +283,7 @@ class ProductionConfig:
             strict_cors=os.getenv("STRICT_CORS", "true").lower() == "true",
             allowed_origins=allowed_origins
         )
-    
+
     def _load_performance_config(self) -> PerformanceConfig:
         """Load performance optimization configuration."""
         return PerformanceConfig(
@@ -299,7 +299,7 @@ class ProductionConfig:
             enable_gzip_compression=os.getenv("ENABLE_GZIP", "true").lower() == "true",
             query_timeout=int(os.getenv("QUERY_TIMEOUT", "30"))
         )
-    
+
     def _load_monitoring_config(self) -> MonitoringIntegrationConfig:
         """Load monitoring integration configuration."""
         return MonitoringIntegrationConfig(
@@ -314,47 +314,47 @@ class ProductionConfig:
             tracing_sample_rate=float(os.getenv("TRACING_SAMPLE_RATE", "0.1")),
             jaeger_endpoint=os.getenv("JAEGER_ENDPOINT")
         )
-    
+
     def _validate_configuration(self):
         """Validate production configuration."""
         issues = []
-        
+
         # Validate database configuration
         if self.database.max_connections < 10:
             issues.append("Database max_connections should be at least 10 in production")
-        
+
         if self.database.connection_timeout < 30:
             issues.append("Database connection_timeout should be at least 30 seconds")
-        
+
         # Validate cache configuration
         if not self.cache.cluster_nodes:
             issues.append("Redis cluster nodes must be configured")
-        
+
         # Validate security configuration
         if self.security.strict_cors and not self.security.allowed_origins:
             issues.append("CORS allowed_origins must be configured when strict_cors is enabled")
-        
+
         if self.security.enable_ip_whitelist and not self.security.allowed_ip_ranges:
             issues.append("IP whitelist ranges must be configured when enabled")
-        
+
         # Validate performance configuration
         if self.performance.max_memory_mb < 1024:
             issues.append("Max memory should be at least 1GB for production")
-        
+
         if self.performance.max_workers < 2:
             issues.append("Should have at least 2 workers in production")
-        
+
         # Log validation issues
         for issue in issues:
             logger.warning(f"Production config validation: {issue}")
-        
+
         if issues and self.base_config.environment.is_production():
             logger.error(f"Production configuration has {len(issues)} validation issues")
-    
+
     def get_database_url(self) -> str:
         """Get database URL with production optimizations."""
         base_url = self.base_config.database.url
-        
+
         # Add connection pool parameters
         pool_params = [
             f"pool_size={self.database.pool_size}",
@@ -363,10 +363,10 @@ class ProductionConfig:
             f"pool_recycle={self.database.pool_recycle}",
             f"pool_pre_ping={'true' if self.database.pool_pre_ping else 'false'}"
         ]
-        
+
         separator = "&" if "?" in base_url else "?"
         return f"{base_url}{separator}{'&'.join(pool_params)}"
-    
+
     def get_redis_config(self) -> Dict[str, Any]:
         """Get Redis configuration dictionary."""
         return {
@@ -385,7 +385,7 @@ class ProductionConfig:
             "compression_threshold": self.cache.compression_threshold,
             "key_prefix": self.cache.key_prefix
         }
-    
+
     def get_security_middleware_config(self) -> Dict[str, Any]:
         """Get security middleware configuration."""
         return {
@@ -411,7 +411,7 @@ class ProductionConfig:
             },
             "rate_limits": self.security.strict_rate_limits
         }
-    
+
     def get_performance_config(self) -> Dict[str, Any]:
         """Get performance configuration dictionary."""
         return {
@@ -441,7 +441,7 @@ class ProductionConfig:
                 "query_cache_ttl": self.performance.query_cache_ttl
             }
         }
-    
+
     def get_monitoring_config(self) -> Dict[str, Any]:
         """Get monitoring configuration dictionary."""
         return {
@@ -470,11 +470,11 @@ class ProductionConfig:
                 "jaeger_endpoint": self.monitoring.jaeger_endpoint
             }
         }
-    
+
     def integrate_with_secrets(self, secrets_manager: ProductionSecretsManager):
         """Integrate configuration with secrets management."""
         self.secrets_manager = secrets_manager
-        
+
         # Update sensitive configuration with secrets
         try:
             # Get database credentials
@@ -483,16 +483,16 @@ class ProductionConfig:
                 logger.info("Integrated production config with secrets management")
         except Exception as e:
             logger.error(f"Failed to integrate with secrets manager: {e}")
-    
+
     def integrate_with_monitoring(self, metrics_service: MetricsService):
         """Integrate configuration with monitoring service."""
         self.metrics_service = metrics_service
-        
+
         # Register configuration metrics
         if metrics_service:
             metrics_service.update_dependency_health("production_config", True)
             logger.info("Integrated production config with monitoring service")
-    
+
     def get_gunicorn_config(self) -> Dict[str, Any]:
         """Get Gunicorn configuration for production deployment."""
         return {
@@ -513,7 +513,7 @@ class ProductionConfig:
             "capture_output": True,
             "enable_stdio_inheritance": True
         }
-    
+
     def health_check(self) -> Dict[str, Any]:
         """Perform production configuration health check."""
         health = {
@@ -527,15 +527,15 @@ class ProductionConfig:
                 "monitoring": self._check_monitoring_config()
             }
         }
-        
+
         # Update overall status
         failed_components = [name for name, status in health["components"].items() if status["status"] != "healthy"]
         if failed_components:
             health["status"] = "degraded" if len(failed_components) <= 2 else "unhealthy"
             health["failed_components"] = failed_components
-        
+
         return health
-    
+
     def _check_database_config(self) -> Dict[str, Any]:
         """Check database configuration health."""
         try:
@@ -546,7 +546,7 @@ class ProductionConfig:
                 return {"status": "warning", "message": "Database configuration suboptimal"}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
-    
+
     def _check_cache_config(self) -> Dict[str, Any]:
         """Check cache configuration health."""
         try:
@@ -556,7 +556,7 @@ class ProductionConfig:
                 return {"status": "warning", "message": "Cache configuration needs review"}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
-    
+
     def _check_security_config(self) -> Dict[str, Any]:
         """Check security configuration health."""
         try:
@@ -566,7 +566,7 @@ class ProductionConfig:
                 "request_signing": self.security.enable_request_signing,
                 "strict_cors": self.security.strict_cors
             }
-            
+
             enabled_count = sum(1 for enabled in checks.values() if enabled)
             if enabled_count >= 3:
                 return {"status": "healthy", "enabled_features": enabled_count}
@@ -574,11 +574,11 @@ class ProductionConfig:
                 return {"status": "warning", "message": "Security features should be enabled"}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
-    
+
     def _check_performance_config(self) -> Dict[str, Any]:
         """Check performance configuration health."""
         try:
-            if (self.performance.max_memory_mb >= 1024 and 
+            if (self.performance.max_memory_mb >= 1024 and
                 self.performance.max_workers >= 2 and
                 self.performance.enable_gzip_compression):
                 return {"status": "healthy", "memory_mb": self.performance.max_memory_mb}
@@ -586,11 +586,11 @@ class ProductionConfig:
                 return {"status": "warning", "message": "Performance settings need optimization"}
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
-    
+
     def _check_monitoring_config(self) -> Dict[str, Any]:
         """Check monitoring configuration health."""
         try:
-            if (self.monitoring.enable_prometheus and 
+            if (self.monitoring.enable_prometheus and
                 self.monitoring.enable_audit_logs and
                 self.monitoring.structured_logging):
                 return {"status": "healthy", "features": "all_enabled"}
@@ -608,7 +608,7 @@ def get_production_config() -> ProductionConfig:
 def create_production_environment() -> Dict[str, Any]:
     """Create complete production environment configuration."""
     prod_config = get_production_config()
-    
+
     return {
         "application": prod_config.base_config.to_dict(),
         "database": prod_config.get_database_url(),

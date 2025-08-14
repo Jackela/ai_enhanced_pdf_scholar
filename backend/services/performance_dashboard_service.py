@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class DashboardMetrics:
     """Real-time dashboard metrics."""
-    
+
     def __init__(
         self,
         apm_service: APMService,
@@ -38,7 +38,7 @@ class DashboardMetrics:
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.metrics = metrics_service
-    
+
     def get_overview_metrics(self) -> Dict[str, Any]:
         """Get high-level overview metrics."""
         # Get latest performance snapshot
@@ -46,22 +46,22 @@ class DashboardMetrics:
             self.apm.performance_snapshots[-1]
             if self.apm.performance_snapshots else None
         )
-        
+
         if not latest_snapshot:
             return {
                 "status": "no_data",
                 "message": "No performance data available"
             }
-        
+
         # Get cache health
         cache_health = self.cache_telemetry.assess_cache_health()
-        
+
         # Get active alerts
         active_alerts = [
             alert for alert in self.amp.alerts
             if not alert.resolved
         ]
-        
+
         return {
             "timestamp": datetime.utcnow().isoformat(),
             "system_health": {
@@ -89,7 +89,7 @@ class DashboardMetrics:
                 for alert in active_alerts[-5:]  # Last 5 alerts
             ]
         }
-    
+
     def get_detailed_performance_metrics(self) -> Dict[str, Any]:
         """Get detailed performance metrics for charts."""
         # Get last hour of performance snapshots
@@ -98,13 +98,13 @@ class DashboardMetrics:
             snapshot for snapshot in self.apm.performance_snapshots
             if snapshot.timestamp >= cutoff_time
         ]
-        
+
         if not recent_snapshots:
             return {"error": "No recent performance data"}
-        
+
         # Format for time series charts
         timestamps = [s.timestamp.isoformat() for s in recent_snapshots]
-        
+
         return {
             "timeline": timestamps,
             "response_times": {
@@ -128,19 +128,19 @@ class DashboardMetrics:
                 "miss_rate_percent": [s.cache_miss_rate_percent for s in recent_snapshots]
             }
         }
-    
+
     def get_cache_analytics(self) -> Dict[str, Any]:
         """Get detailed cache analytics."""
         return self.cache_telemetry.get_dashboard_data()
-    
+
     def get_trace_analytics(self) -> Dict[str, Any]:
         """Get trace analytics for APM dashboard."""
         # Get slow traces
         slow_traces = self.apm.get_slow_traces(threshold_ms=500, limit=10)
-        
+
         # Get error traces
         error_traces = self.apm.get_error_traces(limit=10)
-        
+
         # Get trace distribution by operation
         operation_stats = {}
         for trace in list(self.amp.traces)[-1000:]:  # Last 1000 traces
@@ -151,13 +151,13 @@ class DashboardMetrics:
                     "total_duration": 0,
                     "errors": 0
                 }
-            
+
             operation_stats[op_name]["count"] += 1
             if trace.duration_ms:
                 operation_stats[op_name]["total_duration"] += trace.duration_ms
             if trace.has_errors:
                 operation_stats[op_name]["errors"] += 1
-        
+
         # Calculate averages
         for op_name, stats in operation_stats.items():
             stats["avg_duration_ms"] = (
@@ -168,7 +168,7 @@ class DashboardMetrics:
                 (stats["errors"] / stats["count"]) * 100
                 if stats["count"] > 0 else 0
             )
-        
+
         return {
             "slow_traces": [
                 {
@@ -207,25 +207,25 @@ class DashboardMetrics:
 
 class ConnectionManager:
     """Manages WebSocket connections for real-time updates."""
-    
+
     def __init__(self):
         self.active_connections: List[WebSocket] = []
         self.connection_metadata: Dict[WebSocket, Dict[str, Any]] = {}
-    
+
     async def connect(self, websocket: WebSocket, client_info: Dict[str, Any] = None):
         """Accept a WebSocket connection."""
         await websocket.accept()
         self.active_connections.append(websocket)
         self.connection_metadata[websocket] = client_info or {}
         logger.info(f"WebSocket connection established. Total connections: {len(self.active_connections)}")
-    
+
     def disconnect(self, websocket: WebSocket):
         """Remove a WebSocket connection."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
             self.connection_metadata.pop(websocket, None)
             logger.info(f"WebSocket connection closed. Total connections: {len(self.active_connections)}")
-    
+
     async def send_personal_message(self, message: Dict[str, Any], websocket: WebSocket):
         """Send a message to a specific WebSocket."""
         if websocket.client_state == WebSocketState.CONNECTED:
@@ -234,14 +234,14 @@ class ConnectionManager:
             except Exception as e:
                 logger.error(f"Error sending WebSocket message: {e}")
                 self.disconnect(websocket)
-    
+
     async def broadcast(self, message: Dict[str, Any]):
         """Broadcast a message to all connected WebSockets."""
         if not self.active_connections:
             return
-        
+
         disconnected_connections = []
-        
+
         for connection in self.active_connections:
             try:
                 if connection.client_state == WebSocketState.CONNECTED:
@@ -251,17 +251,17 @@ class ConnectionManager:
             except Exception as e:
                 logger.error(f"Error broadcasting to WebSocket: {e}")
                 disconnected_connections.append(connection)
-        
+
         # Clean up disconnected connections
         for connection in disconnected_connections:
             self.disconnect(connection)
-    
+
     async def send_to_subscribers(self, message: Dict[str, Any], subscription_type: str):
         """Send message to subscribers of a specific type."""
         for connection in self.active_connections:
             metadata = self.connection_metadata.get(connection, {})
             subscriptions = metadata.get("subscriptions", [])
-            
+
             if subscription_type in subscriptions:
                 await self.send_personal_message(message, connection)
 
@@ -274,7 +274,7 @@ class PerformanceDashboardService:
     """
     Real-time performance dashboard service with WebSocket support.
     """
-    
+
     def __init__(
         self,
         apm_service: APMService,
@@ -284,21 +284,21 @@ class PerformanceDashboardService:
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.metrics = metrics_service
-        
+
         self.dashboard_metrics = DashboardMetrics(apm_service, cache_telemetry, metrics_service)
         self.connection_manager = ConnectionManager()
-        
+
         # Background task for real-time updates
         self._update_task: Optional[asyncio.Task] = None
         self._running = False
-    
+
     async def start_real_time_updates(self):
         """Start background task for real-time updates."""
         if not self._running:
             self._running = True
             self._update_task = asyncio.create_task(self._real_time_update_loop())
             logger.info("Real-time dashboard updates started")
-    
+
     async def stop_real_time_updates(self):
         """Stop background task for real-time updates."""
         self._running = False
@@ -309,7 +309,7 @@ class PerformanceDashboardService:
             except asyncio.CancelledError:
                 pass
             logger.info("Real-time dashboard updates stopped")
-    
+
     async def _real_time_update_loop(self):
         """Background loop for sending real-time updates."""
         while self._running:
@@ -323,9 +323,9 @@ class PerformanceDashboardService:
                     },
                     "overview"
                 )
-                
+
                 await asyncio.sleep(5)
-                
+
                 # Send detailed metrics every 30 seconds
                 detailed_data = self.dashboard_metrics.get_detailed_performance_metrics()
                 await self.connection_manager.send_to_subscribers(
@@ -335,7 +335,7 @@ class PerformanceDashboardService:
                     },
                     "performance"
                 )
-                
+
                 # Send cache analytics every 60 seconds
                 cache_data = self.dashboard_metrics.get_cache_analytics()
                 await self.connection_manager.send_to_subscribers(
@@ -345,25 +345,25 @@ class PerformanceDashboardService:
                     },
                     "cache"
                 )
-                
+
                 await asyncio.sleep(25)  # Total 30 seconds between detailed updates
-                
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Error in real-time update loop: {e}")
                 await asyncio.sleep(5)
-    
+
     # ========================================================================
     # WebSocket Handlers
     # ========================================================================
-    
+
     async def handle_websocket_connection(self, websocket: WebSocket):
         """Handle new WebSocket connection."""
         try:
             # Accept connection
             await self.connection_manager.connect(websocket)
-            
+
             # Send initial data
             initial_data = {
                 "type": "initial_data",
@@ -375,7 +375,7 @@ class PerformanceDashboardService:
                 }
             }
             await self.connection_manager.send_personal_message(initial_data, websocket)
-            
+
             # Handle client messages
             while True:
                 try:
@@ -390,42 +390,42 @@ class PerformanceDashboardService:
                         {"type": "error", "message": str(e)},
                         websocket
                     )
-        
+
         except WebSocketDisconnect:
             pass
         finally:
             self.connection_manager.disconnect(websocket)
-    
+
     async def _handle_client_message(self, websocket: WebSocket, message: Dict[str, Any]):
         """Handle message from WebSocket client."""
         message_type = message.get("type")
-        
+
         if message_type == "subscribe":
             # Handle subscription to specific updates
             subscriptions = message.get("subscriptions", [])
             metadata = self.connection_manager.connection_metadata.get(websocket, {})
             metadata["subscriptions"] = subscriptions
             self.connection_manager.connection_metadata[websocket] = metadata
-            
+
             await self.connection_manager.send_personal_message(
                 {"type": "subscription_confirmed", "subscriptions": subscriptions},
                 websocket
             )
-        
+
         elif message_type == "get_trace_details":
             # Get detailed trace information
             trace_id = message.get("trace_id")
             trace_details = self._get_trace_details(trace_id)
-            
+
             await self.connection_manager.send_personal_message(
                 {"type": "trace_details", "data": trace_details},
                 websocket
             )
-        
+
         elif message_type == "get_cache_recommendations":
             # Get cache optimization recommendations
             recommendations = self.cache_telemetry.generate_optimization_recommendations()
-            
+
             await self.connection_manager.send_personal_message(
                 {
                     "type": "cache_recommendations",
@@ -433,7 +433,7 @@ class PerformanceDashboardService:
                 },
                 websocket
             )
-        
+
         elif message_type == "trigger_cache_analysis":
             # Trigger cache analysis
             analysis = {
@@ -444,12 +444,12 @@ class PerformanceDashboardService:
                     for layer in self.cache_telemetry.CacheLayer
                 }
             }
-            
+
             await self.connection_manager.send_personal_message(
                 {"type": "cache_analysis_result", "data": analysis},
                 websocket
             )
-    
+
     def _get_trace_details(self, trace_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed information for a specific trace."""
         for trace in self.apm.traces:
@@ -466,9 +466,9 @@ class PerformanceDashboardService:
                     "spans": [asdict(span) for span in trace.spans],
                     "span_tree": self._build_span_tree(trace)
                 }
-        
+
         return None
-    
+
     def _build_span_tree(self, trace) -> Dict[str, Any]:
         """Build hierarchical span tree for visualization."""
         def build_node(span, children):
@@ -483,12 +483,12 @@ class PerformanceDashboardService:
                 "error": span.error,
                 "children": children
             }
-        
+
         # Build parent-child relationships
         span_map = {trace.root_span.span_id: trace.root_span}
         for span in trace.spans:
             span_map[span.span_id] = span
-        
+
         # Build tree recursively
         def build_children(parent_span_id):
             children = []
@@ -496,13 +496,13 @@ class PerformanceDashboardService:
                 if span.parent_span_id == parent_span_id:
                     children.append(build_node(span, build_children(span.span_id)))
             return children
-        
+
         return build_node(trace.root_span, build_children(trace.root_span.span_id))
-    
+
     # ========================================================================
     # Dashboard HTML Generation
     # ========================================================================
-    
+
     def generate_dashboard_html(self) -> str:
         """Generate HTML for the performance dashboard."""
         html_content = """
@@ -689,32 +689,32 @@ class PerformanceDashboardService:
                     setupWebSocket() {
                         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
                         const wsUrl = `${protocol}//${location.host}/ws/dashboard`;
-                        
+
                         this.socket = new WebSocket(wsUrl);
-                        
+
                         this.socket.onopen = () => {
                             console.log('WebSocket connected');
                             this.updateConnectionStatus('connected');
                             this.reconnectAttempts = 0;
-                            
+
                             // Subscribe to all updates
                             this.socket.send(JSON.stringify({
                                 type: 'subscribe',
                                 subscriptions: ['overview', 'performance', 'cache', 'traces']
                             }));
                         };
-                        
+
                         this.socket.onmessage = (event) => {
                             const message = JSON.parse(event.data);
                             this.handleMessage(message);
                         };
-                        
+
                         this.socket.onclose = () => {
                             console.log('WebSocket disconnected');
                             this.updateConnectionStatus('disconnected');
                             this.attemptReconnect();
                         };
-                        
+
                         this.socket.onerror = (error) => {
                             console.error('WebSocket error:', error);
                             this.updateConnectionStatus('disconnected');
@@ -725,7 +725,7 @@ class PerformanceDashboardService:
                         if (this.reconnectAttempts < this.maxReconnectAttempts) {
                             this.reconnectAttempts++;
                             this.updateConnectionStatus('reconnecting');
-                            
+
                             const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
                             setTimeout(() => this.setupWebSocket(), delay);
                         }
@@ -761,26 +761,26 @@ class PerformanceDashboardService:
 
                     updateOverview(data) {
                         if (data.performance) {
-                            document.getElementById('requests-per-second').textContent = 
+                            document.getElementById('requests-per-second').textContent =
                                 data.performance.requests_per_second?.toFixed(1) || '--';
-                            document.getElementById('avg-response-time').textContent = 
+                            document.getElementById('avg-response-time').textContent =
                                 data.performance.avg_response_time_ms?.toFixed(0) || '--';
-                            document.getElementById('error-rate').textContent = 
+                            document.getElementById('error-rate').textContent =
                                 data.performance.error_rate_percent?.toFixed(2) || '--';
                         }
-                        
+
                         if (data.resources) {
-                            document.getElementById('cpu-usage').textContent = 
+                            document.getElementById('cpu-usage').textContent =
                                 data.resources.cpu_percent?.toFixed(1) || '--';
-                            document.getElementById('cache-hit-rate').textContent = 
+                            document.getElementById('cache-hit-rate').textContent =
                                 data.resources.cache_hit_rate?.toFixed(1) || '--';
                         }
-                        
+
                         if (data.system_health) {
-                            document.getElementById('cache-health-score').textContent = 
+                            document.getElementById('cache-health-score').textContent =
                                 data.system_health.overall_score?.toFixed(0) || '--';
                         }
-                        
+
                         // Update alerts
                         const alertsList = document.getElementById('alerts-list');
                         if (data.alerts && data.alerts.length > 0) {
@@ -797,7 +797,7 @@ class PerformanceDashboardService:
 
                     updatePerformanceCharts(data) {
                         if (!data.timeline) return;
-                        
+
                         // Update response time chart
                         const responseChart = this.charts.responseTime;
                         if (responseChart) {
@@ -806,7 +806,7 @@ class PerformanceDashboardService:
                             responseChart.data.datasets[1].data = data.response_times.p95;
                             responseChart.update('none');
                         }
-                        
+
                         // Update throughput chart
                         const throughputChart = this.charts.throughput;
                         if (throughputChart) {
@@ -818,12 +818,12 @@ class PerformanceDashboardService:
 
                     updateCacheAnalytics(data) {
                         if (!data.layer_metrics) return;
-                        
+
                         const cacheChart = this.charts.cacheAnalysis;
                         if (cacheChart) {
                             const layers = Object.keys(data.layer_metrics);
                             const hitRates = layers.map(layer => data.layer_metrics[layer].hit_rate || 0);
-                            
+
                             cacheChart.data.labels = layers;
                             cacheChart.data.datasets[0].data = hitRates;
                             cacheChart.update('none');
@@ -925,15 +925,15 @@ class PerformanceDashboardService:
         </html>
         """
         return html_content
-    
+
     # ========================================================================
     # HTTP Endpoints
     # ========================================================================
-    
+
     def get_dashboard_page(self) -> HTMLResponse:
         """Get the dashboard HTML page."""
         return HTMLResponse(content=self.generate_dashboard_html())
-    
+
     def get_api_metrics(self) -> Dict[str, Any]:
         """Get metrics via HTTP API."""
         return {
@@ -942,11 +942,11 @@ class PerformanceDashboardService:
             "cache": self.dashboard_metrics.get_cache_analytics(),
             "traces": self.dashboard_metrics.get_trace_analytics()
         }
-    
+
     def get_export_data(self, format: str = "json") -> Dict[str, Any]:
         """Export dashboard data for external tools."""
         data = self.get_api_metrics()
-        
+
         # Add additional export metadata
         data["export_metadata"] = {
             "generated_at": datetime.utcnow().isoformat(),
@@ -954,5 +954,5 @@ class PerformanceDashboardService:
             "service_version": "2.0.0",
             "export_type": "performance_dashboard"
         }
-        
+
         return data

@@ -86,7 +86,7 @@ data:
                     kubernetes.namespace: "kube-system"
                 - contains:
                     kubernetes.namespace: "monitoring"
-    
+
     # ========================================================================
     # AI PDF Scholar Application Logs
     # ========================================================================
@@ -108,7 +108,7 @@ data:
           fields: ["message"]
           target: ""
           overwrite_keys: true
-    
+
     # ========================================================================
     # Security and Authentication Logs
     # ========================================================================
@@ -124,7 +124,7 @@ data:
       processors:
       - add_kubernetes_metadata:
           host: ${NODE_NAME}
-    
+
     # ========================================================================
     # Database Logs (if applicable)
     # ========================================================================
@@ -139,7 +139,7 @@ data:
       processors:
       - add_kubernetes_metadata:
           host: ${NODE_NAME}
-    
+
     # ========================================================================
     # Redis Logs
     # ========================================================================
@@ -154,7 +154,7 @@ data:
       processors:
       - add_kubernetes_metadata:
           host: ${NODE_NAME}
-    
+
     # ========================================================================
     # Nginx/Ingress Logs
     # ========================================================================
@@ -169,7 +169,7 @@ data:
       processors:
       - add_kubernetes_metadata:
           host: ${NODE_NAME}
-    
+
     # ========================================================================
     # System Logs
     # ========================================================================
@@ -184,7 +184,7 @@ data:
         log_type: system
       fields_under_root: true
       exclude_lines: ['^\s*$', '^#']
-    
+
     # ========================================================================
     # Docker Logs
     # ========================================================================
@@ -201,7 +201,7 @@ data:
       processors:
       - add_docker_metadata:
           host: "unix:///var/run/docker.sock"
-    
+
     # ========================================================================
     # Kubernetes Audit Logs
     # ========================================================================
@@ -216,7 +216,7 @@ data:
       fields_under_root: true
       json.keys_under_root: true
       json.add_error_key: true
-    
+
     # ========================================================================
     # Global Processors
     # ========================================================================
@@ -224,17 +224,17 @@ data:
     # Add host metadata
     - add_host_metadata:
         when.not.contains.tags: forwarded
-    
+
     # Add Docker metadata
     - add_docker_metadata: ~
-    
+
     # Add Kubernetes metadata
     - add_kubernetes_metadata:
         host: ${NODE_NAME}
         matchers:
         - logs_path:
             logs_path: "/var/log/containers/"
-    
+
     # Parse timestamps
     - timestamp:
         field: "@timestamp"
@@ -245,7 +245,7 @@ data:
         test:
           - '2023-01-01T12:00:00.000Z'
           - '2023-01-01 12:00:00'
-    
+
     # Extract log levels
     - script:
         lang: javascript
@@ -253,25 +253,25 @@ data:
           function process(event) {
             var message = event.Get("message");
             if (!message) return;
-            
+
             // Extract log level
             var levelMatch = message.match(/\b(DEBUG|INFO|WARN|WARNING|ERROR|FATAL|TRACE)\b/i);
             if (levelMatch) {
               event.Put("log_level", levelMatch[1].toUpperCase());
             }
-            
+
             // Extract HTTP status codes
             var statusMatch = message.match(/\b(1\d\d|2\d\d|3\d\d|4\d\d|5\d\d)\b/);
             if (statusMatch) {
               event.Put("http_status", parseInt(statusMatch[1]));
             }
-            
+
             // Extract IP addresses
             var ipMatch = message.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/);
             if (ipMatch) {
               event.Put("client_ip", ipMatch[0]);
             }
-            
+
             // Extract execution time/duration
             var durationMatch = message.match(/(?:duration|time|took)[:\s]*(\d+(?:\.\d+)?)\s*(ms|s|seconds?|milliseconds?)/i);
             if (durationMatch) {
@@ -284,7 +284,7 @@ data:
               }
             }
           }
-    
+
     # Drop empty or irrelevant logs
     - drop_event:
         when:
@@ -297,7 +297,7 @@ data:
               message: "kube-probe"
           - contains:
               message: "health-check"
-    
+
     # ========================================================================
     # Output Configuration
     # ========================================================================
@@ -308,7 +308,7 @@ data:
       bulk_max_size: 2048
       template.name: "filebeat"
       template.pattern: "filebeat-*"
-    
+
     # ========================================================================
     # Logging Configuration
     # ========================================================================
@@ -317,7 +317,7 @@ data:
     logging.to_syslog: false
     logging.metrics.enabled: true
     logging.metrics.period: 30s
-    
+
     # ========================================================================
     # Monitoring Configuration
     # ========================================================================
@@ -326,11 +326,11 @@ data:
       hosts: ["elasticsearch:9200"]
       username: ""
       password: ""
-    
+
     http.enabled: true
     http.host: 0.0.0.0
     http.port: 5066
-    
+
     # ========================================================================
     # Performance Tuning
     # ========================================================================
@@ -338,13 +338,13 @@ data:
       events: 4096
       flush.min_events: 512
       flush.timeout: 5s
-    
+
     # ========================================================================
     # Security Configuration
     # ========================================================================
     setup.ilm.enabled: false
     setup.template.enabled: false
-    
+
     # ========================================================================
     # Module Configuration
     # ========================================================================
@@ -354,7 +354,7 @@ data:
         enabled: true
       auth:
         enabled: true
-    
+
     - module: nginx
       access:
         enabled: true
@@ -362,7 +362,7 @@ data:
       error:
         enabled: true
         var.paths: ["/var/log/containers/*nginx*error*.log"]
-    
+
     - module: docker
       container:
         enabled: true

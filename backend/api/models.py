@@ -33,7 +33,7 @@ DANGEROUS_SQL_PATTERNS = [
     r'\bgrant\b',  # Grant statements
     r'\brevoke\b',  # Revoke statements
     r"'\s*(or|and)\s*['\"]\d+['\"]\s*=\s*['\"]\d+['\"]",  # Classic OR/AND injection
-    r"'\s*(or|and)\s*\d+\s*=\s*\d+",  # Numeric OR/AND injection  
+    r"'\s*(or|and)\s*\d+\s*=\s*\d+",  # Numeric OR/AND injection
     r"\bor\b\s+\d+\s*=\s*\d+",  # OR 1=1 style attacks
     r"\band\b\s+\d+\s*=\s*\d+",  # AND 1=1 style attacks
     r"'\s*or\s*'",  # Single quote OR attacks
@@ -85,18 +85,18 @@ def log_security_event(event_type: str, field: str, value: str, details: Optiona
     )
 
 
-def validate_against_patterns(value: str, patterns: List[str], field_name: str, 
+def validate_against_patterns(value: str, patterns: List[str], field_name: str,
                             event_type: str = "dangerous_pattern") -> str:
     """Validate string against dangerous patterns."""
     if not value:
         return value
-    
+
     value_lower = value.lower()
     for pattern in patterns:
         if re.search(pattern, value_lower, re.IGNORECASE | re.DOTALL):
             log_security_event(event_type, field_name, value, f"Matched pattern: {pattern}")
             raise SecurityValidationError(
-                field_name, 
+                field_name,
                 f"Contains potentially dangerous pattern: {pattern}",
                 pattern
             )
@@ -107,14 +107,14 @@ def sanitize_html_content(value: str) -> str:
     """Sanitize HTML content to prevent XSS."""
     if not value:
         return value
-    
+
     # HTML encode special characters
     sanitized = html.escape(value, quote=True)
-    
+
     # Additional XSS pattern removal
     for pattern in XSS_PATTERNS:
         sanitized = re.sub(pattern, '', sanitized, flags=re.IGNORECASE | re.DOTALL)
-    
+
     return sanitized.strip()
 
 
@@ -122,20 +122,20 @@ def validate_filename(filename: str) -> str:
     """Validate and sanitize filename."""
     if not filename:
         raise SecurityValidationError("filename", "Filename cannot be empty")
-    
+
     if len(filename) > MAX_FILENAME_LENGTH:
         raise SecurityValidationError("filename", f"Filename too long (max {MAX_FILENAME_LENGTH} characters)")
-    
+
     # Check for dangerous characters
     dangerous_chars = ['<', '>', ':', '"', '|', '?', '*', '\0']
     for char in dangerous_chars:
         if char in filename:
             raise SecurityValidationError("filename", f"Contains dangerous character: {char}")
-    
+
     # Check for path traversal attempts
     if '..' in filename or filename.startswith('/') or '\\' in filename:
         raise SecurityValidationError("filename", "Path traversal attempt detected")
-    
+
     return filename.strip()
 
 
@@ -143,20 +143,20 @@ def validate_file_content_type(content_type: str, filename: str) -> str:
     """Validate file content type against allowed types."""
     if content_type not in ALLOWED_MIME_TYPES:
         raise SecurityValidationError(
-            "content_type", 
+            "content_type",
             f"File type not allowed: {content_type}. Allowed types: {list(ALLOWED_MIME_TYPES.keys())}"
         )
-    
+
     # Check file extension matches content type
     file_ext = '.' + filename.lower().split('.')[-1] if '.' in filename else ''
     allowed_extensions = ALLOWED_MIME_TYPES[content_type]
-    
+
     if file_ext not in allowed_extensions:
         raise SecurityValidationError(
-            "filename", 
+            "filename",
             f"File extension '{file_ext}' doesn't match content type '{content_type}'"
         )
-    
+
     return content_type
 
 
@@ -178,13 +178,13 @@ class ErrorResponse(BaseResponse):
 
 class SecurityValidationErrorResponse(ErrorResponse):
     """Security validation error response model."""
-    
+
     success: bool = False
     error_code: str = "SECURITY_VALIDATION_ERROR"
     field: str = Field(..., description="Field that failed validation")
     attack_type: Optional[str] = Field(None, description="Type of attack detected")
     pattern_matched: Optional[str] = Field(None, description="Dangerous pattern matched")
-    
+
     @classmethod
     def from_security_error(cls, error: SecurityValidationError) -> "SecurityValidationErrorResponse":
         """Create response from SecurityValidationError."""
@@ -202,12 +202,12 @@ class SecurityValidationErrorResponse(ErrorResponse):
 
 class ValidationErrorResponse(ErrorResponse):
     """General validation error response model."""
-    
+
     success: bool = False
     error_code: str = "VALIDATION_ERROR"
     validation_errors: List[Dict[str, Any]] = Field(default_factory=list,
                                                    description="List of validation errors")
-    
+
     @classmethod
     def from_pydantic_error(cls, error) -> "ValidationErrorResponse":
         """Create response from Pydantic ValidationError."""
@@ -219,7 +219,7 @@ class ValidationErrorResponse(ErrorResponse):
                 "type": err.get("type", ""),
                 "input": str(err.get("input", ""))[:100]  # Limit input display
             })
-        
+
         return cls(
             message="Request validation failed",
             validation_errors=validation_errors,
@@ -233,7 +233,7 @@ class ValidationErrorResponse(ErrorResponse):
 # Security-focused query parameter models
 class DocumentSortField(str, Enum):
     """Enumeration of valid document sort fields for SQL injection prevention."""
-    
+
     CREATED_AT = "created_at"
     UPDATED_AT = "updated_at"
     LAST_ACCESSED = "last_accessed"
@@ -243,16 +243,16 @@ class DocumentSortField(str, Enum):
 
 class SortOrder(str, Enum):
     """Enumeration of valid sort orders for SQL injection prevention."""
-    
+
     ASC = "asc"
     DESC = "desc"
 
 
 class DocumentQueryParams(BaseModel):
     """Secure document query parameters with comprehensive validation."""
-    
+
     search_query: Optional[str] = Field(
-        None, 
+        None,
         max_length=MAX_SEARCH_QUERY_LENGTH,
         description="Search documents by title"
     )
@@ -280,29 +280,29 @@ class DocumentQueryParams(BaseModel):
         False,
         description="Include documents with missing files"
     )
-    
+
     @field_validator('search_query')
     @classmethod
     def validate_search_query(cls, v: Optional[str]) -> Optional[str]:
         """Validate and sanitize search query for security threats."""
         if v is None:
             return v
-        
+
         # Validate against SQL injection patterns
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'search_query', 'sql_injection')
-        
+
         # Validate against XSS patterns
         validate_against_patterns(v, XSS_PATTERNS, 'search_query', 'xss_attempt')
-        
+
         # Sanitize HTML content
         sanitized = sanitize_html_content(v)
-        
+
         # Additional length check after sanitization
         if len(sanitized) > MAX_SEARCH_QUERY_LENGTH:
             raise SecurityValidationError('search_query', f'Search query too long after sanitization (max {MAX_SEARCH_QUERY_LENGTH} characters)')
-        
+
         return sanitized.strip()
-    
+
     class Config:
         use_enum_values = True
 
@@ -311,7 +311,7 @@ class DocumentQueryParams(BaseModel):
 class DocumentBase(BaseModel):
     """Base document model with comprehensive security validation."""
 
-    title: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH, 
+    title: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH,
                       description="Document title")
     file_path: Optional[str] = Field(None, max_length=MAX_PATH_LENGTH,
                                     description="File system path")
@@ -328,43 +328,43 @@ class DocumentBase(BaseModel):
         """Validate and sanitize document title."""
         # Validate against SQL injection patterns
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'title', 'sql_injection')
-        
-        # Validate against XSS patterns  
+
+        # Validate against XSS patterns
         validate_against_patterns(v, XSS_PATTERNS, 'title', 'xss_attempt')
-        
+
         # Sanitize HTML content
         sanitized = sanitize_html_content(v)
-        
+
         # Additional validation after sanitization
         if not sanitized or not sanitized.strip():
             raise SecurityValidationError('title', 'Title cannot be empty after sanitization')
-        
+
         if len(sanitized) > MAX_TITLE_LENGTH:
             raise SecurityValidationError('title', f'Title too long after sanitization (max {MAX_TITLE_LENGTH} characters)')
-        
+
         return sanitized.strip()
 
     @field_validator('file_path')
-    @classmethod 
+    @classmethod
     def validate_file_path(cls, v: Optional[str]) -> Optional[str]:
         """Validate file path for security issues."""
         if v is None:
             return v
-        
+
         # Check for path traversal attempts
         if '..' in v:
             raise SecurityValidationError('file_path', 'Path traversal attempt detected')
-        
+
         # Check for dangerous characters
         dangerous_chars = ['<', '>', '|', '*', '?', '\0']
         for char in dangerous_chars:
             if char in v:
                 raise SecurityValidationError('file_path', f'Path contains dangerous character: {char}')
-        
+
         # Validate length
         if len(v) > MAX_PATH_LENGTH:
             raise SecurityValidationError('file_path', f'Path too long (max {MAX_PATH_LENGTH} characters)')
-        
+
         return v.strip()
 
     @field_validator('metadata')
@@ -373,21 +373,21 @@ class DocumentBase(BaseModel):
         """Validate metadata for security and size limits."""
         if v is None:
             return v
-        
+
         # Convert to JSON string to check size
         import json
         metadata_json = json.dumps(v)
-        
+
         if len(metadata_json) > MAX_METADATA_SIZE:
             raise SecurityValidationError('metadata', f'Metadata too large (max {MAX_METADATA_SIZE} bytes)')
-        
+
         # Sanitize string values in metadata
         sanitized_metadata = {}
         for key, value in v.items():
             # Validate key
             if not isinstance(key, str) or len(key) > 100:
                 raise SecurityValidationError('metadata', f'Invalid metadata key: {key}')
-            
+
             # Sanitize string values
             if isinstance(value, str):
                 # Check for dangerous patterns in string values
@@ -396,7 +396,7 @@ class DocumentBase(BaseModel):
                 sanitized_metadata[key] = sanitize_html_content(value)
             else:
                 sanitized_metadata[key] = value
-        
+
         return sanitized_metadata
 
 
@@ -421,23 +421,23 @@ class DocumentUpdate(BaseModel):
         """Validate and sanitize document title."""
         if v is None:
             return v
-        
+
         # Validate against SQL injection patterns
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'title', 'sql_injection')
-        
-        # Validate against XSS patterns  
+
+        # Validate against XSS patterns
         validate_against_patterns(v, XSS_PATTERNS, 'title', 'xss_attempt')
-        
+
         # Sanitize HTML content
         sanitized = sanitize_html_content(v)
-        
+
         # Additional validation after sanitization
         if not sanitized or not sanitized.strip():
             raise SecurityValidationError('title', 'Title cannot be empty after sanitization')
-        
+
         if len(sanitized) > MAX_TITLE_LENGTH:
             raise SecurityValidationError('title', f'Title too long after sanitization (max {MAX_TITLE_LENGTH} characters)')
-        
+
         return sanitized.strip()
 
     @field_validator('metadata')
@@ -446,21 +446,21 @@ class DocumentUpdate(BaseModel):
         """Validate metadata for security and size limits."""
         if v is None:
             return v
-        
+
         # Convert to JSON string to check size
         import json
         metadata_json = json.dumps(v)
-        
+
         if len(metadata_json) > MAX_METADATA_SIZE:
             raise SecurityValidationError('metadata', f'Metadata too large (max {MAX_METADATA_SIZE} bytes)')
-        
+
         # Sanitize string values in metadata
         sanitized_metadata = {}
         for key, value in v.items():
             # Validate key
             if not isinstance(key, str) or len(key) > 100:
                 raise SecurityValidationError('metadata', f'Invalid metadata key: {key}')
-            
+
             # Sanitize string values
             if isinstance(value, str):
                 # Check for dangerous patterns in string values
@@ -469,7 +469,7 @@ class DocumentUpdate(BaseModel):
                 sanitized_metadata[key] = sanitize_html_content(value)
             else:
                 sanitized_metadata[key] = value
-        
+
         return sanitized_metadata
 
 
@@ -526,14 +526,14 @@ class RAGQueryRequest(BaseModel):
         """Validate and sanitize RAG query."""
         # Validate against SQL injection patterns
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'query', 'sql_injection')
-        
-        # Validate against XSS patterns  
+
+        # Validate against XSS patterns
         validate_against_patterns(v, XSS_PATTERNS, 'query', 'xss_attempt')
-        
+
         # Check for prompt injection patterns
         prompt_injection_patterns = [
             r'ignore\s+previous\s+instructions',
-            r'disregard\s+previous\s+instructions', 
+            r'disregard\s+previous\s+instructions',
             r'forget\s+everything\s+above',
             r'system\s*:',
             r'assistant\s*:',
@@ -543,19 +543,19 @@ class RAGQueryRequest(BaseModel):
             r'please\s+act\s+as',
             r'pretend\s+you\s+are',
         ]
-        
+
         validate_against_patterns(v, prompt_injection_patterns, 'query', 'prompt_injection')
-        
+
         # Sanitize HTML content
         sanitized = sanitize_html_content(v)
-        
+
         # Additional validation after sanitization
         if not sanitized or not sanitized.strip():
             raise SecurityValidationError('query', 'Query cannot be empty after sanitization')
-        
+
         if len(sanitized) > 2000:
             raise SecurityValidationError('query', 'Query too long after sanitization (max 2000 characters)')
-        
+
         return sanitized.strip()
 
     @field_validator('document_id')
@@ -564,10 +564,10 @@ class RAGQueryRequest(BaseModel):
         """Validate document ID is within safe range."""
         if v <= 0:
             raise SecurityValidationError('document_id', 'Document ID must be positive')
-        
+
         if v > 2147483647:  # Max 32-bit signed integer
             raise SecurityValidationError('document_id', 'Document ID too large')
-        
+
         return v
 
 
@@ -667,19 +667,19 @@ class IntegrityCheckResponse(BaseResponse):
 # File upload models with security validation
 class SecureFileUpload(BaseModel):
     """Secure file upload validation model."""
-    
+
     filename: str = Field(..., min_length=1, max_length=MAX_FILENAME_LENGTH,
                          description="Original filename")
     content_type: str = Field(..., description="MIME content type")
     file_size: int = Field(..., ge=1, le=1024*1024*1024,  # 1GB max
                           description="File size in bytes")
-    
+
     @field_validator('filename')
     @classmethod
     def validate_filename_security(cls, v: str) -> str:
         """Validate filename for security issues."""
         return validate_filename(v)
-    
+
     @field_validator('content_type')
     @classmethod
     def validate_content_type_security(cls, v: str, info) -> str:
@@ -688,7 +688,7 @@ class SecureFileUpload(BaseModel):
         if filename:
             return validate_file_content_type(v, filename)
         return v
-    
+
     @model_validator(mode='after')
     def validate_file_upload(self):
         """Cross-field validation for file uploads."""
@@ -696,7 +696,7 @@ class SecureFileUpload(BaseModel):
         # For example, checking file size vs content type expectations
         if self.content_type == 'application/pdf' and self.file_size < 100:
             raise SecurityValidationError('file_size', 'PDF file suspiciously small')
-        
+
         return self
 
 
@@ -708,7 +708,7 @@ class SearchFilter(BaseModel):
                                 description="Search query")
     show_missing_files: bool = Field(False, description="Include missing files")
     sort_by: str = Field(
-        "created_at", 
+        "created_at",
         pattern="^(created_at|updated_at|last_accessed|title|file_size)$",
         description="Sort field"
     )
@@ -723,20 +723,20 @@ class SearchFilter(BaseModel):
         """Validate and sanitize search query for security threats."""
         if v is None:
             return v
-        
+
         # Validate against SQL injection patterns
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'query', 'sql_injection')
-        
+
         # Validate against XSS patterns
         validate_against_patterns(v, XSS_PATTERNS, 'query', 'xss_attempt')
-        
+
         # Sanitize HTML content
         sanitized = sanitize_html_content(v)
-        
+
         # Additional length check after sanitization
         if len(sanitized) > MAX_SEARCH_QUERY_LENGTH:
             raise SecurityValidationError('query', f'Search query too long after sanitization (max {MAX_SEARCH_QUERY_LENGTH} characters)')
-        
+
         return sanitized.strip() if sanitized else None
 
 

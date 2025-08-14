@@ -65,7 +65,7 @@
   "performance_baselines": {
     "document_processing": {
       "small_files_1mb": "< 10ms processing time",
-      "medium_files_5mb": "< 50ms processing time", 
+      "medium_files_5mb": "< 50ms processing time",
       "large_files_15mb": "< 200ms processing time",
       "very_large_files_25mb": "< 500ms processing time"
     },
@@ -77,7 +77,7 @@
     },
     "memory_thresholds": {
       "normal_operation": "< 1GB",
-      "high_load": "< 2GB", 
+      "high_load": "< 2GB",
       "critical_threshold": "> 4GB"
     }
   }

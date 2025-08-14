@@ -34,7 +34,7 @@ spec:
   policyTypes:
   - Ingress
   - Egress
-  
+
   ingress:
   # Allow ingress from main namespace for health checks
   - from:
@@ -46,7 +46,7 @@ spec:
       port: 8080  # Health check port
     - protocol: TCP
       port: 9090  # Metrics port
-  
+
   # Allow ingress from monitoring namespace
   - from:
     - namespaceSelector:
@@ -55,7 +55,7 @@ spec:
     ports:
     - protocol: TCP
       port: 9090
-  
+
   # Allow internal communication within DR namespace
   - from:
     - namespaceSelector:
@@ -70,13 +70,13 @@ spec:
       port: 53
     - protocol: TCP
       port: 53
-  
+
   # Allow HTTPS for external APIs and backup storage
   - to: []
     ports:
     - protocol: TCP
       port: 443
-  
+
   # Allow database access
   - to: []
     ports:
@@ -84,7 +84,7 @@ spec:
       port: 5432  # PostgreSQL
     - protocol: TCP
       port: 6379  # Redis
-  
+
   # Allow internal communication within DR namespace
   - to:
     - namespaceSelector:
@@ -109,17 +109,17 @@ spec:
     requests.memory: 8Gi
     limits.cpu: "8"
     limits.memory: 16Gi
-    
+
     # Storage resources
     requests.storage: 100Gi
     persistentvolumeclaims: "10"
-    
+
     # Object counts
     pods: "20"
     services: "10"
     secrets: "20"
     configmaps: "20"
-    
+
     # Service-specific limits
     services.loadbalancers: "2"
     services.nodeports: "0"  # Security: No NodePorts allowed
@@ -150,12 +150,12 @@ spec:
     min:
       cpu: 50m
       memory: 64Mi
-  
+
   - type: Pod
     max:
       cpu: "4"
       memory: 8Gi
-  
+
   - type: PersistentVolumeClaim
     max:
       storage: 50Gi
@@ -321,12 +321,12 @@ data:
     disaster_recovery:
       rto_target_minutes: 60
       rpo_target_minutes: 15
-      
+
       regions:
         primary: us-west-2
         secondary: us-east-1
         tertiary: eu-west-1
-      
+
       backup_sources:
         - name: postgres-main
           type: database
@@ -348,7 +348,7 @@ data:
           type: filesystem
           tier: low
           backup_interval: 24h
-      
+
       validation:
         enabled: true
         schedule: "0 */6 * * *"  # Every 6 hours
@@ -357,14 +357,14 @@ data:
           - basic
           - structural
           - referential
-      
+
       alerts:
         slack_webhook: ${SLACK_WEBHOOK_URL}
         email_recipients:
           - ops@company.com
           - security@company.com
         escalation_delay: 300  # 5 minutes
-      
+
       automation:
         auto_failover_enabled: false  # Manual approval required
         failover_threshold: 3  # Consecutive failures
@@ -408,7 +408,7 @@ data:
         - name: data_counts
           type: content
           timeout: 180
-      
+
       filesystem:
         - name: path_accessibility
           type: basic
@@ -419,7 +419,7 @@ data:
         - name: file_integrity
           type: content
           timeout: 600
-      
+
       application:
         - name: configuration
           type: basic
@@ -446,20 +446,20 @@ stringData:
   PRIMARY_DATABASE_URL: ""
   SECONDARY_DATABASE_URL: ""
   REDIS_URL: ""
-  
+
   # AWS credentials for cross-region operations
   AWS_ACCESS_KEY_ID: ""
   AWS_SECRET_ACCESS_KEY: ""
   AWS_SESSION_TOKEN: ""
-  
+
   # Backup encryption keys
   BACKUP_ENCRYPTION_KEY: ""
   BACKUP_SIGNING_KEY: ""
-  
+
   # Monitoring and alerting
   SLACK_WEBHOOK_URL: ""
   EMAIL_SMTP_PASSWORD: ""
-  
+
   # Application secrets for DR deployment
   JWT_SECRET_KEY: ""
   API_ENCRYPTION_KEY: ""

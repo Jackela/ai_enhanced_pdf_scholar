@@ -26,12 +26,12 @@ from jinja2 import Environment, FileSystemLoader, Template
 
 class DocumentationGenerator:
     """Comprehensive documentation generator for AI Enhanced PDF Scholar."""
-    
+
     def __init__(self, project_root: Path, output_dir: Path):
         self.project_root = Path(project_root)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Initialize Jinja2 environment
         template_dir = self.project_root / "docs" / "templates"
         template_dir.mkdir(parents=True, exist_ok=True)
@@ -41,7 +41,7 @@ class DocumentationGenerator:
             trim_blocks=True,
             lstrip_blocks=True
         )
-        
+
         # Documentation metadata
         self.metadata = {
             "project_name": "AI Enhanced PDF Scholar",
@@ -49,7 +49,7 @@ class DocumentationGenerator:
             "generated_at": datetime.now().isoformat(),
             "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         }
-        
+
         # Collected data
         self.api_endpoints: List[Dict[str, Any]] = []
         self.database_models: List[Dict[str, Any]] = []
@@ -58,7 +58,7 @@ class DocumentationGenerator:
         self.type_definitions: List[Dict[str, Any]] = []
         self.configuration_options: List[Dict[str, Any]] = []
         self.test_coverage: Dict[str, Any] = {}
-        
+
         print(f"📚 Documentation Generator initialized")
         print(f"   Project: {self.metadata['project_name']}")
         print(f"   Version: {self.metadata['version']}")
@@ -75,14 +75,14 @@ class DocumentationGenerator:
                     version_match = re.search(r'version\s*=\s*["\']([^"\']+)["\']', content)
                     if version_match:
                         return version_match.group(1)
-            
+
             # Try package.json (for frontend)
             package_json = self.project_root / "frontend" / "package.json"
             if package_json.exists():
                 with open(package_json, 'r') as f:
                     data = json.load(f)
                     return data.get("version", "unknown")
-            
+
             # Try git tags
             try:
                 result = subprocess.run(
@@ -95,9 +95,9 @@ class DocumentationGenerator:
                     return result.stdout.strip()
             except:
                 pass
-                
+
             return "2.1.0"  # Default version
-            
+
         except Exception as e:
             print(f"⚠️  Warning: Could not determine project version: {e}")
             return "unknown"
@@ -106,17 +106,17 @@ class DocumentationGenerator:
         """Generate all documentation components."""
         if formats is None:
             formats = ["html", "markdown"]
-        
+
         generated_files = {}
-        
+
         print("\n🔍 Analyzing codebase...")
         self._analyze_codebase()
-        
+
         print("\n📊 Collecting metrics...")
         self._collect_metrics()
-        
+
         print("\n📝 Generating documentation...")
-        
+
         # Generate different documentation types
         documentation_types = [
             ("API Reference", self._generate_api_documentation),
@@ -130,7 +130,7 @@ class DocumentationGenerator:
             ("Changelog", self._generate_changelog),
             ("Index", self._generate_index_page)
         ]
-        
+
         for doc_name, generator_func in documentation_types:
             print(f"  📄 {doc_name}")
             try:
@@ -138,12 +138,12 @@ class DocumentationGenerator:
                 generated_files.update(files)
             except Exception as e:
                 print(f"     ❌ Error: {e}")
-        
+
         # Generate search index
         print("  🔍 Search Index")
         search_index = self._generate_search_index()
         generated_files["search_index"] = search_index
-        
+
         print(f"\n✅ Documentation generation complete!")
         print(f"   Generated {len(generated_files)} files")
         return generated_files
@@ -152,34 +152,34 @@ class DocumentationGenerator:
         """Analyze the codebase to extract documentation information."""
         print("  🔍 Analyzing Python code...")
         self._analyze_python_files()
-        
+
         print("  🔍 Analyzing TypeScript code...")
         self._analyze_typescript_files()
-        
+
         print("  🔍 Analyzing configuration files...")
         self._analyze_configuration_files()
 
     def _analyze_python_files(self):
         """Analyze Python files for API endpoints, models, services, etc."""
         python_files = list(self.project_root.rglob("*.py"))
-        
+
         for py_file in python_files:
             if any(exclude in str(py_file) for exclude in ['.venv', '__pycache__', '.git']):
                 continue
-                
+
             try:
                 with open(py_file, 'r', encoding='utf-8') as f:
                     content = f.read()
-                
+
                 # Parse AST
                 try:
                     tree = ast.parse(content)
                 except SyntaxError:
                     continue
-                
+
                 # Extract information based on file type/location
                 file_path_str = str(py_file.relative_to(self.project_root))
-                
+
                 if "routes" in file_path_str:
                     self._extract_api_endpoints(tree, py_file, content)
                 elif "models.py" in file_path_str:
@@ -188,10 +188,10 @@ class DocumentationGenerator:
                     self._extract_service_classes(tree, py_file, content)
                 elif "repositories" in file_path_str or "repository" in file_path_str:
                     self._extract_repository_classes(tree, py_file, content)
-                
+
                 # Always extract type definitions
                 self._extract_type_definitions(tree, py_file, content)
-                
+
             except Exception as e:
                 print(f"     ⚠️  Warning: Error analyzing {py_file}: {e}")
 
@@ -207,7 +207,7 @@ class DocumentationGenerator:
                             decorator_name = decorator.func.attr
                         elif isinstance(decorator.func, ast.Name):
                             decorator_name = decorator.func.id
-                        
+
                         if decorator_name in ['get', 'post', 'put', 'delete', 'patch']:
                             endpoint_info = self._parse_fastapi_endpoint(
                                 node, decorator, content, file_path
@@ -221,7 +221,7 @@ class DocumentationGenerator:
             # Get HTTP method
             method = decorator.func.attr if isinstance(decorator.func, ast.Attribute) else decorator.func.id
             method = method.upper()
-            
+
             # Get path
             path = ""
             if decorator.args:
@@ -229,10 +229,10 @@ class DocumentationGenerator:
                     path = decorator.args[0].s
                 elif isinstance(decorator.args[0], ast.Constant):
                     path = decorator.args[0].value
-            
+
             # Get function docstring
             docstring = ast.get_docstring(func_node)
-            
+
             # Get function signature
             args = []
             for arg in func_node.args.args:
@@ -240,13 +240,13 @@ class DocumentationGenerator:
                 if arg.annotation:
                     arg_info["type"] = ast.unparse(arg.annotation) if hasattr(ast, 'unparse') else str(arg.annotation)
                 args.append(arg_info)
-            
+
             # Parse response model from decorator keywords
             response_model = None
             for keyword in decorator.keywords:
                 if keyword.arg == "response_model":
                     response_model = ast.unparse(keyword.value) if hasattr(ast, 'unparse') else str(keyword.value)
-            
+
             return {
                 "method": method,
                 "path": path,
@@ -272,7 +272,7 @@ class DocumentationGenerator:
                         base_name = base.id
                     elif isinstance(base, ast.Attribute):
                         base_name = base.attr
-                    
+
                     if base_name in ["Model", "Base"] or "Model" in base_name:
                         model_info = self._parse_sqlalchemy_model(node, content, file_path)
                         if model_info:
@@ -290,14 +290,14 @@ class DocumentationGenerator:
                 "relationships": [],
                 "table_name": None
             }
-            
+
             # Extract fields and relationships
             for node in class_node.body:
                 if isinstance(node, ast.Assign):
                     for target in node.targets:
                         if isinstance(target, ast.Name):
                             field_name = target.name
-                            
+
                             # Check if it's a Column
                             if isinstance(node.value, ast.Call):
                                 func_name = ""
@@ -305,14 +305,14 @@ class DocumentationGenerator:
                                     func_name = node.value.func.id
                                 elif isinstance(node.value.func, ast.Attribute):
                                     func_name = node.value.func.attr
-                                
+
                                 if func_name == "Column":
                                     field_info = self._parse_sqlalchemy_column(field_name, node.value)
                                     model_info["fields"].append(field_info)
                                 elif func_name in ["relationship", "relation"]:
                                     rel_info = self._parse_sqlalchemy_relationship(field_name, node.value)
                                     model_info["relationships"].append(rel_info)
-            
+
             return model_info
         except Exception as e:
             print(f"     ⚠️  Warning: Error parsing model {class_node.name}: {e}")
@@ -328,7 +328,7 @@ class DocumentationGenerator:
             "foreign_key": None,
             "default": None
         }
-        
+
         # Get column type (first argument)
         if call_node.args:
             arg = call_node.args[0]
@@ -336,7 +336,7 @@ class DocumentationGenerator:
                 field_info["type"] = arg.id
             elif isinstance(arg, ast.Attribute):
                 field_info["type"] = arg.attr
-        
+
         # Get column attributes from keywords
         for keyword in call_node.keywords:
             if keyword.arg == "nullable":
@@ -347,7 +347,7 @@ class DocumentationGenerator:
                     field_info["primary_key"] = keyword.value.value
             elif keyword.arg == "default":
                 field_info["default"] = ast.unparse(keyword.value) if hasattr(ast, 'unparse') else str(keyword.value)
-        
+
         return field_info
 
     def _parse_sqlalchemy_relationship(self, rel_name: str, call_node: ast.Call) -> Dict[str, Any]:
@@ -358,7 +358,7 @@ class DocumentationGenerator:
             "back_populates": None,
             "cascade": None
         }
-        
+
         # Get target model (first argument)
         if call_node.args:
             arg = call_node.args[0]
@@ -366,13 +366,13 @@ class DocumentationGenerator:
                 rel_info["target_model"] = arg.s
             elif isinstance(arg, ast.Constant):
                 rel_info["target_model"] = arg.value
-        
+
         # Get relationship attributes
         for keyword in call_node.keywords:
             if keyword.arg == "back_populates":
                 if isinstance(keyword.value, (ast.Str, ast.Constant)):
                     rel_info["back_populates"] = keyword.value.s if hasattr(keyword.value, 's') else keyword.value.value
-        
+
         return rel_info
 
     def _extract_service_classes(self, tree: ast.AST, file_path: Path, content: str):
@@ -394,7 +394,7 @@ class DocumentationGenerator:
                 "methods": [],
                 "dependencies": []
             }
-            
+
             # Extract methods
             for node in class_node.body:
                 if isinstance(node, ast.FunctionDef) and not node.name.startswith("_"):
@@ -406,7 +406,7 @@ class DocumentationGenerator:
                         "is_async": isinstance(node, ast.AsyncFunctionDef)
                     }
                     service_info["methods"].append(method_info)
-            
+
             # Extract constructor dependencies
             for node in class_node.body:
                 if isinstance(node, ast.FunctionDef) and node.name == "__init__":
@@ -415,7 +415,7 @@ class DocumentationGenerator:
                         if arg.annotation:
                             dep_info["type"] = ast.unparse(arg.annotation) if hasattr(ast, 'unparse') else str(arg.annotation)
                         service_info["dependencies"].append(dep_info)
-            
+
             return service_info
         except Exception as e:
             print(f"     ⚠️  Warning: Error parsing service {class_node.name}: {e}")
@@ -440,7 +440,7 @@ class DocumentationGenerator:
                 "methods": [],
                 "model_type": None
             }
-            
+
             # Extract methods
             for node in class_node.body:
                 if isinstance(node, ast.FunctionDef) and not node.name.startswith("_"):
@@ -452,7 +452,7 @@ class DocumentationGenerator:
                         "is_async": isinstance(node, ast.AsyncFunctionDef)
                     }
                     repo_info["methods"].append(method_info)
-            
+
             return repo_info
         except Exception as e:
             print(f"     ⚠️  Warning: Error parsing repository {class_node.name}: {e}")
@@ -469,7 +469,7 @@ class DocumentationGenerator:
                         base_name = base.id
                     elif isinstance(base, ast.Attribute):
                         base_name = base.attr
-                    
+
                     if base_name in ["BaseModel", "TypedDict"] or "Model" in base_name:
                         type_info = self._parse_type_definition(node, content, file_path)
                         if type_info:
@@ -485,7 +485,7 @@ class DocumentationGenerator:
                 "line_number": class_node.lineno,
                 "fields": []
             }
-            
+
             # Extract fields with type annotations
             for node in class_node.body:
                 if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
@@ -495,17 +495,17 @@ class DocumentationGenerator:
                         "optional": False,
                         "default": None
                     }
-                    
+
                     if node.value:
                         field_info["default"] = ast.unparse(node.value) if hasattr(ast, 'unparse') else str(node.value)
-                    
+
                     # Check if Optional
                     type_str = field_info["type"]
                     if "Optional" in type_str or "Union" in type_str:
                         field_info["optional"] = True
-                    
+
                     type_info["fields"].append(field_info)
-            
+
             return type_info
         except Exception as e:
             print(f"     ⚠️  Warning: Error parsing type {class_node.name}: {e}")
@@ -514,18 +514,18 @@ class DocumentationGenerator:
     def _analyze_typescript_files(self):
         """Analyze TypeScript files for frontend types and components."""
         ts_files = list(self.project_root.rglob("*.ts")) + list(self.project_root.rglob("*.tsx"))
-        
+
         for ts_file in ts_files:
             if any(exclude in str(ts_file) for exclude in ['node_modules', '.git', 'dist']):
                 continue
-            
+
             try:
                 with open(ts_file, 'r', encoding='utf-8') as f:
                     content = f.read()
-                
+
                 # Extract interfaces and types
                 self._extract_typescript_interfaces(content, ts_file)
-                
+
             except Exception as e:
                 print(f"     ⚠️  Warning: Error analyzing {ts_file}: {e}")
 
@@ -534,12 +534,12 @@ class DocumentationGenerator:
         # Simple regex-based extraction for interfaces
         interface_pattern = r'(?:export\s+)?interface\s+(\w+)\s*\{([^{}]*(?:\{[^}]*\}[^{}]*)*)\}'
         type_pattern = r'(?:export\s+)?type\s+(\w+)\s*=\s*([^;\n]+);?'
-        
+
         # Find interfaces
         for match in re.finditer(interface_pattern, content, re.MULTILINE | re.DOTALL):
             interface_name = match.group(1)
             interface_body = match.group(2)
-            
+
             # Parse fields from interface body
             fields = []
             field_pattern = r'(\w+)\??:\s*([^;,\n]+)[;,\n]'
@@ -547,13 +547,13 @@ class DocumentationGenerator:
                 field_name = field_match.group(1)
                 field_type = field_match.group(2).strip()
                 optional = '?' in field_match.group(0)
-                
+
                 fields.append({
                     "name": field_name,
                     "type": field_type,
                     "optional": optional
                 })
-            
+
             type_info = {
                 "name": interface_name,
                 "kind": "interface",
@@ -562,12 +562,12 @@ class DocumentationGenerator:
                 "language": "TypeScript"
             }
             self.type_definitions.append(type_info)
-        
+
         # Find type aliases
         for match in re.finditer(type_pattern, content, re.MULTILINE):
             type_name = match.group(1)
             type_definition = match.group(2).strip()
-            
+
             type_info = {
                 "name": type_name,
                 "kind": "type",
@@ -587,7 +587,7 @@ class DocumentationGenerator:
             "vite.config.ts",
             "package.json"
         ]
-        
+
         for config_file in config_files:
             config_path = self.project_root / config_file
             if config_path.exists():
@@ -599,16 +599,16 @@ class DocumentationGenerator:
     def _parse_configuration_file(self, file_path: Path):
         """Parse configuration file for options."""
         file_name = file_path.name
-        
+
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        
+
         config_info = {
             "file": file_name,
             "path": str(file_path.relative_to(self.project_root)),
             "options": []
         }
-        
+
         if file_name.endswith('.py'):
             # Parse Python configuration
             config_info["options"] = self._parse_python_config(content)
@@ -630,32 +630,32 @@ class DocumentationGenerator:
         elif file_name == '.env.example':
             # Parse environment variables
             config_info["options"] = self._parse_env_file(content)
-        
+
         if config_info["options"]:
             self.configuration_options.append(config_info)
 
     def _parse_python_config(self, content: str) -> List[Dict[str, Any]]:
         """Parse Python configuration variables."""
         options = []
-        
+
         # Find variable assignments
         var_pattern = r'^([A-Z_][A-Z0-9_]*)\s*=\s*(.+)$'
         for match in re.finditer(var_pattern, content, re.MULTILINE):
             var_name = match.group(1)
             var_value = match.group(2)
-            
+
             options.append({
                 "name": var_name,
                 "value": var_value,
                 "type": "config_variable"
             })
-        
+
         return options
 
     def _parse_env_file(self, content: str) -> List[Dict[str, Any]]:
         """Parse .env file format."""
         options = []
-        
+
         for line in content.split('\n'):
             line = line.strip()
             if line and not line.startswith('#'):
@@ -666,16 +666,16 @@ class DocumentationGenerator:
                         "value": value.strip(),
                         "type": "environment_variable"
                     })
-        
+
         return options
 
     def _flatten_config_dict(self, config_dict: Dict, prefix: str = "") -> List[Dict[str, Any]]:
         """Flatten nested configuration dictionary."""
         options = []
-        
+
         for key, value in config_dict.items():
             full_key = f"{prefix}.{key}" if prefix else key
-            
+
             if isinstance(value, dict):
                 options.extend(self._flatten_config_dict(value, full_key))
             else:
@@ -684,17 +684,17 @@ class DocumentationGenerator:
                     "value": str(value),
                     "type": "config_option"
                 })
-        
+
         return options
 
     def _collect_metrics(self):
         """Collect various project metrics."""
         print("  📊 Collecting code metrics...")
         self._collect_code_metrics()
-        
+
         print("  🧪 Collecting test coverage...")
         self._collect_test_coverage()
-        
+
         print("  📈 Collecting performance metrics...")
         self._collect_performance_metrics()
 
@@ -702,20 +702,20 @@ class DocumentationGenerator:
         """Collect basic code metrics."""
         python_files = list(self.project_root.rglob("*.py"))
         ts_files = list(self.project_root.rglob("*.ts")) + list(self.project_root.rglob("*.tsx"))
-        
+
         total_lines = 0
         total_functions = 0
         total_classes = 0
-        
+
         for py_file in python_files:
             if any(exclude in str(py_file) for exclude in ['.venv', '__pycache__', '.git']):
                 continue
-            
+
             try:
                 with open(py_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                     total_lines += len(content.split('\n'))
-                
+
                 tree = ast.parse(content)
                 for node in ast.walk(tree):
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -724,7 +724,7 @@ class DocumentationGenerator:
                         total_classes += 1
             except:
                 continue
-        
+
         self.metadata.update({
             "code_metrics": {
                 "python_files": len(python_files),
@@ -750,7 +750,7 @@ class DocumentationGenerator:
                 text=True,
                 cwd=self.project_root
             )
-            
+
             if result.returncode == 0:
                 coverage_file = self.project_root / "coverage.json"
                 if coverage_file.exists():
@@ -764,9 +764,9 @@ class DocumentationGenerator:
         """Collect performance metrics from benchmark files."""
         performance_files = list(self.project_root.rglob("*performance*.json"))
         benchmark_files = list(self.project_root.rglob("*benchmark*.json"))
-        
+
         performance_data = []
-        
+
         for perf_file in performance_files + benchmark_files:
             try:
                 with open(perf_file, 'r') as f:
@@ -777,38 +777,38 @@ class DocumentationGenerator:
                     })
             except:
                 continue
-        
+
         self.metadata["performance_metrics"] = performance_data
 
     def _generate_api_documentation(self, formats: List[str]) -> Dict[str, Path]:
         """Generate comprehensive API documentation."""
         template = self.jinja_env.get_template("api_documentation.html")
-        
+
         # Organize endpoints by tags/paths
         organized_endpoints = {}
         for endpoint in self.api_endpoints:
             path_parts = endpoint["path"].strip("/").split("/")
             category = path_parts[1] if len(path_parts) > 1 else "default"
-            
+
             if category not in organized_endpoints:
                 organized_endpoints[category] = []
             organized_endpoints[category].append(endpoint)
-        
+
         context = {
             "metadata": self.metadata,
             "endpoints_by_category": organized_endpoints,
             "total_endpoints": len(self.api_endpoints)
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "api_reference.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["api_html"] = html_file
-        
+
         if "markdown" in formats:
             md_template = self._create_markdown_template("api_documentation")
             md_content = md_template.render(**context)
@@ -816,34 +816,34 @@ class DocumentationGenerator:
             with open(md_file, 'w', encoding='utf-8') as f:
                 f.write(md_content)
             output_files["api_md"] = md_file
-        
+
         return output_files
 
     def _generate_database_documentation(self, formats: List[str]) -> Dict[str, Path]:
         """Generate database schema documentation."""
         template = self.jinja_env.get_template("database_documentation.html")
-        
+
         context = {
             "metadata": self.metadata,
             "models": self.database_models,
             "total_models": len(self.database_models)
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "database_schema.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["db_html"] = html_file
-        
+
         return output_files
 
     def _generate_service_documentation(self, formats: List[str]) -> Dict[str, Path]:
         """Generate service layer documentation."""
         template = self.jinja_env.get_template("service_documentation.html")
-        
+
         context = {
             "metadata": self.metadata,
             "services": self.service_classes,
@@ -851,84 +851,84 @@ class DocumentationGenerator:
             "total_services": len(self.service_classes),
             "total_repositories": len(self.repository_classes)
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "service_architecture.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["service_html"] = html_file
-        
+
         return output_files
 
     def _generate_type_documentation(self, formats: List[str]) -> Dict[str, Path]:
         """Generate type definitions documentation."""
         template = self.jinja_env.get_template("type_documentation.html")
-        
+
         # Organize types by language and category
         python_types = [t for t in self.type_definitions if t.get("language") != "TypeScript"]
         typescript_types = [t for t in self.type_definitions if t.get("language") == "TypeScript"]
-        
+
         context = {
             "metadata": self.metadata,
             "python_types": python_types,
             "typescript_types": typescript_types,
             "total_types": len(self.type_definitions)
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "type_definitions.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["types_html"] = html_file
-        
+
         return output_files
 
     def _generate_configuration_documentation(self, formats: List[str]) -> Dict[str, Path]:
         """Generate configuration documentation."""
         template = self.jinja_env.get_template("configuration_documentation.html")
-        
+
         context = {
             "metadata": self.metadata,
             "configuration_files": self.configuration_options,
             "total_options": sum(len(config["options"]) for config in self.configuration_options)
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "configuration_guide.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["config_html"] = html_file
-        
+
         return output_files
 
     def _generate_test_coverage_documentation(self, formats: List[str]) -> Dict[str, Path]:
         """Generate test coverage documentation."""
         template = self.jinja_env.get_template("test_coverage_documentation.html")
-        
+
         context = {
             "metadata": self.metadata,
             "coverage_data": self.test_coverage,
             "coverage_percentage": self.test_coverage.get("totals", {}).get("percent_covered", 0)
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "test_coverage.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["coverage_html"] = html_file
-        
+
         return output_files
 
     def _generate_architecture_documentation(self, formats: List[str]) -> Dict[str, Path]:
@@ -939,7 +939,7 @@ class DocumentationGenerator:
             self.project_root / "PROJECT_DOCS.md",
             self.project_root / "TECHNICAL_DESIGN.md"
         ]
-        
+
         architecture_content = []
         for arch_file in arch_files:
             if arch_file.exists():
@@ -948,9 +948,9 @@ class DocumentationGenerator:
                         "file": arch_file.name,
                         "content": f.read()
                     })
-        
+
         template = self.jinja_env.get_template("architecture_documentation.html")
-        
+
         context = {
             "metadata": self.metadata,
             "architecture_files": architecture_content,
@@ -958,16 +958,16 @@ class DocumentationGenerator:
             "repositories": self.repository_classes,
             "models": self.database_models
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "architecture_overview.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["arch_html"] = html_file
-        
+
         return output_files
 
     def _generate_developer_documentation(self, formats: List[str]) -> Dict[str, Path]:
@@ -978,7 +978,7 @@ class DocumentationGenerator:
             self.project_root / "DEVELOPMENT_SETUP.md",
             self.project_root / "docs" / "contributing" / "development-workflow.md"
         ]
-        
+
         developer_content = []
         for dev_file in dev_files:
             if dev_file.exists():
@@ -987,37 +987,37 @@ class DocumentationGenerator:
                         "file": dev_file.name,
                         "content": f.read()
                     })
-        
+
         template = self.jinja_env.get_template("developer_documentation.html")
-        
+
         context = {
             "metadata": self.metadata,
             "developer_files": developer_content,
             "code_metrics": self.metadata.get("code_metrics", {}),
             "test_coverage": self.test_coverage
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "developer_guide.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["dev_html"] = html_file
-        
+
         return output_files
 
     def _generate_changelog(self, formats: List[str]) -> Dict[str, Path]:
         """Generate changelog from git commits and existing changelog files."""
         changelog_content = []
-        
+
         # Read existing changelog
         changelog_file = self.project_root / "CHANGELOG.md"
         if changelog_file.exists():
             with open(changelog_file, 'r', encoding='utf-8') as f:
                 changelog_content.append(f.read())
-        
+
         # Get recent git commits if no changelog exists
         if not changelog_content:
             try:
@@ -1032,32 +1032,32 @@ class DocumentationGenerator:
                     changelog_content = [f"## Recent Changes\n\n" + "\n".join(f"- {commit}" for commit in commits)]
             except:
                 changelog_content = ["## Changelog\n\nNo changelog available."]
-        
+
         template = self.jinja_env.get_template("changelog_documentation.html")
-        
+
         context = {
             "metadata": self.metadata,
             "changelog_content": changelog_content[0] if changelog_content else "No changelog available."
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "changelog.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["changelog_html"] = html_file
-        
+
         return output_files
 
     def _generate_index_page(self, formats: List[str]) -> Dict[str, Path]:
         """Generate main documentation index page."""
         template = self.jinja_env.get_template("index_documentation.html")
-        
+
         # Calculate documentation completeness score
         completeness_score = self._calculate_documentation_completeness()
-        
+
         context = {
             "metadata": self.metadata,
             "code_metrics": self.metadata.get("code_metrics", {}),
@@ -1075,46 +1075,46 @@ class DocumentationGenerator:
                 {"name": "Changelog", "file": "changelog.html", "description": "Version history and changes"}
             ]
         }
-        
+
         output_files = {}
-        
+
         if "html" in formats:
             html_content = template.render(**context)
             html_file = self.output_dir / "index.html"
             with open(html_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
             output_files["index_html"] = html_file
-        
+
         return output_files
 
     def _calculate_documentation_completeness(self) -> Dict[str, Any]:
         """Calculate documentation completeness metrics."""
         total_possible = 100
         current_score = 0
-        
+
         # API endpoints documented
         if self.api_endpoints:
             documented_endpoints = sum(1 for ep in self.api_endpoints if ep.get("docstring"))
             current_score += (documented_endpoints / len(self.api_endpoints)) * 20
-        
+
         # Models documented
         if self.database_models:
             documented_models = sum(1 for model in self.database_models if model.get("docstring"))
             current_score += (documented_models / len(self.database_models)) * 20
-        
+
         # Services documented
         if self.service_classes:
             documented_services = sum(1 for svc in self.service_classes if svc.get("docstring"))
             current_score += (documented_services / len(self.service_classes)) * 20
-        
+
         # Test coverage
         coverage_pct = self.test_coverage.get("totals", {}).get("percent_covered", 0)
         current_score += (coverage_pct / 100) * 20
-        
+
         # Configuration documented
         if self.configuration_options:
             current_score += 20
-        
+
         return {
             "score": min(current_score, total_possible),
             "total": total_possible,
@@ -1124,7 +1124,7 @@ class DocumentationGenerator:
     def _generate_search_index(self) -> Path:
         """Generate search index for documentation."""
         search_data = []
-        
+
         # Index API endpoints
         for endpoint in self.api_endpoints:
             search_data.append({
@@ -1134,7 +1134,7 @@ class DocumentationGenerator:
                 "url": f"api_reference.html#{endpoint['function_name']}",
                 "keywords": [endpoint["method"], endpoint["path"], endpoint["function_name"]]
             })
-        
+
         # Index database models
         for model in self.database_models:
             search_data.append({
@@ -1144,7 +1144,7 @@ class DocumentationGenerator:
                 "url": f"database_schema.html#{model['name']}",
                 "keywords": [model["name"], "model", "database"]
             })
-        
+
         # Index services
         for service in self.service_classes:
             search_data.append({
@@ -1154,7 +1154,7 @@ class DocumentationGenerator:
                 "url": f"service_architecture.html#{service['name']}",
                 "keywords": [service["name"], "service", "business logic"]
             })
-        
+
         # Index types
         for type_def in self.type_definitions:
             search_data.append({
@@ -1164,11 +1164,11 @@ class DocumentationGenerator:
                 "url": f"type_definitions.html#{type_def['name']}",
                 "keywords": [type_def["name"], "type", type_def.get("language", "")]
             })
-        
+
         search_index_file = self.output_dir / "search_index.json"
         with open(search_index_file, 'w', encoding='utf-8') as f:
             json.dump(search_data, f, indent=2)
-        
+
         return search_index_file
 
     def _create_markdown_template(self, template_name: str) -> Template:
@@ -1212,14 +1212,14 @@ Version: {{ metadata.version }}
 """
         else:
             template_content = "# {{ template_name }}\n\nTemplate not implemented yet."
-        
+
         return Template(template_content)
 
     def _create_default_templates(self):
         """Create default Jinja2 templates if they don't exist."""
         template_dir = self.project_root / "docs" / "templates"
         template_dir.mkdir(parents=True, exist_ok=True)
-        
+
         templates = {
             "api_documentation.html": self._get_api_documentation_template(),
             "database_documentation.html": self._get_database_documentation_template(),
@@ -1233,7 +1233,7 @@ Version: {{ metadata.version }}
             "index_documentation.html": self._get_index_documentation_template(),
             "base.html": self._get_base_template()
         }
-        
+
         for template_name, template_content in templates.items():
             template_file = template_dir / template_name
             if not template_file.exists():
@@ -1279,7 +1279,7 @@ Version: {{ metadata.version }}
             <h1>{{ metadata.project_name }} Documentation</h1>
             <p>Version {{ metadata.version }} • Generated {{ metadata.generated_at[:10] }}</p>
         </header>
-        
+
         <nav class="nav">
             <a href="index.html">Home</a>
             <a href="api_reference.html">API Reference</a>
@@ -1290,17 +1290,17 @@ Version: {{ metadata.version }}
             <a href="test_coverage.html">Coverage</a>
             <a href="developer_guide.html">Developer Guide</a>
         </nav>
-        
+
         <main class="content">
             {% block content %}{% endblock %}
         </main>
-        
+
         <footer class="footer">
             <p>Documentation generated by AI Enhanced PDF Scholar Documentation Generator</p>
             <p>{{ metadata.generated_at }}</p>
         </footer>
     </div>
-    
+
     <script>
         // Simple search functionality
         function setupSearch() {
@@ -1309,7 +1309,7 @@ Version: {{ metadata.version }}
                 searchBox.addEventListener('input', function(e) {
                     const query = e.target.value.toLowerCase();
                     const items = document.querySelectorAll('[data-searchable]');
-                    
+
                     items.forEach(item => {
                         const text = item.textContent.toLowerCase();
                         if (text.includes(query) || query === '') {
@@ -1321,7 +1321,7 @@ Version: {{ metadata.version }}
                 });
             }
         }
-        
+
         document.addEventListener('DOMContentLoaded', setupSearch);
     </script>
 </body>
@@ -1358,17 +1358,17 @@ Version: {{ metadata.version }}
         <span class="method-badge method-{{ endpoint.method.lower() }}">{{ endpoint.method }}</span>
         <code>{{ endpoint.path }}</code>
     </h4>
-    
+
     <p><strong>Function:</strong> <code>{{ endpoint.function_name }}</code></p>
     <p><strong>File:</strong> {{ endpoint.file_path }}:{{ endpoint.line_number }}</p>
-    
+
     {% if endpoint.docstring %}
     <div class="description">
         <h5>Description</h5>
         <p>{{ endpoint.docstring }}</p>
     </div>
     {% endif %}
-    
+
     {% if endpoint.parameters %}
     <div class="parameters">
         <h5>Parameters</h5>
@@ -1379,7 +1379,7 @@ Version: {{ metadata.version }}
         </ul>
     </div>
     {% endif %}
-    
+
     {% if endpoint.response_model %}
     <div class="response">
         <h5>Response Model</h5>
@@ -1413,13 +1413,13 @@ Version: {{ metadata.version }}
 <div class="model" data-searchable id="{{ model.name }}">
     <h3>{{ model.name }}</h3>
     <p><strong>File:</strong> {{ model.file_path }}:{{ model.line_number }}</p>
-    
+
     {% if model.docstring %}
     <div class="description">
         <p>{{ model.docstring }}</p>
     </div>
     {% endif %}
-    
+
     {% if model.fields %}
     <h4>Fields</h4>
     {% for field in model.fields %}
@@ -1431,7 +1431,7 @@ Version: {{ metadata.version }}
     </div>
     {% endfor %}
     {% endif %}
-    
+
     {% if model.relationships %}
     <h4>Relationships</h4>
     {% for rel in model.relationships %}
@@ -1472,13 +1472,13 @@ Version: {{ metadata.version }}
 <div class="model" data-searchable id="{{ service.name }}">
     <h4>{{ service.name }}</h4>
     <p><strong>File:</strong> {{ service.file_path }}:{{ service.line_number }}</p>
-    
+
     {% if service.docstring %}
     <div class="description">
         <p>{{ service.docstring }}</p>
     </div>
     {% endif %}
-    
+
     {% if service.dependencies %}
     <h5>Dependencies</h5>
     <ul>
@@ -1487,7 +1487,7 @@ Version: {{ metadata.version }}
     {% endfor %}
     </ul>
     {% endif %}
-    
+
     {% if service.methods %}
     <h5>Methods</h5>
     {% for method in service.methods %}
@@ -1508,13 +1508,13 @@ Version: {{ metadata.version }}
 <div class="model" data-searchable id="{{ repo.name }}">
     <h4>{{ repo.name }}</h4>
     <p><strong>File:</strong> {{ repo.file_path }}:{{ repo.line_number }}</p>
-    
+
     {% if repo.docstring %}
     <div class="description">
         <p>{{ repo.docstring }}</p>
     </div>
     {% endif %}
-    
+
     {% if repo.methods %}
     <h5>Methods</h5>
     {% for method in repo.methods %}
@@ -1532,7 +1532,7 @@ Version: {{ metadata.version }}
 {% endblock %}'''
 
     def _get_type_documentation_template(self) -> str:
-        """Get type documentation template.""" 
+        """Get type documentation template."""
         return '''{% extends "base.html" %}
 
 {% block title %}Type Definitions - {{ super() }}{% endblock %}
@@ -1558,13 +1558,13 @@ Version: {{ metadata.version }}
 <div class="model" data-searchable id="{{ type_def.name }}">
     <h4>{{ type_def.name }}</h4>
     <p><strong>File:</strong> {{ type_def.file_path }}:{{ type_def.line_number }}</p>
-    
+
     {% if type_def.docstring %}
     <div class="description">
         <p>{{ type_def.docstring }}</p>
     </div>
     {% endif %}
-    
+
     {% if type_def.fields %}
     <h5>Fields</h5>
     {% for field in type_def.fields %}
@@ -1583,13 +1583,13 @@ Version: {{ metadata.version }}
 <div class="model" data-searchable id="{{ type_def.name }}">
     <h4>{{ type_def.name }} <span style="color: #007bff;">({{ type_def.kind }})</span></h4>
     <p><strong>File:</strong> {{ type_def.file_path }}</p>
-    
+
     {% if type_def.definition %}
     <div class="description">
         <pre><code>{{ type_def.definition }}</code></pre>
     </div>
     {% endif %}
-    
+
     {% if type_def.fields %}
     <h5>Fields</h5>
     {% for field in type_def.fields %}
@@ -1629,7 +1629,7 @@ Version: {{ metadata.version }}
 <div class="model" data-searchable>
     <h3>{{ config.file }}</h3>
     <p><strong>Path:</strong> {{ config.path }}</p>
-    
+
     {% if config.options %}
     <h4>Configuration Options</h4>
     {% for option in config.options %}
@@ -1740,21 +1740,21 @@ Version: {{ metadata.version }}
 <div class="model">
     <h3>Architecture Components</h3>
     <p>The system consists of the following main components:</p>
-    
+
     <h4>Service Layer</h4>
     <ul>
     {% for service in services %}
         <li><strong>{{ service.name }}</strong> - {{ service.docstring|default('Service component') }}</li>
     {% endfor %}
     </ul>
-    
+
     <h4>Repository Layer</h4>
     <ul>
     {% for repo in repositories %}
         <li><strong>{{ repo.name }}</strong> - {{ repo.docstring|default('Data access component') }}</li>
     {% endfor %}
     </ul>
-    
+
     <h4>Data Models</h4>
     <ul>
     {% for model in models %}
@@ -1810,13 +1810,13 @@ Version: {{ metadata.version }}
 <div class="model">
     <h3>Getting Started</h3>
     <p>This project is {{ metadata.project_name }} version {{ metadata.version }}.</p>
-    
+
     <h4>Quick Start</h4>
     <pre><code>git clone https://github.com/your-repo/{{ metadata.project_name|lower|replace(" ", "-") }}.git
 cd {{ metadata.project_name|lower|replace(" ", "-") }}
 pip install -r requirements.txt
 python -m pytest</code></pre>
-    
+
     <h4>Architecture Overview</h4>
     <p>The project follows a clean architecture pattern with the following layers:</p>
     <ul>
@@ -1922,71 +1922,71 @@ Examples:
     python scripts/docs_generator.py --format pdf --output docs/generated
         """
     )
-    
+
     parser.add_argument(
         "--format",
         default="html,markdown",
         help="Output formats (comma-separated): html, markdown, pdf (default: html,markdown)"
     )
-    
+
     parser.add_argument(
         "--output",
         default="docs/generated",
         help="Output directory for generated documentation (default: docs/generated)"
     )
-    
+
     parser.add_argument(
         "--project-root",
         default=".",
         help="Project root directory (default: current directory)"
     )
-    
+
     parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose output"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Parse formats
     formats = [fmt.strip().lower() for fmt in args.format.split(",")]
     valid_formats = ["html", "markdown", "pdf"]
     formats = [fmt for fmt in formats if fmt in valid_formats]
-    
+
     if not formats:
         print("❌ Error: No valid formats specified. Valid formats: html, markdown, pdf")
         sys.exit(1)
-    
+
     # Initialize generator
     project_root = Path(args.project_root).resolve()
     output_dir = Path(args.output)
-    
+
     if not project_root.exists():
         print(f"❌ Error: Project root directory does not exist: {project_root}")
         sys.exit(1)
-    
+
     try:
         generator = DocumentationGenerator(project_root, output_dir)
-        
+
         # Create default templates
         generator._create_default_templates()
-        
+
         # Generate documentation
         generated_files = generator.generate_all_documentation(formats)
-        
+
         print(f"\n🎉 Success! Generated documentation:")
         for doc_type, file_path in generated_files.items():
             print(f"   {doc_type}: {file_path}")
-        
+
         print(f"\n📁 All files saved to: {output_dir.resolve()}")
-        
+
         # If HTML format was generated, show how to view it
         if any("html" in str(f) for f in generated_files.values()):
             index_file = output_dir / "index.html"
             if index_file.exists():
                 print(f"\n🌐 View documentation at: file://{index_file.resolve()}")
-        
+
     except Exception as e:
         print(f"❌ Error: Documentation generation failed: {e}")
         if args.verbose:

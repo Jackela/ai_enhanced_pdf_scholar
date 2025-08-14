@@ -62,7 +62,7 @@ class TestRAGRecoveryService:
         return mock
 
     @pytest.fixture
-    def recovery_service(self, temp_directory, mock_index_builder, 
+    def recovery_service(self, temp_directory, mock_index_builder,
                         mock_file_manager, mock_health_monitor):
         """Create RAGRecoveryService with mocked dependencies."""
         return RAGRecoveryService(
@@ -88,11 +88,11 @@ class TestRAGRecoveryService:
         """Setup corrupted index files for testing."""
         doc_index_path = temp_directory / "document_1"
         doc_index_path.mkdir(exist_ok=True)
-        
+
         # Create corrupted files
         (doc_index_path / "vectors.pkl").write_bytes(b"corrupted_data")
         (doc_index_path / "metadata.json").write_text("invalid json content")
-        
+
         return doc_index_path
 
     def test_recovery_service_initialization(self, recovery_service, temp_directory):
@@ -110,7 +110,7 @@ class TestRAGRecoveryService:
         doc_id = 1
         index_path = recovery_service.index_storage_path / f"document_{doc_id}"
         index_path.mkdir(exist_ok=True)
-        
+
         metadata = {
             "document_id": doc_id,
             "chunks_count": 50,
@@ -120,10 +120,10 @@ class TestRAGRecoveryService:
         }
         (index_path / "metadata.json").write_text(json.dumps(metadata))
         (index_path / "vectors.pkl").write_bytes(b"valid_vector_data")
-        
+
         # When
         corruption_detected = await recovery_service.detect_corruption(doc_id)
-        
+
         # Then
         assert corruption_detected is False
 
@@ -132,7 +132,7 @@ class TestRAGRecoveryService:
         """Test corruption detection with missing index files."""
         # When
         corruption_detected = await recovery_service.detect_corruption(document_id=999)
-        
+
         # Then
         assert corruption_detected is True
 
@@ -141,7 +141,7 @@ class TestRAGRecoveryService:
         """Test corruption detection with malformed metadata."""
         # When
         corruption_detected = await recovery_service.detect_corruption(document_id=1)
-        
+
         # Then
         assert corruption_detected is True
 
@@ -150,7 +150,7 @@ class TestRAGRecoveryService:
         """Test comprehensive corruption analysis."""
         # When
         analysis = await recovery_service.analyze_corruption(document_id=1)
-        
+
         # Then
         assert analysis["corruption_detected"] is True
         assert "missing_files" in analysis
@@ -169,15 +169,15 @@ class TestRAGRecoveryService:
             "severity": "high",
             "recommended_actions": ["full_rebuild"]
         })
-        
+
         # When
         repair_result = await recovery_service.repair_index(sample_document)
-        
+
         # Then
         assert repair_result["status"] == "success"
         assert repair_result["action"] == "full_rebuild"
         assert "repair_time" in repair_result
-        
+
         # Verify repair process
         recovery_service.index_builder.delete_index.assert_called_once_with(sample_document.id)
         recovery_service.index_builder.build_index.assert_called_once_with(sample_document)
@@ -192,14 +192,14 @@ class TestRAGRecoveryService:
             "severity": "low",
             "recommended_actions": ["repair_metadata", "verify_vectors"]
         })
-        
+
         # When
         repair_result = await recovery_service.repair_index(sample_document)
-        
+
         # Then
         assert repair_result["status"] == "success"
         assert repair_result["action"] == "partial_repair"
-        
+
         # Verify partial repair didn't trigger full rebuild
         recovery_service.index_builder.delete_index.assert_not_called()
 
@@ -208,14 +208,14 @@ class TestRAGRecoveryService:
         """Test comprehensive system health checking."""
         # When
         health_status = await recovery_service.health_check()
-        
+
         # Then
         assert health_status["overall_status"] == "healthy"
         assert "system_metrics" in health_status
         assert "index_integrity" in health_status
         assert "storage_status" in health_status
         assert "recovery_readiness" in health_status
-        
+
         # Verify health monitoring was called
         recovery_service.health_monitor.check_system_health.assert_called_once()
 
@@ -229,10 +229,10 @@ class TestRAGRecoveryService:
             "memory_usage": 90,  # 90% used - high
             "cpu_usage": 80     # 80% used - high
         }
-        
+
         # When
         health_status = await recovery_service.health_check()
-        
+
         # Then
         assert health_status["overall_status"] == "degraded"
         assert health_status["warnings"] is not None
@@ -243,14 +243,14 @@ class TestRAGRecoveryService:
         """Test recovery workflow with backup creation and restoration."""
         # Given
         recovery_service.detect_corruption = AsyncMock(return_value=True)
-        
+
         # When
         recovery_result = await recovery_service.recover_with_backup(sample_document)
-        
+
         # Then
         assert recovery_result["backup_created"] is True
         assert recovery_result["recovery_successful"] is True
-        
+
         # Verify backup workflow
         recovery_service.file_manager.create_backup.assert_called_once()
         recovery_service.index_builder.build_index.assert_called_once()
@@ -260,14 +260,14 @@ class TestRAGRecoveryService:
         """Test bulk corruption detection across multiple documents."""
         # Given
         document_ids = [1, 2, 3, 4, 5]
-        
+
         # Mock mixed corruption results
         corruption_results = [True, False, True, False, False]
         recovery_service.detect_corruption = AsyncMock(side_effect=corruption_results)
-        
+
         # When
         bulk_results = await recovery_service.bulk_corruption_check(document_ids)
-        
+
         # Then
         assert len(bulk_results) == 5
         assert bulk_results[1]["corrupted"] is True
@@ -280,13 +280,13 @@ class TestRAGRecoveryService:
         """Test preventive maintenance to prevent corruption."""
         # When
         maintenance_result = await recovery_service.run_preventive_maintenance()
-        
+
         # Then
         assert maintenance_result["status"] == "completed"
         assert "checks_performed" in maintenance_result
         assert "issues_resolved" in maintenance_result
         assert "recommendations" in maintenance_result
-        
+
         # Verify maintenance activities
         recovery_service.file_manager.cleanup_orphaned_files.assert_called_once()
         recovery_service.health_monitor.check_system_health.assert_called()
@@ -301,10 +301,10 @@ class TestRAGRecoveryService:
             {"document_id": 3, "timestamp": "2023-01-01T12:00:00Z", "type": "metadata_corruption"},
         ]
         recovery_service._recovery_history = corruption_events
-        
+
         # When
         pattern_analysis = await recovery_service.analyze_corruption_patterns()
-        
+
         # Then
         assert "most_common_type" in pattern_analysis
         assert "frequency_analysis" in pattern_analysis
@@ -321,10 +321,10 @@ class TestRAGRecoveryService:
             "memory_usage": 95,  # 95% used
             "cpu_usage": 90     # 90% used
         }
-        
+
         # When
         emergency_result = await recovery_service.emergency_recovery()
-        
+
         # Then
         assert emergency_result["status"] == "initiated"
         assert emergency_result["actions_taken"] is not None
@@ -337,14 +337,14 @@ class TestRAGRecoveryService:
         # Given - simulate recovery failure
         recovery_service.index_builder.build_index.side_effect = Exception("Recovery failed")
         recovery_service.detect_corruption = AsyncMock(return_value=True)
-        
+
         # When
         recovery_result = await recovery_service.recover_with_rollback(sample_document)
-        
+
         # Then
         assert recovery_result["status"] == "failed"
         assert recovery_result["rollback_performed"] is True
-        
+
         # Verify rollback actions
         recovery_service.file_manager.restore_from_backup.assert_called_once()
 
@@ -356,10 +356,10 @@ class TestRAGRecoveryService:
             {"timestamp": time.time() - 1800, "duration": 95, "success": True},
             {"timestamp": time.time() - 900, "duration": 200, "success": False}
         ]
-        
+
         # When
         metrics = recovery_service.get_recovery_metrics()
-        
+
         # Then
         assert "total_recoveries" in metrics
         assert "success_rate" in metrics
@@ -373,7 +373,7 @@ class TestRAGRecoveryService:
         """Test proactive measures to prevent corruption."""
         # When
         prevention_result = await recovery_service.run_corruption_prevention()
-        
+
         # Then
         assert prevention_result["status"] == "completed"
         assert "preventive_actions" in prevention_result
@@ -387,10 +387,10 @@ class TestRAGRecoveryService:
         mock_notifier = Mock()
         mock_notifier.send_alert = AsyncMock()
         recovery_service.notifier = mock_notifier
-        
+
         # When
         await recovery_service.repair_index(sample_document)
-        
+
         # Then - verify notification was sent
         recovery_service.notifier.send_alert.assert_called_once()
         call_args = recovery_service.notifier.send_alert.call_args
@@ -401,10 +401,10 @@ class TestRAGRecoveryService:
         """Test comprehensive audit logging for recovery operations."""
         # Given
         recovery_service.detect_corruption = AsyncMock(return_value=True)
-        
+
         # When
         await recovery_service.repair_index(sample_document)
-        
+
         # Then - verify audit log entries
         assert len(recovery_service._recovery_history) > 0
         last_entry = recovery_service._recovery_history[-1]
@@ -422,13 +422,13 @@ class TestRAGRecoveryServiceErrorHandling:
         """Create recovery service with failing dependencies."""
         mock_index_builder = Mock()
         mock_index_builder.build_index = AsyncMock(side_effect=Exception("Index builder failed"))
-        
+
         mock_file_manager = Mock()
         mock_file_manager.cleanup_orphaned_files = AsyncMock(side_effect=Exception("File manager failed"))
-        
+
         mock_health_monitor = Mock()
         mock_health_monitor.check_system_health = AsyncMock(side_effect=Exception("Health monitor failed"))
-        
+
         return RAGRecoveryService(
             index_storage_path=temp_directory,
             index_builder=mock_index_builder,
@@ -442,7 +442,7 @@ class TestRAGRecoveryServiceErrorHandling:
         # When/Then
         with pytest.raises(RAGRecoveryError) as exc_info:
             await failing_recovery_service.repair_index(sample_document)
-        
+
         assert "Recovery operation failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -450,7 +450,7 @@ class TestRAGRecoveryServiceErrorHandling:
         """Test handling of health check failures."""
         # When
         health_status = await failing_recovery_service.health_check()
-        
+
         # Then
         assert health_status["overall_status"] == "unknown"
         assert "health_check_error" in health_status
@@ -460,10 +460,10 @@ class TestRAGRecoveryServiceErrorHandling:
         """Test prevention of cascade failures during recovery."""
         # Given - simulate partial system failure
         recovery_service.index_builder.build_index.side_effect = Exception("Temporary failure")
-        
+
         # When
         recovery_result = await recovery_service.safe_recovery(sample_document)
-        
+
         # Then - should handle failure gracefully
         assert recovery_result["status"] == "failed_safely"
         assert recovery_result["cascade_prevented"] is True
@@ -478,10 +478,10 @@ class TestRAGRecoveryServiceErrorHandling:
             "memory_usage": 98,
             "cpu_usage": 95
         }
-        
+
         # When
         result = await recovery_service.health_check()
-        
+
         # Then
         assert result["overall_status"] == "critical"
         assert "resource_exhaustion" in result
@@ -491,7 +491,7 @@ class TestRAGRecoveryServiceErrorHandling:
     async def test_concurrent_recovery_operations(self, recovery_service):
         """Test handling of concurrent recovery operations."""
         import asyncio
-        
+
         # Given
         document_ids = [1, 2, 3, 4, 5]
         documents = [
@@ -499,11 +499,11 @@ class TestRAGRecoveryServiceErrorHandling:
                          content_hash=f"hash{i}", mime_type="application/pdf")
             for i in document_ids
         ]
-        
+
         # When - trigger concurrent recoveries
         tasks = [recovery_service.repair_index(doc) for doc in documents]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Then
         assert len(results) == 5
         # Should handle concurrent operations without conflicts

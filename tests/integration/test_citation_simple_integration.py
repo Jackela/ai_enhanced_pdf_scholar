@@ -25,7 +25,7 @@ class TestSimpleCitationIntegration:
         """Create temporary test database."""
         temp_db = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
         temp_db.close()
-        
+
         try:
             db_connection = DatabaseConnection(temp_db.name)
             migrator = DatabaseMigrator(db_connection)
@@ -44,7 +44,7 @@ class TestSimpleCitationIntegration:
         # Initialize components
         citation_repo = CitationRepository(test_db)
         parsing_service = CitationParsingService()
-        
+
         # First create a valid document to satisfy foreign key constraint
         doc_sql = """
             INSERT INTO documents (title, file_path, file_hash, file_size, content_hash, page_count, created_at, updated_at)
@@ -53,24 +53,24 @@ class TestSimpleCitationIntegration:
         test_db.execute(doc_sql, (
             "Test Document", "/test/doc.pdf", "test_hash", 1024, "content_hash", 5
         ))
-        
+
         # Get the document ID
         doc_row = test_db.fetch_one("SELECT id FROM documents WHERE file_hash = ?", ("test_hash",))
         document_id = doc_row[0]
-        
+
         # Test data
         academic_text = """
         Smith, J. (2023). Machine Learning Fundamentals. Journal of AI, 15(3), 123-145.
         Jones, M. et al. (2022). Deep Learning Applications. Conference Proceedings.
         """
-        
+
         # Parse citations
         parsed_citations = parsing_service.parse_citations_from_text(academic_text)
-        
+
         # Validate parsing
         assert isinstance(parsed_citations, list)
         assert len(parsed_citations) >= 1
-        
+
         # Create and store citations
         for citation_data in parsed_citations:
             citation_model = CitationModel(
@@ -81,10 +81,10 @@ class TestSimpleCitationIntegration:
                 publication_year=citation_data.get("publication_year"),
                 confidence_score=citation_data["confidence_score"]
             )
-            
+
             # Store citation
             created_citation = citation_repo.create(citation_model)
-            
+
             # Validate storage
             assert created_citation.id is not None
             assert created_citation.raw_text == citation_data["raw_text"]
@@ -96,18 +96,18 @@ class TestSimpleCitationIntegration:
         citation_repo = CitationRepository(test_db)
         relation_repo = CitationRelationRepository(test_db)
         citation_service = CitationService(citation_repo, relation_repo)
-        
+
         # Test statistics (should work even with empty database)
         stats = citation_service.get_citation_statistics()
         assert isinstance(stats, dict)
         assert "total_citations" in stats
         assert stats["total_citations"] >= 0
-        
+
         # Test search (should return empty list for non-existent author)
         search_results = citation_service.search_citations_by_author("NonExistent")
         assert isinstance(search_results, list)
         assert len(search_results) == 0
-        
+
         # Test citation retrieval for non-existent document
         citations = citation_service.get_citations_for_document(99999)
         assert isinstance(citations, list)
@@ -116,26 +116,26 @@ class TestSimpleCitationIntegration:
     def test_parsing_quality_validation(self, test_db: DatabaseConnection):
         """Test parsing quality with realistic academic text."""
         parsing_service = CitationParsingService()
-        
+
         # Real academic text with clear citations
         test_text = """
-        The transformer architecture (Vaswani, A. et al. (2017). Attention is all you need. 
+        The transformer architecture (Vaswani, A. et al. (2017). Attention is all you need.
         In Advances in neural information processing systems.) has revolutionized NLP.
-        
-        Building on this work, Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2018) 
-        introduced BERT in their paper "BERT: Pre-training of Deep Bidirectional Transformers 
+
+        Building on this work, Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2018)
+        introduced BERT in their paper "BERT: Pre-training of Deep Bidirectional Transformers
         for Language Understanding" published as arXiv preprint arXiv:1810.04805.
         """
-        
+
         parsed_citations = parsing_service.parse_citations_from_text(test_text)
-        
+
         # Quality assertions
         assert len(parsed_citations) >= 1, "Should extract at least one citation"
-        
+
         # Check confidence scores
         high_confidence_count = sum(1 for c in parsed_citations if c["confidence_score"] >= 0.5)
         assert high_confidence_count >= 1, "Should have at least one high-confidence citation"
-        
+
         # Check essential fields extraction
         for citation in parsed_citations:
             assert len(citation["raw_text"]) > 10, "Raw text should be substantial"
@@ -148,19 +148,19 @@ class TestSimpleCitationIntegration:
             CitationRelationRepository(test_db)
         )
         parsing_service = CitationParsingService()
-        
+
         # Test with malformed input
         try:
             malformed_result = parsing_service.parse_citations_from_text("Invalid text @@##$$")
             assert isinstance(malformed_result, list)  # Should handle gracefully
         except Exception as e:
             pytest.fail(f"Should handle malformed text gracefully: {e}")
-        
+
         # Test with empty input
         empty_result = parsing_service.parse_citations_from_text("")
         assert isinstance(empty_result, list)
         assert len(empty_result) == 0
-        
+
         # Test service error handling
         invalid_citations = citation_service.get_citations_for_document(-1)
         assert isinstance(invalid_citations, list)
@@ -176,32 +176,32 @@ class TestSimpleCitationIntegration:
         test_db.execute(doc_sql, (
             "Modularity Test Document", "/test/mod.pdf", "mod_hash", 512, "mod_content", 3
         ))
-        
+
         # Get the document ID
         doc_row = test_db.fetch_one("SELECT id FROM documents WHERE file_hash = ?", ("mod_hash",))
         document_id = doc_row[0]
-        
+
         # Original components
         original_repo = CitationRepository(test_db)
         original_service = CitationService(original_repo, CitationRelationRepository(test_db))
-        
+
         # Test component interface compliance
         test_citation = CitationModel(
             document_id=document_id,
             raw_text="Test citation for modularity",
             confidence_score=0.8
         )
-        
+
         # Repository should handle CRUD operations
         created = original_repo.create(test_citation)
         assert created.id is not None
-        
+
         retrieved = original_repo.get_by_id(created.id)
         assert retrieved is not None
         assert retrieved.raw_text == test_citation.raw_text
-        
+
         # Service should work with repository
         search_results = original_service.search_citations_by_author("Test")
         assert isinstance(search_results, list)
-        
+
         # This demonstrates modular architecture for LLM development

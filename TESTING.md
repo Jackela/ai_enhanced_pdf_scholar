@@ -123,7 +123,7 @@ pytest tests/ --cov=src --cov-report=xml --cov-fail-under=75 -n auto
 [pytest]
 testpaths = tests
 python_paths = . src
-addopts = 
+addopts =
     -v
     --tb=short
     --strict-markers
@@ -172,7 +172,7 @@ timeout_method = thread
 ```ini
 [coverage:run]
 source = src
-omit = 
+omit =
     src/web/static/*
     */tests/*
     */test_*
@@ -227,7 +227,7 @@ class TestDocumentModel:
             file_hash="test_hash_123",
             file_size=1024
         )
-        
+
         assert doc.title == "Test Document"
         assert doc.file_path == "/test/path.pdf"
         assert doc.file_hash == "test_hash_123"
@@ -246,7 +246,7 @@ class TestDocumentModel:
                 file_hash="",
                 file_size=1024
             )
-        
+
         # Test negative file size validation
         with pytest.raises(ValueError, match="File size cannot be negative"):
             DocumentModel(
@@ -290,22 +290,22 @@ class TestContentHashService:
     def test_file_hash_calculation(self):
         """Test file hash calculation with temporary files."""
         service = ContentHashService()
-        
+
         # Create a temporary file
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_file.write("test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Calculate hash
             hash_result = service.calculate_file_hash(temp_file_path)
             assert hash_result is not None
             assert len(hash_result) == 16  # 16-character hex length
-            
+
             # Verify hash is consistent
             hash_result2 = service.calculate_file_hash(temp_file_path)
             assert hash_result == hash_result2
-            
+
         finally:
             Path(temp_file_path).unlink(missing_ok=True)
 
@@ -319,10 +319,10 @@ class TestContentHashService:
         mock_doc.__len__.return_value = 1
         mock_doc.__getitem__.return_value = mock_page
         mock_fitz.open.return_value.__enter__.return_value = mock_doc
-        
+
         service = ContentHashService()
         result = service._extract_pdf_text("test.pdf")
-        
+
         assert result == "Sample PDF content"
         mock_fitz.open.assert_called_once_with("test.pdf")
 
@@ -330,21 +330,21 @@ class TestContentHashService:
     def test_hash_calculation_performance(self):
         """Test hash calculation performance benchmarks."""
         import time
-        
+
         service = ContentHashService()
-        
+
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_file.write("test content" * 100)
             temp_file_path = temp_file.name
-        
+
         try:
             start_time = time.time()
             hash_result = service.calculate_file_hash(temp_file_path)
             duration = time.time() - start_time
-            
+
             assert hash_result is not None
             assert duration < 0.1  # Should be fast for small content
-            
+
         finally:
             Path(temp_file_path).unlink(missing_ok=True)
 ```
@@ -358,7 +358,7 @@ def test_database():
     """Create a test database for isolated testing."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
         db_path = temp_db.name
-    
+
     try:
         db = DatabaseConnection(db_path)
         # Initialize schema
@@ -384,14 +384,14 @@ class TestDocumentRepository:
     def test_create_document(self, test_database):
         """Test document creation."""
         repo = DocumentRepository(test_database)
-        
+
         doc = DocumentModel(
             title="Test Document",
             file_path="/test/path.pdf",
             file_hash="test_hash",
             file_size=1024
         )
-        
+
         created_doc = repo.create(doc)
         assert created_doc.id is not None
         assert created_doc.title == "Test Document"
@@ -399,7 +399,7 @@ class TestDocumentRepository:
     def test_find_by_hash(self, test_database):
         """Test finding documents by hash."""
         repo = DocumentRepository(test_database)
-        
+
         # Create test document
         doc = DocumentModel(
             title="Test Document",
@@ -408,13 +408,13 @@ class TestDocumentRepository:
             file_size=1024
         )
         created_doc = repo.create(doc)
-        
+
         # Find by hash
         found_doc = repo.find_by_hash("unique_hash_123")
         assert found_doc is not None
         assert found_doc.id == created_doc.id
         assert found_doc.file_hash == "unique_hash_123"
-        
+
         # Test non-existent hash
         not_found = repo.find_by_hash("non_existent_hash")
         assert not_found is None
@@ -423,27 +423,27 @@ class TestDocumentRepository:
     def test_repository_transaction_support(self, test_database):
         """Test repository transaction handling."""
         repo = DocumentRepository(test_database)
-        
+
         try:
             with test_database.transaction():
                 doc1 = DocumentModel(
-                    title="Doc 1", file_path="/test/1.pdf", 
+                    title="Doc 1", file_path="/test/1.pdf",
                     file_hash="hash1", file_size=100
                 )
                 doc2 = DocumentModel(
-                    title="Doc 2", file_path="/test/2.pdf", 
+                    title="Doc 2", file_path="/test/2.pdf",
                     file_hash="hash2", file_size=200
                 )
-                
+
                 repo.create(doc1)
                 repo.create(doc2)
-                
+
                 # Simulate error
                 raise Exception("Simulated error")
-                
+
         except Exception:
             pass  # Expected exception
-        
+
         # Verify rollback
         docs = repo.find_all()
         assert len(docs) == 0  # Transaction should have rolled back
@@ -475,17 +475,17 @@ class TestDocumentAPI:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             temp_pdf.write(b"%PDF-1.4\n%Test PDF content")
             temp_pdf_path = temp_pdf.name
-        
+
         try:
             with open(temp_pdf_path, "rb") as f:
                 files = {"file": ("test.pdf", f, "application/pdf")}
                 response = client.post("/api/documents/upload", files=files)
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
             assert "document_id" in data
-            
+
         finally:
             Path(temp_pdf_path).unlink(missing_ok=True)
 
@@ -501,12 +501,12 @@ class TestDocumentAPI:
     async def test_websocket_connection(self):
         """Test WebSocket connection for real-time updates."""
         from fastapi.testclient import TestClient
-        
+
         with client.websocket_connect("/ws/documents") as websocket:
             # Test connection
             data = websocket.receive_json()
             assert data["type"] == "connection_established"
-            
+
             # Test message sending
             websocket.send_json({"type": "ping"})
             response = websocket.receive_json()
@@ -523,7 +523,7 @@ class TestCitationIntegration:
         # Setup services
         doc_service = DocumentLibraryService(test_database)
         citation_service = CitationService(test_database)
-        
+
         # Create test document with citations
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf:
             # Create PDF with citation content
@@ -533,19 +533,19 @@ Smith, J. (2023). Machine Learning Applications. Journal of AI, 15(3), 45-67.
 Johnson, A., & Davis, B. (2022). Data Analysis Methods. Proceedings of Data Science Conference, 123-145.
 """)
             temp_pdf_path = temp_pdf.name
-        
+
         try:
             # Upload and process document
             doc_id = doc_service.add_document(temp_pdf_path, "Test Paper")
-            
+
             # Wait for citation processing
             import time
             time.sleep(1)  # Allow async processing
-            
+
             # Verify citations were extracted
             citations = citation_service.get_citations_by_document(doc_id)
             assert len(citations) >= 2
-            
+
             # Verify citation data
             smith_citation = next(
                 (c for c in citations if "Smith" in c.authors), None
@@ -553,17 +553,17 @@ Johnson, A., & Davis, B. (2022). Data Analysis Methods. Proceedings of Data Scie
             assert smith_citation is not None
             assert smith_citation.publication_year == 2023
             assert smith_citation.confidence_score > 0.8
-            
+
         finally:
             Path(temp_pdf_path).unlink(missing_ok=True)
 
     def test_citation_network_analysis(self, test_database):
         """Test citation network relationship analysis."""
         citation_service = CitationService(test_database)
-        
+
         # Create test documents and citations
         # (Implementation would create multiple docs with cross-references)
-        
+
         # Test network analysis
         network = citation_service.analyze_citation_network()
         assert "nodes" in network
@@ -587,7 +587,7 @@ class TestDatabasePerformance:
     def test_bulk_insert_performance(self, test_database):
         """Test bulk insertion performance."""
         repo = DocumentRepository(test_database)
-        
+
         # Generate test data
         documents = [
             DocumentModel(
@@ -598,20 +598,20 @@ class TestDatabasePerformance:
             )
             for i in range(1000)
         ]
-        
+
         # Measure insertion time
         start_time = time.time()
-        
+
         with test_database.transaction():
             for doc in documents:
                 repo.create(doc)
-        
+
         duration = time.time() - start_time
-        
+
         # Performance assertions
         assert duration < 5.0  # Should complete within 5 seconds
         assert len(repo.find_all()) == 1000
-        
+
         # Calculate operations per second
         ops_per_second = 1000 / duration
         assert ops_per_second > 200  # Minimum 200 ops/second
@@ -620,7 +620,7 @@ class TestDatabasePerformance:
     def test_concurrent_database_access(self, test_database):
         """Test concurrent database operations."""
         repo = DocumentRepository(test_database)
-        
+
         def create_document(index):
             """Create a document in a separate thread."""
             doc = DocumentModel(
@@ -630,30 +630,30 @@ class TestDatabasePerformance:
                 file_size=1024
             )
             return repo.create(doc)
-        
+
         # Test concurrent operations
         start_time = time.time()
-        
+
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [
-                executor.submit(create_document, i) 
+                executor.submit(create_document, i)
                 for i in range(100)
             ]
-            
+
             results = [future.result() for future in as_completed(futures)]
-        
+
         duration = time.time() - start_time
-        
+
         # Verify all operations completed
         assert len(results) == 100
         assert all(result.id is not None for result in results)
         assert duration < 10.0  # Should complete within 10 seconds
 
-    @pytest.mark.performance  
+    @pytest.mark.performance
     def test_query_performance(self, test_database):
         """Test query performance with indexes."""
         repo = DocumentRepository(test_database)
-        
+
         # Create test data
         for i in range(1000):
             doc = DocumentModel(
@@ -663,18 +663,18 @@ class TestDatabasePerformance:
                 file_size=1024
             )
             repo.create(doc)
-        
+
         # Test query performance
         start_time = time.time()
-        
+
         # Perform multiple queries
         for _ in range(100):
             results = repo.search("Performance Test")
             assert len(results) > 0
-        
+
         duration = time.time() - start_time
         queries_per_second = 100 / duration
-        
+
         assert queries_per_second > 50  # Minimum 50 queries/second
 ```
 
@@ -688,21 +688,21 @@ class TestAPIPerformance:
         """Test API performance under concurrent load."""
         import concurrent.futures
         import requests
-        
+
         def make_request():
             """Make a single API request."""
             response = requests.get("http://localhost:8000/api/documents")
             return response.status_code, response.elapsed.total_seconds()
-        
+
         # Test concurrent requests
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             futures = [executor.submit(make_request) for _ in range(100)]
             results = [future.result() for future in futures]
-        
+
         # Analyze results
         status_codes = [result[0] for result in results]
         response_times = [result[1] for result in results]
-        
+
         # Performance assertions
         assert all(code == 200 for code in status_codes)
         assert max(response_times) < 1.0  # Max 1 second response time
@@ -713,24 +713,24 @@ class TestAPIPerformance:
         """Test large file upload performance."""
         # Create large test file (10MB)
         large_content = b"test content " * (1024 * 1024)  # ~10MB
-        
+
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
             temp_file.write(b"%PDF-1.4\n")
             temp_file.write(large_content)
             temp_file_path = temp_file.name
-        
+
         try:
             start_time = time.time()
-            
+
             with open(temp_file_path, "rb") as f:
                 files = {"file": ("large_test.pdf", f, "application/pdf")}
                 response = client.post("/api/documents/upload", files=files)
-            
+
             duration = time.time() - start_time
-            
+
             assert response.status_code == 200
             assert duration < 30.0  # Should complete within 30 seconds
-            
+
         finally:
             Path(temp_file_path).unlink(missing_ok=True)
 ```
@@ -751,13 +751,13 @@ def reset_environment():
     import os
     if os.path.exists("./test_cache"):
         shutil.rmtree("./test_cache")
-    
+
     # Reset global state
     from src.core.state_manager import StateManager
     StateManager.reset()
-    
+
     yield
-    
+
     # Cleanup after test
     # ... cleanup code ...
 ```
@@ -771,7 +771,7 @@ def reset_environment():
 def isolated_database():
     """Create isolated database for testing."""
     db_path = f"test_{uuid.uuid4().hex}.db"
-    
+
     try:
         db = DatabaseConnection(db_path)
         yield db
@@ -797,7 +797,7 @@ def test_with_proper_mock(mock_api_client):
     """Test using properly configured mock."""
     service = ExternalService()
     result = service.call_api()
-    
+
     # Verify mock was called
     mock_api_client.query.assert_called_once()
     assert result["status"] == "success"
@@ -874,7 +874,7 @@ def test_multiple_cases(input, expected):
 def test_with_proper_cleanup():
     """Test with explicit resource management."""
     resource = create_expensive_resource()
-    
+
     try:
         # Test logic
         result = use_resource(resource)
@@ -903,27 +903,27 @@ test-job:
   name: 🧪 Test Suite
   runs-on: ubuntu-latest
   timeout-minutes: 15
-  
+
   strategy:
     matrix:
       python-version: [3.11, 3.12]
       test-group: [unit, integration, e2e]
-  
+
   steps:
     - name: 📥 Checkout
       uses: actions/checkout@v4
-      
+
     - name: 🐍 Setup Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
-        
+
     - name: 📦 Install Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt -r requirements-test.txt
-        
+
     - name: 🧪 Run Tests
       run: |
         pytest tests/${{ matrix.test-group }} \
@@ -933,7 +933,7 @@ test-job:
           -n auto \
           --dist=loadfile \
           --maxfail=5
-        
+
     - name: 📊 Upload Coverage
       uses: codecov/codecov-action@v3
       if: matrix.test-group == 'unit'
@@ -955,7 +955,7 @@ def test_document_creation():
     file_path = "/test/path.pdf"
     file_hash = "test_hash"
     file_size = 1024
-    
+
     # Act
     document = DocumentModel(
         title=title,
@@ -963,7 +963,7 @@ def test_document_creation():
         file_hash=file_hash,
         file_size=file_size
     )
-    
+
     # Assert
     assert document.title == title
     assert document.file_path == file_path
@@ -992,7 +992,7 @@ def test_citation_service_extracts_multiple_citations_from_pdf():
 # Use factories for test data creation
 class DocumentFactory:
     """Factory for creating test documents."""
-    
+
     @staticmethod
     def create_document(**kwargs):
         """Create a document with default test data."""
@@ -1022,13 +1022,13 @@ from pytest_benchmark import benchmark
 def test_hash_calculation_benchmark(benchmark):
     """Benchmark hash calculation performance."""
     service = ContentHashService()
-    
+
     def hash_operation():
         return service.calculate_string_hash("test content" * 1000)
-    
+
     result = benchmark(hash_operation)
     assert result is not None
-    
+
     # Benchmark automatically captures timing statistics
 ```
 
@@ -1038,24 +1038,24 @@ def test_concurrent_document_processing():
     """Test system under concurrent load."""
     import concurrent.futures
     import time
-    
+
     def process_document(doc_id):
         # Simulate document processing
         service = DocumentService()
         return service.process_document(doc_id)
-    
+
     # Test with multiple concurrent operations
     start_time = time.time()
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
-            executor.submit(process_document, i) 
+            executor.submit(process_document, i)
             for i in range(50)
         ]
         results = [f.result() for f in futures]
-    
+
     duration = time.time() - start_time
-    
+
     # Performance assertions
     assert len(results) == 50
     assert duration < 30.0  # Should complete within 30 seconds
@@ -1086,16 +1086,16 @@ def test_potentially_flaky():
 def test_citation_extraction_confidence_scoring():
     """
     Test citation extraction confidence scoring algorithm.
-    
+
     This test verifies that the citation parsing service correctly
     assigns confidence scores based on the completeness and format
     of extracted citation data.
-    
+
     Test scenarios:
     1. Complete, well-formatted citation -> high confidence (>0.9)
     2. Missing some fields -> medium confidence (0.5-0.8)
     3. Poorly formatted citation -> low confidence (<0.5)
-    
+
     Expected behavior:
     - Complete citations with all required fields should score >0.9
     - Citations missing 1-2 optional fields should score 0.5-0.8
@@ -1120,7 +1120,7 @@ def test_document_model_with_random_data(title, file_size):
         file_hash="test_hash",
         file_size=file_size
     )
-    
+
     assert doc.title == title
     assert doc.file_size == file_size
     assert len(doc.file_hash) > 0
@@ -1143,16 +1143,16 @@ mutmut show <mutation_id>
 ```python
 class TestServiceContracts:
     """Test service interface contracts."""
-    
+
     def test_document_service_interface_contract(self):
         """Test that DocumentService implements expected interface."""
         service = DocumentService()
-        
+
         # Verify required methods exist
         assert hasattr(service, 'add_document')
         assert hasattr(service, 'get_document')
         assert hasattr(service, 'delete_document')
-        
+
         # Verify method signatures
         import inspect
         add_doc_sig = inspect.signature(service.add_document)

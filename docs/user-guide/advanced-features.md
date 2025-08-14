@@ -24,7 +24,7 @@ The system uses sophisticated content analysis to detect duplicates even when fi
 import requests
 
 # Upload with strict duplicate checking
-response = requests.post("http://localhost:8000/api/documents/upload", 
+response = requests.post("http://localhost:8000/api/documents/upload",
     files={"file": open("document.pdf", "rb")},
     data={
         "check_duplicates": True,
@@ -54,14 +54,14 @@ curl -X POST "http://localhost:8000/api/library/verify-integrity" \
 # Document recovery workflow
 def recover_damaged_documents():
     client = PDFScholarClient("http://localhost:8000")
-    
+
     # Find documents with integrity issues
     health = client.get_library_health()
-    
+
     for issue in health["issues"]:
         if issue["type"] == "missing_file":
             # Attempt to relocate file
-            client.relocate_document(issue["document_id"], 
+            client.relocate_document(issue["document_id"],
                                    new_path="/backup/documents/")
         elif issue["type"] == "corrupted_index":
             # Rebuild vector index
@@ -108,7 +108,7 @@ def bulk_update_metadata():
             }
         }
     ]
-    
+
     response = requests.post("http://localhost:8000/api/documents/bulk-update",
                            json={"updates": updates})
 ```
@@ -121,7 +121,7 @@ def bulk_update_metadata():
 ```python
 # Query across multiple documents
 def multi_document_rag_query(query, document_ids, strategy="ensemble"):
-    response = requests.post("http://localhost:8000/api/rag/query-multi", 
+    response = requests.post("http://localhost:8000/api/rag/query-multi",
         json={
             "query": query,
             "document_ids": document_ids,
@@ -228,15 +228,15 @@ def create_advanced_citation_network(center_doc_id):
             "cluster_detection": True
         }
     )
-    
+
     network_data = response.json()["data"]
-    
+
     # Network includes:
     # - Node centrality measures
     # - Community detection results
     # - Citation strength analysis
     # - Temporal citation patterns
-    
+
     return network_data
 ```
 
@@ -252,15 +252,15 @@ def analyze_citation_patterns(time_range="2020-2024"):
             "include_predictions": True
         }
     )
-    
+
     analysis = response.json()["data"]
-    
+
     # Returns:
     # - Citation frequency over time
     # - Most cited authors/venues
     # - Emerging research areas
     # - Cross-field citation patterns
-    
+
     return analysis
 ```
 
@@ -280,14 +280,14 @@ def extract_citations_with_ai(document_id, use_ai_validation=True):
             "export_uncertain": True  # Export low-confidence citations for manual review
         }
     )
-    
+
     result = response.json()["data"]
-    
+
     # Results include:
     # - High-confidence citations (auto-approved)
     # - Medium-confidence citations (flagged for review)
     # - Potential citations (requires manual verification)
-    
+
     return result
 ```
 
@@ -303,11 +303,11 @@ def link_citations_across_library():
             "create_disambiguation_tasks": True
         }
     )
-    
+
     # Creates citation links between documents in the library
     # Identifies which papers cite which other papers
     # Builds comprehensive citation graph
-    
+
     return response.json()
 ```
 
@@ -348,7 +348,7 @@ def create_document_pipeline():
             }
         ]
     }
-    
+
     response = requests.post("http://localhost:8000/api/automation/create-pipeline",
                            json=pipeline_config)
     return response.json()
@@ -366,19 +366,19 @@ def batch_rag_analysis(queries, document_filter=None):
         "output_format": "structured_report",
         "include_confidence_scores": True
     }
-    
+
     response = requests.post("http://localhost:8000/api/rag/batch-query",
                            json=batch_config)
-    
+
     # Monitor batch processing
     job_id = response.json()["job_id"]
-    
+
     while True:
         status = requests.get(f"http://localhost:8000/api/jobs/{job_id}/status")
         if status.json()["status"] == "completed":
             break
         time.sleep(5)
-    
+
     # Get results
     results = requests.get(f"http://localhost:8000/api/jobs/{job_id}/results")
     return results.json()
@@ -409,7 +409,7 @@ def setup_automated_maintenance():
             "security_audit"
         ]
     }
-    
+
     response = requests.post("http://localhost:8000/api/automation/schedule-maintenance",
                            json=maintenance_schedule)
     return response.json()
@@ -436,7 +436,7 @@ def optimize_database_performance():
             "connection_timeout": 30
         }
     }
-    
+
     response = requests.post("http://localhost:8000/api/system/optimize-database",
                            json=optimization_config)
     return response.json()
@@ -456,7 +456,7 @@ def configure_memory_management():
             "threshold": 0.8
         }
     }
-    
+
     requests.post("http://localhost:8000/api/system/configure-memory",
                  json=memory_config)
 ```
@@ -479,7 +479,7 @@ def configure_concurrency():
             "background_task_queue_size": 100
         }
     }
-    
+
     requests.post("http://localhost:8000/api/system/configure-concurrency",
                  json=concurrency_config)
 ```
@@ -524,7 +524,7 @@ def advanced_library_search():
             "boost_frequently_accessed": 1.1
         }
     }
-    
+
     response = requests.post("http://localhost:8000/api/library/advanced-search",
                            json=search_config)
     return response.json()
@@ -548,7 +548,7 @@ def get_document_recommendations(user_activity_profile):
         "max_recommendations": 20,
         "explain_recommendations": True
     }
-    
+
     response = requests.post("http://localhost:8000/api/library/recommendations",
                            json=recommendation_config)
     return response.json()
@@ -578,7 +578,7 @@ def create_export_template():
         "anonymize_paths": True,
         "compress_output": True
     }
-    
+
     response = requests.post("http://localhost:8000/api/export/create-template",
                            json=template_config)
     return response.json()
@@ -608,7 +608,7 @@ def setup_data_sync():
         "conflict_resolution": "local_wins",
         "encryption": True
     }
-    
+
     requests.post("http://localhost:8000/api/sync/configure",
                  json=sync_config)
 ```
@@ -641,7 +641,7 @@ def setup_custom_metrics():
             "api_usage_patterns"
         ]
     }
-    
+
     requests.post("http://localhost:8000/api/analytics/configure-metrics",
                  json=metrics_config)
 ```
@@ -664,7 +664,7 @@ def analyze_research_impact():
             "impact_distribution_charts": True
         }
     }
-    
+
     response = requests.post("http://localhost:8000/api/analytics/research-impact",
                            json=analysis_config)
     return response.json()
@@ -703,7 +703,7 @@ def configure_security():
             "suspicious_activity_detection": True
         }
     }
-    
+
     requests.post("http://localhost:8000/api/security/configure",
                  json=security_config)
 ```
@@ -716,7 +716,7 @@ def configure_security():
 def gdpr_compliance_tools():
     # Data audit - what personal data is stored
     audit_response = requests.get("http://localhost:8000/api/compliance/data-audit")
-    
+
     # Right to be forgotten - remove specific user data
     deletion_request = {
         "data_subject": "researcher@university.edu",
@@ -725,7 +725,7 @@ def gdpr_compliance_tools():
     }
     requests.post("http://localhost:8000/api/compliance/delete-personal-data",
                  json=deletion_request)
-    
+
     # Data portability - export user's data
     export_request = {
         "data_subject": "researcher@university.edu",
@@ -756,7 +756,7 @@ def register_custom_endpoint():
         "rate_limit": "10_per_minute",
         "authentication": "api_key"
     }
-    
+
     requests.post("http://localhost:8000/api/system/register-endpoint",
                  json=endpoint_config)
 ```
@@ -782,7 +782,7 @@ def setup_webhooks():
             }
         ]
     }
-    
+
     requests.post("http://localhost:8000/api/webhooks/configure",
                  json=webhook_config)
 ```
@@ -796,12 +796,12 @@ class CustomCitationPlugin:
     def __init__(self):
         self.name = "ieee_citation_style"
         self.version = "1.0.0"
-    
+
     def format_citation(self, citation_data):
         # Custom IEEE citation formatting logic
         formatted = f"[{citation_data['id']}] {citation_data['authors']}, \"{citation_data['title']}\", {citation_data['journal']}, {citation_data['year']}."
         return formatted
-    
+
     def register_hooks(self):
         # Register with the main system
         return {

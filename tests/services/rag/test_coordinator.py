@@ -13,9 +13,9 @@ from typing import Dict, Any
 
 from src.services.rag.coordinator import RAGCoordinator
 from src.services.rag.interfaces import (
-    IRAGIndexBuilder, 
+    IRAGIndexBuilder,
     IRAGQueryEngine,
-    IRAGRecoveryService, 
+    IRAGRecoveryService,
     IRAGFileManager
 )
 from src.database.models import DocumentModel
@@ -47,7 +47,7 @@ class TestRAGCoordinator:
         mock.is_ready = Mock(return_value=True)
         return mock
 
-    @pytest.fixture 
+    @pytest.fixture
     def mock_recovery_service(self):
         """Mock RAG recovery service."""
         mock = Mock(spec=IRAGRecoveryService)
@@ -66,7 +66,7 @@ class TestRAGCoordinator:
         return mock
 
     @pytest.fixture
-    def rag_coordinator(self, mock_index_builder, mock_query_engine, 
+    def rag_coordinator(self, mock_index_builder, mock_query_engine,
                        mock_recovery_service, mock_file_manager):
         """Create RAGCoordinator with all mocked dependencies."""
         return RAGCoordinator(
@@ -96,18 +96,18 @@ class TestRAGCoordinator:
         assert rag_coordinator._initialized is True
 
     @pytest.mark.asyncio
-    async def test_process_document_complete_workflow(self, rag_coordinator, 
+    async def test_process_document_complete_workflow(self, rag_coordinator,
                                                     sample_document):
         """Test complete document processing workflow coordination."""
         # When
         result = await rag_coordinator.process_document_complete(sample_document)
-        
+
         # Then
         assert result["success"] is True
         assert result["document_id"] == 1
         assert "processing_time" in result
         assert "index_stats" in result
-        
+
         # Verify orchestration sequence
         rag_coordinator.file_manager.ensure_directories.assert_called_once()
         rag_coordinator.index_builder.build_index.assert_called_once_with(sample_document)
@@ -122,13 +122,13 @@ class TestRAGCoordinator:
         rag_coordinator.index_builder.build_index.side_effect = RAGIndexError(
             "Index building failed"
         )
-        
+
         # When/Then
         with pytest.raises(RAGProcessingError) as exc_info:
             await rag_coordinator.process_document_complete(sample_document)
-        
+
         assert "Index building failed" in str(exc_info.value)
-        
+
         # Verify cleanup was attempted
         rag_coordinator.file_manager.cleanup_temp_files.assert_called()
 
@@ -141,12 +141,12 @@ class TestRAGCoordinator:
             query="What is the main finding?",
             context_window=4000
         )
-        
+
         # Then
         assert result["answer"] == "Test response"
         assert len(result["sources"]) > 0
         assert result["processing_time"] == 0.5
-        
+
         # Verify coordination flow
         rag_coordinator.query_engine.is_ready.assert_called_once()
         rag_coordinator.query_engine.query.assert_called_once_with(
@@ -160,10 +160,10 @@ class TestRAGCoordinator:
         """Test querying when index is not ready triggers loading."""
         # Given
         rag_coordinator.query_engine.is_ready.return_value = False
-        
+
         # When
         await rag_coordinator.query_document(1, "test query")
-        
+
         # Then
         rag_coordinator.query_engine.load_index.assert_called_with(1)
         rag_coordinator.query_engine.query.assert_called_once()
@@ -173,12 +173,12 @@ class TestRAGCoordinator:
         """Test health check coordinates across all services."""
         # When
         health = await rag_coordinator.health_check()
-        
+
         # Then
         assert health["overall_status"] == "healthy"
         assert "recovery_service" in health["components"]
         assert "file_manager" in health["components"]
-        
+
         # Verify all components checked
         rag_coordinator.recovery_service.health_check.assert_called_once()
 
@@ -187,27 +187,27 @@ class TestRAGCoordinator:
         """Test recovery workflow coordination."""
         # Given
         rag_coordinator.recovery_service.detect_corruption.return_value = True
-        
+
         # When
         result = await rag_coordinator.recover_document_index(document_id=1)
-        
+
         # Then
         assert result["recovery_performed"] is True
-        
+
         # Verify recovery sequence
         rag_coordinator.recovery_service.detect_corruption.assert_called_with(1)
         rag_coordinator.recovery_service.repair_index.assert_called_with(1)
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_cleanup_coordination(self, rag_coordinator):
         """Test cleanup operations coordination."""
         # When
         result = await rag_coordinator.cleanup_resources(document_id=1)
-        
+
         # Then
         assert result["cleanup_completed"] is True
         assert result["temp_files_removed"] == 5
-        
+
         # Verify cleanup sequence
         rag_coordinator.file_manager.cleanup_temp_files.assert_called_with(
             document_id=1
@@ -218,14 +218,14 @@ class TestRAGCoordinator:
         """Test batch document processing coordination."""
         # Given
         document_ids = [1, 2, 3]
-        
+
         # When
         results = await rag_coordinator.batch_process_documents(document_ids)
-        
+
         # Then
         assert len(results) == 3
         assert all(r["success"] for r in results)
-        
+
         # Verify batch coordination
         assert rag_coordinator.index_builder.build_index.call_count == 3
 
@@ -233,7 +233,7 @@ class TestRAGCoordinator:
         """Test service statistics aggregation."""
         # When
         stats = rag_coordinator.get_service_statistics()
-        
+
         # Then
         assert "index_builder" in stats
         assert "query_engine" in stats
@@ -246,11 +246,11 @@ class TestRAGCoordinator:
         """Test error handling and transaction rollback coordination."""
         # Given - simulate failure at verification stage
         rag_coordinator.index_builder.verify_index.return_value = False
-        
+
         # When/Then
         with pytest.raises(RAGProcessingError):
             await rag_coordinator.process_document_complete(sample_document)
-        
+
         # Verify rollback coordination
         rag_coordinator.file_manager.cleanup_temp_files.assert_called()
 
@@ -262,13 +262,13 @@ class TestRAGCoordinator:
             rag_coordinator.query_document(1, f"query {i}")
             for i in range(5)
         ]
-        
+
         results = await asyncio.gather(*tasks)
-        
+
         # Then
         assert len(results) == 5
         assert all("answer" in result for result in results)
-        
+
         # Verify all queries were processed
         assert rag_coordinator.query_engine.query.call_count == 5
 
@@ -283,7 +283,7 @@ class TestRAGCoordinator:
                 recovery_service=None,
                 file_manager=None
             )
-        
+
         assert "query_engine is required" in str(exc_info.value)
 
     def test_interface_compliance_validation(self, rag_coordinator):
@@ -303,17 +303,17 @@ class TestRAGCoordinator:
             "chunk_overlap": 300,
             "temperature": 0.2
         }
-        
+
         # When
         result = await rag_coordinator.query_document(
             document_id=1,
             query="test query",
             config_override=config_override
         )
-        
+
         # Then
         assert "answer" in result
-        
+
         # Verify configuration was passed through
         call_args = rag_coordinator.query_engine.query.call_args
         assert call_args.kwargs.get("config_override") == config_override
@@ -323,9 +323,9 @@ class TestRAGCoordinator:
         """Test coordinator collects monitoring metrics."""
         # When
         await rag_coordinator.query_document(1, "test query")
-        
+
         metrics = rag_coordinator.get_performance_metrics()
-        
+
         # Then
         assert "total_queries" in metrics
         assert "average_response_time" in metrics
@@ -337,10 +337,10 @@ class TestRAGCoordinator:
         """Test coordinator gracefully shuts down all services."""
         # When
         await rag_coordinator.shutdown()
-        
+
         # Then
         assert rag_coordinator._initialized is False
-        
+
         # Verify cleanup was coordinated
         rag_coordinator.file_manager.cleanup_temp_files.assert_called()
 
@@ -353,11 +353,11 @@ class TestRAGCoordinatorEdgeCases:
         """Create coordinator with failing dependencies for testing."""
         mock_index_builder = Mock(spec=IRAGIndexBuilder)
         mock_index_builder.build_index = AsyncMock(side_effect=Exception("Service unavailable"))
-        
+
         mock_query_engine = Mock(spec=IRAGQueryEngine)
         mock_recovery_service = Mock(spec=IRAGRecoveryService)
         mock_file_manager = Mock(spec=IRAGFileManager)
-        
+
         return RAGCoordinator(
             index_builder=mock_index_builder,
             query_engine=mock_query_engine,
@@ -380,10 +380,10 @@ class TestRAGCoordinatorEdgeCases:
             RAGQueryError("Temporary failure"),
             {"answer": "Success after retry", "sources": []}
         ]
-        
+
         # When
         result = await rag_coordinator.query_document_with_retry(1, "test query")
-        
+
         # Then
         assert result["answer"] == "Success after retry"
         assert rag_coordinator.query_engine.query.call_count == 2

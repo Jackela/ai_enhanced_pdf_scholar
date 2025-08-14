@@ -5,7 +5,7 @@
 This guide documents the migration from scattered configuration files to a unified configuration management system. The new system provides:
 
 - **Single Source of Truth**: All configuration in one place
-- **Type Safety**: Full type checking and validation  
+- **Type Safety**: Full type checking and validation
 - **Environment Awareness**: Environment-specific defaults and validation
 - **Security Focus**: Built-in security validation and best practices
 
@@ -196,14 +196,14 @@ from backend.config.validation import ConfigValidationError
 def test_production_security():
     config = ApplicationConfig(environment=Environment.PRODUCTION)
     config.cors.allow_origins = ["*"]  # Should fail
-    
+
     with pytest.raises(ConfigValidationError):
         config.validate()
 
 def test_development_config():
     config = ApplicationConfig(environment=Environment.DEVELOPMENT)
     config.cors.allow_origins = ["http://localhost:3000"]
-    
+
     # Should not raise
     config.validate()
 ```
@@ -218,7 +218,7 @@ def setup_test_config():
     reset_configuration()
     os.environ["ENVIRONMENT"] = "testing"
     os.environ["RATE_LIMIT_DISABLE"] = "true"
-    
+
     config = get_application_config()
     return config
 ```
@@ -261,7 +261,7 @@ config = get_application_config()
 - **Production Hardening**: Strict validation in production environments
 - **Audit Trail**: Clear logging of configuration issues
 
-### Maintainability  
+### Maintainability
 
 - **Single Source**: No more scattered configuration files
 - **Consistent Patterns**: Same approach across all settings
@@ -316,7 +316,7 @@ except Exception as e:
 
 - [ ] Install new configuration system
 - [ ] Update FastAPI app initialization
-- [ ] Update middleware configuration  
+- [ ] Update middleware configuration
 - [ ] Set environment variables
 - [ ] Test in development environment
 - [ ] Test in staging environment

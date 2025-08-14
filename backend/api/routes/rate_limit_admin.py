@@ -29,12 +29,12 @@ class RateLimitMetricsResponse(BaseModel):
     rate_limit_effectiveness: float
     success_rate: float
     error_rate: float
-    
+
     @classmethod
     def from_metrics(cls, metrics: 'RateLimitMetrics') -> 'RateLimitMetricsResponse':
         """Create response from metrics object."""
         total = metrics.total_requests or 1  # Avoid division by zero
-        
+
         return cls(
             total_requests=metrics.total_requests,
             successful_requests=metrics.successful_requests,
@@ -103,7 +103,7 @@ router = APIRouter(dependencies=[Depends(require_admin)])
 
 if not MONITORING_AVAILABLE:
     # Provide placeholder responses when monitoring is not available
-    
+
     @router.get("/rate-limit/status")
     async def get_rate_limit_status():
         """Get rate limiting system status."""
@@ -112,16 +112,16 @@ if not MONITORING_AVAILABLE:
             "message": "Rate limiting monitoring is not available",
             "monitoring_available": False
         }
-    
+
 else:
     # Full monitoring endpoints when available
-    
+
     @router.get("/rate-limit/status")
     async def get_rate_limit_status():
         """Get rate limiting system status."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=60)
-        
+
         return {
             "status": "active",
             "monitoring_available": True,
@@ -131,7 +131,7 @@ else:
             "current_window_rate_limited": metrics.rate_limited_requests,
             "effectiveness_percentage": metrics.rate_limit_effectiveness * 100
         }
-    
+
     @router.get("/rate-limit/metrics", response_model=RateLimitMetricsResponse)
     async def get_rate_limit_metrics(
         window_minutes: int = Query(60, ge=1, le=1440, description="Time window in minutes")
@@ -139,9 +139,9 @@ else:
         """Get rate limiting metrics for specified time window."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=window_minutes)
-        
+
         return RateLimitMetricsResponse.from_metrics(metrics)
-    
+
     @router.get("/rate-limit/ip/{client_ip}", response_model=IPAnalysisResponse)
     async def get_ip_analysis(
         client_ip: str,
@@ -150,12 +150,12 @@ else:
         """Get detailed analysis for a specific IP address."""
         monitor = get_monitor()
         analysis = monitor.get_ip_metrics(client_ip, window_minutes)
-        
+
         if "error" in analysis:
             raise HTTPException(status_code=404, detail=analysis["error"])
-        
+
         return IPAnalysisResponse(**analysis)
-    
+
     @router.get("/rate-limit/endpoint", response_model=EndpointAnalysisResponse)
     async def get_endpoint_analysis(
         endpoint: str = Query(..., description="Endpoint path to analyze"),
@@ -164,12 +164,12 @@ else:
         """Get detailed analysis for a specific endpoint."""
         monitor = get_monitor()
         analysis = monitor.get_endpoint_metrics(endpoint, window_minutes)
-        
+
         if "error" in analysis:
             raise HTTPException(status_code=404, detail=analysis["error"])
-        
+
         return EndpointAnalysisResponse(**analysis)
-    
+
     @router.get("/rate-limit/suspicious-ips", response_model=List[SuspiciousIPResponse])
     async def get_suspicious_ips(
         window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes"),
@@ -182,14 +182,14 @@ else:
             window_minutes=window_minutes,
             min_requests=min_requests
         )
-        
+
         # Convert to response models and limit results
         results = []
         for ip_data in suspicious_ips[:limit]:
             results.append(SuspiciousIPResponse(**ip_data))
-        
+
         return results
-    
+
     @router.get("/rate-limit/top-endpoints")
     async def get_top_endpoints(
         window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes"),
@@ -198,13 +198,13 @@ else:
         """Get most frequently accessed endpoints."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=window_minutes)
-        
+
         return {
             "window_minutes": window_minutes,
             "top_endpoints": metrics.top_endpoints[:limit],
             "total_unique_endpoints": len(metrics.top_endpoints)
         }
-    
+
     @router.get("/rate-limit/top-ips")
     async def get_top_ips(
         window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes"),
@@ -213,13 +213,13 @@ else:
         """Get most active IP addresses."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=window_minutes)
-        
+
         return {
             "window_minutes": window_minutes,
             "top_ips": metrics.top_ips[:limit],
             "total_unique_ips": metrics.unique_ips
         }
-    
+
     @router.post("/rate-limit/export")
     async def export_rate_limit_data(
         window_minutes: Optional[int] = Query(None, ge=1, le=10080, description="Export window in minutes"),
@@ -227,7 +227,7 @@ else:
     ):
         """Export rate limiting data to JSON file."""
         monitor = get_monitor()
-        
+
         try:
             monitor.export_events(filename, window_minutes)
             return {
@@ -237,18 +237,18 @@ else:
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
-    
+
     @router.delete("/rate-limit/cleanup")
     async def cleanup_old_events(
         hours_to_keep: int = Query(24, ge=1, le=168, description="Hours of data to keep")
     ):
         """Clean up old rate limiting events to free memory."""
         monitor = get_monitor()
-        
+
         old_count = len(monitor._events)
         monitor.clear_old_events(hours_to_keep)
         new_count = len(monitor._events)
-        
+
         return {
             "message": f"Cleaned up old events",
             "events_before": old_count,
@@ -256,33 +256,33 @@ else:
             "events_removed": old_count - new_count,
             "hours_kept": hours_to_keep
         }
-    
+
     @router.get("/rate-limit/health")
     async def get_rate_limit_health():
         """Get health status of rate limiting system."""
         monitor = get_monitor()
-        
+
         # Get recent metrics to assess health
         metrics_5m = monitor.get_metrics(window_minutes=5)
         metrics_60m = monitor.get_metrics(window_minutes=60)
-        
+
         # Calculate health indicators
         recent_error_rate = 0
         if metrics_5m.total_requests > 0:
             recent_error_rate = metrics_5m.error_requests / metrics_5m.total_requests * 100
-        
+
         rate_limiting_active = metrics_5m.rate_limited_requests > 0
         high_load = metrics_5m.total_requests > 1000  # 1000 requests in 5 minutes
-        
+
         # Determine overall health
         health_status = "healthy"
         if recent_error_rate > 5:
             health_status = "degraded"
         if recent_error_rate > 20:
             health_status = "unhealthy"
-        
+
         health_score = max(0, 100 - recent_error_rate - (10 if high_load else 0))
-        
+
         return {
             "status": health_status,
             "health_score": health_score,
@@ -302,7 +302,7 @@ else:
                 "unique_ips": metrics_60m.unique_ips
             }
         }
-    
+
     @router.get("/rate-limit/alerts")
     async def get_recent_alerts():
         """Get recent rate limiting alerts and warnings."""
@@ -312,7 +312,7 @@ else:
             "alerts": [
                 {
                     "timestamp": datetime.now().isoformat(),
-                    "severity": "warning", 
+                    "severity": "warning",
                     "type": "high_rate_limiting",
                     "message": "High rate limiting detected for IP 192.168.1.100",
                     "details": {
@@ -333,9 +333,9 @@ async def get_rate_limit_config():
     """Get current rate limiting configuration."""
     # Import here to avoid circular imports
     from ..rate_limit_config import get_rate_limit_config
-    
+
     config = get_rate_limit_config()
-    
+
     return {
         "default_limit": {
             "requests": config.default_limit.requests,

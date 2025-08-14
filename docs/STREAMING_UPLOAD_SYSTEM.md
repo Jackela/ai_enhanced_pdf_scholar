@@ -41,13 +41,13 @@ graph TB
     B --> D[StreamingValidationService]
     B --> E[UploadResumptionService]
     B --> F[StreamingPDFProcessor]
-    
+
     C --> G[WebSocket Manager]
     C --> H[Temp File Storage]
     D --> I[Security Scanner]
     E --> J[State Persistence]
     F --> K[LlamaIndex Integration]
-    
+
     G --> L[Real-time Updates]
     H --> M[Chunked Assembly]
     I --> N[Threat Detection]
@@ -65,13 +65,13 @@ sequenceDiagram
     participant SVS as StreamingValidationService
     participant WS as WebSocket
     participant FS as File System
-    
+
     C->>API: POST /streaming/initiate
     API->>SUS: initiate_upload()
     SUS->>FS: Create temp file
     SUS->>WS: Join upload room
     API-->>C: Upload session details
-    
+
     loop For each chunk
         C->>API: POST /streaming/chunk/{session_id}
         API->>SVS: validate_chunk()
@@ -82,7 +82,7 @@ sequenceDiagram
         WS-->>C: Real-time progress
         API-->>C: Chunk response
     end
-    
+
     C->>API: POST /streaming/complete/{session_id}
     API->>SUS: finalize_upload()
     SUS->>SVS: validate_complete_file()
@@ -114,7 +114,7 @@ max_concurrent_uploads: int = 5  # Concurrent upload limit
 def _calculate_optimal_chunk_size(self, file_size: int, requested_chunk_size: int) -> int:
     if file_size < 10 * 1024 * 1024:  # < 10MB
         return min(requested_chunk_size, 2 * 1024 * 1024)  # Max 2MB chunks
-    elif file_size < 100 * 1024 * 1024:  # < 100MB  
+    elif file_size < 100 * 1024 * 1024:  # < 100MB
         return min(requested_chunk_size, 8 * 1024 * 1024)  # Max 8MB chunks
     else:  # >= 100MB
         return requested_chunk_size  # Use requested size
@@ -136,7 +136,7 @@ def _calculate_optimal_chunk_size(self, file_size: int, requested_chunk_size: in
 SECURITY_PATTERNS = {
     'javascript': [rb'/JavaScript\s*\(', rb'app\.alert\s*\('],
     'embedded_files': [rb'/EmbeddedFiles', rb'/FileAttachment'],
-    'forms': [rb'/AcroForm', rb'/XFA'], 
+    'forms': [rb'/AcroForm', rb'/XFA'],
     'external_references': [rb'/URI\s*\(', rb'http://'],
 }
 ```
@@ -170,7 +170,7 @@ state = {
 
 **New Methods**:
 - `send_upload_progress()`: Real-time upload progress
-- `send_chunk_progress()`: Detailed chunk-level updates  
+- `send_chunk_progress()`: Detailed chunk-level updates
 - `join_upload_room()`: Upload-specific room management
 - `send_memory_warning()`: Memory usage alerts
 
@@ -375,7 +375,7 @@ Get memory usage statistics.
 class StreamingUploadClient {
   private websocket: WebSocket;
   private sessionId: string;
-  
+
   async uploadFile(file: File): Promise<void> {
     // 1. Initiate upload
     const initResponse = await fetch('/api/documents/streaming/initiate', {
@@ -388,10 +388,10 @@ class StreamingUploadClient {
         chunk_size: 8 * 1024 * 1024, // 8MB chunks
       })
     });
-    
+
     const session = await initResponse.json();
     this.sessionId = session.session_id;
-    
+
     // 2. Connect to WebSocket for progress updates
     this.websocket = new WebSocket(`ws://localhost:8000/ws/${session.client_id}`);
     this.websocket.onmessage = (event) => {
@@ -400,54 +400,54 @@ class StreamingUploadClient {
         this.updateProgress(data.data);
       }
     };
-    
+
     // 3. Upload chunks
     const chunkSize = session.chunk_size;
     let chunkId = 0;
-    
+
     for (let offset = 0; offset < file.size; offset += chunkSize) {
       const chunk = file.slice(offset, offset + chunkSize);
       const isLastChunk = offset + chunkSize >= file.size;
-      
+
       const formData = new FormData();
       formData.append('chunk_id', chunkId.toString());
       formData.append('chunk_offset', offset.toString());
       formData.append('is_final', isLastChunk.toString());
       formData.append('file', chunk);
-      
+
       const chunkResponse = await fetch(`/api/documents/streaming/chunk/${this.sessionId}`, {
         method: 'POST',
         body: formData
       });
-      
+
       const result = await chunkResponse.json();
       if (!result.success) {
         throw new Error(`Chunk upload failed: ${result.message}`);
       }
-      
+
       if (result.upload_complete) break;
       chunkId++;
     }
-    
+
     // 4. Complete upload
     const completeResponse = await fetch(`/api/documents/streaming/complete/${this.sessionId}`, {
       method: 'POST'
     });
-    
+
     const document = await completeResponse.json();
     console.log('Upload completed:', document);
   }
-  
+
   private updateProgress(progressData: any): void {
     const progressBar = document.getElementById('progress-bar') as HTMLProgressElement;
     const statusText = document.getElementById('status-text') as HTMLSpanElement;
-    
+
     progressBar.value = progressData.progress_percentage;
     statusText.textContent = `${progressData.message} (${Math.round(progressData.progress_percentage)}%)`;
-    
+
     if (progressData.upload_speed_bps) {
       const speedMBps = progressData.upload_speed_bps / (1024 * 1024);
-      const etaText = progressData.estimated_time_remaining 
+      const etaText = progressData.estimated_time_remaining
         ? ` - ${progressData.estimated_time_remaining}s remaining`
         : '';
       statusText.textContent += ` - ${speedMBps.toFixed(1)} MB/s${etaText}`;
@@ -468,7 +468,7 @@ class StreamingUploadClient:
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
         self.session_id = None
-    
+
     async def upload_file(self, file_path: Path, title: str = None):
         async with aiohttp.ClientSession() as session:
             # 1. Initiate upload
@@ -480,32 +480,32 @@ class StreamingUploadClient:
                 "chunk_size": 8 * 1024 * 1024,  # 8MB
                 "title": title or file_path.stem,
             }
-            
-            async with session.post(f"{self.base_url}/api/documents/streaming/initiate", 
+
+            async with session.post(f"{self.base_url}/api/documents/streaming/initiate",
                                   json=init_data) as resp:
                 upload_session = await resp.json()
                 self.session_id = upload_session["session_id"]
                 chunk_size = upload_session["chunk_size"]
-            
+
             # 2. Upload chunks
             async with aiofiles.open(file_path, 'rb') as f:
                 chunk_id = 0
                 offset = 0
-                
+
                 while offset < file_size:
                     chunk_data = await f.read(chunk_size)
                     if not chunk_data:
                         break
-                    
+
                     is_final = offset + len(chunk_data) >= file_size
-                    
+
                     # Upload chunk
                     form_data = aiohttp.FormData()
                     form_data.add_field('chunk_id', str(chunk_id))
                     form_data.add_field('chunk_offset', str(offset))
                     form_data.add_field('is_final', str(is_final).lower())
                     form_data.add_field('file', chunk_data, filename='chunk')
-                    
+
                     async with session.post(
                         f"{self.base_url}/api/documents/streaming/chunk/{self.session_id}",
                         data=form_data
@@ -513,15 +513,15 @@ class StreamingUploadClient:
                         result = await resp.json()
                         if not result["success"]:
                             raise Exception(f"Chunk upload failed: {result['message']}")
-                        
+
                         print(f"Uploaded chunk {chunk_id} ({len(chunk_data)} bytes)")
-                        
+
                         if result["upload_complete"]:
                             break
-                    
+
                     chunk_id += 1
                     offset += len(chunk_data)
-            
+
             # 3. Complete upload
             async with session.post(f"{self.base_url}/api/documents/streaming/complete/{self.session_id}") as resp:
                 result = await resp.json()
@@ -576,7 +576,7 @@ STREAMING_MEMORY_LIMIT_MB=500           # Memory limit (MB)
 STREAMING_SESSION_TIMEOUT_HOURS=24      # Session timeout
 STREAMING_CLEANUP_INTERVAL_MINUTES=60   # Cleanup interval
 
-# Storage Configuration  
+# Storage Configuration
 STREAMING_UPLOAD_DIR="/tmp/uploads"     # Temporary upload directory
 STREAMING_STATE_DIR="/tmp/upload_states" # Resume state directory
 ```
@@ -621,13 +621,13 @@ logging.getLogger("backend.services.upload_resumption_service").setLevel(logging
 # Memory usage monitoring
 async def check_upload_health():
     stats = await streaming_service.get_memory_stats()
-    
+
     if stats.memory_usage_mb > stats.memory_limit_mb * 0.9:
         logger.warning(f"High memory usage: {stats.memory_usage_mb}MB")
-    
+
     if stats.concurrent_uploads >= max_concurrent_uploads:
         logger.warning("Maximum concurrent uploads reached")
-    
+
     return {
         "status": "healthy" if stats.memory_usage_mb < stats.memory_limit_mb * 0.8 else "warning",
         "memory_usage": stats.memory_usage_mb,
@@ -653,7 +653,7 @@ async def check_upload_health():
 **Causes**: Too many concurrent uploads, large chunk sizes
 **Solutions**:
 - Reduce `max_concurrent_uploads`
-- Decrease `chunk_size` 
+- Decrease `chunk_size`
 - Increase `memory_limit_mb`
 - Monitor with `GET /streaming/memory-stats`
 

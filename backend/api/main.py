@@ -235,10 +235,10 @@ async def startup_event() -> None:
     """Initialize services on startup."""
     try:
         logger.info("Starting AI Enhanced PDF Scholar API...")
-        
+
         # Log CORS security configuration
         cors_config.log_security_info()
-        
+
         # Log security headers configuration
         logger.info(f"Security headers initialized:")
         logger.info(f"  - Environment: {security_headers_config.environment.value}")
@@ -246,14 +246,14 @@ async def startup_event() -> None:
         logger.info(f"  - CSP Mode: {'Report-Only' if security_headers_config.csp_report_only else 'Enforcing'}")
         logger.info(f"  - HSTS: {'Enabled' if security_headers_config.strict_transport_security_enabled else 'Disabled'}")
         logger.info(f"  - Nonce-based CSP: {'Enabled' if security_headers_config.nonce_enabled else 'Disabled'}")
-        
+
         # Log rate limiting configuration
         logger.info(f"Rate limiting initialized:")
         logger.info(f"  - Default limit: {rate_limit_config.default_limit.requests} requests/{rate_limit_config.default_limit.window}s")
         logger.info(f"  - Global IP limit: {rate_limit_config.global_ip_limit.requests} requests/{rate_limit_config.global_ip_limit.window}s")
         logger.info(f"  - Storage backend: {'Redis' if rate_limit_config.redis_url else 'In-Memory'}")
         logger.info(f"  - Environment: {os.getenv('ENVIRONMENT', 'development')}")
-        
+
         # Initialize database
         db_dir = Path.home() / ".ai_pdf_scholar"
         db_dir.mkdir(exist_ok=True)
@@ -274,7 +274,7 @@ async def startup_event() -> None:
                 logger.info("Cache system disabled or initialization failed")
         except Exception as cache_error:
             logger.warning(f"Cache system initialization failed: {cache_error}")
-        
+
         logger.info("API startup completed successfully")
         logger.info("Unified error handling system active")
     except Exception as e:
@@ -286,7 +286,7 @@ async def startup_event() -> None:
 async def shutdown_event() -> None:
     """Cleanup on shutdown."""
     logger.info("Shutting down AI Enhanced PDF Scholar API...")
-    
+
     # Shutdown cache system
     try:
         from backend.services.cache_service_integration import shutdown_application_cache
@@ -294,7 +294,7 @@ async def shutdown_event() -> None:
         logger.info("Cache system shutdown completed")
     except Exception as cache_error:
         logger.warning(f"Cache system shutdown error: {cache_error}")
-    
+
     # Add other cleanup logic here if needed
     logger.info("API shutdown completed")
 

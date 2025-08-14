@@ -188,7 +188,7 @@ class PDFScholarClient:
     def __init__(self, base_url, token):
         self.base_url = base_url
         self.headers = {"Authorization": f"Bearer {token}"}
-    
+
     def upload_document(self, file_path):
         with open(file_path, 'rb') as f:
             files = {"file": f}
@@ -198,12 +198,12 @@ class PDFScholarClient:
                 headers=self.headers
             )
         return response.json()
-    
+
     def query_rag(self, query, document_id=None):
         data = {"query": query}
         if document_id:
             data["document_id"] = document_id
-            
+
         response = requests.post(
             f"{self.base_url}/api/rag/query",
             json=data,
@@ -272,8 +272,8 @@ class PDFScholarAPI {
 
 ---
 
-**📊 Last Updated**: 2025-01-19  
-**🔖 Version**: 2.1.0  
+**📊 Last Updated**: 2025-01-19
+**🔖 Version**: 2.1.0
 **👥 Maintained by**: AI Enhanced PDF Scholar Team
 
 *For complete implementation details, see the [OpenAPI specification](./openapi_spec.yaml)*

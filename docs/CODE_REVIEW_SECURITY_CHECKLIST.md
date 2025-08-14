@@ -19,8 +19,8 @@ This checklist ensures that all code changes maintain the SQL injection preventi
   ```python
   # ❌ DANGEROUS
   query = f"SELECT * FROM table WHERE field = {user_input}"
-  
-  # ✅ SAFE  
+
+  # ✅ SAFE
   query = "SELECT * FROM table WHERE field = ?"
   params = (user_input,)
   ```
@@ -43,7 +43,7 @@ def get_documents(self, sort_by: str = "created_at") -> List[DocumentModel]:
     # Whitelist validation
     valid_fields = {"created_at": "created_at", "title": "title"}
     safe_sort_by = valid_fields.get(sort_by.lower(), "created_at")
-    
+
     query = f"SELECT * FROM documents ORDER BY {safe_sort_by}"
     return self.db.fetch_all(query, ())
 ```
@@ -95,11 +95,11 @@ async def get_documents(
 def bad_query(user_input):
     # String interpolation
     return f"SELECT * FROM docs WHERE title = '{user_input}'"
-    
+
 def bad_sorting(sort_field):
     # Direct field name interpolation
     return f"SELECT * FROM docs ORDER BY {sort_field}"
-    
+
 def bad_search(search_term):
     # No input validation
     return f"SELECT * FROM docs WHERE content LIKE '%{search_term}%'"
@@ -110,7 +110,7 @@ def bad_search(search_term):
 ### Security Test Coverage
 
 - [ ] **Injection Payloads**: Test with known SQL injection patterns
-- [ ] **Boundary Values**: Test parameter limits and edge cases  
+- [ ] **Boundary Values**: Test parameter limits and edge cases
 - [ ] **Error Conditions**: Verify error handling doesn't leak information
 - [ ] **Integration Tests**: End-to-end security validation
 - [ ] **Performance Tests**: Ensure security doesn't impact performance significantly
@@ -160,20 +160,20 @@ def test_parameter_validation():
 def get_documents(self, sort_by: str) -> List[DocumentModel]:
     """
     Get documents with secure sorting.
-    
+
     Security: sort_by parameter is validated against whitelist to prevent
     SQL injection. Only predefined field names are allowed.
-    
+
     Args:
         sort_by: Sort field name (validated against whitelist)
     """
     # SECURITY: Whitelist validation prevents SQL injection
     valid_fields = {"created_at": "created_at", "title": "title"}
     safe_sort_by = valid_fields.get(sort_by.lower(), "created_at")
-    
+
     # AUDIT: Log security-critical operations
     logger.debug(f"Executing secure query with sort_by='{safe_sort_by}'")
-    
+
     query = f"SELECT * FROM documents ORDER BY {safe_sort_by}"
     return self.db.fetch_all(query, ())
 ```
@@ -200,7 +200,7 @@ def get_documents(self, sort_by: str) -> List[DocumentModel]:
 ### Security Reviewer Checklist
 
 - [ ] **Code Review Completed**: All security items verified
-- [ ] **Tests Reviewed**: Security test coverage adequate  
+- [ ] **Tests Reviewed**: Security test coverage adequate
 - [ ] **Documentation Reviewed**: Security docs updated
 - [ ] **Risk Assessment**: Security risk level acceptable
 - [ ] **Deployment Approval**: Safe to deploy
@@ -224,14 +224,14 @@ def secure_query(self, user_param: str) -> List[Model]:
     # 1. Validate input
     whitelist = {"allowed": "allowed_value"}
     safe_param = whitelist.get(user_param, "default")
-    
+
     # 2. Use parameterized query
     query = "SELECT * FROM table WHERE safe_field = ?"
     params = (safe_param,)
-    
+
     # 3. Log for audit
     logger.debug(f"Secure query: {safe_param}")
-    
+
     return self.db.fetch_all(query, params)
 
 # ✅ SECURE API ENDPOINT
@@ -253,6 +253,6 @@ async def get_items(params: SecureParams = Depends()):
 
 ---
 
-**Checklist Version**: 1.0  
-**Last Updated**: 2025-01-19  
+**Checklist Version**: 1.0
+**Last Updated**: 2025-01-19
 **Next Review**: 2025-04-19

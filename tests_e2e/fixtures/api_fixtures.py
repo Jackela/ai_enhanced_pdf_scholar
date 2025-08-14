@@ -24,26 +24,26 @@ class APIResponse:
     elapsed_time: float
     request_url: str
     request_method: str
-    
+
     @property
     def success(self) -> bool:
         """Check if the response was successful."""
         return 200 <= self.status_code < 300
-    
+
     @property
     def data(self) -> Any:
         """Get the data field from JSON response."""
         if self.json_data and "data" in self.json_data:
             return self.json_data["data"]
         return self.json_data
-    
+
     @property
     def message(self) -> Optional[str]:
         """Get the message field from JSON response."""
         if self.json_data and "message" in self.json_data:
             return self.json_data["message"]
         return None
-    
+
     @property
     def error(self) -> Optional[str]:
         """Get the error field from JSON response."""
@@ -56,20 +56,20 @@ class APIClient:
     """
     Enhanced API client for E2E testing with comprehensive features.
     """
-    
+
     def __init__(self, base_url: str, timeout: int = 30):
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
         self.session = requests.Session()
         self.auth_token = None
         self.request_history = []
-        
+
         # Set default headers
         self.session.headers.update({
             'User-Agent': 'E2E-Test-Client/1.0',
             'Accept': 'application/json',
         })
-    
+
     def _make_request(
         self,
         method: str,
@@ -80,26 +80,26 @@ class APIClient:
         Make an HTTP request with enhanced error handling and logging.
         """
         url = urljoin(self.base_url + '/', endpoint.lstrip('/'))
-        
+
         # Add auth header if authenticated
         if self.auth_token:
             kwargs.setdefault('headers', {})['Authorization'] = f'Bearer {self.auth_token}'
-        
+
         # Set default timeout
         kwargs.setdefault('timeout', self.timeout)
-        
+
         # Make request
         start_time = time.time()
         try:
             response = self.session.request(method, url, **kwargs)
             elapsed_time = time.time() - start_time
-            
+
             # Try to parse JSON
             try:
                 json_data = response.json()
             except (json.JSONDecodeError, ValueError):
                 json_data = None
-            
+
             # Create response object
             api_response = APIResponse(
                 status_code=response.status_code,
@@ -110,7 +110,7 @@ class APIClient:
                 request_url=url,
                 request_method=method
             )
-            
+
             # Log request
             self.request_history.append({
                 'timestamp': time.time(),
@@ -119,9 +119,9 @@ class APIClient:
                 'status_code': response.status_code,
                 'elapsed_time': elapsed_time
             })
-            
+
             return api_response
-            
+
         except requests.exceptions.RequestException as e:
             # Log failed request
             self.request_history.append({
@@ -132,27 +132,27 @@ class APIClient:
                 'elapsed_time': time.time() - start_time
             })
             raise
-    
+
     def get(self, endpoint: str, **kwargs) -> APIResponse:
         """Make a GET request."""
         return self._make_request('GET', endpoint, **kwargs)
-    
+
     def post(self, endpoint: str, **kwargs) -> APIResponse:
         """Make a POST request."""
         return self._make_request('POST', endpoint, **kwargs)
-    
+
     def put(self, endpoint: str, **kwargs) -> APIResponse:
         """Make a PUT request."""
         return self._make_request('PUT', endpoint, **kwargs)
-    
+
     def patch(self, endpoint: str, **kwargs) -> APIResponse:
         """Make a PATCH request."""
         return self._make_request('PATCH', endpoint, **kwargs)
-    
+
     def delete(self, endpoint: str, **kwargs) -> APIResponse:
         """Make a DELETE request."""
         return self._make_request('DELETE', endpoint, **kwargs)
-    
+
     def upload_file(
         self,
         endpoint: str,
@@ -167,7 +167,7 @@ class APIClient:
             files = {field_name: (file_path.name, f, 'application/pdf')}
             data = additional_data or {}
             return self.post(endpoint, files=files, data=data)
-    
+
     def authenticate(self, username: str, password: str) -> bool:
         """
         Authenticate with the API and store the token.
@@ -176,12 +176,12 @@ class APIClient:
             'username': username,
             'password': password
         })
-        
+
         if response.success and response.data:
             self.auth_token = response.data.get('token')
             return True
         return False
-    
+
     def logout(self) -> bool:
         """
         Logout and clear the authentication token.
@@ -191,7 +191,7 @@ class APIClient:
             self.auth_token = None
             return response.success
         return True
-    
+
     def wait_for_status(
         self,
         endpoint: str,
@@ -210,7 +210,7 @@ class APIClient:
                     return True
             time.sleep(poll_interval)
         return False
-    
+
     def batch_request(
         self,
         requests_data: list[Dict[str, Any]]
@@ -226,17 +226,17 @@ class APIClient:
             response = self._make_request(method, endpoint, **kwargs)
             responses.append(response)
         return responses
-    
+
     def get_metrics(self) -> Dict[str, Any]:
         """
         Get performance metrics for all requests made.
         """
         if not self.request_history:
             return {}
-        
+
         elapsed_times = [req['elapsed_time'] for req in self.request_history if 'elapsed_time' in req]
         status_codes = [req.get('status_code', 0) for req in self.request_history]
-        
+
         return {
             'total_requests': len(self.request_history),
             'successful_requests': sum(1 for code in status_codes if 200 <= code < 300),
@@ -245,7 +245,7 @@ class APIClient:
             'min_response_time': min(elapsed_times) if elapsed_times else 0,
             'max_response_time': max(elapsed_times) if elapsed_times else 0,
             'status_code_distribution': {
-                code: status_codes.count(code) 
+                code: status_codes.count(code)
                 for code in set(status_codes) if code != 0
             }
         }
@@ -286,32 +286,32 @@ class WebSocketClient:
     """
     WebSocket client for testing real-time features.
     """
-    
+
     def __init__(self, url: str):
         import websocket
         self.url = url
         self.ws = None
         self.messages = []
         self.is_connected = False
-        
+
     def connect(self):
         """Connect to WebSocket server."""
         import websocket
         self.ws = websocket.WebSocket()
         self.ws.connect(self.url)
         self.is_connected = True
-        
+
     def send(self, message: Dict[str, Any]):
         """Send a message to the WebSocket server."""
         if not self.is_connected:
             self.connect()
         self.ws.send(json.dumps(message))
-        
+
     def receive(self, timeout: int = 5) -> Optional[Dict[str, Any]]:
         """Receive a message from the WebSocket server."""
         if not self.is_connected:
             return None
-        
+
         self.ws.settimeout(timeout)
         try:
             message = self.ws.recv()
@@ -320,7 +320,7 @@ class WebSocketClient:
             return parsed
         except Exception:
             return None
-    
+
     def close(self):
         """Close the WebSocket connection."""
         if self.ws:
@@ -343,11 +343,11 @@ class MockAPIServer:
     """
     Mock API server for testing without a real backend.
     """
-    
+
     def __init__(self):
         self.responses = {}
         self.request_log = []
-        
+
     def register_response(
         self,
         method: str,
@@ -363,7 +363,7 @@ class MockAPIServer:
             'status_code': status_code,
             'delay': delay
         }
-    
+
     def get_response(self, method: str, endpoint: str) -> Optional[Dict[str, Any]]:
         """Get the mock response for an endpoint."""
         key = f"{method}:{endpoint}"
@@ -373,7 +373,7 @@ class MockAPIServer:
                 time.sleep(response['delay'])
             return response
         return None
-    
+
     def log_request(self, method: str, endpoint: str, data: Any = None):
         """Log a request for verification."""
         self.request_log.append({
@@ -382,7 +382,7 @@ class MockAPIServer:
             'endpoint': endpoint,
             'data': data
         })
-    
+
     def verify_request_made(
         self,
         method: str,

@@ -78,53 +78,53 @@ logger = logging.getLogger(__name__)
 class MyMigrationName(BaseMigration):
     \"\"\"
     Brief description of the migration.
-    
+
     Detailed explanation of changes made.
     \"\"\"
-    
+
     @property
     def version(self) -> int:
         return XXX  # Must match filename
-        
+
     @property
     def description(self) -> str:
         return "Brief description of changes"
-        
+
     @property
     def dependencies(self) -> list[int]:
         return [1, 5]  # List of required prior migrations
-        
+
     @property
     def rollback_supported(self) -> bool:
         return True  # Set to False if rollback is not possible
-        
+
     def up(self) -> None:
         \"\"\"Apply the migration (required).\"\"\"
         logger.info("Applying migration XXX")
-        
+
         # Your migration code here
         self.execute_sql("CREATE TABLE new_table (id INTEGER PRIMARY KEY)")
-        
+
         logger.info("Migration XXX completed")
-        
+
     def down(self) -> None:
         \"\"\"Rollback the migration (optional).\"\"\"
         logger.info("Rolling back migration XXX")
-        
+
         # Your rollback code here
         self.execute_sql("DROP TABLE IF EXISTS new_table")
-        
+
         logger.info("Migration XXX rollback completed")
-        
+
     def pre_migrate_checks(self) -> bool:
         \"\"\"Optional: Custom pre-migration validation.\"\"\"
         if not super().pre_migrate_checks():
             return False
-            
+
         # Custom validation logic
         # Return False to skip migration, True to proceed
         return True
-        
+
     def post_migrate_checks(self) -> bool:
         \"\"\"Optional: Custom post-migration validation.\"\"\"
         # Validate that migration worked correctly
@@ -147,7 +147,7 @@ self.execute_sql_file("path/to/schema.sql")
 # Create table if not exists
 self.create_table_if_not_exists("table_name", "CREATE TABLE ...")
 
-# Create index if not exists  
+# Create index if not exists
 self.create_index_if_not_exists("index_name", "CREATE INDEX ...")
 ```
 
@@ -178,7 +178,7 @@ def up(self):
     )
     """
     self.create_table_if_not_exists("user_preferences", schema)
-    
+
     # Add indexes
     self.create_index_if_not_exists(
         "idx_user_preferences_user_id",
@@ -192,7 +192,7 @@ def up(self):
     # Check if column exists first
     columns = self.db.fetch_all("PRAGMA table_info(documents)")
     column_names = [col["name"] for col in columns]
-    
+
     if "new_column" not in column_names:
         self.execute_sql("ALTER TABLE documents ADD COLUMN new_column TEXT")
         logger.info("Added new_column to documents table")
@@ -207,17 +207,17 @@ def up(self):
     records = self.db.fetch_all(
         "SELECT id, old_format_data FROM table_name WHERE migrated = 0"
     )
-    
+
     for record in records:
         # Transform data
         new_data = transform_data(record["old_format_data"])
-        
+
         # Update record
         self.execute_sql(
             "UPDATE table_name SET new_format_data = ?, migrated = 1 WHERE id = ?",
             (new_data, record["id"])
         )
-    
+
     logger.info(f"Migrated {len(records)} records to new format")
 ```
 
@@ -230,7 +230,7 @@ def up(self):
         ("idx_documents_created_desc", "CREATE INDEX idx_documents_created_desc ON documents(created_at DESC)"),
         ("idx_citations_author_year", "CREATE INDEX idx_citations_author_year ON citations(authors, publication_year)"),
     ]
-    
+
     for index_name, index_sql in indexes:
         self.create_index_if_not_exists(index_name, index_sql)
 ```
@@ -252,21 +252,21 @@ def up(self):
 def up(self):
     batch_size = 1000
     offset = 0
-    
+
     while True:
         records = self.db.fetch_all(
             "SELECT * FROM large_table LIMIT ? OFFSET ?",
             (batch_size, offset)
         )
-        
+
         if not records:
             break
-            
+
         # Process batch
         for record in records:
             # ... process record
             pass
-            
+
         offset += batch_size
         logger.info(f"Processed {offset} records")
 ```
@@ -290,7 +290,7 @@ Not all migrations can be safely rolled back:
 @property
 def rollback_supported(self) -> bool:
     return False
-    
+
 def down(self) -> None:
     raise NotImplementedError(
         "This migration cannot be safely rolled back due to potential data loss"
@@ -317,7 +317,7 @@ def up(self):
         # Migration logic
         self.execute_sql("CREATE TABLE ...")
         logger.info("Table created successfully")
-        
+
     except Exception as e:
         logger.error(f"Migration failed: {e}")
         # Let the error bubble up - the framework will handle rollback
@@ -382,19 +382,19 @@ Always test migrations thoroughly:
 def test_my_migration():
     # Create test database
     db = DatabaseConnection(":memory:")
-    
+
     # Apply base migrations
     migrator = ModularDatabaseMigrator(db)
     migrator.migrate_to_version(5)  # Apply prerequisites
-    
+
     # Test your migration
     migration = MyMigration(db)
     assert migration.run() == True
-    
+
     # Validate results
     tables = db.fetch_all("SELECT name FROM sqlite_master WHERE type='table'")
     assert "new_table" in [t["name"] for t in tables]
-    
+
     # Test rollback if supported
     if migration.rollback_supported:
         assert migration.rollback() == True

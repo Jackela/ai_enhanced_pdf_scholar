@@ -166,7 +166,7 @@ pip install --upgrade refextract requests
 # 在生产环境中的推荐模式
 def parse_citations_robust(text_content):
     service = CitationParsingService()
-    
+
     try:
         # 优先使用增强模式
         return service.parse_citations_from_text(text_content, use_third_party=True)
@@ -182,11 +182,11 @@ def parse_citations_robust(text_content):
 def batch_parse_citations(document_texts):
     service = CitationParsingService()
     results = []
-    
+
     for text in document_texts:
         citations = service.parse_citations_from_text(text)
         results.append(citations)
-    
+
     return results
 ```
 
@@ -195,7 +195,7 @@ def batch_parse_citations(document_texts):
 # 验证解析质量
 def validate_parsing_quality(citations):
     high_confidence = [c for c in citations if c['confidence_score'] >= 0.7]
-    
+
     print(f"总引用数: {len(citations)}")
     print(f"高置信度引用: {len(high_confidence)}")
     print(f"质量率: {len(high_confidence)/len(citations)*100:.1f}%")
@@ -239,15 +239,15 @@ service.register_parser(CustomCitationParser())
 # 核心集成模式
 def parse_citations_from_text(self, text_content: str, use_third_party: bool = True):
     citations = []
-    
+
     # 1. 第三方库解析（如果可用）
     if use_third_party:
         citations.extend(self._parse_with_refextract(text_content))
         citations.extend(self._parse_with_anystyle_api(text_content))
-    
+
     # 2. 内置解析器（总是运行）
     fallback_citations = self._parse_with_regex(text_content)
-    
+
     # 3. 智能去重合并
     return self._merge_and_deduplicate_citations(citations, fallback_citations)
 ```
@@ -263,6 +263,6 @@ def parse_citations_from_text(self, text_content: str, use_third_party: bool = T
 
 ---
 
-**最后更新**: 2025-01-20  
-**版本**: 1.0.0  
+**最后更新**: 2025-01-20
+**版本**: 1.0.0
 **兼容性**: AI Enhanced PDF Scholar v2.1.0+

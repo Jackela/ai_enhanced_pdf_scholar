@@ -41,7 +41,7 @@ class StreamingChunk(BaseModel):
     offset: int = Field(..., description="Chunk offset in the original file")
     is_final: bool = Field(default=False, description="Whether this is the last chunk")
     checksum: Optional[str] = Field(None, description="Chunk SHA-256 checksum")
-    
+
     @field_validator('checksum')
     @classmethod
     def validate_checksum(cls, v: Optional[str], info) -> Optional[str]:
@@ -75,7 +75,7 @@ class UploadSession(BaseModel):
     expected_hash: Optional[str] = Field(None, description="Expected file SHA-256 hash")
     actual_hash: Optional[str] = Field(None, description="Calculated file SHA-256 hash")
     metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict, description="Additional metadata")
-    
+
     @field_validator('total_chunks')
     @classmethod
     def validate_total_chunks(cls, v: int, info) -> int:
@@ -117,7 +117,7 @@ class StreamingUploadRequest(BaseModel):
     check_duplicates: bool = Field(default=True, description="Check for duplicate documents")
     auto_build_index: bool = Field(default=False, description="Auto-build vector index after upload")
     expected_hash: Optional[str] = Field(None, min_length=64, max_length=64, description="Expected SHA-256 hash")
-    
+
     @field_validator('filename')
     @classmethod
     def validate_filename(cls, v: str) -> str:
@@ -129,7 +129,7 @@ class StreamingUploadRequest(BaseModel):
         if not all(c in safe_chars for c in v):
             raise ValueError("Filename contains invalid characters")
         return v
-    
+
     @field_validator('expected_hash')
     @classmethod
     def validate_expected_hash(cls, v: Optional[str]) -> Optional[str]:

@@ -70,10 +70,10 @@ data:
       external_labels:
         cluster: 'ai-pdf-scholar'
         replica: '__replica__'
-    
+
     rule_files:
       - "/etc/prometheus/rules/*.yml"
-    
+
     scrape_configs:
     # Kubernetes API Server
     - job_name: 'kubernetes-apiservers'
@@ -87,7 +87,7 @@ data:
       - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
         action: keep
         regex: default;kubernetes;https
-    
+
     # Kubernetes Nodes
     - job_name: 'kubernetes-nodes'
       scheme: https
@@ -105,7 +105,7 @@ data:
         regex: (.+)
         target_label: __metrics_path__
         replacement: /api/v1/nodes/${1}/proxy/metrics
-    
+
     # Kubernetes Pods
     - job_name: 'kubernetes-pods'
       kubernetes_sd_configs:
@@ -131,7 +131,7 @@ data:
       - source_labels: [__meta_kubernetes_pod_name]
         action: replace
         target_label: kubernetes_pod_name
-    
+
     # AI PDF Scholar Backend
     - job_name: 'ai-pdf-scholar-backend'
       static_configs:
@@ -139,19 +139,19 @@ data:
       metrics_path: /metrics
       scrape_interval: 15s
       scrape_timeout: 10s
-    
+
     # PostgreSQL
     - job_name: 'postgresql'
       static_configs:
       - targets: ['postgresql-exporter:9187']
       scrape_interval: 30s
-    
+
     # Redis
     - job_name: 'redis'
       static_configs:
       - targets: ['redis-exporter:9121']
       scrape_interval: 30s
-    
+
     # Node Exporter
     - job_name: 'node-exporter'
       kubernetes_sd_configs:
@@ -160,7 +160,7 @@ data:
       - source_labels: [__meta_kubernetes_endpoints_name]
         action: keep
         regex: node-exporter
-    
+
     # cAdvisor
     - job_name: 'kubernetes-cadvisor'
       scheme: https
@@ -178,7 +178,7 @@ data:
         regex: (.+)
         target_label: __metrics_path__
         replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
-    
+
     # Alertmanager
     alerting:
       alertmanagers:
@@ -203,7 +203,7 @@ data:
         annotations:
           summary: "Instance {{ $labels.instance }} down"
           description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
-      
+
       - alert: HighMemoryUsage
         expr: (1 - (node_memory_MemAvailable_bytes{job="node-exporter"} / node_memory_MemTotal_bytes{job="node-exporter"})) * 100 > 90
         for: 2m
@@ -212,7 +212,7 @@ data:
         annotations:
           summary: "High memory usage on {{ $labels.instance }}"
           description: "Memory usage is above 90% (current value: {{ $value }}%)"
-      
+
       - alert: HighCPUUsage
         expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{job="node-exporter",mode="idle"}[5m])) * 100) > 85
         for: 2m
@@ -221,7 +221,7 @@ data:
         annotations:
           summary: "High CPU usage on {{ $labels.instance }}"
           description: "CPU usage is above 85% (current value: {{ $value }}%)"
-      
+
       - alert: DiskSpaceLow
         expr: (node_filesystem_avail_bytes{job="node-exporter",fstype!="tmpfs"} / node_filesystem_size_bytes{job="node-exporter",fstype!="tmpfs"} * 100) < 10
         for: 1m
@@ -230,7 +230,7 @@ data:
         annotations:
           summary: "Low disk space on {{ $labels.instance }}"
           description: "Disk space is below 10% (current value: {{ $value }}%)"
-      
+
       # Application-Specific Alerts
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
@@ -240,7 +240,7 @@ data:
         annotations:
           summary: "High error rate in {{ $labels.job }}"
           description: "Error rate is above 10% (current value: {{ $value | humanizePercentage }})"
-      
+
       - alert: HighLatency
         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
         for: 5m
@@ -249,7 +249,7 @@ data:
         annotations:
           summary: "High latency in {{ $labels.job }}"
           description: "95th percentile latency is above 2 seconds (current value: {{ $value }}s)"
-      
+
       - alert: DatabaseConnectionsHigh
         expr: db_connections_active > 40
         for: 2m
@@ -258,7 +258,7 @@ data:
         annotations:
           summary: "High database connections"
           description: "Active database connections: {{ $value }} (threshold: 40)"
-      
+
       - alert: RAGQueryFailureRate
         expr: rate(rag_queries_total{result="failure"}[5m]) / rate(rag_queries_total[5m]) > 0.05
         for: 3m
@@ -267,7 +267,7 @@ data:
         annotations:
           summary: "High RAG query failure rate"
           description: "RAG query failure rate is above 5% (current value: {{ $value | humanizePercentage }})"
-      
+
       - alert: DocumentProcessingErrors
         expr: rate(document_processing_errors_total[5m]) > 0.1
         for: 2m
@@ -276,7 +276,7 @@ data:
         annotations:
           summary: "High document processing error rate"
           description: "Document processing errors: {{ $value }} errors/sec"
-      
+
       # Security Alerts
       - alert: HighFailedLoginAttempts
         expr: rate(failed_login_attempts_total[5m]) > 5
@@ -286,7 +286,7 @@ data:
         annotations:
           summary: "High failed login attempts"
           description: "Failed login attempts: {{ $value }} attempts/sec from {{ $labels.ip_address }}"
-      
+
       - alert: RateLimitExceeded
         expr: rate(rate_limit_exceeded_total[1m]) > 10
         for: 1m
@@ -295,7 +295,7 @@ data:
         annotations:
           summary: "High rate limit violations"
           description: "Rate limit exceeded: {{ $value }} violations/sec on {{ $labels.endpoint }}"
-      
+
       # Infrastructure Health
       - alert: PodCrashLooping
         expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
@@ -305,7 +305,7 @@ data:
         annotations:
           summary: "Pod {{ $labels.pod }} is crash looping"
           description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
-      
+
       - alert: PodNotReady
         expr: kube_pod_status_ready{condition="false"} == 1
         for: 5m
@@ -314,7 +314,7 @@ data:
         annotations:
           summary: "Pod {{ $labels.pod }} not ready"
           description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready"
-      
+
       # Service Degradation Alerts
       - alert: ServiceResponseTimeHigh
         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m])) > 1
@@ -324,7 +324,7 @@ data:
         annotations:
           summary: "Service response time high"
           description: "95th percentile response time is {{ $value }}s (threshold: 1s)"
-      
+
       - alert: CacheHitRateLow
         expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.8
         for: 5m

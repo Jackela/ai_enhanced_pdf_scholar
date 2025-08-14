@@ -47,7 +47,7 @@ limit_request_fields = int(os.getenv("GUNICORN_LIMIT_REQUEST_FIELDS", "200"))
 limit_request_field_size = int(os.getenv("GUNICORN_LIMIT_REQUEST_FIELD_SIZE", "8190"))
 
 # ============================================================================
-# Security Configuration  
+# Security Configuration
 # ============================================================================
 
 # Process ownership
@@ -125,10 +125,10 @@ raw_env = [
 def when_ready(server):
     """Called when the server is started and ready to accept connections."""
     server.log.info("AI PDF Scholar server is ready. Workers: %d", server.num_workers)
-    
+
     # Optional: Register with service discovery
     register_with_service_discovery()
-    
+
     # Optional: Warm up application
     warmup_application()
 
@@ -136,9 +136,9 @@ def when_ready(server):
 def on_starting(server):
     """Called at server startup."""
     server.log.info("Starting AI PDF Scholar server...")
-    server.log.info("Configuration: %d workers, %s worker class", 
+    server.log.info("Configuration: %d workers, %s worker class",
                     server.cfg.workers, server.cfg.worker_class)
-    
+
     # Initialize monitoring
     setup_monitoring()
 
@@ -161,7 +161,7 @@ def pre_fork(server, worker):
 def post_fork(server, worker):
     """Called after forking a worker."""
     server.log.debug("Worker %d ready", worker.pid)
-    
+
     # Set up worker-specific resources
     setup_worker_resources()
 
@@ -202,10 +202,10 @@ def nworkers_changed(server, new_value, old_value):
 def on_exit(server):
     """Called when server is shutting down."""
     server.log.info("Shutting down AI PDF Scholar server")
-    
+
     # Cleanup resources
     cleanup_resources()
-    
+
     # Deregister from service discovery
     deregister_from_service_discovery()
 
@@ -240,14 +240,14 @@ def setup_worker_resources():
         import resource
         if 'max_worker_memory' in globals():
             resource.setrlimit(resource.RLIMIT_AS, (max_worker_memory, max_worker_memory))
-        
+
         # Set CPU limits if needed
         cpu_limit = os.getenv("WORKER_CPU_LIMIT")
         if cpu_limit:
             import psutil
             p = psutil.Process()
             p.cpu_affinity(list(range(int(cpu_limit))))
-            
+
     except Exception as e:
         logging.warning(f"Failed to setup worker resources: {e}")
 
@@ -257,15 +257,15 @@ def warmup_application():
     try:
         import requests
         import time
-        
+
         # Wait a moment for server to be ready
         time.sleep(2)
-        
+
         # Make a health check request to warm up
         health_url = f"http://{bind.split(':')[0]}:{bind.split(':')[1]}/health"
         requests.get(health_url, timeout=5)
         logging.info("Application warmed up successfully")
-        
+
     except Exception as e:
         logging.warning(f"Application warmup failed: {e}")
 
@@ -311,26 +311,26 @@ def cleanup_resources():
 def load_environment_config():
     """Load environment-specific configuration."""
     env = os.getenv("ENVIRONMENT", "production").lower()
-    
+
     if env == "development":
         # Development overrides
         global workers, loglevel, accesslog, timeout
         workers = 1
         loglevel = "debug"
         timeout = 120  # Longer timeout for debugging
-        
+
     elif env == "staging":
         # Staging overrides
         global workers, loglevel
         workers = max(2, multiprocessing.cpu_count())
         loglevel = "info"
-        
+
     elif env == "production":
         # Production is the default, but we can add specific overrides
         global workers, loglevel, preload_app
         workers = min(workers, int(os.getenv("MAX_WORKERS", "8")))
         preload_app = True
-        
+
         # Enable all security features in production
         if not keyfile and not certfile:
             logging.warning("Running in production without SSL/TLS certificates")
@@ -385,25 +385,25 @@ def custom_error_page(status_code: int, message: str) -> str:
 
 class PerformanceMonitor:
     """Monitor worker performance and resource usage."""
-    
+
     def __init__(self):
         self.request_count = 0
         self.error_count = 0
         self.start_time = None
-    
+
     def record_request(self, status_code: int):
         """Record request metrics."""
         self.request_count += 1
         if status_code >= 400:
             self.error_count += 1
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get performance statistics."""
         uptime = 0
         if self.start_time:
             from time import time
             uptime = time() - self.start_time
-            
+
         return {
             "uptime_seconds": uptime,
             "request_count": self.request_count,
@@ -435,7 +435,7 @@ logging.basicConfig(
 if loglevel != "debug":
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-    
+
 logging.info("Gunicorn configuration loaded successfully")
 logging.info(f"Workers: {workers}, Worker Class: {worker_class}")
 logging.info(f"Bind: {bind}, Backlog: {backlog}")

@@ -6,7 +6,7 @@ including all specialized services and their integration.
 
 Test Coverage:
 - RAGCoordinator: Service orchestration and coordination
-- RAGIndexBuilder: PDF processing and vector index building  
+- RAGIndexBuilder: PDF processing and vector index building
 - RAGQueryEngine: Query execution and response generation
 - RAGRecoveryService: Corruption detection and recovery
 - RAGFileManager: File operations and storage management
@@ -29,18 +29,18 @@ from .test_rag_integration import TestRAGModuleIntegration, TestRAGModuleSOLIDCo
 __all__ = [
     # Core module tests
     "TestRAGCoordinator",
-    "TestRAGIndexBuilder", 
+    "TestRAGIndexBuilder",
     "TestRAGQueryEngine",
     "TestRAGRecoveryService",
     "TestRAGFileManager",
-    
+
     # Error handling tests
     "TestRAGCoordinatorEdgeCases",
     "TestRAGIndexBuilderErrorHandling",
-    "TestRAGQueryEngineErrorHandling", 
+    "TestRAGQueryEngineErrorHandling",
     "TestRAGRecoveryServiceErrorHandling",
     "TestRAGFileManagerErrorHandling",
-    
+
     # Integration tests
     "TestRAGModuleIntegration",
     "TestRAGModuleSOLIDCompliance"
@@ -51,7 +51,7 @@ TEST_CONFIG = {
     "timeout": 30,  # seconds
     "markers": {
         "unit": "Unit tests for individual RAG modules",
-        "integration": "Integration tests for RAG module interactions", 
+        "integration": "Integration tests for RAG module interactions",
         "asyncio": "Tests requiring asyncio event loop",
         "slow": "Slow running tests (>5 seconds)"
     }

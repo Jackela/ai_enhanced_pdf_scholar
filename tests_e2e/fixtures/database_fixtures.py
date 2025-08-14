@@ -18,45 +18,45 @@ class DatabaseManager:
     """
     Manage database operations for testing.
     """
-    
+
     def __init__(self, db_path: Path):
         self.db_path = db_path
         self.connection = None
-        
+
     def connect(self):
         """Connect to the database."""
         self.connection = sqlite3.connect(str(self.db_path))
         self.connection.row_factory = sqlite3.Row
         return self.connection
-    
+
     def disconnect(self):
         """Disconnect from the database."""
         if self.connection:
             self.connection.close()
             self.connection = None
-    
+
     def execute(self, query: str, params: tuple = None) -> sqlite3.Cursor:
         """Execute a query."""
         if not self.connection:
             self.connect()
         return self.connection.execute(query, params or ())
-    
+
     def executemany(self, query: str, params: List[tuple]) -> sqlite3.Cursor:
         """Execute multiple queries."""
         if not self.connection:
             self.connect()
         return self.connection.executemany(query, params)
-    
+
     def commit(self):
         """Commit the current transaction."""
         if self.connection:
             self.connection.commit()
-    
+
     def rollback(self):
         """Rollback the current transaction."""
         if self.connection:
             self.connection.rollback()
-    
+
     def create_tables(self):
         """Create database tables for testing."""
         queries = [
@@ -160,37 +160,37 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
             """
         ]
-        
+
         for query in queries:
             self.execute(query)
         self.commit()
-    
+
     def drop_all_tables(self):
         """Drop all tables."""
         tables = [
             'audit_logs', 'sessions', 'rag_queries',
             'citations', 'documents', 'users'
         ]
-        
+
         for table in tables:
             self.execute(f"DROP TABLE IF EXISTS {table}")
         self.commit()
-    
+
     def clear_all_data(self):
         """Clear all data from tables without dropping them."""
         tables = [
             'audit_logs', 'sessions', 'rag_queries',
             'citations', 'documents', 'users'
         ]
-        
+
         for table in tables:
             self.execute(f"DELETE FROM {table}")
         self.commit()
-    
+
     def seed_users(self, count: int = 10) -> List[int]:
         """Seed the database with test users."""
         user_ids = []
-        
+
         for i in range(count):
             role = 'admin' if i == 0 else 'user' if i < 8 else 'guest'
             cursor = self.execute(
@@ -206,19 +206,19 @@ class DatabaseManager:
                 )
             )
             user_ids.append(cursor.lastrowid)
-        
+
         self.commit()
         return user_ids
-    
+
     def seed_documents(self, user_ids: List[int], count: int = 50) -> List[int]:
         """Seed the database with test documents."""
         document_ids = []
         statuses = ['pending', 'processing', 'completed', 'failed']
-        
+
         for i in range(count):
             user_id = random.choice(user_ids)
             status = random.choice(statuses)
-            
+
             cursor = self.execute(
                 """
                 INSERT INTO documents (
@@ -246,17 +246,17 @@ class DatabaseManager:
                 )
             )
             document_ids.append(cursor.lastrowid)
-        
+
         self.commit()
         return document_ids
-    
+
     def seed_citations(self, document_ids: List[int]) -> List[int]:
         """Seed the database with test citations."""
         citation_ids = []
-        
+
         for doc_id in random.sample(document_ids, min(30, len(document_ids))):
             citation_count = random.randint(1, 10)
-            
+
             for i in range(citation_count):
                 cursor = self.execute(
                     """
@@ -279,10 +279,10 @@ class DatabaseManager:
                     )
                 )
                 citation_ids.append(cursor.lastrowid)
-        
+
         self.commit()
         return citation_ids
-    
+
     def seed_rag_queries(self, user_ids: List[int], document_ids: List[int]) -> List[int]:
         """Seed the database with test RAG queries."""
         query_ids = []
@@ -298,7 +298,7 @@ class DatabaseManager:
             "How do LLMs work?",
             "What is transfer learning?"
         ]
-        
+
         for _ in range(30):
             user_id = random.choice(user_ids)
             query_text = random.choice(sample_queries)
@@ -306,7 +306,7 @@ class DatabaseManager:
                 document_ids,
                 min(random.randint(1, 5), len(document_ids))
             )
-            
+
             cursor = self.execute(
                 """
                 INSERT INTO rag_queries (
@@ -326,20 +326,20 @@ class DatabaseManager:
                 )
             )
             query_ids.append(cursor.lastrowid)
-        
+
         self.commit()
         return query_ids
-    
+
     def get_statistics(self) -> Dict[str, Any]:
         """Get database statistics."""
         stats = {}
-        
+
         tables = ['users', 'documents', 'citations', 'rag_queries', 'sessions', 'audit_logs']
-        
+
         for table in tables:
             cursor = self.execute(f"SELECT COUNT(*) as count FROM {table}")
             stats[f"{table}_count"] = cursor.fetchone()['count']
-        
+
         # Get document status distribution
         cursor = self.execute(
             "SELECT status, COUNT(*) as count FROM documents GROUP BY status"
@@ -347,7 +347,7 @@ class DatabaseManager:
         stats['document_status'] = {
             row['status']: row['count'] for row in cursor.fetchall()
         }
-        
+
         # Get user role distribution
         cursor = self.execute(
             "SELECT role, COUNT(*) as count FROM users GROUP BY role"
@@ -355,7 +355,7 @@ class DatabaseManager:
         stats['user_roles'] = {
             row['role']: row['count'] for row in cursor.fetchall()
         }
-        
+
         return stats
 
 
@@ -367,17 +367,17 @@ def test_database() -> Generator[DatabaseManager, None, None]:
     # Create test database
     db_path = Path("tests_e2e/test_data/test_database.db")
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Remove existing database if it exists
     if db_path.exists():
         db_path.unlink()
-    
+
     # Create and setup database
     db_manager = DatabaseManager(db_path)
     db_manager.create_tables()
-    
+
     yield db_manager
-    
+
     # Cleanup
     db_manager.disconnect()
     if db_path.exists():
@@ -394,7 +394,7 @@ def seeded_database(test_database: DatabaseManager) -> DatabaseManager:
     document_ids = test_database.seed_documents(user_ids, 50)
     test_database.seed_citations(document_ids)
     test_database.seed_rag_queries(user_ids, document_ids)
-    
+
     return test_database
 
 
@@ -405,27 +405,27 @@ def database_backup() -> Generator[callable, None, None]:
     """
     backup_dir = Path("tests_e2e/test_data/backups")
     backup_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def backup_restore(action: str, db_path: Path = None, backup_name: str = "backup"):
         backup_path = backup_dir / f"{backup_name}.db"
-        
+
         if action == "backup" and db_path:
             if db_path.exists():
                 shutil.copy2(db_path, backup_path)
                 return backup_path
-        
+
         elif action == "restore" and db_path:
             if backup_path.exists():
                 shutil.copy2(backup_path, db_path)
                 return db_path
-        
+
         elif action == "list":
             return list(backup_dir.glob("*.db"))
-        
+
         return None
-    
+
     yield backup_restore
-    
+
     # Cleanup backups
     for backup in backup_dir.glob("*.db"):
         backup.unlink()
@@ -437,11 +437,11 @@ def database_monitor(test_database: DatabaseManager) -> Generator[callable, None
     Provide a function to monitor database changes during tests.
     """
     initial_stats = test_database.get_statistics()
-    
+
     def get_changes():
         current_stats = test_database.get_statistics()
         changes = {}
-        
+
         for key, initial_value in initial_stats.items():
             current_value = current_stats.get(key)
             if isinstance(initial_value, dict) and isinstance(current_value, dict):
@@ -464,7 +464,7 @@ def database_monitor(test_database: DatabaseManager) -> Generator[callable, None
                     'after': current_value,
                     'change': current_value - initial_value
                 }
-        
+
         return changes
-    
+
     yield get_changes

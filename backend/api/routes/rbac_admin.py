@@ -131,12 +131,12 @@ async def list_roles(
     Requires system:read permission.
     """
     query = db.query(Role)
-    
+
     if not include_system:
         query = query.filter(Role.is_system_role == False)
-    
+
     roles = query.order_by(Role.priority, Role.name).all()
-    
+
     response = []
     for role in roles:
         response.append(RoleResponse(
@@ -150,7 +150,7 @@ async def list_roles(
             created_at=role.created_at,
             parent_role=role.parent_role.name if role.parent_role else None
         ))
-    
+
     logger.info(f"User {current_user.email} listed {len(response)} roles")
     return response
 
@@ -175,7 +175,7 @@ async def create_role(
             created_by=current_user,
             parent_role=request.parent_role
         )
-        
+
         return RoleResponse(
             id=role.id,
             name=role.name,
@@ -208,28 +208,28 @@ async def delete_role(
     Requires super_admin role.
     """
     role = db.query(Role).filter_by(name=role_name).first()
-    
+
     if not role:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Role {role_name} not found"
         )
-    
+
     if role.is_system_role:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete system roles"
         )
-    
+
     if role.users:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot delete role with {len(role.users)} assigned users"
         )
-    
+
     db.delete(role)
     db.commit()
-    
+
     logger.info(f"Role {role_name} deleted by {current_user.email}")
 
 
@@ -250,17 +250,17 @@ async def assign_role_to_user(
     Requires user:update permission.
     """
     target_user = db.query(User).filter_by(id=request.user_id).first()
-    
+
     if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User {request.user_id} not found"
         )
-    
+
     expires_at = None
     if request.expires_in_hours:
         expires_at = datetime.utcnow() + timedelta(hours=request.expires_in_hours)
-    
+
     try:
         success = rbac.assign_role(
             user=target_user,
@@ -268,7 +268,7 @@ async def assign_role_to_user(
             assigned_by=current_user,
             expires_at=expires_at
         )
-        
+
         if success:
             logger.info(
                 f"Role {request.role_name} assigned to user {target_user.email} "
@@ -303,20 +303,20 @@ async def revoke_role_from_user(
     Requires user:update permission.
     """
     target_user = db.query(User).filter_by(id=user_id).first()
-    
+
     if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User {user_id} not found"
         )
-    
+
     try:
         success = rbac.revoke_role(
             user=target_user,
             role_name=role_name,
             revoked_by=current_user
         )
-        
+
         if success:
             logger.info(
                 f"Role {role_name} revoked from user {target_user.email} "
@@ -356,12 +356,12 @@ async def list_permissions(
     Requires system:read permission.
     """
     query = db.query(Permission)
-    
+
     if resource:
         query = query.filter(Permission.resource == resource)
-    
+
     permissions = query.order_by(Permission.resource, Permission.action).all()
-    
+
     response = []
     for permission in permissions:
         response.append(PermissionResponse(
@@ -373,7 +373,7 @@ async def list_permissions(
             is_system_permission=permission.is_system_permission,
             role_count=len(permission.roles)
         ))
-    
+
     return response
 
 
@@ -391,17 +391,17 @@ async def grant_direct_permission(
     Requires admin role.
     """
     target_user = db.query(User).filter_by(id=request.user_id).first()
-    
+
     if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User {request.user_id} not found"
         )
-    
+
     expires_at = None
     if request.expires_in_hours:
         expires_at = datetime.utcnow() + timedelta(hours=request.expires_in_hours)
-    
+
     try:
         success = rbac.grant_permission(
             user=target_user,
@@ -410,7 +410,7 @@ async def grant_direct_permission(
             expires_at=expires_at,
             reason=request.reason
         )
-        
+
         if success:
             logger.info(
                 f"Permission {request.permission_name} granted to user {target_user.email} "
@@ -448,22 +448,22 @@ async def get_user_permissions(
     Requires user:read permission.
     """
     target_user = db.query(User).filter_by(id=user_id).first()
-    
+
     if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User {user_id} not found"
         )
-    
+
     # Get user's roles
     roles = [role.name for role in target_user.roles]
-    
+
     # Get direct permissions (would need to be implemented)
     direct_permissions = []  # This would query the user_permissions table
-    
+
     # Get all effective permissions
     effective_permissions = rbac.get_user_permissions(target_user)
-    
+
     return UserPermissionsResponse(
         user_id=target_user.id,
         email=target_user.email,
@@ -486,7 +486,7 @@ async def get_my_permissions(
     roles = [role.name for role in current_user.roles]
     direct_permissions = []  # This would query the user_permissions table
     effective_permissions = rbac.get_user_permissions(current_user)
-    
+
     return UserPermissionsResponse(
         user_id=current_user.id,
         email=current_user.email,
@@ -515,7 +515,7 @@ async def check_permission(
         action=action,
         resource_id=resource_id
     )
-    
+
     return {
         "allowed": result.allowed,
         "reason": result.reason,
@@ -540,7 +540,7 @@ async def create_resource_policy(
     Requires system:update permission.
     """
     from backend.api.auth.rbac import ResourcePolicy
-    
+
     policy = ResourcePolicy(
         resource_type=request.resource_type,
         resource_id=request.resource_id,
@@ -548,15 +548,15 @@ async def create_resource_policy(
         policy_value=request.policy_value,
         created_by=current_user.id
     )
-    
+
     db.add(policy)
     db.commit()
-    
+
     logger.info(
         f"Resource policy created for {request.resource_type}:{request.resource_id} "
         f"by {current_user.email}"
     )
-    
+
     return {
         "message": "Resource policy created successfully",
         "policy_id": policy.id
@@ -606,13 +606,13 @@ async def get_rbac_statistics(
     total_users = db.query(User).count()
     total_roles = db.query(Role).count()
     total_permissions = db.query(Permission).count()
-    
+
     # Get role distribution
     role_distribution = {}
     roles = db.query(Role).all()
     for role in roles:
         role_distribution[role.name] = len(role.users)
-    
+
     return {
         "total_users": total_users,
         "total_roles": total_roles,

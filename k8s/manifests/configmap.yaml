@@ -11,13 +11,13 @@ data:
   ENVIRONMENT: "production"
   DEBUG: "false"
   LOG_LEVEL: "INFO"
-  
+
   # API Configuration
   API_HOST: "0.0.0.0"
   API_PORT: "8000"
   API_VERSION: "v1"
   CORS_ORIGINS: "https://your-domain.com,https://www.your-domain.com"
-  
+
   # Database Configuration
   POSTGRES_HOST: "postgresql-service"
   POSTGRES_PORT: "5432"
@@ -25,48 +25,48 @@ data:
   POSTGRES_POOL_SIZE: "20"
   POSTGRES_MAX_OVERFLOW: "40"
   POSTGRES_POOL_TIMEOUT: "30"
-  
+
   # Redis Configuration
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
   REDIS_DB: "0"
   REDIS_MAX_CONNECTIONS: "50"
-  
+
   # Cache Configuration
   CACHE_DEFAULT_TTL: "3600"
   CACHE_MAX_TTL: "86400"
   CACHE_COMPRESSION_THRESHOLD: "1000"
-  
+
   # Monitoring Configuration
   PROMETHEUS_PORT: "8001"
   OTEL_SERVICE_NAME: "ai-pdf-scholar"
   OTEL_SERVICE_VERSION: "2.0.0"
   JAEGER_ENDPOINT: "http://jaeger-collector:14268/api/traces"
-  
+
   # Elasticsearch Configuration
   ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
   ELASTICSEARCH_INDEX_PREFIX: "ai-pdf-scholar"
   ELASTICSEARCH_BULK_SIZE: "500"
   ELASTICSEARCH_FLUSH_INTERVAL: "5"
-  
+
   # Security Configuration
   JWT_ALGORITHM: "HS256"
   JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
   JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"
   BCRYPT_ROUNDS: "12"
-  
+
   # Encryption Configuration
   ENCRYPTION_ALGORITHM: "AES-256-GCM"
   KEY_ROTATION_DAYS: "90"
-  
+
   # Rate Limiting
   RATE_LIMIT_REQUESTS: "1000"
   RATE_LIMIT_WINDOW: "3600"
-  
+
   # File Upload
   MAX_UPLOAD_SIZE: "104857600"  # 100MB
   UPLOAD_PATH: "/app/uploads"
-  
+
   # GDPR Configuration
   DATA_RETENTION_DAYS: "730"  # 2 years
   CONSENT_RENEWAL_DAYS: "365"
@@ -85,30 +85,30 @@ data:
         least_conn;
         server ai-pdf-scholar-backend:8000 max_fails=3 fail_timeout=30s;
     }
-    
+
     upstream frontend {
         least_conn;
         server ai-pdf-scholar-frontend:3000 max_fails=3 fail_timeout=30s;
     }
-    
+
     # Rate limiting
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=upload:10m rate=1r/s;
-    
+
     server {
         listen 80;
         server_name _;
-        
+
         # Security headers
         add_header X-Frame-Options "SAMEORIGIN" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-XSS-Protection "1; mode=block" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
         add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" always;
-        
+
         # Client max body size for file uploads
         client_max_body_size 100M;
-        
+
         # Frontend routes
         location / {
             proxy_pass http://frontend;
@@ -117,56 +117,56 @@ data:
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
-        
+
         # API routes with rate limiting
         location /api/ {
             limit_req zone=api burst=20 nodelay;
-            
+
             proxy_pass http://backend;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-            
+
             # CORS headers
             add_header Access-Control-Allow-Origin $http_origin always;
             add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
             add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
             add_header Access-Control-Allow-Credentials true always;
-            
+
             if ($request_method = OPTIONS) {
                 return 204;
             }
         }
-        
+
         # Upload endpoints with stricter rate limiting
         location /api/documents/upload {
             limit_req zone=upload burst=5 nodelay;
-            
+
             proxy_pass http://backend;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-            
+
             # Increase timeouts for large uploads
             proxy_read_timeout 300s;
             proxy_send_timeout 300s;
         }
-        
+
         # Health check endpoint
         location /health {
             access_log off;
             proxy_pass http://backend;
         }
-        
+
         # Metrics endpoint (internal only)
         location /metrics {
             allow 10.0.0.0/8;
             allow 172.16.0.0/12;
             allow 192.168.0.0/16;
             deny all;
-            
+
             proxy_pass http://backend;
         }
     }

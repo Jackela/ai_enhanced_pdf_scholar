@@ -25,7 +25,7 @@ repos:
       - id: check-symlinks
       - id: check-added-large-files
         args: [--maxkb=1000]  # 1MB limit
-      
+
       # Python-specific checks
       - id: check-ast
       - id: check-builtin-literals
@@ -33,11 +33,11 @@ repos:
       - id: debug-statements
       - id: name-tests-test
         args: [--pytest-test-first]
-      
+
       # Security and sensitive data
       - id: detect-private-key
       - id: detect-aws-credentials
-      
+
       # Git and file management
       - id: fix-byte-order-marker
       - id: mixed-line-ending
@@ -210,7 +210,7 @@ repos:
         language: system
         files: requirements\.txt$
         pass_filenames: false
-      
+
       # Python test coverage check
       - id: pytest-coverage
         name: PyTest with coverage
@@ -220,7 +220,7 @@ repos:
         files: \.py$
         pass_filenames: false
         exclude: ^(frontend/|node_modules/|\.venv/|venv/)
-      
+
       # Frontend type checking
       - id: frontend-typecheck
         name: Frontend TypeScript check
@@ -229,7 +229,7 @@ repos:
         language: system
         files: ^frontend/.*\.(ts|tsx)$
         pass_filenames: false
-      
+
       # Check for TODO/FIXME comments in production code
       - id: check-todos
         name: Check for TODO/FIXME in production code
@@ -239,7 +239,7 @@ repos:
         files: \.py$
         exclude: ^(tests/|test_.*\.py)
         pass_filenames: false
-      
+
       # Check database migrations
       - id: check-migrations
         name: Check database migration consistency
@@ -268,7 +268,7 @@ default_stages: [commit, push]
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit.com hooks
-    
+
     for more information, see https://pre-commit.ci
   autofix_prs: true
   autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'

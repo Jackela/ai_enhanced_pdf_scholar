@@ -22,7 +22,7 @@ cd ai_enhanced_pdf_scholar
 # 2. Backend setup
 python -m pip install -r requirements.txt
 
-# 3. Frontend setup  
+# 3. Frontend setup
 cd frontend
 npm install
 
@@ -37,7 +37,7 @@ python -m src.database.migrations
 # Terminal 1 - Backend
 uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
-# Terminal 2 - Frontend  
+# Terminal 2 - Frontend
 cd frontend && npm run dev
 ```
 
@@ -56,7 +56,7 @@ cd frontend && npm run dev
 - **[TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)** - Architecture decisions and design patterns
 - **[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)** - Feature roadmap and development phases
 
-### System Documentation  
+### System Documentation
 - **[Database Design](DATABASE_DESIGN.md)** - Schema, models, and migration guide
 - **[Citation System Guide](CITATION_SYSTEM.md)** - Academic citation parsing and network analysis
 - **[Security Documentation](SECURITY.md)** - Security implementation and best practices
@@ -64,7 +64,7 @@ cd frontend && npm run dev
 
 ### Developer Documentation
 - **[Setup Guide](SETUP.md)** - Detailed development environment setup
-- **[Testing Guide](TESTING.md)** - Testing strategy, execution, and contribution guidelines  
+- **[Testing Guide](TESTING.md)** - Testing strategy, execution, and contribution guidelines
 - **[Contributing Guidelines](CONTRIBUTING.md)** - Code standards and contribution process
 - **[Deployment Guide](DEPLOYMENT.md)** - Production deployment and operations
 
@@ -83,32 +83,32 @@ graph TB
         B[Tailwind CSS]
         C[PWA Support]
     end
-    
+
     subgraph "API Layer"
         D[FastAPI]
         E[WebSocket]
         F[Pydantic Models]
     end
-    
+
     subgraph "Service Layer"
         G[Document Service]
         H[RAG Service]
         I[Citation Service]
         J[Content Hash Service]
     end
-    
+
     subgraph "Repository Layer"
         K[Document Repository]
         L[Vector Repository]
         M[Citation Repository]
     end
-    
+
     subgraph "Data Layer"
         N[SQLite Database]
         O[Vector Indexes]
         P[File Storage]
     end
-    
+
     A --> D
     B --> D
     C --> E

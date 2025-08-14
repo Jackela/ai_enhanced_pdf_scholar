@@ -54,12 +54,12 @@ class RAGTaskResponse(BaseModel):
 
 class RAGStreamingProcessor:
     """Processor for async RAG operations with WebSocket streaming support."""
-    
+
     def __init__(self, ws_manager: WebSocketManager, controller: LibraryController, rag_service: EnhancedRAGService):
         self.ws_manager = ws_manager
         self.controller = controller
         self.rag_service = rag_service
-        
+
     async def process_rag_query(
         self,
         query: str,
@@ -79,81 +79,81 @@ class RAGStreamingProcessor:
                     client_id, task_id, RAGProgressType.PARSING, 10.0,
                     "Validating document and preparing query"
                 )
-            
+
             # Check cancellation
             if cancellation_token.is_set():
                 return ""
-            
+
             # Validate document access
             validate_document_access(document_id, self.controller)
-            
+
             # Stage 2: Index Status Check
             if enable_progress_updates:
                 await self.ws_manager.send_rag_progress_update(
                     client_id, task_id, RAGProgressType.INDEXING, 30.0,
                     "Checking vector index status"
                 )
-            
+
             # Check cancellation
             if cancellation_token.is_set():
                 return ""
-            
+
             index_status = self.controller.get_index_status(document_id)
             if not index_status.get("can_query", False):
                 raise ErrorTemplates.index_not_ready(document_id)
-            
+
             # Stage 3: Query Processing
             if enable_progress_updates:
                 await self.ws_manager.send_rag_progress_update(
                     client_id, task_id, RAGProgressType.QUERYING, 50.0,
                     "Processing RAG query"
                 )
-            
+
             # Check cancellation
             if cancellation_token.is_set():
                 return ""
-            
+
             # Execute RAG query (simulate async processing)
             await asyncio.sleep(0.1)  # Allow for cancellation checks
             response = self.controller.query_document(document_id, query)
-            
+
             if response is None:
                 raise SystemException(
                     message="RAG query processing failed",
                     error_type="external_service"
                 )
-            
+
             # Stage 4: Response Streaming (if enabled)
             if enable_progress_updates and len(response) > chunk_size:
                 await self.ws_manager.send_rag_progress_update(
                     client_id, task_id, RAGProgressType.STREAMING_RESPONSE, 80.0,
                     "Streaming response to client"
                 )
-                
+
                 # Stream response in chunks
                 chunks = [response[i:i+chunk_size] for i in range(0, len(response), chunk_size)]
                 total_chunks = len(chunks)
-                
+
                 for i, chunk in enumerate(chunks):
                     if cancellation_token.is_set():
                         return ""
-                    
+
                     await self.ws_manager.send_rag_response_chunk(
                         client_id, task_id, chunk, i, total_chunks
                     )
-                    
+
                     # Small delay between chunks to prevent overwhelming
                     await asyncio.sleep(0.05)
-            
+
             # Final stage
             if enable_progress_updates:
                 await self.ws_manager.send_rag_progress_update(
                     client_id, task_id, RAGProgressType.COMPLETED, 100.0,
                     "Query processing completed"
                 )
-            
+
             return response
-            
+
         except asyncio.CancelledError:
             logger.info(f"RAG query cancelled for task {task_id}")
             raise
@@ -182,10 +182,10 @@ async def async_query_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Client {request.client_id} not connected to WebSocket"
             )
-        
+
         # Create RAG processor
         processor = RAGStreamingProcessor(ws_manager, controller, rag_service)
-        
+
         # Start async RAG processing
         task_id = await ws_manager.start_rag_stream(
             client_id=request.client_id,
@@ -195,13 +195,13 @@ async def async_query_document(
             chunk_size=request.chunk_size,
             enable_progress_updates=request.enable_progress_updates
         )
-        
+
         return RAGTaskResponse(
             task_id=task_id,
             status="started",
             message="RAG query processing started"
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -221,15 +221,15 @@ async def get_async_query_status(
     """Get the status of an async RAG query."""
     try:
         status_info = await ws_manager.get_rag_task_status(client_id, task_id)
-        
+
         if status_info is None:
             raise ResourceNotFoundException(
                 resource_type="rag_task",
                 message=f"RAG task {task_id} not found or not accessible"
             )
-        
+
         return status_info
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -249,19 +249,19 @@ async def cancel_async_query(
     """Cancel a running async RAG query."""
     try:
         success = await ws_manager.cancel_rag_task(client_id, task_id)
-        
+
         if not success:
             raise ResourceNotFoundException(
                 resource_type="rag_task",
                 message=f"RAG task {task_id} not found, not accessible, or already completed"
             )
-        
+
         return RAGTaskResponse(
             task_id=task_id,
             status="cancelled",
             message="RAG query cancelled successfully"
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -283,20 +283,20 @@ async def websocket_rag_endpoint(
         # Generate client ID and connect
         client_id = f"rag_client_{int(time.time() * 1000)}"
         await ws_manager.connect(websocket, client_id)
-        
+
         while True:
             # Wait for messages from client
             data = await websocket.receive_json()
-            
+
             # Handle different message types
             message_type = data.get("type")
-            
+
             if message_type == "ping":
                 await websocket.send_json({
                     "type": "pong",
                     "timestamp": time.time()
                 })
-            
+
             elif message_type == "task_status":
                 task_id = data.get("task_id")
                 if task_id:
@@ -306,7 +306,7 @@ async def websocket_rag_endpoint(
                         "task_id": task_id,
                         "status": status_info
                     })
-            
+
             elif message_type == "cancel_task":
                 task_id = data.get("task_id")
                 if task_id:
@@ -316,13 +316,13 @@ async def websocket_rag_endpoint(
                         "task_id": task_id,
                         "success": success
                     })
-            
+
             else:
                 await websocket.send_json({
                     "type": "error",
                     "message": f"Unknown message type: {message_type}"
                 })
-                
+
     except WebSocketDisconnect:
         logger.info(f"RAG WebSocket client {client_id} disconnected")
     except Exception as e:
@@ -345,7 +345,7 @@ async def get_streaming_stats(
             "websocket_stats": stats,
             "timestamp": time.time()
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to get streaming stats: {e}")
         raise SystemException(
@@ -367,7 +367,7 @@ async def hybrid_query_document(
         # If client_id provided and connected, use async streaming
         if client_id and client_id in ws_manager.active_connections:
             processor = RAGStreamingProcessor(ws_manager, controller, rag_service)
-            
+
             task_id = await ws_manager.start_rag_stream(
                 client_id=client_id,
                 document_id=query_request.document_id,
@@ -375,11 +375,11 @@ async def hybrid_query_document(
                 rag_processor=processor.process_rag_query,
                 enable_progress_updates=False  # Return response immediately
             )
-            
+
             # Wait for completion (with timeout)
             timeout_seconds = 30
             start_time = time.time()
-            
+
             while time.time() - start_time < timeout_seconds:
                 task_status = await ws_manager.get_rag_task_status(client_id, task_id)
                 if task_status and task_status["status"] == "completed":
@@ -395,30 +395,30 @@ async def hybrid_query_document(
                         message=f"Async RAG query failed: {task_status.get('error', 'Unknown error')}",
                         error_type="external_service"
                     )
-                
+
                 await asyncio.sleep(0.1)
-            
+
             # Timeout - cancel task and fall back to sync
             await ws_manager.cancel_rag_task(client_id, task_id)
             logger.warning(f"Async RAG query timeout, falling back to sync for document {query_request.document_id}")
-        
+
         # Fall back to synchronous processing
         validate_document_access(query_request.document_id, controller)
-        
+
         index_status = controller.get_index_status(query_request.document_id)
         if not index_status.get("can_query", False):
             raise ErrorTemplates.index_not_ready(query_request.document_id)
-        
+
         start_time = time.time()
         response = controller.query_document(query_request.document_id, query_request.query)
         processing_time = (time.time() - start_time) * 1000
-        
+
         if response is None:
             raise SystemException(
                 message="RAG query processing failed",
                 error_type="external_service"
             )
-        
+
         return RAGQueryResponse(
             query=query_request.query,
             response=response,
@@ -426,7 +426,7 @@ async def hybrid_query_document(
             from_cache=False,
             processing_time_ms=processing_time,
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:

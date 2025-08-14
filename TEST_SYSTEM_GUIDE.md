@@ -74,7 +74,7 @@ tests/
 
 ```ini
 # 主要配置亮点
-addopts = 
+addopts =
     --tb=short
     --strict-markers
     --disable-warnings
@@ -145,7 +145,7 @@ python scripts/test_diagnostics.py --fix
 #### 1. "no tests ran" 问题
 
 **原因**: 测试发现配置问题
-**解决**: 
+**解决**:
 ```bash
 python scripts/test_diagnostics.py --fix
 ```
@@ -158,14 +158,14 @@ python scripts/test_diagnostics.py --fix
 #### 3. 测试超时
 
 **原因**: 某些测试执行时间过长
-**解决**: 
+**解决**:
 - 使用`--sequential`禁用并行执行
 - 检查数据库连接和外部依赖
 
 #### 4. 覆盖率失败
 
 **原因**: 覆盖率要求过高或代码未被测试覆盖
-**解决**: 
+**解决**:
 ```bash
 # 跳过覆盖率检查
 python scripts/test_runner.py --quick
@@ -205,7 +205,7 @@ python -m pytest tests/ --tb=short --maxfail=10 -n auto
 ### 当前覆盖率状况
 
 - **数据库连接层**: ~68% 覆盖率
-- **模型层**: ~28% 覆盖率  
+- **模型层**: ~28% 覆盖率
 - **整体项目**: ~6% 覆盖率（由于许多模块尚未被测试覆盖）
 
 ### 覆盖率改进建议
@@ -237,7 +237,7 @@ python -m pytest tests/ --tb=short --maxfail=10 -n auto
 - **特点**: 快速执行，独立运行，使用Mock
 - **位置**: `tests/unit/`
 
-#### Integration Tests (集成测试)  
+#### Integration Tests (集成测试)
 - **目标**: 模块间交互，数据流验证
 - **特点**: 涉及真实数据库，文件系统
 - **位置**: `tests/integration/`
@@ -253,7 +253,7 @@ python -m pytest tests/ --tb=short --maxfail=10 -n auto
 ```python
 # 测试类命名
 class TestDocumentRepository:
-    
+
 # 测试方法命名 - 描述性且具体
 def test_find_by_id_returns_document_when_exists(self):
 def test_find_by_id_returns_none_when_not_found(self):
@@ -265,10 +265,10 @@ def test_create_document_raises_error_with_invalid_data(self):
 def test_document_creation_success(self):
     # Arrange - 准备测试数据
     doc_data = {"title": "Test Doc", "content": "Test content"}
-    
+
     # Act - 执行被测试的操作
     result = document_service.create_document(doc_data)
-    
+
     # Assert - 验证结果
     assert result.id is not None
     assert result.title == "Test Doc"
@@ -297,7 +297,7 @@ def test_document_processing(sample_document):
 2. 修复被ignore的测试文件依赖问题
 3. 添加性能基准测试
 
-### 中期目标 (1个月)  
+### 中期目标 (1个月)
 1. 集成测试覆盖率达到60%+
 2. 添加API端点的完整测试覆盖
 3. 实现测试数据的自动生成和清理
@@ -312,7 +312,7 @@ def test_document_processing(sample_document):
 ## 💡 小贴士
 
 1. **日常开发使用**: `python scripts/test_runner.py --quick`
-2. **提交前验证**: `python scripts/test_runner.py --full` 
+2. **提交前验证**: `python scripts/test_runner.py --full`
 3. **问题诊断**: `python scripts/test_diagnostics.py`
 4. **性能调试**: 使用`--sequential --debug`参数
 5. **覆盖率分析**: 仅在需要详细报告时使用`--coverage`

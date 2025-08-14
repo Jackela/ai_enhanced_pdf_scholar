@@ -15,16 +15,16 @@ __all__ = [
     'page',
     'mobile_browser',
     'multi_browser',
-    
+
     # Data fixtures
     'test_pdf_file',
     'test_user',
     'test_documents',
-    
+
     # API fixtures
     'api_client',
     'authenticated_api',
-    
+
     # Database fixtures
     'clean_database',
     'seeded_database',

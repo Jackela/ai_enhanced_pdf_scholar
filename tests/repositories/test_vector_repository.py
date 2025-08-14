@@ -407,25 +407,25 @@ class TestVectorIndexRepository:
         valid_doc_id = self._create_test_document()
         valid_index = self._create_test_vector_index(document_id=valid_doc_id)
         valid_created = self.repository.create(valid_index)
-        
+
         # Create invalid index
         invalid_doc_id = self._create_test_document(title="Invalid Doc", file_path="/test/path/invalid_document.pdf")
         invalid_index = self._create_test_vector_index(document_id=invalid_doc_id)
         invalid_created = self.repository.create(invalid_index)
-        
+
         # Create a custom mock that checks the actual instance ID
         original_method = VectorIndexModel.is_index_available
-        
+
         def custom_mock(instance_self):
             if instance_self.id == valid_created.id:
                 return True  # Valid index
             else:
                 return False  # Invalid index
-        
+
         # Apply the mock
         with patch.object(VectorIndexModel, 'is_index_available', custom_mock):
             cleaned_count = self.repository.cleanup_invalid_indexes()
-            
+
         assert cleaned_count == 1
         # Verify valid index remains
         valid_found = self.repository.find_by_id(valid_created.id)

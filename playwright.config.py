@@ -17,7 +17,7 @@ BASE_URL = "http://localhost:8000"
 BROWSER_TIMEOUT = 30000  # 30 seconds
 DEFAULT_TIMEOUT = 5000   # 5 seconds
 
-# Browser configuration for different environments  
+# Browser configuration for different environments
 BROWSERS = {
     "chromium": {"headless": False, "slow_mo": 500},  # Visible for debugging
     "firefox": {"headless": True},   # Headless for CI
@@ -65,11 +65,11 @@ endobj
 
 xref
 0 5
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000206 00000 n 
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000206 00000 n
 trailer
 <<
 /Size 5
@@ -77,4 +77,4 @@ trailer
 >>
 startxref
 300
-%%EOF""" 
+%%EOF"""

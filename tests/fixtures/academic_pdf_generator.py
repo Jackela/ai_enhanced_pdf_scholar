@@ -1,6 +1,6 @@
 """
 Academic PDF Test Fixtures Generator
-Creates realistic academic paper fixtures for RAG testing with citations, references, 
+Creates realistic academic paper fixtures for RAG testing with citations, references,
 and structured content typical of research papers.
 """
 
@@ -34,13 +34,13 @@ class AcademicPDFGenerator:
         """Create a sample AI research paper with citations."""
         pdf_path = self.fixture_dir / filename
         doc = fitz.open()
-        
+
         # Page 1: Title, Abstract, Introduction
         page1 = doc.new_page()
-        
+
         title = "Deep Learning Approaches for Natural Language Processing: A Comprehensive Review"
         abstract = """Abstract
-        
+
 Natural language processing (NLP) has experienced remarkable advances with the introduction of deep learning techniques. This paper provides a comprehensive review of recent developments in deep learning for NLP, covering transformer architectures, attention mechanisms, and pre-trained language models. We analyze the performance improvements achieved through models like BERT, GPT, and T5, discussing their applications in tasks such as sentiment analysis, machine translation, and question answering. Our findings suggest that transformer-based models have revolutionized the field, achieving state-of-the-art results across multiple benchmarks.
 
 Keywords: natural language processing, deep learning, transformers, BERT, GPT, attention mechanism"""
@@ -61,7 +61,7 @@ Recent advances in transformer architecture have enabled the development of larg
 
         # Page 2: Methods and Results
         page2 = doc.new_page()
-        
+
         methods = """2. Methodology
 
 Our analysis encompasses a systematic review of transformer-based architectures published between 2017 and 2023. We evaluate models based on their performance on standard benchmarks including GLUE (Wang et al., 2018), SuperGLUE (Wang et al., 2019), and SQuAD (Rajpurkar et al., 2016).
@@ -84,7 +84,7 @@ The attention mechanism proves crucial for handling long-range dependencies in t
 
         # Page 3: Conclusion and References
         page3 = doc.new_page()
-        
+
         conclusion = """4. Conclusion
 
 This comprehensive review demonstrates the transformative impact of deep learning on natural language processing. Transformer-based architectures have established new performance benchmarks across diverse NLP tasks, fundamentally changing how we approach language understanding and generation.
@@ -125,12 +125,12 @@ Wang, A., Pruksachatkun, Y., Nangia, N., Singh, A., Michael, J., Hill, F., ... &
         """Create a sample computer vision research paper."""
         pdf_path = self.fixture_dir / filename
         doc = fitz.open()
-        
+
         # Page 1: Title and Abstract
         page1 = doc.new_page()
-        
+
         title = "Convolutional Neural Networks for Image Classification: Recent Advances and Applications"
-        
+
         content = f"""{title}
 
 Abstract
@@ -151,9 +151,9 @@ Recent work on neural architecture search has automated the design process, lead
 
         page1.insert_text((50, 50), content, fontsize=10, color=(0, 0, 0))
 
-        # Page 2: Results and References  
+        # Page 2: Results and References
         page2 = doc.new_page()
-        
+
         results_and_refs = """3. Experimental Results
 
 Our experiments on ImageNet-1K demonstrate significant improvements in accuracy and efficiency. EfficientNet-B7 achieves 84.3% top-1 accuracy while being 8.4x smaller than the best existing ConvNet (Tan & Le, 2019).
@@ -195,9 +195,9 @@ Tan, M., & Le, Q. (2019). EfficientNet: Rethinking model scaling for convolution
         """Create a sample data science research paper."""
         pdf_path = self.fixture_dir / filename
         doc = fitz.open()
-        
+
         page1 = doc.new_page()
-        
+
         content = """Machine Learning in Healthcare: Predictive Analytics for Patient Outcomes
 
 Abstract
@@ -210,7 +210,7 @@ The digitization of healthcare records has created unprecedented opportunities f
 
 This paper presents a comprehensive analysis of ML applications in healthcare, with particular focus on:
 - 30-day readmission prediction
-- Mortality risk assessment  
+- Mortality risk assessment
 - Personalized treatment recommendations
 
 2. Methodology
@@ -229,7 +229,7 @@ Performance metrics included AUROC, precision, recall, and calibration plots to 
 
         # Page 2
         page2 = doc.new_page()
-        
+
         results_refs = """3. Results
 
 Random Forest achieved the highest AUROC of 0.87 for readmission prediction, outperforming logistic regression (0.81) and neural networks (0.84). Feature importance analysis revealed that previous admission history and comorbidity burden were the strongest predictors.
@@ -266,11 +266,11 @@ Topol, E. J. (2019). High-performance medicine: the convergence of human and art
     def create_all_academic_fixtures(self) -> Dict[str, Path]:
         """Create all academic test fixtures."""
         print("Creating academic PDF test fixtures...")
-        
+
         self.create_ai_research_paper()
         self.create_computer_vision_paper()
         self.create_data_science_paper()
-        
+
         print(f"Created {len(self.fixtures)} academic PDF fixtures in {self.fixture_dir}")
         return self.fixtures.copy()
 

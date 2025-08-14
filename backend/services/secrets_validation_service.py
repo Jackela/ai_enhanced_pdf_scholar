@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 
 from ..core.secrets_vault import (
-    ProductionSecretsManager, 
+    ProductionSecretsManager,
     validate_prod_secrets,
     validate_secret_strength,
     calculate_entropy,
@@ -87,7 +87,7 @@ class SecretValidationService:
     Advanced secrets validation service with compliance checking,
     automated monitoring, and remediation recommendations.
     """
-    
+
     def __init__(self, secrets_manager: Optional[ProductionSecretsManager] = None):
         """Initialize the validation service."""
         self.secrets_manager = secrets_manager or ProductionSecretsManager()
@@ -95,11 +95,11 @@ class SecretValidationService:
         self.compliance_mappings = self._initialize_compliance_mappings()
         self.validation_cache: Dict[str, Tuple[datetime, SecretValidationReport]] = {}
         self.cache_ttl_minutes = 30
-        
+
     def _initialize_validation_rules(self) -> Dict[str, ValidationRule]:
         """Initialize comprehensive validation rules."""
         rules = {}
-        
+
         # Strength validation rules
         rules['minimum_length'] = ValidationRule(
             name="minimum_length",
@@ -134,7 +134,7 @@ class SecretValidationService:
                 }
             }
         )
-        
+
         rules['entropy_threshold'] = ValidationRule(
             name="entropy_threshold",
             description="Ensure sufficient entropy in secret values",
@@ -150,7 +150,7 @@ class SecretValidationService:
                 'development': {'min_entropy': 32}
             }
         )
-        
+
         rules['no_weak_patterns'] = ValidationRule(
             name="no_weak_patterns",
             description="Detect and reject common weak password patterns",
@@ -165,7 +165,7 @@ class SecretValidationService:
                 'keyboard_patterns': True
             }
         )
-        
+
         rules['character_diversity'] = ValidationRule(
             name="character_diversity",
             description="Enforce character complexity requirements",
@@ -182,7 +182,7 @@ class SecretValidationService:
                 'min_character_classes': 3
             }
         )
-        
+
         rules['no_dictionary_words'] = ValidationRule(
             name="no_dictionary_words",
             description="Prevent use of common dictionary words",
@@ -194,7 +194,7 @@ class SecretValidationService:
                 'max_dictionary_ratio': 0.5
             }
         )
-        
+
         rules['rotation_age_check'] = ValidationRule(
             name="rotation_age_check",
             description="Check if secrets need rotation based on age",
@@ -228,7 +228,7 @@ class SecretValidationService:
                 }
             }
         )
-        
+
         rules['access_frequency_check'] = ValidationRule(
             name="access_frequency_check",
             description="Monitor secret access patterns for anomalies",
@@ -243,7 +243,7 @@ class SecretValidationService:
                 'unusual_hour_threshold': 3  # accesses between midnight and 6 AM
             }
         )
-        
+
         rules['encryption_compliance'] = ValidationRule(
             name="encryption_compliance",
             description="Verify encryption standards compliance",
@@ -260,7 +260,7 @@ class SecretValidationService:
                 'require_authenticated_encryption': True
             }
         )
-        
+
         rules['exposure_check'] = ValidationRule(
             name="exposure_check",
             description="Check for potential secret exposure",
@@ -277,9 +277,9 @@ class SecretValidationService:
                 'check_version_control': True
             }
         )
-        
+
         return rules
-    
+
     def _initialize_compliance_mappings(self) -> Dict[ComplianceStandard, Dict[str, Any]]:
         """Initialize compliance standard mappings."""
         return {
@@ -319,7 +319,7 @@ class SecretValidationService:
                 ]
             }
         }
-    
+
     async def validate_secret(
         self,
         secret_name: str,
@@ -329,13 +329,13 @@ class SecretValidationService:
     ) -> SecretValidationReport:
         """
         Validate a single secret against all applicable rules.
-        
+
         Args:
             secret_name: Name of the secret
             secret_value: Secret value to validate
             environment: Environment context
             compliance_standards: Specific standards to validate against
-        
+
         Returns:
             Comprehensive validation report
         """
@@ -345,47 +345,47 @@ class SecretValidationService:
             cached_time, cached_report = self.validation_cache[cache_key]
             if datetime.utcnow() - cached_time < timedelta(minutes=self.cache_ttl_minutes):
                 return cached_report
-        
+
         report = SecretValidationReport(
             secret_name=secret_name,
             environment=environment,
             timestamp=datetime.utcnow(),
             overall_status="pass"
         )
-        
+
         # Determine applicable compliance standards
         if compliance_standards is None:
             compliance_standards = self._get_environment_compliance_standards(environment)
-        
+
         # Run validation rules
         for rule_name, rule in self.validation_rules.items():
             if not rule.enabled:
                 continue
-            
+
             # Check if rule applies to compliance standards
             if compliance_standards and not any(
                 std in rule.compliance_standards for std in compliance_standards
             ):
                 continue
-            
+
             result = await self._execute_validation_rule(
                 rule, secret_name, secret_value, environment
             )
             report.validation_results.append(result)
-            
+
             # Update overall status
             if not result.passed:
                 if result.severity in [ValidationSeverity.CRITICAL, ValidationSeverity.HIGH]:
                     report.overall_status = "fail"
                 elif report.overall_status == "pass":
                     report.overall_status = "warning"
-        
+
         # Calculate compliance status
         for standard in compliance_standards:
             report.compliance_status[standard] = self._calculate_compliance_status(
                 report.validation_results, standard
             )
-        
+
         # Generate metadata
         report.metadata = {
             'secret_length': len(secret_value),
@@ -395,12 +395,12 @@ class SecretValidationService:
             'environment': environment,
             'compliance_standards': [s.value for s in compliance_standards]
         }
-        
+
         # Cache the report
         self.validation_cache[cache_key] = (datetime.utcnow(), report)
-        
+
         return report
-    
+
     async def validate_environment_secrets(
         self,
         secrets_dict: Dict[str, str],
@@ -409,23 +409,23 @@ class SecretValidationService:
     ) -> Dict[str, SecretValidationReport]:
         """
         Validate all secrets in an environment.
-        
+
         Args:
             secrets_dict: Dictionary of secret names and values
             environment: Environment name
             compliance_standards: Compliance standards to validate against
-        
+
         Returns:
             Dictionary of validation reports by secret name
         """
         validation_tasks = []
-        
+
         for secret_name, secret_value in secrets_dict.items():
             task = self.validate_secret(
                 secret_name, secret_value, environment, compliance_standards
             )
             validation_tasks.append((secret_name, task))
-        
+
         results = {}
         for secret_name, task in validation_tasks:
             try:
@@ -447,9 +447,9 @@ class SecretValidationService:
                         )
                     ]
                 )
-        
+
         return results
-    
+
     async def _execute_validation_rule(
         self,
         rule: ValidationRule,
@@ -492,7 +492,7 @@ class SecretValidationService:
                 severity=ValidationSeverity.CRITICAL,
                 message=f"Rule execution failed: {str(e)}"
             )
-    
+
     def _validate_minimum_length(
         self,
         rule: ValidationRule,
@@ -503,10 +503,10 @@ class SecretValidationService:
         """Validate minimum length requirement."""
         env_params = rule.custom_params.get(environment, rule.custom_params.get('production', {}))
         min_length = env_params.get(secret_name, env_params.get('default', 12))
-        
+
         actual_length = len(secret_value)
         passed = actual_length >= min_length
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed,
@@ -520,7 +520,7 @@ class SecretValidationService:
             remediation=f"Increase secret length to at least {min_length} characters" if not passed else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     def _validate_entropy_threshold(
         self,
         rule: ValidationRule,
@@ -531,10 +531,10 @@ class SecretValidationService:
         """Validate entropy threshold."""
         env_params = rule.custom_params.get(environment, rule.custom_params.get('production', {}))
         min_entropy = env_params.get('min_entropy', 64)
-        
+
         actual_entropy = calculate_entropy(secret_value)
         passed = actual_entropy >= min_entropy
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed,
@@ -548,7 +548,7 @@ class SecretValidationService:
             remediation=f"Increase randomness to achieve at least {min_entropy} bits of entropy" if not passed else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     def _validate_no_weak_patterns(
         self,
         rule: ValidationRule,
@@ -559,28 +559,28 @@ class SecretValidationService:
         """Validate against weak patterns."""
         weak_patterns = rule.custom_params.get('weak_patterns', [])
         found_patterns = []
-        
+
         secret_lower = secret_value.lower()
-        
+
         # Check for weak patterns
         for pattern in weak_patterns:
             if pattern in secret_lower:
                 found_patterns.append(pattern)
-        
+
         # Check for sequential patterns if enabled
         if rule.custom_params.get('sequential_patterns', False):
             sequential = self._detect_sequential_patterns(secret_value)
             if sequential:
                 found_patterns.extend(sequential)
-        
+
         # Check for keyboard patterns if enabled
         if rule.custom_params.get('keyboard_patterns', False):
             keyboard = self._detect_keyboard_patterns(secret_value)
             if keyboard:
                 found_patterns.extend(keyboard)
-        
+
         passed = len(found_patterns) == 0
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed,
@@ -593,7 +593,7 @@ class SecretValidationService:
             remediation="Remove weak patterns and use more random characters" if not passed else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     def _validate_character_diversity(
         self,
         rule: ValidationRule,
@@ -606,12 +606,12 @@ class SecretValidationService:
         has_lower = any(c.islower() for c in secret_value)
         has_digits = any(c.isdigit() for c in secret_value)
         has_special = any(not c.isalnum() for c in secret_value)
-        
+
         character_classes = sum([has_upper, has_lower, has_digits, has_special])
         min_classes = rule.custom_params.get('min_character_classes', 3)
-        
+
         passed = character_classes >= min_classes
-        
+
         missing_classes = []
         if rule.custom_params.get('require_uppercase', True) and not has_upper:
             missing_classes.append('uppercase letters')
@@ -621,7 +621,7 @@ class SecretValidationService:
             missing_classes.append('digits')
         if rule.custom_params.get('require_special', True) and not has_special:
             missing_classes.append('special characters')
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed and len(missing_classes) == 0,
@@ -641,7 +641,7 @@ class SecretValidationService:
             remediation=f"Add {', '.join(missing_classes)}" if missing_classes else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     def _validate_no_dictionary_words(
         self,
         rule: ValidationRule,
@@ -657,18 +657,18 @@ class SecretValidationService:
             'access', 'secure', 'private', 'public', 'system', 'database',
             'server', 'application', 'service', 'default', 'test', 'demo'
         ]
-        
+
         secret_lower = secret_value.lower()
         found_words = [word for word in common_words if word in secret_lower]
-        
+
         # Calculate dictionary ratio
         total_chars = len(secret_value)
         dict_chars = sum(len(word) for word in found_words)
         dict_ratio = dict_chars / total_chars if total_chars > 0 else 0
-        
+
         max_ratio = rule.custom_params.get('max_dictionary_ratio', 0.5)
         passed = dict_ratio <= max_ratio and len(found_words) == 0
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed,
@@ -684,7 +684,7 @@ class SecretValidationService:
             remediation="Avoid common dictionary words and increase randomness" if not passed else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     async def _validate_rotation_age_check(
         self,
         rule: ValidationRule,
@@ -698,7 +698,7 @@ class SecretValidationService:
             metadata = self.secrets_manager.get_secret_metadata(secret_name) if self.secrets_manager else None
         except:
             metadata = None
-        
+
         if not metadata:
             return ValidationResult(
                 rule_name=rule.name,
@@ -709,18 +709,18 @@ class SecretValidationService:
                 remediation="Implement proper secret metadata tracking",
                 compliance_impact=rule.compliance_standards
             )
-        
+
         env_params = rule.custom_params.get(environment, rule.custom_params.get('production', {}))
         max_age_days = env_params.get(secret_name, env_params.get('default', 90))
-        
+
         # Calculate age
         if metadata.last_rotated:
             age_days = (datetime.utcnow() - metadata.last_rotated).days
         else:
             age_days = (datetime.utcnow() - metadata.created_at).days
-        
+
         passed = age_days <= max_age_days
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed,
@@ -735,7 +735,7 @@ class SecretValidationService:
             remediation=f"Rotate secret (overdue by {age_days - max_age_days} days)" if not passed else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     async def _validate_access_frequency_check(
         self,
         rule: ValidationRule,
@@ -746,7 +746,7 @@ class SecretValidationService:
         """Validate access frequency patterns."""
         # This would typically integrate with access logs
         # For now, return a placeholder implementation
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=True,
@@ -758,7 +758,7 @@ class SecretValidationService:
             },
             compliance_impact=rule.compliance_standards
         )
-    
+
     def _validate_encryption_compliance(
         self,
         rule: ValidationRule,
@@ -772,10 +772,10 @@ class SecretValidationService:
             algorithm = self.secrets_manager._encryption_algorithm.value
         else:
             algorithm = "unknown"
-        
+
         required_algorithms = rule.custom_params.get('required_algorithms', [])
         passed = algorithm in required_algorithms
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed,
@@ -789,7 +789,7 @@ class SecretValidationService:
             remediation=f"Use approved encryption algorithm: {required_algorithms}" if not passed else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     async def _validate_exposure_check(
         self,
         rule: ValidationRule,
@@ -799,14 +799,14 @@ class SecretValidationService:
     ) -> ValidationResult:
         """Check for potential secret exposure."""
         exposure_risks = []
-        
+
         # Check environment variables
         if rule.custom_params.get('check_environment_vars', True):
             env_vars = dict(os.environ)
             for var_name, var_value in env_vars.items():
                 if secret_value in str(var_value):
                     exposure_risks.append(f"Found in environment variable: {var_name}")
-        
+
         # Check common config file patterns (simplified)
         if rule.custom_params.get('check_config_files', True):
             config_paths = [
@@ -815,9 +815,9 @@ class SecretValidationService:
             ]
             # In production, this would actually scan files
             # For now, it's a placeholder
-        
+
         passed = len(exposure_risks) == 0
-        
+
         return ValidationResult(
             rule_name=rule.name,
             passed=passed,
@@ -833,52 +833,52 @@ class SecretValidationService:
             remediation="Review and remove exposed secrets immediately" if not passed else None,
             compliance_impact=rule.compliance_standards
         )
-    
+
     def _detect_sequential_patterns(self, text: str) -> List[str]:
         """Detect sequential character patterns."""
         patterns = []
         text_lower = text.lower()
-        
+
         # Check for alphabetical sequences
         alpha_sequences = ['abcd', 'efgh', 'ijkl', 'mnop', 'qrst', 'uvwx', 'wxyz']
         for seq in alpha_sequences:
             if seq in text_lower or seq[::-1] in text_lower:
                 patterns.append(f"alphabetical_sequence:{seq}")
-        
+
         # Check for numerical sequences
         for i in range(10 - 3):
             seq = ''.join(str(j) for j in range(i, i + 4))
             if seq in text or seq[::-1] in text:
                 patterns.append(f"numerical_sequence:{seq}")
-        
+
         return patterns
-    
+
     def _detect_keyboard_patterns(self, text: str) -> List[str]:
         """Detect keyboard pattern sequences."""
         patterns = []
-        
+
         # Common keyboard patterns
         keyboard_patterns = [
             'qwerty', 'asdf', 'zxcv', '1234', 'qwertyuiop',
             'asdfghjkl', 'zxcvbnm', '!@#$', 'qwer', 'asdf'
         ]
-        
+
         text_lower = text.lower()
         for pattern in keyboard_patterns:
             if pattern in text_lower:
                 patterns.append(f"keyboard_pattern:{pattern}")
-        
+
         return patterns
-    
+
     def _count_character_classes(self, text: str) -> int:
         """Count the number of character classes used."""
         has_upper = any(c.isupper() for c in text)
         has_lower = any(c.islower() for c in text)
         has_digits = any(c.isdigit() for c in text)
         has_special = any(not c.isalnum() for c in text)
-        
+
         return sum([has_upper, has_lower, has_digits, has_special])
-    
+
     def _get_environment_compliance_standards(self, environment: str) -> List[ComplianceStandard]:
         """Get applicable compliance standards for environment."""
         if environment == "production":
@@ -891,7 +891,7 @@ class SecretValidationService:
             return [ComplianceStandard.ISO_27001, ComplianceStandard.SOC2_TYPE2]
         else:
             return [ComplianceStandard.ISO_27001]
-    
+
     def _calculate_compliance_status(
         self,
         validation_results: List[ValidationResult],
@@ -900,15 +900,15 @@ class SecretValidationService:
         """Calculate compliance status for a standard."""
         standard_info = self.compliance_mappings.get(standard, {})
         required_rules = standard_info.get('required_rules', [])
-        
+
         relevant_results = [
             result for result in validation_results
             if result.rule_name in required_rules
         ]
-        
+
         if not relevant_results:
             return "not_applicable"
-        
+
         passed_results = [r for r in relevant_results if r.passed]
         failed_critical = [
             r for r in relevant_results
@@ -918,7 +918,7 @@ class SecretValidationService:
             r for r in relevant_results
             if not r.passed and r.severity == ValidationSeverity.HIGH
         ]
-        
+
         if failed_critical:
             return "non_compliant"
         elif failed_high:
@@ -927,7 +927,7 @@ class SecretValidationService:
             return "compliant"
         else:
             return "partially_compliant"
-    
+
     def generate_compliance_report(
         self,
         validation_reports: Dict[str, SecretValidationReport],
@@ -937,7 +937,7 @@ class SecretValidationService:
         """Generate comprehensive compliance report."""
         if compliance_standards is None:
             compliance_standards = self._get_environment_compliance_standards(environment)
-        
+
         report = {
             'timestamp': datetime.utcnow().isoformat(),
             'environment': environment,
@@ -953,7 +953,7 @@ class SecretValidationService:
             'critical_issues': [],
             'detailed_results': validation_reports
         }
-        
+
         # Analyze compliance by standard
         for standard in compliance_standards:
             standard_results = {
@@ -962,11 +962,11 @@ class SecretValidationService:
                 'non_compliant': 0,
                 'not_applicable': 0
             }
-            
+
             for secret_name, validation_report in validation_reports.items():
                 status = validation_report.compliance_status.get(standard, 'not_applicable')
                 standard_results[status] = standard_results.get(status, 0) + 1
-            
+
             report['standards_compliance'][standard.value] = {
                 'name': self.compliance_mappings[standard]['name'],
                 'overall_status': self._calculate_overall_compliance_status(standard_results),
@@ -976,18 +976,18 @@ class SecretValidationService:
                     if validation_reports else 0
                 )
             }
-        
+
         # Generate recommendations
         all_failed_results = []
         for validation_report in validation_reports.values():
             all_failed_results.extend([
                 r for r in validation_report.validation_results if not r.passed
             ])
-        
+
         # Group recommendations by severity
         critical_issues = [r for r in all_failed_results if r.severity == ValidationSeverity.CRITICAL]
         high_issues = [r for r in all_failed_results if r.severity == ValidationSeverity.HIGH]
-        
+
         report['critical_issues'] = [
             {
                 'secret_name': result.rule_name,  # This would be better tracked
@@ -997,7 +997,7 @@ class SecretValidationService:
             }
             for result in critical_issues
         ]
-        
+
         # Generate general recommendations
         if critical_issues:
             report['recommendations'].append(
@@ -1007,18 +1007,18 @@ class SecretValidationService:
             report['recommendations'].append(
                 "HIGH: Review and remediate high-severity issues within 24 hours"
             )
-        
+
         return report
-    
+
     def _calculate_overall_compliance_status(self, results: Dict[str, int]) -> str:
         """Calculate overall compliance status from results."""
         total = sum(results.values())
         if total == 0:
             return "not_applicable"
-        
+
         compliant_ratio = results['compliant'] / total
         non_compliant_ratio = results['non_compliant'] / total
-        
+
         if compliant_ratio >= 0.9:
             return "compliant"
         elif non_compliant_ratio >= 0.1:

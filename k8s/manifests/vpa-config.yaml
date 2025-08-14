@@ -30,16 +30,16 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: ai-pdf-scholar-backend
-  
+
   # VPA Policy Configuration
   updatePolicy:
     # Auto mode: VPA will automatically apply resource recommendations
     # Options: Off, Initial, Auto
     updateMode: "Auto"
-    
+
     # Minimum time between applying updates (prevents thrashing)
     minReplicas: 2
-  
+
   # Resource Policy
   resourcePolicy:
     containerPolicies:
@@ -48,16 +48,16 @@ spec:
       minAllowed:
         memory: "512Mi"   # Minimum for FastAPI + ML models
         cpu: "250m"       # Quarter CPU minimum
-      
+
       # Maximum resources (cost control)
       maxAllowed:
         memory: "4Gi"     # Maximum memory per pod
         cpu: "2000m"      # Maximum 2 CPU cores per pod
-      
+
       # Control both requests and limits
       controlledResources: ["cpu", "memory"]
       controlledValues: RequestsAndLimits
-      
+
       # Resource scaling factor (how aggressively to recommend changes)
       mode: Auto
 
@@ -76,10 +76,10 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: ai-pdf-scholar-frontend
-  
+
   updatePolicy:
     updateMode: "Auto"
-  
+
   resourcePolicy:
     containerPolicies:
     - containerName: frontend
@@ -108,12 +108,12 @@ spec:
     apiVersion: apps/v1
     kind: StatefulSet
     name: postgresql
-  
+
   updatePolicy:
     updateMode: "Auto"
     # For StatefulSets, be more conservative with updates
     minReplicas: 1
-  
+
   resourcePolicy:
     containerPolicies:
     - containerName: postgresql
@@ -142,10 +142,10 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: redis-cache
-  
+
   updatePolicy:
     updateMode: "Auto"
-  
+
   resourcePolicy:
     containerPolicies:
     - containerName: redis
@@ -174,11 +174,11 @@ spec:
     apiVersion: apps/v1
     kind: StatefulSet
     name: prometheus
-  
+
   updatePolicy:
     # Use Initial mode for Prometheus to avoid disruptions
     updateMode: "Initial"
-  
+
   resourcePolicy:
     containerPolicies:
     - containerName: prometheus
@@ -215,7 +215,7 @@ data:
       minBumpUp: 0.1  # 10% minimum increase
       # Maximum memory bump (prevent runaway recommendations)
       maxBumpUp: 1.0  # 100% maximum increase
-    
+
     # CPU recommendation settings
     cpu:
       # AI workloads can be CPU-intensive during inference
@@ -223,13 +223,13 @@ data:
       confidenceMultiplier: 1.0
       minBumpUp: 0.1
       maxBumpUp: 1.0
-    
+
     # Recommendation frequency
     checkpointsPerDay: 24  # Update recommendations hourly
-    
+
     # History length for recommendations
     historyLength: "7d"    # Use 7 days of historical data
-    
+
     # Percentile for resource usage analysis
     targetCPUPercentile: 0.9     # 90th percentile for CPU
     targetMemoryPercentile: 0.9  # 90th percentile for Memory
@@ -259,12 +259,12 @@ webhooks:
     apiGroups: ["apps"]
     apiVersions: ["v1"]
     resources: ["deployments", "statefulsets", "daemonsets"]
-  
+
   # Only apply VPA to our namespace
   namespaceSelector:
     matchLabels:
       name: ai-pdf-scholar
-  
+
   # Fail policy - if VPA admission controller is down, still allow pods
   failurePolicy: Ignore
   admissionReviewVersions: ["v1", "v1beta1"]

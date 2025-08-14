@@ -23,7 +23,7 @@ caching:
   pip_cache: "~/.cache/pip"
   build_cache: ".build-cache"
   dependency_cache_ttl: "24h"
-  
+
 # Performance Monitoring
 monitoring:
   enable_profiling: false
@@ -46,7 +46,7 @@ development:
   minimal_dependencies: true
   cache_imports: true
 
-# Production Performance  
+# Production Performance
 production:
   preload_models: false       # Don't preload AI models
   optimize_memory: true       # Memory optimization

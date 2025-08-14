@@ -131,7 +131,7 @@ pytest tests_e2e -m "critical and not slow"
 # Basic page fixture
 def test_example(page):
     page.goto("http://localhost:8000")
-    
+
 # Multi-browser testing
 @pytest.mark.parametrize('browser_config', ['desktop_chrome', 'mobile_iphone'])
 def test_responsive(browser_context):
@@ -148,11 +148,11 @@ def test_with_helper(page, page_helper):
 # Test PDF files
 def test_upload(test_pdf_files):
     upload_file(test_pdf_files["standard"])
-    
+
 # User data
 def test_auth(test_user_data):
     login(test_user_data["admin"])
-    
+
 # Security payloads
 def test_security(security_test_payloads):
     test_xss(security_test_payloads["xss"])
@@ -163,7 +163,7 @@ def test_security(security_test_payloads):
 # API client
 def test_api(api_client):
     response = api_client.get("/api/documents")
-    
+
 # Authenticated client
 def test_protected(authenticated_api_client):
     response = authenticated_api_client.post("/api/documents", json=data)
@@ -174,7 +174,7 @@ def test_protected(authenticated_api_client):
 # Clean database
 def test_with_db(test_database):
     test_database.seed_users(10)
-    
+
 # Pre-seeded database
 def test_with_data(seeded_database):
     stats = seeded_database.get_statistics()
@@ -249,12 +249,12 @@ The workflow file `.github/workflows/e2e-tests.yml` runs:
 1. **Quick Validation** (PR) - 10 min
    - Critical path tests
    - Basic security checks
-   
+
 2. **Standard Testing** (Push) - 20 min
    - Smoke tests
    - Core workflows
    - Cross-browser basics
-   
+
 3. **Comprehensive** (Nightly) - 60 min
    - All test suites
    - Performance benchmarks
@@ -326,7 +326,7 @@ from fixtures import *
 
 class TestFeatureName:
     """Test suite for specific feature."""
-    
+
     @pytest.mark.e2e
     @pytest.mark.smoke  # Add appropriate markers
     def test_feature_scenario(
@@ -339,13 +339,13 @@ class TestFeatureName:
         """Test specific scenario."""
         # Arrange
         page.goto("/feature")
-        
+
         # Act
         page.click('[data-testid="action-button"]')
-        
+
         # Assert
         expect(page.locator('[data-testid="result"]')).to_be_visible()
-        
+
         # Cleanup (if needed)
         api_client.delete("/api/resource/123")
 ```
@@ -413,6 +413,6 @@ When adding new E2E tests:
 
 ---
 
-**Last Updated**: 2025-01-20  
-**Maintainer**: AI Enhanced PDF Scholar Team  
+**Last Updated**: 2025-01-20
+**Maintainer**: AI Enhanced PDF Scholar Team
 **Version**: 2.0.0

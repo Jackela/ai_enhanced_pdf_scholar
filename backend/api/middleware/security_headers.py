@@ -78,12 +78,12 @@ class CSPSource:
     FILESYSTEM = "filesystem:"
     HTTPS = "https:"
     WSS = "wss:"
-    
+
     @staticmethod
     def nonce(value: str) -> str:
         """Generate nonce source."""
         return f"'nonce-{value}'"
-    
+
     @staticmethod
     def sha256(hash_value: str) -> str:
         """Generate SHA256 hash source."""
@@ -92,7 +92,7 @@ class CSPSource:
 
 class SecurityHeadersConfig:
     """Configuration for security headers."""
-    
+
     def __init__(self, environment: Optional[Environment] = None):
         """Initialize security headers configuration."""
         self.environment = environment or self._detect_environment()
@@ -100,14 +100,14 @@ class SecurityHeadersConfig:
         self.csp_report_only = self.environment in [Environment.DEVELOPMENT, Environment.STAGING]
         self.strict_transport_security_enabled = self.environment in [Environment.STAGING, Environment.PRODUCTION]
         self.enable_reporting = self.environment != Environment.TESTING
-        
+
         # Load configuration from environment
         self._load_from_environment()
-    
+
     def _detect_environment(self) -> Environment:
         """Detect current environment from environment variables."""
         env_value = os.getenv("ENVIRONMENT", "development").lower()
-        
+
         env_mapping = {
             "dev": Environment.DEVELOPMENT,
             "development": Environment.DEVELOPMENT,
@@ -118,45 +118,45 @@ class SecurityHeadersConfig:
             "prod": Environment.PRODUCTION,
             "production": Environment.PRODUCTION,
         }
-        
+
         return env_mapping.get(env_value, Environment.DEVELOPMENT)
-    
+
     def _load_from_environment(self) -> None:
         """Load configuration from environment variables."""
         # CSP configuration
         self.csp_enabled = os.getenv("CSP_ENABLED", "true").lower() == "true"
         self.csp_report_uri = os.getenv("CSP_REPORT_URI", "/api/security/csp-report")
         self.csp_report_to_group = os.getenv("CSP_REPORT_TO_GROUP", "csp-endpoint")
-        
+
         # HSTS configuration
         self.hsts_max_age = int(os.getenv("HSTS_MAX_AGE", "31536000"))  # 1 year default
         self.hsts_include_subdomains = os.getenv("HSTS_INCLUDE_SUBDOMAINS", "true").lower() == "true"
         self.hsts_preload = os.getenv("HSTS_PRELOAD", "false").lower() == "true"
-        
+
         # Frame options
         self.frame_options = os.getenv("X_FRAME_OPTIONS", "DENY")
-        
+
         # Referrer policy
         self.referrer_policy = os.getenv("REFERRER_POLICY", "strict-origin-when-cross-origin")
-        
+
         # Permissions policy
         self.permissions_policy_enabled = os.getenv("PERMISSIONS_POLICY_ENABLED", "true").lower() == "true"
-        
+
         # Cookie security
         self.secure_cookies = self.environment in [Environment.STAGING, Environment.PRODUCTION]
         self.cookie_samesite = os.getenv("COOKIE_SAMESITE", "lax" if self.environment == Environment.DEVELOPMENT else "strict")
-        
+
         # Certificate transparency
         self.expect_ct_enabled = self.environment == Environment.PRODUCTION
         self.expect_ct_max_age = int(os.getenv("EXPECT_CT_MAX_AGE", "86400"))  # 24 hours
         self.expect_ct_enforce = os.getenv("EXPECT_CT_ENFORCE", "false").lower() == "true"
         self.expect_ct_report_uri = os.getenv("EXPECT_CT_REPORT_URI", "/api/security/ct-report")
-        
+
         # Cross-origin policies
         self.cross_origin_embedder_policy = os.getenv("COEP", "require-corp" if self.environment == Environment.PRODUCTION else "unsafe-none")
         self.cross_origin_opener_policy = os.getenv("COOP", "same-origin-allow-popups")
         self.cross_origin_resource_policy = os.getenv("CORP", "same-site")
-    
+
     def get_csp_policy(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
         """Get Content Security Policy configuration for current environment."""
         if self.environment == Environment.DEVELOPMENT:
@@ -167,7 +167,7 @@ class SecurityHeadersConfig:
             return self._get_staging_csp(nonce)
         else:  # PRODUCTION
             return self._get_production_csp(nonce)
-    
+
     def _get_development_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
         """Get CSP for development environment (relaxed for debugging)."""
         policy = {
@@ -210,12 +210,12 @@ class SecurityHeadersConfig:
             CSPDirective.BASE_URI: [CSPSource.SELF],
             CSPDirective.FORM_ACTION: [CSPSource.SELF],
         }
-        
+
         if self.enable_reporting:
             policy[CSPDirective.REPORT_URI] = [self.csp_report_uri]
-        
+
         return policy
-    
+
     def _get_testing_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
         """Get CSP for testing environment."""
         policy = {
@@ -235,9 +235,9 @@ class SecurityHeadersConfig:
             CSPDirective.BASE_URI: [CSPSource.SELF],
             CSPDirective.FORM_ACTION: [CSPSource.SELF],
         }
-        
+
         return policy
-    
+
     def _get_staging_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
         """Get CSP for staging environment (production-like but with reporting)."""
         policy = {
@@ -276,18 +276,18 @@ class SecurityHeadersConfig:
             CSPDirective.WORKER_SRC: [CSPSource.SELF],
             CSPDirective.UPGRADE_INSECURE_REQUESTS: [""],
         }
-        
+
         if self.enable_reporting:
             policy[CSPDirective.REPORT_URI] = [self.csp_report_uri]
             policy[CSPDirective.REPORT_TO] = [self.csp_report_to_group]
-        
+
         # Remove empty nonce if not provided
         if nonce is None:
             policy[CSPDirective.SCRIPT_SRC] = [s for s in policy[CSPDirective.SCRIPT_SRC] if s]
             policy[CSPDirective.STYLE_SRC] = [s for s in policy[CSPDirective.STYLE_SRC] if s]
-        
+
         return policy
-    
+
     def _get_production_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
         """Get CSP for production environment (maximum security)."""
         policy = {
@@ -328,23 +328,23 @@ class SecurityHeadersConfig:
             CSPDirective.UPGRADE_INSECURE_REQUESTS: [""],
             CSPDirective.BLOCK_ALL_MIXED_CONTENT: [""],
         }
-        
+
         # Add Trusted Types for XSS protection
         if os.getenv("CSP_TRUSTED_TYPES", "false").lower() == "true":
             policy[CSPDirective.REQUIRE_TRUSTED_TYPES] = ["'script'"]
             policy[CSPDirective.TRUSTED_TYPES] = ["default", "dompurify"]
-        
+
         if self.enable_reporting:
             policy[CSPDirective.REPORT_URI] = [self.csp_report_uri]
             policy[CSPDirective.REPORT_TO] = [self.csp_report_to_group]
-        
+
         # Remove empty nonce if not provided
         if nonce is None:
             policy[CSPDirective.SCRIPT_SRC] = [s for s in policy[CSPDirective.SCRIPT_SRC] if s]
             policy[CSPDirective.STYLE_SRC] = [s for s in policy[CSPDirective.STYLE_SRC] if s]
-        
+
         return policy
-    
+
     def get_permissions_policy(self) -> Dict[str, List[str]]:
         """Get Permissions Policy (Feature Policy) configuration."""
         if self.environment == Environment.DEVELOPMENT:
@@ -403,16 +403,16 @@ class SecurityHeadersConfig:
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add comprehensive security headers to responses."""
-    
+
     def __init__(self, app: ASGIApp, config: Optional[SecurityHeadersConfig] = None):
         """Initialize security headers middleware."""
         super().__init__(app)
         self.config = config or SecurityHeadersConfig()
         self._csp_violations: List[Dict[str, Any]] = []
         self._ct_violations: List[Dict[str, Any]] = []
-        
+
         logger.info(f"Security headers middleware initialized for {self.config.environment.value} environment")
-    
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Add security headers to response."""
         # Generate nonce for this request if enabled
@@ -421,73 +421,73 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             nonce = self._generate_nonce()
             # Store nonce in request state for use in templates
             request.state.csp_nonce = nonce
-        
+
         # Process the request
         response = await call_next(request)
-        
+
         # Add security headers
         self._add_security_headers(response, request, nonce)
-        
+
         return response
-    
+
     def _generate_nonce(self) -> str:
         """Generate a cryptographically secure nonce."""
         return secrets.token_urlsafe(32)
-    
+
     def _add_security_headers(self, response: Response, request: Request, nonce: Optional[str] = None) -> None:
         """Add all security headers to the response."""
         # Content Security Policy
         if self.config.csp_enabled:
             self._add_csp_header(response, nonce)
-        
+
         # HTTP Strict Transport Security (HSTS)
         if self.config.strict_transport_security_enabled:
             self._add_hsts_header(response)
-        
+
         # X-Frame-Options
         response.headers["X-Frame-Options"] = self.config.frame_options
-        
+
         # X-Content-Type-Options
         response.headers["X-Content-Type-Options"] = "nosniff"
-        
+
         # X-XSS-Protection (legacy but still useful)
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        
+
         # Referrer-Policy
         response.headers["Referrer-Policy"] = self.config.referrer_policy
-        
+
         # Permissions-Policy (Feature-Policy)
         if self.config.permissions_policy_enabled:
             self._add_permissions_policy_header(response)
-        
+
         # Certificate Transparency
         if self.config.expect_ct_enabled:
             self._add_expect_ct_header(response)
-        
+
         # Cross-Origin policies
         self._add_cross_origin_headers(response)
-        
+
         # Report-To header for reporting API
         if self.config.enable_reporting:
             self._add_report_to_header(response)
-        
+
         # Clear-Site-Data for logout endpoints
         if request.url.path in ["/api/auth/logout", "/api/auth/signout"]:
             response.headers["Clear-Site-Data"] = '"cache", "cookies", "storage"'
-        
+
         # Security.txt support
         if request.url.path == "/.well-known/security.txt":
             self._add_security_txt_headers(response)
-        
+
         # Add custom security headers for API responses
         if request.url.path.startswith("/api/"):
             response.headers["X-API-Version"] = "2.0.0"
             response.headers["X-Request-ID"] = request.headers.get("X-Request-ID", self._generate_request_id())
-    
+
     def _add_csp_header(self, response: Response, nonce: Optional[str] = None) -> None:
         """Add Content Security Policy header."""
         policy = self.config.get_csp_policy(nonce)
-        
+
         # Build CSP string
         csp_parts = []
         for directive, sources in policy.items():
@@ -497,31 +497,31 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     csp_parts.append(f"{directive.value} {sources_str}")
                 else:
                     csp_parts.append(directive.value)
-        
+
         csp_string = "; ".join(csp_parts)
-        
+
         # Use Report-Only mode if configured
         if self.config.csp_report_only:
             response.headers["Content-Security-Policy-Report-Only"] = csp_string
         else:
             response.headers["Content-Security-Policy"] = csp_string
-    
+
     def _add_hsts_header(self, response: Response) -> None:
         """Add HTTP Strict Transport Security header."""
         hsts_parts = [f"max-age={self.config.hsts_max_age}"]
-        
+
         if self.config.hsts_include_subdomains:
             hsts_parts.append("includeSubDomains")
-        
+
         if self.config.hsts_preload:
             hsts_parts.append("preload")
-        
+
         response.headers["Strict-Transport-Security"] = "; ".join(hsts_parts)
-    
+
     def _add_permissions_policy_header(self, response: Response) -> None:
         """Add Permissions-Policy header."""
         policy = self.config.get_permissions_policy()
-        
+
         policy_parts = []
         for feature, allowlist in policy.items():
             if not allowlist:
@@ -531,27 +531,27 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             else:
                 origins = " ".join(f'"{origin}"' if origin != "self" else origin for origin in allowlist)
                 policy_parts.append(f"{feature}=({origins})")
-        
+
         response.headers["Permissions-Policy"] = ", ".join(policy_parts)
-    
+
     def _add_expect_ct_header(self, response: Response) -> None:
         """Add Expect-CT header for Certificate Transparency."""
         ct_parts = [f"max-age={self.config.expect_ct_max_age}"]
-        
+
         if self.config.expect_ct_enforce:
             ct_parts.append("enforce")
-        
+
         if self.config.expect_ct_report_uri:
             ct_parts.append(f'report-uri="{self.config.expect_ct_report_uri}"')
-        
+
         response.headers["Expect-CT"] = ", ".join(ct_parts)
-    
+
     def _add_cross_origin_headers(self, response: Response) -> None:
         """Add Cross-Origin headers."""
         response.headers["Cross-Origin-Embedder-Policy"] = self.config.cross_origin_embedder_policy
         response.headers["Cross-Origin-Opener-Policy"] = self.config.cross_origin_opener_policy
         response.headers["Cross-Origin-Resource-Policy"] = self.config.cross_origin_resource_policy
-    
+
     def _add_report_to_header(self, response: Response) -> None:
         """Add Report-To header for Reporting API."""
         report_endpoints = [
@@ -562,7 +562,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "include_subdomains": True,
             }
         ]
-        
+
         if self.config.expect_ct_enabled and self.config.expect_ct_report_uri:
             report_endpoints.append({
                 "group": "ct-endpoint",
@@ -570,33 +570,33 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "endpoints": [{"url": self.config.expect_ct_report_uri}],
                 "include_subdomains": True,
             })
-        
+
         response.headers["Report-To"] = json.dumps(report_endpoints)
-    
+
     def _add_security_txt_headers(self, response: Response) -> None:
         """Add headers for security.txt responses."""
         response.headers["Content-Type"] = "text/plain; charset=utf-8"
         response.headers["Cache-Control"] = "max-age=86400"  # Cache for 24 hours
-    
+
     def _generate_request_id(self) -> str:
         """Generate a unique request ID."""
         return secrets.token_hex(16)
-    
+
     def _set_secure_cookie_attributes(self, response: Response) -> None:
         """Set secure attributes for cookies."""
         if not self.config.secure_cookies:
             return
-        
+
         # Parse and modify Set-Cookie headers
         set_cookie_headers = response.headers.getlist("set-cookie")
         if not set_cookie_headers:
             return
-        
+
         new_cookies = []
         for cookie_header in set_cookie_headers:
             cookie_parts = cookie_header.split(";")
             cookie_name_value = cookie_parts[0]
-            
+
             # Parse existing attributes
             attributes = {}
             for part in cookie_parts[1:]:
@@ -605,12 +605,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     attributes[key.lower()] = value
                 else:
                     attributes[part.strip().lower()] = True
-            
+
             # Add security attributes
             attributes["secure"] = True
             attributes["httponly"] = True
             attributes["samesite"] = self.config.cookie_samesite
-            
+
             # Use cookie prefixes for additional security
             if cookie_name_value.startswith("session") or cookie_name_value.startswith("auth"):
                 if "domain" not in attributes:
@@ -621,7 +621,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 else:
                     # Use __Secure- prefix (requires Secure)
                     cookie_name_value = f"__Secure-{cookie_name_value}"
-            
+
             # Rebuild cookie header
             new_cookie = cookie_name_value
             for key, value in attributes.items():
@@ -629,9 +629,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                     new_cookie += f"; {key.capitalize()}"
                 else:
                     new_cookie += f"; {key.capitalize()}={value}"
-            
+
             new_cookies.append(new_cookie)
-        
+
         # Replace Set-Cookie headers
         del response.headers["set-cookie"]
         for cookie in new_cookies:
@@ -640,52 +640,52 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 class CSPViolationReport:
     """CSP violation report handler."""
-    
+
     def __init__(self, max_reports: int = 1000):
         """Initialize CSP violation report handler."""
         self.max_reports = max_reports
         self.reports: List[Dict[str, Any]] = []
         self.report_counts: Dict[str, int] = {}
-    
+
     def add_report(self, report: Dict[str, Any]) -> None:
         """Add a CSP violation report."""
         # Extract key fields for deduplication
         blocked_uri = report.get("blocked-uri", "")
         violated_directive = report.get("violated-directive", "")
         document_uri = report.get("document-uri", "")
-        
+
         # Create a unique key for this type of violation
         violation_key = f"{document_uri}|{violated_directive}|{blocked_uri}"
-        
+
         # Track violation counts
         self.report_counts[violation_key] = self.report_counts.get(violation_key, 0) + 1
-        
+
         # Store report with metadata
         report["timestamp"] = datetime.utcnow().isoformat()
         report["count"] = self.report_counts[violation_key]
-        
+
         # Add to reports list (with size limit)
         self.reports.append(report)
         if len(self.reports) > self.max_reports:
             self.reports.pop(0)
-        
+
         # Log the violation
         security_logger.warning(
             f"CSP Violation: {violated_directive} blocked {blocked_uri} on {document_uri}"
         )
-    
+
     def get_summary(self) -> Dict[str, Any]:
         """Get summary of CSP violations."""
         if not self.reports:
             return {"total_reports": 0, "unique_violations": 0, "top_violations": []}
-        
+
         # Sort violations by count
         sorted_violations = sorted(
             self.report_counts.items(),
             key=lambda x: x[1],
             reverse=True
         )
-        
+
         # Get top violations
         top_violations = []
         for violation_key, count in sorted_violations[:10]:
@@ -696,7 +696,7 @@ class CSPViolationReport:
                 "blocked_uri": blocked_uri,
                 "count": count,
             })
-        
+
         return {
             "total_reports": len(self.reports),
             "unique_violations": len(self.report_counts),
@@ -715,13 +715,13 @@ async def handle_csp_report(request: Request) -> JSONResponse:
         # Parse the CSP report
         body = await request.body()
         report_data = json.loads(body)
-        
+
         # Extract the CSP report (may be nested)
         csp_report = report_data.get("csp-report", report_data)
-        
+
         # Add to violation handler
         csp_violation_handler.add_report(csp_report)
-        
+
         return JSONResponse(
             status_code=status.HTTP_204_NO_CONTENT,
             content=None
@@ -740,10 +740,10 @@ async def handle_ct_report(request: Request) -> JSONResponse:
         # Parse the CT report
         body = await request.body()
         report_data = json.loads(body)
-        
+
         # Log the CT violation
         security_logger.warning(f"CT Violation: {report_data}")
-        
+
         return JSONResponse(
             status_code=status.HTTP_204_NO_CONTENT,
             content=None
@@ -759,7 +759,7 @@ async def handle_ct_report(request: Request) -> JSONResponse:
 def create_security_txt_content() -> str:
     """Create content for security.txt file."""
     expires = (datetime.utcnow() + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    
+
     return f"""# Security Policy
 # This security.txt file is compliant with RFC 9116
 
@@ -782,19 +782,19 @@ def setup_security_headers(app: FastAPI, config: Optional[SecurityHeadersConfig]
     # Add security headers middleware
     config = config or SecurityHeadersConfig()
     app.add_middleware(SecurityHeadersMiddleware, config=config)
-    
+
     # Add CSP report endpoint
     @app.post("/api/security/csp-report", include_in_schema=False)
     async def csp_report_endpoint(request: Request) -> JSONResponse:
         """Endpoint to receive CSP violation reports."""
         return await handle_csp_report(request)
-    
+
     # Add CT report endpoint
     @app.post("/api/security/ct-report", include_in_schema=False)
     async def ct_report_endpoint(request: Request) -> JSONResponse:
         """Endpoint to receive Certificate Transparency reports."""
         return await handle_ct_report(request)
-    
+
     # Add CSP violations summary endpoint (admin only)
     @app.get("/api/admin/security/csp-violations", include_in_schema=False)
     async def get_csp_violations(
@@ -810,7 +810,7 @@ def setup_security_headers(app: FastAPI, config: Optional[SecurityHeadersConfig]
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to retrieve CSP violations summary"
             )
-    
+
     # Add security.txt endpoint
     @app.get("/.well-known/security.txt", include_in_schema=False)
     async def security_txt() -> Response:
@@ -823,7 +823,7 @@ def setup_security_headers(app: FastAPI, config: Optional[SecurityHeadersConfig]
                 "Cache-Control": "max-age=86400",
             }
         )
-    
+
     logger.info(f"Security headers configured for {config.environment.value} environment")
     if config.csp_enabled:
         logger.info(f"CSP {'Report-Only' if config.csp_report_only else 'Enforcing'} mode enabled")

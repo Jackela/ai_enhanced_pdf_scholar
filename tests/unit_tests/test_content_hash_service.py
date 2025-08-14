@@ -43,10 +43,10 @@ class TestContentHashService:
     def test_calculate_content_hash_consistent(self, hash_service):
         """Test content hash generation is consistent."""
         content = "test content"
-        
+
         hash1 = hash_service.calculate_content_hash(content)
         hash2 = hash_service.calculate_content_hash(content)
-        
+
         assert hash1 == hash2
         assert isinstance(hash1, str)
         assert len(hash1) > 0
@@ -55,10 +55,10 @@ class TestContentHashService:
         """Test different content produces different hashes."""
         content1 = "test content 1"
         content2 = "test content 2"
-        
+
         hash1 = hash_service.calculate_content_hash(content1)
         hash2 = hash_service.calculate_content_hash(content2)
-        
+
         assert hash1 != hash2
 
     def test_calculate_content_hash_empty_string(self, hash_service):
@@ -77,7 +77,7 @@ class TestContentHashService:
     def test_calculate_file_hash_success(self, hash_service, temp_file_with_content):
         """Test successful file hash generation."""
         file_path, content = temp_file_with_content
-        
+
         file_hash = hash_service.calculate_file_hash(file_path)
         assert isinstance(file_hash, str)
         assert len(file_hash) > 0
@@ -85,10 +85,10 @@ class TestContentHashService:
     def test_calculate_file_hash_consistent(self, hash_service, temp_file_with_content):
         """Test file hash generation is consistent."""
         file_path, content = temp_file_with_content
-        
+
         hash1 = hash_service.calculate_file_hash(file_path)
         hash2 = hash_service.calculate_file_hash(file_path)
-        
+
         assert hash1 == hash2
 
     def test_calculate_file_hash_nonexistent_file(self, hash_service):
@@ -100,7 +100,7 @@ class TestContentHashService:
         """Test file hash generation with pathlib.Path object."""
         file_path, content = temp_file_with_content
         path_obj = Path(file_path)
-        
+
         file_hash = hash_service.calculate_file_hash(str(path_obj))
         assert isinstance(file_hash, str)
         assert len(file_hash) > 0
@@ -109,7 +109,7 @@ class TestContentHashService:
         """Test that generated hashes have expected format."""
         content = "test content"
         content_hash = hash_service.calculate_content_hash(content)
-        
+
         # Hash should be hexadecimal string
         assert content_hash.isalnum()
         # Common hash lengths (MD5=32, SHA1=40, SHA256=64)
@@ -125,13 +125,13 @@ class TestContentHashService:
         """Test hash generation performance with large content."""
         # Create large content (1MB)
         large_content = "x" * (1024 * 1024)
-        
+
         # Should complete reasonably quickly
         import time
         start_time = time.time()
         hash_result = hash_service.calculate_content_hash(large_content)
         end_time = time.time()
-        
+
         assert isinstance(hash_result, str)
         assert len(hash_result) > 0
         # Should complete in less than 1 second
@@ -140,13 +140,13 @@ class TestContentHashService:
     def test_content_vs_file_hash_consistency(self, hash_service, temp_file_with_content):
         """Test that content hash matches file hash for same content."""
         file_path, content = temp_file_with_content
-        
+
         # Generate hash from content directly
         content_hash = hash_service.calculate_content_hash(content.decode('utf-8'))
-        
+
         # Generate hash from file
         file_hash = hash_service.calculate_file_hash(file_path)
-        
+
         # They might be different if file hash includes metadata,
         # but both should be valid hashes
         assert isinstance(content_hash, str)
@@ -172,14 +172,14 @@ class TestContentHashServiceEdgeCases:
         except (TypeError, UnicodeDecodeError):
             # If service doesn't handle binary, try with decoded content
             hash_result = hash_service.calculate_content_hash(str(binary_content))
-        
+
         assert isinstance(hash_result, str)
         assert len(hash_result) > 0
 
     def test_very_long_file_path(self, hash_service):
         """Test handling of very long file paths."""
         long_path = "a" * 1000 + ".txt"
-        
+
         with pytest.raises((FileNotFoundError, OSError, Exception)):
             hash_service.calculate_file_hash(long_path)
 
@@ -187,7 +187,7 @@ class TestContentHashServiceEdgeCases:
         """Test handling of special characters in content."""
         special_content = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~"
         hash_result = hash_service.calculate_content_hash(special_content)
-        
+
         assert isinstance(hash_result, str)
         assert len(hash_result) > 0
 
@@ -195,10 +195,10 @@ class TestContentHashServiceEdgeCases:
         """Test that different newline styles produce different hashes."""
         content_unix = "line1\nline2\nline3"
         content_windows = "line1\r\nline2\r\nline3"
-        
+
         hash_unix = hash_service.calculate_content_hash(content_unix)
         hash_windows = hash_service.calculate_content_hash(content_windows)
-        
+
         # Different line endings should produce different hashes
         assert hash_unix != hash_windows
 
@@ -207,11 +207,11 @@ class TestContentHashServiceEdgeCases:
         content1 = "word1 word2"
         content2 = "word1  word2"  # Extra space
         content3 = "word1\tword2"  # Tab instead of space
-        
+
         hash1 = hash_service.calculate_content_hash(content1)
         hash2 = hash_service.calculate_content_hash(content2)
         hash3 = hash_service.calculate_content_hash(content3)
-        
+
         # All should be different
         assert hash1 != hash2
         assert hash1 != hash3
@@ -232,11 +232,11 @@ class TestContentHashServiceIntegration:
         content1 = "This is a document content"
         content2 = "This is a document content"  # Identical
         content3 = "This is different content"
-        
+
         hash1 = hash_service.calculate_content_hash(content1)
         hash2 = hash_service.calculate_content_hash(content2)
         hash3 = hash_service.calculate_content_hash(content3)
-        
+
         # Identical content should have same hash (duplicates)
         assert hash1 == hash2
         # Different content should have different hash
@@ -247,7 +247,7 @@ class TestContentHashServiceIntegration:
         """Test hashing multiple temporary files."""
         temp_files = []
         hashes = []
-        
+
         try:
             # Create multiple temporary files
             for i in range(5):
@@ -255,19 +255,19 @@ class TestContentHashServiceIntegration:
                 with tempfile.NamedTemporaryFile(delete=False, mode='w') as f:
                     f.write(content)
                     temp_files.append(f.name)
-                
+
                 # Generate hash for each file
                 file_hash = hash_service.calculate_file_hash(f.name)
                 hashes.append(file_hash)
-            
+
             # All hashes should be different
             assert len(set(hashes)) == len(hashes)
-            
+
             # All hashes should be valid
             for hash_val in hashes:
                 assert isinstance(hash_val, str)
                 assert len(hash_val) > 0
-                
+
         finally:
             # Cleanup temporary files
             for file_path in temp_files:

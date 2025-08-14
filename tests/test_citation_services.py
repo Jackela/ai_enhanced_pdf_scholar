@@ -79,11 +79,11 @@ class TestCitationServiceInterface:
         """Test extracting citations from a document."""
         # This test will fail until we implement CitationService
         # Following TDD red-green-refactor cycle
-        
+
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         # Mock parsing results
         expected_citations = [
             {
@@ -95,17 +95,17 @@ class TestCitationServiceInterface:
                 "confidence_score": 0.95
             }
         ]
-        
+
         # Mock repository responses
         mock_citation_repo.create.return_value = CitationModel(
             id=1, document_id=1, raw_text="Smith, J. (2023). Machine Learning. Journal of AI.",
             authors="Smith, J.", title="Machine Learning", publication_year=2023,
             _from_database=True
         )
-        
+
         # Act
         result = service.extract_citations_from_document(sample_document)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) > 0
@@ -117,13 +117,13 @@ class TestCitationServiceInterface:
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         # Mock repository response
         mock_citation_repo.find_by_document_id.return_value = sample_citations
-        
+
         # Act
         result = service.get_citations_for_document(1)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 2
@@ -135,7 +135,7 @@ class TestCitationServiceInterface:
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         # Mock repository response
         mock_citations = [
             CitationModel(
@@ -144,10 +144,10 @@ class TestCitationServiceInterface:
             )
         ]
         mock_citation_repo.search_by_author.return_value = mock_citations
-        
+
         # Act
         result = service.search_citations_by_author("Smith")
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
@@ -159,7 +159,7 @@ class TestCitationServiceInterface:
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         # Mock repository response
         mock_stats = {
             "total_citations": 100,
@@ -168,10 +168,10 @@ class TestCitationServiceInterface:
             "citation_types": {"journal": 60, "conference": 30, "book": 10}
         }
         mock_citation_repo.get_statistics.return_value = mock_stats
-        
+
         # Act
         result = service.get_citation_statistics()
-        
+
         # Assert
         assert isinstance(result, dict)
         assert "total_citations" in result
@@ -184,7 +184,7 @@ class TestCitationServiceInterface:
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         # Mock repository response
         mock_network = {
             "nodes": [{"id": 1, "title": "Document 1"}, {"id": 2, "title": "Document 2"}],
@@ -193,10 +193,10 @@ class TestCitationServiceInterface:
             "depth": 2
         }
         mock_relation_repo.get_citation_network.return_value = mock_network
-        
+
         # Act
         result = service.build_citation_network(1, depth=2)
-        
+
         # Assert
         assert isinstance(result, dict)
         assert "nodes" in result
@@ -209,7 +209,7 @@ class TestCitationServiceInterface:
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         # Mock repository response
         new_relation = CitationRelationModel(
             source_document_id=1,
@@ -219,7 +219,7 @@ class TestCitationServiceInterface:
             confidence_score=0.9
         )
         mock_relation_repo.create.return_value = new_relation
-        
+
         # Act
         result = service.create_citation_relation(
             source_document_id=1,
@@ -228,7 +228,7 @@ class TestCitationServiceInterface:
             relation_type="cites",
             confidence_score=0.9
         )
-        
+
         # Assert
         assert isinstance(result, CitationRelationModel)
         assert result.source_document_id == 1
@@ -240,16 +240,16 @@ class TestCitationServiceInterface:
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         citation_to_update = sample_citations[0]
         citation_to_update.title = "Updated Title"
-        
+
         # Mock repository response
         mock_citation_repo.update.return_value = citation_to_update
-        
+
         # Act
         result = service.update_citation(citation_to_update)
-        
+
         # Assert
         assert isinstance(result, CitationModel)
         assert result.title == "Updated Title"
@@ -260,13 +260,13 @@ class TestCitationServiceInterface:
         # Arrange
         from src.services.citation_service import CitationService
         service = CitationService(mock_citation_repo, mock_relation_repo)
-        
+
         # Mock repository response
         mock_citation_repo.delete.return_value = True
-        
+
         # Act
         result = service.delete_citation(1)
-        
+
         # Assert
         assert result is True
         mock_citation_repo.delete.assert_called_once_with(1)
@@ -279,26 +279,26 @@ class TestCitationParsingServiceInterface:
         """Test parsing citations from text content."""
         # This test will fail until we implement CitationParsingService
         # Following TDD red-green-refactor cycle
-        
+
         # Arrange
         from src.services.citation_parsing_service import CitationParsingService
         service = CitationParsingService()
-        
+
         text_content = """
-        This paper builds on previous work by Smith, J. (2023). Machine Learning Fundamentals. 
+        This paper builds on previous work by Smith, J. (2023). Machine Learning Fundamentals.
         Journal of AI Research, 15(3), 123-145. https://doi.org/10.1000/test.
-        
-        Additional research includes Jones, M., & Brown, K. (2022). Deep Learning Applications. 
+
+        Additional research includes Jones, M., & Brown, K. (2022). Deep Learning Applications.
         In Proceedings of ICML 2022 (pp. 56-78). MIT Press.
         """
-        
+
         # Act
         result = service.parse_citations_from_text(text_content)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) >= 2  # Should find at least 2 citations
-        
+
         # Check first citation
         first_citation = result[0]
         assert isinstance(first_citation, dict)
@@ -306,7 +306,7 @@ class TestCitationParsingServiceInterface:
         assert "authors" in first_citation
         assert "title" in first_citation
         assert "publication_year" in first_citation
-        
+
         # Verify basic structure (parsing works)
         assert len(first_citation["raw_text"]) > 10
         assert isinstance(first_citation["publication_year"], int)
@@ -317,7 +317,7 @@ class TestCitationParsingServiceInterface:
         # Arrange
         from src.services.citation_parsing_service import CitationParsingService
         service = CitationParsingService()
-        
+
         test_cases = [
             {
                 "input": "Smith, J. (2023). Test Paper.",
@@ -332,11 +332,11 @@ class TestCitationParsingServiceInterface:
                 "expected": "Anderson, P. et al."
             }
         ]
-        
+
         for case in test_cases:
             # Act
             result = service.extract_authors(case["input"])
-            
+
             # Assert
             assert isinstance(result, str)
             # More flexible assertion - just check that some author text is extracted
@@ -347,7 +347,7 @@ class TestCitationParsingServiceInterface:
         # Arrange
         from src.services.citation_parsing_service import CitationParsingService
         service = CitationParsingService()
-        
+
         test_cases = [
             {
                 "input": "Smith, J. (2023). Machine Learning Fundamentals. Journal of AI.",
@@ -358,11 +358,11 @@ class TestCitationParsingServiceInterface:
                 "expected": "Deep Learning: A Comprehensive Guide"
             }
         ]
-        
+
         for case in test_cases:
             # Act
             result = service.extract_title(case["input"])
-            
+
             # Assert
             # Title extraction is challenging, just verify structure
             assert result is None or isinstance(result, str)
@@ -374,7 +374,7 @@ class TestCitationParsingServiceInterface:
         # Arrange
         from src.services.citation_parsing_service import CitationParsingService
         service = CitationParsingService()
-        
+
         test_cases = [
             {
                 "input": "Smith, J. (2023). Test Paper. Journal.",
@@ -389,11 +389,11 @@ class TestCitationParsingServiceInterface:
                 "expected": 2021
             }
         ]
-        
+
         for case in test_cases:
             # Act
             result = service.extract_year(case["input"])
-            
+
             # Assert
             assert isinstance(result, int)
             assert result == case["expected"]
@@ -403,7 +403,7 @@ class TestCitationParsingServiceInterface:
         # Arrange
         from src.services.citation_parsing_service import CitationParsingService
         service = CitationParsingService()
-        
+
         test_cases = [
             {
                 "input": "Smith, J. (2023). Test. Journal. https://doi.org/10.1000/test123",
@@ -418,11 +418,11 @@ class TestCitationParsingServiceInterface:
                 "expected": None
             }
         ]
-        
+
         for case in test_cases:
             # Act
             result = service.extract_doi(case["input"])
-            
+
             # Assert
             if case["expected"]:
                 assert isinstance(result, str)
@@ -435,7 +435,7 @@ class TestCitationParsingServiceInterface:
         # Arrange
         from src.services.citation_parsing_service import CitationParsingService
         service = CitationParsingService()
-        
+
         test_cases = [
             {
                 "input": "Smith, J. (2023). Paper. Journal of AI Research, 15(3), 123-145.",
@@ -454,11 +454,11 @@ class TestCitationParsingServiceInterface:
                 "expected": "thesis"
             }
         ]
-        
+
         for case in test_cases:
             # Act
             result = service.classify_citation_type(case["input"])
-            
+
             # Assert
             assert isinstance(result, str)
             assert result == case["expected"]
@@ -468,7 +468,7 @@ class TestCitationParsingServiceInterface:
         # Arrange
         from src.services.citation_parsing_service import CitationParsingService
         service = CitationParsingService()
-        
+
         test_cases = [
             {
                 "citation_data": {
@@ -495,11 +495,11 @@ class TestCitationParsingServiceInterface:
                 "expected_range": (0.1, 0.4)  # Low confidence - minimal information
             }
         ]
-        
+
         for case in test_cases:
             # Act
             result = service.calculate_confidence_score(case["citation_data"])
-            
+
             # Assert
             assert isinstance(result, float)
             assert 0.0 <= result <= 1.0
@@ -509,12 +509,12 @@ class TestCitationParsingServiceInterface:
 
 class TestCitationServiceSOLIDCompliance:
     """Test SOLID principles compliance in citation services."""
-    
+
     def test_single_responsibility_principle(self):
         """Test that each service has a single responsibility."""
         # CitationService should handle business logic for citations
         # CitationParsingService should handle text parsing only
-        
+
         # This will be verified when we implement the actual services
         # For now, verify that interfaces would support proper separation
         assert True  # Placeholder until implementation

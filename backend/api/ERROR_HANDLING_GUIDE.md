@@ -326,7 +326,7 @@ def test_document_not_found_error():
     """Test document not found error format."""
     response = client.get("/api/documents/99999")
     assert response.status_code == 404
-    
+
     error_data = response.json()
     assert error_data["success"] is False
     assert error_data["error"]["code"] == "DOCUMENT_NOT_FOUND"
@@ -338,7 +338,7 @@ def test_validation_error_format():
     """Test validation error with details."""
     response = client.post("/api/documents/upload", files={})
     assert response.status_code == 400
-    
+
     error_data = response.json()
     assert "details" in error_data["error"]
     assert "help_text" in error_data["error"]["details"]

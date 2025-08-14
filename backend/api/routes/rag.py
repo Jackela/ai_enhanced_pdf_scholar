@@ -50,10 +50,10 @@ async def query_document(
     try:
         # Validate document exists
         validate_document_access(query_request.document_id, controller)
-        
+
         # Generate cache key for this specific query
         cache_key = f"rag_query:{query_request.document_id}:{hash(query_request.query)}"
-        
+
         # Try to get cached response
         if cache_service:
             cached_response = await cache_service.get(cache_key)
@@ -67,20 +67,20 @@ async def query_document(
         # Perform query with timing
         start_time = time.time()
         from_cache = False
-        
+
         # Execute RAG query
         response = controller.query_document(
             query_request.document_id, query_request.query
         )
-        
+
         processing_time = (time.time() - start_time) * 1000  # Convert to milliseconds
-        
+
         if response is None:
             raise SystemException(
                 message="RAG query processing failed",
                 error_type="external_service"
             )
-        
+
         # Create response object
         rag_response = RAGQueryResponse(
             query=query_request.query,
@@ -89,19 +89,19 @@ async def query_document(
             from_cache=from_cache,
             processing_time_ms=processing_time,
         )
-        
+
         # Cache the response if cache service is available and caching is enabled
         if cache_service and query_request.use_cache:
             try:
                 await cache_service.set(
-                    cache_key, 
+                    cache_key,
                     rag_response.dict(),
                     ttl_seconds=3600  # Cache for 1 hour
                 )
                 logger.debug(f"Cached RAG response: doc={query_request.document_id}")
             except Exception as cache_error:
                 logger.warning(f"Failed to cache RAG response: {cache_error}")
-        
+
         return rag_response
     except HTTPException:
         raise

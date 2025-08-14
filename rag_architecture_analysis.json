@@ -12,14 +12,14 @@
           "functionality": "orchestrates service interactions"
         },
         "RAGIndexBuilder": {
-          "status": "implemented", 
+          "status": "implemented",
           "file": "src/services/rag/index_builder.py",
           "interface_compatibility": false,
           "functionality": "handles PDF processing and vector index creation"
         },
         "RAGQueryEngine": {
           "status": "implemented",
-          "file": "src/services/rag/query_engine.py", 
+          "file": "src/services/rag/query_engine.py",
           "interface_compatibility": false,
           "functionality": "manages index loading and query execution"
         },
@@ -42,7 +42,7 @@
           "status": "missing",
           "required_interfaces": [
             "IRAGIndexBuilder",
-            "IRAGQueryEngine", 
+            "IRAGQueryEngine",
             "IRAGRecoveryService",
             "IRAGFileManager"
           ],
@@ -53,7 +53,7 @@
           "status": "missing",
           "required_exceptions": [
             "RAGProcessingError",
-            "RAGIndexError", 
+            "RAGIndexError",
             "RAGQueryError"
           ],
           "blocking_800_tests": true
@@ -74,7 +74,7 @@
     "test_blockage_analysis": {
       "blocked_test_count": "800+",
       "primary_cause": "missing interface definitions",
-      "secondary_cause": "missing exception definitions", 
+      "secondary_cause": "missing exception definitions",
       "impact": "complete RAG test suite non-functional",
       "resolution_complexity": "low",
       "estimated_fix_time": "30 minutes"

@@ -201,7 +201,7 @@ class TestVectorIndexManager:
         mock_dt = MagicMock()
         mock_dt.strftime.return_value = "20230101_120000"
         mock_dt.isoformat.return_value = "2023-01-01T12:00:00"
-        
+
         with patch("src.services.vector_index_manager.datetime") as mock_datetime:
             mock_datetime.now.return_value = mock_dt
             # Create first index

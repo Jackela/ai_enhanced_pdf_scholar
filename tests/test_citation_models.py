@@ -17,13 +17,13 @@ class TestCitationModel:
         # Arrange
         document_id = 1
         raw_text = "Smith, J. (2023). Test Paper. Journal of Testing, 1(1), 1-10."
-        
+
         # Act
         citation = CitationModel(
             document_id=document_id,
             raw_text=raw_text
         )
-        
+
         # Assert
         assert citation.document_id == document_id
         assert citation.raw_text == raw_text
@@ -48,10 +48,10 @@ class TestCitationModel:
             "citation_type": "journal",
             "confidence_score": 0.95
         }
-        
+
         # Act
         citation = CitationModel(**test_data)
-        
+
         # Assert
         assert citation.document_id == test_data["document_id"]
         assert citation.raw_text == test_data["raw_text"]
@@ -68,7 +68,7 @@ class TestCitationModel:
         """Test validation fails for invalid document_id."""
         # Arrange
         invalid_ids = [0, -1, -999]
-        
+
         for invalid_id in invalid_ids:
             # Act & Assert
             with pytest.raises(ValueError, match="Document ID must be positive"):
@@ -81,7 +81,7 @@ class TestCitationModel:
         """Test validation fails for empty raw_text."""
         # Arrange
         empty_texts = ["", "   ", "\t\n"]
-        
+
         for empty_text in empty_texts:
             # Act & Assert
             with pytest.raises(ValueError, match="Raw citation text cannot be empty"):
@@ -94,7 +94,7 @@ class TestCitationModel:
         """Test validation fails for invalid publication_year."""
         # Arrange
         invalid_years = [999, datetime.now().year + 2, -2023]
-        
+
         for invalid_year in invalid_years:
             # Act & Assert
             with pytest.raises(ValueError, match="Invalid publication year"):
@@ -108,7 +108,7 @@ class TestCitationModel:
         """Test validation fails for invalid confidence_score."""
         # Arrange
         invalid_scores = [-0.1, 1.1, 2.0, -1.0]
-        
+
         for invalid_score in invalid_scores:
             # Act & Assert
             with pytest.raises(ValueError, match="Confidence score must be between 0.0 and 1.0"):
@@ -136,10 +136,10 @@ class TestCitationModel:
             "created_at": "2023-01-01T12:00:00",
             "updated_at": "2023-01-02T12:00:00"
         }
-        
+
         # Act
         citation = CitationModel.from_database_row(db_row)
-        
+
         # Assert
         assert citation.id == 1
         assert citation.document_id == 2
@@ -168,10 +168,10 @@ class TestCitationModel:
             confidence_score=0.9
         )
         citation.id = 1
-        
+
         # Act
         db_dict = citation.to_database_dict()
-        
+
         # Assert
         expected_keys = [
             "id", "document_id", "raw_text", "authors", "title",
@@ -197,10 +197,10 @@ class TestCitationModel:
             confidence_score=0.85
         )
         citation.id = 2
-        
+
         # Act
         api_dict = citation.to_api_dict()
-        
+
         # Assert
         expected_keys = [
             "id", "document_id", "raw_text", "authors", "title",
@@ -224,10 +224,10 @@ class TestCitationModel:
             publication_year=2023,
             journal_or_venue="Journal of Test Citations"
         )
-        
+
         # Act
         formatted = citation.get_formatted_citation("apa")
-        
+
         # Assert
         expected = "Smith, J., & Jones, M.. (2023). Test Paper on Citation Formatting. *Journal of Test Citations*."
         assert formatted == expected
@@ -243,10 +243,10 @@ class TestCitationModel:
             publication_year=2023,
             journal_or_venue="Journal of Test Citations"
         )
-        
+
         # Act
         formatted = citation.get_formatted_citation("mla")
-        
+
         # Assert
         expected = 'Smith, John, "Test Paper on Citation Formatting", *Journal of Test Citations*, 2023.'
         assert formatted == expected
@@ -262,10 +262,10 @@ class TestCitationModel:
             publication_year=2023,
             journal_or_venue="Journal of Test Citations"
         )
-        
+
         # Act
         formatted = citation.get_formatted_citation("chicago")
-        
+
         # Assert
         expected = 'Smith, John. "Test Paper on Citation Formatting". Journal of Test Citations. (2023).'
         assert formatted == expected
@@ -278,10 +278,10 @@ class TestCitationModel:
             raw_text="Raw citation text",
             authors="Test Author"
         )
-        
+
         # Act
         formatted = citation.get_formatted_citation("unknown")
-        
+
         # Assert
         assert formatted == "Raw citation text"
 
@@ -295,7 +295,7 @@ class TestCitationModel:
             title="Complete Title",
             publication_year=2023
         )
-        
+
         # Act & Assert
         assert citation.is_complete() is True
 
@@ -307,7 +307,7 @@ class TestCitationModel:
             CitationModel(document_id=1, raw_text="No title", authors="Author"),
             CitationModel(document_id=1, raw_text="No year", authors="Author", title="Title"),
         ]
-        
+
         for citation in incomplete_citations:
             # Act & Assert
             assert citation.is_complete() is False
@@ -321,13 +321,13 @@ class TestCitationRelationModel:
         # Arrange
         source_doc_id = 1
         source_citation_id = 2
-        
+
         # Act
         relation = CitationRelationModel(
             source_document_id=source_doc_id,
             source_citation_id=source_citation_id
         )
-        
+
         # Assert
         assert relation.source_document_id == source_doc_id
         assert relation.source_citation_id == source_citation_id
@@ -349,10 +349,10 @@ class TestCitationRelationModel:
             "relation_type": "references",
             "confidence_score": 0.88
         }
-        
+
         # Act
         relation = CitationRelationModel(**test_data)
-        
+
         # Assert
         assert relation.source_document_id == 1
         assert relation.source_citation_id == 2
@@ -365,7 +365,7 @@ class TestCitationRelationModel:
         """Test validation fails for invalid source_document_id."""
         # Arrange
         invalid_ids = [0, -1, -999]
-        
+
         for invalid_id in invalid_ids:
             # Act & Assert
             with pytest.raises(ValueError, match="Source document ID must be positive"):
@@ -378,7 +378,7 @@ class TestCitationRelationModel:
         """Test validation fails for invalid source_citation_id."""
         # Arrange
         invalid_ids = [0, -1, -999]
-        
+
         for invalid_id in invalid_ids:
             # Act & Assert
             with pytest.raises(ValueError, match="Source citation ID must be positive"):
@@ -391,7 +391,7 @@ class TestCitationRelationModel:
         """Test validation fails for invalid target_document_id when provided."""
         # Arrange
         invalid_ids = [0, -1, -999]
-        
+
         for invalid_id in invalid_ids:
             # Act & Assert
             with pytest.raises(ValueError, match="Target document ID must be positive"):
@@ -405,7 +405,7 @@ class TestCitationRelationModel:
         """Test validation fails for invalid confidence_score."""
         # Arrange
         invalid_scores = [-0.1, 1.1, 2.0, -1.0]
-        
+
         for invalid_score in invalid_scores:
             # Act & Assert
             with pytest.raises(ValueError, match="Confidence score must be between 0.0 and 1.0"):
@@ -428,10 +428,10 @@ class TestCitationRelationModel:
             "confidence_score": 0.75,
             "created_at": "2023-01-01T12:00:00"
         }
-        
+
         # Act
         relation = CitationRelationModel.from_database_row(db_row)
-        
+
         # Assert
         assert relation.id == 1
         assert relation.source_document_id == 2
@@ -453,10 +453,10 @@ class TestCitationRelationModel:
             confidence_score=0.9
         )
         relation.id = 1
-        
+
         # Act
         db_dict = relation.to_database_dict()
-        
+
         # Assert
         expected_keys = [
             "id", "source_document_id", "source_citation_id",
@@ -480,10 +480,10 @@ class TestCitationRelationModel:
             "source_citation_id": 3,
             "created_at": "2023-01-01T12:00:00"
         }
-        
+
         # Act
         relation = CitationRelationModel.from_database_row(minimal_row)
-        
+
         # Assert
         assert relation.id == 1
         assert relation.source_document_id == 2

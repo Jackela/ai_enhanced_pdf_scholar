@@ -16,9 +16,9 @@ from pydantic import BaseModel, Field, field_validator
 from backend.api.error_handling import SystemException
 from backend.api.dependencies import get_db
 from backend.api.models import (
-    SecurityValidationError, 
-    validate_against_patterns, 
-    DANGEROUS_SQL_PATTERNS, 
+    SecurityValidationError,
+    validate_against_patterns,
+    DANGEROUS_SQL_PATTERNS,
     XSS_PATTERNS,
     sanitize_html_content,
     log_security_event
@@ -31,9 +31,9 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 class ApiKeyRequest(BaseModel):
     """API key test request with security validation."""
-    api_key: str = Field(..., min_length=10, max_length=200, 
+    api_key: str = Field(..., min_length=10, max_length=200,
                         description="API key to test")
-    
+
     @field_validator('api_key')
     @classmethod
     def validate_api_key(cls, v: str) -> str:
@@ -41,11 +41,11 @@ class ApiKeyRequest(BaseModel):
         # Basic validation against injection attacks
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'api_key', 'sql_injection')
         validate_against_patterns(v, XSS_PATTERNS, 'api_key', 'xss_attempt')
-        
+
         # API key format validation
         if not v.strip():
             raise SecurityValidationError('api_key', 'API key cannot be empty')
-        
+
         # Check for suspicious patterns
         suspicious_patterns = [
             r'\s',  # No whitespace allowed in API keys
@@ -53,9 +53,9 @@ class ApiKeyRequest(BaseModel):
             r'javascript:',  # No JS protocol
             r'data:',  # No data protocol
         ]
-        
+
         validate_against_patterns(v, suspicious_patterns, 'api_key', 'suspicious_pattern')
-        
+
         return v.strip()
 
 
@@ -64,26 +64,26 @@ class SettingsRequest(BaseModel):
     gemini_api_key: Optional[str] = Field(None, min_length=10, max_length=200,
                                          description="Google Gemini API key")
     rag_enabled: bool = Field(False, description="Enable RAG functionality")
-    
+
     @field_validator('gemini_api_key')
     @classmethod
     def validate_gemini_api_key(cls, v: Optional[str]) -> Optional[str]:
         """Validate Gemini API key."""
         if v is None:
             return v
-            
+
         # Skip validation if it's a masked value (contains bullets)
         if '●' in v:
             return v
-        
+
         # Basic validation against injection attacks
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'gemini_api_key', 'sql_injection')
         validate_against_patterns(v, XSS_PATTERNS, 'gemini_api_key', 'xss_attempt')
-        
+
         # API key format validation
         if not v.strip():
             raise SecurityValidationError('gemini_api_key', 'API key cannot be empty')
-        
+
         # Check for suspicious patterns
         suspicious_patterns = [
             r'\s',  # No whitespace allowed in API keys
@@ -91,9 +91,9 @@ class SettingsRequest(BaseModel):
             r'javascript:',  # No JS protocol
             r'data:',  # No data protocol
         ]
-        
+
         validate_against_patterns(v, suspicious_patterns, 'gemini_api_key', 'suspicious_pattern')
-        
+
         return v.strip()
 
 

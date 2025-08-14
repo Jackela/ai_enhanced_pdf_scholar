@@ -36,7 +36,7 @@ This document summarizes the resolution of all TODO items in `src/services/docum
 
 **Repository Support**:
 - Added `find_duplicates_by_content_hash()` method
-- Added `find_similar_documents_by_title()` method  
+- Added `find_similar_documents_by_title()` method
 - Added `_calculate_title_similarity()` helper for fuzzy matching
 
 ### 3. ✅ Enhanced Cleanup Operations (Line 419)
@@ -67,7 +67,7 @@ This document summarizes the resolution of all TODO items in `src/services/docum
 # Secure sorting with whitelist validation
 valid_sort_fields = {
     "created_at": "created_at",
-    "updated_at": "updated_at", 
+    "updated_at": "updated_at",
     "last_accessed": "last_accessed",
     "title": "title",
     "file_size": "file_size",
@@ -180,9 +180,9 @@ results = service.cleanup_library(
 ```python
 # Enhanced sorting
 docs = service.get_documents(
-    sort_by="title", 
-    sort_order="asc", 
-    limit=50, 
+    sort_by="title",
+    sort_order="asc",
+    limit=50,
     offset=0
 )
 
@@ -224,7 +224,7 @@ results = service.cleanup_library(
 All three TODO items have been successfully resolved with production-ready implementations:
 
 1. **✅ Database-level sorting** - Secure, efficient, and fully featured
-2. **✅ Content-based duplicate detection** - Multi-tier algorithm with resolution workflows  
+2. **✅ Content-based duplicate detection** - Multi-tier algorithm with resolution workflows
 3. **✅ Advanced cleanup operations** - Comprehensive maintenance with selective controls
 
 The enhancements maintain backward compatibility, include comprehensive testing, and provide significant improvements to the DocumentLibraryService functionality. All implementations follow the existing codebase patterns and maintain the high quality standards of the project.

@@ -4,7 +4,7 @@
 
 ### Before Optimization
 - **Main Bundle**: 184KB (approaching 300KB limit)
-- **React Vendor**: 165KB  
+- **React Vendor**: 165KB
 - **UI Vendor**: 100KB (at limit)
 - **PDF Vendor**: 1KB
 - **Total Initial Load**: ~350KB
@@ -31,7 +31,7 @@ const ChatView = lazy(() => import('./views/ChatView'))
 
 **Results:**
 - LibraryView: 9.2KB (lazy loaded)
-- ChatView: 17.4KB (lazy loaded) 
+- ChatView: 17.4KB (lazy loaded)
 - DocumentViewer: 1.9KB (lazy loaded)
 - SettingsView: 6.5KB (lazy loaded)
 
@@ -117,7 +117,7 @@ build: {
 npm run analyze
 ```
 - Detailed chunk analysis
-- Performance recommendations  
+- Performance recommendations
 - Size breakdown by category
 - Optimization suggestions
 
@@ -157,7 +157,7 @@ npm run check-size
 - **88.6% lazy load efficiency**
 - All performance budgets met with significant headroom
 
-### ✅ Code Splitting Excellence  
+### ✅ Code Splitting Excellence
 - **4 route chunks** properly split
 - **Dynamic component loading** for heavy features
 - **Smart preloading** prevents performance impact

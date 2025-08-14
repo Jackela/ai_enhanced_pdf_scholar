@@ -19,7 +19,7 @@ from .validation import ConfigValidationError
 
 __all__ = [
     'ApplicationConfig',
-    'get_application_config', 
+    'get_application_config',
     'Environment',
     'get_current_environment',
     'ConfigValidationError'

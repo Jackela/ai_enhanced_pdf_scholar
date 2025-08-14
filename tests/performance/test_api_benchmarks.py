@@ -36,7 +36,7 @@ class APIEndpointBenchmark:
     expected_p99_ms: float = 3000.0
     iterations: int = 100
     warmup_iterations: int = 10
-    
+
     # Performance baselines
     baseline_response_time_ms: Optional[float] = None
     baseline_p95_ms: Optional[float] = None
@@ -46,13 +46,13 @@ class APIEndpointBenchmark:
 
 class APIBenchmarkTest(PerformanceTestBase):
     """API endpoint performance benchmarking"""
-    
+
     def __init__(self, base_url: str = "http://localhost:8000"):
         super().__init__(base_url)
         self.collector = MetricsCollector(storage_path=Path("api_benchmarks.db"))
         self.endpoints = self._define_endpoints()
         self.baselines: Dict[str, Dict[str, float]] = {}
-        
+
     def _define_endpoints(self) -> List[APIEndpointBenchmark]:
         """Define API endpoints to benchmark"""
         return [
@@ -65,7 +65,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=100,
                 expected_p99_ms=200
             ),
-            
+
             # Document operations
             APIEndpointBenchmark(
                 name="List Documents",
@@ -75,7 +75,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=500,
                 expected_p99_ms=1000
             ),
-            
+
             APIEndpointBenchmark(
                 name="Get Document",
                 method="GET",
@@ -84,7 +84,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=300,
                 expected_p99_ms=500
             ),
-            
+
             APIEndpointBenchmark(
                 name="Create Document Metadata",
                 method="POST",
@@ -98,7 +98,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=600,
                 expected_p99_ms=1000
             ),
-            
+
             # RAG operations
             APIEndpointBenchmark(
                 name="Simple RAG Query",
@@ -112,7 +112,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=2000,
                 expected_p99_ms=3000
             ),
-            
+
             APIEndpointBenchmark(
                 name="Complex RAG Query",
                 method="POST",
@@ -126,7 +126,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=4000,
                 expected_p99_ms=6000
             ),
-            
+
             # Citation operations
             APIEndpointBenchmark(
                 name="List Citations",
@@ -136,7 +136,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=400,
                 expected_p99_ms=600
             ),
-            
+
             APIEndpointBenchmark(
                 name="Search Citations",
                 method="GET",
@@ -145,7 +145,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=1000,
                 expected_p99_ms=1500
             ),
-            
+
             # Vector operations
             APIEndpointBenchmark(
                 name="Vector Search",
@@ -159,7 +159,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p95_ms=1500,
                 expected_p99_ms=2500
             ),
-            
+
             # Session operations
             APIEndpointBenchmark(
                 name="Create Session",
@@ -173,35 +173,35 @@ class APIBenchmarkTest(PerformanceTestBase):
                 expected_p99_ms=300
             )
         ]
-    
+
     async def benchmark_endpoint(
         self,
         endpoint: APIEndpointBenchmark,
         session: Optional[aiohttp.ClientSession] = None
     ) -> Dict[str, Any]:
         """Benchmark a single API endpoint"""
-        
+
         # Create session if not provided
         if session is None:
             session = aiohttp.ClientSession()
             close_session = True
         else:
             close_session = False
-        
+
         try:
             response_times = []
             errors = 0
-            
+
             # Warmup
             for _ in range(endpoint.warmup_iterations):
                 try:
                     await self._make_request(session, endpoint)
                 except:
                     pass  # Ignore warmup errors
-            
+
             # Actual benchmark
             start_time = time.perf_counter()
-            
+
             for _ in range(endpoint.iterations):
                 try:
                     request_start = time.perf_counter()
@@ -211,9 +211,9 @@ class APIBenchmarkTest(PerformanceTestBase):
                 except Exception as e:
                     errors += 1
                     print(f"Request error: {e}")
-            
+
             total_time = time.perf_counter() - start_time
-            
+
             # Calculate metrics
             if response_times:
                 metrics = {
@@ -238,10 +238,10 @@ class APIBenchmarkTest(PerformanceTestBase):
                         "p99": np.percentile(response_times, 99)
                     }
                 }
-                
+
                 # Check against expected performance
                 metrics["performance_status"] = self._check_performance(endpoint, metrics)
-                
+
                 return metrics
             else:
                 return {
@@ -249,11 +249,11 @@ class APIBenchmarkTest(PerformanceTestBase):
                     "error": "No successful requests",
                     "errors": errors
                 }
-                
+
         finally:
             if close_session:
                 await session.close()
-    
+
     async def _make_request(
         self,
         session: aiohttp.ClientSession,
@@ -261,18 +261,18 @@ class APIBenchmarkTest(PerformanceTestBase):
     ) -> aiohttp.ClientResponse:
         """Make HTTP request to endpoint"""
         url = f"{self.base_url}{endpoint.path}"
-        
+
         kwargs = {}
         if endpoint.headers:
             kwargs["headers"] = endpoint.headers
         if endpoint.payload and endpoint.method in ["POST", "PUT", "PATCH"]:
             kwargs["json"] = endpoint.payload
-        
+
         async with session.request(endpoint.method, url, **kwargs) as response:
             await response.read()  # Ensure response is fully read
             response.raise_for_status()
             return response
-    
+
     def _check_performance(
         self,
         endpoint: APIEndpointBenchmark,
@@ -284,9 +284,9 @@ class APIBenchmarkTest(PerformanceTestBase):
             "warnings": [],
             "failures": []
         }
-        
+
         response_times = metrics["response_times"]
-        
+
         # Check mean response time
         if response_times["mean"] > endpoint.expected_response_time_ms:
             status["warnings"].append(
@@ -294,7 +294,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 f"exceeds expectation ({endpoint.expected_response_time_ms}ms)"
             )
             status["meets_expectations"] = False
-        
+
         # Check P95
         if response_times["p95"] > endpoint.expected_p95_ms:
             status["warnings"].append(
@@ -302,7 +302,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 f"exceeds expectation ({endpoint.expected_p95_ms}ms)"
             )
             status["meets_expectations"] = False
-        
+
         # Check P99
         if response_times["p99"] > endpoint.expected_p99_ms:
             status["warnings"].append(
@@ -310,47 +310,47 @@ class APIBenchmarkTest(PerformanceTestBase):
                 f"exceeds expectation ({endpoint.expected_p99_ms}ms)"
             )
             status["meets_expectations"] = False
-        
+
         # Check error rate
         if metrics["error_rate"] > 1.0:
             status["failures"].append(
                 f"Error rate ({metrics['error_rate']:.2f}%) exceeds 1%"
             )
             status["meets_expectations"] = False
-        
+
         # Check against baseline if available
         if endpoint.name in self.baselines:
             baseline = self.baselines[endpoint.name]
-            
+
             # Check for regression (>10% degradation)
-            mean_degradation = ((response_times["mean"] - baseline["mean"]) / 
+            mean_degradation = ((response_times["mean"] - baseline["mean"]) /
                               baseline["mean"] * 100)
-            
+
             if mean_degradation > 10:
                 status["warnings"].append(
                     f"Performance regression detected: "
                     f"{mean_degradation:.1f}% slower than baseline"
                 )
-        
+
         return status
-    
+
     async def run_all_benchmarks(self) -> Dict[str, Any]:
         """Run benchmarks for all endpoints"""
         print("API Performance Benchmark Suite")
         print("=" * 80)
-        
+
         results = {}
-        
+
         async with aiohttp.ClientSession() as session:
             for endpoint in self.endpoints:
                 print(f"\nBenchmarking: {endpoint.name}")
                 print(f"  Method: {endpoint.method}")
                 print(f"  Path: {endpoint.path}")
                 print(f"  Iterations: {endpoint.iterations}")
-                
+
                 metrics = await self.benchmark_endpoint(endpoint, session)
                 results[endpoint.name] = metrics
-                
+
                 if "error" not in metrics:
                     rt = metrics["response_times"]
                     print(f"  Results:")
@@ -359,7 +359,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                     print(f"    P95: {rt['p95']:.2f}ms")
                     print(f"    P99: {rt['p99']:.2f}ms")
                     print(f"    Throughput: {metrics['throughput_rps']:.2f} req/s")
-                    
+
                     status = metrics["performance_status"]
                     if status["meets_expectations"]:
                         print("    Status: ✓ Meets expectations")
@@ -371,25 +371,25 @@ class APIBenchmarkTest(PerformanceTestBase):
                             print(f"      - ERROR: {failure}")
                 else:
                     print(f"  Error: {metrics['error']}")
-        
+
         return results
-    
+
     async def establish_baselines(self, iterations: int = 1000) -> Dict[str, Any]:
         """Establish performance baselines for all endpoints"""
         print("Establishing Performance Baselines")
         print("=" * 80)
-        
+
         baselines = {}
-        
+
         async with aiohttp.ClientSession() as session:
             for endpoint in self.endpoints:
                 # Use more iterations for baseline
                 endpoint.iterations = iterations
-                
+
                 print(f"\nEstablishing baseline for: {endpoint.name}")
-                
+
                 metrics = await self.benchmark_endpoint(endpoint, session)
-                
+
                 if "error" not in metrics:
                     baseline = {
                         "mean": metrics["response_times"]["mean"],
@@ -397,24 +397,24 @@ class APIBenchmarkTest(PerformanceTestBase):
                         "p99": metrics["response_times"]["p99"],
                         "throughput": metrics["throughput_rps"]
                     }
-                    
+
                     baselines[endpoint.name] = baseline
                     self.baselines[endpoint.name] = baseline
-                    
+
                     print(f"  Baseline established:")
                     print(f"    Mean: {baseline['mean']:.2f}ms")
                     print(f"    P95: {baseline['p95']:.2f}ms")
                     print(f"    P99: {baseline['p99']:.2f}ms")
                     print(f"    Throughput: {baseline['throughput']:.2f} req/s")
-        
+
         # Save baselines to file
         with open("api_baselines.json", "w") as f:
             json.dump(baselines, f, indent=2)
-        
+
         print(f"\nBaselines saved to api_baselines.json")
-        
+
         return baselines
-    
+
     def load_baselines(self, filepath: str = "api_baselines.json") -> bool:
         """Load performance baselines from file"""
         try:
@@ -428,34 +428,34 @@ class APIBenchmarkTest(PerformanceTestBase):
         except Exception as e:
             print(f"Error loading baselines: {e}")
             return False
-    
+
     async def compare_with_baselines(self) -> Dict[str, Any]:
         """Compare current performance with baselines"""
         if not self.baselines:
             if not self.load_baselines():
                 print("No baselines available for comparison")
                 return {}
-        
+
         print("Performance Comparison with Baselines")
         print("=" * 80)
-        
+
         comparison = {}
-        
+
         async with aiohttp.ClientSession() as session:
             for endpoint in self.endpoints:
                 if endpoint.name not in self.baselines:
                     continue
-                
+
                 print(f"\nComparing: {endpoint.name}")
-                
+
                 # Run benchmark with fewer iterations for comparison
                 endpoint.iterations = 50
                 metrics = await self.benchmark_endpoint(endpoint, session)
-                
+
                 if "error" not in metrics:
                     baseline = self.baselines[endpoint.name]
                     current = metrics["response_times"]
-                    
+
                     comparison[endpoint.name] = {
                         "baseline": baseline,
                         "current": {
@@ -465,19 +465,19 @@ class APIBenchmarkTest(PerformanceTestBase):
                             "throughput": metrics["throughput_rps"]
                         },
                         "delta": {
-                            "mean_percent": ((current["mean"] - baseline["mean"]) / 
+                            "mean_percent": ((current["mean"] - baseline["mean"]) /
                                            baseline["mean"] * 100),
-                            "p95_percent": ((current["p95"] - baseline["p95"]) / 
+                            "p95_percent": ((current["p95"] - baseline["p95"]) /
                                           baseline["p95"] * 100),
-                            "p99_percent": ((current["p99"] - baseline["p99"]) / 
+                            "p99_percent": ((current["p99"] - baseline["p99"]) /
                                           baseline["p99"] * 100),
-                            "throughput_percent": ((metrics["throughput_rps"] - baseline["throughput"]) / 
+                            "throughput_percent": ((metrics["throughput_rps"] - baseline["throughput"]) /
                                                  baseline["throughput"] * 100)
                         }
                     }
-                    
+
                     delta = comparison[endpoint.name]["delta"]
-                    
+
                     print(f"  Mean: {current['mean']:.2f}ms "
                           f"(baseline: {baseline['mean']:.2f}ms, "
                           f"delta: {delta['mean_percent']:+.1f}%)")
@@ -487,7 +487,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                     print(f"  P99: {current['p99']:.2f}ms "
                           f"(baseline: {baseline['p99']:.2f}ms, "
                           f"delta: {delta['p99_percent']:+.1f}%)")
-                    
+
                     # Check for regression
                     if delta["mean_percent"] > 10:
                         print(f"  ⚠ WARNING: Performance regression detected!")
@@ -495,37 +495,37 @@ class APIBenchmarkTest(PerformanceTestBase):
                         print(f"  ✓ Performance improvement detected!")
                     else:
                         print(f"  ✓ Performance stable")
-        
+
         return comparison
-    
+
     def generate_benchmark_report(self, results: Dict[str, Any]) -> str:
         """Generate detailed benchmark report"""
         report = []
         report.append("=" * 80)
         report.append("API PERFORMANCE BENCHMARK REPORT")
         report.append("=" * 80)
-        
+
         # Summary statistics
         total_endpoints = len(results)
         successful = sum(1 for r in results.values() if "error" not in r)
         meeting_expectations = sum(
-            1 for r in results.values() 
+            1 for r in results.values()
             if "error" not in r and r.get("performance_status", {}).get("meets_expectations", False)
         )
-        
+
         report.append(f"\nSummary:")
         report.append(f"  Total Endpoints: {total_endpoints}")
         report.append(f"  Successful: {successful}")
         report.append(f"  Meeting Expectations: {meeting_expectations}")
         report.append(f"  Success Rate: {(successful/total_endpoints)*100:.1f}%")
-        
+
         # Detailed results
         report.append("\nDetailed Results:")
         report.append("-" * 40)
-        
+
         for endpoint_name, metrics in results.items():
             report.append(f"\n{endpoint_name}:")
-            
+
             if "error" in metrics:
                 report.append(f"  ERROR: {metrics['error']}")
             else:
@@ -543,7 +543,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 report.append(f"    P99: {rt['p99']:.2f}ms")
                 report.append(f"  Throughput: {metrics['throughput_rps']:.2f} req/s")
                 report.append(f"  Error Rate: {metrics['error_rate']:.2f}%")
-                
+
                 status = metrics.get("performance_status", {})
                 if status.get("meets_expectations"):
                     report.append(f"  Status: PASS")
@@ -553,7 +553,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                         report.append(f"  Warnings:")
                         for warning in status["warnings"]:
                             report.append(f"    - {warning}")
-        
+
         report.append("\n" + "=" * 80)
         return "\n".join(report)
 
@@ -576,9 +576,9 @@ async def test_health_endpoint_performance(api_benchmark):
         expected_response_time_ms=50,
         iterations=100
     )
-    
+
     metrics = await api_benchmark.benchmark_endpoint(endpoint)
-    
+
     assert "error" not in metrics, f"Benchmark failed: {metrics.get('error')}"
     assert metrics["response_times"]["mean"] < 100, "Health check too slow"
     assert metrics["error_rate"] < 1.0, "Health check error rate too high"
@@ -591,11 +591,11 @@ async def test_api_baseline_establishment(api_benchmark):
     # Run with fewer iterations for testing
     for endpoint in api_benchmark.endpoints:
         endpoint.iterations = 10
-    
+
     baselines = await api_benchmark.establish_baselines(iterations=10)
-    
+
     assert len(baselines) > 0, "No baselines established"
-    
+
     for name, baseline in baselines.items():
         assert "mean" in baseline, f"Missing mean for {name}"
         assert "p95" in baseline, f"Missing p95 for {name}"
@@ -615,7 +615,7 @@ async def test_performance_regression_detection(api_benchmark):
             "throughput": 50.0
         }
     }
-    
+
     # Simulate current metrics with regression
     endpoint = APIEndpointBenchmark(
         name="Test Endpoint",
@@ -623,7 +623,7 @@ async def test_performance_regression_detection(api_benchmark):
         path="/test",
         expected_response_time_ms=100
     )
-    
+
     metrics = {
         "response_times": {
             "mean": 150.0,  # 50% regression
@@ -633,9 +633,9 @@ async def test_performance_regression_detection(api_benchmark):
         "throughput_rps": 35.0,
         "error_rate": 0.5
     }
-    
+
     status = api_benchmark._check_performance(endpoint, metrics)
-    
+
     assert not status["meets_expectations"], "Should detect performance issues"
     assert len(status["warnings"]) > 0, "Should have warnings for regression"
 
@@ -644,24 +644,24 @@ if __name__ == "__main__":
     # Run benchmarks
     async def main():
         test = APIBenchmarkTest()
-        
+
         # Establish baselines or load existing
         if not test.load_baselines():
             print("Establishing new baselines...")
             await test.establish_baselines(iterations=100)
-        
+
         # Run benchmarks
         results = await test.run_all_benchmarks()
-        
+
         # Compare with baselines
         await test.compare_with_baselines()
-        
+
         # Generate report
         report = test.generate_benchmark_report(results)
         print(report)
-        
+
         # Save report
         with open("api_benchmark_report.txt", "w") as f:
             f.write(report)
-    
+
     asyncio.run(main())

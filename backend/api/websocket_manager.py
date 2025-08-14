@@ -74,14 +74,14 @@ class WebSocketManager:
         self.active_connections: Dict[str, WebSocket] = {}
         # Group connections by rooms/channels
         self.rooms: Dict[str, List[str]] = {}
-        
+
         # RAG streaming capabilities
         self.rag_tasks: Dict[str, RAGTask] = {}
         self.client_tasks: Dict[str, Set[str]] = {}  # client_id -> set of task_ids
         self.rag_config = RAGStreamConfig()
         self._task_counter = 0
         self._cleanup_task: Optional[asyncio.Task] = None
-        
+
         # Start background cleanup task
         self._start_cleanup_task()
 
@@ -112,10 +112,10 @@ class WebSocketManager:
             for room_name, members in self.rooms.items():
                 if client_id in members:
                     members.remove(client_id)
-            
+
             # Cancel and cleanup RAG tasks for this client
             self._cleanup_client_rag_tasks(client_id)
-            
+
             logger.info(
                 f"WebSocket client {client_id} disconnected. Total: {len(self.active_connections)}"
             )
@@ -319,19 +319,19 @@ class WebSocketManager:
             "data": data,
         }
         await self.send_json_to_room(message_data, room_name)
-    
+
     def _start_cleanup_task(self):
         """Start background task for cleaning up completed/failed RAG tasks."""
         if not self._cleanup_task or self._cleanup_task.done():
             self._cleanup_task = asyncio.create_task(self._cleanup_background())
-    
+
     async def _cleanup_background(self):
         """Background task to clean up old RAG tasks."""
         while True:
             try:
                 await asyncio.sleep(60)  # Cleanup every minute
                 current_time = datetime.now()
-                
+
                 # Find tasks to cleanup (completed/failed tasks older than 10 minutes)
                 tasks_to_remove = []
                 for task_id, task in self.rag_tasks.items():
@@ -339,59 +339,59 @@ class WebSocketManager:
                         age_minutes = (current_time - task.created_at).total_seconds() / 60
                         if age_minutes > 10:
                             tasks_to_remove.append(task_id)
-                
+
                 # Remove old tasks
                 for task_id in tasks_to_remove:
                     self._remove_rag_task(task_id)
-                    
+
                 if tasks_to_remove:
                     logger.debug(f"Cleaned up {len(tasks_to_remove)} old RAG tasks")
-                    
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Error in RAG task cleanup: {e}")
-    
+
     def _cleanup_client_rag_tasks(self, client_id: str):
         """Cancel and cleanup all RAG tasks for a specific client."""
         if client_id not in self.client_tasks:
             return
-            
+
         task_ids = self.client_tasks[client_id].copy()
         for task_id in task_ids:
             if task_id in self.rag_tasks:
                 task = self.rag_tasks[task_id]
-                
+
                 # Cancel background task if running
                 if task.background_task and not task.background_task.done():
                     task.background_task.cancel()
-                
+
                 # Set cancellation token
                 if task.cancellation_token:
                     task.cancellation_token.set()
-                
+
                 # Update status
                 task.status = RAGTaskStatus.CANCELLED
-                
+
                 # Remove from tracking
                 self._remove_rag_task(task_id)
-        
+
         logger.debug(f"Cancelled {len(task_ids)} RAG tasks for client {client_id}")
-    
+
     def _remove_rag_task(self, task_id: str):
         """Remove a RAG task from all tracking dictionaries."""
         if task_id in self.rag_tasks:
             task = self.rag_tasks[task_id]
-            
+
             # Remove from client tracking
             if task.client_id in self.client_tasks:
                 self.client_tasks[task.client_id].discard(task_id)
                 if not self.client_tasks[task.client_id]:
                     del self.client_tasks[task.client_id]
-            
+
             # Remove main task
             del self.rag_tasks[task_id]
-    
+
     def _generate_task_id(self) -> str:
         """Generate a unique task ID."""
         self._task_counter += 1
@@ -421,7 +421,7 @@ class WebSocketManager:
     ):
         """Send detailed chunk upload progress."""
         progress_percentage = (bytes_uploaded / total_bytes) * 100 if total_bytes > 0 else 0
-        
+
         data = {
             "type": "chunk_progress",
             "session_id": session_id,
@@ -432,14 +432,14 @@ class WebSocketManager:
             "total_bytes": total_bytes,
             "progress_percentage": round(progress_percentage, 2),
         }
-        
+
         if upload_speed:
             data["upload_speed_bps"] = upload_speed
             if upload_speed > 0:
                 remaining_bytes = total_bytes - bytes_uploaded
                 eta_seconds = remaining_bytes / upload_speed
                 data["eta_seconds"] = int(eta_seconds)
-        
+
         await self.send_personal_json(data, client_id)
 
     def get_stats(self) -> dict:
@@ -453,7 +453,7 @@ class WebSocketManager:
             "completed_tasks": len([t for t in self.rag_tasks.values() if t.status == RAGTaskStatus.COMPLETED]),
             "failed_tasks": len([t for t in self.rag_tasks.values() if t.status == RAGTaskStatus.FAILED]),
         }
-        
+
         return {
             "active_connections": self.get_connection_count(),
             "total_rooms": self.get_room_count(),
@@ -468,11 +468,11 @@ class WebSocketManager:
             },
         }
 
-    
+
     # ============================================================================
     # RAG Streaming Methods
     # ============================================================================
-    
+
     async def start_rag_stream(
         self,
         client_id: str,
@@ -484,19 +484,19 @@ class WebSocketManager:
         """Start a new RAG streaming task."""
         if client_id not in self.active_connections:
             raise ValueError(f"Client {client_id} not connected")
-        
+
         client_task_count = len(self.client_tasks.get(client_id, set()))
         if client_task_count >= self.rag_config.max_concurrent_tasks:
             await self.send_rag_error(
-                client_id, 
+                client_id,
                 f"Maximum concurrent tasks ({self.rag_config.max_concurrent_tasks}) reached",
                 document_id
             )
             raise ValueError("Too many concurrent RAG tasks")
-        
+
         task_id = self._generate_task_id()
         cancellation_token = asyncio.Event()
-        
+
         task = RAGTask(
             task_id=task_id,
             client_id=client_id,
@@ -505,64 +505,64 @@ class WebSocketManager:
             status=RAGTaskStatus.PENDING,
             cancellation_token=cancellation_token
         )
-        
+
         self.rag_tasks[task_id] = task
         if client_id not in self.client_tasks:
             self.client_tasks[client_id] = set()
         self.client_tasks[client_id].add(task_id)
-        
+
         background_task = asyncio.create_task(
             self._process_rag_task(task, rag_processor, **kwargs)
         )
         task.background_task = background_task
-        
+
         await self.send_rag_task_started(client_id, task_id, document_id, query)
         logger.info(f"Started RAG streaming task {task_id} for client {client_id}")
         return task_id
-    
+
     async def _process_rag_task(self, task: RAGTask, rag_processor: Callable, **kwargs):
         """Background task to process RAG query with streaming."""
         try:
             task.status = RAGTaskStatus.PROCESSING
             start_time = datetime.now()
-            
+
             await self.send_rag_progress_update(
                 task.client_id, task.task_id, RAGProgressType.STARTED, 0.0, "Starting RAG processing"
             )
-            
+
             result = await rag_processor(
                 task.query, task.document_id, task.task_id, task.cancellation_token, **kwargs
             )
-            
+
             if task.cancellation_token.is_set():
                 task.status = RAGTaskStatus.CANCELLED
                 await self.send_rag_task_cancelled(task.client_id, task.task_id)
                 return
-            
+
             end_time = datetime.now()
             task.result = result
             task.processing_time_ms = (end_time - start_time).total_seconds() * 1000
             task.status = RAGTaskStatus.COMPLETED
             task.progress_percentage = 100.0
-            
+
             await self.send_rag_task_completed(
-                task.client_id, task.task_id, task.document_id, 
+                task.client_id, task.task_id, task.document_id,
                 task.query, result, task.processing_time_ms
             )
-            
+
             logger.info(f"RAG task {task.task_id} completed in {task.processing_time_ms:.2f}ms")
-            
+
         except asyncio.CancelledError:
             task.status = RAGTaskStatus.CANCELLED
             await self.send_rag_task_cancelled(task.client_id, task.task_id)
             logger.info(f"RAG task {task.task_id} was cancelled")
-            
+
         except Exception as e:
             task.status = RAGTaskStatus.FAILED
             task.error = str(e)
             await self.send_rag_task_failed(task.client_id, task.task_id, str(e))
             logger.error(f"RAG task {task.task_id} failed: {e}")
-    
+
     async def cancel_rag_task(self, client_id: str, task_id: str) -> bool:
         """Cancel a running RAG task."""
         if task_id not in self.rag_tasks:
@@ -578,7 +578,7 @@ class WebSocketManager:
         await self.send_rag_task_cancelled(client_id, task_id)
         logger.info(f"RAG task {task_id} cancelled by client {client_id}")
         return True
-    
+
     async def get_rag_task_status(self, client_id: str, task_id: str) -> Optional[Dict[str, Any]]:
         """Get status of a RAG task."""
         if task_id not in self.rag_tasks:
@@ -592,7 +592,7 @@ class WebSocketManager:
             "progress_percentage": task.progress_percentage, "current_stage": task.current_stage,
             "result": task.result, "error": task.error, "processing_time_ms": task.processing_time_ms,
         }
-    
+
     # Notification Methods
     async def send_rag_task_started(self, client_id: str, task_id: str, document_id: int, query: str):
         """Send RAG task started notification."""
@@ -600,8 +600,8 @@ class WebSocketManager:
             "type": "rag_task_started", "task_id": task_id, "document_id": document_id,
             "query": query, "timestamp": datetime.now().isoformat(),
         }, client_id)
-    
-    async def send_rag_progress_update(self, client_id: str, task_id: str, progress_type: RAGProgressType, 
+
+    async def send_rag_progress_update(self, client_id: str, task_id: str, progress_type: RAGProgressType,
                                      percentage: float, message: str, stage_data: Optional[Dict[str, Any]] = None):
         """Send detailed RAG progress update."""
         data = {
@@ -614,8 +614,8 @@ class WebSocketManager:
         if task_id in self.rag_tasks:
             self.rag_tasks[task_id].progress_percentage = percentage
             self.rag_tasks[task_id].current_stage = progress_type.value
-    
-    async def send_rag_response_chunk(self, client_id: str, task_id: str, chunk: str, 
+
+    async def send_rag_response_chunk(self, client_id: str, task_id: str, chunk: str,
                                     chunk_index: int, total_chunks: Optional[int] = None):
         """Send streaming RAG response chunk."""
         await self.send_personal_json({
@@ -623,8 +623,8 @@ class WebSocketManager:
             "chunk_index": chunk_index, "total_chunks": total_chunks,
             "timestamp": datetime.now().isoformat(),
         }, client_id)
-    
-    async def send_rag_task_completed(self, client_id: str, task_id: str, document_id: int, 
+
+    async def send_rag_task_completed(self, client_id: str, task_id: str, document_id: int,
                                     query: str, result: str, processing_time_ms: float):
         """Send RAG task completion notification."""
         await self.send_personal_json({
@@ -632,14 +632,14 @@ class WebSocketManager:
             "query": query, "result": result, "processing_time_ms": processing_time_ms,
             "timestamp": datetime.now().isoformat(),
         }, client_id)
-    
+
     async def send_rag_task_failed(self, client_id: str, task_id: str, error: str):
         """Send RAG task failure notification."""
         await self.send_personal_json({
             "type": "rag_task_failed", "task_id": task_id, "error": error,
             "timestamp": datetime.now().isoformat(),
         }, client_id)
-    
+
     async def send_rag_task_cancelled(self, client_id: str, task_id: str):
         """Send RAG task cancellation notification."""
         await self.send_personal_json({

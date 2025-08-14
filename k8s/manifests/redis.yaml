@@ -137,15 +137,15 @@ data:
     port 6379
     tcp-backlog 511
     tcp-keepalive 300
-    
+
     # General
     timeout 0
     databases 16
-    
+
     # Memory Management
     maxmemory 512mb
     maxmemory-policy allkeys-lru
-    
+
     # Persistence (RDB)
     save 900 1
     save 300 10
@@ -155,7 +155,7 @@ data:
     rdbchecksum yes
     dbfilename dump.rdb
     dir /data
-    
+
     # Append Only File (AOF)
     appendonly yes
     appendfilename "appendonly.aof"
@@ -163,14 +163,14 @@ data:
     no-appendfsync-on-rewrite no
     auto-aof-rewrite-percentage 100
     auto-aof-rewrite-min-size 64mb
-    
+
     # Logging
     loglevel notice
     logfile ""
-    
+
     # Security (if password is set)
     # requirepass will be set via environment variable if REDIS_PASSWORD is provided
-    
+
     # Performance
     hz 10
     dynamic-hz yes

@@ -197,7 +197,7 @@ class TestAPIDocumentEndpoints:
         assert response.status_code in [200, 400, 404, 422]
 
 
-@pytest.mark.integration  
+@pytest.mark.integration
 class TestAPIRAGEndpoints:
     """Test RAG-related API endpoints."""
 
@@ -212,7 +212,7 @@ class TestAPIRAGEndpoints:
         response = client.post("/api/rag/query", json={})
         assert response.status_code in [400, 422]
 
-        # Test with minimal valid structure  
+        # Test with minimal valid structure
         response = client.post("/api/rag/query", json={"query": "test query"})
         # Should not return server error
         assert response.status_code not in [500, 502, 503]

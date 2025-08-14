@@ -66,7 +66,7 @@ class TestRAGIndexBuilder:
         return mock
 
     @pytest.fixture
-    def index_builder(self, temp_directory, mock_pdf_processor, 
+    def index_builder(self, temp_directory, mock_pdf_processor,
                      mock_vector_store, mock_text_splitter):
         """Create RAGIndexBuilder with mocked dependencies."""
         return RAGIndexBuilder(
@@ -82,7 +82,7 @@ class TestRAGIndexBuilder:
         # Create a fake PDF file
         pdf_path = temp_directory / "sample.pdf"
         pdf_path.write_text("Mock PDF content")
-        
+
         return DocumentModel(
             id=1,
             title="Sample Document",
@@ -105,14 +105,14 @@ class TestRAGIndexBuilder:
         """Test complete index building workflow for a document."""
         # When
         result = await index_builder.build_index(sample_document)
-        
+
         # Then
         assert result["status"] == "success"
         assert result["document_id"] == 1
         assert result["chunks_created"] == 5
         assert "processing_time" in result
         assert "index_size" in result
-        
+
         # Verify workflow steps
         index_builder.pdf_processor.extract_text.assert_called_once()
         index_builder.text_splitter.split_text.assert_called_once()
@@ -128,13 +128,13 @@ class TestRAGIndexBuilder:
             "chunk_overlap": 300,
             "preserve_formatting": True
         }
-        
+
         # When
         result = await index_builder.build_index(sample_document, chunk_config)
-        
+
         # Then
         assert result["status"] == "success"
-        
+
         # Verify chunking configuration was applied
         index_builder.text_splitter.split_text.assert_called_once()
         call_args = index_builder.text_splitter.split_text.call_args
@@ -146,11 +146,11 @@ class TestRAGIndexBuilder:
         """Test index building handles PDF extraction failure."""
         # Given
         index_builder.pdf_processor.extract_text.side_effect = Exception("PDF corrupted")
-        
+
         # When/Then
         with pytest.raises(RAGIndexError) as exc_info:
             await index_builder.build_index(sample_document)
-        
+
         assert "PDF extraction failed" in str(exc_info.value)
         assert "PDF corrupted" in str(exc_info.value)
 
@@ -159,11 +159,11 @@ class TestRAGIndexBuilder:
         """Test index building handles empty document content."""
         # Given
         index_builder.pdf_processor.extract_text.return_value = ""
-        
+
         # When/Then
         with pytest.raises(RAGIndexError) as exc_info:
             await index_builder.build_index(sample_document)
-        
+
         assert "Document contains no extractable text" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -172,7 +172,7 @@ class TestRAGIndexBuilder:
         # Given - setup index file
         index_path = index_builder._get_index_path(sample_document.id)
         index_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Create mock index metadata
         metadata = {
             "document_id": sample_document.id,
@@ -181,10 +181,10 @@ class TestRAGIndexBuilder:
             "content_hash": sample_document.content_hash
         }
         (index_path / "metadata.json").write_text(json.dumps(metadata))
-        
+
         # When
         result = await index_builder.verify_index(sample_document.id)
-        
+
         # Then
         assert result is True
 
@@ -193,7 +193,7 @@ class TestRAGIndexBuilder:
         """Test index verification fails for missing index files."""
         # When
         result = await index_builder.verify_index(document_id=999)
-        
+
         # Then
         assert result is False
 
@@ -204,10 +204,10 @@ class TestRAGIndexBuilder:
         index_path = index_builder._get_index_path(sample_document.id)
         index_path.parent.mkdir(parents=True, exist_ok=True)
         (index_path / "metadata.json").write_text("invalid json")
-        
+
         # When
         result = await index_builder.verify_index(sample_document.id)
-        
+
         # Then
         assert result is False
 
@@ -216,14 +216,14 @@ class TestRAGIndexBuilder:
         # Given - setup index directory with files
         index_path = index_builder._get_index_path(sample_document.id)
         index_path.mkdir(parents=True, exist_ok=True)
-        
+
         # Create mock files with sizes
         (index_path / "vectors.pkl").write_bytes(b"mock_vector_data" * 100)
         (index_path / "metadata.json").write_text('{"chunks_count": 5}')
-        
+
         # When
         stats = index_builder.get_index_stats(sample_document.id)
-        
+
         # Then
         assert stats["document_id"] == sample_document.id
         assert stats["total_size"] > 0
@@ -234,7 +234,7 @@ class TestRAGIndexBuilder:
         """Test index stats for non-existent index."""
         # When
         stats = index_builder.get_index_stats(document_id=999)
-        
+
         # Then
         assert stats is None
 
@@ -243,17 +243,17 @@ class TestRAGIndexBuilder:
         """Test rebuilding existing index."""
         # Given - create existing index
         await index_builder.build_index(sample_document)
-        
+
         # Reset mocks to track rebuild
         index_builder.vector_store.reset_mock()
-        
+
         # When
         result = await index_builder.rebuild_index(sample_document)
-        
+
         # Then
         assert result["status"] == "success"
         assert result["operation"] == "rebuild"
-        
+
         # Verify old index was cleaned up before rebuild
         index_builder.vector_store.add_documents.assert_called_once()
 
@@ -264,10 +264,10 @@ class TestRAGIndexBuilder:
         await index_builder.build_index(sample_document)
         index_path = index_builder._get_index_path(sample_document.id)
         assert index_path.exists()
-        
+
         # When
         result = await index_builder.delete_index(sample_document.id)
-        
+
         # Then
         assert result["deleted"] is True
         assert result["document_id"] == sample_document.id
@@ -278,46 +278,46 @@ class TestRAGIndexBuilder:
         """Test batch processing of multiple documents."""
         # Given
         documents = [
-            DocumentModel(id=1, title="Doc 1", file_path="/test1.pdf", 
+            DocumentModel(id=1, title="Doc 1", file_path="/test1.pdf",
                          content_hash="hash1", mime_type="application/pdf"),
-            DocumentModel(id=2, title="Doc 2", file_path="/test2.pdf", 
+            DocumentModel(id=2, title="Doc 2", file_path="/test2.pdf",
                          content_hash="hash2", mime_type="application/pdf"),
-            DocumentModel(id=3, title="Doc 3", file_path="/test3.pdf", 
+            DocumentModel(id=3, title="Doc 3", file_path="/test3.pdf",
                          content_hash="hash3", mime_type="application/pdf")
         ]
-        
+
         # When
         results = await index_builder.batch_build_indexes(documents)
-        
+
         # Then
         assert len(results) == 3
         assert all(r["status"] == "success" for r in results)
         assert index_builder.pdf_processor.extract_text.call_count == 3
         assert index_builder.vector_store.add_documents.call_count == 3
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_batch_processing_with_partial_failures(self, index_builder):
         """Test batch processing handles partial failures correctly."""
         # Given
         documents = [
-            DocumentModel(id=1, title="Doc 1", file_path="/test1.pdf", 
+            DocumentModel(id=1, title="Doc 1", file_path="/test1.pdf",
                          content_hash="hash1", mime_type="application/pdf"),
-            DocumentModel(id=2, title="Doc 2", file_path="/test2.pdf", 
+            DocumentModel(id=2, title="Doc 2", file_path="/test2.pdf",
                          content_hash="hash2", mime_type="application/pdf")
         ]
-        
+
         # Mock failure for second document
         def extract_side_effect(file_path):
             if "test2.pdf" in file_path:
                 raise Exception("Processing error")
             return "Sample content"
-        
+
         index_builder.pdf_processor.extract_text.side_effect = extract_side_effect
-        
+
         # When
-        results = await index_builder.batch_build_indexes(documents, 
+        results = await index_builder.batch_build_indexes(documents,
                                                          fail_fast=False)
-        
+
         # Then
         assert len(results) == 2
         assert results[0]["status"] == "success"
@@ -328,26 +328,26 @@ class TestRAGIndexBuilder:
         """Test different chunking strategies for optimal indexing."""
         # Given
         test_content = "A" * 10000  # Long content to test chunking
-        
+
         # Test different chunk sizes
         strategies = [
             {"chunk_size": 1000, "chunk_overlap": 100},
-            {"chunk_size": 2000, "chunk_overlap": 200}, 
+            {"chunk_size": 2000, "chunk_overlap": 200},
             {"chunk_size": 4000, "chunk_overlap": 400}
         ]
-        
+
         for strategy in strategies:
             # When
             index_builder.text_splitter.split_text.return_value = [
-                test_content[i:i+strategy["chunk_size"]] 
+                test_content[i:i+strategy["chunk_size"]]
                 for i in range(0, len(test_content), strategy["chunk_size"])
             ]
-            
+
             chunks = index_builder._optimize_chunking(test_content, strategy)
-            
+
             # Then
             assert len(chunks) > 0
-            assert all(len(chunk) <= strategy["chunk_size"] + strategy["chunk_overlap"] 
+            assert all(len(chunk) <= strategy["chunk_size"] + strategy["chunk_overlap"]
                       for chunk in chunks)
 
     @pytest.mark.asyncio
@@ -359,15 +359,15 @@ class TestRAGIndexBuilder:
             "compression_level": 6,
             "optimize_storage": True
         }
-        
+
         # When
-        result = await index_builder.build_index(sample_document, 
+        result = await index_builder.build_index(sample_document,
                                                compression_config=compression_config)
-        
+
         # Then
         assert result["status"] == "success"
         assert "compressed_size" in result
-        
+
         # Verify compression was applied
         index_path = index_builder._get_index_path(sample_document.id)
         assert (index_path / "vectors.gz").exists() or \
@@ -377,18 +377,18 @@ class TestRAGIndexBuilder:
     async def test_concurrent_index_building(self, index_builder):
         """Test concurrent index building for multiple documents."""
         import asyncio
-        
+
         # Given
         documents = [
             DocumentModel(id=i, title=f"Doc {i}", file_path=f"/test{i}.pdf",
                          content_hash=f"hash{i}", mime_type="application/pdf")
             for i in range(1, 6)
         ]
-        
+
         # When
         tasks = [index_builder.build_index(doc) for doc in documents]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Then
         assert len(results) == 5
         successful_results = [r for r in results if not isinstance(r, Exception)]
@@ -400,21 +400,21 @@ class TestRAGIndexBuilder:
         # Given - simulate large document
         large_document = DocumentModel(
             id=1,
-            title="Large Document", 
+            title="Large Document",
             file_path="/large_doc.pdf",
             content_hash="large_hash",
             mime_type="application/pdf",
             file_size=50 * 1024 * 1024  # 50MB
         )
-        
+
         # Mock large content extraction
         large_content = "Large document content. " * 100000  # ~2MB of text
         index_builder.pdf_processor.extract_text.return_value = large_content
-        
+
         # When
-        result = await index_builder.build_index(large_document, 
+        result = await index_builder.build_index(large_document,
                                                memory_efficient=True)
-        
+
         # Then
         assert result["status"] == "success"
         assert result["chunks_created"] > 10  # Should create many chunks
@@ -424,15 +424,15 @@ class TestRAGIndexBuilder:
         """Test index metadata creation and management."""
         # Given
         index_path = index_builder._get_index_path(sample_document.id)
-        
+
         # When
-        metadata = index_builder._create_index_metadata(sample_document, 
+        metadata = index_builder._create_index_metadata(sample_document,
                                                        chunks_count=5,
                                                        processing_stats={
                                                            "processing_time": 1.5,
                                                            "memory_usage": "100MB"
                                                        })
-        
+
         # Then
         assert metadata["document_id"] == sample_document.id
         assert metadata["content_hash"] == sample_document.content_hash
@@ -446,10 +446,10 @@ class TestRAGIndexBuilder:
         """Test comprehensive index validation and integrity checking."""
         # Given - build index
         await index_builder.build_index(sample_document)
-        
+
         # When
         validation_result = await index_builder.validate_index_integrity(sample_document.id)
-        
+
         # Then
         assert validation_result["valid"] is True
         assert validation_result["checks_passed"] > 0
@@ -467,7 +467,7 @@ class TestRAGIndexBuilderErrorHandling:
         mock_pdf_processor = Mock()
         mock_vector_store = Mock()
         mock_text_splitter = Mock()
-        
+
         return RAGIndexBuilder(
             index_storage_path=temp_directory,
             pdf_processor=mock_pdf_processor,
@@ -481,16 +481,16 @@ class TestRAGIndexBuilderErrorHandling:
         # Given
         document = DocumentModel(id=1, title="Test", file_path="/test.pdf",
                                content_hash="hash", mime_type="application/pdf")
-        
+
         # Mock permission error
         error_prone_builder.vector_store.save_local.side_effect = PermissionError("Access denied")
         error_prone_builder.pdf_processor.extract_text.return_value = "content"
         error_prone_builder.text_splitter.split_text.return_value = ["chunk1"]
-        
+
         # When/Then
         with pytest.raises(RAGIndexError) as exc_info:
             await error_prone_builder.build_index(document)
-        
+
         assert "Storage access denied" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -499,16 +499,16 @@ class TestRAGIndexBuilderErrorHandling:
         # Given
         document = DocumentModel(id=1, title="Test", file_path="/test.pdf",
                                content_hash="hash", mime_type="application/pdf")
-        
+
         # Mock disk space error
         error_prone_builder.vector_store.save_local.side_effect = OSError("No space left on device")
         error_prone_builder.pdf_processor.extract_text.return_value = "content"
         error_prone_builder.text_splitter.split_text.return_value = ["chunk1"]
-        
+
         # When/Then
         with pytest.raises(RAGIndexError) as exc_info:
             await error_prone_builder.build_index(document)
-        
+
         assert "Insufficient storage space" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -517,13 +517,13 @@ class TestRAGIndexBuilderErrorHandling:
         # Given
         document = DocumentModel(id=1, title="Test", file_path="/corrupted.pdf",
                                content_hash="hash", mime_type="application/pdf")
-        
+
         # Mock PDF corruption
         error_prone_builder.pdf_processor.extract_text.side_effect = Exception("PDF structure damaged")
-        
+
         # When/Then
         with pytest.raises(RAGIndexError) as exc_info:
             await error_prone_builder.build_index(document)
-        
+
         assert "PDF processing failed" in str(exc_info.value)
         assert "PDF structure damaged" in str(exc_info.value)

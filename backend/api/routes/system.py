@@ -23,7 +23,7 @@ from backend.api.models import (
 )
 from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor
 from backend.services.real_time_metrics_collector import (
-    RealTimeMetricsCollector, 
+    RealTimeMetricsCollector,
     MetricType,
     SystemMetrics,
     DatabaseMetrics,
@@ -295,10 +295,10 @@ async def get_secrets_health():
     try:
         secrets_manager = ProductionSecretsManager()
         health_status = secrets_manager.health_check()
-        
+
         # Add additional validation service health
         validation_service = SecretValidationService(secrets_manager)
-        
+
         # Test validation system
         test_results = []
         try:
@@ -314,12 +314,12 @@ async def get_secrets_health():
                 "validation_test": "failed",
                 "error": str(e)
             })
-        
+
         health_status["validation_service"] = {
             "status": "healthy" if test_results and test_results[0].get("validation_test") == "passed" else "error",
             "test_results": test_results
         }
-        
+
         return BaseResponse(
             message="Secrets health check completed",
             data=health_status
@@ -347,10 +347,10 @@ async def validate_environment_secrets(
             "encryption_key": "encryption_key_with_256_bit_strength_abc123",
             "google_api_key": "AIzaSyD_example_key_1234567890"
         }
-        
+
         secrets_manager = ProductionSecretsManager()
         validation_service = SecretValidationService(secrets_manager)
-        
+
         # Convert compliance standards
         standards = []
         if compliance_standards:
@@ -359,17 +359,17 @@ async def validate_environment_secrets(
                     standards.append(ComplianceStandard(std))
                 except ValueError:
                     logger.warning(f"Unknown compliance standard: {std}")
-        
+
         # Validate all secrets
         validation_results = await validation_service.validate_environment_secrets(
             test_secrets, environment, standards
         )
-        
+
         # Generate compliance report
         compliance_report = validation_service.generate_compliance_report(
             validation_results, environment, standards
         )
-        
+
         return BaseResponse(
             message=f"Secrets validation completed for {environment}",
             data={
@@ -379,7 +379,7 @@ async def validate_environment_secrets(
                         "compliance_status": report.compliance_status,
                         "issues_count": len([r for r in report.validation_results if not r.passed]),
                         "critical_issues": len([
-                            r for r in report.validation_results 
+                            r for r in report.validation_results
                             if not r.passed and r.severity == ValidationSeverity.CRITICAL
                         ])
                     }
@@ -401,15 +401,15 @@ async def rotate_secret(secret_name: str):
     """Rotate a specific secret with zero-downtime."""
     try:
         secrets_manager = ProductionSecretsManager()
-        
+
         # Perform secret rotation
         new_version = secrets_manager.rotate_key(secret_name)
-        
+
         # Get audit trail for the rotation
         audit_entries = secrets_manager.get_audit_trail(
             operation="rotate_secret"
         )
-        
+
         return BaseResponse(
             message=f"Secret {secret_name} rotated successfully",
             data={
@@ -432,10 +432,10 @@ async def backup_secrets(backup_name: Optional[str] = None):
     """Create encrypted backup of all secrets."""
     try:
         secrets_manager = ProductionSecretsManager()
-        
+
         # Create backup
         backup_path = secrets_manager.backup_secrets(backup_name)
-        
+
         return BaseResponse(
             message="Secrets backup created successfully",
             data={
@@ -461,12 +461,12 @@ async def detailed_health_check(
     """Comprehensive health status with detailed component information."""
     try:
         health_data = {}
-        
+
         # System resources
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
         cpu_percent = psutil.cpu_percent(interval=1)
-        
+
         health_data["system_resources"] = {
             "memory": {
                 "total_bytes": memory.total,
@@ -486,14 +486,14 @@ async def detailed_health_check(
                 "status": "healthy" if cpu_percent < 70 else "warning" if cpu_percent < 85 else "critical"
             }
         }
-        
+
         # Database health
         db_health = {"status": "unknown", "connection_pool": {}, "response_time_ms": None}
         try:
             start_time = time.time()
             result = db.fetch_one("SELECT 1 as test, datetime('now') as current_time")
             response_time = (time.time() - start_time) * 1000
-            
+
             db_health.update({
                 "status": "healthy",
                 "response_time_ms": round(response_time, 2),
@@ -506,15 +506,15 @@ async def detailed_health_check(
                 "error": str(e),
                 "connection_active": False
             })
-        
+
         health_data["database"] = db_health
-        
+
         # RAG service health
         rag_health = {
             "available": rag_service is not None,
             "status": "healthy" if rag_service is not None else "unavailable"
         }
-        
+
         if rag_service:
             try:
                 # Test RAG service with a simple operation
@@ -528,14 +528,14 @@ async def detailed_health_check(
                     "status": "error",
                     "error": str(e)
                 })
-        
+
         health_data["rag_service"] = rag_health
-        
+
         # Storage health with detailed breakdown
         storage_health = {"status": "unknown", "directories": {}}
         try:
             base_dir = Path.home() / ".ai_pdf_scholar"
-            
+
             if base_dir.exists():
                 # Check critical directories
                 critical_dirs = ["uploads", "vector_indexes", "cache"]
@@ -544,7 +544,7 @@ async def detailed_health_check(
                     if dir_path.exists():
                         dir_size = sum(f.stat().st_size for f in dir_path.rglob("*") if f.is_file())
                         file_count = len([f for f in dir_path.rglob("*") if f.is_file()])
-                        
+
                         storage_health["directories"][dir_name] = {
                             "exists": True,
                             "size_bytes": dir_size,
@@ -556,19 +556,19 @@ async def detailed_health_check(
                             "exists": False,
                             "error": "Directory not found"
                         }
-                
+
                 storage_health["status"] = "healthy"
             else:
                 storage_health["status"] = "not_initialized"
-                
+
         except Exception as e:
             storage_health.update({
                 "status": "error",
                 "error": str(e)
             })
-        
+
         health_data["storage"] = storage_health
-        
+
         # API configuration health
         api_health = {
             "gemini_api_configured": Config.get_gemini_api_key() is not None,
@@ -576,10 +576,10 @@ async def detailed_health_check(
             "debug_mode": Config.DEBUG
         }
         health_data["api_configuration"] = api_health
-        
+
         # Calculate overall health score
         component_scores = []
-        
+
         # System resources score (40%)
         if health_data["system_resources"]["memory"]["status"] == "healthy":
             component_scores.append(0.4)
@@ -587,27 +587,27 @@ async def detailed_health_check(
             component_scores.append(0.2)
         else:
             component_scores.append(0.0)
-        
+
         # Database score (30%)
         if health_data["database"]["status"] == "healthy":
             component_scores.append(0.3)
         else:
             component_scores.append(0.0)
-        
+
         # RAG service score (20%)
         if health_data["rag_service"]["status"] == "healthy":
             component_scores.append(0.2)
         else:
             component_scores.append(0.0)
-        
+
         # Storage score (10%)
         if health_data["storage"]["status"] == "healthy":
             component_scores.append(0.1)
         else:
             component_scores.append(0.0)
-        
+
         overall_score = sum(component_scores)
-        
+
         # Determine overall status
         if overall_score >= 0.8:
             overall_status = "healthy"
@@ -615,19 +615,19 @@ async def detailed_health_check(
             overall_status = "degraded"
         else:
             overall_status = "unhealthy"
-        
+
         health_data["overall"] = {
             "status": overall_status,
             "score": round(overall_score, 2),
             "uptime_seconds": time.time() - startup_time,
             "timestamp": datetime.now().isoformat()
         }
-        
+
         return BaseResponse(
             message="Detailed health check completed",
             data=health_data
         )
-        
+
     except Exception as e:
         logger.error(f"Detailed health check failed: {e}")
         raise SystemException(
@@ -641,14 +641,14 @@ async def dependency_health_check():
     """Check health of external dependencies and services."""
     try:
         dependencies = {}
-        
+
         # Test Redis connection if configured
         redis_health = {"available": False, "status": "unknown"}
         try:
             # Try to connect to Redis (assuming default config)
             r = redis.Redis(host='localhost', port=6379, db=0, socket_timeout=5)
             r.ping()
-            
+
             # Get Redis info
             info = r.info()
             redis_health.update({
@@ -671,22 +671,22 @@ async def dependency_health_check():
                 "status": "error",
                 "error": str(e)
             })
-        
+
         dependencies["redis"] = redis_health
-        
+
         # Test Google Gemini API connectivity
         gemini_health = {"configured": False, "status": "unknown"}
         api_key = Config.get_gemini_api_key()
-        
+
         if api_key:
             gemini_health["configured"] = True
             try:
                 # Simple connectivity test - just check if we can import and initialize
                 import google.generativeai as genai
-                
+
                 # Configure with API key
                 genai.configure(api_key=api_key)
-                
+
                 # Test with a simple request (without actually making a call)
                 gemini_health.update({
                     "status": "healthy",
@@ -709,21 +709,21 @@ async def dependency_health_check():
                 "status": "not_configured",
                 "error": "API key not provided"
             })
-        
+
         dependencies["google_gemini"] = gemini_health
-        
+
         # Test file system access
         filesystem_health = {"status": "unknown"}
         try:
             base_dir = Path.home() / ".ai_pdf_scholar"
             test_file = base_dir / "health_test.tmp"
-            
+
             # Test write permissions
             base_dir.mkdir(parents=True, exist_ok=True)
             test_file.write_text("health_check")
             content = test_file.read_text()
             test_file.unlink()
-            
+
             filesystem_health.update({
                 "status": "healthy",
                 "writable": True,
@@ -736,16 +736,16 @@ async def dependency_health_check():
                 "error": str(e),
                 "writable": False
             })
-        
+
         dependencies["filesystem"] = filesystem_health
-        
+
         # Calculate overall dependency health
         healthy_deps = sum(1 for dep in dependencies.values() if dep["status"] == "healthy")
         total_deps = len(dependencies)
         health_score = healthy_deps / total_deps if total_deps > 0 else 0
-        
+
         overall_status = "healthy" if health_score >= 0.8 else "degraded" if health_score >= 0.5 else "unhealthy"
-        
+
         return BaseResponse(
             message="Dependency health check completed",
             data={
@@ -759,7 +759,7 @@ async def dependency_health_check():
                 }
             }
         )
-        
+
     except Exception as e:
         logger.error(f"Dependency health check failed: {e}")
         raise SystemException(
@@ -773,16 +773,16 @@ async def performance_health_check():
     """Real-time performance metrics and health indicators."""
     try:
         performance_data = {}
-        
+
         # System performance metrics
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
-        
+
         # CPU metrics with more detail
         cpu_times = psutil.cpu_times()
         cpu_count = psutil.cpu_count()
         cpu_freq = psutil.cpu_freq()
-        
+
         performance_data["cpu"] = {
             "usage_percent": psutil.cpu_percent(interval=1),
             "core_count": cpu_count,
@@ -791,7 +791,7 @@ async def performance_health_check():
             "context_switches": psutil.cpu_stats().ctx_switches,
             "interrupts": psutil.cpu_stats().interrupts
         }
-        
+
         # Memory metrics with swap info
         swap = psutil.swap_memory()
         performance_data["memory"] = {
@@ -805,7 +805,7 @@ async def performance_health_check():
             "swap_used_bytes": swap.used,
             "swap_percent": swap.percent
         }
-        
+
         # Disk I/O metrics
         disk_io = psutil.disk_io_counters()
         performance_data["disk"] = {
@@ -819,7 +819,7 @@ async def performance_health_check():
             "read_time_ms": disk_io.read_time if disk_io else 0,
             "write_time_ms": disk_io.write_time if disk_io else 0
         }
-        
+
         # Network I/O metrics
         net_io = psutil.net_io_counters()
         performance_data["network"] = {
@@ -832,11 +832,11 @@ async def performance_health_check():
             "dropin": net_io.dropin if net_io else 0,
             "dropout": net_io.dropout if net_io else 0
         }
-        
+
         # Process-specific metrics
         current_process = psutil.Process()
         process_memory = current_process.memory_info()
-        
+
         performance_data["process"] = {
             "pid": current_process.pid,
             "cpu_percent": current_process.cpu_percent(),
@@ -847,18 +847,18 @@ async def performance_health_check():
             "create_time": current_process.create_time(),
             "uptime_seconds": time.time() - current_process.create_time()
         }
-        
+
         # Database performance test
         db_performance = {"status": "unknown"}
         try:
             from backend.api.dependencies import get_db
             db = next(get_db())
-            
+
             # Simple query performance test
             start_time = time.time()
             result = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
             query_time = (time.time() - start_time) * 1000
-            
+
             db_performance.update({
                 "status": "healthy",
                 "simple_query_ms": round(query_time, 2),
@@ -869,49 +869,49 @@ async def performance_health_check():
                 "status": "error",
                 "error": str(e)
             })
-        
+
         performance_data["database"] = db_performance
-        
+
         # Performance health assessment
         health_indicators = []
-        
+
         # CPU health
         if performance_data["cpu"]["usage_percent"] > 90:
             health_indicators.append({"component": "cpu", "level": "critical", "message": "CPU usage very high"})
         elif performance_data["cpu"]["usage_percent"] > 75:
             health_indicators.append({"component": "cpu", "level": "warning", "message": "CPU usage elevated"})
-        
+
         # Memory health
         memory_percent = (memory.used / memory.total) * 100
         if memory_percent > 90:
             health_indicators.append({"component": "memory", "level": "critical", "message": "Memory usage very high"})
         elif memory_percent > 80:
             health_indicators.append({"component": "memory", "level": "warning", "message": "Memory usage elevated"})
-        
+
         # Disk health
         disk_percent = (disk.used / disk.total) * 100
         if disk_percent > 95:
             health_indicators.append({"component": "disk", "level": "critical", "message": "Disk space critically low"})
         elif disk_percent > 85:
             health_indicators.append({"component": "disk", "level": "warning", "message": "Disk space low"})
-        
+
         # Database performance health
         if db_performance["status"] == "healthy" and db_performance.get("simple_query_ms", 0) > 1000:
             health_indicators.append({"component": "database", "level": "warning", "message": "Database queries slow"})
         elif db_performance["status"] != "healthy":
             health_indicators.append({"component": "database", "level": "critical", "message": "Database not responding"})
-        
+
         # Overall performance score
         critical_issues = len([i for i in health_indicators if i["level"] == "critical"])
         warning_issues = len([i for i in health_indicators if i["level"] == "warning"])
-        
+
         if critical_issues > 0:
             overall_status = "critical"
         elif warning_issues > 0:
             overall_status = "warning"
         else:
             overall_status = "healthy"
-        
+
         performance_data["health_assessment"] = {
             "overall_status": overall_status,
             "critical_issues": critical_issues,
@@ -919,12 +919,12 @@ async def performance_health_check():
             "health_indicators": health_indicators,
             "timestamp": datetime.now().isoformat()
         }
-        
+
         return BaseResponse(
             message="Performance health check completed",
             data=performance_data
         )
-        
+
     except Exception as e:
         logger.error(f"Performance health check failed: {e}")
         raise SystemException(
@@ -941,16 +941,16 @@ async def get_secrets_audit_log(
     """Get secrets management audit log."""
     try:
         secrets_manager = ProductionSecretsManager()
-        
+
         from datetime import timedelta
         start_time = time.time() - (hours * 3600)  # Convert hours to seconds
         start_datetime = datetime.fromtimestamp(start_time)
-        
+
         audit_entries = secrets_manager.get_audit_trail(
             start_time=start_datetime,
             operation=operation
         )
-        
+
         # Summarize audit data
         summary = {
             "total_operations": len(audit_entries),
@@ -958,11 +958,11 @@ async def get_secrets_audit_log(
             "failed_operations": len([e for e in audit_entries if not e.get("success", True)]),
             "operations_by_type": {}
         }
-        
+
         for entry in audit_entries:
             op_type = entry.get("operation", "unknown")
             summary["operations_by_type"][op_type] = summary["operations_by_type"].get(op_type, 0) + 1
-        
+
         return BaseResponse(
             message=f"Retrieved {len(audit_entries)} audit entries from last {hours} hours",
             data={
@@ -992,10 +992,10 @@ async def get_current_metrics():
                 status_code=503,
                 detail="Metrics collection not initialized"
             )
-        
+
         current_metrics = metrics_collector.get_current_metrics()
         system_health = metrics_collector.get_system_health_summary()
-        
+
         return BaseResponse(
             message="Current metrics retrieved successfully",
             data={
@@ -1026,7 +1026,7 @@ async def get_metrics_history(
                 status_code=503,
                 detail="Metrics collection not initialized"
             )
-        
+
         # Convert string to MetricType enum
         try:
             metric_enum = MetricType(metric_type.lower())
@@ -1035,9 +1035,9 @@ async def get_metrics_history(
                 status_code=400,
                 detail=f"Invalid metric type. Valid types: {[t.value for t in MetricType]}"
             )
-        
+
         history = metrics_collector.get_metrics_history(metric_enum, hours_back)
-        
+
         return BaseResponse(
             message=f"Retrieved {len(history)} {metric_type} metrics from last {hours_back} hours",
             data={
@@ -1066,7 +1066,7 @@ async def get_detailed_system_metrics():
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
             cpu_percent = psutil.cpu_percent(interval=1)
-            
+
             return BaseResponse(
                 message="System metrics retrieved (fallback mode)",
                 data={
@@ -1077,25 +1077,25 @@ async def get_detailed_system_metrics():
                     "timestamp": datetime.now().isoformat()
                 }
             )
-        
+
         # Get current metrics
         current_metrics = metrics_collector.get_current_metrics()
-        
+
         # Get recent history for trending
         system_history = metrics_collector.get_metrics_history(MetricType.SYSTEM, 1)
-        
+
         # Calculate trends if we have enough data
         trends = {}
         if len(system_history) >= 2:
             recent = system_history[-1]
             previous = system_history[0]
-            
+
             trends = {
                 "cpu_trend": recent.get("cpu_percent", 0) - previous.get("cpu_percent", 0),
                 "memory_trend": recent.get("memory_percent", 0) - previous.get("memory_percent", 0),
                 "disk_trend": recent.get("disk_usage_percent", 0) - previous.get("disk_usage_percent", 0)
             }
-        
+
         return BaseResponse(
             message="Detailed system metrics retrieved successfully",
             data={
@@ -1123,11 +1123,11 @@ async def get_database_metrics():
             try:
                 from backend.api.dependencies import get_db
                 db = next(get_db())
-                
+
                 start_time = time.time()
                 result = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
                 query_time = (time.time() - start_time) * 1000
-                
+
                 return BaseResponse(
                     message="Database metrics retrieved (fallback mode)",
                     data={
@@ -1147,13 +1147,13 @@ async def get_database_metrics():
                         "timestamp": datetime.now().isoformat()
                     }
                 )
-        
+
         current_metrics = metrics_collector.get_current_metrics()
         db_metrics = current_metrics.get(MetricType.DATABASE.value, {})
-        
+
         # Get database history
         db_history = metrics_collector.get_metrics_history(MetricType.DATABASE, 1)
-        
+
         return BaseResponse(
             message="Database metrics retrieved successfully",
             data={
@@ -1180,25 +1180,25 @@ async def get_websocket_metrics():
                 status_code=503,
                 detail="Metrics collection not initialized"
             )
-        
+
         current_metrics = metrics_collector.get_current_metrics()
         ws_metrics = current_metrics.get(MetricType.WEBSOCKET.value, {})
-        
+
         # Get WebSocket history
         ws_history = metrics_collector.get_metrics_history(MetricType.WEBSOCKET, 1)
-        
+
         # Calculate activity statistics
         activity_stats = {}
         if ws_history:
             recent_data = ws_history[-10:] if len(ws_history) >= 10 else ws_history
-            
+
             activity_stats = {
                 "avg_connections": sum(d.get("active_connections", 0) for d in recent_data) / len(recent_data),
                 "max_connections": max(d.get("active_connections", 0) for d in recent_data),
                 "avg_task_duration": sum(d.get("avg_task_duration_ms", 0) for d in recent_data) / len(recent_data),
                 "total_completed_tasks": sum(d.get("rag_tasks_completed", 0) for d in recent_data)
             }
-        
+
         return BaseResponse(
             message="WebSocket metrics retrieved successfully",
             data={
@@ -1226,7 +1226,7 @@ async def get_memory_leak_metrics():
             # Fallback memory check
             process = psutil.Process()
             memory_info = process.memory_info()
-            
+
             return BaseResponse(
                 message="Memory metrics retrieved (fallback mode)",
                 data={
@@ -1236,13 +1236,13 @@ async def get_memory_leak_metrics():
                     "timestamp": datetime.now().isoformat()
                 }
             )
-        
+
         current_metrics = metrics_collector.get_current_metrics()
         memory_metrics = current_metrics.get(MetricType.MEMORY.value, {})
-        
+
         # Get memory history for leak detection
         memory_history = metrics_collector.get_metrics_history(MetricType.MEMORY, 2)
-        
+
         # Analyze for potential leaks
         leak_analysis = {"status": "healthy"}
         if len(memory_history) >= 10:
@@ -1261,7 +1261,7 @@ async def get_memory_leak_metrics():
                         "message": f"Memory leak likely: {growth_rate:.2f}MB/interval growth",
                         "growth_rate_mb": round(growth_rate, 2)
                     }
-        
+
         return BaseResponse(
             message="Memory leak detection completed",
             data={

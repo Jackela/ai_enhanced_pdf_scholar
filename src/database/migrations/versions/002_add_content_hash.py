@@ -110,8 +110,8 @@ class AddContentHashMigration(BaseMigration):
 
         # Copy data from old table to new table (excluding content_hash)
         copy_data_sql = """
-        INSERT INTO documents_new 
-        (id, title, file_path, file_hash, file_size, page_count, 
+        INSERT INTO documents_new
+        (id, title, file_path, file_hash, file_size, page_count,
          created_at, updated_at, last_accessed, metadata)
         SELECT id, title, file_path, file_hash, file_size, page_count,
                created_at, updated_at, last_accessed, metadata

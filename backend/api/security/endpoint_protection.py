@@ -41,7 +41,7 @@ def secure_endpoint(
 ):
     """
     Comprehensive security decorator for API endpoints.
-    
+
     Args:
         resource: Resource type being accessed
         action: Action being performed
@@ -49,7 +49,7 @@ def secure_endpoint(
         rate_limit: Custom rate limit for this endpoint
         audit_log: Whether to log this action to audit trail
         validate_input: Whether to perform input validation
-        
+
     Example:
         @secure_endpoint(ResourceTypes.DOCUMENT, Actions.READ)
         async def get_document(doc_id: int, user: User = Depends(get_current_user)):
@@ -60,7 +60,7 @@ def secure_endpoint(
         async def wrapper(*args, **kwargs):
             # Extract request if available
             request = kwargs.get("request")
-            
+
             # Authentication check
             if not allow_anonymous:
                 user = kwargs.get("current_user") or kwargs.get("user")
@@ -92,7 +92,7 @@ def secure_endpoint(
                         )
             else:
                 user = kwargs.get("current_user") or kwargs.get("user")
-            
+
             # RBAC check (if user is authenticated)
             if user:
                 db = kwargs.get("db")
@@ -106,12 +106,12 @@ def secure_endpoint(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Database session not available"
                         )
-                
+
                 rbac = RBACService(db)
-                
+
                 # Extract resource_id if available
                 resource_id = kwargs.get(f"{resource}_id") or kwargs.get("id")
-                
+
                 # Check permission
                 permission_check = rbac.check_permission(
                     user=user,
@@ -119,7 +119,7 @@ def secure_endpoint(
                     action=action,
                     resource_id=str(resource_id) if resource_id else None
                 )
-                
+
                 if not permission_check.allowed:
                     # Log unauthorized access attempt
                     if audit_log:
@@ -134,15 +134,15 @@ def secure_endpoint(
                                 "reason": permission_check.reason
                             }
                         )
-                    
+
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail=permission_check.reason
                     )
-                
+
                 # Add permission context to kwargs
                 kwargs["permission_context"] = permission_check.context
-            
+
             # Audit logging for successful access
             if audit_log and user:
                 logger.info(
@@ -155,13 +155,13 @@ def secure_endpoint(
                         "endpoint": func.__name__
                     }
                 )
-            
+
             # Execute the actual function
             return await func(*args, **kwargs)
-        
+
         # Add security information to function for OpenAPI docs
         wrapper.__doc__ = (func.__doc__ or "") + f"\n\nSecurity: Requires {resource}:{action} permission"
-        
+
         return wrapper
     return decorator
 
@@ -181,7 +181,7 @@ def secure_admin_endpoint(audit_log: bool = True):
                     detail="Authentication required",
                     headers={"WWW-Authenticate": "Bearer"}
                 )
-            
+
             # Check for admin roles
             user_roles = [role.name for role in user.roles]
             if "admin" not in user_roles and "super_admin" not in user_roles:
@@ -190,20 +190,20 @@ def secure_admin_endpoint(audit_log: bool = True):
                         f"Non-admin user {user.email} attempted to access admin endpoint",
                         extra={"user_id": user.id, "endpoint": func.__name__}
                     )
-                
+
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Admin access required"
                 )
-            
+
             if audit_log:
                 logger.info(
                     f"Admin access: {user.email} accessed {func.__name__}",
                     extra={"user_id": user.id, "endpoint": func.__name__}
                 )
-            
+
             return await func(*args, **kwargs)
-        
+
         wrapper.__doc__ = (func.__doc__ or "") + "\n\nSecurity: Admin access required"
         return wrapper
     return decorator
@@ -212,11 +212,11 @@ def secure_admin_endpoint(audit_log: bool = True):
 def secure_owner_only(resource_type: str, get_owner_func: Callable):
     """
     Decorator that ensures only the resource owner can access.
-    
+
     Args:
         resource_type: Type of resource
         get_owner_func: Function to get owner ID from resource
-        
+
     Example:
         @secure_owner_only("document", lambda doc: doc.user_id)
         async def update_my_document(doc_id: int, ...):
@@ -232,7 +232,7 @@ def secure_owner_only(resource_type: str, get_owner_func: Callable):
                     detail="Authentication required",
                     headers={"WWW-Authenticate": "Bearer"}
                 )
-            
+
             # Get the resource
             resource_id = kwargs.get(f"{resource_type}_id") or kwargs.get("id")
             if not resource_id:
@@ -240,13 +240,13 @@ def secure_owner_only(resource_type: str, get_owner_func: Callable):
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"No {resource_type} ID provided"
                 )
-            
+
             # Check ownership
             # This would need to be implemented based on your data model
             # For now, we'll use RBAC with resource policy
             db = kwargs.get("db") or next(get_db())
             rbac = RBACService(db)
-            
+
             permission_check = rbac.check_permission(
                 user=user,
                 resource=resource_type,
@@ -254,7 +254,7 @@ def secure_owner_only(resource_type: str, get_owner_func: Callable):
                 resource_id=str(resource_id),
                 context={"owner_id": user.id}
             )
-            
+
             if not permission_check.allowed:
                 logger.warning(
                     f"User {user.email} attempted to access resource they don't own",
@@ -264,14 +264,14 @@ def secure_owner_only(resource_type: str, get_owner_func: Callable):
                         "resource_id": resource_id
                     }
                 )
-                
+
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You don't have permission to access this resource"
                 )
-            
+
             return await func(*args, **kwargs)
-        
+
         wrapper.__doc__ = (func.__doc__ or "") + f"\n\nSecurity: Owner-only access for {resource_type}"
         return wrapper
     return decorator
@@ -284,12 +284,12 @@ def rate_limited(
 ):
     """
     Rate limiting decorator for endpoints.
-    
+
     Args:
         requests: Number of requests allowed
         window: Time window in seconds
         key_func: Function to generate rate limit key
-        
+
     Example:
         @rate_limited(requests=10, window=60)
         async def expensive_operation(...):
@@ -301,7 +301,7 @@ def rate_limited(
             # Rate limiting logic would go here
             # This would integrate with the rate limiting middleware
             return await func(*args, **kwargs)
-        
+
         wrapper.__doc__ = (func.__doc__ or "") + f"\n\nRate limit: {requests} requests per {window} seconds"
         return wrapper
     return decorator
@@ -315,14 +315,14 @@ class BatchSecurityValidator:
     """
     Validates security for batch operations.
     """
-    
+
     def __init__(self, user: User, db: Session):
         """Initialize batch validator."""
         self.user = user
         self.rbac = RBACService(db)
         self.failed_items: List[Dict[str, Any]] = []
         self.successful_items: List[Any] = []
-    
+
     def validate_batch(
         self,
         items: List[Any],
@@ -332,19 +332,19 @@ class BatchSecurityValidator:
     ) -> tuple[List[Any], List[Dict[str, Any]]]:
         """
         Validate permissions for a batch of items.
-        
+
         Args:
             items: List of items to validate
             resource: Resource type
             action: Action to perform
             id_func: Function to extract ID from item
-            
+
         Returns:
             Tuple of (allowed_items, denied_items)
         """
         allowed = []
         denied = []
-        
+
         for item in items:
             item_id = id_func(item)
             check = self.rbac.check_permission(
@@ -353,7 +353,7 @@ class BatchSecurityValidator:
                 action=action,
                 resource_id=item_id
             )
-            
+
             if check.allowed:
                 allowed.append(item)
             else:
@@ -362,7 +362,7 @@ class BatchSecurityValidator:
                     "id": item_id,
                     "reason": check.reason
                 })
-        
+
         return allowed, denied
 
 
@@ -374,18 +374,18 @@ class APIKeyAuth:
     """
     API key authentication for service accounts and external integrations.
     """
-    
+
     def __init__(self, db: Session):
         """Initialize API key auth."""
         self.db = db
-    
+
     async def validate_api_key(self, api_key: str) -> Optional[User]:
         """
         Validate an API key and return associated service account.
-        
+
         Args:
             api_key: API key to validate
-            
+
         Returns:
             User object if valid, None otherwise
         """
@@ -397,10 +397,10 @@ class APIKeyAuth:
 def require_api_key(scopes: List[str] = None):
     """
     Decorator to require API key authentication.
-    
+
     Args:
         scopes: Required scopes for the API key
-        
+
     Example:
         @require_api_key(scopes=["documents:read"])
         async def external_api_endpoint(...):
@@ -415,7 +415,7 @@ def require_api_key(scopes: List[str] = None):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Request object not available"
                 )
-            
+
             # Check for API key in header
             api_key = request.headers.get("X-API-Key")
             if not api_key:
@@ -424,26 +424,26 @@ def require_api_key(scopes: List[str] = None):
                     detail="API key required",
                     headers={"WWW-Authenticate": "ApiKey"}
                 )
-            
+
             # Validate API key
             db = kwargs.get("db") or next(get_db())
             api_auth = APIKeyAuth(db)
             user = await api_auth.validate_api_key(api_key)
-            
+
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid API key"
                 )
-            
+
             # Check scopes if required
             if scopes:
                 # This would check if the API key has required scopes
                 pass
-            
+
             kwargs["current_user"] = user
             return await func(*args, **kwargs)
-        
+
         wrapper.__doc__ = (func.__doc__ or "") + f"\n\nSecurity: API key required with scopes: {scopes}"
         return wrapper
     return decorator
@@ -457,7 +457,7 @@ class SecurityContext:
     """
     Context manager for security-sensitive operations.
     """
-    
+
     def __init__(
         self,
         user: User,
@@ -474,25 +474,25 @@ class SecurityContext:
         self.audit = audit
         self.rbac = RBACService(db)
         self.start_time = None
-    
+
     async def __aenter__(self):
         """Enter security context."""
         import time
         self.start_time = time.time()
-        
+
         # Check permission
         check = self.rbac.check_permission(
             user=self.user,
             resource=self.resource,
             action=self.action
         )
-        
+
         if not check.allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=check.reason
             )
-        
+
         if self.audit:
             logger.info(
                 f"Security context entered: {self.user.email} -> {self.resource}:{self.action}",
@@ -502,14 +502,14 @@ class SecurityContext:
                     "action": self.action
                 }
             )
-        
+
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Exit security context."""
         import time
         duration = time.time() - self.start_time if self.start_time else 0
-        
+
         if self.audit:
             if exc_type:
                 logger.error(
@@ -542,7 +542,7 @@ class AutoSecurityMiddleware:
     """
     Middleware that automatically applies security to all endpoints.
     """
-    
+
     def __init__(self, app, config: Dict[str, Any]):
         """Initialize middleware."""
         self.app = app
@@ -555,18 +555,18 @@ class AutoSecurityMiddleware:
             "/api/redoc",
             "/openapi.json"
         ])
-    
+
     async def __call__(self, scope, receive, send):
         """Process request through security middleware."""
         if scope["type"] == "http":
             path = scope["path"]
-            
+
             # Check if path is excluded
             if not any(path.startswith(excluded) for excluded in self.excluded_paths):
                 # Apply automatic security checks
                 # This would integrate with the request processing
                 pass
-        
+
         await self.app(scope, receive, send)
 
 
@@ -577,11 +577,11 @@ class AutoSecurityMiddleware:
 def mask_sensitive_data(data: Dict[str, Any], fields: List[str]) -> Dict[str, Any]:
     """
     Mask sensitive fields in response data.
-    
+
     Args:
         data: Data dictionary
         fields: List of field names to mask
-        
+
     Returns:
         Data with masked fields
     """
@@ -601,10 +601,10 @@ def mask_sensitive_data(data: Dict[str, Any], fields: List[str]) -> Dict[str, An
 def sanitize_user_input(input_data: Any) -> Any:
     """
     Sanitize user input to prevent injection attacks.
-    
+
     Args:
         input_data: User input data
-        
+
     Returns:
         Sanitized data
     """

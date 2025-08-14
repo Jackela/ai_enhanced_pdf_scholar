@@ -93,7 +93,7 @@ The security headers middleware (`backend/api/middleware/security_headers.py`) i
 
 ```javascript
 // Production CSP Example
-Content-Security-Policy: 
+Content-Security-Policy:
   default-src 'none';
   script-src 'self' 'nonce-{random}' 'strict-dynamic';
   style-src 'self' 'nonce-{random}';
@@ -179,10 +179,10 @@ X_FRAME_OPTIONS=DENY
 Controls browser features:
 
 ```javascript
-Permissions-Policy: 
-  camera=(), 
-  microphone=(), 
-  geolocation=(), 
+Permissions-Policy:
+  camera=(),
+  microphone=(),
+  geolocation=(),
   payment=(self),
   usb=()
 ```
@@ -192,7 +192,7 @@ Permissions-Policy:
 ```bash
 # Environment variables
 COEP=require-corp         # Cross-Origin-Embedder-Policy
-COOP=same-origin         # Cross-Origin-Opener-Policy  
+COOP=same-origin         # Cross-Origin-Opener-Policy
 CORP=same-site           # Cross-Origin-Resource-Policy
 ```
 
@@ -280,7 +280,7 @@ Use browser developer tools to inspect headers:
 fetch('/api/test').then(r => {
   console.log('Security Headers:');
   for (let [key, value] of r.headers.entries()) {
-    if (key.toLowerCase().includes('security') || 
+    if (key.toLowerCase().includes('security') ||
         key.toLowerCase().includes('content-security') ||
         key.toLowerCase().includes('frame') ||
         key.toLowerCase().includes('strict-transport')) {
@@ -498,6 +498,6 @@ Security headers have minimal performance impact:
 
 ---
 
-**Last Updated**: 2025-01-08  
-**Version**: 1.0.0  
+**Last Updated**: 2025-01-08
+**Version**: 1.0.0
 **Maintainer**: Security Team

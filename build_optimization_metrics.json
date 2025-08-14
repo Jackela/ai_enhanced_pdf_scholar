@@ -69,7 +69,7 @@
         "optimization_applied": "Vendor chunking + caching"
       },
       {
-        "category": "Third-party Libraries", 
+        "category": "Third-party Libraries",
         "size_kb": 118.31,
         "percentage": 21.9,
         "optimization_applied": "Tree shaking + chunking"
@@ -117,7 +117,7 @@
       },
       {
         "route": "LibraryView",
-        "budget_kb": 100, 
+        "budget_kb": 100,
         "actual_kb": 9.46,
         "status": "UNDER_BUDGET"
       },

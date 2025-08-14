@@ -57,11 +57,11 @@ class TestCitationRepositoryInterface:
         """Test creating a new citation through repository."""
         # This test will fail until we implement CitationRepository
         # Following TDD red-green-refactor cycle
-        
+
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         new_citation = CitationModel(
             document_id=1,
             raw_text="New citation text",
@@ -69,14 +69,14 @@ class TestCitationRepositoryInterface:
             title="New Title",
             publication_year=2023
         )
-        
+
         # Mock database response
         mock_db_connection.execute.return_value = None
         mock_db_connection.fetch_one.return_value = {"id": 1}
-        
+
         # Act
         result = repo.create(new_citation)
-        
+
         # Assert
         assert isinstance(result, CitationModel)
         assert result.id == 1
@@ -89,7 +89,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_row = {
             "id": 1,
@@ -107,10 +107,10 @@ class TestCitationRepositoryInterface:
             "updated_at": "2023-01-01T12:00:00"
         }
         mock_db_connection.fetch_one.return_value = mock_row
-        
+
         # Act
         result = repo.get_by_id(1)
-        
+
         # Assert
         assert isinstance(result, CitationModel)
         assert result.id == 1
@@ -123,13 +123,13 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_db_connection.fetch_one.return_value = None
-        
+
         # Act
         result = repo.get_by_id(999)
-        
+
         # Assert
         assert result is None
         mock_db_connection.fetch_one.assert_called_once()
@@ -139,7 +139,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         citation = CitationModel(
             id=1,
             document_id=1,
@@ -149,13 +149,13 @@ class TestCitationRepositoryInterface:
             publication_year=2023,
             _from_database=True
         )
-        
+
         # Mock database response
         mock_db_connection.execute.return_value = None
-        
+
         # Act
         result = repo.update(citation)
-        
+
         # Assert
         assert isinstance(result, CitationModel)
         assert result.raw_text == "Updated citation text"
@@ -166,14 +166,14 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_db_connection.execute.return_value = None
         mock_db_connection.get_last_change_count.return_value = 1
-        
+
         # Act
         result = repo.delete(1)
-        
+
         # Assert
         assert result is True
         mock_db_connection.execute.assert_called_once()
@@ -183,14 +183,14 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [citation.to_database_dict() for citation in sample_citations]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.find_by_document_id(1)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 2
@@ -203,7 +203,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [{
             "id": 1,
@@ -221,10 +221,10 @@ class TestCitationRepositoryInterface:
             "updated_at": "2023-01-01T12:00:00"
         }]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.search_by_author("Smith")
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
@@ -236,7 +236,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [{
             "id": 1,
@@ -254,10 +254,10 @@ class TestCitationRepositoryInterface:
             "updated_at": "2023-01-01T12:00:00"
         }]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.search_by_title("Machine Learning")
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
@@ -269,7 +269,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_row = {
             "id": 1,
@@ -287,10 +287,10 @@ class TestCitationRepositoryInterface:
             "updated_at": "2023-01-01T12:00:00"
         }
         mock_db_connection.fetch_one.return_value = mock_row
-        
+
         # Act
         result = repo.find_by_doi("10.1000/test.doi")
-        
+
         # Assert
         assert isinstance(result, CitationModel)
         assert result.doi == "10.1000/test.doi"
@@ -301,7 +301,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [
             {
@@ -336,10 +336,10 @@ class TestCitationRepositoryInterface:
             }
         ]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.find_by_year_range(2020, 2022)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 2
@@ -351,7 +351,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [{
             "id": 1,
@@ -369,10 +369,10 @@ class TestCitationRepositoryInterface:
             "updated_at": "2023-01-01T12:00:00"
         }]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.get_by_type("journal")
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
@@ -384,7 +384,7 @@ class TestCitationRepositoryInterface:
         # Arrange
         from src.repositories.citation_repository import CitationRepository
         repo = CitationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_db_connection.fetch_one.side_effect = [
             {"count": 100},  # total_citations
@@ -396,10 +396,10 @@ class TestCitationRepositoryInterface:
             [{"citation_type": "journal", "count": 40}],  # citation_types
             [{"publication_year": 2023, "count": 15}],  # years_breakdown
         ]
-        
+
         # Act
         result = repo.get_statistics()
-        
+
         # Assert
         assert isinstance(result, dict)
         assert "total_citations" in result
@@ -447,7 +447,7 @@ class TestCitationRelationRepositoryInterface:
         # Arrange
         from src.repositories.citation_relation_repository import CitationRelationRepository
         repo = CitationRelationRepository(mock_db_connection)
-        
+
         new_relation = CitationRelationModel(
             source_document_id=1,
             source_citation_id=1,
@@ -455,14 +455,14 @@ class TestCitationRelationRepositoryInterface:
             relation_type="cites",
             confidence_score=0.88
         )
-        
+
         # Mock database response
         mock_db_connection.execute.return_value = None
         mock_db_connection.fetch_one.return_value = {"id": 1}
-        
+
         # Act
         result = repo.create(new_relation)
-        
+
         # Assert
         assert isinstance(result, CitationRelationModel)
         assert result.id == 1
@@ -475,7 +475,7 @@ class TestCitationRelationRepositoryInterface:
         # Arrange
         from src.repositories.citation_relation_repository import CitationRelationRepository
         repo = CitationRelationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [{
             "id": 1,
@@ -488,10 +488,10 @@ class TestCitationRelationRepositoryInterface:
             "created_at": "2023-01-01T12:00:00"
         }]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.find_by_source_document(1)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
@@ -503,7 +503,7 @@ class TestCitationRelationRepositoryInterface:
         # Arrange
         from src.repositories.citation_relation_repository import CitationRelationRepository
         repo = CitationRelationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [{
             "id": 1,
@@ -516,10 +516,10 @@ class TestCitationRelationRepositoryInterface:
             "created_at": "2023-01-01T12:00:00"
         }]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.find_by_target_document(1)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
@@ -531,13 +531,13 @@ class TestCitationRelationRepositoryInterface:
         # Arrange
         from src.repositories.citation_relation_repository import CitationRelationRepository
         repo = CitationRelationRepository(mock_db_connection)
-        
+
         # Mock database response - return empty relations for simplicity
         mock_db_connection.fetch_all.return_value = []
-        
+
         # Act
         result = repo.get_citation_network(1, depth=1)
-        
+
         # Assert
         assert isinstance(result, dict)
         assert "nodes" in result
@@ -553,7 +553,7 @@ class TestCitationRelationRepositoryInterface:
         # Arrange
         from src.repositories.citation_relation_repository import CitationRelationRepository
         repo = CitationRelationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_rows = [{
             "document_id": 1,
@@ -562,10 +562,10 @@ class TestCitationRelationRepositoryInterface:
             "created_at": "2023-01-01T12:00:00"
         }]
         mock_db_connection.fetch_all.return_value = mock_rows
-        
+
         # Act
         result = repo.get_most_cited_documents(limit=5)
-        
+
         # Assert
         assert isinstance(result, list)
         assert len(result) == 1
@@ -578,14 +578,14 @@ class TestCitationRelationRepositoryInterface:
         # Arrange
         from src.repositories.citation_relation_repository import CitationRelationRepository
         repo = CitationRelationRepository(mock_db_connection)
-        
+
         # Mock database response
         mock_db_connection.execute.return_value = None
         mock_db_connection.get_last_change_count.side_effect = [1, 1, 1, 0]  # 4 SQL operations
-        
+
         # Act
         result = repo.cleanup_orphaned_relations()
-        
+
         # Assert
         assert result == 3  # 1 + 1 + 1 + 0 = 3
         mock_db_connection.execute.assert_called()
@@ -593,21 +593,21 @@ class TestCitationRelationRepositoryInterface:
 
 class TestCitationRepositorySOLIDCompliance:
     """Test SOLID principles compliance in citation repositories."""
-    
+
     def test_single_responsibility_principle(self):
         """Test that each repository has a single responsibility."""
         # CitationRepository should only handle citation data operations
         # CitationRelationRepository should only handle relation operations
         from src.interfaces.repository_interfaces import ICitationRepository, ICitationRelationRepository
-        
+
         # Check that interfaces are properly segregated
         citation_methods = [method for method in dir(ICitationRepository) if not method.startswith('_')]
         relation_methods = [method for method in dir(ICitationRelationRepository) if not method.startswith('_')]
-        
+
         # Assert no overlap in responsibilities (method names should be distinct)
         assert "find_by_document_id" in citation_methods
         assert "get_citation_network" in relation_methods
-        
+
         # Both should inherit from base IRepository interface
         from src.interfaces.repository_interfaces import IRepository
         assert issubclass(ICitationRepository, IRepository)
@@ -618,18 +618,18 @@ class TestCitationRepositorySOLIDCompliance:
         from src.interfaces.repository_interfaces import (
             IRepository, ICitationRepository, ICitationRelationRepository
         )
-        
+
         # Check that clients only depend on methods they need
         base_methods = {"create", "get_by_id", "update", "delete"}
         citation_specific = {"find_by_document_id", "search_by_author", "search_by_title"}
         relation_specific = {"find_by_source_document", "get_citation_network"}
-        
+
         # Verify method separation
         citation_interface_methods = {
-            method for method in dir(ICitationRepository) 
+            method for method in dir(ICitationRepository)
             if not method.startswith('_') and callable(getattr(ICitationRepository, method))
         }
-        
+
         assert base_methods.issubset(citation_interface_methods)
         assert citation_specific.issubset(citation_interface_methods)
         assert not relation_specific.intersection(citation_interface_methods)
@@ -638,13 +638,13 @@ class TestCitationRepositorySOLIDCompliance:
         """Test that repositories depend on abstractions, not concretions."""
         # This test will verify that repositories depend on DatabaseConnection interface
         # rather than concrete database implementations
-        
+
         # Repositories should accept DatabaseConnection (abstraction) in constructor
         # This will be verified when we implement the actual repositories
-        
+
         # For now, verify that interfaces exist and are properly abstract
         from src.interfaces.repository_interfaces import ICitationRepository
-        
+
         # Check that interface methods are abstract
         assert hasattr(ICitationRepository, '__abstractmethods__')
         assert len(ICitationRepository.__abstractmethods__) > 0

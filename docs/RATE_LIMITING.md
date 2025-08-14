@@ -122,7 +122,7 @@ Access rate limiting administration at `/api/admin/rate-limit/`:
 - **GET** `/status` - System status and health
 - **GET** `/metrics?window_minutes=60` - Detailed metrics
 - **GET** `/ip/{client_ip}?window_minutes=60` - IP analysis
-- **GET** `/endpoint?endpoint=/api/documents&window_minutes=60` - Endpoint analysis  
+- **GET** `/endpoint?endpoint=/api/documents&window_minutes=60` - Endpoint analysis
 - **GET** `/suspicious-ips?window_minutes=60&min_requests=50` - Suspicious activity
 - **GET** `/top-endpoints?window_minutes=60&limit=10` - Most accessed endpoints
 - **GET** `/top-ips?window_minutes=60&limit=10` - Most active IPs
@@ -164,10 +164,10 @@ The system automatically identifies suspicious IPs based on:
    ```bash
    # Ubuntu/Debian
    sudo apt install redis-server
-   
+
    # macOS
    brew install redis
-   
+
    # Windows
    # Use Redis for Windows or Docker
    ```
@@ -206,7 +206,7 @@ python scripts/test_rate_limiting.py --help
 # Burst test (100 requests quickly)
 python scripts/test_rate_limiting.py --test burst --requests 100
 
-# Sustained load test (10 RPS for 30 seconds)  
+# Sustained load test (10 RPS for 30 seconds)
 python scripts/test_rate_limiting.py --test sustained --rps 10 --duration 30
 
 # Multi-IP test (10 IPs, 10 requests each)
@@ -293,7 +293,7 @@ logging.getLogger("backend.api.middleware.rate_limiting").setLevel(logging.DEBUG
 
 - **User-based rate limiting** (post-authentication)
 - **Dynamic rate limit adjustment** based on system load
-- **Geolocation-based rate limiting** 
+- **Geolocation-based rate limiting**
 - **Machine learning-based anomaly detection**
 - **Integration with external monitoring systems** (Prometheus, Grafana)
 - **Rate limiting for WebSocket connections**

@@ -26,24 +26,24 @@ class RedisClusterConfig:
     timeout_seconds: float = 5.0
     retry_on_timeout: bool = True
     health_check_interval: int = 30
-    
+
     def validate(self, environment: Environment) -> List[str]:
         """Validate Redis cluster configuration."""
         issues = []
-        
+
         if self.enabled and not self.nodes:
             issues.append("Redis cluster enabled but no nodes configured")
-        
+
         for node in self.nodes:
             if not all(key in node for key in ['host', 'port']):
                 issues.append("Redis node missing required host/port configuration")
-        
+
         if self.max_connections <= 0:
             issues.append("Redis max_connections must be positive")
-        
+
         if environment.is_production() and self.replication_factor < 2:
             issues.append("Production Redis cluster should have replication_factor >= 2")
-        
+
         return issues
 
 
@@ -58,21 +58,21 @@ class L1CacheConfig:
     ttl_seconds: int = 3600
     cleanup_interval_seconds: int = 60
     enable_metrics: bool = True
-    
+
     def validate(self, environment: Environment) -> List[str]:
         """Validate L1 cache configuration."""
         issues = []
-        
+
         total_size = self.hot_data_size_mb + self.warm_data_size_mb + self.cold_data_size_mb
         if total_size > self.max_size_mb:
             issues.append("L1 cache level sizes exceed maximum cache size")
-        
+
         if self.max_size_mb <= 0:
             issues.append("L1 cache max_size_mb must be positive")
-        
+
         if environment.is_production() and self.max_size_mb > 512:
             issues.append("L1 cache size may be too large for production (>512MB)")
-        
+
         return issues
 
 
@@ -88,24 +88,24 @@ class L2CacheConfig:
     write_behind_enabled: bool = True
     write_behind_flush_interval: int = 30
     hot_data_ttl_multiplier: float = 2.0
-    
+
     def validate(self, environment: Environment) -> List[str]:
         """Validate L2 cache configuration."""
         issues = []
-        
+
         if self.default_ttl_seconds <= 0:
             issues.append("L2 cache default_ttl_seconds must be positive")
-        
+
         if self.max_ttl_seconds < self.default_ttl_seconds:
             issues.append("L2 cache max_ttl_seconds cannot be less than default_ttl_seconds")
-        
+
         if self.batch_size <= 0:
             issues.append("L2 cache batch_size must be positive")
-        
+
         return issues
 
 
-@dataclass 
+@dataclass
 class L3CDNConfig:
     """L3 CDN cache configuration."""
     enabled: bool = False
@@ -119,27 +119,27 @@ class L3CDNConfig:
     api_responses_ttl: int = 3600  # 1 hour
     enable_compression: bool = True
     enable_ssl: bool = True
-    
+
     def validate(self, environment: Environment) -> List[str]:
         """Validate L3 CDN configuration."""
         issues = []
-        
+
         if self.enabled:
             if not self.domain_name:
                 issues.append("CDN enabled but domain_name not configured")
-            
+
             if self.provider == "cloudfront" and not self.distribution_id:
                 issues.append("CloudFront provider requires distribution_id")
-            
+
             if not self.origin_domain:
                 issues.append("CDN enabled but origin_domain not configured")
-            
+
             if environment.is_production() and not self.enable_ssl:
                 issues.append("CDN SSL must be enabled in production")
-        
+
         if self.default_ttl_seconds <= 0:
             issues.append("CDN default_ttl_seconds must be positive")
-        
+
         return issues
 
 
@@ -153,26 +153,26 @@ class CacheCoherencyConfig:
     coherency_check_interval: int = 300
     enable_versioning: bool = True
     enable_monitoring: bool = True
-    
+
     def validate(self, environment: Environment) -> List[str]:
         """Validate cache coherency configuration."""
         issues = []
-        
+
         valid_protocols = {"write_through", "write_behind", "write_back", "invalidate", "broadcast"}
         if self.protocol not in valid_protocols:
             issues.append(f"Invalid coherency protocol: {self.protocol}")
-        
+
         valid_consistency = {"eventual", "strong", "weak", "causal"}
         if self.consistency_level not in valid_consistency:
             issues.append(f"Invalid consistency level: {self.consistency_level}")
-        
+
         valid_invalidation = {"immediate", "lazy", "ttl_based", "version_based"}
         if self.invalidation_strategy not in valid_invalidation:
             issues.append(f"Invalid invalidation strategy: {self.invalidation_strategy}")
-        
+
         if environment.is_production() and self.consistency_level == "weak":
             issues.append("Weak consistency not recommended for production")
-        
+
         return issues
 
 
@@ -186,43 +186,43 @@ class CachingConfig:
     l2_cache: L2CacheConfig = field(default_factory=L2CacheConfig)
     l3_cdn: L3CDNConfig = field(default_factory=L3CDNConfig)
     coherency: CacheCoherencyConfig = field(default_factory=CacheCoherencyConfig)
-    
+
     # Global cache settings
     enable_multi_layer: bool = True
     cache_key_prefix: str = "pdf_scholar:"
     enable_performance_monitoring: bool = True
     metrics_collection_interval: int = 60
-    
+
     # Cache warming and prefetching
     enable_cache_warming: bool = True
     warming_batch_size: int = 50
     prefetch_popular_content: bool = True
-    
+
     @classmethod
     def from_environment(cls, environment: Environment) -> 'CachingConfig':
         """Create caching configuration from environment variables."""
         config = cls()
-        
+
         # Load Redis cluster config
         config._load_redis_cluster_config(environment)
-        
+
         # Load cache layer configs
         config._load_l1_config(environment)
         config._load_l2_config(environment)
         config._load_l3_config(environment)
         config._load_coherency_config(environment)
-        
+
         # Load global settings
         config._load_global_config(environment)
-        
+
         return config
-    
+
     def _load_redis_cluster_config(self, environment: Environment):
         """Load Redis cluster configuration."""
         # Parse Redis nodes from environment
         redis_nodes = []
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-        
+
         # Support both single URL and cluster configuration
         if os.getenv("REDIS_CLUSTER_NODES"):
             nodes_str = os.getenv("REDIS_CLUSTER_NODES")
@@ -237,7 +237,7 @@ class CachingConfig:
                 host = url_parts[0] if url_parts[0] else "localhost"
                 port = int(url_parts[1]) if len(url_parts) > 1 and url_parts[1] else 6379
                 redis_nodes.append({"host": host, "port": port})
-        
+
         self.redis_cluster = RedisClusterConfig(
             enabled=os.getenv("REDIS_CLUSTER_ENABLED", "true").lower() == "true",
             nodes=redis_nodes,
@@ -247,7 +247,7 @@ class CachingConfig:
             timeout_seconds=float(os.getenv("REDIS_TIMEOUT", "5.0")),
             health_check_interval=int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "30"))
         )
-    
+
     def _load_l1_config(self, environment: Environment):
         """Load L1 cache configuration."""
         # Environment-specific defaults
@@ -266,7 +266,7 @@ class CachingConfig:
             hot_size = 32.0
             warm_size = 64.0
             cold_size = 32.0
-        
+
         self.l1_cache = L1CacheConfig(
             enabled=os.getenv("L1_CACHE_ENABLED", "true").lower() == "true",
             max_size_mb=float(os.getenv("L1_CACHE_SIZE_MB", str(default_size))),
@@ -276,7 +276,7 @@ class CachingConfig:
             ttl_seconds=int(os.getenv("L1_CACHE_TTL", "3600")),
             cleanup_interval_seconds=int(os.getenv("L1_CLEANUP_INTERVAL", "60"))
         )
-    
+
     def _load_l2_config(self, environment: Environment):
         """Load L2 cache configuration."""
         self.l2_cache = L2CacheConfig(
@@ -289,7 +289,7 @@ class CachingConfig:
             write_behind_enabled=os.getenv("L2_WRITE_BEHIND_ENABLED", "true").lower() == "true",
             write_behind_flush_interval=int(os.getenv("L2_WRITE_BEHIND_INTERVAL", "30"))
         )
-    
+
     def _load_l3_config(self, environment: Environment):
         """Load L3 CDN cache configuration."""
         self.l3_cdn = L3CDNConfig(
@@ -305,7 +305,7 @@ class CachingConfig:
             enable_compression=os.getenv("CDN_COMPRESSION", "true").lower() == "true",
             enable_ssl=os.getenv("CDN_SSL", "true").lower() == "true"
         )
-    
+
     def _load_coherency_config(self, environment: Environment):
         """Load cache coherency configuration."""
         self.coherency = CacheCoherencyConfig(
@@ -317,23 +317,23 @@ class CachingConfig:
             enable_versioning=os.getenv("CACHE_VERSIONING_ENABLED", "true").lower() == "true",
             enable_monitoring=os.getenv("CACHE_MONITORING_ENABLED", "true").lower() == "true"
         )
-    
+
     def _load_global_config(self, environment: Environment):
         """Load global cache configuration."""
         self.enable_multi_layer = os.getenv("MULTI_LAYER_CACHE_ENABLED", "true").lower() == "true"
         self.cache_key_prefix = os.getenv("CACHE_KEY_PREFIX", f"pdf_scholar:{environment.value}:")
         self.enable_performance_monitoring = os.getenv("CACHE_PERFORMANCE_MONITORING", "true").lower() == "true"
         self.metrics_collection_interval = int(os.getenv("CACHE_METRICS_INTERVAL", "60"))
-        
+
         # Cache warming settings
         self.enable_cache_warming = os.getenv("CACHE_WARMING_ENABLED", "true").lower() == "true"
         self.warming_batch_size = int(os.getenv("CACHE_WARMING_BATCH_SIZE", "50"))
         self.prefetch_popular_content = os.getenv("CACHE_PREFETCH_POPULAR", "true").lower() == "true"
-    
+
     def validate(self, environment: Environment) -> List[str]:
         """Validate entire caching configuration."""
         all_issues = []
-        
+
         # Validate each configuration section
         for config_name, config_obj in [
             ("redis_cluster", self.redis_cluster),
@@ -346,22 +346,22 @@ class CachingConfig:
                 issues = config_obj.validate(environment)
                 for issue in issues:
                     all_issues.append(f"{config_name}: {issue}")
-        
+
         # Cross-configuration validation
         if self.enable_multi_layer:
             if not self.l1_cache.enabled and not self.l2_cache.enabled:
                 all_issues.append("Multi-layer caching enabled but no cache layers configured")
-        
+
         if self.l3_cdn.enabled and not self.l2_cache.enabled:
             all_issues.append("L3 CDN cache requires L2 cache to be enabled")
-        
+
         # Performance validation
-        if (self.l1_cache.enabled and self.l1_cache.max_size_mb > 1024 and 
+        if (self.l1_cache.enabled and self.l1_cache.max_size_mb > 1024 and
             environment.is_production()):
             all_issues.append("L1 cache size >1GB may impact application memory usage")
-        
+
         return all_issues
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary for serialization."""
         return {
@@ -402,36 +402,36 @@ class CachingConfig:
 def get_caching_config(environment: Optional[Environment] = None) -> CachingConfig:
     """
     Get caching configuration for the specified environment.
-    
+
     Args:
         environment: Environment instance, if not provided will be detected
-        
+
     Returns:
         CachingConfig instance
     """
     if environment is None:
         from .environment import get_current_environment
         environment = get_current_environment()
-    
+
     config = CachingConfig.from_environment(environment)
-    
+
     # Validate configuration
     issues = config.validate(environment)
     if issues:
         for issue in issues:
             logger.warning(f"Caching configuration issue: {issue}")
-        
+
         # Raise error for critical issues in production
         critical_keywords = ["must", "required", "invalid", "not allowed"]
         critical_issues = [
-            issue for issue in issues 
+            issue for issue in issues
             if any(keyword in issue.lower() for keyword in critical_keywords)
         ]
-        
+
         if critical_issues and environment.requires_strict_security():
             raise ConfigValidationError(
                 "Critical caching configuration issues found",
                 issues=critical_issues
             )
-    
+
     return config

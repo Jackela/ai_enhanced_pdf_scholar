@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import uuid4
 
 from sqlalchemy import (
-    Column, String, Text, Integer, DateTime, Boolean, 
+    Column, String, Text, Integer, DateTime, Boolean,
     ForeignKey, JSON, create_engine
 )
 from sqlalchemy.ext.declarative import declarative_base
@@ -70,31 +70,31 @@ class ProcessingPurpose(str, Enum):
 class ConsentRecord(Base):
     """Record of user consent for data processing."""
     __tablename__ = 'consent_records'
-    
+
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    
+
     # Consent details
     purpose = Column(String(100), nullable=False)
     data_categories = Column(JSON, nullable=False)  # List of DataCategory
     legal_basis = Column(String(50), nullable=False)
-    
+
     # Consent status
     given_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     withdrawn_at = Column(DateTime, nullable=True)
     expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
-    
+
     # Consent metadata
     version = Column(String(20), nullable=False)  # Privacy policy version
     method = Column(String(50), nullable=False)  # How consent was obtained
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
-    
+
     # Consent proof
     consent_text = Column(Text, nullable=False)  # What the user agreed to
     consent_hash = Column(String(64), nullable=False)  # Hash for integrity
-    
+
     # Withdrawal
     withdrawal_reason = Column(Text, nullable=True)
     withdrawal_method = Column(String(50), nullable=True)
@@ -103,28 +103,28 @@ class ConsentRecord(Base):
 class DataSubjectRequest(Base):
     """Data subject requests under GDPR rights."""
     __tablename__ = 'data_subject_requests'
-    
+
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    
+
     # Request details
     request_type = Column(String(50), nullable=False)  # access, rectification, erasure, etc.
     requested_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    
+
     # Processing
     status = Column(String(20), nullable=False, default='pending')  # pending, processing, completed, rejected
     processed_at = Column(DateTime, nullable=True)
     processed_by = Column(Integer, ForeignKey('users.id'), nullable=True)
-    
+
     # Request specifics
     details = Column(JSON, nullable=True)  # Request-specific details
     verification_token = Column(String(100), nullable=True)
     verified_at = Column(DateTime, nullable=True)
-    
+
     # Response
     response = Column(JSON, nullable=True)
     response_file_path = Column(String(500), nullable=True)
-    
+
     # Compliance tracking
     deadline = Column(DateTime, nullable=False)  # GDPR requires response within 30 days
     extension_reason = Column(Text, nullable=True)  # If deadline extended
@@ -134,31 +134,31 @@ class DataSubjectRequest(Base):
 class DataProcessingActivity(Base):
     """Record of processing activities (GDPR Article 30)."""
     __tablename__ = 'data_processing_activities'
-    
+
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    
+
     # Controller information
     controller_name = Column(String(255), nullable=False)
     controller_contact = Column(String(255), nullable=False)
     dpo_contact = Column(String(255), nullable=True)  # Data Protection Officer
-    
+
     # Processing details
     activity_name = Column(String(255), nullable=False)
     purposes = Column(JSON, nullable=False)  # List of ProcessingPurpose
     legal_bases = Column(JSON, nullable=False)  # List of LegalBasis
-    
+
     # Data details
     data_categories = Column(JSON, nullable=False)
     data_subjects = Column(JSON, nullable=False)  # Categories of data subjects
-    
+
     # Recipients
     recipients = Column(JSON, nullable=True)  # Who data is shared with
     third_countries = Column(JSON, nullable=True)  # International transfers
-    
+
     # Security and retention
     security_measures = Column(Text, nullable=False)
     retention_period = Column(String(100), nullable=False)
-    
+
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -168,32 +168,32 @@ class DataProcessingActivity(Base):
 class DataBreach(Base):
     """Data breach records for GDPR Article 33/34 compliance."""
     __tablename__ = 'data_breaches'
-    
+
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    
+
     # Breach details
     detected_at = Column(DateTime, nullable=False)
     reported_at = Column(DateTime, nullable=True)
-    
+
     # Breach information
     breach_type = Column(String(100), nullable=False)  # confidentiality, integrity, availability
     severity = Column(String(20), nullable=False)  # low, medium, high, critical
-    
+
     # Affected data
     affected_users = Column(Integer, nullable=True)
     affected_records = Column(Integer, nullable=True)
     data_categories_affected = Column(JSON, nullable=False)
-    
+
     # Response
     containment_measures = Column(Text, nullable=False)
     mitigation_measures = Column(Text, nullable=False)
     notification_sent = Column(Boolean, default=False)
     authority_notified = Column(Boolean, default=False)
-    
+
     # Investigation
     root_cause = Column(Text, nullable=True)
     investigation_report = Column(Text, nullable=True)
-    
+
     # Compliance
     notification_deadline = Column(DateTime, nullable=False)  # 72 hours from detection
     delayed_notification_reason = Column(Text, nullable=True)
@@ -207,7 +207,7 @@ class GDPRComplianceService:
     """
     Comprehensive GDPR compliance service.
     """
-    
+
     def __init__(
         self,
         db: Session,
@@ -218,16 +218,16 @@ class GDPRComplianceService:
         self.db = db
         self.audit_logger = audit_logger
         self.encryption_service = encryption_service
-        
+
         # Privacy configuration
         self.privacy_policy_version = "2.0.0"
         self.data_retention_days = 365 * 2  # 2 years default
         self.consent_renewal_days = 365  # Annual consent renewal
-        
+
     # ========================================================================
     # Consent Management
     # ========================================================================
-    
+
     def record_consent(
         self,
         user_id: int,
@@ -241,19 +241,19 @@ class GDPRComplianceService:
     ) -> str:
         """
         Record user consent for data processing.
-        
+
         Returns:
             Consent record ID
         """
         # Generate consent text if not provided
         if not consent_text:
             consent_text = self._generate_consent_text(purpose, data_categories)
-        
+
         # Calculate expiration
         expires_at = None
         if expires_in_days:
             expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
-        
+
         # Create consent record
         consent = ConsentRecord(
             user_id=user_id,
@@ -268,10 +268,10 @@ class GDPRComplianceService:
             consent_hash=hashlib.sha256(consent_text.encode()).hexdigest(),
             expires_at=expires_at
         )
-        
+
         self.db.add(consent)
         self.db.commit()
-        
+
         # Audit log
         self.audit_logger.log(
             event_type=AuditEventType.CONSENT_GIVEN,
@@ -283,11 +283,11 @@ class GDPRComplianceService:
                 "categories": [cat.value for cat in data_categories]
             }
         )
-        
+
         logger.info(f"Consent recorded for user {user_id}: {consent.id}")
-        
+
         return consent.id
-    
+
     def withdraw_consent(
         self,
         user_id: int,
@@ -297,7 +297,7 @@ class GDPRComplianceService:
     ) -> bool:
         """
         Withdraw user consent.
-        
+
         Returns:
             Success status
         """
@@ -305,26 +305,26 @@ class GDPRComplianceService:
             ConsentRecord.user_id == user_id,
             ConsentRecord.is_active == True
         )
-        
+
         if consent_id:
             query = query.filter(ConsentRecord.id == consent_id)
-        
+
         if purpose:
             query = query.filter(ConsentRecord.purpose == purpose.value)
-        
+
         consents = query.all()
-        
+
         if not consents:
             return False
-        
+
         for consent in consents:
             consent.is_active = False
             consent.withdrawn_at = datetime.utcnow()
             consent.withdrawal_reason = reason
             consent.withdrawal_method = "user_request"
-        
+
         self.db.commit()
-        
+
         # Audit log
         self.audit_logger.log(
             event_type=AuditEventType.CONSENT_WITHDRAWN,
@@ -335,12 +335,12 @@ class GDPRComplianceService:
                 "reason": reason
             }
         )
-        
+
         # Trigger data processing cessation
         self._stop_processing_for_withdrawn_consent(user_id, consents)
-        
+
         return True
-    
+
     def get_user_consents(
         self,
         user_id: int,
@@ -350,12 +350,12 @@ class GDPRComplianceService:
         query = self.db.query(ConsentRecord).filter(
             ConsentRecord.user_id == user_id
         )
-        
+
         if active_only:
             query = query.filter(ConsentRecord.is_active == True)
-        
+
         consents = query.all()
-        
+
         return [
             {
                 "id": consent.id,
@@ -368,11 +368,11 @@ class GDPRComplianceService:
             }
             for consent in consents
         ]
-    
+
     # ========================================================================
     # Data Subject Rights
     # ========================================================================
-    
+
     def handle_access_request(
         self,
         user_id: int,
@@ -380,7 +380,7 @@ class GDPRComplianceService:
     ) -> Dict[str, Any]:
         """
         Handle GDPR Article 15 - Right of access.
-        
+
         Returns:
             User's personal data
         """
@@ -388,11 +388,11 @@ class GDPRComplianceService:
             user_id=user_id,
             request_type="access"
         )
-        
+
         try:
             # Collect user data
             user_data = self._collect_user_data(user_id, include_categories)
-            
+
             # Generate report
             report = {
                 "request_id": request.id,
@@ -403,13 +403,13 @@ class GDPRComplianceService:
                 "consents": self.get_user_consents(user_id),
                 "data_sharing": self._get_data_sharing_info(user_id)
             }
-            
+
             # Store response
             request.status = "completed"
             request.processed_at = datetime.utcnow()
             request.response = report
             self.db.commit()
-            
+
             # Audit log
             self.audit_logger.log(
                 event_type=AuditEventType.DATA_REQUEST,
@@ -417,15 +417,15 @@ class GDPRComplianceService:
                 user_id=user_id,
                 metadata={"request_id": request.id}
             )
-            
+
             return report
-            
+
         except Exception as e:
             request.status = "failed"
             self.db.commit()
             logger.error(f"Access request failed for user {user_id}: {e}")
             raise
-    
+
     def handle_portability_request(
         self,
         user_id: int,
@@ -433,7 +433,7 @@ class GDPRComplianceService:
     ) -> Tuple[bytes, str]:
         """
         Handle GDPR Article 20 - Right to data portability.
-        
+
         Returns:
             Tuple of (data_bytes, filename)
         """
@@ -441,11 +441,11 @@ class GDPRComplianceService:
             user_id=user_id,
             request_type="portability"
         )
-        
+
         try:
             # Collect portable data
             user_data = self._collect_user_data(user_id, portable_only=True)
-            
+
             # Format data
             if format == "json":
                 data_bytes = json.dumps(user_data, indent=2).encode('utf-8')
@@ -455,16 +455,16 @@ class GDPRComplianceService:
                 filename = f"user_data_{user_id}_{datetime.now().strftime('%Y%m%d')}.csv"
             else:
                 raise ValueError(f"Unsupported format: {format}")
-            
+
             # Encrypt data for transfer
             encrypted_data, metadata = self.encryption_service.encrypt_data(data_bytes)
-            
+
             # Store response
             request.status = "completed"
             request.processed_at = datetime.utcnow()
             request.response = {"format": format, "size": len(data_bytes)}
             self.db.commit()
-            
+
             # Audit log
             self.audit_logger.log(
                 event_type=AuditEventType.DATA_REQUEST,
@@ -476,15 +476,15 @@ class GDPRComplianceService:
                     "size": len(data_bytes)
                 }
             )
-            
+
             return encrypted_data, filename
-            
+
         except Exception as e:
             request.status = "failed"
             self.db.commit()
             logger.error(f"Portability request failed for user {user_id}: {e}")
             raise
-    
+
     def handle_erasure_request(
         self,
         user_id: int,
@@ -493,7 +493,7 @@ class GDPRComplianceService:
     ) -> Dict[str, Any]:
         """
         Handle GDPR Article 17 - Right to erasure (right to be forgotten).
-        
+
         Returns:
             Erasure confirmation
         """
@@ -502,18 +502,18 @@ class GDPRComplianceService:
             request_type="erasure",
             details={"categories": [cat.value for cat in categories] if categories else None}
         )
-        
+
         # Verify token
         if not self._verify_erasure_token(user_id, verification_token):
             request.status = "rejected"
             request.rejection_reason = "Invalid verification token"
             self.db.commit()
             raise ValueError("Invalid verification token")
-        
+
         try:
             # Check if erasure can be performed
             can_erase, reason = self._check_erasure_eligibility(user_id)
-            
+
             if not can_erase:
                 request.status = "rejected"
                 request.rejection_reason = reason
@@ -522,13 +522,13 @@ class GDPRComplianceService:
                     "success": False,
                     "reason": reason
                 }
-            
+
             # Perform erasure
             erased_items = self._perform_data_erasure(user_id, categories)
-            
+
             # Anonymize remaining data
             self._anonymize_user_data(user_id)
-            
+
             # Store response
             request.status = "completed"
             request.processed_at = datetime.utcnow()
@@ -537,7 +537,7 @@ class GDPRComplianceService:
                 "anonymized": True
             }
             self.db.commit()
-            
+
             # Audit log
             self.audit_logger.log(
                 event_type=AuditEventType.DATA_DELETION,
@@ -548,19 +548,19 @@ class GDPRComplianceService:
                     "erased_items": erased_items
                 }
             )
-            
+
             return {
                 "success": True,
                 "request_id": request.id,
                 "erased_items": erased_items
             }
-            
+
         except Exception as e:
             request.status = "failed"
             self.db.commit()
             logger.error(f"Erasure request failed for user {user_id}: {e}")
             raise
-    
+
     def handle_rectification_request(
         self,
         user_id: int,
@@ -568,7 +568,7 @@ class GDPRComplianceService:
     ) -> bool:
         """
         Handle GDPR Article 16 - Right to rectification.
-        
+
         Returns:
             Success status
         """
@@ -577,17 +577,17 @@ class GDPRComplianceService:
             request_type="rectification",
             details={"corrections": corrections}
         )
-        
+
         try:
             # Apply corrections
             applied = self._apply_data_corrections(user_id, corrections)
-            
+
             # Store response
             request.status = "completed"
             request.processed_at = datetime.utcnow()
             request.response = {"applied_corrections": applied}
             self.db.commit()
-            
+
             # Audit log
             self.audit_logger.log(
                 event_type=AuditEventType.DATA_UPDATE,
@@ -598,15 +598,15 @@ class GDPRComplianceService:
                     "corrections": len(corrections)
                 }
             )
-            
+
             return True
-            
+
         except Exception as e:
             request.status = "failed"
             self.db.commit()
             logger.error(f"Rectification request failed for user {user_id}: {e}")
             return False
-    
+
     def handle_restriction_request(
         self,
         user_id: int,
@@ -614,7 +614,7 @@ class GDPRComplianceService:
     ) -> bool:
         """
         Handle GDPR Article 18 - Right to restriction of processing.
-        
+
         Returns:
             Success status
         """
@@ -623,30 +623,30 @@ class GDPRComplianceService:
             request_type="restriction",
             details={"purposes": [p.value for p in purposes]}
         )
-        
+
         try:
             # Apply processing restrictions
             for purpose in purposes:
                 self._restrict_processing(user_id, purpose)
-            
+
             # Store response
             request.status = "completed"
             request.processed_at = datetime.utcnow()
             request.response = {"restricted_purposes": [p.value for p in purposes]}
             self.db.commit()
-            
+
             return True
-            
+
         except Exception as e:
             request.status = "failed"
             self.db.commit()
             logger.error(f"Restriction request failed for user {user_id}: {e}")
             return False
-    
+
     # ========================================================================
     # Data Breach Management
     # ========================================================================
-    
+
     def report_data_breach(
         self,
         breach_type: str,
@@ -658,15 +658,15 @@ class GDPRComplianceService:
     ) -> str:
         """
         Report a data breach (GDPR Article 33/34).
-        
+
         Returns:
             Breach ID
         """
         detected_at = detected_at or datetime.utcnow()
-        
+
         # Calculate notification deadline (72 hours)
         notification_deadline = detected_at + timedelta(hours=72)
-        
+
         breach = DataBreach(
             detected_at=detected_at,
             breach_type=breach_type,
@@ -678,10 +678,10 @@ class GDPRComplianceService:
             mitigation_measures="Mitigation planning in progress",
             notification_deadline=notification_deadline
         )
-        
+
         self.db.add(breach)
         self.db.commit()
-        
+
         # Audit log
         self.audit_logger.log(
             event_type=AuditEventType.SECURITY_ALERT,
@@ -694,14 +694,14 @@ class GDPRComplianceService:
                 "affected_users": affected_users
             }
         )
-        
+
         # Trigger breach response workflow
         self._initiate_breach_response(breach)
-        
+
         logger.critical(f"Data breach reported: {breach.id}")
-        
+
         return breach.id
-    
+
     def notify_breach_to_authority(
         self,
         breach_id: str,
@@ -709,31 +709,31 @@ class GDPRComplianceService:
     ) -> bool:
         """Notify supervisory authority of data breach."""
         breach = self.db.query(DataBreach).filter_by(id=breach_id).first()
-        
+
         if not breach:
             return False
-        
+
         # Check if within 72-hour deadline
         hours_elapsed = (datetime.utcnow() - breach.detected_at).total_seconds() / 3600
-        
+
         if hours_elapsed > 72:
             breach.delayed_notification_reason = f"Notification sent {hours_elapsed:.1f} hours after detection"
-        
+
         breach.authority_notified = True
         breach.reported_at = datetime.utcnow()
-        
+
         # Generate breach report
         report = self._generate_breach_report(breach)
-        
+
         # Send to authority (implement actual notification mechanism)
         # self._send_to_authority(authority_name, report)
-        
+
         self.db.commit()
-        
+
         logger.info(f"Breach {breach_id} notified to {authority_name}")
-        
+
         return True
-    
+
     def notify_affected_users(
         self,
         breach_id: str,
@@ -741,14 +741,14 @@ class GDPRComplianceService:
     ) -> int:
         """Notify affected users of data breach."""
         breach = self.db.query(DataBreach).filter_by(id=breach_id).first()
-        
+
         if not breach:
             return 0
-        
+
         # Determine affected users
         if not user_ids:
             user_ids = self._get_affected_user_ids(breach)
-        
+
         # Send notifications
         notified_count = 0
         for user_id in user_ids:
@@ -757,30 +757,30 @@ class GDPRComplianceService:
                 notified_count += 1
             except Exception as e:
                 logger.error(f"Failed to notify user {user_id}: {e}")
-        
+
         breach.notification_sent = True
         self.db.commit()
-        
+
         logger.info(f"Notified {notified_count} users about breach {breach_id}")
-        
+
         return notified_count
-    
+
     # ========================================================================
     # Privacy by Design
     # ========================================================================
-    
+
     def implement_data_minimization(
         self,
         data_schema: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Implement data minimization principle.
-        
+
         Returns:
             Minimized data schema
         """
         minimized_schema = {}
-        
+
         for field, config in data_schema.items():
             # Check if field is necessary
             if config.get("required") or config.get("legal_requirement"):
@@ -791,13 +791,13 @@ class GDPRComplianceService:
             else:
                 # Mark as optional or remove
                 logger.info(f"Field '{field}' marked for removal (data minimization)")
-        
+
         return minimized_schema
-    
+
     def configure_privacy_defaults(self) -> Dict[str, Any]:
         """
         Configure privacy-friendly defaults.
-        
+
         Returns:
             Privacy configuration
         """
@@ -827,11 +827,11 @@ class GDPRComplianceService:
                 "processing_visibility": True
             }
         }
-    
+
     # ========================================================================
     # Compliance Reporting
     # ========================================================================
-    
+
     def generate_compliance_report(
         self,
         start_date: datetime,
@@ -849,15 +849,15 @@ class GDPRComplianceService:
             "processing_activities": self._get_processing_statistics(),
             "compliance_score": self._calculate_compliance_score()
         }
-        
+
         return report
-    
+
     def export_records_of_processing(self) -> Dict[str, Any]:
         """Export records of processing activities (Article 30)."""
         activities = self.db.query(DataProcessingActivity).filter_by(
             is_active=True
         ).all()
-        
+
         return {
             "exported_at": datetime.utcnow().isoformat(),
             "controller": {
@@ -879,11 +879,11 @@ class GDPRComplianceService:
                 for activity in activities
             ]
         }
-    
+
     # ========================================================================
     # Helper Methods
     # ========================================================================
-    
+
     def _create_data_request(
         self,
         user_id: int,
@@ -892,7 +892,7 @@ class GDPRComplianceService:
     ) -> DataSubjectRequest:
         """Create a data subject request."""
         deadline = datetime.utcnow() + timedelta(days=30)  # GDPR 30-day deadline
-        
+
         request = DataSubjectRequest(
             user_id=user_id,
             request_type=request_type,
@@ -900,12 +900,12 @@ class GDPRComplianceService:
             deadline=deadline,
             verification_token=secrets.token_urlsafe(32)
         )
-        
+
         self.db.add(request)
         self.db.commit()
-        
+
         return request
-    
+
     def _collect_user_data(
         self,
         user_id: int,
@@ -921,7 +921,7 @@ class GDPRComplianceService:
             "activity": [],
             "preferences": {}
         }
-    
+
     def _perform_data_erasure(
         self,
         user_id: int,
@@ -929,17 +929,17 @@ class GDPRComplianceService:
     ) -> List[str]:
         """Perform actual data erasure."""
         erased_items = []
-        
+
         # Implementation depends on your data model
         # This would delete/anonymize data from relevant tables
-        
+
         return erased_items
-    
+
     def _anonymize_user_data(self, user_id: int):
         """Anonymize user data instead of deletion where required."""
         # Replace identifying information with anonymized values
         pass
-    
+
     def _generate_consent_text(
         self,
         purpose: ProcessingPurpose,
@@ -947,7 +947,7 @@ class GDPRComplianceService:
     ) -> str:
         """Generate consent text."""
         return f"I consent to the processing of my {', '.join([c.value for c in categories])} data for {purpose.value}"
-    
+
     def _check_erasure_eligibility(
         self,
         user_id: int
@@ -957,7 +957,7 @@ class GDPRComplianceService:
         # Check for ongoing contracts
         # Check for legal claims
         return True, None
-    
+
     def _calculate_compliance_score(self) -> float:
         """Calculate overall GDPR compliance score."""
         # Implement scoring based on various compliance metrics

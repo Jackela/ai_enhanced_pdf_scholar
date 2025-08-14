@@ -73,7 +73,7 @@ class TestRAGQueryEngine:
         return mock
 
     @pytest.fixture
-    def query_engine(self, temp_directory, mock_vector_store, 
+    def query_engine(self, temp_directory, mock_vector_store,
                     mock_llm_client, mock_context_builder):
         """Create RAGQueryEngine with mocked dependencies."""
         return RAGQueryEngine(
@@ -97,10 +97,10 @@ class TestRAGQueryEngine:
         """Test successful index loading."""
         # Given
         document_id = 1
-        
+
         # When
         result = await query_engine.load_index(document_id)
-        
+
         # Then
         assert result is True
         assert document_id in query_engine._loaded_indexes
@@ -111,21 +111,21 @@ class TestRAGQueryEngine:
         """Test index loading with missing index files."""
         # Given
         query_engine.vector_store.load_local.side_effect = FileNotFoundError("Index not found")
-        
+
         # When/Then
         with pytest.raises(RAGIndexError) as exc_info:
             await query_engine.load_index(document_id=999)
-        
+
         assert "Index not found for document 999" in str(exc_info.value)
 
     def test_is_ready_with_loaded_index(self, query_engine):
         """Test readiness check with loaded index."""
         # Given
         query_engine._loaded_indexes[1] = {"loaded_at": time.time()}
-        
+
         # When
         result = query_engine.is_ready(document_id=1)
-        
+
         # Then
         assert result is True
 
@@ -133,7 +133,7 @@ class TestRAGQueryEngine:
         """Test readiness check without loaded index."""
         # When
         result = query_engine.is_ready(document_id=999)
-        
+
         # Then
         assert result is False
 
@@ -144,17 +144,17 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # When
         result = await query_engine.query(document_id, query)
-        
+
         # Then
         assert result["answer"] == "This is a sample AI-generated answer based on the provided context."
         assert result["confidence"] == 0.85
         assert "sources" in result
         assert "processing_time" in result
         assert len(result["sources"]) == 2
-        
+
         # Verify query flow
         query_engine.vector_store.similarity_search_with_score.assert_called_once()
         query_engine.context_builder.build_context.assert_called_once()
@@ -166,14 +166,14 @@ class TestRAGQueryEngine:
         # Given
         document_id = 1
         query = "What are the main findings?"
-        
+
         # When
         result = await query_engine.query(document_id, query)
-        
+
         # Then
         assert result["answer"] is not None
         assert document_id in query_engine._loaded_indexes
-        
+
         # Verify index was auto-loaded
         query_engine.vector_store.load_local.assert_called_once()
 
@@ -185,14 +185,14 @@ class TestRAGQueryEngine:
         query = "What are the main findings?"
         context_window = 8000
         await query_engine.load_index(document_id)
-        
+
         # When
-        result = await query_engine.query(document_id, query, 
+        result = await query_engine.query(document_id, query,
                                         context_window=context_window)
-        
+
         # Then
         assert result["answer"] is not None
-        
+
         # Verify context window was passed through
         call_args = query_engine.context_builder.build_context.call_args
         assert call_args[1]["max_length"] == context_window
@@ -205,14 +205,14 @@ class TestRAGQueryEngine:
         query = "What are the main findings?"
         relevance_threshold = 0.8
         await query_engine.load_index(document_id)
-        
+
         # When
         result = await query_engine.query(document_id, query,
                                         relevance_threshold=relevance_threshold)
-        
+
         # Then
         assert result["answer"] is not None
-        
+
         # Verify only high-relevance sources included
         high_relevance_sources = [s for s in result["sources"] if s["relevance"] >= 0.8]
         assert len(high_relevance_sources) >= 1
@@ -224,17 +224,17 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # When - first query
         result1 = await query_engine.query(document_id, query, enable_cache=True)
-        
-        # When - second identical query  
+
+        # When - second identical query
         result2 = await query_engine.query(document_id, query, enable_cache=True)
-        
+
         # Then
         assert result1["answer"] == result2["answer"]
         assert result2.get("from_cache") is True
-        
+
         # Verify LLM was only called once (cached second time)
         query_engine.llm_client.generate_response.assert_called_once()
 
@@ -244,19 +244,19 @@ class TestRAGQueryEngine:
         # Given
         document_ids = [1, 2, 3]
         query = "What are the common themes?"
-        
+
         # Load indexes for all documents
         for doc_id in document_ids:
             await query_engine.load_index(doc_id)
-        
+
         # When
         result = await query_engine.query_multiple(document_ids, query)
-        
+
         # Then
         assert result["answer"] is not None
         assert result["document_count"] == 3
         assert len(result["sources"]) > 0
-        
+
         # Verify all document indexes were searched
         assert query_engine.vector_store.similarity_search_with_score.call_count == 3
 
@@ -267,18 +267,18 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # When
-        result = await query_engine.query(document_id, query, 
+        result = await query_engine.query(document_id, query,
                                         include_citations=True)
-        
+
         # Then
         assert result["answer"] is not None
         assert "citations" in result
-        
+
         for citation in result["citations"]:
             assert "page" in citation
-            assert "chunk_id" in citation  
+            assert "chunk_id" in citation
             assert "relevance" in citation
             assert "text_excerpt" in citation
 
@@ -289,10 +289,10 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # When
         result = await query_engine.query(document_id, query)
-        
+
         # Then
         assert "performance_metrics" in result
         metrics = result["performance_metrics"]
@@ -309,18 +309,18 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # Test different temperature values
         temperatures = [0.1, 0.5, 0.9]
-        
+
         for temperature in temperatures:
             # When
-            result = await query_engine.query(document_id, query, 
+            result = await query_engine.query(document_id, query,
                                             temperature=temperature)
-            
+
             # Then
             assert result["answer"] is not None
-            
+
             # Verify temperature was passed to LLM
             call_args = query_engine.llm_client.generate_response.call_args
             assert call_args[1]["temperature"] == temperature
@@ -333,15 +333,15 @@ class TestRAGQueryEngine:
         query = "Provide a detailed explanation?"
         max_tokens = 500
         await query_engine.load_index(document_id)
-        
+
         # When
-        result = await query_engine.query(document_id, query, 
+        result = await query_engine.query(document_id, query,
                                         max_tokens=max_tokens)
-        
+
         # Then
         assert result["answer"] is not None
         assert result["token_usage"]["output"] <= max_tokens
-        
+
         # Verify token limit was enforced
         call_args = query_engine.llm_client.generate_response.call_args
         assert call_args[1]["max_tokens"] == max_tokens
@@ -353,21 +353,21 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # Mock streaming response
         async def mock_stream():
             yield {"partial_answer": "This is", "complete": False}
             yield {"partial_answer": "This is a sample", "complete": False}
             yield {"partial_answer": "This is a sample answer", "complete": True}
-        
+
         query_engine.llm_client.stream_response = AsyncMock(return_value=mock_stream())
-        
+
         # When
         stream = query_engine.stream_query(document_id, query)
         responses = []
         async for response in stream:
             responses.append(response)
-        
+
         # Then
         assert len(responses) == 3
         assert responses[-1]["complete"] is True
@@ -381,10 +381,10 @@ class TestRAGQueryEngine:
             "sources": [{"page": 1, "relevance": 0.9}],
             "processing_time": 1.5
         }
-        
+
         # When
         validated = query_engine._validate_query_result(raw_result)
-        
+
         # Then
         assert validated["answer"] == "Test answer"
         assert 0 <= validated["confidence"] <= 1
@@ -396,26 +396,26 @@ class TestRAGQueryEngine:
     async def test_concurrent_queries_handling(self, query_engine):
         """Test handling of concurrent queries to the same document."""
         import asyncio
-        
+
         # Given
         document_id = 1
         queries = [
             "What are the main findings?",
-            "What is the methodology?", 
+            "What is the methodology?",
             "What are the conclusions?",
             "Who are the authors?",
             "What is the significance?"
         ]
         await query_engine.load_index(document_id)
-        
+
         # When
         tasks = [query_engine.query(document_id, q) for q in queries]
         results = await asyncio.gather(*tasks)
-        
+
         # Then
         assert len(results) == 5
         assert all("answer" in result for result in results)
-        
+
         # Verify concurrent handling
         assert query_engine.llm_client.generate_response.call_count == 5
 
@@ -426,7 +426,7 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # Mock temporary LLM failure followed by success
         query_engine.llm_client.generate_response.side_effect = [
             Exception("Temporary service unavailable"),
@@ -436,11 +436,11 @@ class TestRAGQueryEngine:
                 "reasoning": "Answer after retry"
             }
         ]
-        
+
         # When
-        result = await query_engine.query_with_retry(document_id, query, 
+        result = await query_engine.query_with_retry(document_id, query,
                                                     max_retries=2)
-        
+
         # Then
         assert result["answer"] == "Recovered response"
         assert query_engine.llm_client.generate_response.call_count == 2
@@ -454,10 +454,10 @@ class TestRAGQueryEngine:
                 "loaded_at": time.time(),
                 "memory_usage": 50 * 1024 * 1024  # 50MB each
             }
-        
+
         # When - trigger memory management
         query_engine._manage_index_memory(max_memory=400 * 1024 * 1024)  # 400MB limit
-        
+
         # Then - should keep only most recent indexes
         assert len(query_engine._loaded_indexes) <= 8  # Should unload oldest
 
@@ -468,18 +468,18 @@ class TestRAGQueryEngine:
         document_id = 1
         query = "What are the main findings?"
         await query_engine.load_index(document_id)
-        
+
         # Mock raw LLM response needing post-processing
         query_engine.llm_client.generate_response.return_value = {
             "answer": "Raw answer with potential issues...",
             "confidence": 0.75,
             "reasoning": "Basic reasoning"
         }
-        
+
         # When
-        result = await query_engine.query(document_id, query, 
+        result = await query_engine.query(document_id, query,
                                         enable_post_processing=True)
-        
+
         # Then
         assert result["answer"] is not None
         assert "quality_score" in result
@@ -496,7 +496,7 @@ class TestRAGQueryEngineErrorHandling:
         mock_vector_store = Mock()
         mock_llm_client = Mock()
         mock_context_builder = Mock()
-        
+
         return RAGQueryEngine(
             index_storage_path=temp_directory,
             vector_store=mock_vector_store,
@@ -510,7 +510,7 @@ class TestRAGQueryEngineErrorHandling:
         # Given
         document_id = 1
         query = "Test query"
-        
+
         # Mock LLM service failure
         error_prone_engine.vector_store.load_local = AsyncMock(return_value=True)
         error_prone_engine.vector_store.similarity_search_with_score = AsyncMock(return_value=[])
@@ -518,11 +518,11 @@ class TestRAGQueryEngineErrorHandling:
         error_prone_engine.llm_client.generate_response = AsyncMock(
             side_effect=Exception("LLM service unavailable")
         )
-        
+
         # When/Then
         with pytest.raises(RAGQueryError) as exc_info:
             await error_prone_engine.query(document_id, query)
-        
+
         assert "LLM service unavailable" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -531,14 +531,14 @@ class TestRAGQueryEngineErrorHandling:
         # Given
         document_id = 1
         query = "Completely unrelated query"
-        
+
         # Mock empty search results
         error_prone_engine.vector_store.load_local = AsyncMock(return_value=True)
         error_prone_engine.vector_store.similarity_search_with_score = AsyncMock(return_value=[])
-        
+
         # When
         result = await error_prone_engine.query(document_id, query)
-        
+
         # Then
         assert result["answer"] is not None
         assert result["confidence"] == 0.0
@@ -551,7 +551,7 @@ class TestRAGQueryEngineErrorHandling:
         # Given
         document_id = 1
         query = "Complex query"
-        
+
         # Mock context that exceeds limits
         large_context = "A" * 20000  # Very large context
         error_prone_engine.vector_store.load_local = AsyncMock(return_value=True)
@@ -564,11 +564,11 @@ class TestRAGQueryEngineErrorHandling:
             "context_length": len(large_context),
             "truncated": True
         }
-        
+
         # When
-        result = await error_prone_engine.query(document_id, query, 
+        result = await error_prone_engine.query(document_id, query,
                                               context_window=4000)
-        
+
         # Then
         assert result is not None
         assert result.get("context_truncated") is True
@@ -585,9 +585,9 @@ class TestRAGQueryEngineErrorHandling:
             "<script>alert('xss')</script>",  # Potentially malicious
             None  # None value
         ]
-        
+
         error_prone_engine.vector_store.load_local = AsyncMock(return_value=True)
-        
+
         for bad_query in malformed_queries:
             # When/Then
             with pytest.raises(RAGQueryError):
@@ -599,14 +599,14 @@ class TestRAGQueryEngineErrorHandling:
         # Given
         document_id = 1
         query = "Test query"
-        
+
         # Mock index corruption
         error_prone_engine.vector_store.load_local = AsyncMock(
             side_effect=Exception("Index file corrupted")
         )
-        
+
         # When/Then
         with pytest.raises(RAGIndexError) as exc_info:
             await error_prone_engine.query(document_id, query)
-        
+
         assert "Index corruption detected" in str(exc_info.value)

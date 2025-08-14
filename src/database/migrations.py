@@ -800,7 +800,7 @@ if "DatabaseMigrator" not in globals():
             # Insert all baselines
             if baselines:
                 baseline_insert_sql = """
-                INSERT INTO performance_baselines (metric_name, baseline_value, measurement_unit, context_info) 
+                INSERT INTO performance_baselines (metric_name, baseline_value, measurement_unit, context_info)
                 VALUES (?, ?, ?, ?)
                 """
                 for baseline in baselines:
@@ -1910,7 +1910,7 @@ if "DatabaseMigrator" not in globals():
 
         admin_user_sql = """
         INSERT INTO users (
-            username, email, password_hash, full_name, role, 
+            username, email, password_hash, full_name, role,
             is_active, is_verified, account_status, email_verified_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """

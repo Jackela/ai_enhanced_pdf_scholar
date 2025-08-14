@@ -19,7 +19,7 @@
       "assessment": "EXCELLENT - Perfect connection resilience"
     },
     {
-      "test_name": "resource_exhaustion_recovery", 
+      "test_name": "resource_exhaustion_recovery",
       "description": "Tests behavior under resource pressure and recovery capability",
       "iterations": 20,
       "successful_iterations": 20,
@@ -66,7 +66,7 @@
   "error_handling_assessment": {
     "error_detection": {
       "timeout_handling": "EXCELLENT",
-      "connection_error_handling": "EXCELLENT", 
+      "connection_error_handling": "EXCELLENT",
       "resource_exhaustion_detection": "GOOD",
       "graceful_degradation": "EXCELLENT"
     },
@@ -109,7 +109,7 @@
   },
   "production_reliability_predictions": {
     "expected_uptime": "99.9%",
-    "mean_time_between_failures": "720+ hours", 
+    "mean_time_between_failures": "720+ hours",
     "mean_time_to_recovery": "< 1 minute",
     "failure_probability_under_normal_load": "< 0.1%",
     "failure_probability_under_peak_load": "< 5%",

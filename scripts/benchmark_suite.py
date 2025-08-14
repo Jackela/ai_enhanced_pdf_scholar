@@ -39,7 +39,7 @@ try:
     # Import project modules
     import sys
     sys.path.append(str(Path(__file__).parent.parent))
-    
+
     from src.database.connection import DatabaseConnection
     from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
     from src.database.models import DocumentModel, CitationModel, VectorIndexModel
@@ -48,7 +48,7 @@ try:
     from src.services.document_library_service import DocumentLibraryService
     from src.services.enhanced_rag_service import EnhancedRAGService
     from src.services.content_hash_service import ContentHashService
-    
+
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     logger.error("Make sure you're running from the project root directory")
@@ -83,12 +83,12 @@ class BenchmarkResult:
 
 class PerformanceMonitor:
     """Monitors system performance during benchmark operations."""
-    
+
     def __init__(self):
         self.process = psutil.Process()
         self.baseline_memory = self.process.memory_info().rss / 1024 / 1024
         self.baseline_cpu = self.process.cpu_percent()
-    
+
     def get_current_stats(self) -> Tuple[float, float]:
         """Get current memory (MB) and CPU usage (%)."""
         memory_mb = self.process.memory_info().rss / 1024 / 1024
@@ -98,30 +98,30 @@ class PerformanceMonitor:
 
 class BenchmarkTimer:
     """High-precision timer for benchmarking operations."""
-    
+
     def __init__(self, monitor: PerformanceMonitor):
         self.monitor = monitor
         self.start_time = None
         self.end_time = None
         self.start_memory = None
         self.start_cpu = None
-        
+
     def __enter__(self):
         gc.collect()  # Clean garbage before measurement
         self.start_memory, self.start_cpu = self.monitor.get_current_stats()
         self.start_time = time.perf_counter()
         return self
-        
+
     def __exit__(self, *args):
         self.end_time = time.perf_counter()
-        
+
     @property
     def duration_ms(self) -> float:
         """Get measured duration in milliseconds."""
         if self.start_time and self.end_time:
             return (self.end_time - self.start_time) * 1000
         return 0.0
-    
+
     def get_resource_usage(self) -> Tuple[float, float]:
         """Get resource usage during the operation."""
         end_memory, end_cpu = self.monitor.get_current_stats()
@@ -132,20 +132,20 @@ class BenchmarkTimer:
 
 class PDFBenchmark:
     """Benchmarks PDF processing operations."""
-    
+
     def __init__(self, test_data_dir: Path):
         self.test_data_dir = test_data_dir
         self.monitor = PerformanceMonitor()
-        
+
     def create_test_pdfs(self) -> List[Path]:
         """Create test PDFs of various sizes."""
         test_files = []
-        
+
         # Create simple test PDFs using reportlab if available
         try:
             from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import letter
-            
+
             # Small PDF (10KB target)
             small_pdf = self.test_data_dir / "small_test.pdf"
             c = canvas.Canvas(str(small_pdf), pagesize=letter)
@@ -154,7 +154,7 @@ class PDFBenchmark:
             c.showPage()
             c.save()
             test_files.append(small_pdf)
-            
+
             # Medium PDF (100KB target)
             medium_pdf = self.test_data_dir / "medium_test.pdf"
             c = canvas.Canvas(str(medium_pdf), pagesize=letter)
@@ -170,7 +170,7 @@ class PDFBenchmark:
                 c.showPage()
             c.save()
             test_files.append(medium_pdf)
-            
+
             # Large PDF (1MB target)
             large_pdf = self.test_data_dir / "large_test.pdf"
             c = canvas.Canvas(str(large_pdf), pagesize=letter)
@@ -186,35 +186,35 @@ class PDFBenchmark:
                 c.showPage()
             c.save()
             test_files.append(large_pdf)
-            
+
         except ImportError:
             logger.warning("reportlab not available, creating mock PDF files")
             # Create mock files with appropriate sizes
             small_pdf = self.test_data_dir / "small_test.pdf"
             with open(small_pdf, 'wb') as f:
                 f.write(b'%PDF-1.4\nMock small PDF content\n' * 200)  # ~5KB
-            
+
             medium_pdf = self.test_data_dir / "medium_test.pdf"
             with open(medium_pdf, 'wb') as f:
                 f.write(b'%PDF-1.4\nMock medium PDF content\n' * 2000)  # ~50KB
-                
+
             large_pdf = self.test_data_dir / "large_test.pdf"
             with open(large_pdf, 'wb') as f:
                 f.write(b'%PDF-1.4\nMock large PDF content\n' * 20000)  # ~500KB
-                
+
             test_files = [small_pdf, medium_pdf, large_pdf]
-        
+
         return test_files
-    
+
     def benchmark_pdf_processing(self, pdf_files: List[Path], runs: int = 10) -> List[BenchmarkResult]:
         """Benchmark PDF processing operations."""
         logger.info(f"Benchmarking PDF processing with {runs} runs per file size")
         results = []
-        
+
         for pdf_file in pdf_files:
             file_size_kb = pdf_file.stat().st_size / 1024
             metrics = []
-            
+
             for run in range(runs):
                 try:
                     with BenchmarkTimer(self.monitor) as timer:
@@ -225,9 +225,9 @@ class PDFBenchmark:
                             # Simulate text extraction processing
                             processed_text = content.decode('utf-8', errors='ignore')
                             word_count = len(processed_text.split())
-                    
+
                     memory_mb, cpu_percent = timer.get_resource_usage()
-                    
+
                     metric = PerformanceMetric(
                         operation=f"pdf_processing_{pdf_file.stem}",
                         duration_ms=timer.duration_ms,
@@ -241,11 +241,11 @@ class PDFBenchmark:
                         }
                     )
                     metrics.append(metric)
-                    
+
                 except Exception as e:
                     logger.warning(f"PDF processing failed for {pdf_file}: {e}")
                     continue
-            
+
             if metrics:
                 durations = [m.duration_ms for m in metrics]
                 result = BenchmarkResult(
@@ -264,34 +264,34 @@ class PDFBenchmark:
                     }
                 )
                 results.append(result)
-        
+
         return results
 
 
 class DatabaseBenchmark:
     """Benchmarks database operations."""
-    
+
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or tempfile.mktemp(suffix='.db')
         self.cleanup_db = db_path is None
         self.monitor = PerformanceMonitor()
-        
+
         # Initialize database components
         self.db = DatabaseConnection(self.db_path)
         self.migrator = DatabaseMigrator(self.db)
         self.doc_repo = DocumentRepository(self.db)
-        
+
     def setup_test_database(self):
         """Setup test database with schema."""
         logger.info("Setting up test database")
-        
+
         if self.migrator.needs_migration():
             self.migrator.migrate()
-            
+
     def create_test_documents(self, count: int = 100) -> List[DocumentModel]:
         """Create test documents for benchmarking."""
         documents = []
-        
+
         with BenchmarkTimer(self.monitor) as timer:
             for i in range(count):
                 doc = DocumentModel(
@@ -306,15 +306,15 @@ class DatabaseBenchmark:
                 )
                 created_doc = self.doc_repo.create(doc)
                 documents.append(created_doc)
-                
+
         logger.info(f"Created {len(documents)} test documents in {timer.duration_ms:.2f}ms")
         return documents
-    
+
     def benchmark_crud_operations(self, runs: int = 50) -> List[BenchmarkResult]:
         """Benchmark CRUD (Create, Read, Update, Delete) operations."""
         logger.info(f"Benchmarking CRUD operations with {runs} runs")
         results = []
-        
+
         # CREATE operations
         create_metrics = []
         for run in range(runs):
@@ -330,7 +330,7 @@ class DatabaseBenchmark:
                     metadata={"crud_test": True}
                 )
                 created_doc = self.doc_repo.create(doc)
-            
+
             memory_mb, cpu_percent = timer.get_resource_usage()
             create_metrics.append(PerformanceMetric(
                 operation="database_create",
@@ -340,7 +340,7 @@ class DatabaseBenchmark:
                 timestamp=datetime.now(),
                 metadata={"run": run, "doc_id": created_doc.id}
             ))
-        
+
         # READ operations
         read_metrics = []
         doc_ids = [m.metadata["doc_id"] for m in create_metrics]
@@ -348,7 +348,7 @@ class DatabaseBenchmark:
             doc_id = doc_ids[run % len(doc_ids)]
             with BenchmarkTimer(self.monitor) as timer:
                 doc = self.doc_repo.get_by_id(doc_id)
-                
+
             memory_mb, cpu_percent = timer.get_resource_usage()
             read_metrics.append(PerformanceMetric(
                 operation="database_read",
@@ -358,7 +358,7 @@ class DatabaseBenchmark:
                 timestamp=datetime.now(),
                 metadata={"run": run, "found": doc is not None}
             ))
-        
+
         # UPDATE operations
         update_metrics = []
         for run in range(min(runs, len(doc_ids))):
@@ -369,7 +369,7 @@ class DatabaseBenchmark:
                     doc.title = f"Updated CRUD Document {run}"
                     doc.metadata["updated"] = True
                     self.doc_repo.update(doc)
-            
+
             memory_mb, cpu_percent = timer.get_resource_usage()
             update_metrics.append(PerformanceMetric(
                 operation="database_update",
@@ -379,14 +379,14 @@ class DatabaseBenchmark:
                 timestamp=datetime.now(),
                 metadata={"run": run}
             ))
-        
+
         # DELETE operations
         delete_metrics = []
         for run in range(min(runs // 2, len(doc_ids))):  # Delete half
             doc_id = doc_ids[run]
             with BenchmarkTimer(self.monitor) as timer:
                 self.doc_repo.delete(doc_id)
-                
+
             memory_mb, cpu_percent = timer.get_resource_usage()
             delete_metrics.append(PerformanceMetric(
                 operation="database_delete",
@@ -396,7 +396,7 @@ class DatabaseBenchmark:
                 timestamp=datetime.now(),
                 metadata={"run": run}
             ))
-        
+
         # Convert to BenchmarkResults
         for operation, metrics in [
             ("database_create", create_metrics),
@@ -419,19 +419,19 @@ class DatabaseBenchmark:
                     metadata={"category": "database_crud"}
                 )
                 results.append(result)
-        
+
         return results
-    
+
     def benchmark_query_operations(self, document_count: int = 100, runs: int = 30) -> List[BenchmarkResult]:
         """Benchmark various database query operations."""
         logger.info(f"Benchmarking query operations with {document_count} documents, {runs} runs")
-        
+
         # Ensure we have test documents
         existing_docs = self.doc_repo.get_all()
         if len(existing_docs) < document_count:
             needed = document_count - len(existing_docs)
             self.create_test_documents(needed)
-        
+
         query_tests = [
             ("count_all", lambda: len(self.doc_repo.get_all())),
             ("get_all", lambda: self.doc_repo.get_all()),
@@ -439,18 +439,18 @@ class DatabaseBenchmark:
             ("get_recent", lambda: self.doc_repo.get_all()[:10]),  # Simulate recent query
             ("find_large_files", lambda: [d for d in self.doc_repo.get_all() if d.file_size > 50000])
         ]
-        
+
         results = []
-        
+
         for query_name, query_func in query_tests:
             metrics = []
-            
+
             for run in range(runs):
                 try:
                     with BenchmarkTimer(self.monitor) as timer:
                         query_result = query_func()
                         result_count = len(query_result) if hasattr(query_result, '__len__') else 1
-                    
+
                     memory_mb, cpu_percent = timer.get_resource_usage()
                     metrics.append(PerformanceMetric(
                         operation=f"query_{query_name}",
@@ -460,11 +460,11 @@ class DatabaseBenchmark:
                         timestamp=datetime.now(),
                         metadata={"run": run, "result_count": result_count}
                     ))
-                    
+
                 except Exception as e:
                     logger.warning(f"Query {query_name} failed on run {run}: {e}")
                     continue
-            
+
             if metrics:
                 durations = [m.duration_ms for m in metrics]
                 result = BenchmarkResult(
@@ -480,9 +480,9 @@ class DatabaseBenchmark:
                     metadata={"category": "database_queries", "avg_result_count": statistics.mean([m.metadata["result_count"] for m in metrics])}
                 )
                 results.append(result)
-        
+
         return results
-    
+
     def cleanup(self):
         """Clean up test database."""
         try:
@@ -497,26 +497,26 @@ class DatabaseBenchmark:
 
 class APIMockBenchmark:
     """Benchmarks simulated API endpoint operations."""
-    
+
     def __init__(self):
         self.monitor = PerformanceMonitor()
-        
+
     def simulate_api_endpoint(self, endpoint_name: str, processing_time_ms: float = 10) -> Dict[str, Any]:
         """Simulate API endpoint processing."""
         # Simulate some processing work
         time.sleep(processing_time_ms / 1000)
-        
+
         return {
             "success": True,
             "endpoint": endpoint_name,
             "timestamp": datetime.now().isoformat(),
             "processing_time_ms": processing_time_ms
         }
-    
+
     def benchmark_api_endpoints(self, runs: int = 50) -> List[BenchmarkResult]:
         """Benchmark simulated API endpoint response times."""
         logger.info(f"Benchmarking API endpoints with {runs} runs")
-        
+
         endpoints = [
             ("get_documents", 5),      # Fast endpoint
             ("upload_document", 50),   # Slow endpoint (file processing)
@@ -524,19 +524,19 @@ class APIMockBenchmark:
             ("get_document", 3),       # Very fast endpoint
             ("delete_document", 8),    # Fast endpoint
         ]
-        
+
         results = []
-        
+
         for endpoint_name, base_time in endpoints:
             metrics = []
-            
+
             for run in range(runs):
                 # Add some randomness to processing time
                 processing_time = base_time + (run % 5) * 2
-                
+
                 with BenchmarkTimer(self.monitor) as timer:
                     response = self.simulate_api_endpoint(endpoint_name, processing_time)
-                
+
                 memory_mb, cpu_percent = timer.get_resource_usage()
                 metrics.append(PerformanceMetric(
                     operation=f"api_{endpoint_name}",
@@ -546,7 +546,7 @@ class APIMockBenchmark:
                     timestamp=datetime.now(),
                     metadata={"run": run, "success": response["success"]}
                 ))
-            
+
             durations = [m.duration_ms for m in metrics]
             result = BenchmarkResult(
                 operation=f"api_{endpoint_name}",
@@ -561,39 +561,39 @@ class APIMockBenchmark:
                 metadata={"category": "api_endpoints", "base_time_ms": base_time}
             )
             results.append(result)
-        
+
         return results
 
 
 class ConcurrencyBenchmark:
     """Benchmarks concurrent operations performance."""
-    
+
     def __init__(self, db_path: Optional[str] = None):
         self.db_path = db_path or tempfile.mktemp(suffix='_concurrent.db')
         self.cleanup_db = db_path is None
         self.monitor = PerformanceMonitor()
-        
+
     def benchmark_concurrent_operations(self, thread_counts: List[int] = [1, 2, 4, 8], operations_per_thread: int = 10) -> List[BenchmarkResult]:
         """Benchmark operations under different concurrency levels."""
         logger.info(f"Benchmarking concurrency with thread counts: {thread_counts}")
-        
+
         results = []
-        
+
         for thread_count in thread_counts:
             # Setup database for this test
             db = DatabaseConnection(self.db_path)
             migrator = DatabaseMigrator(db)
             if migrator.needs_migration():
                 migrator.migrate()
-            
+
             doc_repo = DocumentRepository(db)
-            
+
             def worker_task(worker_id: int, operations: int) -> List[float]:
                 """Worker thread task."""
                 times = []
                 for i in range(operations):
                     start = time.perf_counter()
-                    
+
                     # Simulate database operation
                     doc = DocumentModel(
                         title=f"Concurrent Doc {worker_id}-{i}",
@@ -606,12 +606,12 @@ class ConcurrencyBenchmark:
                         metadata={"worker": worker_id, "concurrent": True}
                     )
                     created_doc = doc_repo.create(doc)
-                    
+
                     end = time.perf_counter()
                     times.append((end - start) * 1000)  # Convert to ms
-                
+
                 return times
-            
+
             # Run concurrent operations
             with BenchmarkTimer(self.monitor) as timer:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
@@ -619,14 +619,14 @@ class ConcurrencyBenchmark:
                         executor.submit(worker_task, worker_id, operations_per_thread)
                         for worker_id in range(thread_count)
                     ]
-                    
+
                     all_times = []
                     for future in concurrent.futures.as_completed(futures):
                         worker_times = future.result()
                         all_times.extend(worker_times)
-            
+
             memory_mb, cpu_percent = timer.get_resource_usage()
-            
+
             if all_times:
                 total_operations = len(all_times)
                 result = BenchmarkResult(
@@ -647,12 +647,12 @@ class ConcurrencyBenchmark:
                     }
                 )
                 results.append(result)
-            
+
             # Cleanup for next iteration
             db.close_all_connections()
-        
+
         return results
-    
+
     def cleanup(self):
         """Clean up test database."""
         try:
@@ -664,28 +664,28 @@ class ConcurrencyBenchmark:
 
 class ComprehensiveBenchmarkSuite:
     """Main benchmark suite coordinator."""
-    
+
     def __init__(self, output_dir: Optional[Path] = None):
         self.output_dir = output_dir or Path("benchmark_results")
         self.output_dir.mkdir(exist_ok=True)
-        
+
         # Create test data directory
         self.test_data_dir = self.output_dir / "test_data"
         self.test_data_dir.mkdir(exist_ok=True)
-        
+
         self.start_time = None
         self.end_time = None
         self.results = {}
-        
+
     def run_full_benchmark_suite(self) -> Dict[str, Any]:
         """Run the complete benchmark suite."""
         logger.info("="*80)
         logger.info("STARTING COMPREHENSIVE PERFORMANCE BENCHMARK SUITE")
         logger.info("="*80)
-        
+
         self.start_time = time.time()
         all_results = []
-        
+
         try:
             # 1. PDF Processing Benchmarks
             logger.info("Phase 1: PDF Processing Benchmarks")
@@ -694,7 +694,7 @@ class ComprehensiveBenchmarkSuite:
             pdf_results = pdf_benchmark.benchmark_pdf_processing(test_pdfs)
             all_results.extend(pdf_results)
             self.results["pdf_processing"] = pdf_results
-            
+
             # 2. Database Operation Benchmarks
             logger.info("Phase 2: Database Operation Benchmarks")
             db_benchmark = DatabaseBenchmark()
@@ -708,14 +708,14 @@ class ComprehensiveBenchmarkSuite:
                 self.results["database_queries"] = query_results
             finally:
                 db_benchmark.cleanup()
-            
+
             # 3. API Endpoint Benchmarks
             logger.info("Phase 3: API Endpoint Benchmarks")
             api_benchmark = APIMockBenchmark()
             api_results = api_benchmark.benchmark_api_endpoints()
             all_results.extend(api_results)
             self.results["api_endpoints"] = api_results
-            
+
             # 4. Concurrency Benchmarks
             logger.info("Phase 4: Concurrency Benchmarks")
             concurrency_benchmark = ConcurrencyBenchmark()
@@ -725,9 +725,9 @@ class ComprehensiveBenchmarkSuite:
                 self.results["concurrency"] = concurrency_results
             finally:
                 concurrency_benchmark.cleanup()
-            
+
             self.end_time = time.time()
-            
+
             # Generate comprehensive report
             self.results["summary"] = self._generate_summary(all_results)
             self.results["metadata"] = {
@@ -736,38 +736,38 @@ class ComprehensiveBenchmarkSuite:
                 "system_info": self._get_system_info(),
                 "total_operations": sum(r.run_count for r in all_results)
             }
-            
+
         except Exception as e:
             logger.error(f"Benchmark suite failed: {e}")
             self.results["error"] = str(e)
             raise
-        
+
         return self.results
-    
+
     def _generate_summary(self, all_results: List[BenchmarkResult]) -> Dict[str, Any]:
         """Generate summary statistics from all results."""
         if not all_results:
             return {"error": "No benchmark results available"}
-        
+
         # Overall statistics
         all_durations = []
         all_memory = []
         all_cpu = []
         category_stats = {}
-        
+
         for result in all_results:
             all_durations.append(result.avg_duration_ms)
             all_memory.append(result.avg_memory_mb)
             all_cpu.append(result.avg_cpu_percent)
-            
+
             category = result.metadata.get("category", "unknown")
             if category not in category_stats:
                 category_stats[category] = {"count": 0, "avg_time": [], "avg_throughput": []}
-            
+
             category_stats[category]["count"] += 1
             category_stats[category]["avg_time"].append(result.avg_duration_ms)
             category_stats[category]["avg_throughput"].append(result.throughput_ops_per_sec)
-        
+
         # Performance categories
         performance_tiers = {
             "excellent": 0,  # < 5ms
@@ -775,7 +775,7 @@ class ComprehensiveBenchmarkSuite:
             "acceptable": 0,  # 20-100ms
             "slow": 0        # > 100ms
         }
-        
+
         for duration in all_durations:
             if duration < 5:
                 performance_tiers["excellent"] += 1
@@ -785,7 +785,7 @@ class ComprehensiveBenchmarkSuite:
                 performance_tiers["acceptable"] += 1
             else:
                 performance_tiers["slow"] += 1
-        
+
         # Generate category summaries
         category_summaries = {}
         for category, stats in category_stats.items():
@@ -797,7 +797,7 @@ class ComprehensiveBenchmarkSuite:
                     "min_duration_ms": min(stats["avg_time"]),
                     "max_duration_ms": max(stats["avg_time"])
                 }
-        
+
         return {
             "total_operations": len(all_results),
             "overall_avg_duration_ms": statistics.mean(all_durations) if all_durations else 0,
@@ -809,7 +809,7 @@ class ComprehensiveBenchmarkSuite:
             "fastest_operation": min(all_results, key=lambda r: r.avg_duration_ms).operation if all_results else None,
             "slowest_operation": max(all_results, key=lambda r: r.avg_duration_ms).operation if all_results else None
         }
-    
+
     def _get_system_info(self) -> Dict[str, Any]:
         """Get system information for benchmark context."""
         return {
@@ -818,15 +818,15 @@ class ComprehensiveBenchmarkSuite:
             "python_version": sys.version,
             "platform": sys.platform
         }
-    
+
     def save_results(self, filename: str = None):
         """Save benchmark results to JSON file."""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"benchmark_results_{timestamp}.json"
-        
+
         output_file = self.output_dir / filename
-        
+
         # Convert BenchmarkResult objects to dictionaries
         serializable_results = {}
         for category, results in self.results.items():
@@ -834,38 +834,38 @@ class ComprehensiveBenchmarkSuite:
                 serializable_results[category] = [asdict(result) for result in results]
             else:
                 serializable_results[category] = results
-        
+
         with open(output_file, 'w') as f:
             json.dump(serializable_results, f, indent=2, default=str)
-        
+
         logger.info(f"Benchmark results saved to: {output_file}")
         return output_file
-    
+
     def print_summary_report(self):
         """Print a comprehensive summary report."""
         print("\n" + "="*80)
         print("COMPREHENSIVE PERFORMANCE BENCHMARK REPORT")
         print("="*80)
-        
+
         if "error" in self.results:
             print(f"❌ BENCHMARK FAILED: {self.results['error']}")
             return
-        
+
         # Overall metrics
         if "metadata" in self.results:
             metadata = self.results["metadata"]
             print(f"⏱️  Total Runtime: {metadata.get('total_duration_seconds', 0):.2f} seconds")
             print(f"🔄 Total Operations: {metadata.get('total_operations', 0)}")
-            
+
         if "summary" in self.results:
             summary = self.results["summary"]
-            
+
             print(f"\n📊 OVERALL PERFORMANCE METRICS:")
             print(f"   Average Duration: {summary.get('overall_avg_duration_ms', 0):.2f}ms")
             print(f"   95th Percentile: {summary.get('overall_p95_duration_ms', 0):.2f}ms")
             print(f"   Memory Usage: {summary.get('overall_avg_memory_mb', 0):.1f}MB")
             print(f"   CPU Usage: {summary.get('overall_avg_cpu_percent', 0):.1f}%")
-            
+
             # Performance distribution
             perf_dist = summary.get('performance_distribution', {})
             total_ops = sum(perf_dist.values())
@@ -873,10 +873,10 @@ class ComprehensiveBenchmarkSuite:
             for tier, count in perf_dist.items():
                 percentage = (count / total_ops * 100) if total_ops > 0 else 0
                 print(f"   {tier.capitalize()}: {count} operations ({percentage:.1f}%)")
-            
+
             print(f"\n⚡ FASTEST: {summary.get('fastest_operation', 'N/A')}")
             print(f"🐌 SLOWEST: {summary.get('slowest_operation', 'N/A')}")
-        
+
         # Category breakdown
         print(f"\n📋 CATEGORY BREAKDOWN:")
         for category in ["pdf_processing", "database_crud", "database_queries", "api_endpoints", "concurrency"]:
@@ -888,7 +888,7 @@ class ComprehensiveBenchmarkSuite:
                 print(f"     • {len(results)} operations")
                 print(f"     • Avg: {avg_time:.2f}ms")
                 print(f"     • Throughput: {avg_throughput:.1f} ops/sec")
-        
+
         # System context
         if "metadata" in self.results and "system_info" in self.results["metadata"]:
             sys_info = self.results["metadata"]["system_info"]
@@ -896,37 +896,37 @@ class ComprehensiveBenchmarkSuite:
             print(f"   CPU Cores: {sys_info.get('cpu_count', 'Unknown')}")
             print(f"   Memory: {sys_info.get('memory_total_mb', 0):.0f}MB")
             print(f"   Platform: {sys_info.get('platform', 'Unknown')}")
-        
+
         print("\n" + "="*80)
 
 
 def main():
     """Main function to run benchmark suite."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Comprehensive Performance Benchmark Suite")
     parser.add_argument("--output-dir", help="Output directory for results", type=Path)
     parser.add_argument("--save-results", help="Save results to JSON file", action="store_true")
     parser.add_argument("--verbose", "-v", help="Verbose logging", action="store_true")
     parser.add_argument("--quick", help="Run smaller benchmark (faster)", action="store_true")
-    
+
     args = parser.parse_args()
-    
+
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    
+
     try:
         suite = ComprehensiveBenchmarkSuite(args.output_dir)
         results = suite.run_full_benchmark_suite()
-        
+
         # Print summary
         suite.print_summary_report()
-        
+
         # Save results if requested
         if args.save_results:
             output_file = suite.save_results()
             print(f"\n💾 Results saved to: {output_file}")
-        
+
         # Exit code based on performance
         if "summary" in results:
             avg_time = results["summary"].get("overall_avg_duration_ms", 0)
@@ -941,7 +941,7 @@ def main():
                 return 1
         else:
             return 1
-            
+
     except KeyboardInterrupt:
         logger.info("Benchmark interrupted by user")
         return 1

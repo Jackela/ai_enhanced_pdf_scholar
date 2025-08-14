@@ -10,7 +10,7 @@ groups:
 - name: critical-system-alerts
   interval: 30s
   rules:
-  
+
   # Service availability
   - alert: ServiceDown
     expr: up{job=~"ai-pdf-scholar-backend|postgresql|redis|elasticsearch|kibana"} == 0

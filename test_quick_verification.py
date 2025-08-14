@@ -30,19 +30,19 @@ def test_basic_database():
     """Test basic database operations without leak issues"""
     try:
         from src.database.connection import DatabaseConnection
-        
+
         # Create temporary database
         temp_db = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
         temp_db.close()
-        
+
         # Test connection without migration (which was causing recursion)
         db_connection = DatabaseConnection(temp_db.name)
-        
+
         # Simple query test
         result = db_connection.execute("SELECT 1 as test")
         if result is None:
             print("✅ Basic database connection successful")
-        
+
         # Cleanup
         db_connection.close_all_connections()
         try:
@@ -51,7 +51,7 @@ def test_basic_database():
         except PermissionError:
             print("✅ Database test successful (cleanup skipped due to file lock)")
         return True
-        
+
     except Exception as e:
         print(f"❌ Database test failed: {e}")
         traceback.print_exc()
@@ -61,19 +61,19 @@ def test_citation_parsing():
     """Test citation parsing without database dependency"""
     try:
         from src.services.citation_parsing_service import CitationParsingService
-        
+
         parsing_service = CitationParsingService()
         test_text = "Smith, J. (2023). Test Paper. Journal of Testing, 15(3), 123-145."
-        
+
         result = parsing_service.parse_citations_from_text(test_text)
-        
+
         if isinstance(result, list):
             print("✅ Citation parsing successful")
             return True
         else:
             print("❌ Citation parsing returned unexpected type")
             return False
-            
+
     except Exception as e:
         print(f"❌ Citation parsing failed: {e}")
         traceback.print_exc()
@@ -82,25 +82,25 @@ def test_citation_parsing():
 def main():
     """Run all verification tests"""
     print("🚀 Starting quick verification tests...")
-    
+
     tests = [
         ("Core Imports", test_imports),
-        ("Basic Database", test_basic_database), 
+        ("Basic Database", test_basic_database),
         ("Citation Parsing", test_citation_parsing)
     ]
-    
+
     passed = 0
     total = len(tests)
-    
+
     for test_name, test_func in tests:
         print(f"\n🧪 Running {test_name}...")
         if test_func():
             passed += 1
         else:
             print(f"⚠️  {test_name} failed")
-    
+
     print(f"\n📊 Results: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("🎉 All verification tests passed!")
         return 0

@@ -279,23 +279,23 @@ class TestCitationService:
     @pytest.fixture
     def citation_service(self, mock_citation_repo, mock_relation_repo):
         return CitationService(mock_citation_repo, mock_relation_repo)
-    
+
     def test_extract_citations_with_high_confidence(self, citation_service):
         """Test citation extraction with high confidence threshold."""
         # Given
         document_id = 1
         confidence_threshold = 0.9
-        
+
         # When
         result = citation_service.extract_citations_from_document(
             document_id, confidence_threshold
         )
-        
+
         # Then
         assert result.success is True
         assert all(citation.confidence >= 0.9 for citation in result.citations)
         assert len(result.citations) > 0
-    
+
     @patch('src.services.citation_service.LLMCitationParser')
     def test_citation_parsing_with_mocked_llm(self, mock_llm, citation_service):
         """Test citation parsing with mocked LLM service."""
@@ -303,10 +303,10 @@ class TestCitationService:
         mock_llm.return_value.parse.return_value = [
             {"title": "Test Paper", "authors": ["John Doe"], "confidence": 0.95}
         ]
-        
+
         # When
         result = citation_service.parse_citation_text("Sample citation text")
-        
+
         # Then
         assert len(result) == 1
         assert result[0]["confidence"] == 0.95
@@ -322,7 +322,7 @@ class TestDocumentAPI:
     @pytest.fixture
     def client(self):
         return TestClient(app)
-    
+
     @pytest.fixture
     def auth_headers(self, client):
         # Login and get auth token
@@ -332,27 +332,27 @@ class TestDocumentAPI:
         })
         token = response.json()["data"]["access_token"]
         return {"Authorization": f"Bearer {token}"}
-    
+
     def test_document_upload_and_query_workflow(self, client, auth_headers, sample_pdf):
         """Test complete document workflow: upload -> index -> query."""
         # Upload document
         with open(sample_pdf, 'rb') as f:
             response = client.post(
-                "/api/documents", 
-                files={"file": f}, 
+                "/api/documents",
+                files={"file": f},
                 headers=auth_headers
             )
-        
+
         assert response.status_code == 201
         document_id = response.json()["data"]["id"]
-        
+
         # Index for RAG
         response = client.post(
             f"/api/rag/index/{document_id}",
             headers=auth_headers
         )
         assert response.status_code == 200
-        
+
         # Query document
         response = client.post(
             "/api/rag/query",
@@ -362,7 +362,7 @@ class TestDocumentAPI:
             },
             headers=auth_headers
         )
-        
+
         assert response.status_code == 200
         assert "answer" in response.json()["data"]
 ```
@@ -409,21 +409,21 @@ python scripts/test_runner.py --unit --coverage
 def extract_citations(document: DocumentModel, threshold: float = 0.8) -> List[Citation]:
     """
     Extract citations from document content.
-    
+
     Args:
         document: Document to analyze
         threshold: Minimum confidence threshold (0.0-1.0)
-        
+
     Returns:
         List of extracted citations with confidence scores
-        
+
     Raises:
         ValueError: If threshold is outside valid range
         DocumentProcessingError: If document cannot be processed
     """
     if not 0.0 <= threshold <= 1.0:
         raise ValueError("Threshold must be between 0.0 and 1.0")
-    
+
     citations = []
     # Implementation here...
     return citations
@@ -436,7 +436,7 @@ class CitationExtractionResult:
     citations: List[Citation]
     confidence_avg: float
     processing_time: float
-    
+
     def __post_init__(self) -> None:
         """Validate result after initialization."""
         if self.confidence_avg < 0 or self.confidence_avg > 1:
@@ -472,14 +472,14 @@ def process_document(file_path: Path) -> DocumentModel:
     try:
         if not file_path.exists():
             raise FileNotFoundError(f"Document file not found: {file_path}")
-            
+
         # Process document
         document = DocumentProcessor.process(file_path)
-        
+
         # Log success
         logger.info(f"Successfully processed document: {document.title}")
         return document
-        
+
     except FileNotFoundError:
         logger.error(f"Document file missing: {file_path}")
         raise
@@ -513,23 +513,23 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 }) => {
   // Use proper hooks
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  
+
   // Memoize expensive calculations
   const sortedDocuments = useMemo(
     () => documents.sort((a, b) => b.created_at.localeCompare(a.created_at)),
     [documents]
   )
-  
+
   // Proper event handlers
   const handleDocumentClick = useCallback((document: Document) => {
     setSelectedId(document.id)
     onDocumentSelect(document)
   }, [onDocumentSelect])
-  
+
   if (loading) {
     return <LoadingSpinner />
   }
-  
+
   return (
     <div className={clsx('document-list', className)}>
       {sortedDocuments.map(document => (
@@ -553,11 +553,11 @@ export class PDFScholarAPI {
     private baseUrl: string,
     private authToken: string
   ) {}
-  
+
   async uploadDocument(file: File): Promise<DocumentResponse> {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     try {
       const response = await fetch(`${this.baseUrl}/api/documents`, {
         method: 'POST',
@@ -566,17 +566,17 @@ export class PDFScholarAPI {
         },
         body: formData
       })
-      
+
       if (!response.ok) {
         throw new APIError(
           `Upload failed: ${response.status} ${response.statusText}`,
           response.status
         )
       }
-      
+
       const data = await response.json()
       return DocumentResponse.parse(data) // Zod validation
-      
+
     } catch (error) {
       if (error instanceof APIError) {
         throw error
@@ -603,7 +603,7 @@ class DocumentUploadRequest(BaseModel):
     """Secure document upload request model."""
     title: Optional[str] = None
     tags: List[str] = []
-    
+
     @validator('title')
     def validate_title(cls, v):
         if v is not None:
@@ -613,7 +613,7 @@ class DocumentUploadRequest(BaseModel):
                 raise ValueError("Title too long")
             return sanitized
         return v
-    
+
     @validator('tags')
     def validate_tags(cls, v):
         # Limit number and length of tags
@@ -635,7 +635,7 @@ class JWTManager:
     def __init__(self, private_key: str, public_key: str):
         self.private_key = private_key
         self.public_key = public_key
-    
+
     def create_access_token(self, user_id: int, permissions: List[str]) -> str:
         """Create secure access token with minimal payload."""
         payload = {
@@ -659,7 +659,7 @@ const MessageDisplay: React.FC<{ content: string; role: 'user' | 'assistant' }> 
 }) => {
   const { sanitizedContent, hasXSSRisk } = useSanitizedContent(content)
   const xssDetection = useXSSDetection(content)
-  
+
   // Log security events
   useEffect(() => {
     if (hasXSSRisk) {
@@ -669,7 +669,7 @@ const MessageDisplay: React.FC<{ content: string; role: 'user' | 'assistant' }> 
       })
     }
   }, [hasXSSRisk, xssDetection])
-  
+
   return (
     <div className={clsx('message', {
       'message--user': role === 'user',
@@ -681,7 +681,7 @@ const MessageDisplay: React.FC<{ content: string; role: 'user' | 'assistant' }> 
           ⚠️ Potentially unsafe content detected
         </div>
       ) : null}
-      
+
       <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
     </div>
   )
@@ -709,18 +709,18 @@ const MessageDisplay: React.FC<{ content: string; role: 'user' | 'assistant' }> 
 #### Python Docstrings
 ```python
 def extract_citations_from_document(
-    self, 
-    document_id: int, 
+    self,
+    document_id: int,
     confidence_threshold: float = 0.8,
     formats: List[CitationFormat] = None
 ) -> CitationExtractionResult:
     """
     Extract citations from document using multiple format parsers.
-    
+
     This method uses a combination of regex patterns and machine learning
     models to identify and parse citations in various academic formats.
     The extraction process includes confidence scoring and duplicate detection.
-    
+
     Args:
         document_id: Unique identifier for the document to process
         confidence_threshold: Minimum confidence score (0.0-1.0) for including
@@ -729,21 +729,21 @@ def extract_citations_from_document(
         formats: List of citation formats to recognize. If None, all supported
             formats will be used. Supported formats include APA, MLA, Chicago,
             IEEE, Harvard, and Vancouver.
-    
+
     Returns:
         CitationExtractionResult containing:
             - List of extracted citations with confidence scores
-            - Average confidence across all extracted citations  
+            - Average confidence across all extracted citations
             - Processing time in seconds
             - Extraction statistics and metadata
-    
+
     Raises:
         DocumentNotFoundError: If document_id doesn't exist in database
         DocumentNotProcessedError: If document hasn't been indexed for processing
         ValueError: If confidence_threshold is outside [0.0, 1.0] range
         CitationExtractionError: If extraction process fails due to document
             corruption or unsupported format
-    
+
     Example:
         >>> service = CitationService(citation_repo, relation_repo)
         >>> result = service.extract_citations_from_document(
@@ -753,11 +753,11 @@ def extract_citations_from_document(
         ... )
         >>> print(f"Extracted {len(result.citations)} citations")
         >>> print(f"Average confidence: {result.confidence_avg:.2f}")
-    
+
     Note:
         This operation can be computationally intensive for large documents.
         Consider using background tasks for documents over 100 pages.
-        
+
     See Also:
         - parse_citation_text(): For parsing individual citation strings
         - build_citation_network(): For building relationship networks
@@ -770,23 +770,23 @@ def extract_citations_from_document(
 ```typescript
 /**
  * Secure RAG query hook with XSS protection and caching
- * 
+ *
  * This hook provides a secure interface for querying documents using
  * RAG (Retrieval-Augmented Generation) with built-in XSS protection,
  * response caching, and error handling.
- * 
+ *
  * @param config - Configuration object for RAG queries
  * @param config.baseUrl - API base URL (defaults to current origin)
  * @param config.cacheTimeout - Cache timeout in milliseconds (default: 300000)
  * @param config.enableXSSProtection - Enable XSS protection (default: true)
- * 
+ *
  * @returns Object containing:
  *   - `query`: Function to execute RAG queries
  *   - `loading`: Boolean indicating query in progress
  *   - `error`: Error object if query failed
  *   - `result`: Last query result with XSS protection
  *   - `clearCache`: Function to clear query cache
- * 
+ *
  * @example
  * ```tsx
  * const MyComponent = () => {
@@ -794,7 +794,7 @@ def extract_citations_from_document(
  *     baseUrl: 'https://api.example.com',
  *     cacheTimeout: 600000 // 10 minutes
  *   })
- * 
+ *
  *   const handleQuery = async () => {
  *     try {
  *       await query({
@@ -806,7 +806,7 @@ def extract_citations_from_document(
  *       console.error('Query failed:', error)
  *     }
  *   }
- * 
+ *
  *   return (
  *     <div>
  *       <button onClick={handleQuery} disabled={loading}>
@@ -818,12 +818,12 @@ def extract_citations_from_document(
  *   )
  * }
  * ```
- * 
+ *
  * @security
  * - All query responses are automatically sanitized for XSS protection
  * - User inputs are validated before sending to API
  * - Sensitive information is excluded from cache keys
- * 
+ *
  * @performance
  * - Implements intelligent caching with configurable timeout
  * - Debounces rapid successive queries
@@ -862,11 +862,11 @@ class RAGCoordinator:
         file_manager: IRAGFileManager
     ):
         # Dependency injection for loose coupling
-        
+
     async def process_document_complete(self, document_id: int) -> ProcessingResult:
         """Orchestrates complete document processing pipeline."""
         # 1. Build index
-        # 2. Verify integrity  
+        # 2. Verify integrity
         # 3. Enable querying
         # 4. Update status
 ```
@@ -877,10 +877,10 @@ class RAGCoordinator:
 ```mermaid
 graph TD
     A[RAGCoordinator] --> B[RAGIndexBuilder]
-    A --> C[RAGQueryEngine]  
+    A --> C[RAGQueryEngine]
     A --> D[RAGRecoveryService]
     A --> E[RAGFileManager]
-    
+
     B --> F[DocumentRepository]
     C --> F
     D --> F
@@ -1169,6 +1169,6 @@ We value all types of contributions:
 
 ---
 
-**📊 Last Updated**: 2025-01-19  
-**🔖 Version**: 2.1.0  
+**📊 Last Updated**: 2025-01-19
+**🔖 Version**: 2.1.0
 **👥 Maintained by**: AI Enhanced PDF Scholar Team

@@ -39,17 +39,17 @@ graph TD
     C -->|Testing| E[Restricted Test Origins]
     C -->|Staging| F[Staging Domain Origins]
     C -->|Production| G[Strict Production Origins]
-    
+
     D --> H[Allow Credentials: True]
     E --> I[Allow Credentials: False]
     F --> J[Allow Credentials: True]
     G --> K[Allow Credentials: True]
-    
+
     H --> L[Apply CORS Middleware]
     I --> L
     J --> L
     K --> L
-    
+
     G --> M[Production Security Validation]
     M --> N{Security Check}
     N -->|Pass| L
@@ -64,18 +64,18 @@ sequenceDiagram
     participant Config as CORSConfig
     participant Validator as Security Validator
     participant Logger as Security Logger
-    
+
     App->>Config: Initialize CORS
     Config->>Config: Detect Environment
     Config->>Config: Parse Origins
-    
+
     alt Production Environment
         Config->>Validator: Validate Security
         Validator->>Validator: Check Wildcard Origins
         Validator->>Validator: Check Localhost Origins
         Validator->>Validator: Check HTTPS Usage
         Validator->>Validator: Validate Origin Format
-        
+
         alt Security Issues Found
             Validator->>Logger: Log Security Errors
             Validator->>App: Raise ValueError
@@ -84,7 +84,7 @@ sequenceDiagram
             Validator->>Config: Return Valid Config
         end
     end
-    
+
     Config->>App: Return CORS Middleware Config
     App->>App: Apply CORS Middleware
 ```
@@ -98,7 +98,7 @@ sequenceDiagram
 
 ```yaml
 Environment: development
-Default Origins: 
+Default Origins:
   - http://localhost:3000
   - http://localhost:8000
   - http://127.0.0.1:3000
@@ -122,7 +122,7 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:8000
 
 ```yaml
 Environment: testing
-Default Origins: 
+Default Origins:
   - http://localhost:3000
   - http://127.0.0.1:3000
 Allow Credentials: false  # More restrictive
@@ -296,7 +296,7 @@ allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 # Only allow necessary headers
 allow_headers = [
     "Accept",
-    "Content-Type", 
+    "Content-Type",
     "Authorization",
     "X-Requested-With",
     "X-CSRF-Token",
@@ -491,7 +491,7 @@ ValueError: CORS security validation failed:
 # ❌ Wrong
 CORS_ORIGINS=*
 
-# ✅ Correct  
+# ✅ Correct
 CORS_ORIGINS=https://app.yourdomain.com
 ```
 
@@ -603,7 +603,7 @@ export CORS_ORIGINS=https://your-production-domain.com
 ## Security Audit Checklist
 
 - [ ] No wildcard (`*`) origins in any environment
-- [ ] No localhost origins in production environment  
+- [ ] No localhost origins in production environment
 - [ ] All production origins use HTTPS
 - [ ] Origins are explicitly configured (no defaults in production)
 - [ ] Testing environment has restrictive credential settings
@@ -632,6 +632,6 @@ For issues with CORS configuration:
 
 ---
 
-**Last Updated:** 2025-01-19  
-**Version:** 2.0.0  
+**Last Updated:** 2025-01-19
+**Version:** 2.0.0
 **Security Review:** Completed

@@ -11,12 +11,12 @@ data:
   ENVIRONMENT: {{ .Values.app.environment | quote }}
   DEBUG: {{ .Values.backend.env.DEBUG | quote }}
   LOG_LEVEL: {{ .Values.backend.env.LOG_LEVEL | quote }}
-  
+
   # API Configuration
   API_HOST: "0.0.0.0"
   API_PORT: {{ .Values.backend.service.port | quote }}
   API_VERSION: "v1"
-  
+
   # Database Configuration
   {{- if .Values.postgresql.enabled }}
   POSTGRES_HOST: {{ include "ai-pdf-scholar.postgresql.fullname" . | quote }}
@@ -32,7 +32,7 @@ data:
   POSTGRES_POOL_SIZE: {{ .Values.backend.env.POSTGRES_POOL_SIZE | quote }}
   POSTGRES_MAX_OVERFLOW: {{ .Values.backend.env.POSTGRES_MAX_OVERFLOW | quote }}
   POSTGRES_POOL_TIMEOUT: "30"
-  
+
   # Redis Configuration
   {{- if .Values.redis.enabled }}
   REDIS_HOST: {{ include "ai-pdf-scholar.redis.fullname" . | quote }}
@@ -44,12 +44,12 @@ data:
   REDIS_DB: "0"
   {{- end }}
   REDIS_MAX_CONNECTIONS: {{ .Values.backend.env.REDIS_MAX_CONNECTIONS | quote }}
-  
+
   # Cache Configuration
   CACHE_DEFAULT_TTL: {{ .Values.backend.env.CACHE_DEFAULT_TTL | quote }}
   CACHE_MAX_TTL: {{ .Values.backend.env.CACHE_MAX_TTL | quote }}
   CACHE_COMPRESSION_THRESHOLD: "1000"
-  
+
   # Monitoring Configuration
   PROMETHEUS_PORT: {{ .Values.backend.service.metricsPort | quote }}
   OTEL_SERVICE_NAME: {{ include "ai-pdf-scholar.name" . | quote }}
@@ -57,7 +57,7 @@ data:
   {{- if .Values.jaeger.enabled }}
   JAEGER_ENDPOINT: "http://{{ .Release.Name }}-jaeger-collector:14268/api/traces"
   {{- end }}
-  
+
   # Elasticsearch Configuration
   {{- if .Values.elasticsearch.enabled }}
   ELASTICSEARCH_HOSTS: {{ include "ai-pdf-scholar.elasticsearch.connectionString" . | quote }}
@@ -65,29 +65,29 @@ data:
   {{- end }}
   ELASTICSEARCH_BULK_SIZE: "500"
   ELASTICSEARCH_FLUSH_INTERVAL: "5"
-  
+
   # Security Configuration
   JWT_ALGORITHM: {{ .Values.backend.env.JWT_ALGORITHM | quote }}
   JWT_ACCESS_TOKEN_EXPIRE_MINUTES: {{ .Values.backend.env.JWT_ACCESS_TOKEN_EXPIRE_MINUTES | quote }}
   JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"
   BCRYPT_ROUNDS: {{ .Values.backend.env.BCRYPT_ROUNDS | quote }}
-  
+
   # Encryption Configuration
   ENCRYPTION_ALGORITHM: "AES-256-GCM"
   KEY_ROTATION_DAYS: "90"
-  
+
   # Rate Limiting
   RATE_LIMIT_REQUESTS: "1000"
   RATE_LIMIT_WINDOW: "3600"
-  
+
   # File Upload
   MAX_UPLOAD_SIZE: {{ .Values.backend.env.MAX_UPLOAD_SIZE | quote }}
   UPLOAD_PATH: "/app/uploads"
-  
+
   # GDPR Configuration
   DATA_RETENTION_DAYS: {{ .Values.backend.env.DATA_RETENTION_DAYS | quote }}
   CONSENT_RENEWAL_DAYS: "365"
-  
+
   # Kubernetes Configuration
   KUBERNETES_NAMESPACE: {{ .Release.Namespace | quote }}
 ---
@@ -131,7 +131,7 @@ data:
         keepalive_timeout 65;
         types_hash_max_size 2048;
         server_tokens off;
-        
+
         # Gzip compression
         gzip on;
         gzip_vary on;
@@ -143,7 +143,7 @@ data:
         # Rate limiting
         limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
         limit_req_zone $binary_remote_addr zone=upload:10m rate=1r/s;
-        
+
         # Upstream configurations
         upstream backend {
             least_conn;
@@ -152,7 +152,7 @@ data:
             {{- end }}
             keepalive 32;
         }
-        
+
         upstream frontend {
             least_conn;
             {{- range $i := until (int .Values.frontend.replicaCount) }}
@@ -164,17 +164,17 @@ data:
         server {
             listen 80;
             server_name _;
-            
+
             # Security headers
             add_header X-Frame-Options "SAMEORIGIN" always;
             add_header X-Content-Type-Options "nosniff" always;
             add_header X-XSS-Protection "1; mode=block" always;
             add_header Referrer-Policy "strict-origin-when-cross-origin" always;
             add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'" always;
-            
+
             # Client max body size for file uploads
             client_max_body_size {{ .Values.backend.env.MAX_UPLOAD_SIZE }};
-            
+
             # Frontend routes
             location / {
                 proxy_pass http://frontend;
@@ -186,11 +186,11 @@ data:
                 proxy_set_header Connection "";
                 proxy_buffering off;
             }
-            
+
             # API routes with rate limiting
             location /api/ {
                 limit_req zone=api burst=20 nodelay;
-                
+
                 proxy_pass http://backend;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
@@ -198,55 +198,55 @@ data:
                 proxy_set_header X-Forwarded-Proto $scheme;
                 proxy_http_version 1.1;
                 proxy_set_header Connection "";
-                
+
                 # CORS headers
                 add_header Access-Control-Allow-Origin $http_origin always;
                 add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
                 add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
                 add_header Access-Control-Allow-Credentials true always;
-                
+
                 if ($request_method = OPTIONS) {
                     return 204;
                 }
             }
-            
+
             # Upload endpoints with stricter rate limiting
             location /api/documents/upload {
                 limit_req zone=upload burst=5 nodelay;
-                
+
                 proxy_pass http://backend;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
-                
+
                 # Increase timeouts for large uploads
                 proxy_read_timeout 300s;
                 proxy_send_timeout 300s;
             }
-            
+
             # Health check endpoint
             location /health {
                 access_log off;
                 proxy_pass http://backend/health;
             }
-            
+
             # Metrics endpoint (internal only)
             location /metrics {
                 allow 10.0.0.0/8;
                 allow 172.16.0.0/12;
                 allow 192.168.0.0/16;
                 deny all;
-                
+
                 proxy_pass http://backend:{{ .Values.backend.service.metricsPort }}/metrics;
             }
         }
-        
+
         {{- if and .Values.nginx.tls.enabled .Values.nginx.tls.secretName }}
         server {
             listen 443 ssl http2;
             server_name _;
-            
+
             ssl_certificate /etc/nginx/certs/tls.crt;
             ssl_certificate_key /etc/nginx/certs/tls.key;
             ssl_protocols TLSv1.2 TLSv1.3;
@@ -254,7 +254,7 @@ data:
             ssl_prefer_server_ciphers on;
             ssl_session_cache shared:SSL:10m;
             ssl_session_timeout 10m;
-            
+
             # Include the same location blocks as HTTP server
             # ... (same locations as above)
         }

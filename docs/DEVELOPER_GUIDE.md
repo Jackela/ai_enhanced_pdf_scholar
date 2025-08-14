@@ -63,7 +63,7 @@ python scripts/test_runner.py --quick
 # Terminal 1: Backend
 uvicorn web_main:app --reload --port 8000
 
-# Terminal 2: Frontend  
+# Terminal 2: Frontend
 cd frontend && npm run dev
 ```
 
@@ -86,38 +86,38 @@ graph TB
         B[Tailwind CSS]
         C[Security Hooks]
     end
-    
-    subgraph "API Layer" 
+
+    subgraph "API Layer"
         D[FastAPI]
         E[JWT Auth]
         F[Rate Limiting]
         G[CORS Security]
     end
-    
+
     subgraph "Service Layer"
         H[RAG Services]
-        I[Citation Services]  
+        I[Citation Services]
         J[Document Services]
         K[Security Services]
     end
-    
+
     subgraph "Repository Layer"
         L[Document Repo]
         M[Citation Repo]
         N[User Repo]
     end
-    
+
     subgraph "Data Layer"
         O[SQLite/PostgreSQL]
         P[Vector Indexes]
         Q[File Storage]
     end
-    
+
     subgraph "External Services"
         R[Google Gemini API]
         S[Redis Cache]
     end
-    
+
     A --> D
     D --> H
     H --> L
@@ -134,7 +134,7 @@ graph TB
    # Each service has a single, well-defined responsibility
    class CitationExtractionService:
        """Responsible only for extracting citations from documents."""
-       
+
    class CitationFormattingService:
        """Responsible only for formatting citations in different styles."""
    ```
@@ -146,11 +146,11 @@ graph TB
        @abstractmethod
        def parse(self, text: str) -> List[Citation]:
            pass
-   
+
    class APACitationParser(ICitationParser):
        def parse(self, text: str) -> List[Citation]:
            # APA-specific implementation
-           
+
    class MLACitationParser(ICitationParser):
        def parse(self, text: str) -> List[Citation]:
            # MLA-specific implementation
@@ -173,7 +173,7 @@ graph TB
        @abstractmethod
        def get_by_id(self, id: int) -> Optional[T]:
            pass
-   
+
    class IWritableRepository(ABC):
        @abstractmethod
        def save(self, entity: T) -> T:
@@ -185,7 +185,7 @@ graph TB
    # High-level modules depend on abstractions
    class DocumentService:
        def __init__(
-           self, 
+           self,
            repo: IDocumentRepository,  # Abstraction
            indexer: IDocumentIndexer   # Abstraction
        ):
@@ -199,25 +199,25 @@ graph TB
 ```python
 class RAGCoordinator:
     """Orchestrates RAG operations across specialized services."""
-    
+
     def __init__(
         self,
         index_builder: IRAGIndexBuilder,
-        query_engine: IRAGQueryEngine, 
+        query_engine: IRAGQueryEngine,
         recovery_service: IRAGRecoveryService,
         file_manager: IRAGFileManager
     ):
         # Dependency injection for loose coupling
-        
+
 class RAGIndexBuilder:
     """Specialized service for building and managing vector indexes."""
-    
+
 class RAGQueryEngine:
     """Optimized service for executing RAG queries."""
-    
+
 class RAGRecoveryService:
     """Service for detecting and recovering from index corruption."""
-    
+
 class RAGFileManager:
     """Service for managing RAG-related file operations."""
 ```
@@ -313,7 +313,7 @@ MAX_CONCURRENT_UPLOADS=10
 
 #### Production Configuration (`.env.production`)
 ```bash
-# Core Configuration  
+# Core Configuration
 ENVIRONMENT=production
 DEBUG=false
 LOG_LEVEL=INFO
@@ -352,7 +352,7 @@ version: '3.8'
 
 services:
   backend:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.dev
     ports:
@@ -367,7 +367,7 @@ services:
     depends_on:
       - db
       - redis
-  
+
   frontend:
     build:
       context: ./frontend
@@ -377,7 +377,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-  
+
   db:
     image: postgres:15
     environment:
@@ -388,7 +388,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-  
+
   redis:
     image: redis:7
     ports:
@@ -576,7 +576,7 @@ git checkout -b feature/advanced-citation-network-analysis
 # Document the feature in GitHub issue
 # Include:
 # - User stories
-# - Acceptance criteria  
+# - Acceptance criteria
 # - Technical specifications
 # - Security considerations
 # - Performance requirements
@@ -587,7 +587,7 @@ git checkout -b feature/advanced-citation-network-analysis
 ##### Backend Development
 ```python
 # 1. Define data models
-@dataclass  
+@dataclass
 class CitationNetwork:
     """Represents a citation network with nodes and relationships."""
     root_document_id: int
@@ -605,7 +605,7 @@ class ICitationNetworkRepository(ABC):
 class CitationNetworkService:
     def __init__(self, repo: ICitationNetworkRepository):
         self.repo = repo
-    
+
     def analyze_network(self, document_id: int, config: NetworkConfig) -> NetworkAnalysis:
         """Analyze citation relationships and generate insights."""
         network = self.repo.build_network(document_id, config.max_depth)
@@ -658,11 +658,11 @@ class CitationNetworkAPI {
       },
       body: JSON.stringify({ document_id: documentId, config })
     })
-    
+
     if (!response.ok) {
       throw new APIError(`Network analysis failed: ${response.statusText}`)
     }
-    
+
     return response.json()
   }
 }
@@ -672,11 +672,11 @@ export const useCitationNetwork = () => {
   const [network, setNetwork] = useState<CitationNetwork | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-  
+
   const analyzeNetwork = useCallback(async (documentId: number, config: NetworkConfig) => {
     setLoading(true)
     setError(null)
-    
+
     try {
       const api = new CitationNetworkAPI()
       const analysis = await api.analyzeNetwork(documentId, config)
@@ -687,22 +687,22 @@ export const useCitationNetwork = () => {
       setLoading(false)
     }
   }, [])
-  
+
   return { network, loading, error, analyzeNetwork }
 }
 
 // 4. Create component
 export const CitationNetworkViewer: React.FC<{documentId: number}> = ({documentId}) => {
   const { network, loading, error, analyzeNetwork } = useCitationNetwork()
-  
+
   useEffect(() => {
     analyzeNetwork(documentId, { maxDepth: 3, minConfidence: 0.7 })
   }, [documentId, analyzeNetwork])
-  
+
   if (loading) return <LoadingSpinner />
   if (error) return <ErrorDisplay error={error} />
   if (!network) return <EmptyState />
-  
+
   return (
     <div className="citation-network-viewer">
       <NetworkVisualization network={network} />
@@ -732,7 +732,7 @@ python scripts/benchmark_citation_network.py
 
 #### 4. Code Review Checklist
 - [ ] **Functionality**: Feature works as specified
-- [ ] **Code Quality**: Clean, readable, maintainable code  
+- [ ] **Code Quality**: Clean, readable, maintainable code
 - [ ] **Architecture**: Follows SOLID principles
 - [ ] **Security**: No security vulnerabilities introduced
 - [ ] **Performance**: No significant performance regression
@@ -768,7 +768,7 @@ python scripts/start_dev_environment.py
 # This script:
 # 1. Activates conda environment
 # 2. Starts backend server with hot reload
-# 3. Starts frontend dev server  
+# 3. Starts frontend dev server
 # 4. Opens browser tabs for development
 # 5. Starts log monitoring
 ```
@@ -807,7 +807,7 @@ class TestCitationExtractionService:
         mock_repo = Mock(spec=ICitationRepository)
         mock_parser = Mock(spec=ICitationParser)
         return CitationExtractionService(mock_repo, mock_parser)
-    
+
     def test_extract_citations_with_confidence_threshold(self, service):
         """Test citation extraction respects confidence threshold."""
         # Given
@@ -816,19 +816,19 @@ class TestCitationExtractionService:
             Citation(text="Smith, J. (2023)", confidence=0.95),
             Citation(text="Low confidence citation", confidence=0.3)
         ]
-        
+
         # When
         result = service.extract_citations(document_text, confidence_threshold=0.8)
-        
+
         # Then
         assert len(result.citations) == 1
         assert result.citations[0].confidence >= 0.8
-        
+
     def test_extract_citations_handles_empty_document(self, service):
         """Test extraction handles empty document gracefully."""
         # Given/When
         result = service.extract_citations("", confidence_threshold=0.8)
-        
+
         # Then
         assert len(result.citations) == 0
         assert result.success is True
@@ -843,7 +843,7 @@ class TestDocumentUploadAPI:
     @pytest.fixture
     def client(self):
         return TestClient(app)
-    
+
     @pytest.fixture
     def auth_token(self, client):
         response = client.post("/api/auth/login", json={
@@ -851,11 +851,11 @@ class TestDocumentUploadAPI:
             "password": "testpass"
         })
         return response.json()["data"]["access_token"]
-    
+
     def test_upload_and_process_document(self, client, auth_token, sample_pdf):
         """Test complete document upload and processing workflow."""
         headers = {"Authorization": f"Bearer {auth_token}"}
-        
+
         # Upload document
         with open(sample_pdf, "rb") as f:
             response = client.post(
@@ -864,19 +864,19 @@ class TestDocumentUploadAPI:
                 data={"extract_metadata": "true"},
                 headers=headers
             )
-        
+
         assert response.status_code == 201
         document_data = response.json()["data"]
         assert document_data["title"] is not None
-        
+
         # Verify document is accessible
-        doc_id = document_data["id"] 
+        doc_id = document_data["id"]
         response = client.get(f"/api/documents/{doc_id}", headers=headers)
         assert response.status_code == 200
-        
+
         # Verify RAG indexing
         response = client.post(
-            f"/api/rag/index/{doc_id}", 
+            f"/api/rag/index/{doc_id}",
             headers=headers
         )
         assert response.status_code == 200
@@ -895,30 +895,30 @@ test('complete document analysis workflow', async ({ page }) => {
   await page.fill('[data-testid=username]', 'test@example.com')
   await page.fill('[data-testid=password]', 'testpass')
   await page.click('[data-testid=login-button]')
-  
+
   // Upload document
   await page.goto('/documents')
   const fileChooser = await page.waitForEvent('filechooser')
   await page.click('[data-testid=upload-button]')
   await fileChooser.setFiles('tests/fixtures/sample_research_paper.pdf')
-  
+
   // Wait for upload to complete
   await page.waitForSelector('[data-testid=upload-success]')
-  
+
   // Query document with RAG
   await page.click('[data-testid=query-document-button]')
   await page.fill('[data-testid=query-input]', 'What are the main findings?')
   await page.click('[data-testid=submit-query-button]')
-  
+
   // Verify response
   await page.waitForSelector('[data-testid=rag-response]')
   const response = await page.textContent('[data-testid=rag-response]')
   expect(response).toContain('findings')
-  
+
   // Extract citations
   await page.click('[data-testid=extract-citations-button]')
   await page.waitForSelector('[data-testid=citations-list]')
-  
+
   const citationCount = await page.locator('[data-testid=citation-item]').count()
   expect(citationCount).toBeGreaterThan(0)
 })
@@ -930,7 +930,7 @@ test('complete document analysis workflow', async ({ page }) => {
 ```ini
 [tool:pytest]
 minversion = 7.0
-addopts = 
+addopts =
     -v
     --strict-markers
     --strict-config
@@ -945,7 +945,7 @@ testpaths = tests
 markers =
     unit: Unit tests
     integration: Integration tests
-    security: Security tests  
+    security: Security tests
     performance: Performance tests
     slow: Slow running tests
     api: API tests
@@ -964,25 +964,25 @@ import time
 class TestRunner:
     def __init__(self):
         self.project_root = Path(__file__).parent.parent
-        
+
     def run_quick_tests(self):
         """Run smoke tests for rapid feedback (3-7 seconds)."""
         print("🚀 Running quick smoke tests...")
         start_time = time.time()
-        
+
         cmd = [
-            sys.executable, "-m", "pytest", 
+            sys.executable, "-m", "pytest",
             "-m", "unit and not slow",
             "-x", "--tb=short", "--no-cov",
             "-q", "--disable-warnings",
             f"--rootdir={self.project_root}"
         ]
-        
+
         result = subprocess.run(cmd, cwd=self.project_root)
         elapsed = time.time() - start_time
         print(f"✅ Quick tests completed in {elapsed:.2f}s")
         return result.returncode == 0
-        
+
     def run_unit_tests(self):
         """Run comprehensive unit test suite."""
         print("🔬 Running unit tests...")
@@ -994,19 +994,19 @@ class TestRunner:
         ]
         result = subprocess.run(cmd, cwd=self.project_root)
         return result.returncode == 0
-        
+
     def run_integration_tests(self):
         """Run integration tests with database."""
         print("🔗 Running integration tests...")
         cmd = [
             sys.executable, "-m", "pytest",
-            "-m", "integration", 
+            "-m", "integration",
             "--tb=short",
             f"--rootdir={self.project_root}"
         ]
         result = subprocess.run(cmd, cwd=self.project_root)
         return result.returncode == 0
-        
+
     def run_security_tests(self):
         """Run security-focused tests."""
         print("🔒 Running security tests...")
@@ -1018,12 +1018,12 @@ class TestRunner:
         ]
         result = subprocess.run(cmd, cwd=self.project_root)
         return result.returncode == 0
-        
+
     def run_performance_tests(self):
         """Run performance benchmarks."""
         print("⚡ Running performance tests...")
         cmd = [
-            sys.executable, "-m", "pytest", 
+            sys.executable, "-m", "pytest",
             "-m", "performance",
             "--tb=short",
             f"--rootdir={self.project_root}"
@@ -1033,7 +1033,7 @@ class TestRunner:
 
 if __name__ == "__main__":
     runner = TestRunner()
-    
+
     if "--quick" in sys.argv:
         runner.run_quick_tests()
     elif "--unit" in sys.argv:
@@ -1064,12 +1064,12 @@ def test_db():
     """Create a test database for each test."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    
+
     Session = sessionmaker(bind=engine)
     session = Session()
-    
+
     yield DatabaseConnection.from_session(session)
-    
+
     session.close()
 
 @pytest.fixture
@@ -1078,22 +1078,22 @@ def sample_documents(test_db):
     documents = [
         DocumentModel(
             title="AI Research Paper",
-            file_path="ai_research.pdf", 
+            file_path="ai_research.pdf",
             content_hash="abc123",
             mime_type="application/pdf"
         ),
         DocumentModel(
             title="Machine Learning Survey",
             file_path="ml_survey.pdf",
-            content_hash="def456", 
+            content_hash="def456",
             mime_type="application/pdf"
         )
     ]
-    
+
     for doc in documents:
         test_db.session.add(doc)
     test_db.session.commit()
-    
+
     return documents
 ```
 
@@ -1107,17 +1107,17 @@ def mock_gemini_api():
         mock.generate_content.return_value.text = "Mocked AI response"
         yield mock
 
-@pytest.fixture  
+@pytest.fixture
 def mock_file_operations():
     """Mock file system operations."""
     with patch('pathlib.Path.exists') as mock_exists, \
          patch('pathlib.Path.unlink') as mock_unlink, \
          patch('shutil.copy2') as mock_copy:
-        
+
         mock_exists.return_value = True
         yield {
             'exists': mock_exists,
-            'unlink': mock_unlink, 
+            'unlink': mock_unlink,
             'copy': mock_copy
         }
 ```
@@ -1153,22 +1153,22 @@ class MetricsCollector:
         self.request_count = 0
         self.error_count = 0
         self.start_time = time.time()
-    
+
     def record_request(self, response_time: float, is_error: bool = False):
         """Record request metrics."""
         self.request_times.append(response_time)
         self.request_count += 1
         if is_error:
             self.error_count += 1
-            
+
         # Keep only last 1000 requests
         if len(self.request_times) > 1000:
             self.request_times = self.request_times[-1000:]
-    
+
     def get_metrics(self) -> PerformanceMetrics:
         """Get current performance metrics."""
         uptime = time.time() - self.start_time
-        
+
         return PerformanceMetrics(
             cpu_usage=psutil.cpu_percent(),
             memory_usage=psutil.virtual_memory().percent,
@@ -1186,18 +1186,18 @@ import time
 async def performance_middleware(request: Request, call_next):
     """Middleware to collect performance metrics."""
     start_time = time.time()
-    
+
     try:
         response = await call_next(request)
         processing_time = time.time() - start_time
-        
+
         # Record successful request
         metrics_collector.record_request(processing_time, is_error=False)
-        
+
         # Add performance headers
         response.headers["X-Processing-Time"] = str(processing_time)
         return response
-        
+
     except Exception as e:
         processing_time = time.time() - start_time
         metrics_collector.record_request(processing_time, is_error=True)
@@ -1213,7 +1213,7 @@ from sqlalchemy.orm import joinedload, selectinload
 class OptimizedDocumentRepository:
     def __init__(self, db_session):
         self.session = db_session
-    
+
     def get_documents_with_citations(self, limit: int = 50):
         """Optimized query with eager loading."""
         return self.session.query(DocumentModel)\
@@ -1223,42 +1223,42 @@ class OptimizedDocumentRepository:
             )\
             .limit(limit)\
             .all()
-    
+
     def search_documents_optimized(self, query: str):
         """Full-text search with database optimization."""
         # Use database-specific full-text search
         sql = text("""
-            SELECT d.*, ts_rank(to_tsvector('english', d.title || ' ' || d.content), 
+            SELECT d.*, ts_rank(to_tsvector('english', d.title || ' ' || d.content),
                                plainto_tsquery('english', :query)) as rank
-            FROM documents d 
-            WHERE to_tsvector('english', d.title || ' ' || d.content) @@ 
+            FROM documents d
+            WHERE to_tsvector('english', d.title || ' ' || d.content) @@
                   plainto_tsquery('english', :query)
             ORDER BY rank DESC
             LIMIT 50
         """)
         return self.session.execute(sql, {"query": query}).fetchall()
-    
+
     def get_document_statistics_cached(self):
         """Cached statistics query."""
         cache_key = "document_statistics"
-        
+
         # Try cache first
         cached = redis_client.get(cache_key)
         if cached:
             return json.loads(cached)
-        
+
         # Calculate statistics
         stats = self.session.execute(text("""
-            SELECT 
+            SELECT
                 COUNT(*) as total_documents,
                 SUM(file_size) as total_size,
                 COUNT(DISTINCT mime_type) as file_types,
                 AVG(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 ELSE 0 END) as recent_activity
             FROM documents
         """)).fetchone()
-        
+
         result = dict(stats)
-        
+
         # Cache for 1 hour
         redis_client.setex(cache_key, 3600, json.dumps(result))
         return result
@@ -1277,18 +1277,18 @@ class CacheManager:
     def __init__(self, redis_url: str):
         self.redis_client = redis.from_url(redis_url)
         self.local_cache = {}  # In-memory cache for frequent data
-        
+
     def cache_key(self, prefix: str, *args, **kwargs) -> str:
         """Generate consistent cache key."""
         key_data = f"{prefix}:{args}:{sorted(kwargs.items())}"
         return hashlib.md5(key_data.encode()).hexdigest()
-    
+
     def get(self, key: str) -> Optional[Any]:
         """Get from multi-layer cache."""
         # Try local cache first (fastest)
         if key in self.local_cache:
             return self.local_cache[key]
-        
+
         # Try Redis cache
         cached = self.redis_client.get(key)
         if cached:
@@ -1296,19 +1296,19 @@ class CacheManager:
             # Store in local cache for next time
             self.local_cache[key] = data
             return data
-        
+
         return None
-    
+
     def set(self, key: str, value: Any, ttl: int = 3600):
         """Set in multi-layer cache."""
         serialized = json.dumps(value)
-        
+
         # Store in Redis with TTL
         self.redis_client.setex(key, ttl, serialized)
-        
+
         # Store in local cache
         self.local_cache[key] = value
-        
+
         # Limit local cache size
         if len(self.local_cache) > 1000:
             # Remove oldest entries
@@ -1322,17 +1322,17 @@ def cache_result(prefix: str, ttl: int = 3600):
         @wraps(func)
         def wrapper(*args, **kwargs):
             cache_key = cache_manager.cache_key(prefix, *args, **kwargs)
-            
+
             # Try to get from cache
             cached_result = cache_manager.get(cache_key)
             if cached_result is not None:
                 return cached_result
-            
+
             # Execute function and cache result
             result = func(*args, **kwargs)
             cache_manager.set(cache_key, result, ttl)
             return result
-            
+
         return wrapper
     return decorator
 
@@ -1357,11 +1357,11 @@ import asyncio
 class PerformanceBenchmark:
     def __init__(self):
         self.results = {}
-    
+
     def benchmark_function(self, name: str, func: Callable, iterations: int = 100):
         """Benchmark a function's execution time."""
         times = []
-        
+
         for _ in range(iterations):
             start = time.perf_counter()
             try:
@@ -1371,7 +1371,7 @@ class PerformanceBenchmark:
             except Exception as e:
                 print(f"Error in {name}: {e}")
                 continue
-        
+
         if times:
             self.results[name] = {
                 'mean': statistics.mean(times),
@@ -1381,17 +1381,17 @@ class PerformanceBenchmark:
                 'std_dev': statistics.stdev(times) if len(times) > 1 else 0,
                 'iterations': len(times)
             }
-    
+
     def benchmark_concurrent(self, name: str, func: Callable, workers: int = 10, tasks_per_worker: int = 10):
         """Benchmark concurrent execution."""
         start_time = time.perf_counter()
-        
+
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = []
             for _ in range(workers * tasks_per_worker):
                 future = executor.submit(func)
                 futures.append(future)
-            
+
             # Wait for all to complete
             completed = 0
             errors = 0
@@ -1401,9 +1401,9 @@ class PerformanceBenchmark:
                     completed += 1
                 except Exception:
                     errors += 1
-        
+
         total_time = time.perf_counter() - start_time
-        
+
         self.results[name] = {
             'total_time': total_time,
             'completed': completed,
@@ -1411,18 +1411,18 @@ class PerformanceBenchmark:
             'throughput': completed / total_time if total_time > 0 else 0,
             'workers': workers
         }
-    
+
     def print_results(self):
         """Print benchmark results in a formatted table."""
         print("\n" + "="*80)
         print("PERFORMANCE BENCHMARK RESULTS")
         print("="*80)
-        
+
         for name, result in self.results.items():
             print(f"\n{name}:")
             if 'mean' in result:
                 print(f"  Mean time:     {result['mean']*1000:.2f}ms")
-                print(f"  Median time:   {result['median']*1000:.2f}ms") 
+                print(f"  Median time:   {result['median']*1000:.2f}ms")
                 print(f"  Min time:      {result['min']*1000:.2f}ms")
                 print(f"  Max time:      {result['max']*1000:.2f}ms")
                 print(f"  Std deviation: {result['std_dev']*1000:.2f}ms")
@@ -1438,30 +1438,30 @@ class PerformanceBenchmark:
 def run_document_benchmarks():
     """Run document processing benchmarks."""
     benchmark = PerformanceBenchmark()
-    
+
     # Benchmark document upload
     def upload_test_document():
         # Mock document upload
         time.sleep(0.1)  # Simulate processing time
         return True
-    
+
     benchmark.benchmark_function("Document Upload", upload_test_document, iterations=50)
-    
+
     # Benchmark RAG queries
     def rag_query_test():
         # Mock RAG query
         time.sleep(0.2)  # Simulate query processing
         return "Mock response"
-    
+
     benchmark.benchmark_function("RAG Query", rag_query_test, iterations=20)
-    
+
     # Benchmark concurrent operations
     def concurrent_query_test():
         time.sleep(0.1)  # Simulate work
         return True
-    
+
     benchmark.benchmark_concurrent("Concurrent Queries", concurrent_query_test, workers=5, tasks_per_worker=10)
-    
+
     benchmark.print_results()
 
 if __name__ == "__main__":
@@ -1490,7 +1490,7 @@ class JWTManager:
         self.private_key = self._load_private_key(private_key_path)
         self.public_key = self._load_public_key(public_key_path)
         self.algorithm = "RS256"
-    
+
     def _load_private_key(self, path: str):
         """Load RSA private key."""
         with open(path, 'rb') as key_file:
@@ -1498,12 +1498,12 @@ class JWTManager:
                 key_file.read(),
                 password=None  # Use environment variable for password in production
             )
-    
+
     def _load_public_key(self, path: str):
         """Load RSA public key."""
         with open(path, 'rb') as key_file:
             return serialization.load_pem_public_key(key_file.read())
-    
+
     def create_access_token(self, user_id: int, permissions: List[str]) -> str:
         """Create access token with minimal payload."""
         now = datetime.utcnow()
@@ -1515,49 +1515,49 @@ class JWTManager:
             "iat": now,                    # Issued at
             "jti": str(uuid.uuid4())       # JWT ID for revocation
         }
-        
+
         return jwt.encode(payload, self.private_key, algorithm=self.algorithm)
-    
+
     def create_refresh_token(self, user_id: int) -> str:
         """Create refresh token with longer expiration."""
         now = datetime.utcnow()
         payload = {
             "sub": str(user_id),
-            "type": "refresh", 
+            "type": "refresh",
             "exp": now + timedelta(days=7),
             "iat": now,
             "jti": str(uuid.uuid4())
         }
-        
+
         return jwt.encode(payload, self.private_key, algorithm=self.algorithm)
-    
+
     def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Verify and decode token."""
         try:
             payload = jwt.decode(
-                token, 
-                self.public_key, 
+                token,
+                self.public_key,
                 algorithms=[self.algorithm],
                 options={"require": ["sub", "exp", "iat"]}
             )
-            
+
             # Additional validation
             if payload.get("type") not in ["access", "refresh"]:
                 return None
-                
+
             return payload
-            
+
         except jwt.ExpiredSignatureError:
             return None
         except jwt.InvalidTokenError:
             return None
-    
+
     def is_token_revoked(self, jti: str) -> bool:
         """Check if token is revoked (implement with Redis/database)."""
         # Implementation depends on your revocation strategy
         # Could use Redis set, database table, etc.
         return redis_client.sismember("revoked_tokens", jti)
-    
+
     def revoke_token(self, jti: str, expiration: datetime):
         """Revoke token until its natural expiration."""
         # Store revoked token ID with TTL matching token expiration
@@ -1577,7 +1577,7 @@ from fastapi import HTTPException, Depends
 class Permission(Enum):
     """System permissions."""
     READ_DOCUMENTS = "documents:read"
-    WRITE_DOCUMENTS = "documents:write" 
+    WRITE_DOCUMENTS = "documents:write"
     DELETE_DOCUMENTS = "documents:delete"
     MANAGE_USERS = "users:manage"
     VIEW_ANALYTICS = "analytics:view"
@@ -1615,14 +1615,14 @@ ROLE_PERMISSIONS = {
 class RBACManager:
     def __init__(self):
         self.role_permissions = ROLE_PERMISSIONS
-    
+
     def get_user_permissions(self, roles: List[Role]) -> Set[Permission]:
         """Get combined permissions for user roles."""
         permissions = set()
         for role in roles:
             permissions.update(self.role_permissions.get(role, set()))
         return permissions
-    
+
     def has_permission(self, user_roles: List[Role], required_permission: Permission) -> bool:
         """Check if user has required permission."""
         user_permissions = self.get_user_permissions(user_roles)
@@ -1633,15 +1633,15 @@ def require_permission(permission: Permission):
     """FastAPI dependency to require specific permission."""
     def permission_checker(current_user: dict = Depends(get_current_user)):
         user_roles = [Role(role) for role in current_user.get("roles", [])]
-        
+
         if not rbac_manager.has_permission(user_roles, permission):
             raise HTTPException(
                 status_code=403,
                 detail=f"Insufficient permissions. Required: {permission.value}"
             )
-        
+
         return current_user
-    
+
     return permission_checker
 
 # Usage in API endpoints
@@ -1672,7 +1672,7 @@ class SecureDocumentUpload(BaseModel):
     tags: List[str] = Field(default_factory=list, max_items=10)
     extract_metadata: bool = True
     check_duplicates: bool = True
-    
+
     @validator('title')
     def validate_title(cls, v):
         if v is not None:
@@ -1680,7 +1680,7 @@ class SecureDocumentUpload(BaseModel):
             sanitized = html.escape(v.strip())
             if not sanitized:
                 raise ValueError("Title cannot be empty")
-            
+
             # Check for suspicious patterns
             dangerous_patterns = [
                 r'<script.*?</script>',
@@ -1688,95 +1688,95 @@ class SecureDocumentUpload(BaseModel):
                 r'vbscript:',
                 r'on\w+\s*='
             ]
-            
+
             for pattern in dangerous_patterns:
                 if re.search(pattern, sanitized, re.IGNORECASE):
                     raise ValueError("Title contains potentially dangerous content")
-            
+
             return sanitized
         return v
-    
+
     @validator('tags')
     def validate_tags(cls, v):
         if not v:
             return []
-        
+
         sanitized_tags = []
         for tag in v:
             if not isinstance(tag, str):
                 continue
-                
+
             # Clean and validate tag
             clean_tag = re.sub(r'[^a-zA-Z0-9\-_\s]', '', tag.strip())
             if len(clean_tag) > 50:
                 raise ValueError(f"Tag too long: {clean_tag[:20]}...")
-            
+
             if clean_tag and clean_tag not in sanitized_tags:
                 sanitized_tags.append(clean_tag)
-        
+
         return sanitized_tags[:10]  # Limit to 10 tags
 
 class SecureFileValidator:
     """Comprehensive file validation."""
-    
+
     ALLOWED_MIME_TYPES = {
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'text/plain',
         'text/markdown'
     }
-    
+
     DANGEROUS_EXTENSIONS = {
-        '.exe', '.bat', '.cmd', '.scr', '.vbs', '.js', '.jar', 
+        '.exe', '.bat', '.cmd', '.scr', '.vbs', '.js', '.jar',
         '.com', '.pif', '.msi', '.dll', '.sh'
     }
-    
+
     MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-    
+
     @classmethod
     def validate_file(cls, file: UploadFile) -> dict:
         """Comprehensive file validation."""
         errors = []
         warnings = []
-        
+
         # Check file size
         if hasattr(file.file, 'seek'):
             file.file.seek(0, 2)  # Seek to end
             size = file.file.tell()
             file.file.seek(0)  # Reset to beginning
-            
+
             if size > cls.MAX_FILE_SIZE:
                 errors.append(f"File too large: {size} bytes (max: {cls.MAX_FILE_SIZE})")
-        
+
         # Check MIME type
         if file.content_type not in cls.ALLOWED_MIME_TYPES:
             errors.append(f"File type not allowed: {file.content_type}")
-        
+
         # Check file extension
         file_path = Path(file.filename or "")
         extension = file_path.suffix.lower()
-        
+
         if extension in cls.DANGEROUS_EXTENSIONS:
             errors.append(f"Dangerous file extension: {extension}")
-        
+
         # Check filename for suspicious patterns
         if file.filename:
             # Sanitize filename
             safe_filename = re.sub(r'[^a-zA-Z0-9.\-_]', '_', file.filename)
             if safe_filename != file.filename:
                 warnings.append("Filename contains special characters - will be sanitized")
-            
+
             # Check for double extensions
             if file.filename.count('.') > 1:
                 warnings.append("Multiple extensions detected")
-        
+
         # Basic content validation (magic number check)
         if file.content_type == 'application/pdf':
             header = file.file.read(5)
             file.file.seek(0)
             if not header.startswith(b'%PDF-'):
                 errors.append("Invalid PDF file - header mismatch")
-        
+
         return {
             'is_valid': len(errors) == 0,
             'errors': errors,
@@ -1817,27 +1817,27 @@ export function useXSSDetection(content: string): XSSDetectionResult {
       { pattern: /<iframe[^>]*>/gi, name: 'IFrame Tags', severity: 'medium' },
       { pattern: /expression\s*\(/gi, name: 'CSS Expression', severity: 'high' }
     ] as const
-    
+
     const detectedPatterns: string[] = []
     let highestSeverity: 'low' | 'medium' | 'high' | 'critical' = 'low'
-    
+
     // Check for HTML entity encoded patterns
     const decodedContent = content
       .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
       .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
       .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
-    
+
     dangerousPatterns.forEach(({ pattern, name, severity }) => {
       if (pattern.test(content) || pattern.test(decodedContent)) {
         detectedPatterns.push(name)
-        
+
         const severityLevels = { low: 1, medium: 2, high: 3, critical: 4 }
         if (severityLevels[severity] > severityLevels[highestSeverity]) {
           highestSeverity = severity
         }
       }
     })
-    
+
     return {
       isDetected: detectedPatterns.length > 0,
       patterns: detectedPatterns,
@@ -1847,36 +1847,36 @@ export function useXSSDetection(content: string): XSSDetectionResult {
 }
 
 export function useSafeContent(
-  content: string, 
+  content: string,
   config: SecurityConfig = {}
 ) {
   const xssDetection = useXSSDetection(content)
-  
+
   const sanitizedContent = useMemo(() => {
     if (config.stripAllHTML) {
       return content.replace(/<[^>]*>/g, '')
     }
-    
+
     const dompurifyConfig: any = {
       ALLOWED_TAGS: ['b', 'i', 'u', 'em', 'strong', 'br', 'p'],
       ALLOWED_ATTR: ['class'],
       KEEP_CONTENT: true,
       ALLOW_DATA_ATTR: false
     }
-    
+
     if (config.allowLinks) {
       dompurifyConfig.ALLOWED_TAGS.push('a')
       dompurifyConfig.ALLOWED_ATTR.push('href', 'target', 'rel')
     }
-    
+
     if (config.allowImages) {
       dompurifyConfig.ALLOWED_TAGS.push('img')
       dompurifyConfig.ALLOWED_ATTR.push('src', 'alt', 'width', 'height')
     }
-    
+
     return DOMPurify.sanitize(content, dompurifyConfig)
   }, [content, config])
-  
+
   return {
     sanitizedContent: xssDetection.isDetected ? content.replace(/<[^>]*>/g, '') : sanitizedContent,
     hasXSSRisk: xssDetection.isDetected,
@@ -1891,7 +1891,7 @@ export function SafeContent({ content, allowMarkdown = false }: { content: strin
     allowLinks: allowMarkdown,
     allowImages: false
   })
-  
+
   if (hasXSSRisk) {
     return (
       <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -1908,9 +1908,9 @@ export function SafeContent({ content, allowMarkdown = false }: { content: strin
       </div>
     )
   }
-  
+
   return (
-    <div 
+    <div
       dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       className="safe-content"
     />

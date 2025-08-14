@@ -26,37 +26,37 @@ graph TB
         INGRESS[NGINX Ingress Controller]
         CERT[Cert-Manager]
     end
-    
+
     subgraph "Application Layer"
         API_PODS[API Pods<br/>3 replicas]
         WORKER_PODS[Worker Pods<br/>2 replicas]
         WEB_PODS[Web Pods<br/>2 replicas]
     end
-    
+
     subgraph "Data Layer"
         POSTGRES[PostgreSQL<br/>StatefulSet]
         REDIS[Redis<br/>StatefulSet]
         STORAGE[Persistent Storage<br/>PVC]
     end
-    
+
     subgraph "Monitoring Layer"
         PROMETHEUS[Prometheus]
         GRAFANA[Grafana]
         LOKI[Loki]
     end
-    
+
     INGRESS --> API_PODS
     INGRESS --> WEB_PODS
     CERT --> INGRESS
-    
+
     API_PODS --> POSTGRES
     API_PODS --> REDIS
     WORKER_PODS --> POSTGRES
     WORKER_PODS --> REDIS
-    
+
     API_PODS --> STORAGE
     WORKER_PODS --> STORAGE
-    
+
     API_PODS --> PROMETHEUS
     WORKER_PODS --> PROMETHEUS
     PROMETHEUS --> GRAFANA
@@ -204,24 +204,24 @@ data:
   DATABASE_HOST: "postgresql"
   DATABASE_PORT: "5432"
   DATABASE_NAME: "pdf_scholar"
-  
+
   # Redis configuration
   REDIS_HOST: "redis"
   REDIS_PORT: "6379"
   REDIS_DB: "0"
-  
+
   # Application settings
   ENVIRONMENT: "production"
   LOG_LEVEL: "INFO"
   MAX_FILE_SIZE_MB: "100"
   ENABLE_METRICS: "true"
   ENABLE_TRACING: "true"
-  
+
   # AI/ML settings
   RAG_CHUNK_SIZE: "1000"
   RAG_CHUNK_OVERLAP: "200"
   EMBEDDING_MODEL: "text-embedding-ada-002"
-  
+
   # Performance settings
   WORKERS_COUNT: "4"
   MAX_CONNECTIONS: "100"
@@ -241,14 +241,14 @@ data:
   # Database credentials (base64 encoded)
   DATABASE_USER: cGRmX3NjaG9sYXI=  # pdf_scholar
   DATABASE_PASSWORD: c2VjdXJlX3Bhc3N3b3Jk  # secure_password
-  
+
   # API keys (base64 encoded)
   GEMINI_API_KEY: eW91cl9nZW1pbmlfYXBpX2tleQ==
   OPENAI_API_KEY: eW91cl9vcGVuYWlfa2V5
-  
+
   # JWT secret
   JWT_SECRET: eW91cl9qd3Rfc2VjcmV0X2tleQ==
-  
+
   # Redis password
   REDIS_PASSWORD: cmVkaXNfcGFzc3dvcmQ=
 ```
@@ -500,13 +500,13 @@ spec:
             - |
               BACKUP_FILE="/backup/postgres-$(date +%Y%m%d_%H%M%S).sql"
               pg_dump -h postgresql -U $POSTGRES_USER -d $POSTGRES_DB > $BACKUP_FILE
-              
+
               # Compress backup
               gzip $BACKUP_FILE
-              
+
               # Upload to S3 (optional)
               aws s3 cp $BACKUP_FILE.gz s3://pdf-scholar-backups/database/
-              
+
               # Clean old local backups (keep last 7 days)
               find /backup -name "postgres-*.sql.gz" -mtime +7 -delete
             env:
@@ -785,7 +785,7 @@ spec:
       annotations:
         summary: "High error rate in PDF Scholar API"
         description: "Error rate is {{ $value }} errors per second"
-    
+
     - alert: PDFScholarHighResponseTime
       expr: histogram_quantile(0.95, rate(pdf_scholar_request_duration_seconds_bucket[5m])) > 2
       for: 5m
@@ -794,7 +794,7 @@ spec:
       annotations:
         summary: "High response time in PDF Scholar API"
         description: "95th percentile response time is {{ $value }}s"
-    
+
     - alert: PDFScholarPodCrashLooping
       expr: rate(kube_pod_container_status_restarts_total{namespace="pdf-scholar"}[5m]) > 0
       for: 5m
@@ -978,31 +978,31 @@ spec:
             - -c
             - |
               set -e
-              
+
               # Create timestamped backup
               BACKUP_FILE="/backup/postgresql-$(date +%Y%m%d_%H%M%S).sql"
               echo "Creating backup: $BACKUP_FILE"
-              
+
               pg_dump -h $DATABASE_HOST -U $DATABASE_USER -d $DATABASE_NAME > $BACKUP_FILE
-              
+
               # Compress backup
               gzip $BACKUP_FILE
               echo "Backup compressed: $BACKUP_FILE.gz"
-              
+
               # Verify backup
               gunzip -t $BACKUP_FILE.gz
               echo "Backup verification successful"
-              
+
               # Upload to cloud storage
               if [ -n "$AWS_S3_BUCKET" ]; then
                 aws s3 cp $BACKUP_FILE.gz s3://$AWS_S3_BUCKET/database/
                 echo "Backup uploaded to S3"
               fi
-              
+
               # Clean old backups (keep last 30 days)
               find /backup -name "postgresql-*.sql.gz" -mtime +30 -delete
               echo "Old backups cleaned"
-              
+
             env:
             - name: DATABASE_HOST
               valueFrom:
@@ -1048,7 +1048,7 @@ data:
   backup.sh: |
     #!/bin/bash
     set -e
-    
+
     # Create volume snapshots
     kubectl apply -f - <<EOF
     apiVersion: snapshot.storage.k8s.io/v1
@@ -1061,7 +1061,7 @@ data:
         persistentVolumeClaimName: documents-pvc
       volumeSnapshotClassName: csi-snapshotter
     EOF
-    
+
     # Clean old snapshots (keep last 7)
     kubectl get volumesnapshot -n pdf-scholar --sort-by=.metadata.creationTimestamp -o name | head -n -7 | xargs -r kubectl delete -n pdf-scholar
 ```
@@ -1080,31 +1080,31 @@ data:
   restore.sh: |
     #!/bin/bash
     # Disaster Recovery Script
-    
+
     set -e
-    
+
     BACKUP_DATE=${1:-$(date +%Y%m%d)}
     NAMESPACE="pdf-scholar"
-    
+
     echo "Starting disaster recovery for date: $BACKUP_DATE"
-    
+
     # 1. Scale down applications
     echo "Scaling down applications..."
     kubectl scale deployment pdf-scholar-api --replicas=0 -n $NAMESPACE
     kubectl scale deployment pdf-scholar-frontend --replicas=0 -n $NAMESPACE
     kubectl scale deployment pdf-scholar-worker --replicas=0 -n $NAMESPACE
-    
+
     # 2. Restore database
     echo "Restoring database..."
     BACKUP_FILE="postgresql-${BACKUP_DATE}_*.sql.gz"
-    
+
     # Download backup from S3
     aws s3 cp s3://pdf-scholar-backups/database/$BACKUP_FILE /tmp/
-    
+
     # Restore database
     gunzip -c /tmp/$BACKUP_FILE | kubectl exec -i postgresql-0 -n $NAMESPACE -- psql -U $DATABASE_USER -d postgres -c "DROP DATABASE IF EXISTS $DATABASE_NAME; CREATE DATABASE $DATABASE_NAME;"
     gunzip -c /tmp/$BACKUP_FILE | kubectl exec -i postgresql-0 -n $NAMESPACE -- psql -U $DATABASE_USER -d $DATABASE_NAME
-    
+
     # 3. Restore volumes from snapshots
     echo "Restoring volumes..."
     kubectl apply -f - <<EOF
@@ -1124,20 +1124,20 @@ data:
         requests:
           storage: 100Gi
     EOF
-    
+
     # 4. Scale up applications
     echo "Scaling up applications..."
     kubectl scale deployment pdf-scholar-api --replicas=3 -n $NAMESPACE
     kubectl scale deployment pdf-scholar-frontend --replicas=2 -n $NAMESPACE
     kubectl scale deployment pdf-scholar-worker --replicas=2 -n $NAMESPACE
-    
+
     # 5. Verify recovery
     echo "Verifying recovery..."
     kubectl wait --for=condition=ready pod -l app=pdf-scholar-api -n $NAMESPACE --timeout=300s
-    
+
     # Health check
     kubectl exec deployment/pdf-scholar-api -n $NAMESPACE -- curl -f http://localhost:8000/api/system/health
-    
+
     echo "Disaster recovery completed successfully!"
 ```
 
@@ -1364,9 +1364,9 @@ kubectl apply -f k8s/manifests/security-patch.yaml
 
 ---
 
-**Deployment Guide Version**: 2.1.0  
-**Last Updated**: 2025-08-09  
-**Kubernetes Compatibility**: v1.24+  
+**Deployment Guide Version**: 2.1.0
+**Last Updated**: 2025-08-09
+**Kubernetes Compatibility**: v1.24+
 **Status**: Production Ready
 
 This guide provides comprehensive instructions for deploying AI Enhanced PDF Scholar on Kubernetes with enterprise-grade features including high availability, auto-scaling, monitoring, and disaster recovery capabilities.

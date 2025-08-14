@@ -16,22 +16,22 @@ import base64
 
 class TestDataGenerator:
     """Generate various types of test data."""
-    
+
     @staticmethod
     def random_string(length: int = 10) -> str:
         """Generate a random string."""
         return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-    
+
     @staticmethod
     def random_email() -> str:
         """Generate a random email address."""
         return f"test_{TestDataGenerator.random_string(8)}@example.com"
-    
+
     @staticmethod
     def random_phone() -> str:
         """Generate a random phone number."""
         return f"+1{random.randint(2000000000, 9999999999)}"
-    
+
     @staticmethod
     def create_pdf_content(
         title: str = "Test Document",
@@ -43,45 +43,45 @@ class TestDataGenerator:
         Create PDF content with configurable properties.
         """
         pdf_header = b"%PDF-1.4\n"
-        
+
         # Simple PDF structure
         objects = []
-        
+
         # Catalog
         objects.append(b"1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n")
-        
+
         # Pages
         page_refs = ' '.join([f"{i+3} 0 R" for i in range(pages)])
         objects.append(f"2 0 obj\n<</Type/Pages/Kids[{page_refs}]/Count {pages}>>\nendobj\n".encode())
-        
+
         # Individual pages
         for i in range(pages):
             page_num = i + 3
             content_num = pages + i + 3
-            
+
             # Page object
             objects.append(
                 f"{page_num} 0 obj\n"
                 f"<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents {content_num} 0 R/Resources<</Font<</F1 {pages*2+3} 0 R>>>>>> \n"
                 f"endobj\n".encode()
             )
-            
+
             # Content stream
             page_content = f"BT /F1 12 Tf 72 720 Td ({title} - Page {i+1}) Tj ET\n"
             if with_citations and i == 0:
                 page_content += "BT /F1 10 Tf 72 680 Td ([1] Smith et al., 2024) Tj ET\n"
                 page_content += "BT /F1 10 Tf 72 660 Td ([2] Johnson, 2023) Tj ET\n"
             page_content += f"BT /F1 10 Tf 72 640 Td ({content}) Tj ET\n"
-            
+
             stream = page_content.encode()
             objects.append(
                 f"{content_num} 0 obj\n"
                 f"<</Length {len(stream)}>>\n"
-                f"stream\n".encode() + 
-                stream + 
+                f"stream\n".encode() +
+                stream +
                 b"\nendstream\nendobj\n"
             )
-        
+
         # Font object
         font_obj_num = pages * 2 + 3
         objects.append(
@@ -89,28 +89,28 @@ class TestDataGenerator:
             f"<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>\n"
             f"endobj\n".encode()
         )
-        
+
         # Build complete PDF
         pdf_content = pdf_header
         for obj in objects:
             pdf_content += obj
-        
+
         # Cross-reference table
         xref = b"xref\n"
         xref += f"0 {len(objects) + 1}\n".encode()
         xref += b"0000000000 65535 f \n"
-        
+
         offset = len(pdf_header)
         for obj in objects:
             xref += f"{offset:010d} 00000 n \n".encode()
             offset += len(obj)
-        
+
         # Trailer
         trailer = f"trailer\n<</Size {len(objects) + 1}/Root 1 0 R>>\n".encode()
         trailer += b"startxref\n"
         trailer += f"{len(pdf_content)}\n".encode()
         trailer += b"%%EOF"
-        
+
         return pdf_content + xref + trailer
 
 
@@ -121,11 +121,11 @@ def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
     """
     generator = TestDataGenerator()
     test_files = {}
-    
+
     # Create test directory
     test_dir = Path("tests_e2e/test_data/pdfs")
     test_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Standard test PDF
     standard_pdf = test_dir / "standard_test.pdf"
     standard_pdf.write_bytes(generator.create_pdf_content(
@@ -134,7 +134,7 @@ def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
         pages=3
     ))
     test_files["standard"] = standard_pdf
-    
+
     # PDF with citations
     citations_pdf = test_dir / "citations_test.pdf"
     citations_pdf.write_bytes(generator.create_pdf_content(
@@ -144,7 +144,7 @@ def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
         with_citations=True
     ))
     test_files["with_citations"] = citations_pdf
-    
+
     # Large PDF
     large_pdf = test_dir / "large_test.pdf"
     large_pdf.write_bytes(generator.create_pdf_content(
@@ -153,7 +153,7 @@ def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
         pages=50
     ))
     test_files["large"] = large_pdf
-    
+
     # Empty PDF (minimal valid PDF)
     empty_pdf = test_dir / "empty_test.pdf"
     empty_pdf.write_bytes(generator.create_pdf_content(
@@ -162,7 +162,7 @@ def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
         pages=1
     ))
     test_files["empty"] = empty_pdf
-    
+
     # Special characters PDF
     special_pdf = test_dir / "special_chars.pdf"
     special_pdf.write_bytes(generator.create_pdf_content(
@@ -171,9 +171,9 @@ def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
         pages=1
     ))
     test_files["special_chars"] = special_pdf
-    
+
     yield test_files
-    
+
     # Cleanup
     for file in test_files.values():
         if file.exists():
@@ -186,7 +186,7 @@ def test_user_data() -> Dict[str, Any]:
     Generate test user data.
     """
     generator = TestDataGenerator()
-    
+
     return {
         "admin": {
             "username": "admin_test",
@@ -220,7 +220,7 @@ def test_documents_data() -> List[Dict[str, Any]]:
     documents = []
     categories = ["Research", "Tutorial", "Reference", "Report", "Article"]
     statuses = ["pending", "processing", "completed", "failed"]
-    
+
     for i in range(10):
         doc_date = datetime.now() - timedelta(days=random.randint(0, 365))
         documents.append({
@@ -242,7 +242,7 @@ def test_documents_data() -> List[Dict[str, Any]]:
                 "keywords": [f"keyword{j}" for j in range(random.randint(3, 8))]
             }
         })
-    
+
     return documents
 
 
@@ -296,37 +296,37 @@ def invalid_files() -> Generator[Dict[str, Path], None, None]:
     """
     test_dir = Path("tests_e2e/test_data/invalid")
     test_dir.mkdir(parents=True, exist_ok=True)
-    
+
     invalid_files = {}
-    
+
     # Not a PDF file
     txt_file = test_dir / "not_a_pdf.txt"
     txt_file.write_text("This is not a PDF file")
     invalid_files["not_pdf"] = txt_file
-    
+
     # Corrupted PDF
     corrupted_pdf = test_dir / "corrupted.pdf"
     corrupted_pdf.write_bytes(b"%PDF-1.4\nCorrupted content that is not valid PDF")
     invalid_files["corrupted"] = corrupted_pdf
-    
+
     # Empty file
     empty_file = test_dir / "empty.pdf"
     empty_file.write_bytes(b"")
     invalid_files["empty"] = empty_file
-    
+
     # File too large (create a reference, not actual file)
     large_file_ref = test_dir / "too_large.pdf"
     large_file_ref.write_text("Reference to a file that would be too large")
     invalid_files["too_large"] = large_file_ref
-    
+
     # File with malicious name
     malicious_name = test_dir / "../../etc/passwd.pdf"
     safe_malicious = test_dir / "malicious_name.pdf"
     safe_malicious.write_bytes(b"%PDF-1.4\nTest")
     invalid_files["malicious_name"] = safe_malicious
-    
+
     yield invalid_files
-    
+
     # Cleanup
     for file in invalid_files.values():
         if file.exists():

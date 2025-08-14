@@ -64,7 +64,7 @@
   "performance_thresholds": {
     "response_time_targets": {
       "excellent": "< 50ms",
-      "good": "< 100ms", 
+      "good": "< 100ms",
       "acceptable": "< 500ms",
       "poor": "> 500ms"
     },

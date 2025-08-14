@@ -178,17 +178,17 @@ data:
     listen_addresses = '*'
     port = 5432
     max_connections = 200
-    
+
     # Memory Settings
     shared_buffers = 256MB
     effective_cache_size = 1GB
     work_mem = 16MB
     maintenance_work_mem = 128MB
-    
+
     # Checkpoint Settings
     checkpoint_completion_target = 0.7
     wal_buffers = 16MB
-    
+
     # Logging Settings
     log_destination = 'stderr'
     logging_collector = on
@@ -196,19 +196,19 @@ data:
     log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
     log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
     log_min_duration_statement = 1000
-    
+
     # Replication Settings (for read replicas)
     wal_level = replica
     max_wal_senders = 3
     max_replication_slots = 3
     hot_standby = on
-    
+
     # Performance Settings
     random_page_cost = 1.1  # For SSD
     effective_io_concurrency = 200
     max_parallel_workers_per_gather = 2
     max_parallel_workers = 8
-    
+
   pg_hba.conf: |
     # TYPE  DATABASE        USER            ADDRESS                 METHOD
     local   all             postgres                                peer

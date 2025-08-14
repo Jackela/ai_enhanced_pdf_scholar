@@ -54,14 +54,14 @@ async def register(
 ) -> UserResponse:
     """
     Register a new user account.
-    
+
     - Username must be unique and 3-50 characters
     - Email must be valid and unique
     - Password must meet security requirements
     - Email verification will be required
     """
     auth_service = AuthenticationService(db)
-    
+
     # Register user
     user, error = auth_service.register_user(
         username=user_data.username,
@@ -70,13 +70,13 @@ async def register(
         full_name=user_data.full_name,
         auto_verify=False  # Require email verification
     )
-    
+
     if error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error
         )
-    
+
     # Send verification email
     from backend.services.email_service import email_service
     try:
@@ -91,9 +91,9 @@ async def register(
     except Exception as e:
         logger.error(f"Error sending verification email to {user.email}: {e}")
         # Don't fail registration if email sending fails
-    
+
     logger.info(f"New user registered: {user.username} from IP: {request.client.host}")
-    
+
     return UserResponse.model_validate(user)
 
 
@@ -106,30 +106,30 @@ async def login(
 ) -> TokenResponse:
     """
     Authenticate user and receive access tokens.
-    
+
     - Returns JWT access token (15 min) and refresh token (7 days)
     - Tokens use RS256 asymmetric signing
     - Failed attempts may result in account lockout
     """
     auth_service = AuthenticationService(db)
-    
+
     # Get client IP for logging
     client_ip = request.client.host
     if "x-forwarded-for" in request.headers:
         client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
     elif "x-real-ip" in request.headers:
         client_ip = request.headers["x-real-ip"]
-    
+
     # Get user agent
     user_agent = request.headers.get("user-agent", "Unknown")
-    
+
     # Authenticate user
     user, error = auth_service.authenticate_user(
         username=credentials.username,
         password=credentials.password,
         ip_address=client_ip
     )
-    
+
     # Log attempt
     log_entry = LoginAttemptLog(
         username=credentials.username,
@@ -145,7 +145,7 @@ async def login(
     except Exception as e:
         logger.error(f"Failed to log login attempt: {e}")
         # Don't fail authentication if logging fails
-    
+
     if error:
         logger.warning(f"Failed login attempt for {credentials.username} from {client_ip}: {error}")
         raise HTTPException(
@@ -153,11 +153,11 @@ async def login(
             detail=error,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Create tokens
     device_info = f"{user_agent} | {client_ip}"
     access_token, refresh_token, expires_in = auth_service.create_tokens(user, device_info)
-    
+
     # Set secure cookie if remember_me is true
     if credentials.remember_me:
         response.set_cookie(
@@ -169,9 +169,9 @@ async def login(
             samesite="lax",
             path="/api/auth"
         )
-    
+
     logger.info(f"User logged in: {user.username} from {client_ip}")
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -188,24 +188,24 @@ async def refresh_tokens(
 ) -> TokenResponse:
     """
     Refresh access token using refresh token.
-    
+
     - Implements token rotation for security
     - Old refresh token is revoked
     - Returns new access and refresh tokens
     """
     auth_service = AuthenticationService(db)
-    
+
     # Get device info
     user_agent = request.headers.get("user-agent", "Unknown")
     client_ip = request.client.host
     device_info = f"{user_agent} | {client_ip}"
-    
+
     # Refresh tokens
     access_token, refresh_token, expires_in, error = auth_service.refresh_tokens(
         refresh_token=token_data.refresh_token,
         device_info=device_info
     )
-    
+
     if error:
         logger.warning(f"Token refresh failed from {client_ip}: {error}")
         raise HTTPException(
@@ -213,7 +213,7 @@ async def refresh_tokens(
             detail=error,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -231,25 +231,25 @@ async def logout(
 ) -> BaseResponse:
     """
     Logout user by revoking refresh token.
-    
+
     - Revokes the provided refresh token
     - Clears authentication cookies
     - Access token remains valid until expiry
     """
     auth_service = AuthenticationService(db)
-    
+
     # Revoke refresh token if provided
     if token_data and token_data.refresh_token:
         auth_service.revoke_refresh_token(token_data.refresh_token)
-    
+
     # Clear cookies
     if response:
         response.delete_cookie(key="refresh_token", path="/api/auth")
         response.delete_cookie(key="access_token", path="/")
-    
+
     if user:
         logger.info(f"User logged out: {user.username}")
-    
+
     return BaseResponse(success=True, message="Logged out successfully")
 
 
@@ -260,24 +260,24 @@ async def logout_all_devices(
 ) -> BaseResponse:
     """
     Logout from all devices by invalidating all tokens.
-    
+
     - Revokes all refresh tokens for the user
     - Increments token version to invalidate access tokens
     - Forces re-authentication on all devices
     """
     auth_service = AuthenticationService(db)
-    
+
     # Revoke all tokens
     success = auth_service.revoke_all_user_tokens(user.id)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to logout from all devices"
         )
-    
+
     logger.info(f"User logged out from all devices: {user.username}")
-    
+
     return BaseResponse(success=True, message="Logged out from all devices successfully")
 
 
@@ -289,16 +289,16 @@ async def request_password_reset(
 ) -> BaseResponse:
     """
     Request password reset token.
-    
+
     - Sends reset token to user's email
     - Token is valid for 1 hour
     - Does not reveal if email exists (security)
     """
     auth_service = AuthenticationService(db)
-    
+
     # Request reset token
     reset_token, error = auth_service.request_password_reset(reset_data.email)
-    
+
     if reset_token:
         # Send password reset email
         from backend.services.email_service import email_service
@@ -318,7 +318,7 @@ async def request_password_reset(
         except Exception as e:
             logger.error(f"Error sending password reset email to {reset_data.email}: {e}")
             # Don't fail the request if email sending fails
-    
+
     # Always return success (don't reveal if email exists)
     return BaseResponse(
         success=True,
@@ -333,28 +333,28 @@ async def reset_password(
 ) -> BaseResponse:
     """
     Reset password using reset token.
-    
+
     - Validates reset token
     - Updates password
     - Invalidates all existing tokens
     - Unlocks account if it was locked
     """
     auth_service = AuthenticationService(db)
-    
+
     # Reset password
     success, error = auth_service.reset_password(
         token=reset_data.token,
         new_password=reset_data.new_password
     )
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error or "Password reset failed"
         )
-    
+
     logger.info("Password reset completed successfully")
-    
+
     return BaseResponse(success=True, message="Password reset successfully")
 
 
@@ -365,24 +365,24 @@ async def verify_email(
 ) -> BaseResponse:
     """
     Verify email address using verification token.
-    
+
     - Validates verification token
     - Marks email as verified
     - Activates user account
     """
     auth_service = AuthenticationService(db)
-    
+
     # Verify email
     success, error = auth_service.verify_email(verification_data.token)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error or "Email verification failed"
         )
-    
+
     logger.info("Email verified successfully")
-    
+
     return BaseResponse(success=True, message="Email verified successfully")
 
 
@@ -396,7 +396,7 @@ async def get_current_user_profile(
 ) -> UserProfileResponse:
     """
     Get current user's profile information.
-    
+
     - Returns detailed user profile
     - Requires valid access token
     """
@@ -411,7 +411,7 @@ async def update_user_profile(
 ) -> UserResponse:
     """
     Update current user's profile.
-    
+
     - Updates user profile information
     - Cannot change username or role
     - Email change may require re-verification
@@ -419,24 +419,24 @@ async def update_user_profile(
     # Update allowed fields
     if update_data.full_name is not None:
         user.full_name = update_data.full_name
-    
+
     if update_data.email is not None and update_data.email != user.email:
         # Check if email is already taken
         existing = db.query(UserModel).filter(
             UserModel.email == update_data.email.lower()
         ).first()
-        
+
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-        
+
         # Update email (may require re-verification)
         user.email = update_data.email.lower()
         user.is_verified = False  # Require re-verification
         user.email_verification_token = secrets.token_urlsafe(32)
-        
+
         # Send new verification email for the updated email
         from backend.services.email_service import email_service
         try:
@@ -452,13 +452,13 @@ async def update_user_profile(
                 logger.warning(f"Failed to send verification email to updated address: {user.email}")
         except Exception as e:
             logger.error(f"Error sending verification email to updated address {user.email}: {e}")
-    
+
     user.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
-    
+
     logger.info(f"User profile updated: {user.username}")
-    
+
     return UserResponse.model_validate(user)
 
 
@@ -470,28 +470,28 @@ async def change_password(
 ) -> BaseResponse:
     """
     Change current user's password.
-    
+
     - Requires current password verification
     - Validates new password strength
     - Invalidates all existing tokens
     """
     auth_service = AuthenticationService(db)
-    
+
     # Change password
     success, error = auth_service.change_password(
         user_id=user.id,
         current_password=password_data.current_password,
         new_password=password_data.new_password
     )
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error or "Password change failed"
         )
-    
+
     logger.info(f"Password changed for user: {user.username}")
-    
+
     return BaseResponse(
         success=True,
         message="Password changed successfully. Please login again."
@@ -506,7 +506,7 @@ async def get_active_sessions(
 ) -> list:
     """
     Get list of active sessions (refresh tokens).
-    
+
     - Shows all active refresh tokens
     - Includes device information
     - Can be used to manage logged-in devices
@@ -516,20 +516,20 @@ async def get_active_sessions(
     from backend.api.auth.jwt_handler import jwt_handler
     from fastapi.security import HTTPBearer
     from fastapi import Cookie
-    
+
     # Extract current token to identify current session
     current_token_id = None
     try:
         # Get token from Authorization header or cookie
         authorization = request.headers.get("authorization", "")
         access_token_cookie = request.cookies.get("access_token")
-        
+
         token = None
         if authorization.startswith("Bearer "):
             token = authorization[7:]
         elif access_token_cookie:
             token = access_token_cookie
-        
+
         if token:
             payload = jwt_handler.decode_token(token, token_type="access")
             if payload and hasattr(payload, 'jti'):
@@ -538,14 +538,14 @@ async def get_active_sessions(
                 current_token_id = payload.jti
     except Exception as e:
         logger.debug(f"Could not identify current session: {e}")
-    
+
     # Get active refresh tokens
     tokens = db.query(RefreshTokenModel).filter(
         RefreshTokenModel.user_id == user.id,
         RefreshTokenModel.revoked_at.is_(None),
         RefreshTokenModel.expires_at > datetime.utcnow()
     ).order_by(RefreshTokenModel.created_at.desc()).all()
-    
+
     sessions = []
     for token in tokens:
         # Try to identify current session by matching token ID or recent activity
@@ -555,7 +555,7 @@ async def get_active_sessions(
             # Fallback: most recently created token if no JTI match
             current_token_id is None and token == tokens[0] if tokens else False
         )
-        
+
         sessions.append({
             "id": token.id,
             "device_info": token.device_info,
@@ -564,7 +564,7 @@ async def get_active_sessions(
             "last_used": token.last_used.isoformat() if hasattr(token, 'last_used') and token.last_used else None,
             "is_current": is_current
         })
-    
+
     return sessions
 
 
@@ -576,29 +576,29 @@ async def revoke_session(
 ) -> BaseResponse:
     """
     Revoke a specific session (refresh token).
-    
+
     - Revokes the specified refresh token
     - Can be used to logout specific devices
     """
     from backend.api.auth.models import RefreshTokenModel
-    
+
     # Find and revoke token
     token = db.query(RefreshTokenModel).filter(
         RefreshTokenModel.id == session_id,
         RefreshTokenModel.user_id == user.id
     ).first()
-    
+
     if not token:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Session not found"
         )
-    
+
     token.revoke("Manual revocation by user")
     db.commit()
-    
+
     logger.info(f"Session revoked for user: {user.username}, session: {session_id}")
-    
+
     return BaseResponse(success=True, message="Session revoked successfully")
 
 
@@ -610,14 +610,14 @@ async def revoke_session(
 async def auth_health_check() -> BaseResponse:
     """
     Check authentication service health.
-    
+
     - Verifies JWT keys are available
     - Returns service status
     """
     try:
         # Check if JWT keys exist
         jwt_handler.config.ensure_keys_exist()
-        
+
         return BaseResponse(
             success=True,
             message="Authentication service is healthy"

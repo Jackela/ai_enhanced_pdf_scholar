@@ -1,7 +1,7 @@
 
 # 📊 Test Coverage Report
 
-**Generated:** 2025-08-10 10:00:19  
+**Generated:** 2025-08-10 10:00:19
 **Project:** AI Enhanced PDF Scholar
 
 ## 📈 Coverage Summary

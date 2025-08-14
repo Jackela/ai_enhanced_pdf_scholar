@@ -30,11 +30,11 @@ data:
       smtp_auth_username: ''
       smtp_auth_password: ''
       slack_api_url: ''
-      
+
     # Notification templates
     templates:
       - '/etc/alertmanager/templates/*.tmpl'
-    
+
     # Route configuration for different alert types
     route:
       group_by: ['alertname', 'cluster', 'service']
@@ -42,7 +42,7 @@ data:
       group_interval: 5m
       repeat_interval: 12h
       receiver: 'default-receiver'
-      
+
       routes:
       # Critical alerts - immediate notification
       - match:
@@ -51,35 +51,35 @@ data:
         group_wait: 10s
         group_interval: 1m
         repeat_interval: 5m
-        
+
       # Database issues - dedicated channel
       - match_re:
           alertname: '(DatabaseConnectionsHigh|InstanceDown)'
         receiver: 'database-team'
         group_wait: 30s
         repeat_interval: 30m
-        
+
       # Security alerts - security team
       - match_re:
           alertname: '(HighFailedLoginAttempts|RateLimitExceeded|SecurityIncident)'
         receiver: 'security-team'
         group_wait: 10s
         repeat_interval: 15m
-        
+
       # Performance alerts - engineering team
       - match_re:
           alertname: '(HighLatency|HighErrorRate|RAGQueryFailureRate)'
         receiver: 'engineering-team'
         group_wait: 2m
         repeat_interval: 1h
-        
+
       # Infrastructure alerts - ops team
       - match_re:
           alertname: '(HighMemoryUsage|HighCPUUsage|DiskSpaceLow)'
         receiver: 'ops-team'
         group_wait: 1m
         repeat_interval: 2h
-    
+
     # Inhibit rules - prevent spam
     inhibit_rules:
     # Inhibit non-critical alerts when critical ones are firing
@@ -88,14 +88,14 @@ data:
       target_match:
         severity: 'warning'
       equal: ['alertname', 'instance']
-    
+
     # Inhibit specific combinations
     - source_match:
         alertname: 'InstanceDown'
       target_match_re:
         alertname: '(HighMemoryUsage|HighCPUUsage|DatabaseConnectionsHigh)'
       equal: ['instance']
-    
+
     # Notification receivers
     receivers:
     # Default receiver for unmatched alerts
@@ -111,7 +111,7 @@ data:
           {{ end }}
         headers:
           Priority: 'normal'
-    
+
     # Critical alerts - multiple channels
     - name: 'critical-alerts'
       email_configs:
@@ -120,22 +120,22 @@ data:
         body: |
           {{ range .Alerts }}
           🚨 CRITICAL ALERT
-          
+
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
-          
+
           Severity: {{ .Labels.severity }}
           Instance: {{ .Labels.instance }}
           Job: {{ .Labels.job }}
-          
+
           Time: {{ .StartsAt }}
-          
+
           Labels: {{ range .Labels.SortedPairs }}
           • {{ .Name }}: {{ .Value }}{{ end }}
           {{ end }}
         headers:
           Priority: 'high'
-          
+
       slack_configs:
       - api_url: '${SLACK_API_URL}'
         channel: '#critical-alerts'
@@ -148,12 +148,12 @@ data:
           *Instance:* {{ .Labels.instance }}
           {{ end }}
         color: 'danger'
-        
+
       pagerduty_configs:
       - routing_key: '${PAGERDUTY_ROUTING_KEY}'
         description: 'Critical alert in AI PDF Scholar: {{ .GroupLabels.alertname }}'
         severity: 'critical'
-    
+
     # Database team alerts
     - name: 'database-team'
       email_configs:
@@ -161,13 +161,13 @@ data:
         subject: '[DB] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
         body: |
           Database Alert Notification
-          
+
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           Instance: {{ .Labels.instance }}
           {{ end }}
-          
+
       slack_configs:
       - api_url: '${SLACK_API_URL}'
         channel: '#database-alerts'
@@ -179,7 +179,7 @@ data:
           *Instance:* {{ .Labels.instance }}
           {{ end }}
         color: 'warning'
-    
+
     # Security team alerts
     - name: 'security-team'
       email_configs:
@@ -187,18 +187,18 @@ data:
         subject: '🔒 [SECURITY] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
         body: |
           Security Alert Notification
-          
+
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
-          
+
           Security Event Details:
           {{ range .Labels.SortedPairs }}• {{ .Name }}: {{ .Value }}
           {{ end }}
           {{ end }}
         headers:
           Priority: 'high'
-          
+
       slack_configs:
       - api_url: '${SLACK_API_URL}'
         channel: '#security-alerts'
@@ -210,7 +210,7 @@ data:
           *Instance:* {{ .Labels.instance }}
           {{ end }}
         color: 'danger'
-    
+
     # Engineering team alerts
     - name: 'engineering-team'
       email_configs:
@@ -218,12 +218,12 @@ data:
         subject: '[ENG] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
         body: |
           Performance/Engineering Alert
-          
+
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           {{ end }}
-          
+
       slack_configs:
       - api_url: '${SLACK_API_URL}'
         channel: '#engineering-alerts'
@@ -234,7 +234,7 @@ data:
           *Description:* {{ .Annotations.description }}
           {{ end }}
         color: 'warning'
-    
+
     # Operations team alerts
     - name: 'ops-team'
       email_configs:
@@ -242,13 +242,13 @@ data:
         subject: '[OPS] AI-PDF-Scholar: {{ .GroupLabels.alertname }}'
         body: |
           Infrastructure/Operations Alert
-          
+
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           Instance: {{ .Labels.instance }}
           {{ end }}
-          
+
       slack_configs:
       - api_url: '${SLACK_API_URL}'
         channel: '#ops-alerts'
@@ -266,7 +266,7 @@ data:
     {{ define "custom.title" }}
     [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.SortedPairs.Values | join " " }} {{ if gt (len .CommonLabels) (len .GroupLabels) }}({{ with .CommonLabels.Remove .GroupLabels.Names }}{{ .Values | join " " }}{{ end }}){{ end }}
     {{ end }}
-    
+
     {{ define "custom.slack.text" }}
     {{ range .Alerts }}
     {{ if .Annotations.summary }}*Summary:* {{ .Annotations.summary }}{{ end }}
@@ -276,7 +276,7 @@ data:
     {{ if .Labels.runbook_url }}*Runbook:* <{{ .Labels.runbook_url }}|View>{{ end }}
     {{ end }}
     {{ end }}
-    
+
     {{ define "custom.slack.color" }}
     {{ if eq .Status "firing" }}
     {{ if eq .GroupLabels.severity "critical" }}danger{{ else }}warning{{ end }}
@@ -487,7 +487,7 @@ data:
       settings:
         url: http://alertmanager:9093
         basicAuth: false
-    
+
     - name: slack-critical
       type: slack
       uid: slack-critical
@@ -500,7 +500,7 @@ data:
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           {{ end }}
-    
+
     - name: email-team
       type: email
       uid: email-team

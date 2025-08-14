@@ -737,7 +737,7 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
         },
         {
           "id": "doc_12",
-          "type": "document", 
+          "type": "document",
           "title": "Machine Learning Trends",
           "citation_count": 8
         }
@@ -1024,24 +1024,24 @@ async function uploadDocument(file, title) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
-    
+
     const response = await fetch(`${BASE_URL}/api/documents/upload`, {
         method: 'POST',
         body: formData
     });
-    
+
     return await response.json();
 }
 
 // 3. WebSocket 连接
 function connectWebSocket(clientId) {
     const ws = new WebSocket(`ws://localhost:8000/ws/${clientId}`);
-    
+
     ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
         console.log('Received:', message);
     };
-    
+
     // 发送 RAG 查询
     function sendRAGQuery(query, documentId) {
         ws.send(JSON.stringify({
@@ -1050,7 +1050,7 @@ function connectWebSocket(clientId) {
             document_id: documentId
         }));
     }
-    
+
     return { ws, sendRAGQuery };
 }
 ```
@@ -1071,6 +1071,6 @@ function connectWebSocket(clientId) {
 
 ---
 
-**文档最后更新**: 2025-07-13  
-**API 版本**: 2.0.0  
+**文档最后更新**: 2025-07-13
+**API 版本**: 2.0.0
 **状态**: 🚧 基于当前实现编写，持续更新中

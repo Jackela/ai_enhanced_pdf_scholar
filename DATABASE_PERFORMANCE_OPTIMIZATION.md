@@ -30,24 +30,24 @@ The AI Enhanced PDF Scholar project includes comprehensive database performance 
 
 ```sql
 -- Document Listing (Optimized with covering index)
-SELECT * FROM documents 
-ORDER BY created_at DESC, title 
+SELECT * FROM documents
+ORDER BY created_at DESC, title
 LIMIT 20;
 
 -- Duplicate Detection (Optimized with unique indexes)
-SELECT * FROM documents 
+SELECT * FROM documents
 WHERE file_hash = ? OR content_hash = ?;
 
 -- Citation Analysis (Optimized with composite indexes)
-SELECT d.*, COUNT(c.id) as citation_count 
-FROM documents d 
-LEFT JOIN citations c ON d.id = c.document_id 
-GROUP BY d.id 
+SELECT d.*, COUNT(c.id) as citation_count
+FROM documents d
+LEFT JOIN citations c ON d.id = c.document_id
+GROUP BY d.id
 ORDER BY citation_count DESC;
 
 -- Full-text Search (Optimized with case-insensitive indexes)
-SELECT * FROM documents 
-WHERE title LIKE ? COLLATE NOCASE 
+SELECT * FROM documents
+WHERE title LIKE ? COLLATE NOCASE
 ORDER BY title;
 ```
 
@@ -182,7 +182,7 @@ benchmark_results = migrator.benchmark_query_performance(test_queries)
 # {
 #     "benchmarks": [...],        # Individual query results
 #     "fastest_query": "hash_lookup",
-#     "slowest_query": "document_count", 
+#     "slowest_query": "document_count",
 #     "average_time": 15.7,       # Average execution time in ms
 #     "performance_summary": {...}
 # }

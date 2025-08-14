@@ -570,7 +570,7 @@
           "textFormat": "CPU usage exceeded threshold"
         },
         {
-          "datasource": "Prometheus", 
+          "datasource": "Prometheus",
           "enable": true,
           "expr": "ALERTS{alertname=\"HighMemoryUsage\", severity=\"critical\"}",
           "iconColor": "orange",

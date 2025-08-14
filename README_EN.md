@@ -153,7 +153,7 @@ python -m pytest tests/ --cov=src --cov-report=html
 
 ### Test Statistics
 - **Total Tests**: 500+
-- **Test Categories**: 
+- **Test Categories**:
   - Unit tests, Component tests, Integration tests, UI tests, Error scenario tests
   - 17 E2E tests covering complete Web interface functionality
 - **Coverage**: 100% coverage for core functionality
@@ -265,4 +265,4 @@ Thanks to the following open source projects:
 
 [Report Issues](../../issues) • [Feature Requests](../../issues/new) • [Contribute Code](../../pulls)
 
-</div> 
+</div>

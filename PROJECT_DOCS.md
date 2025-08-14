@@ -15,16 +15,16 @@ graph TD
     A --> D[frontend/]
     A --> E[tests/]
     A --> F[配置文件]
-    
+
     B --> B1[controllers/]
     B --> B2[services/]
     B --> B3[repositories/]
     B --> B4[database/]
     B --> B5[interfaces/]
     B --> B6[core/]
-    
+
     B1 --> B11[library_controller.py]
-    
+
     B2 --> B21[document_library_service.py]
     B2 --> B22[enhanced_rag_service.py]
     B2 --> B23[content_hash_service.py]
@@ -32,42 +32,42 @@ graph TD
     B2 --> B25[vector_index_manager.py]
     B2 --> B26[citation_service.py]
     B2 --> B27[citation_parsing_service.py]
-    
+
     B3 --> B31[base_repository.py]
     B3 --> B32[document_repository.py]
     B3 --> B33[vector_repository.py]
     B3 --> B34[citation_repository.py]
     B3 --> B35[citation_relation_repository.py]
-    
+
     B4 --> B41[connection.py]
     B4 --> B42[models.py]
     B4 --> B43[migrations.py]
-    
+
     B5 --> B51[repository_interfaces.py]
     B5 --> B52[service_interfaces.py]
-    
+
     B6 --> B61[state_manager.py]
-    
+
     C --> C1[api/]
     C1 --> C11[main.py]
     C1 --> C12[dependencies.py]
     C1 --> C13[models.py]
     C1 --> C14[websocket_manager.py]
     C1 --> C15[routes/]
-    
+
     C15 --> C151[documents.py]
     C15 --> C152[library.py]
     C15 --> C153[rag.py]
     C15 --> C154[system.py]
-    
+
     D --> D1[src/]
     D --> D2[package.json]
     D --> D3[vite.config.ts]
-    
+
     D1 --> D11[components/]
     D1 --> D12[contexts/]
     D1 --> D13[lib/]
-    
+
     E --> E1[conftest.py]
     E --> E2[test_database_models.py]
     E --> E3[test_database_connection.py]
@@ -79,12 +79,12 @@ graph TD
     E --> E9[integration/]
     E --> E10[e2e/]
     E --> E11[scripts/benchmark_tests.py]
-    
+
     E9 --> E91[test_citation_integration.py]
     E9 --> E92[test_citation_simple_integration.py]
-    
+
     E10 --> E101[test_citation_e2e_workflow.py]
-    
+
     F --> F1[web_main.py]
     F --> F2[config.py]
     F --> F3[requirements.txt]
@@ -167,7 +167,7 @@ def test_document_to_rag_workflow():
 
 **错误处理验证**
 - **异常场景**: 全面的错误模拟和恢复测试
-- **边界条件**: 极限值和边缘情况验证  
+- **边界条件**: 极限值和边缘情况验证
 - **并发安全**: 多线程访问和竞态条件测试
 - **资源管理**: 内存泄漏和连接池验证
 
@@ -198,7 +198,7 @@ def test_document_to_rag_workflow():
 ```ini
 [pytest]
 testpaths = tests
-addopts = 
+addopts =
     -v --tb=short --strict-markers
     --cov=src --cov-report=html:coverage_html
     --cov-report=term-missing --cov-report=xml:coverage.xml
@@ -248,7 +248,7 @@ timeout_method = thread
 ```python
 # Web API模式（唯一支持模式）
 controller = LibraryController(
-    db_connection=db, 
+    db_connection=db,
     enhanced_rag_service=rag
 )
 documents = controller.get_all_documents()
@@ -273,7 +273,7 @@ documents = library_service.get_documents(search_query="keyword")
 - **示例用法**:
 ```python
 rag_service = EnhancedRAGService(
-    api_key=gemini_key, 
+    api_key=gemini_key,
     db_connection=db,
     vector_storage_dir="/path/to/indexes"
 )
@@ -358,7 +358,7 @@ sequenceDiagram
     participant Deps as dependencies.py
     participant DB as DatabaseConnection
     participant Services as 核心服务
-    
+
     User->>WebMain: python web_main.py
     WebMain->>FastAPI: uvicorn.run()
     FastAPI->>Deps: 初始化依赖注入
@@ -380,7 +380,7 @@ sequenceDiagram
     participant RAG as EnhancedRAGService
     participant VectorDB as Vector Index
     participant LLM as Gemini API
-    
+
     Client->>WS: 连接WebSocket
     Client->>WS: rag_query消息
     WS->>Main: 处理WebSocket消息
@@ -460,13 +460,13 @@ graph TB
     C --> D[Service Layer - Business Logic]
     D --> E[Repository Layer - Data Access]
     E --> F[Database Layer - SQLite]
-    
+
     A1[React Components] --> B1[REST & WebSocket API]
     B1 --> C1[LibraryController + CitationController]
     C1 --> D1[DocumentLibraryService + EnhancedRAGService + CitationService]
     D1 --> E1[DocumentRepository + VectorRepository + CitationRepository + CitationRelationRepository]
     E1 --> F1[SQLite + Vector Indexes + Citation Tables]
-    
+
     G[External Services] --> D
     G1[Gemini LLM API] --> D1
     G2[LlamaIndex] --> D1
@@ -484,11 +484,11 @@ graph LR
     A[PyQt6桌面应用] --> B[前后端分离]
     B --> C[纯Web架构]
     C --> D[微服务就绪]
-    
+
     A1[单体桌面] --> B1[FastAPI + React]
     B1 --> C1[RESTful API + WebSocket]
     C1 --> D1[容器化部署]
-    
+
     subgraph "当前架构 (v2.x)"
         E[React TypeScript 前端]
         F[FastAPI Python 后端]
@@ -530,7 +530,7 @@ class DocumentLibraryService:
     def __init__(self, db: DatabaseConnection):
         self.document_repo = DocumentRepository(db)
         self.hash_service = ContentHashService()
-    
+
     def import_document(self, file_path: str) -> DocumentModel:
         # 复合业务逻辑：验证、哈希、存储、索引
 ```
@@ -570,7 +570,7 @@ class RAGCacheService:
     """
     多层次智能缓存系统:
     - LRU淘汰策略
-    - TTL过期管理  
+    - TTL过期管理
     - 语义相似度匹配
     - 性能指标追踪
     """
@@ -580,7 +580,7 @@ class RAGCacheService:
 
 **缓存性能指标**:
 - **写入性能**: 3,948 操作/秒
-- **读取性能**: 10,877 命中/秒  
+- **读取性能**: 10,877 命中/秒
 - **命中率**: 100% (最优条件)
 - **缓存优化**: 显著的缓存查询性能提升
 
@@ -638,18 +638,18 @@ graph TD
     D --> F[数据库度量]
     D --> G[WebSocket 度量]
     D --> H[API 性能度量]
-    
+
     I[监控集成服务] --> D
     I --> J[WebSocket 管理器]
     I --> K[性能监控器]
-    
+
     L[简单告警服务] --> D
     L --> M[告警规则引擎]
     L --> N[告警历史]
-    
+
     D --> O[度量历史存储]
     D --> P[系统健康评估]
-    
+
     Q[API 路由] --> D
     Q --> R[/metrics/current]
     Q --> S[/metrics/history]
@@ -671,16 +671,16 @@ class RealTimeMetricsCollector:
         self.collection_interval = collection_interval
         self.metrics_history: Dict[MetricType, List[Dict[str, Any]]] = {}
         self.alerting_service = SimpleAlertingService()
-    
+
     async def start_collection(self):
         """启动实时数据收集循环"""
-    
+
     def get_system_metrics(self) -> SystemMetrics:
         """收集CPU、内存、磁盘I/O指标"""
-    
+
     def get_database_metrics(self) -> DatabaseMetrics:
         """收集数据库连接、查询性能指标"""
-    
+
     def get_websocket_metrics(self) -> WebSocketMetrics:
         """收集WebSocket连接和RAG任务指标"""
 ```
@@ -703,13 +703,13 @@ class MonitoringIntegrationService:
             websocket_manager=websocket_manager,
             integrated_monitor=integrated_monitor
         )
-    
+
     async def start_integrated_monitoring(self):
         """启动集成监控，协调所有监控服务"""
-    
+
     async def _integrate_websocket_metrics(self):
         """集成WebSocket指标，监控RAG任务队列"""
-    
+
     async def _integrate_performance_monitor(self):
         """集成现有性能监控器的数据"""
 ```
@@ -731,13 +731,13 @@ class SimpleAlertingService:
         self.active_alerts: Dict[str, Alert] = {}
         self.alert_history: List[Alert] = []
         self._initialize_default_rules()
-    
+
     def evaluate_metrics(self, metrics_data: Dict[str, Any]):
         """评估度量数据并触发告警"""
-    
+
     def acknowledge_alert(self, alert_id: str, acknowledged_by: str) -> bool:
         """确认告警"""
-    
+
     def resolve_alert(self, alert_id: str) -> bool:
         """解决告警"""
 ```
@@ -765,16 +765,16 @@ export default function MonitoringDashboard() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
-  
+
   // WebSocket连接管理
   useEffect(() => {
     const wsClient = new MetricsWebSocketClient()
     wsClient.connect()
-    
+
     wsClient.onMetricsUpdate = (data) => setMetricsData(data)
     wsClient.onHealthStatusUpdate = (status) => setSystemHealth(status)
     wsClient.onAlert = (alert) => setAlerts(prev => [alert, ...prev])
-    
+
     return () => wsClient.disconnect()
   }, [])
 ```
@@ -794,22 +794,22 @@ export default function MonitoringDashboard() {
 ```typescript
 export function SystemMetricsChart({ data, metricType }: SystemMetricsChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  
+
   useEffect(() => {
     if (!canvasRef.current || !data) return
-    
+
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')!
-    
+
     // 清除画布
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    
+
     // 绘制网格线
     drawGrid(ctx, canvas.width, canvas.height)
-    
+
     // 绘制数据线
     drawDataLine(ctx, data, canvas.width, canvas.height)
-    
+
     // 绘制当前值指示器
     drawCurrentValueIndicator(ctx, data[data.length - 1])
   }, [data, metricType])
@@ -834,26 +834,26 @@ export class MetricsWebSocketClient {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
-  
+
   onMetricsUpdate?: (data: MetricsData) => void
   onHealthStatusUpdate?: (status: SystemHealthStatus) => void
   onAlert?: (alert: Alert) => void
-  
+
   connect(): void {
     try {
       this.ws = new WebSocket(`${WS_BASE_URL}/ws/metrics`)
-      
+
       this.ws.onopen = () => {
         console.log('Metrics WebSocket connected')
         this.reconnectAttempts = 0
         this.subscribe(['system', 'database', 'websocket', 'api'])
       }
-      
+
       this.ws.onmessage = (event) => {
         const data = JSON.parse(event.data)
         this.handleMessage(data)
       }
-      
+
       this.ws.onclose = () => {
         this.handleReconnection()
       }
@@ -862,7 +862,7 @@ export class MetricsWebSocketClient {
       this.handleReconnection()
     }
   }
-  
+
   private handleReconnection(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       setTimeout(() => {
@@ -889,20 +889,20 @@ async def websocket_metrics_endpoint(websocket: WebSocket):
         'subscriptions': set(),
         'last_ping': time.time()
     }
-    
+
     try:
         while True:
             message = await websocket.receive_text()
             data = json.loads(message)
-            
+
             if data['type'] == 'subscribe':
                 client_info = connected_clients[client_id]
                 client_info['subscriptions'].update(data['metrics'])
-                
+
             elif data['type'] == 'ping':
                 connected_clients[client_id]['last_ping'] = time.time()
                 await websocket.send_text(json.dumps({'type': 'pong'}))
-                
+
     except WebSocketDisconnect:
         if client_id in connected_clients:
             del connected_clients[client_id]
@@ -922,7 +922,7 @@ async def get_current_metrics(
     """获取当前系统度量数据"""
     if not metrics_collector:
         return {"message": "Metrics collector not available", "fallback_data": get_basic_system_info()}
-    
+
     return {
         "timestamp": datetime.now().isoformat(),
         "system_metrics": metrics_collector.get_system_metrics().__dict__,
@@ -940,7 +940,7 @@ async def get_metrics_history(
     """获取指定度量类型的历史数据"""
     if not metrics_collector:
         return {"message": "Metrics collector not available", "data": []}
-    
+
     return {
         "metric_type": metric_type,
         "time_range_hours": hours,
@@ -954,7 +954,7 @@ async def get_detailed_system_metrics(
     """获取详细的系统度量和健康状态"""
     if not metrics_collector:
         return {"message": "Metrics collector not available"}
-    
+
     return {
         "current_metrics": metrics_collector.get_current_metrics(),
         "system_health": metrics_collector.get_system_health_summary(),
@@ -973,12 +973,12 @@ sequenceDiagram
     participant Collector as 度量收集器
     participant Alerting as 告警服务
     participant System as 系统资源
-    
+
     Dashboard->>WSClient: 初始化连接
     WSClient->>WSEndpoint: WebSocket连接
     WSEndpoint-->>WSClient: 连接确认
     WSClient->>WSEndpoint: 订阅度量类型
-    
+
     loop 实时数据收集 (每1秒)
         Collector->>System: 收集系统度量
         System-->>Collector: 返回度量数据
@@ -989,7 +989,7 @@ sequenceDiagram
         WSClient->>Dashboard: 更新仪表板数据
         Dashboard->>Dashboard: 渲染实时图表
     end
-    
+
     alt 告警触发
         Alerting->>WSEndpoint: 告警通知
         WSEndpoint->>WSClient: 推送告警
@@ -1005,34 +1005,34 @@ def calculate_system_health_status(self) -> SystemHealthStatus:
     """基于多维度指标计算系统健康状态"""
     system_metrics = self.get_system_metrics()
     health_score = 100.0
-    
+
     # CPU健康评分 (权重: 25%)
     cpu_penalty = max(0, (system_metrics.cpu_percent - 70) * 2)
     health_score -= cpu_penalty * 0.25
-    
+
     # 内存健康评分 (权重: 30%)
     memory_penalty = max(0, (system_metrics.memory_percent - 80) * 2.5)
     health_score -= memory_penalty * 0.30
-    
+
     # 磁盘健康评分 (权重: 20%)
     disk_penalty = max(0, (system_metrics.disk_usage_percent - 85) * 3)
     health_score -= disk_penalty * 0.20
-    
+
     # API性能评分 (权重: 15%)
     api_metrics = self.get_api_metrics()
     if api_metrics.avg_response_time_ms > 500:
         api_penalty = (api_metrics.avg_response_time_ms - 500) * 0.1
         health_score -= api_penalty * 0.15
-    
+
     # 活跃告警惩罚 (权重: 10%)
     active_alerts = len(self.alerting_service.get_active_alerts())
     health_score -= active_alerts * 5 * 0.10
-    
+
     # 健康状态分级
     if health_score >= 80:
         return 'healthy'
     elif health_score >= 60:
-        return 'warning' 
+        return 'warning'
     else:
         return 'critical'
 ```
@@ -1050,7 +1050,7 @@ async def initialize_monitoring():
         websocket_manager=get_websocket_manager(),
         integrated_monitor=get_performance_monitor()
     )
-    
+
     await integration_service.start_integrated_monitoring()
     return integration_service
 ```
@@ -1101,8 +1101,8 @@ const navigation = [
 
 ---
 
-**监控仪表板更新**: 2025-01-19  
-**功能状态**: ✅ 生产就绪  
+**监控仪表板更新**: 2025-01-19
+**功能状态**: ✅ 生产就绪
 **文档版本**: v2.1.0
 
 ### 🗄️ **数据库架构设计**
@@ -1203,7 +1203,7 @@ FROM python:3.11-slim as backend
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM node:18-alpine as frontend  
+FROM node:18-alpine as frontend
 COPY frontend/package.json .
 RUN npm ci --only=production
 ```
@@ -1240,7 +1240,7 @@ erDiagram
     DOCUMENTS ||--o{ VECTOR_INDEXES : has
     DOCUMENTS ||--o{ DOCUMENT_TAGS : tagged_with
     TAGS ||--o{ DOCUMENT_TAGS : applied_to
-    
+
     DOCUMENTS {
         int id PK
         string title
@@ -1254,7 +1254,7 @@ erDiagram
         datetime last_accessed
         json metadata "扩展元数据字段"
     }
-    
+
     VECTOR_INDEXES {
         int id PK
         int document_id FK
@@ -1263,13 +1263,13 @@ erDiagram
         int chunk_count "文档分块数量"
         datetime created_at
     }
-    
+
     TAGS {
         int id PK
         string name UK "标签名称（唯一）"
         string color "显示颜色"
     }
-    
+
     DOCUMENT_TAGS {
         int document_id FK
         int tag_id FK
@@ -1359,19 +1359,19 @@ graph TD
     B --> C[Header.tsx]
     B --> D[LibraryView.tsx]
     B --> E[Sidebar.tsx]
-    
+
     D --> F[DocumentCard.tsx]
     D --> G[DocumentUpload.tsx]
     D --> H[SystemStatus.tsx]
-    
+
     I[Contexts] --> J[ThemeContext.tsx]
     I --> K[WebSocketContext.tsx]
-    
+
     L[UI Components] --> M[Button.tsx]
     L --> N[Input.tsx]
     L --> O[Toast.tsx]
     L --> P[DropdownMenu.tsx]
-    
+
     Q[lib/] --> R[api.ts]
     Q --> S[utils.ts]
 ```
@@ -1533,7 +1533,7 @@ graph TD
     B --> D[CitationRelationRepository]
     C --> E[Citation Database Tables]
     D --> E
-    
+
     F[Academic Text] --> A
     A --> G[Parsed Citations]
     G --> B
@@ -1578,13 +1578,13 @@ graph TD
 
 ---
 
-**项目版本**: 2.1.0 (智能引用系统集成版)  
-**最后更新**: 2025-01-19  
-**架构状态**: ✅ 生产就绪 (纯Web架构 + 智能引用系统)  
-**代码质量**: ✅ 符合SOLID原则和最佳实践  
-**测试覆盖**: ✅ 核心功能完全测试覆盖 (63个引用系统测试用例)  
-**引用系统**: ✅ TDD开发完成，支持多格式学术引用解析和网络分析  
-**文档状态**: ✅ 与实际代码完全一致  
+**项目版本**: 2.1.0 (智能引用系统集成版)
+**最后更新**: 2025-01-19
+**架构状态**: ✅ 生产就绪 (纯Web架构 + 智能引用系统)
+**代码质量**: ✅ 符合SOLID原则和最佳实践
+**测试覆盖**: ✅ 核心功能完全测试覆盖 (63个引用系统测试用例)
+**引用系统**: ✅ TDD开发完成，支持多格式学术引用解析和网络分析
+**文档状态**: ✅ 与实际代码完全一致
 
 ## 🔄 异步RAG处理架构 (新增)
 
@@ -1650,18 +1650,18 @@ sequenceDiagram
     participant TM as 任务管理器
     participant RP as RAG处理器
     participant EH as 错误处理器
-    
+
     C->>+AR: POST /rag/query/async
     AR->>+WS: 创建RAG流式任务
     WS->>+TM: 提交后台任务
     TM->>TM: 任务队列调度
     TM->>+RP: 执行RAG处理
-    
+
     loop 处理进度
         RP->>WS: 发送进度更新
         WS->>C: 实时进度通知
     end
-    
+
     alt 成功执行
         RP->>WS: 流式响应分块
         WS->>C: 分块响应数据
@@ -1673,7 +1673,7 @@ sequenceDiagram
         RP->>WS: 错误通知
         WS->>C: 错误信息
     end
-    
+
     TM-->>-WS: 任务结果
     WS-->>-AR: 响应数据
     AR-->>-C: 最终响应
@@ -1688,7 +1688,7 @@ flowchart TD
     C --> < /dev/null | 是| D[开始处理]
     C -->|否| E[等待内存释放]
     E --> C
-    
+
     D --> F[处理阶段监控]
     F --> G{内存使用 < 85%?}
     G -->|是| H[继续处理]
@@ -1697,7 +1697,7 @@ flowchart TD
     J -->|是| H
     J -->|否| K[内存压力警告]
     K --> L[强制任务限制]
-    
+
     H --> M[响应流式传输]
     M --> N[任务完成清理]
     L --> O[任务失败]
@@ -1736,7 +1736,7 @@ RAG_CONFIG = {
     "enable_streaming": True
 }
 
-# 任务管理器配置  
+# 任务管理器配置
 TASK_MANAGER_CONFIG = {
     "max_queue_size": 100,
     "memory_monitoring": True,

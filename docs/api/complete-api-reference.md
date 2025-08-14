@@ -259,7 +259,7 @@ Initialize or reinitialize the system (run migrations, create directories).
     "message": "System initialized successfully",
     "operations_performed": [
         "database_migrations_applied",
-        "storage_directories_created", 
+        "storage_directories_created",
         "vector_indexes_validated",
         "cache_initialized"
     ],
@@ -817,7 +817,7 @@ Identify potential duplicate documents in the library.
                 },
                 {
                     "id": 12,
-                    "title": "AI_Research_Paper_Copy.pdf", 
+                    "title": "AI_Research_Paper_Copy.pdf",
                     "file_size": 1024000,
                     "created_at": "2025-08-07T15:30:00Z"
                 }
@@ -1619,7 +1619,7 @@ const ws = new WebSocket('ws://localhost:8000/ws/client_123');
 
 ws.onopen = () => {
     console.log('Connected to WebSocket');
-    
+
     // Subscribe to events
     ws.send(JSON.stringify({
         type: 'subscribe',
@@ -1629,7 +1629,7 @@ ws.onopen = () => {
 
 ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
-    
+
     switch(message.type) {
         case 'rag_response':
             displayAnswer(message.answer, message.sources);
@@ -1750,7 +1750,7 @@ class APIError(Exception):
 def handle_api_response(response: requests.Response) -> Dict[str, Any]:
     if response.ok:
         return response.json()
-    
+
     try:
         error_data = response.json()
         raise APIError(
@@ -1848,60 +1848,60 @@ class PDFScholarClient:
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
-    
+
     def _request(self, method: str, endpoint: str, **kwargs) -> Dict[str, Any]:
         """Make authenticated API request"""
         url = f"{self.base_url}/api/{endpoint.lstrip('/')}"
         response = self.session.request(method, url, **kwargs)
-        
+
         if not response.ok:
             error_data = response.json() if response.content else {}
             raise Exception(f"API Error {response.status_code}: {error_data.get('detail', response.reason)}")
-        
+
         return response.json()
-    
+
     # System Management
     def health_check(self) -> Dict[str, Any]:
         """Check system health status"""
         return self._request('GET', 'system/health')
-    
+
     def get_system_config(self) -> Dict[str, Any]:
         """Get system configuration"""
         return self._request('GET', 'system/config')
-    
+
     # Document Management
     def list_documents(self, page: int = 1, per_page: int = 50, **filters) -> Dict[str, Any]:
         """List documents with pagination and filtering"""
         params = {'page': page, 'per_page': per_page, **filters}
         return self._request('GET', 'documents/', params=params)
-    
+
     def get_document(self, document_id: int, include_content: bool = False) -> Dict[str, Any]:
         """Get document details"""
         params = {'include_content': include_content} if include_content else {}
         return self._request('GET', f'documents/{document_id}', params=params)
-    
+
     def upload_document(self, file_path: Path, title: str = None, **options) -> Dict[str, Any]:
         """Upload a PDF document"""
         files = {'file': open(file_path, 'rb')}
         data = {}
-        
+
         if title:
             data['title'] = title
-        
+
         # Add upload options
         for key, value in options.items():
             data[key] = str(value).lower() if isinstance(value, bool) else str(value)
-        
+
         try:
             return self._request('POST', 'documents/upload', files=files, data=data)
         finally:
             files['file'].close()
-    
+
     def delete_document(self, document_id: int, delete_file: bool = True) -> Dict[str, Any]:
         """Delete a document"""
         params = {'delete_file': delete_file}
         return self._request('DELETE', f'documents/{document_id}', params=params)
-    
+
     # RAG Operations
     def rag_query(self, query: str, document_id: int, **options) -> Dict[str, Any]:
         """Execute RAG query against a document"""
@@ -1911,7 +1911,7 @@ class PDFScholarClient:
             'options': options
         }
         return self._request('POST', 'rag/query', json=data)
-    
+
     def build_vector_index(self, document_id: int, force_rebuild: bool = False, **options) -> Dict[str, Any]:
         """Build vector index for a document"""
         data = {
@@ -1922,37 +1922,37 @@ class PDFScholarClient:
             }
         }
         return self._request('POST', 'rag/build-index', json=data)
-    
+
     def check_index_status(self, document_id: int) -> Dict[str, Any]:
         """Check vector index status"""
         return self._request('GET', f'rag/status/{document_id}')
-    
+
     # Citation Management
     def extract_citations(self, document_id: int, **options) -> Dict[str, Any]:
         """Extract citations from a document"""
         data = {'options': options} if options else {}
         return self._request('POST', f'citations/extract/{document_id}', json=data)
-    
+
     def list_citations(self, document_id: int, page: int = 1, limit: int = 50, **filters) -> Dict[str, Any]:
         """List citations for a document"""
         params = {'page': page, 'limit': limit, **filters}
         return self._request('GET', f'citations/document/{document_id}', params=params)
-    
+
     def search_citations(self, **search_params) -> Dict[str, Any]:
         """Search citations across all documents"""
         return self._request('GET', 'citations/search', params=search_params)
-    
+
     # Library Management
     def library_stats(self, include_trends: bool = False) -> Dict[str, Any]:
         """Get library statistics"""
         params = {'include_trends': include_trends}
         return self._request('GET', 'library/stats', params=params)
-    
+
     def search_library(self, query: str, **options) -> Dict[str, Any]:
         """Search library documents"""
         params = {'q': query, **options}
         return self._request('GET', 'library/search', params=params)
-    
+
     def cleanup_library(self, operations: Dict[str, bool], dry_run: bool = False) -> Dict[str, Any]:
         """Perform library cleanup"""
         data = {'operations': operations, 'dry_run': dry_run}
@@ -1961,11 +1961,11 @@ class PDFScholarClient:
 # Usage Example
 def main():
     client = PDFScholarClient()
-    
+
     # Check system health
     health = client.health_check()
     print(f"System status: {health['status']}")
-    
+
     # Upload document
     doc_path = Path("research_paper.pdf")
     if doc_path.exists():
@@ -1977,11 +1977,11 @@ def main():
         )
         document_id = result['document']['id']
         print(f"Uploaded document ID: {document_id}")
-        
+
         # Wait for index to be built, then query
         import time
         time.sleep(10)  # Wait for index building
-        
+
         answer = client.rag_query(
             "What is this paper about?",
             document_id,
@@ -2058,7 +2058,7 @@ class PDFScholarClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}/api/${endpoint.replace(/^\//, '')}`;
-    
+
     const config: RequestInit = {
       method,
       headers: {
@@ -2069,7 +2069,7 @@ class PDFScholarClient {
     };
 
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
@@ -2356,9 +2356,9 @@ export { PDFScholarClient, type Document, type RAGResponse, type ApiResponse };
 
 ---
 
-**Documentation Version**: 2.1.0  
-**Last Updated**: 2025-08-09  
-**API Compatibility**: v2.x  
+**Documentation Version**: 2.1.0
+**Last Updated**: 2025-08-09
+**API Compatibility**: v2.x
 **Status**: Active Development
 
 For the most up-to-date API documentation, visit: `http://localhost:8000/api/docs`

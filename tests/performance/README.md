@@ -248,32 +248,32 @@ on:
 jobs:
   performance:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-    
+
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
         pip install -r tests/performance/requirements.txt
-    
+
     - name: Start application
       run: |
         uvicorn app.main:app --host 0.0.0.0 --port 8000 &
         sleep 5
-    
+
     - name: Run performance tests
       run: |
         python tests/performance/run_performance_tests.py \
           --benchmarks \
           --concurrent \
           --resources
-    
+
     - name: Upload reports
       uses: actions/upload-artifact@v3
       with:

@@ -46,7 +46,7 @@ class TestCitationE2EWorkflow:
         """
         temp_db = tempfile.NamedTemporaryFile(suffix='.db', delete=False)
         temp_db.close()
-        
+
         try:
             db_connection = DatabaseConnection(temp_db.name)
             migrator = DatabaseMigrator(db_connection)
@@ -58,11 +58,11 @@ class TestCitationE2EWorkflow:
                 db_connection.close_all_connections()
             except Exception as e:
                 logger.warning(f"Error closing database connections: {e}")
-            
+
             # Wait a moment for Windows to release file locks
             import time
             time.sleep(0.1)
-            
+
             # Attempt to delete the temporary database file
             if os.path.exists(temp_db.name):
                 try:
@@ -88,11 +88,11 @@ class TestCitationE2EWorkflow:
         document_repo = DocumentRepository(e2e_database)
         citation_repo = CitationRepository(e2e_database)
         relation_repo = CitationRelationRepository(e2e_database)
-        
+
         # Service layer
         parsing_service = CitationParsingService()
         citation_service = CitationService(citation_repo, relation_repo)
-        
+
         return {
             "db": e2e_database,
             "document_repo": document_repo,
@@ -114,18 +114,18 @@ class TestCitationE2EWorkflow:
                 "file_path": "/papers/ml_nlp_advances.pdf",
                 "content": """
                 Abstract: This paper presents recent advances in machine learning for natural language processing.
-                
+
                 Introduction:
-                Recent work by Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., 
-                Kaiser, L., & Polosukhin, I. (2017). Attention is all you need. In Advances in neural 
+                Recent work by Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N.,
+                Kaiser, L., & Polosukhin, I. (2017). Attention is all you need. In Advances in neural
                 information processing systems (pp. 5998-6008).
-                
-                The transformer architecture has revolutionized NLP, as demonstrated in Devlin, J., Chang, M. W., 
-                Lee, K., & Toutanova, K. (2018). BERT: Pre-training of Deep Bidirectional Transformers for 
+
+                The transformer architecture has revolutionized NLP, as demonstrated in Devlin, J., Chang, M. W.,
+                Lee, K., & Toutanova, K. (2018). BERT: Pre-training of Deep Bidirectional Transformers for
                 Language Understanding. arXiv preprint arXiv:1810.04805.
-                
-                Recent developments include Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J. D., 
-                Dhariwal, P., ... & Amodei, D. (2020). Language models are few-shot learners. 
+
+                Recent developments include Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J. D.,
+                Dhariwal, P., ... & Amodei, D. (2020). Language models are few-shot learners.
                 Advances in neural information processing systems, 33, 1877-1901.
                 """,
                 "expected_citations": [
@@ -139,16 +139,16 @@ class TestCitationE2EWorkflow:
                 "file_path": "/papers/cv_deep_learning_survey.pdf",
                 "content": """
                 This survey examines recent progress in computer vision using deep learning techniques.
-                
-                Foundational work includes LeCun, Y., Bottou, L., Bengio, Y., & Haffner, P. (1998). 
+
+                Foundational work includes LeCun, Y., Bottou, L., Bengio, Y., & Haffner, P. (1998).
                 Gradient-based learning applied to document recognition. Proceedings of the IEEE, 86(11), 2278-2324.
-                
-                Modern architectures build on He, K., Zhang, X., Ren, S., & Sun, J. (2016). Deep residual 
-                learning for image recognition. In Proceedings of the IEEE conference on computer vision 
+
+                Modern architectures build on He, K., Zhang, X., Ren, S., & Sun, J. (2016). Deep residual
+                learning for image recognition. In Proceedings of the IEEE conference on computer vision
                 and pattern recognition (pp. 770-778).
-                
-                Object detection advances are covered in Ren, S., He, K., Girshick, R., & Sun, J. (2015). 
-                Faster r-cnn: Towards real-time object detection with region proposal networks. 
+
+                Object detection advances are covered in Ren, S., He, K., Girshick, R., & Sun, J. (2015).
+                Faster r-cnn: Towards real-time object detection with region proposal networks.
                 Advances in neural information processing systems, 28.
                 """,
                 "expected_citations": [
@@ -166,7 +166,7 @@ class TestCitationE2EWorkflow:
     ):
         """
         Test complete document processing pipeline from ingestion to citation network.
-        
+
         Pipeline: Document → Parse → Extract → Store → Network → Analysis
         Enterprise validation with performance metrics.
         """
@@ -174,10 +174,10 @@ class TestCitationE2EWorkflow:
         citation_service = e2e_system_components["citation_service"]
         parsing_service = e2e_system_components["parsing_service"]
         relation_repo = e2e_system_components["relation_repo"]
-        
+
         processed_documents = []
         all_citations = []
-        
+
         # Process each research paper
         for paper_data in research_paper_documents:
             # Step 1: Create document record
@@ -190,7 +190,7 @@ class TestCitationE2EWorkflow:
                 page_count=10,
                 _from_database=False
             )
-            
+
             # Insert document
             insert_sql = """
                 INSERT INTO documents (title, file_path, file_hash, file_size, content_hash, page_count, created_at, updated_at)
@@ -200,23 +200,23 @@ class TestCitationE2EWorkflow:
                 document.title, document.file_path, document.file_hash,
                 document.file_size, document.content_hash, document.page_count
             ))
-            
+
             # Get document with ID
             row = e2e_system_components["db"].fetch_one(
-                "SELECT id FROM documents WHERE file_hash = ?", 
+                "SELECT id FROM documents WHERE file_hash = ?",
                 (document.file_hash,)
             )
             if row:
                 document.id = row[0]
             document._from_database = True
             processed_documents.append(document)
-            
+
             # Step 2: Parse citations from content
             parsed_citations = parsing_service.parse_citations_from_text(paper_data["content"])
-            
+
             # Validate parsing results against expected
             assert len(parsed_citations) >= len(paper_data["expected_citations"])
-            
+
             # Step 3: Store citations via service
             document_citations = []
             for citation_data in parsed_citations:
@@ -231,27 +231,27 @@ class TestCitationE2EWorkflow:
                     citation_type=citation_data.get("citation_type", "unknown"),
                     confidence_score=citation_data["confidence_score"]
                 )
-                
+
                 created_citation = e2e_system_components["citation_repo"].create(citation_model)
                 document_citations.append(created_citation)
                 all_citations.append(created_citation)
-            
+
             # Validate citation storage
             assert len(document_citations) >= 1
-            
+
             # Step 4: Verify citation retrieval
             retrieved_citations = citation_service.get_citations_for_document(document.id)
             assert len(retrieved_citations) == len(document_citations)
-        
+
         # Step 5: Cross-document citation network analysis
         if len(processed_documents) >= 2:
             # Create citation relations between documents
             doc1, doc2 = processed_documents[0], processed_documents[1]
-            
+
             # Find citations in doc1 that might reference doc2's authors
             doc1_citations = citation_service.get_citations_for_document(doc1.id)
             doc2_citations = citation_service.get_citations_for_document(doc2.id)
-            
+
             # Create a cross-reference relation (simulated)
             if doc1_citations and doc2_citations:
                 relation = CitationRelationModel(
@@ -261,10 +261,10 @@ class TestCitationE2EWorkflow:
                     relation_type="cites",
                     confidence_score=0.8
                 )
-                
+
                 created_relation = relation_repo.create(relation)
                 assert created_relation.id is not None
-                
+
                 # Test citation network building
                 network = citation_service.build_citation_network(doc1.id, depth=1)
                 assert isinstance(network, dict)
@@ -274,7 +274,7 @@ class TestCitationE2EWorkflow:
         # Step 6: System-wide analytics
         total_stats = citation_service.get_citation_statistics()
         assert total_stats["total_citations"] == len(all_citations)
-        
+
         # Performance validation
         assert len(all_citations) >= len(research_paper_documents)  # At least one citation per document
 
@@ -288,7 +288,7 @@ class TestCitationE2EWorkflow:
         Tests parsing accuracy against known ground truth.
         """
         parsing_service = e2e_system_components["parsing_service"]
-        
+
         quality_metrics = {
             "total_expected": 0,
             "total_extracted": 0,
@@ -296,45 +296,45 @@ class TestCitationE2EWorkflow:
             "author_extraction_accuracy": 0,
             "year_extraction_accuracy": 0
         }
-        
+
         for paper_data in research_paper_documents:
             expected_citations = paper_data["expected_citations"]
             quality_metrics["total_expected"] += len(expected_citations)
-            
+
             # Parse citations
             parsed_citations = parsing_service.parse_citations_from_text(paper_data["content"])
             quality_metrics["total_extracted"] += len(parsed_citations)
-            
+
             # Count high-confidence extractions
             high_conf_citations = [c for c in parsed_citations if c["confidence_score"] >= 0.5]
             quality_metrics["high_confidence_extracted"] += len(high_conf_citations)
-            
+
             # Validate against expected citations
             for expected in expected_citations:
                 # Check if any parsed citation matches expected author
                 author_matches = [
-                    c for c in parsed_citations 
+                    c for c in parsed_citations
                     if c.get("authors") and expected["authors"] in c["authors"]
                 ]
                 if author_matches:
                     quality_metrics["author_extraction_accuracy"] += 1
-                
+
                 # Check year extraction
                 year_matches = [
-                    c for c in parsed_citations 
+                    c for c in parsed_citations
                     if c.get("publication_year") == expected["year"]
                 ]
                 if year_matches:
                     quality_metrics["year_extraction_accuracy"] += 1
-        
+
         # Enterprise quality thresholds
         extraction_rate = quality_metrics["total_extracted"] / quality_metrics["total_expected"]
         assert extraction_rate >= 0.8, f"Extraction rate {extraction_rate:.2f} below 80% threshold"
-        
+
         if quality_metrics["total_extracted"] > 0:
             high_conf_rate = quality_metrics["high_confidence_extracted"] / quality_metrics["total_extracted"]
             assert high_conf_rate >= 0.3, f"High confidence rate {high_conf_rate:.2f} below 30% threshold"
-        
+
         # Author extraction accuracy
         if quality_metrics["total_expected"] > 0:
             author_accuracy = quality_metrics["author_extraction_accuracy"] / quality_metrics["total_expected"]
@@ -350,17 +350,17 @@ class TestCitationE2EWorkflow:
         Validates performance under realistic load.
         """
         import time
-        
+
         citation_service = e2e_system_components["citation_service"]
         parsing_service = e2e_system_components["parsing_service"]
         document_repo = e2e_system_components["document_repo"]
-        
+
         # Create multiple documents with citations
         num_documents = 10
         total_citations = 0
-        
+
         start_time = time.time()
-        
+
         for i in range(num_documents):
             # Create document
             document = DocumentModel(
@@ -372,7 +372,7 @@ class TestCitationE2EWorkflow:
                 page_count=5,
                 _from_database=False
             )
-            
+
             # Store document
             insert_sql = """
                 INSERT INTO documents (title, file_path, file_hash, file_size, content_hash, page_count, created_at, updated_at)
@@ -382,23 +382,23 @@ class TestCitationE2EWorkflow:
                 document.title, document.file_path, document.file_hash,
                 document.file_size, document.content_hash, document.page_count
             ))
-            
+
             row = e2e_system_components["db"].fetch_one(
-                "SELECT id FROM documents WHERE file_hash = ?", 
+                "SELECT id FROM documents WHERE file_hash = ?",
                 (document.file_hash,)
             )
             if row:
                 document.id = row[0]
-            
+
             # Generate citations for this document
             sample_text = f"""
-            This is test document {i}. It references Author{i}, A. ({2020 + i}). 
+            This is test document {i}. It references Author{i}, A. ({2020 + i}).
             Test Paper {i}. Journal of Testing, {i}(1), 1-10.
-            
-            Additional reference: Researcher{i}, B. et al. ({2021 + i}). 
+
+            Additional reference: Researcher{i}, B. et al. ({2021 + i}).
             Another Test Study. Conference Proceedings, pages {i*10}-{i*10+10}.
             """
-            
+
             # Parse and store citations
             parsed_citations = parsing_service.parse_citations_from_text(sample_text)
             for citation_data in parsed_citations:
@@ -410,13 +410,13 @@ class TestCitationE2EWorkflow:
                 )
                 e2e_system_components["citation_repo"].create(citation_model)
                 total_citations += 1
-        
+
         processing_time = time.time() - start_time
-        
+
         # Performance assertions
         docs_per_second = num_documents / processing_time
         assert docs_per_second >= 2, f"Document processing rate {docs_per_second:.1f}/s below threshold"
-        
+
         # Verify all data was stored correctly
         final_stats = citation_service.get_citation_statistics()
         assert final_stats["total_citations"] >= total_citations
@@ -431,28 +431,28 @@ class TestCitationE2EWorkflow:
         """
         citation_service = e2e_system_components["citation_service"]
         parsing_service = e2e_system_components["parsing_service"]
-        
+
         # Test with malformed text
         malformed_text = "This is not a proper citation format!!! @#$%^&*()"
-        
+
         try:
             parsed_citations = parsing_service.parse_citations_from_text(malformed_text)
             # Should return empty list or handle gracefully
             assert isinstance(parsed_citations, list)
         except Exception as e:
             pytest.fail(f"System should handle malformed text gracefully, but raised: {e}")
-        
+
         # Test with empty text
         empty_citations = parsing_service.parse_citations_from_text("")
         assert isinstance(empty_citations, list)
         assert len(empty_citations) == 0
-        
+
         # Test with very long text
         long_text = "A. Smith (2023). " * 1000  # Repeat pattern 1000 times
         long_citations = parsing_service.parse_citations_from_text(long_text)
         assert isinstance(long_citations, list)
         # Should not crash or take excessive time
-        
+
         # Test invalid document queries
         invalid_citations = citation_service.get_citations_for_document(-1)
         assert isinstance(invalid_citations, list)
@@ -469,15 +469,15 @@ class TestCitationE2EWorkflow:
         # Create base system
         citation_repo = CitationRepository(e2e_database)
         relation_repo = CitationRelationRepository(e2e_database)
-        
+
         # Original parsing service
         original_parser = CitationParsingService()
         original_service = CitationService(citation_repo, relation_repo)
-        
+
         # Test with original parser
         test_text = "Smith, J. (2023). Original Test Paper. Journal of Tests."
         original_results = original_parser.parse_citations_from_text(test_text)
-        
+
         # Create enhanced parsing service (simulated LLM enhancement)
         class EnhancedParsingService:
             def parse_citations_from_text(self, text: str) -> list[dict]:
@@ -485,25 +485,25 @@ class TestCitationE2EWorkflow:
                 return [{
                     "raw_text": "Smith, J. (2023). Original Test Paper. Journal of Tests.",
                     "authors": "Smith, J.",
-                    "title": "Original Test Paper", 
+                    "title": "Original Test Paper",
                     "publication_year": 2023,
                     "journal_or_venue": "Journal of Tests",
                     "citation_type": "journal",
                     "confidence_score": 0.95  # Higher confidence
                 }]
-        
+
         # Swap parsing service
         enhanced_parser = EnhancedParsingService()
         enhanced_results = enhanced_parser.parse_citations_from_text(test_text)
-        
+
         # Both should work with same interface
         assert isinstance(original_results, list)
         assert isinstance(enhanced_results, list)
-        
+
         # Enhanced parser should provide better results
         if enhanced_results:
             assert enhanced_results[0]["confidence_score"] >= 0.9
-        
+
         # Service layer should work with both parsers
         # This demonstrates modular extensibility for LLM development
 
@@ -517,7 +517,7 @@ class TestCitationE2EWorkflow:
         """
         # This test will be expanded when citation network functionality is implemented
         citation_service = e2e_system_components["citation_service"]
-        
+
         # For now, test basic network functionality
         try:
             # Test network building with non-existent document
@@ -538,25 +538,25 @@ class TestCitationE2EWorkflow:
         Validates data quality and export formats.
         """
         citation_service = e2e_system_components["citation_service"]
-        
+
         # Get system statistics
         stats = citation_service.get_citation_statistics()
-        
+
         # Validate statistics structure
         required_fields = ["total_citations", "complete_citations", "avg_confidence_score"]
         for field in required_fields:
             assert field in stats, f"Missing required field: {field}"
-        
+
         # Validate data types
         assert isinstance(stats["total_citations"], int)
         assert isinstance(stats["complete_citations"], int)
         assert isinstance(stats["avg_confidence_score"], (int, float))
-        
+
         # Validate value ranges
         assert stats["total_citations"] >= 0
         assert stats["complete_citations"] >= 0
         assert 0.0 <= stats["avg_confidence_score"] <= 1.0
-        
+
         # Test search functionality
         search_results = citation_service.search_citations_by_author("Smith", limit=10)
         assert isinstance(search_results, list)

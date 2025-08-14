@@ -46,7 +46,7 @@ BROWSER_CONFIGS = {
 def browser_context(playwright: Playwright, request) -> Generator[BrowserContext, None, None]:
     """
     Create a browser context with configurable options.
-    
+
     Usage:
         @pytest.mark.parametrize('browser_config', ['desktop_chrome', 'mobile_iphone'])
         def test_responsive(browser_context):
@@ -55,22 +55,22 @@ def browser_context(playwright: Playwright, request) -> Generator[BrowserContext
     # Get browser type from marker or default to chromium
     browser_name = request.node.get_closest_marker("browser")
     browser_type = browser_name.args[0] if browser_name else "chromium"
-    
+
     # Get configuration
     config_name = getattr(request, "param", "desktop_chrome") if hasattr(request, "param") else "desktop_chrome"
     config = BROWSER_CONFIGS.get(config_name, BROWSER_CONFIGS["desktop_chrome"])
-    
+
     # Launch browser
     browser_launcher = getattr(playwright, browser_type)
     headless = request.config.getoption("--headless", default=True)
     slow_mo = request.config.getoption("--slow-mo", default=0)
-    
+
     browser = browser_launcher.launch(
         headless=headless,
         slow_mo=slow_mo,
         args=['--no-sandbox', '--disable-setuid-sandbox'] if headless else []
     )
-    
+
     # Create context with configuration
     context = browser.new_context(
         **config,
@@ -83,7 +83,7 @@ def browser_context(playwright: Playwright, request) -> Generator[BrowserContext
         record_video_dir='tests_e2e/videos' if request.config.getoption("--video", default=False) else None,
         record_har_path='tests_e2e/har/test.har' if request.config.getoption("--har", default=False) else None,
     )
-    
+
     # Enable tracing if requested
     if request.config.getoption("--tracing", default=False):
         context.tracing.start(
@@ -91,24 +91,24 @@ def browser_context(playwright: Playwright, request) -> Generator[BrowserContext
             snapshots=True,
             sources=True
         )
-    
+
     # Add request interceptor for network mocking
     def handle_route(route):
         # Add custom headers or modify requests
         headers = route.request.headers
         headers['X-Test-Request'] = 'true'
         route.continue_(headers=headers)
-    
+
     # context.route("**/*", handle_route)
-    
+
     yield context
-    
+
     # Save trace if enabled
     if request.config.getoption("--tracing", default=False):
         trace_path = Path("tests_e2e/traces") / f"{request.node.name}.zip"
         trace_path.parent.mkdir(exist_ok=True)
         context.tracing.stop(path=str(trace_path))
-    
+
     context.close()
     browser.close()
 
@@ -119,11 +119,11 @@ def page(browser_context: BrowserContext, request) -> Generator[Page, None, None
     Create a page with enhanced error handling and utilities.
     """
     page = browser_context.new_page()
-    
+
     # Set default timeout
     page.set_default_timeout(30000)
     page.set_default_navigation_timeout(30000)
-    
+
     # Add console log capture
     console_logs = []
     page.on("console", lambda msg: console_logs.append({
@@ -131,11 +131,11 @@ def page(browser_context: BrowserContext, request) -> Generator[Page, None, None
         "text": msg.text,
         "location": msg.location
     }))
-    
+
     # Add error capture
     page_errors = []
     page.on("pageerror", lambda err: page_errors.append(str(err)))
-    
+
     # Add request failure capture
     failed_requests = []
     page.on("requestfailed", lambda req: failed_requests.append({
@@ -143,33 +143,33 @@ def page(browser_context: BrowserContext, request) -> Generator[Page, None, None
         "failure": req.failure,
         "method": req.method
     }))
-    
+
     # Attach logs to page for access in tests
     page.console_logs = console_logs
     page.page_errors = page_errors
     page.failed_requests = failed_requests
-    
+
     yield page
-    
+
     # Take screenshot on failure
     if request.node.rep_call.failed if hasattr(request.node, "rep_call") else False:
         screenshot_dir = Path("tests_e2e/screenshots")
         screenshot_dir.mkdir(exist_ok=True)
         screenshot_path = screenshot_dir / f"{request.node.name}.png"
         page.screenshot(path=str(screenshot_path), full_page=True)
-        
+
         # Log console errors
         if page_errors:
             print(f"Page errors for {request.node.name}:")
             for error in page_errors:
                 print(f"  - {error}")
-        
+
         # Log failed requests
         if failed_requests:
             print(f"Failed requests for {request.node.name}:")
             for req in failed_requests:
                 print(f"  - {req['method']} {req['url']}: {req['failure']}")
-    
+
     page.close()
 
 
@@ -185,9 +185,9 @@ def mobile_browser(playwright: Playwright) -> Generator[BrowserContext, None, No
         ignore_https_errors=True,
         locale='en-US',
     )
-    
+
     yield context
-    
+
     context.close()
     browser.close()
 
@@ -202,9 +202,9 @@ def multi_browser(playwright: Playwright) -> Generator[Dict[str, Browser], None,
         'firefox': playwright.firefox.launch(headless=True),
         'webkit': playwright.webkit.launch(headless=True),
     }
-    
+
     yield browsers
-    
+
     for browser in browsers.values():
         browser.close()
 
@@ -213,18 +213,18 @@ class PageHelper:
     """
     Helper class with common page interactions and assertions.
     """
-    
+
     def __init__(self, page: Page):
         self.page = page
-    
+
     def wait_for_element(self, selector: str, state: str = "visible", timeout: int = 10000):
         """Wait for an element to be in a specific state."""
         return self.page.wait_for_selector(selector, state=state, timeout=timeout)
-    
+
     def wait_for_text(self, text: str, timeout: int = 10000):
         """Wait for text to appear on the page."""
         return self.page.wait_for_selector(f"text={text}", timeout=timeout)
-    
+
     def click_and_wait(self, selector: str, wait_for: str = None):
         """Click an element and wait for navigation or another element."""
         if wait_for:
@@ -233,7 +233,7 @@ class PageHelper:
             self.wait_for_element(wait_for)
         else:
             self.page.click(selector)
-    
+
     def fill_form(self, form_data: Dict[str, Any]):
         """Fill a form with multiple fields."""
         for selector, value in form_data.items():
@@ -249,14 +249,14 @@ class PageHelper:
             else:
                 # Handle text inputs
                 self.page.fill(selector, str(value))
-    
+
     def get_table_data(self, table_selector: str) -> List[Dict[str, str]]:
         """Extract data from a table."""
         headers = self.page.eval_on_selector_all(
             f"{table_selector} thead th",
             "elements => elements.map(el => el.textContent.trim())"
         )
-        
+
         rows = self.page.eval_on_selector_all(
             f"{table_selector} tbody tr",
             """rows => rows.map(row => {
@@ -264,14 +264,14 @@ class PageHelper:
                 return cells.map(cell => cell.textContent.trim());
             })"""
         )
-        
+
         return [dict(zip(headers, row)) for row in rows]
-    
+
     def wait_for_api_response(self, url_pattern: str, timeout: int = 10000):
         """Wait for a specific API response."""
         with self.page.expect_response(url_pattern, timeout=timeout) as response_info:
             return response_info.value
-    
+
     def mock_api_response(self, url_pattern: str, response_data: Dict[str, Any], status: int = 200):
         """Mock an API response."""
         def handle(route):
@@ -280,9 +280,9 @@ class PageHelper:
                 content_type="application/json",
                 body=json.dumps(response_data)
             )
-        
+
         self.page.route(url_pattern, handle)
-    
+
     def take_full_page_screenshot(self, name: str):
         """Take a full page screenshot with a specific name."""
         screenshot_dir = Path("tests_e2e/screenshots")
@@ -290,13 +290,13 @@ class PageHelper:
         path = screenshot_dir / f"{name}.png"
         self.page.screenshot(path=str(path), full_page=True)
         return path
-    
+
     def measure_performance(self):
         """Measure page performance metrics."""
         metrics = self.page.evaluate("""() => {
             const timing = performance.timing;
             const navigation = performance.getEntriesByType('navigation')[0];
-            
+
             return {
                 domContentLoaded: timing.domContentLoadedEventEnd - timing.navigationStart,
                 loadComplete: timing.loadEventEnd - timing.navigationStart,
@@ -305,7 +305,7 @@ class PageHelper:
                 resources: performance.getEntriesByType('resource').length
             };
         }""")
-        
+
         return metrics
 
 

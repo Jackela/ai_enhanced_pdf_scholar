@@ -99,7 +99,7 @@ erDiagram
     DOCUMENTS ||--o{ VECTOR_INDEXES : has
     DOCUMENTS ||--o{ DOCUMENT_TAGS : has
     TAGS ||--o{ DOCUMENT_TAGS : belongs_to
-    
+
     DOCUMENTS {
         int id PK
         string title
@@ -112,7 +112,7 @@ erDiagram
         datetime last_accessed
         json metadata
     }
-    
+
     VECTOR_INDEXES {
         int id PK
         int document_id FK
@@ -121,13 +121,13 @@ erDiagram
         int chunk_count
         datetime created_at
     }
-    
+
     TAGS {
         int id PK
         string name UK
         string color
     }
-    
+
     DOCUMENT_TAGS {
         int document_id FK
         int tag_id FK
@@ -138,9 +138,9 @@ erDiagram
 ```python
 class DatabaseMigration:
     """数据库版本管理和迁移"""
-    
+
     CURRENT_VERSION = 1
-    
+
     migrations = {
         1: """
         CREATE TABLE documents (
@@ -155,7 +155,7 @@ class DatabaseMigration:
             last_accessed DATETIME,
             metadata JSON
         );
-        
+
         CREATE TABLE vector_indexes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             document_id INTEGER NOT NULL,
@@ -165,7 +165,7 @@ class DatabaseMigration:
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (document_id) REFERENCES documents (id)
         );
-        
+
         CREATE INDEX idx_documents_hash ON documents(file_hash);
         CREATE INDEX idx_documents_title ON documents(title);
         CREATE INDEX idx_vector_indexes_document ON vector_indexes(document_id);
@@ -181,7 +181,7 @@ class ContentHashService:
     """
     负责生成文档内容哈希，实现智能去重
     """
-    
+
     @staticmethod
     def calculate_file_hash(file_path: str) -> str:
         """
@@ -190,7 +190,7 @@ class ContentHashService:
         - 返回16位短哈希用于去重
         - 支持大文件处理（>100MB）
         """
-        
+
     @staticmethod
     def calculate_content_hash(file_path: str) -> str:
         """
@@ -199,7 +199,7 @@ class ContentHashService:
         - 文本规范化（小写、去除多余空格）
         - 用于检测相同内容的不同格式版本
         """
-    
+
     @staticmethod
     def calculate_combined_hashes(file_path: str) -> Tuple[str, str]:
         """
@@ -207,7 +207,7 @@ class ContentHashService:
         - 优化性能，一次调用获取两种哈希
         - 返回元组：(file_hash, content_hash)
         """
-    
+
     @staticmethod
     def validate_pdf_file(file_path: str) -> bool:
         """
@@ -224,9 +224,9 @@ class DocumentLibraryService:
     文档生命周期管理的核心业务逻辑
     提供高级文档管理操作，封装Repository层的复杂性
     """
-    
-    def import_document(self, 
-                       file_path: str, 
+
+    def import_document(self,
+                       file_path: str,
                        title: str = None,
                        check_duplicates: bool = True,
                        overwrite_duplicates: bool = False) -> DocumentModel:
@@ -239,7 +239,7 @@ class DocumentLibraryService:
         5. 保存到数据库
         6. 返回文档模型
         """
-    
+
     def find_duplicate_documents(self) -> List[Tuple[str, List[DocumentModel]]]:
         """
         查找潜在重复文档
@@ -247,8 +247,8 @@ class DocumentLibraryService:
         - 按文件名相似度分组
         - 返回重复组列表
         """
-    
-    def get_documents(self, 
+
+    def get_documents(self,
                      search_query: str = None,
                      limit: int = 50,
                      offset: int = 0,
@@ -257,15 +257,15 @@ class DocumentLibraryService:
         """
         获取文档列表，支持搜索和分页
         """
-    
-    def delete_document(self, document_id: int, 
+
+    def delete_document(self, document_id: int,
                        remove_vector_index: bool = True) -> bool:
         """
         删除文档及其相关数据
         - 支持级联删除向量索引
         - 事务安全操作
         """
-    
+
     def get_library_statistics(self) -> Dict[str, Any]:
         """
         获取库统计信息
@@ -273,7 +273,7 @@ class DocumentLibraryService:
         - 向量索引覆盖率
         - 孤立数据检查
         """
-    
+
     def cleanup_library(self) -> Dict[str, int]:
         """
         库清理操作
@@ -281,7 +281,7 @@ class DocumentLibraryService:
         - 清理无效索引文件
         - 返回清理统计
         """
-    
+
     def verify_document_integrity(self, document_id: int) -> Dict[str, Any]:
         """
         验证文档完整性
@@ -298,12 +298,12 @@ class EnhancedRAGService:
     集成数据库的增强RAG服务
     继承现有RAGService，添加持久化能力
     """
-    
+
     def __init__(self, api_key: str, db_connection: DatabaseConnection):
         super().__init__(api_key)
         self.db = db_connection
         self.vector_repo = VectorIndexRepository(db_connection)
-    
+
     def build_index_from_document(self, document: DocumentModel) -> bool:
         """
         从数据库文档记录构建索引
@@ -311,7 +311,7 @@ class EnhancedRAGService:
         2. 如果不存在，创建新索引
         3. 保存索引元数据到数据库
         """
-    
+
     def load_index_for_document(self, document_id: int) -> bool:
         """
         从数据库加载文档的向量索引
@@ -326,7 +326,7 @@ class EnhancedRAGService:
 function DocumentLibraryView() {
     """
     文档管理的主要UI组件
-    
+
     布局结构：
     ┌─────────────────────────────────┐
     │ [搜索框] [导入] [标签筛选]        │
@@ -339,7 +339,7 @@ function DocumentLibraryView() {
     │    ❌ Status: Error             │
     └─────────────────────────────────┘
     """
-    
+
     # 信号定义
     document_selected = pyqtSignal(DocumentModel)
     document_import_requested = pyqtSignal()
@@ -352,7 +352,7 @@ class ResponsiveDocumentPanel:
     """
     针对文档库的响应式设计配置
     """
-    
+
     RESPONSIVE_CONFIG = {
         "small": {
             "item_height": 60,
@@ -383,13 +383,13 @@ sequenceDiagram
     participant Hash as Content Hash Service
     participant Repo as Document Repository
     participant RAG as Enhanced RAG Service
-    
+
     UI->>Ctrl: import_document(file_path)
     Ctrl->>Hash: calculate_file_hash(file_path)
     Hash-->>Ctrl: file_hash
     Ctrl->>Svc: import_document(file_path, file_hash)
     Svc->>Repo: find_by_hash(file_hash)
-    
+
     alt Document exists
         Repo-->>Svc: existing_document
         Svc-->>Ctrl: DuplicateDocumentError
@@ -412,10 +412,10 @@ sequenceDiagram
     participant RAG as Enhanced RAG Service
     participant VRepo as Vector Repository
     participant Cache as Query Cache
-    
+
     UI->>Ctrl: send_message(query, document_id)
     Ctrl->>Cache: get_cached_response(query_hash)
-    
+
     alt Cache hit
         Cache-->>Ctrl: cached_response
         Ctrl->>UI: display_response(cached_response)
@@ -442,11 +442,11 @@ CREATE INDEX idx_documents_accessed ON documents(last_accessed DESC);
 CREATE INDEX idx_vector_indexes_document ON vector_indexes(document_id);
 
 -- 查询优化示例
-SELECT d.*, vi.index_path 
-FROM documents d 
-LEFT JOIN vector_indexes vi ON d.id = vi.document_id 
-WHERE d.title LIKE ? 
-ORDER BY d.last_accessed DESC 
+SELECT d.*, vi.index_path
+FROM documents d
+LEFT JOIN vector_indexes vi ON d.id = vi.document_id
+WHERE d.title LIKE ?
+ORDER BY d.last_accessed DESC
 LIMIT 20;
 ```
 
@@ -459,7 +459,7 @@ class RAGQueryCache:
     - 查询结果TTL = 1小时
     - 支持查询哈希和语义相似度匹配
     """
-    
+
     def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600):
         self.cache = {}
         self.max_size = max_size
@@ -475,11 +475,11 @@ class StreamingPDFProcessor:
     - 进度回调，实时UI更新
     - 支持中断和恢复
     """
-    
+
     CHUNK_SIZE = 1024 * 1024  # 1MB per chunk
-    
-    def process_large_pdf(self, 
-                         file_path: str, 
+
+    def process_large_pdf(self,
+                         file_path: str,
                          progress_callback: Callable[[int], None]) -> str:
         """流式计算大文件哈希"""
 ```
@@ -509,8 +509,8 @@ class StreamingPDFProcessor:
 @pytest.fixture(scope="session")
 def shared_db_connection():
     """会话级数据库连接，减少设置开销"""
-    
-@pytest.fixture(scope="function") 
+
+@pytest.fixture(scope="function")
 def clean_db_connection():
     """提供干净的数据库状态，智能清理"""
 
@@ -521,7 +521,7 @@ def thread_test_helper():
 
 **并行测试配置 (`pytest.ini`)**
 ```ini
-addopts = 
+addopts =
     -n auto              # 自动CPU扩展
     --dist=loadfile      # 最优负载分发
     --maxfail=10         # 快速失败检测
@@ -532,10 +532,10 @@ timeout = 60             # 优化的超时设置
 ```python
 class TestBenchmark:
     """自动化性能基准测试"""
-    
+
     def run_benchmark_suite(self):
         """完整性能基准测试套件"""
-        
+
     def _benchmark_parallel_tests(self):
         """并行vs串行执行性能对比"""
 ```
@@ -548,17 +548,17 @@ class TestBenchmark:
 ```python
 class PerformanceMetrics:
     """性能监控指标"""
-    
+
     # 测试执行性能
     test_execution_time: float   # 测试执行时间
     database_setup_time: float  # 数据库设置时间
     parallel_speedup: float     # 并行加速比
-    
+
     # 系统性能
     memory_usage: int           # 内存使用量
     database_operations: float  # 数据库操作响应时间
-    
-    # CI/CD性能  
+
+    # CI/CD性能
     pipeline_duration: float    # CI流水线执行时间
     error_rate: float          # 错误率
     user_satisfaction: float   # 用户满意度
@@ -571,17 +571,17 @@ from typing import Any, Dict
 
 class StructuredLogger:
     """结构化日志记录器"""
-    
-    def log_document_import(self, 
-                           document_id: int, 
-                           file_size: int, 
+
+    def log_document_import(self,
+                           document_id: int,
+                           file_size: int,
                            duration: float,
                            success: bool):
         """记录文档导入事件"""
-        
-    def log_rag_query(self, 
-                     query: str, 
-                     document_id: int, 
+
+    def log_rag_query(self,
+                     query: str,
+                     document_id: int,
                      response_time: float,
                      similarity_score: float):
         """记录RAG查询事件"""
@@ -606,7 +606,7 @@ class StructuredLogger:
 ```python
 class LegacyCacheMigrator:
     """现有缓存系统迁移器"""
-    
+
     def migrate_existing_cache(self, old_cache_dir: str):
         """
         迁移现有.rag_cache到新数据库系统

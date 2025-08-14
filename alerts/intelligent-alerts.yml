@@ -1,6 +1,6 @@
 # ============================================================================
 # Intelligent Alert Rules for AI Enhanced PDF Scholar
-# Advanced alerting with dynamic thresholds, escalation policies, and 
+# Advanced alerting with dynamic thresholds, escalation policies, and
 # business hours awareness
 # ============================================================================
 
@@ -11,7 +11,7 @@ groups:
 - name: critical-system-alerts
   interval: 30s
   rules:
-  
+
   # Service availability with escalation
   - alert: ServiceDown
     expr: up{job=~"ai-pdf-scholar-backend|postgresql|redis|elasticsearch|kibana"} == 0
@@ -27,13 +27,13 @@ groups:
       summary: "🚨 CRITICAL: {{ $labels.job }} service is completely down"
       description: |
         {{ $labels.job }} service on {{ $labels.instance }} has been down for more than 1 minute.
-        
+
         **Immediate Actions Required:**
         1. Check service status and restart if necessary
         2. Investigate root cause
         3. Verify dependencies (database, cache, etc.)
         4. Update incident status
-        
+
         **Business Impact:** Application functionality severely compromised
       impact: "Application unavailable - revenue impact"
       action: "Immediate investigation and service recovery required"
@@ -63,12 +63,12 @@ groups:
         Memory usage is critically high on {{ $labels.instance }}:
         - Current usage: {{ $value | humanizePercentage }}
         - Trend: {{ with query "rate(node_memory_MemAvailable_bytes{instance=\"" }}{{ . }}{{ end }}
-        
+
         **Auto-remediation enabled:**
         - Memory cleanup jobs triggered
         - Non-essential processes may be terminated
         - Cache clearing initiated
-        
+
         **Manual Actions:**
         1. Identify memory-intensive processes
         2. Check for memory leaks
@@ -105,7 +105,7 @@ groups:
         - Current usage: {{ $value | humanizePercentage }}
         - Business hours impact: {{ $labels.business_hours }}
         - Load average: {{ with query "node_load1{instance=\"" }}{{ . }}{{ end }}
-        
+
         **Actions:**
         1. Check for runaway processes
         2. Review recent deployments
@@ -146,7 +146,7 @@ groups:
         - Current usage: {{ $value | humanizePercentage }}
         - 10m trend: no improvement detected
         - Predicted exhaustion: {{ with query "predict_linear(node_memory_MemAvailable_bytes[30m], 3600)" }}{{ if lt . 0 }}< 1 hour{{ else }}> 1 hour{{ end }}{{ end }}
-        
+
         **Recommended Actions:**
         1. Monitor memory growth patterns
         2. Identify potential memory leaks
@@ -179,10 +179,10 @@ groups:
         - 95th percentile query time: {{ with query "histogram_quantile(0.95, rate(ai_pdf_scholar_db_query_duration_seconds_bucket[5m]))" }}{{ . }}{{ end }}s
         - Average query time: {{ with query "rate(ai_pdf_scholar_db_query_duration_seconds_sum[5m]) / rate(ai_pdf_scholar_db_query_duration_seconds_count[5m])" }}{{ . }}{{ end }}s
         - Query rate: {{ with query "rate(ai_pdf_scholar_db_query_duration_seconds_count[5m])" }}{{ . }}{{ end }}/sec
-        
+
         **Investigation Steps:**
         1. Check slow query log
-        2. Review query execution plans  
+        2. Review query execution plans
         3. Monitor database connections
         4. Check index usage
       impact: "User experience degradation"
@@ -212,7 +212,7 @@ groups:
         - 95th percentile response: {{ with query "histogram_quantile(0.95, rate(ai_pdf_scholar_http_request_duration_seconds_bucket[5m]))" }}{{ . }}{{ end }}s
         - Request rate: {{ with query "rate(ai_pdf_scholar_http_requests_total[5m])" }}{{ . }}{{ end }}/sec
         - Error rate: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=~\"5..\"}[5m]) / rate(ai_pdf_scholar_http_requests_total[5m]) * 100" }}{{ . }}{{ end }}%
-        
+
         **Correlation Analysis:**
         - Database health: {{ with query "ai_pdf_scholar_db_health" }}{{ if eq . 1.0 }}Healthy{{ else }}Degraded{{ end }}{{ end }}
         - Memory pressure: {{ with query "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100" }}{{ . }}{{ end }}%
@@ -252,11 +252,11 @@ groups:
         - Hit rate: {{ $value | humanizePercentage }}
         - Miss rate: {{ with query "rate(ai_pdf_scholar_cache_misses_total[10m]) / (rate(ai_pdf_scholar_cache_hits_total[10m]) + rate(ai_pdf_scholar_cache_misses_total[10m])) * 100" }}{{ . }}{{ end }}%
         - Request rate: {{ with query "rate(ai_pdf_scholar_cache_requests_total[5m])" }}{{ . }}{{ end }}/sec
-        
+
         **Auto-remediation:**
         - Cache warming process initiated
         - Popular queries being pre-cached
-        
+
         **Manual Actions:**
         1. Review cache key patterns
         2. Analyze eviction policies
@@ -291,12 +291,12 @@ groups:
         - Service status: Unavailable
         - Last successful check: {{ with query "time() - ai_pdf_scholar_rag_last_success" }}{{ . }}{{ end }} seconds ago
         - API key configured: {{ with query "ai_pdf_scholar_api_key_configured" }}{{ if eq . 1.0 }}Yes{{ else }}No{{ end }}{{ end }}
-        
+
         **Impact Analysis:**
         - Document querying disabled
         - Vector search unavailable
         - Core AI functionality impacted
-        
+
         **Dependencies to check:**
         1. Google Gemini API connectivity
         2. Vector index availability
@@ -329,12 +329,12 @@ groups:
         - Current error rate: {{ $value | humanizePercentage }}
         - Request rate: {{ with query "rate(ai_pdf_scholar_http_requests_total[5m])" }}{{ . }}{{ end }}/sec
         - 5xx errors/min: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=~\"5..\"}[5m]) * 60" }}{{ . }}{{ end }}
-        
+
         **Error Breakdown:**
         - 500 errors: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=\"500\"}[5m]) * 60" }}{{ . }}{{ end }}/min
         - 502 errors: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=\"502\"}[5m]) * 60" }}{{ . }}{{ end }}/min
         - 503 errors: {{ with query "rate(ai_pdf_scholar_http_requests_total{status=\"503\"}[5m]) * 60" }}{{ . }}{{ end }}/min
-        
+
         **Investigation Priority:**
         1. Check application logs for error patterns
         2. Verify upstream service health
@@ -379,12 +379,12 @@ groups:
         - Total space: {{ with query "node_filesystem_size_bytes{mountpoint=\"/\"}" }}{{ . | humanizeBytes }}{{ end }}
         - Usage trend: {{ with query "rate(node_filesystem_avail_bytes{mountpoint=\"/\"}[1h])" }}{{ if lt . 0 }}Decreasing{{ else }}Stable{{ end }}{{ end }}
         - Predicted exhaustion: {{ with query "predict_linear(node_filesystem_avail_bytes{mountpoint=\"/\"}[2h], 24*3600)" }}{{ if lt . 0 }}< 24 hours{{ else }}> 24 hours{{ end }}{{ end }}
-        
+
         **Auto-remediation initiated:**
         - Log rotation triggered
         - Temporary file cleanup started
         - Cache optimization enabled
-        
+
         **Manual Actions:**
         1. Identify large files/directories
         2. Archive old logs and data
@@ -414,7 +414,7 @@ groups:
       description: |
         System is currently in maintenance mode.
         All non-critical alerts are suppressed.
-        
+
         Maintenance started: {{ with query "ai_pdf_scholar_maintenance_start_time" }}{{ . | humanizeTimestamp }}{{ end }}
         Expected duration: {{ with query "ai_pdf_scholar_maintenance_duration" }}{{ . }} minutes{{ end }}
 
@@ -431,7 +431,7 @@ groups:
       description: |
         Application deployment is in progress.
         Performance and cache-related alerts are temporarily suppressed.
-        
+
         **Suppressed alert types:** performance, cache
         **Suppression duration:** 10 minutes post-deployment
         **Deployment version:** {{ with query "ai_pdf_scholar_version_info" }}{{ .version }}{{ end }}
@@ -477,11 +477,11 @@ escalation_policies:
       post_deployment: true
 
 # ============================================================================
-# Alert Routing and Notification Configuration  
+# Alert Routing and Notification Configuration
 # ============================================================================
 notification_config:
   default_receiver: "team-alerts"
-  
+
   receivers:
     - name: "critical-alerts"
       integrations:

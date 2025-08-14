@@ -7,22 +7,22 @@ def check_embeddings():
     """Check available embedding classes"""
     try:
         import llama_index.embeddings.google_genai as google_genai
-        
+
         print("=== Google GenAI Embeddings Module ===")
         print("Available attributes:")
         for attr in dir(google_genai):
             if not attr.startswith('_'):
                 print(f"  - {attr}")
-                
+
         # Try common names
         common_names = [
             'GoogleGenerativeAIEmbedding',
-            'GoogleEmbedding', 
+            'GoogleEmbedding',
             'GenAIEmbedding',
             'GoogleGenAIEmbedding',
             'EmbeddingModel'
         ]
-        
+
         print("\nTesting common class names:")
         for name in common_names:
             try:
@@ -33,7 +33,7 @@ def check_embeddings():
                     print(f"  ❌ {name} - Not found")
             except Exception as e:
                 print(f"  ❌ {name} - Error: {e}")
-                
+
     except Exception as e:
         print(f"Failed to import embeddings module: {e}")
 
@@ -41,13 +41,13 @@ def check_llms():
     """Check available LLM classes"""
     try:
         import llama_index.llms.google_genai as google_genai
-        
+
         print("\n=== Google GenAI LLMs Module ===")
         print("Available attributes:")
         for attr in dir(google_genai):
             if not attr.startswith('_'):
                 print(f"  - {attr}")
-                
+
         # Try common names
         common_names = [
             'GoogleGenerativeAI',
@@ -56,7 +56,7 @@ def check_llms():
             'GoogleGenAI',
             'Gemini'
         ]
-        
+
         print("\nTesting common class names:")
         for name in common_names:
             try:
@@ -67,7 +67,7 @@ def check_llms():
                     print(f"  ❌ {name} - Not found")
             except Exception as e:
                 print(f"  ❌ {name} - Error: {e}")
-                
+
     except Exception as e:
         print(f"Failed to import LLMs module: {e}")
 

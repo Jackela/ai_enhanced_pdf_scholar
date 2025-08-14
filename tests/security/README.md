@@ -182,7 +182,7 @@ The security testing suite generates multiple report formats:
 
 ### Risk Scoring
 - **Critical (0-40)**: Immediate action required
-- **High (41-60)**: Priority remediation needed  
+- **High (41-60)**: Priority remediation needed
 - **Medium (61-80)**: Planned remediation recommended
 - **Low (81-95)**: Minor issues, good posture
 - **Secure (96-100)**: Excellent security posture
@@ -229,7 +229,7 @@ The security testing suite generates multiple report formats:
 
 ### OWASP Top 10 2021
 - A01: Broken Access Control ✓
-- A02: Cryptographic Failures ✓  
+- A02: Cryptographic Failures ✓
 - A03: Injection ✓
 - A04: Insecure Design ✓
 - A05: Security Misconfiguration ✓
@@ -252,7 +252,7 @@ The security testing suite generates multiple report formats:
 class CustomSecurityTests(SecurityTestBase):
     async def test_custom_vulnerability(self) -> SecurityTestResult:
         result = SecurityTestResult("Custom_Test")
-        
+
         # Your custom test logic
         try:
             # Test implementation
@@ -263,7 +263,7 @@ class CustomSecurityTests(SecurityTestBase):
                 'type': 'Custom Vulnerability',
                 'description': 'Custom vulnerability found'
             })
-        
+
         result.finalize()
         return result
 ```
@@ -382,7 +382,7 @@ This security testing suite is part of the AI Enhanced PDF Scholar project and f
 
 For issues, questions, or contributions:
 1. Check existing GitHub issues
-2. Review documentation thoroughly  
+2. Review documentation thoroughly
 3. Create detailed issue reports
 4. Include reproduction steps and environment details
 5. Follow security disclosure guidelines for vulnerabilities

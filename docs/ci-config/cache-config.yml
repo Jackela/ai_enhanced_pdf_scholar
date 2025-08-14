@@ -135,12 +135,12 @@ usage_scenarios:
   cold_build:
     estimated_time: '12-15 minutes'
     cache_usage: '0%'
-    
+
   # Incremental build (partial cache)
   warm_build:
     estimated_time: '6-8 minutes'
     cache_usage: '40-60%'
-    
+
   # Hot build (full cache)
   hot_build:
     estimated_time: '3-5 minutes'

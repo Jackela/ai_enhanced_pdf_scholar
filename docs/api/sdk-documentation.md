@@ -23,7 +23,7 @@ The AI Enhanced PDF Scholar SDKs provide developer-friendly interfaces for integ
 ### Features Overview
 
 - **📄 Document Management**: Upload, organize, and manage PDF documents
-- **🧠 AI-Powered Queries**: RAG-based question answering system  
+- **🧠 AI-Powered Queries**: RAG-based question answering system
 - **📚 Citation Analysis**: Extract and analyze academic citations
 - **🔍 Advanced Search**: Semantic and hybrid search capabilities
 - **📊 Analytics**: Library statistics and usage insights
@@ -39,13 +39,13 @@ graph TD
     B --> D[WebSocket Client]
     B --> E[Error Handling]
     B --> F[Type Definitions]
-    
+
     C --> G[REST API]
     D --> H[WebSocket API]
-    
+
     G --> I[AI Enhanced PDF Scholar Backend]
     H --> I
-    
+
     I --> J[Document Processing]
     I --> K[RAG System]
     I --> L[Citation Engine]
@@ -193,7 +193,7 @@ client = PDFScholarClient(
 ```python
 class PDFScholarClient:
     """Main client for interacting with AI Enhanced PDF Scholar API"""
-    
+
     def __init__(
         self,
         base_url: str = "http://localhost:8000",
@@ -203,16 +203,16 @@ class PDFScholarClient:
     ):
         """Initialize the client with configuration"""
         pass
-    
+
     # System Management
     def health_check(self) -> HealthStatus:
         """Check system health and availability"""
         pass
-    
+
     def get_system_config(self) -> SystemConfig:
         """Get system configuration and feature availability"""
         pass
-    
+
     # Document Management
     def list_documents(
         self,
@@ -222,7 +222,7 @@ class PDFScholarClient:
     ) -> DocumentList:
         """List documents with pagination and filtering"""
         pass
-    
+
     def get_document(
         self,
         document_id: int,
@@ -231,7 +231,7 @@ class PDFScholarClient:
     ) -> Document:
         """Get detailed document information"""
         pass
-    
+
     def upload_document(
         self,
         file_path: Union[str, Path],
@@ -239,7 +239,7 @@ class PDFScholarClient:
     ) -> Document:
         """Upload a PDF document"""
         pass
-    
+
     def update_document(
         self,
         document_id: int,
@@ -248,7 +248,7 @@ class PDFScholarClient:
     ) -> Document:
         """Update document metadata"""
         pass
-    
+
     def delete_document(
         self,
         document_id: int,
@@ -256,7 +256,7 @@ class PDFScholarClient:
     ) -> bool:
         """Delete a document"""
         pass
-    
+
     # RAG Operations
     def rag_query(
         self,
@@ -266,7 +266,7 @@ class PDFScholarClient:
     ) -> RAGResponse:
         """Execute RAG query against a document"""
         pass
-    
+
     def multi_document_query(
         self,
         query: str,
@@ -275,7 +275,7 @@ class PDFScholarClient:
     ) -> MultiRAGResponse:
         """Query multiple documents simultaneously"""
         pass
-    
+
     def build_vector_index(
         self,
         document_id: int,
@@ -284,7 +284,7 @@ class PDFScholarClient:
     ) -> IndexBuildResult:
         """Build vector index for RAG queries"""
         pass
-    
+
     # Citation Management
     def extract_citations(
         self,
@@ -293,7 +293,7 @@ class PDFScholarClient:
     ) -> CitationExtractionResult:
         """Extract citations from document"""
         pass
-    
+
     def list_citations(
         self,
         document_id: int,
@@ -303,14 +303,14 @@ class PDFScholarClient:
     ) -> CitationList:
         """List citations for a document"""
         pass
-    
+
     def search_citations(
         self,
         filters: CitationSearchFilters
     ) -> CitationSearchResult:
         """Search citations across all documents"""
         pass
-    
+
     # Library Management
     def library_stats(
         self,
@@ -318,7 +318,7 @@ class PDFScholarClient:
     ) -> LibraryStats:
         """Get comprehensive library statistics"""
         pass
-    
+
     def search_library(
         self,
         query: str,
@@ -326,7 +326,7 @@ class PDFScholarClient:
     ) -> LibrarySearchResult:
         """Search across library documents"""
         pass
-    
+
     def cleanup_library(
         self,
         operations: CleanupOperations,
@@ -334,7 +334,7 @@ class PDFScholarClient:
     ) -> CleanupResult:
         """Perform library maintenance"""
         pass
-    
+
     # WebSocket Support
     def create_websocket_connection(
         self,
@@ -365,7 +365,7 @@ class Document:
     has_vector_index: bool
     citation_count: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None
-    
+
     def __post_init__(self):
         # Convert string dates to datetime objects
         if isinstance(self.created_at, str):
@@ -449,21 +449,21 @@ async def main():
             for i in range(5)
         ]
         documents = await asyncio.gather(*upload_tasks)
-        
+
         # Build indexes concurrently
         index_tasks = [
             client.build_vector_index(doc.id)
             for doc in documents
         ]
         await asyncio.gather(*index_tasks)
-        
+
         # Query all documents
         query_tasks = [
             client.rag_query("What is the main contribution?", doc.id)
             for doc in documents
         ]
         answers = await asyncio.gather(*query_tasks)
-        
+
         for i, answer in enumerate(answers):
             print(f"Document {i+1}: {answer.answer}")
 
@@ -506,14 +506,14 @@ with PDFScholarClient("http://localhost:8000") as client:
         "remove_orphaned_indexes": True,
         "clean_cache": True
     })
-    
+
     # WebSocket with automatic connection management
     with client.create_websocket_connection("client_123") as ws:
         ws.subscribe_to_events(["document.uploaded", "index.built"])
-        
+
         # Upload and process document
         doc = client.upload_document("paper.pdf", auto_build_index=True)
-        
+
         # Wait for index build notification
         event = ws.wait_for_event("index.built", timeout=30)
         print(f"Index built for document {event.data['document_id']}")
@@ -535,22 +535,22 @@ try:
 except DocumentNotFoundError as e:
     print(f"Document not found: {e.document_id}")
     print(f"Suggestion: {e.suggestion}")
-    
+
 except RAGServiceUnavailableError as e:
     print("RAG service is not available. Please configure API key.")
     print(f"Configuration help: {e.help_url}")
-    
+
 except RateLimitExceededError as e:
     print(f"Rate limit exceeded. Retry after {e.retry_after} seconds")
     import time
     time.sleep(e.retry_after)
     # Retry operation
-    
+
 except ValidationError as e:
     print("Validation errors:")
     for field, message in e.validation_errors.items():
         print(f"  {field}: {message}")
-        
+
 except APIError as e:
     print(f"API Error {e.status_code}: {e.message}")
     print(f"Error code: {e.error_code}")
@@ -562,7 +562,7 @@ except APIError as e:
 ### Installation & Setup
 
 ```typescript
-import { 
+import {
     PDFScholarClient,
     type Document,
     type RAGResponse,
@@ -593,76 +593,76 @@ interface PDFScholarClientOptions {
 
 class PDFScholarClient {
     constructor(options: PDFScholarClientOptions = {})
-    
+
     // System Management
     healthCheck(): Promise<HealthStatus>
     getSystemConfig(): Promise<SystemConfig>
-    
+
     // Document Management
     listDocuments(
         page?: number,
         perPage?: number,
         filters?: DocumentFilters
     ): Promise<DocumentList>
-    
+
     getDocument(
         documentId: number,
         options?: { includeContent?: boolean; includeMetadata?: boolean }
     ): Promise<Document>
-    
+
     uploadDocument(
         file: File | Blob,
         options?: UploadOptions
     ): Promise<Document>
-    
+
     updateDocument(
         documentId: number,
         updates: DocumentUpdates
     ): Promise<Document>
-    
+
     deleteDocument(
         documentId: number,
         deleteFile?: boolean
     ): Promise<boolean>
-    
+
     // RAG Operations
     ragQuery(
         query: string,
         documentId: number,
         options?: QueryOptions
     ): Promise<RAGResponse>
-    
+
     multiDocumentQuery(
         query: string,
         documentIds: number[],
         options?: QueryOptions
     ): Promise<MultiRAGResponse>
-    
+
     buildVectorIndex(
         documentId: number,
         options?: IndexOptions
     ): Promise<IndexBuildResult>
-    
+
     checkIndexStatus(documentId: number): Promise<IndexStatus>
-    
+
     // Citation Management
     extractCitations(
         documentId: number,
         options?: CitationOptions
     ): Promise<CitationExtractionResult>
-    
+
     listCitations(
         documentId: number,
         options?: PaginationOptions & CitationFilters
     ): Promise<CitationList>
-    
+
     searchCitations(filters: CitationSearchFilters): Promise<CitationSearchResult>
-    
+
     // Library Management
     getLibraryStats(includeTrends?: boolean): Promise<LibraryStats>
     searchLibrary(query: string, options?: LibrarySearchOptions): Promise<LibrarySearchResult>
     cleanupLibrary(operations: CleanupOperations, dryRun?: boolean): Promise<CleanupResult>
-    
+
     // WebSocket Support
     createWebSocketConnection(clientId: string): WebSocketManager
 }
@@ -759,9 +759,9 @@ const useDocuments = () => {
     const [documents, setDocuments] = useState<Document[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     const client = new PDFScholarClient();
-    
+
     useEffect(() => {
         const loadDocuments = async () => {
             try {
@@ -773,10 +773,10 @@ const useDocuments = () => {
                 setLoading(false);
             }
         };
-        
+
         loadDocuments();
     }, []);
-    
+
     const uploadDocument = async (file: File, options?: UploadOptions) => {
         try {
             const result = await client.uploadDocument(file, options);
@@ -787,7 +787,7 @@ const useDocuments = () => {
             throw err;
         }
     };
-    
+
     return { documents, loading, error, uploadDocument };
 };
 
@@ -795,11 +795,11 @@ const useDocuments = () => {
 const DocumentUpload: React.FC = () => {
     const { uploadDocument } = useDocuments();
     const [uploading, setUploading] = useState(false);
-    
+
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        
+
         setUploading(true);
         try {
             const document = await uploadDocument(file, {
@@ -813,12 +813,12 @@ const DocumentUpload: React.FC = () => {
             setUploading(false);
         }
     };
-    
+
     return (
         <div>
-            <input 
-                type="file" 
-                accept=".pdf" 
+            <input
+                type="file"
+                accept=".pdf"
                 onChange={handleFileUpload}
                 disabled={uploading}
             />
@@ -836,32 +836,32 @@ import { PDFScholarClient } from '@ai-pdf-scholar/sdk';
 class DocumentProcessor {
     private client: PDFScholarClient;
     private wsManager: WebSocketManager;
-    
+
     constructor() {
         this.client = new PDFScholarClient();
         this.wsManager = this.client.createWebSocketConnection('processor_1');
     }
-    
+
     async initialize() {
         // Set up event handlers
         this.wsManager.on('document.uploaded', (data) => {
             console.log('New document uploaded:', data.documentId);
             this.processNewDocument(data.documentId);
         });
-        
+
         this.wsManager.on('index.built', (data) => {
             console.log('Index built for document:', data.documentId);
             this.extractCitations(data.documentId);
         });
-        
+
         this.wsManager.on('citations.extracted', (data) => {
             console.log(`Extracted ${data.totalExtracted} citations`);
             this.analyzeDocument(data.documentId);
         });
-        
+
         // Connect to WebSocket
         await this.wsManager.connect();
-        
+
         // Subscribe to relevant events
         this.wsManager.subscribe([
             'document.uploaded',
@@ -869,7 +869,7 @@ class DocumentProcessor {
             'citations.extracted'
         ]);
     }
-    
+
     private async processNewDocument(documentId: number) {
         try {
             // Build vector index
@@ -877,26 +877,26 @@ class DocumentProcessor {
                 chunkStrategy: 'semantic',
                 chunkSize: 1000
             });
-            
+
             console.log(`Started index building for document ${documentId}`);
         } catch (error) {
             console.error('Failed to build index:', error);
         }
     }
-    
+
     private async extractCitations(documentId: number) {
         try {
             await this.client.extractCitations(documentId, {
                 confidenceThreshold: 0.8,
                 resolveDoi: true
             });
-            
+
             console.log(`Started citation extraction for document ${documentId}`);
         } catch (error) {
             console.error('Failed to extract citations:', error);
         }
     }
-    
+
     private async analyzeDocument(documentId: number) {
         try {
             // Perform analysis queries
@@ -905,16 +905,16 @@ class DocumentProcessor {
                 'What methodology was used?',
                 'What are the key findings?'
             ];
-            
+
             const results = await Promise.all(
-                queries.map(query => 
+                queries.map(query =>
                     this.client.ragQuery(query, documentId, {
                         maxSources: 3,
                         responseLength: 'brief'
                     })
                 )
             );
-            
+
             console.log('Analysis results:', results.map(r => r.data.answer));
         } catch (error) {
             console.error('Failed to analyze document:', error);
@@ -930,11 +930,11 @@ processor.initialize();
 #### Error Handling
 
 ```typescript
-import { 
+import {
     APIError,
     DocumentNotFoundError,
     RAGServiceUnavailableError,
-    RateLimitExceededError 
+    RateLimitExceededError
 } from '@ai-pdf-scholar/sdk';
 
 async function handleApiOperation<T>(
@@ -947,33 +947,33 @@ async function handleApiOperation<T>(
             console.error(`Document ${error.documentId} not found`);
             // Show user-friendly message
             showNotification('Document not found', 'error');
-            
+
         } else if (error instanceof RAGServiceUnavailableError) {
             console.error('RAG service unavailable:', error.message);
             // Redirect to configuration
             showNotification('Please configure AI service', 'warning');
-            
+
         } else if (error instanceof RateLimitExceededError) {
             console.error(`Rate limit exceeded, retry after ${error.retryAfter}s`);
             // Implement exponential backoff
             await sleep(error.retryAfter * 1000);
             return handleApiOperation(operation); // Retry
-            
+
         } else if (error instanceof APIError) {
             console.error(`API Error ${error.statusCode}:`, error.message);
             showNotification(`Error: ${error.message}`, 'error');
-            
+
         } else {
             console.error('Unexpected error:', error);
             showNotification('An unexpected error occurred', 'error');
         }
-        
+
         return null;
     }
 }
 
 // Usage
-const document = await handleApiOperation(() => 
+const document = await handleApiOperation(() =>
     client.getDocument(documentId)
 );
 
@@ -1008,78 +1008,78 @@ var client = new PdfScholarClient(new PdfScholarClientOptions
 public class PdfScholarClient : IDisposable
 {
     public PdfScholarClient(PdfScholarClientOptions options = null)
-    
+
     // System Management
     public async Task<HealthStatus> HealthCheckAsync()
     public async Task<SystemConfig> GetSystemConfigAsync()
-    
+
     // Document Management
     public async Task<DocumentList> ListDocumentsAsync(
-        int page = 1, 
-        int perPage = 50, 
+        int page = 1,
+        int perPage = 50,
         DocumentFilters filters = null)
-    
+
     public async Task<Document> GetDocumentAsync(
-        int documentId, 
-        bool includeContent = false, 
+        int documentId,
+        bool includeContent = false,
         bool includeMetadata = true)
-    
+
     public async Task<Document> UploadDocumentAsync(
-        Stream fileStream, 
-        string fileName, 
+        Stream fileStream,
+        string fileName,
         UploadOptions options = null)
-    
+
     public async Task<Document> UploadDocumentAsync(
-        string filePath, 
+        string filePath,
         UploadOptions options = null)
-    
+
     public async Task<Document> UpdateDocumentAsync(
-        int documentId, 
+        int documentId,
         DocumentUpdates updates)
-    
+
     public async Task<bool> DeleteDocumentAsync(
-        int documentId, 
+        int documentId,
         bool deleteFile = true)
-    
+
     // RAG Operations
     public async Task<RagResponse> RagQueryAsync(
-        string query, 
-        int documentId, 
+        string query,
+        int documentId,
         QueryOptions options = null)
-    
+
     public async Task<MultiRagResponse> MultiDocumentQueryAsync(
-        string query, 
-        int[] documentIds, 
+        string query,
+        int[] documentIds,
         QueryOptions options = null)
-    
+
     public async Task<IndexBuildResult> BuildVectorIndexAsync(
-        int documentId, 
+        int documentId,
         IndexOptions options = null)
-    
+
     public async Task<IndexStatus> CheckIndexStatusAsync(int documentId)
-    
+
     // Citation Management
     public async Task<CitationExtractionResult> ExtractCitationsAsync(
-        int documentId, 
+        int documentId,
         CitationOptions options = null)
-    
+
     public async Task<CitationList> ListCitationsAsync(
-        int documentId, 
-        int page = 1, 
-        int limit = 50, 
+        int documentId,
+        int page = 1,
+        int limit = 50,
         CitationFilters filters = null)
-    
+
     public async Task<CitationSearchResult> SearchCitationsAsync(
         CitationSearchFilters filters)
-    
+
     // Library Management
     public async Task<LibraryStats> GetLibraryStatsAsync(bool includeTrends = false)
     public async Task<LibrarySearchResult> SearchLibraryAsync(string query, LibrarySearchOptions options = null)
     public async Task<CleanupResult> CleanupLibraryAsync(CleanupOperations operations, bool dryRun = false)
-    
+
     // WebSocket Support
     public WebSocketManager CreateWebSocketConnection(string clientId)
-    
+
     public void Dispose()
 }
 ```
@@ -1170,13 +1170,13 @@ class Program
     static async Task Main(string[] args)
     {
         var client = new PdfScholarClient();
-        
+
         try
         {
             // Check system health
             var health = await client.HealthCheckAsync();
             Console.WriteLine($"System status: {health.Status}");
-            
+
             // Upload document
             var document = await client.UploadDocumentAsync(
                 "research_paper.pdf",
@@ -1187,12 +1187,12 @@ class Program
                     ExtractCitations = true,
                     Tags = new[] { "machine learning", "AI" }
                 });
-            
+
             Console.WriteLine($"Uploaded document ID: {document.Id}");
-            
+
             // Wait for index building
             await WaitForIndexAsync(client, document.Id);
-            
+
             // Query document
             var response = await client.RagQueryAsync(
                 "What is the main contribution of this paper?",
@@ -1202,10 +1202,10 @@ class Program
                     MaxSources = 5,
                     ResponseLength = "detailed"
                 });
-            
+
             Console.WriteLine($"Answer: {response.Answer}");
             Console.WriteLine($"Sources: {response.Sources.Length}");
-            
+
             // Extract and analyze citations
             var citations = await client.ExtractCitationsAsync(document.Id);
             Console.WriteLine($"Extracted {citations.TotalCitations} citations");
@@ -1227,7 +1227,7 @@ class Program
             client.Dispose();
         }
     }
-    
+
     static async Task WaitForIndexAsync(PdfScholarClient client, int documentId)
     {
         for (int i = 0; i < 30; i++) // Wait up to 30 seconds
@@ -1238,11 +1238,11 @@ class Program
                 Console.WriteLine("Vector index is ready");
                 return;
             }
-            
+
             Console.WriteLine($"Index status: {status.IndexStatus}");
             await Task.Delay(1000);
         }
-        
+
         throw new TimeoutException("Index building timed out");
     }
 }
@@ -1255,24 +1255,24 @@ class Program
 public async Task ProcessDocumentsAsync(string[] filePaths)
 {
     var client = new PdfScholarClient();
-    
+
     // Upload documents in parallel
-    var uploadTasks = filePaths.Select(path => 
+    var uploadTasks = filePaths.Select(path =>
         client.UploadDocumentAsync(path, new UploadOptions { AutoBuildIndex = true })
     );
     var documents = await Task.WhenAll(uploadTasks);
-    
+
     // Wait for all indexes to be built
     var indexTasks = documents.Select(doc => WaitForIndexAsync(client, doc.Id));
     await Task.WhenAll(indexTasks);
-    
+
     // Query all documents in parallel
     var query = "What are the key findings?";
-    var queryTasks = documents.Select(doc => 
+    var queryTasks = documents.Select(doc =>
         client.RagQueryAsync(query, doc.Id)
     );
     var responses = await Task.WhenAll(queryTasks);
-    
+
     // Process results
     for (int i = 0; i < documents.Length; i++)
     {
@@ -1323,12 +1323,12 @@ import java.util.concurrent.CompletableFuture;
 public class PdfScholarExample {
     public static void main(String[] args) {
         PdfScholarClient client = new PdfScholarClient();
-        
+
         try {
             // Check system health
             HealthStatus health = client.healthCheck().get();
             System.out.println("System status: " + health.getStatus());
-            
+
             // Upload document
             Document document = client.uploadDocument(
                 Paths.get("research_paper.pdf"),
@@ -1338,12 +1338,12 @@ public class PdfScholarExample {
                     .extractCitations(true)
                     .build()
             ).get();
-            
+
             System.out.println("Uploaded document ID: " + document.getId());
-            
+
             // Wait for index building
             waitForIndex(client, document.getId());
-            
+
             // Query document
             RagResponse response = client.ragQuery(
                 "What is the main contribution of this paper?",
@@ -1353,10 +1353,10 @@ public class PdfScholarExample {
                     .responseLength("detailed")
                     .build()
             ).get();
-            
+
             System.out.println("Answer: " + response.getAnswer());
             System.out.println("Sources: " + response.getSources().size());
-            
+
         } catch (DocumentNotFoundApiException e) {
             System.err.println("Document not found: " + e.getDocumentId());
         } catch (RagServiceUnavailableApiException e) {
@@ -1369,8 +1369,8 @@ public class PdfScholarExample {
             client.close();
         }
     }
-    
-    private static void waitForIndex(PdfScholarClient client, int documentId) 
+
+    private static void waitForIndex(PdfScholarClient client, int documentId)
             throws Exception {
         for (int i = 0; i < 30; i++) {
             IndexStatus status = client.checkIndexStatus(documentId).get();
@@ -1378,11 +1378,11 @@ public class PdfScholarExample {
                 System.out.println("Vector index is ready");
                 return;
             }
-            
+
             System.out.println("Index status: " + status.getIndexStatus());
             Thread.sleep(1000);
         }
-        
+
         throw new RuntimeException("Index building timed out");
     }
 }
@@ -1406,7 +1406,7 @@ import (
     "fmt"
     "log"
     "time"
-    
+
     "github.com/Jackela/ai-enhanced-pdf-scholar-go-sdk/client"
     "github.com/Jackela/ai-enhanced-pdf-scholar-go-sdk/models"
 )
@@ -1417,22 +1417,22 @@ func main() {
         BaseURL: "http://localhost:8000",
         Timeout: 30 * time.Second,
     }
-    
+
     c, err := client.New(cfg)
     if err != nil {
         log.Fatal(err)
     }
     defer c.Close()
-    
+
     ctx := context.Background()
-    
+
     // Check system health
     health, err := c.HealthCheck(ctx)
     if err != nil {
         log.Fatal(err)
     }
     fmt.Printf("System status: %s\n", health.Status)
-    
+
     // Upload document
     opts := &models.UploadOptions{
         Title:          "My Research Paper",
@@ -1440,30 +1440,30 @@ func main() {
         ExtractCitations: true,
         Tags:           []string{"machine learning", "AI"},
     }
-    
+
     document, err := c.UploadDocumentFromFile(ctx, "research_paper.pdf", opts)
     if err != nil {
         log.Fatal(err)
     }
     fmt.Printf("Uploaded document ID: %d\n", document.ID)
-    
+
     // Wait for index building
     if err := waitForIndex(ctx, c, document.ID); err != nil {
         log.Fatal(err)
     }
-    
+
     // Query document
     queryOpts := &models.QueryOptions{
         MaxSources:       5,
         ResponseLength:   "detailed",
         MinRelevanceScore: 0.7,
     }
-    
+
     response, err := c.RAGQuery(ctx, "What is the main contribution of this paper?", document.ID, queryOpts)
     if err != nil {
         log.Fatal(err)
     }
-    
+
     fmt.Printf("Answer: %s\n", response.Answer)
     fmt.Printf("Sources: %d\n", len(response.Sources))
 }
@@ -1474,16 +1474,16 @@ func waitForIndex(ctx context.Context, c *client.Client, documentID int) error {
         if err != nil {
             return err
         }
-        
+
         if status.IndexStatus == "ready" {
             fmt.Println("Vector index is ready")
             return nil
         }
-        
+
         fmt.Printf("Index status: %s\n", status.IndexStatus)
         time.Sleep(1 * time.Second)
     }
-    
+
     return fmt.Errorf("index building timed out")
 }
 ```
@@ -1607,36 +1607,36 @@ class RetryableClient:
     def __init__(self, client: PDFScholarClient, max_retries: int = 3):
         self.client = client
         self.max_retries = max_retries
-    
+
     async def execute_with_retry(self, operation, *args, **kwargs):
         last_exception = None
-        
+
         for attempt in range(self.max_retries + 1):
             try:
                 return await operation(*args, **kwargs)
-                
+
             except RateLimitExceededError as e:
                 if attempt == self.max_retries:
                     raise
-                
+
                 # Use server-provided retry-after or exponential backoff
                 wait_time = e.retry_after or (2 ** attempt + random.uniform(0, 1))
                 await asyncio.sleep(wait_time)
                 last_exception = e
-                
+
             except NetworkError as e:
                 if attempt == self.max_retries:
                     raise
-                
+
                 # Exponential backoff for network errors
                 wait_time = 2 ** attempt + random.uniform(0, 1)
                 await asyncio.sleep(wait_time)
                 last_exception = e
-                
+
             except Exception as e:
                 # Don't retry for non-retryable errors
                 raise
-        
+
         raise last_exception
 
 # Usage
@@ -1657,12 +1657,12 @@ class CircuitBreaker {
     private failures = 0;
     private lastFailureTime = 0;
     private state: 'closed' | 'open' | 'half-open' = 'closed';
-    
+
     constructor(
         private failureThreshold = 5,
         private recoveryTimeout = 60000
     ) {}
-    
+
     async execute<T>(operation: () => Promise<T>): Promise<T> {
         if (this.state === 'open') {
             if (Date.now() - this.lastFailureTime > this.recoveryTimeout) {
@@ -1671,7 +1671,7 @@ class CircuitBreaker {
                 throw new Error('Circuit breaker is open');
             }
         }
-        
+
         try {
             const result = await operation();
             this.onSuccess();
@@ -1681,16 +1681,16 @@ class CircuitBreaker {
             throw error;
         }
     }
-    
+
     private onSuccess() {
         this.failures = 0;
         this.state = 'closed';
     }
-    
+
     private onFailure() {
         this.failures++;
         this.lastFailureTime = Date.now();
-        
+
         if (this.failures >= this.failureThreshold) {
             this.state = 'open';
         }
@@ -1702,7 +1702,7 @@ const circuitBreaker = new CircuitBreaker(5, 60000);
 const client = new PDFScholarClient();
 
 try {
-    const document = await circuitBreaker.execute(() => 
+    const document = await circuitBreaker.execute(() =>
         client.getDocument(documentId)
     );
 } catch (error) {
@@ -1732,7 +1732,7 @@ async def stream_rag_query(client: PDFScholarClient, query: str, document_id: in
 // TypeScript streaming example
 async function streamRagQuery(client: PDFScholarClient, query: string, documentId: number) {
     const stream = client.ragQueryStream(query, documentId);
-    
+
     for await (const chunk of stream) {
         switch (chunk.type) {
             case 'progress':
@@ -1776,7 +1776,7 @@ index_results = await batch.build_indexes(
 # Batch queries
 queries = [
     "What is the main contribution?",
-    "What methodology was used?", 
+    "What methodology was used?",
     "What are the limitations?"
 ]
 
@@ -1798,29 +1798,29 @@ from ai_pdf_scholar.extensions import BaseExtension
 
 class CustomAnalysisExtension(BaseExtension):
     """Custom extension for domain-specific analysis"""
-    
+
     def __init__(self, client: PDFScholarClient):
         super().__init__(client)
         self.name = "custom_analysis"
-    
+
     async def analyze_research_trends(self, document_ids: List[int]) -> Dict[str, Any]:
         """Analyze research trends across multiple documents"""
-        
+
         # Extract key terms from all documents
         key_terms = []
         for doc_id in document_ids:
             citations = await self.client.list_citations(doc_id)
             for citation in citations.citations:
                 key_terms.extend(self.extract_key_terms(citation.title))
-        
+
         # Analyze trends
         trends = self.analyze_term_frequency(key_terms)
-        
+
         # Generate insights using RAG
         insights = []
         for trend in trends[:5]:  # Top 5 trends
             query = f"How has research in {trend.term} evolved over time?"
-            
+
             # Query multiple documents
             responses = []
             for doc_id in document_ids:
@@ -1829,26 +1829,26 @@ class CustomAnalysisExtension(BaseExtension):
                     responses.append(response)
                 except Exception:
                     continue
-            
+
             # Synthesize responses
             insight = self.synthesize_trend_insight(trend, responses)
             insights.append(insight)
-        
+
         return {
             "trends": trends,
             "insights": insights,
             "document_count": len(document_ids),
             "analysis_timestamp": datetime.now().isoformat()
         }
-    
+
     def extract_key_terms(self, title: str) -> List[str]:
         # Implement key term extraction logic
         pass
-    
+
     def analyze_term_frequency(self, terms: List[str]) -> List[Any]:
         # Implement frequency analysis
         pass
-    
+
     def synthesize_trend_insight(self, trend: Any, responses: List[RAGResponse]) -> str:
         # Implement insight synthesis
         pass
@@ -1869,7 +1869,7 @@ print(f"Found {len(trends['insights'])} research trends")
 ```python
 async def analyze_research_collection(pdf_directory: str) -> Dict[str, Any]:
     """Complete pipeline for analyzing a collection of research papers"""
-    
+
     client = PDFScholarClient()
     results = {
         "documents": [],
@@ -1878,12 +1878,12 @@ async def analyze_research_collection(pdf_directory: str) -> Dict[str, Any]:
         "network_analysis": {},
         "trends": {}
     }
-    
+
     try:
         # Step 1: Upload all PDFs
         pdf_files = list(Path(pdf_directory).glob("*.pdf"))
         print(f"Found {len(pdf_files)} PDF files")
-        
+
         upload_tasks = []
         for pdf_file in pdf_files:
             upload_tasks.append(
@@ -1896,24 +1896,24 @@ async def analyze_research_collection(pdf_directory: str) -> Dict[str, Any]:
                     )
                 )
             )
-        
+
         documents = await asyncio.gather(*upload_tasks, return_exceptions=True)
         successful_docs = [d for d in documents if not isinstance(d, Exception)]
         results["documents"] = successful_docs
-        
+
         print(f"Successfully uploaded {len(successful_docs)} documents")
-        
+
         # Step 2: Wait for processing to complete
         await wait_for_processing(client, [d.id for d in successful_docs])
-        
+
         # Step 3: Extract and analyze citations
         all_citations = []
         for doc in successful_docs:
             citations = await client.list_citations(doc.id)
             all_citations.extend(citations.citations)
-        
+
         results["citations"] = all_citations
-        
+
         # Step 4: Generate insights using RAG
         research_questions = [
             "What are the main research themes across these papers?",
@@ -1922,7 +1922,7 @@ async def analyze_research_collection(pdf_directory: str) -> Dict[str, Any]:
             "What future research directions are suggested?",
             "What are the main limitations mentioned?"
         ]
-        
+
         insights = {}
         for question in research_questions:
             # Query all documents with the same question
@@ -1937,22 +1937,22 @@ async def analyze_research_collection(pdf_directory: str) -> Dict[str, Any]:
                     })
                 except Exception as e:
                     print(f"Failed to query document {doc.id}: {e}")
-            
+
             insights[question] = responses
-        
+
         results["insights"] = insights
-        
+
         # Step 5: Citation network analysis
         if len(successful_docs) > 1:
             network_analysis = await analyze_citation_network(client, successful_docs)
             results["network_analysis"] = network_analysis
-        
+
         # Step 6: Trend analysis
         trends = analyze_publication_trends(all_citations)
         results["trends"] = trends
-        
+
         return results
-        
+
     except Exception as e:
         print(f"Analysis failed: {e}")
         raise
@@ -1963,10 +1963,10 @@ async def wait_for_processing(client: PDFScholarClient, document_ids: List[int])
     """Wait for all documents to be processed (indexed and citations extracted)"""
     max_wait = 300  # 5 minutes
     start_time = time.time()
-    
+
     while time.time() - start_time < max_wait:
         all_ready = True
-        
+
         for doc_id in document_ids:
             try:
                 # Check index status
@@ -1974,33 +1974,33 @@ async def wait_for_processing(client: PDFScholarClient, document_ids: List[int])
                 if index_status.index_status != "ready":
                     all_ready = False
                     break
-                
+
                 # Check if citations are extracted
                 citations = await client.list_citations(doc_id, limit=1)
                 # If no citations but document has content, might still be processing
-                
+
             except Exception as e:
                 print(f"Error checking status for document {doc_id}: {e}")
                 all_ready = False
                 break
-        
+
         if all_ready:
             print("All documents processed successfully")
             return
-        
+
         print("Waiting for document processing...")
         await asyncio.sleep(10)
-    
+
     print("Warning: Some documents may not be fully processed")
 
 def analyze_publication_trends(citations: List[Citation]) -> Dict[str, Any]:
     """Analyze publication trends from citations"""
     from collections import Counter
-    
+
     # Year distribution
     years = [c.year for c in citations if c.year]
     year_distribution = Counter(years)
-    
+
     # Author analysis
     authors = []
     for c in citations:
@@ -2008,13 +2008,13 @@ def analyze_publication_trends(citations: List[Citation]) -> Dict[str, Any]:
             # Simple author extraction (could be improved)
             author_list = c.authors.split(';')
             authors.extend([a.strip() for a in author_list])
-    
+
     author_distribution = Counter(authors)
-    
+
     # Journal analysis
     journals = [c.journal for c in citations if c.journal]
     journal_distribution = Counter(journals)
-    
+
     return {
         "total_citations": len(citations),
         "year_range": {
@@ -2039,38 +2039,38 @@ class DocumentMonitor {
     private client: PDFScholarClient;
     private wsManager: WebSocketManager;
     private eventHandlers: Map<string, Function[]> = new Map();
-    
+
     constructor(baseUrl: string = 'http://localhost:8000') {
         this.client = new PDFScholarClient({ baseUrl });
         this.wsManager = this.client.createWebSocketConnection('monitor_' + Date.now());
     }
-    
+
     async initialize(): Promise<void> {
         // Set up WebSocket event handlers
         this.wsManager.on('document.uploaded', (data) => this.handleDocumentUploaded(data));
         this.wsManager.on('index.built', (data) => this.handleIndexBuilt(data));
         this.wsManager.on('citations.extracted', (data) => this.handleCitationsExtracted(data));
         this.wsManager.on('error', (data) => this.handleError(data));
-        
+
         // Connect and subscribe
         await this.wsManager.connect();
         this.wsManager.subscribe([
             'document.uploaded',
-            'index.built', 
+            'index.built',
             'citations.extracted',
             'document.deleted'
         ]);
-        
+
         console.log('Document monitor initialized');
     }
-    
+
     on(event: string, handler: Function): void {
         if (!this.eventHandlers.has(event)) {
             this.eventHandlers.set(event, []);
         }
         this.eventHandlers.get(event)!.push(handler);
     }
-    
+
     private emit(event: string, data: any): void {
         const handlers = this.eventHandlers.get(event) || [];
         handlers.forEach(handler => {
@@ -2081,58 +2081,58 @@ class DocumentMonitor {
             }
         });
     }
-    
+
     private async handleDocumentUploaded(data: any): Promise<void> {
         console.log(`New document uploaded: ${data.documentId}`);
-        
+
         try {
             const document = await this.client.getDocument(data.documentId);
-            
+
             // Emit custom event
             this.emit('document_ready', {
                 document,
                 uploadedAt: new Date(data.timestamp)
             });
-            
+
             // Auto-start processing if configured
             if (this.shouldAutoProcess(document)) {
                 await this.startDocumentProcessing(document.id);
             }
-            
+
         } catch (error) {
             console.error('Failed to handle document upload:', error);
         }
     }
-    
+
     private async handleIndexBuilt(data: any): Promise<void> {
         console.log(`Index built for document: ${data.documentId}`);
-        
+
         try {
             const document = await this.client.getDocument(data.documentId);
-            
+
             this.emit('document_indexed', {
                 document,
                 indexedAt: new Date(data.timestamp),
                 chunksCount: data.chunksCount
             });
-            
+
             // Start citation extraction if enabled
             if (this.shouldExtractCitations(document)) {
                 await this.client.extractCitations(document.id);
             }
-            
+
         } catch (error) {
             console.error('Failed to handle index build:', error);
         }
     }
-    
+
     private async handleCitationsExtracted(data: any): Promise<void> {
         console.log(`Citations extracted for document: ${data.documentId} (${data.totalExtracted} citations)`);
-        
+
         try {
             const document = await this.client.getDocument(data.documentId);
             const citations = await this.client.listCitations(data.documentId, 1, 100);
-            
+
             this.emit('citations_ready', {
                 document,
                 citations: citations.data.citations,
@@ -2140,89 +2140,89 @@ class DocumentMonitor {
                 totalExtracted: data.totalExtracted,
                 highConfidenceCount: data.highConfidenceCount
             });
-            
+
             // Perform automatic analysis
             await this.performAutomaticAnalysis(document.id);
-            
+
         } catch (error) {
             console.error('Failed to handle citation extraction:', error);
         }
     }
-    
+
     private handleError(data: any): void {
         console.error('WebSocket error:', data);
         this.emit('error', data);
     }
-    
+
     private shouldAutoProcess(document: Document): boolean {
         // Custom logic to determine if document should be auto-processed
         return document.pageCount < 100; // Only auto-process smaller documents
     }
-    
+
     private shouldExtractCitations(document: Document): boolean {
         // Custom logic for citation extraction
         return document.metadata?.type === 'research_paper';
     }
-    
+
     private async startDocumentProcessing(documentId: number): Promise<void> {
         try {
             console.log(`Starting processing for document: ${documentId}`);
-            
+
             // Build vector index
             await this.client.buildVectorIndex(documentId, {
                 chunkStrategy: 'semantic',
                 chunkSize: 1000,
                 forceRebuild: false
             });
-            
+
             console.log(`Index building started for document: ${documentId}`);
-            
+
         } catch (error) {
             console.error(`Failed to start processing for document ${documentId}:`, error);
         }
     }
-    
+
     private async performAutomaticAnalysis(documentId: number): Promise<void> {
         try {
             console.log(`Performing automatic analysis for document: ${documentId}`);
-            
+
             // Run standard analysis queries
             const analysisQueries = [
                 'What is the main topic of this document?',
                 'What are the key contributions?',
                 'What methodology is used?'
             ];
-            
+
             const results = await Promise.allSettled(
-                analysisQueries.map(query => 
+                analysisQueries.map(query =>
                     this.client.ragQuery(query, documentId, {
                         maxSources: 3,
                         responseLength: 'brief'
                     })
                 )
             );
-            
+
             const analysis = analysisQueries.map((query, index) => ({
                 query,
-                result: results[index].status === 'fulfilled' ? 
-                    (results[index] as PromiseFulfilledResult<any>).value.data.answer : 
+                result: results[index].status === 'fulfilled' ?
+                    (results[index] as PromiseFulfilledResult<any>).value.data.answer :
                     null,
-                error: results[index].status === 'rejected' ? 
-                    (results[index] as PromiseRejectedResult).reason : 
+                error: results[index].status === 'rejected' ?
+                    (results[index] as PromiseRejectedResult).reason :
                     null
             }));
-            
+
             this.emit('analysis_complete', {
                 documentId,
                 analysis,
                 analyzedAt: new Date()
             });
-            
+
         } catch (error) {
             console.error(`Automatic analysis failed for document ${documentId}:`, error);
         }
     }
-    
+
     async close(): Promise<void> {
         await this.wsManager.close();
         console.log('Document monitor closed');
@@ -2332,9 +2332,9 @@ go test -cover ./...
 
 ---
 
-**SDK Version**: 2.1.0  
-**Last Updated**: 2025-08-09  
-**Compatibility**: AI Enhanced PDF Scholar API v2.x  
+**SDK Version**: 2.1.0
+**Last Updated**: 2025-08-09
+**Compatibility**: AI Enhanced PDF Scholar API v2.x
 **License**: MIT
 
 For more information, visit the [GitHub repository](https://github.com/Jackela/ai-enhanced-pdf-scholar) or check the [API documentation](http://localhost:8000/api/docs).

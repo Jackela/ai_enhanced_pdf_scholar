@@ -1,10 +1,10 @@
 {
   "dashboard": {
     "id": null,
-    "title": "AI PDF Scholar - Business Metrics", 
+    "title": "AI PDF Scholar - Business Metrics",
     "tags": ["ai-pdf-scholar", "business", "metrics"],
     "style": "dark",
-    "timezone": "browser", 
+    "timezone": "browser",
     "refresh": "1m",
     "schemaVersion": 16,
     "version": 1,
@@ -97,7 +97,7 @@
       {
         "id": 5,
         "title": "Average Document Size",
-        "type": "singlestat", 
+        "type": "singlestat",
         "gridPos": {"h": 6, "w": 4, "x": 12, "y": 8},
         "targets": [
           {
@@ -134,7 +134,7 @@
             "refId": "A"
           },
           {
-            "expr": "histogram_quantile(0.50, rate(rag_query_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))", 
+            "expr": "histogram_quantile(0.50, rate(rag_query_duration_seconds_bucket{job=\"ai-pdf-scholar-backend\"}[5m]))",
             "legendFormat": "Median duration",
             "refId": "B"
           },
@@ -164,7 +164,7 @@
           },
           {
             "expr": "increase(vector_index_size_total{job=\"ai-pdf-scholar-backend\"}[1h])",
-            "legendFormat": "Hourly Growth ({{index_type}})", 
+            "legendFormat": "Hourly Growth ({{index_type}})",
             "refId": "B"
           }
         ]

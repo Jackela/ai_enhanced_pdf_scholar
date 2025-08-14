@@ -47,7 +47,7 @@
       },
       "system_reliability": {
         "score": 100.0,
-        "classification": "EXCELLENT", 
+        "classification": "EXCELLENT",
         "key_metrics": {
           "uptime_prediction": 99.9,
           "recovery_time_ms": 21.15,
@@ -88,7 +88,7 @@
     "scaling_thresholds": {
       "scale_up_triggers": [
         "CPU utilization > 70% for 5 minutes",
-        "Memory utilization > 85% for 10 minutes", 
+        "Memory utilization > 85% for 10 minutes",
         "Response time > 100ms for 95th percentile",
         "Error rate > 1% for 5 minutes"
       ],
@@ -110,7 +110,7 @@
       "priority": 1
     },
     {
-      "issue_id": "MEMORY_002", 
+      "issue_id": "MEMORY_002",
       "severity": "MEDIUM",
       "title": "High baseline memory usage",
       "description": "System baseline memory usage at 28GB (87.4% of 32GB system memory)",
@@ -177,7 +177,7 @@
       ]
     },
     {
-      "category": "Reliability", 
+      "category": "Reliability",
       "recommendations": [
         "Implement circuit breaker patterns",
         "Set up automated backup and recovery procedures",
@@ -191,7 +191,7 @@
     "confidence_level": "HIGH",
     "conditions": [
       "Implement recommended monitoring and alerting",
-      "Address identified memory usage issues", 
+      "Address identified memory usage issues",
       "Set up proper backup and recovery procedures",
       "Establish performance baseline tracking"
     ],

@@ -48,7 +48,7 @@ def _build_index_with_recovery(
 # Tuple typing for multi-return functions
 def _calculate_file_hashes(self, file_path: str) -> Tuple[str, str]:
 
-# Complex nested generic types  
+# Complex nested generic types
 def find_duplicate_documents(self) -> List[Tuple[str, List[DocumentModel]]]:
 
 # Dictionary typing with proper structure
@@ -162,7 +162,7 @@ from __future__ import annotations
 # Modern syntax (preferred)
 def method(param: str | None = None) -> Dict[str, Any] | None:
 
-# Legacy syntax (for compatibility)  
+# Legacy syntax (for compatibility)
 def method(param: Optional[str] = None) -> Optional[Dict[str, Any]]:
 ```
 
@@ -175,7 +175,7 @@ Tuple[str, str]
 
 # Not just bare types
 list  # ❌ Missing type parameters
-dict  # ❌ Missing type parameters  
+dict  # ❌ Missing type parameters
 ```
 
 ### 4. TYPE_CHECKING Import Pattern
@@ -184,7 +184,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from some_optional_library import ExpensiveClass
-    
+
 # Use ExpensiveClass in type hints without runtime import cost
 ```
 

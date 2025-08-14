@@ -282,7 +282,7 @@ elasticsearch:
       xpack.monitoring.collection.enabled: true
   volumeClaimTemplate:
     accessModes: ["ReadWriteOnce"]
-    storageClassName: "fast-ssd" 
+    storageClassName: "fast-ssd"
     resources:
       requests:
         storage: 20Gi

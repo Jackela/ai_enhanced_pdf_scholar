@@ -21,7 +21,7 @@ class TestDocumentModel:
             file_hash="abc123",
             file_size=1024
         )
-        
+
         assert doc.title == "Test Document"
         assert doc.file_path == "/path/to/document.pdf"
         assert doc.file_hash == "abc123"
@@ -42,7 +42,7 @@ class TestDocumentModel:
             created_at=now,
             last_accessed=now
         )
-        
+
         assert doc.id == 1
         assert doc.title == "Complete Document"
         assert doc.file_size == 1024
@@ -59,7 +59,7 @@ class TestDocumentModel:
             file_path="/path/to/document.pdf",
             file_hash="test123", file_size=500
         )
-        
+
         # Check that optional fields have expected defaults
         assert doc.file_size is None or doc.file_size == 0
         assert doc.page_count is None or doc.page_count == 0
@@ -71,7 +71,7 @@ class TestDocumentModel:
             file_path="/path/to/document.pdf",
             file_hash="test123", file_size=500
         )
-        
+
         str_repr = str(doc)
         assert "Test Document" in str_repr or "DocumentModel" in str_repr
 
@@ -82,7 +82,7 @@ class TestDocumentModel:
             file_path="/path/to/unicode.pdf",
             content="Unicode content: 测试内容 with émojis 🚀"
         )
-        
+
         assert "测试内容" in doc.file_hash
         assert "🚀" in doc.file_hash
 
@@ -109,7 +109,7 @@ class TestDocumentModel:
             file_path="/path/to/doc.pdf",
             content="Content for serialization"
         )
-        
+
         # Test if model has dict conversion method
         try:
             doc_dict = doc.to_dict()
@@ -131,7 +131,7 @@ class TestCitationModel:
             title="Test Citation",
             authors="Test Author"
         )
-        
+
         assert citation.document_id == 1
         assert citation.raw_text == "Smith, J. (2023). Test Article. Journal of Testing, 10(1), 1-10."
         assert citation.title == "Test Citation"
@@ -153,7 +153,7 @@ class TestCitationModel:
             confidence_score=0.95,
             created_at=datetime.now()
         )
-        
+
         assert citation.citation_id == 1
         assert citation.year == 2023
         assert citation.journal == "Test Journal"
@@ -168,7 +168,7 @@ class TestCitationModel:
             authors="Smith, J.; Johnson, A.; Williams, B.",
             citation_type="article"
         )
-        
+
         assert "Smith, J." in citation.authors
         assert "Johnson, A." in citation.authors
         assert "Williams, B." in citation.authors
@@ -176,7 +176,7 @@ class TestCitationModel:
     def test_citation_model_different_types(self):
         """Test citation model with different citation types."""
         types = ["article", "book", "inproceedings", "techreport", "misc"]
-        
+
         for citation_type in types:
             citation = CitationModel(
                 document_id=1,
@@ -232,7 +232,7 @@ class TestCitationRelationModel:
             target_document_id=2,
             citation_context="This work builds upon [1]"
         )
-        
+
         assert relation.source_document_id == 1
         assert relation.target_document_id == 2
         assert relation.citation_context == "This work builds upon [1]"
@@ -248,7 +248,7 @@ class TestCitationRelationModel:
             confidence_score=0.9,
             created_at=datetime.now()
         )
-        
+
         assert relation.relation_id == 1
         assert relation.relation_type == "cites"
         assert relation.confidence_score == 0.9
@@ -257,7 +257,7 @@ class TestCitationRelationModel:
     def test_citation_relation_different_types(self):
         """Test citation relation with different relation types."""
         relation_types = ["cites", "cited_by", "related_to", "builds_on"]
-        
+
         for rel_type in relation_types:
             relation = CitationRelationModel(
                 source_document_id=1,
@@ -314,7 +314,7 @@ class TestModelInteractions:
             file_path="/path/to/source.pdf",
             content="Document with citations"
         )
-        
+
         # Create a citation for that document
         citation = CitationModel(
             document_id=doc.document_id,
@@ -322,7 +322,7 @@ class TestModelInteractions:
             authors="Referenced Author",
             citation_type="article"
         )
-        
+
         assert citation.document_id == doc.document_id
 
     def test_citation_relation_consistency(self):
@@ -334,28 +334,28 @@ class TestModelInteractions:
             file_path="/path/to/source.pdf",
             content="Source content"
         )
-        
+
         doc2 = DocumentModel(
             document_id=2,
-            title="Target Document", 
+            title="Target Document",
             file_path="/path/to/target.pdf",
             content="Target content"
         )
-        
+
         # Create relation between documents
         relation = CitationRelationModel(
             source_document_id=doc1.document_id,
             target_document_id=doc2.document_id,
             citation_context="Document 1 cites Document 2"
         )
-        
+
         assert relation.source_document_id == doc1.document_id
         assert relation.target_document_id == doc2.document_id
 
     def test_model_datetime_consistency(self):
         """Test that datetime fields are consistent across models."""
         now = datetime.now()
-        
+
         # Create models with same timestamp
         doc = DocumentModel(
             title="Timestamped Document",
@@ -363,7 +363,7 @@ class TestModelInteractions:
             content="Content",
             created_at=now
         )
-        
+
         citation = CitationModel(
             document_id=1,
             title="Timestamped Citation",
@@ -371,14 +371,14 @@ class TestModelInteractions:
             citation_type="article",
             created_at=now
         )
-        
+
         relation = CitationRelationModel(
             source_document_id=1,
             target_document_id=2,
             citation_context="Context",
             created_at=now
         )
-        
+
         # All should have the same creation time
         assert doc.created_at == now
         assert citation.created_at == now
@@ -397,7 +397,7 @@ class TestModelEdgeCases:
             content=""
         )
         assert doc.file_hash == ""
-        
+
         # Citation with empty journal
         citation = CitationModel(
             document_id=1,
@@ -417,7 +417,7 @@ class TestModelEdgeCases:
             file_size=None,
             page_count=None
         )
-        
+
         assert doc.file_size is None
         assert doc.page_count is None
 
@@ -428,6 +428,6 @@ class TestModelEdgeCases:
             file_path="/path/with spaces/and-symbols.pdf",
             content="Content with special chars: <>?{}[]|\\"
         )
-        
+
         assert "!@#$%^&*()" in doc.title
         assert "<>?{}[]|\\" in doc.file_hash

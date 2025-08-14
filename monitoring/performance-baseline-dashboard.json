@@ -55,13 +55,13 @@
             "legendFormat": "SELECT p95"
           },
           {
-            "expr": "db_query_insert_p95_milliseconds", 
+            "expr": "db_query_insert_p95_milliseconds",
             "refId": "B",
             "legendFormat": "INSERT p95"
           },
           {
             "expr": "db_query_complex_p95_milliseconds",
-            "refId": "C", 
+            "refId": "C",
             "legendFormat": "Complex p95"
           }
         ],
@@ -129,7 +129,7 @@
           },
           {
             "expr": "api_response_documents_avg_milliseconds",
-            "refId": "B", 
+            "refId": "B",
             "legendFormat": "Documents Endpoint"
           }
         ],
@@ -144,7 +144,7 @@
             },
             "mappings": [],
             "thresholds": {
-              "mode": "absolute", 
+              "mode": "absolute",
               "steps": [
                 {
                   "color": "green",
@@ -201,7 +201,7 @@
             "legendFormat": "Baseline"
           },
           {
-            "expr": "memory_usage_peak_megabytes", 
+            "expr": "memory_usage_peak_megabytes",
             "refId": "C",
             "legendFormat": "Peak"
           }
@@ -244,7 +244,7 @@
               "mode": "absolute",
               "steps": [
                 {
-                  "color": "green", 
+                  "color": "green",
                   "value": null
                 },
                 {
@@ -277,7 +277,7 @@
       },
       {
         "id": 4,
-        "title": "RAG Processing Performance", 
+        "title": "RAG Processing Performance",
         "type": "stat",
         "targets": [
           {
@@ -314,7 +314,7 @@
                   "value": null
                 },
                 {
-                  "color": "yellow", 
+                  "color": "yellow",
                   "value": 1
                 },
                 {
@@ -359,7 +359,7 @@
             "legendFormat": "DB Regression"
           },
           {
-            "expr": "performance_regression_api_percentage", 
+            "expr": "performance_regression_api_percentage",
             "refId": "B",
             "legendFormat": "API Regression"
           },
@@ -402,7 +402,7 @@
                   "value": 10
                 },
                 {
-                  "color": "red", 
+                  "color": "red",
                   "value": 20
                 }
               ]
@@ -444,7 +444,7 @@
           },
           {
             "expr": "system_memory_utilization_percentage",
-            "refId": "B", 
+            "refId": "B",
             "legendFormat": "Memory Usage"
           },
           {
@@ -460,7 +460,7 @@
             },
             "custom": {
               "axisLabel": "",
-              "axisPlacement": "auto", 
+              "axisPlacement": "auto",
               "barAlignment": 0,
               "drawStyle": "line",
               "fillOpacity": 10,

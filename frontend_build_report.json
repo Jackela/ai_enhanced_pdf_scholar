@@ -72,7 +72,7 @@
         "status": "WITHIN_LIMIT"
       },
       {
-        "route": "LibraryView", 
+        "route": "LibraryView",
         "size_kb": 9.46,
         "status": "WITHIN_LIMIT"
       },
@@ -168,7 +168,7 @@
     },
     {
       "category": "SECURITY",
-      "priority": "MEDIUM", 
+      "priority": "MEDIUM",
       "item": "Enable CSP meta tag injection in production builds"
     },
     {

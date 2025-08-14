@@ -6,7 +6,7 @@
 
 Before starting, ensure you have:
 - [ ] **Python 3.11+** installed
-- [ ] **8GB+ RAM** available  
+- [ ] **8GB+ RAM** available
 - [ ] **Internet connection** for AI features
 - [ ] **PDF document** ready to upload
 - [ ] **5 minutes** of focused time
@@ -229,7 +229,7 @@ curl -d '{"query":"What is this?","document_id":1}' localhost:8000/api/rag/query
 Once you're up and running:
 
 1. **📖 Read**: [Getting Started Guide](../user-guide/getting-started.md) for detailed features
-2. **🚀 Explore**: [Advanced Features](../user-guide/advanced-features.md) for power user capabilities  
+2. **🚀 Explore**: [Advanced Features](../user-guide/advanced-features.md) for power user capabilities
 3. **🔧 Develop**: [API Documentation](../api/complete-api-reference.md) for integrations
 4. **📊 Monitor**: Check the performance dashboard for system metrics
 

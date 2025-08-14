@@ -46,7 +46,7 @@
       {
         "id": 2,
         "title": "Response Time Distribution",
-        "type": "graph", 
+        "type": "graph",
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
         "targets": [
           {
@@ -139,7 +139,7 @@
           },
           {
             "expr": "rate(document_processing_errors_total{job=\"ai-pdf-scholar-backend\"}[5m])",
-            "legendFormat": "Error Rate", 
+            "legendFormat": "Error Rate",
             "refId": "B"
           }
         ]

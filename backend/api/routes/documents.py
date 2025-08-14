@@ -126,34 +126,34 @@ async def get_documents(
     try:
         # Use secure validated parameters
         logger.info(f"Getting documents with secure params: sort_by={params.sort_by}, sort_order={params.sort_order}")
-        
+
         # Get documents with secure parameters
         documents = controller.get_documents(
             search_query=params.search_query,
             limit=params.per_page * params.page,  # Simple pagination for now
             sort_by=params.sort_by,  # Enum inherits from str, so no .value needed
         )
-        
+
         # Apply additional filters
         if not params.show_missing:
             documents = [doc for doc in documents if doc.is_file_available()]
-            
+
         # Simple pagination
         start_idx = (params.page - 1) * params.per_page
         end_idx = start_idx + params.per_page
         paginated_docs = documents[start_idx:end_idx]
-        
+
         # Convert to response models
         doc_responses = []
         for doc in paginated_docs:
             doc_dict = doc.to_api_dict()
             doc_dict["is_file_available"] = doc.is_file_available()
             doc_responses.append(DocumentResponse(**doc_dict))
-            
+
         return DocumentListResponse(
-            documents=doc_responses, 
-            total=len(documents), 
-            page=params.page, 
+            documents=doc_responses,
+            total=len(documents),
+            page=params.page,
             per_page=params.per_page
         )
     except Exception as e:
@@ -204,7 +204,7 @@ async def upload_document(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content=SecurityValidationErrorResponse.from_security_error(e).dict()
             )
-        
+
         # Validate file type (additional check)
         filename = file.filename or ""
         if not filename.lower().endswith(".pdf"):
@@ -286,7 +286,7 @@ async def initiate_streaming_upload(
 ) -> StreamingUploadResponse:
     """
     Initiate a streaming upload session for large PDF files.
-    
+
     This endpoint starts a chunked upload process that allows:
     - Memory-efficient processing of large files
     - Real-time progress tracking via WebSocket
@@ -298,13 +298,13 @@ async def initiate_streaming_upload(
         max_size = config["max_file_size_mb"] * 1024 * 1024
         if request.file_size > max_size:
             raise ErrorTemplates.file_too_large(request.file_size, max_size)
-        
+
         # Initiate upload session
         session = await streaming_service.initiate_upload(request, websocket_manager)
-        
+
         # Join WebSocket room for progress updates
         await websocket_manager.join_upload_room(request.client_id, str(session.session_id))
-        
+
         # Create response
         response = StreamingUploadResponse(
             session_id=session.session_id,
@@ -314,14 +314,14 @@ async def initiate_streaming_upload(
             expires_at=session.created_at.replace(hour=23, minute=59, second=59),
             websocket_room=f"upload_{session.session_id}",
         )
-        
+
         logger.info(
             f"Streaming upload initiated: {session.session_id} "
             f"({request.filename}, {request.file_size} bytes, {session.total_chunks} chunks)"
         )
-        
+
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -346,7 +346,7 @@ async def upload_chunk(
 ) -> ChunkUploadResponse:
     """
     Upload an individual chunk of a streaming upload.
-    
+
     This endpoint handles:
     - Individual chunk validation and processing
     - Real-time progress updates
@@ -356,13 +356,13 @@ async def upload_chunk(
     try:
         # Read chunk data
         chunk_data = await file.read()
-        
+
         # Validate chunk during upload
         is_first_chunk = chunk_id == 0
         chunk_valid, errors, warnings = await validation_service.validate_chunk_during_upload(
             chunk_data, chunk_id, is_first_chunk
         )
-        
+
         if not chunk_valid:
             return ChunkUploadResponse(
                 success=False,
@@ -371,7 +371,7 @@ async def upload_chunk(
                 message=f"Chunk validation failed: {'; '.join(errors)}",
                 retry_after=5,
             )
-        
+
         # Send warnings if any
         if warnings and websocket_manager:
             for warning in warnings:
@@ -379,7 +379,7 @@ async def upload_chunk(
                     "",  # Will be determined from session
                     {"type": "warning", "message": warning}
                 )
-        
+
         # Process chunk
         success, message = await streaming_service.process_chunk(
             session_id=session_id,
@@ -390,7 +390,7 @@ async def upload_chunk(
             expected_checksum=checksum,
             websocket_manager=websocket_manager,
         )
-        
+
         if not success:
             return ChunkUploadResponse(
                 success=False,
@@ -399,7 +399,7 @@ async def upload_chunk(
                 message=message,
                 retry_after=5,
             )
-        
+
         # Get session to check completion status
         session = await streaming_service.get_session(session_id)
         if not session:
@@ -409,10 +409,10 @@ async def upload_chunk(
                 upload_complete=False,
                 message="Upload session not found",
             )
-        
+
         upload_complete = session.status == UploadStatus.COMPLETED
         next_chunk_id = None if upload_complete else chunk_id + 1
-        
+
         return ChunkUploadResponse(
             success=True,
             chunk_id=chunk_id,
@@ -420,7 +420,7 @@ async def upload_chunk(
             upload_complete=upload_complete,
             message="Chunk uploaded successfully" if not upload_complete else "Upload completed successfully",
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to upload chunk {chunk_id} for session {session_id}: {e}")
         return ChunkUploadResponse(
@@ -443,7 +443,7 @@ async def complete_streaming_upload(
 ) -> DocumentImportResponse:
     """
     Complete a streaming upload and import the document into the library.
-    
+
     This endpoint:
     - Validates the complete uploaded file
     - Processes PDF content with streaming approach
@@ -456,20 +456,20 @@ async def complete_streaming_upload(
         session = await streaming_service.get_session(session_id)
         if not session:
             raise ErrorTemplates.resource_not_found("upload session", str(session_id))
-        
+
         if session.status != UploadStatus.COMPLETED:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Upload not completed. Current status: {session.status.value}"
             )
-        
+
         # Validate uploaded file
         if not session.temp_file_path or not Path(session.temp_file_path).exists():
             raise SystemException(
                 message="Uploaded file not found",
                 error_type="file_system"
             )
-        
+
         # Send processing status
         await websocket_manager.send_upload_status(
             session.client_id,
@@ -477,66 +477,66 @@ async def complete_streaming_upload(
             "processing",
             "Starting document import..."
         )
-        
+
         try:
             # Import document using the controller
             # The temp file will be moved to permanent storage by the controller
             document_title = session.metadata.get("title") or Path(session.filename).stem
             check_duplicates = session.metadata.get("check_duplicates", True)
             auto_build_index = session.metadata.get("auto_build_index", False)
-            
+
             success = controller.import_document(
                 file_path=session.temp_file_path,
                 title=document_title,
                 check_duplicates=check_duplicates,
                 auto_build_index=auto_build_index,
             )
-            
+
             if not success:
                 raise SystemException(
                     message="Document import operation failed",
                     error_type="general"
                 )
-            
+
             # Clean up session and temporary files
             await streaming_service.cancel_upload(session_id, "Import completed")
             await resumption_service.delete_resumable_session(session_id)
-            
+
             # Get the imported document
             documents = controller.get_documents(limit=1, sort_by="created_at")
             if documents:
                 document = documents[0]
                 doc_dict = document.to_api_dict()
                 doc_dict["is_file_available"] = document.is_file_available()
-                
+
                 # Send completion notification
                 await websocket_manager.send_upload_completed(
                     session.client_id,
                     str(session_id),
                     doc_dict
                 )
-                
+
                 # Leave upload room
                 await websocket_manager.leave_upload_room(session.client_id, str(session_id))
-                
+
                 return DocumentImportResponse(document=DocumentResponse(**doc_dict))
-            
+
             raise SystemException(
                 message="Document imported but could not retrieve details",
                 error_type="database"
             )
-            
+
         except DuplicateDocumentError as e:
             # Clean up on duplicate error
             await streaming_service.cancel_upload(session_id, "Duplicate document")
             await resumption_service.delete_resumable_session(session_id)
             raise ErrorTemplates.duplicate_document(session.filename)
-            
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to complete streaming upload {session_id}: {e}")
-        
+
         # Send error notification
         if websocket_manager and session:
             await websocket_manager.send_upload_error(
@@ -544,7 +544,7 @@ async def complete_streaming_upload(
                 str(session_id),
                 f"Import failed: {str(e)}"
             )
-        
+
         raise SystemException(
             message="Failed to complete document import",
             error_type="general"
@@ -563,14 +563,14 @@ async def cancel_streaming_upload(
     try:
         # Get session for client ID
         session = await streaming_service.get_session(session_id)
-        
+
         # Cancel upload
         success = await streaming_service.cancel_upload(session_id, request.reason or "User cancelled")
-        
+
         if success:
             # Clean up resumption data
             await resumption_service.delete_resumable_session(session_id)
-            
+
             # Notify client
             if session and websocket_manager:
                 await websocket_manager.send_upload_status(
@@ -580,11 +580,11 @@ async def cancel_streaming_upload(
                     request.reason or "Upload cancelled"
                 )
                 await websocket_manager.leave_upload_room(session.client_id, str(session_id))
-            
+
             return BaseResponse(message=f"Upload {session_id} cancelled successfully")
         else:
             raise ErrorTemplates.resource_not_found("upload session", str(session_id))
-            
+
     except HTTPException:
         raise
     except Exception as e:
@@ -606,17 +606,17 @@ async def resume_streaming_upload(
     try:
         # Resume session
         session = await resumption_service.resume_upload_session(request)
-        
+
         if not session:
             raise ErrorTemplates.resource_not_found("resumable upload session", str(request.session_id))
-        
+
         # Re-register with streaming service
         streaming_service.active_sessions[session.session_id] = session
         streaming_service.session_locks[session.session_id] = asyncio.Lock()
-        
+
         # Join WebSocket room
         await websocket_manager.join_upload_room(request.client_id, str(session.session_id))
-        
+
         # Send resume notification
         await websocket_manager.send_upload_status(
             request.client_id,
@@ -624,7 +624,7 @@ async def resume_streaming_upload(
             "resumed",
             f"Upload resumed from chunk {session.uploaded_chunks}"
         )
-        
+
         response = StreamingUploadResponse(
             session_id=session.session_id,
             upload_url=f"/api/documents/streaming/chunk/{session.session_id}",
@@ -633,11 +633,11 @@ async def resume_streaming_upload(
             expires_at=session.created_at.replace(hour=23, minute=59, second=59),
             websocket_room=f"upload_{session.session_id}",
         )
-        
+
         logger.info(f"Streaming upload resumed: {session.session_id} from chunk {session.uploaded_chunks}")
-        
+
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:

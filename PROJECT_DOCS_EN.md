@@ -15,62 +15,62 @@ graph TD
     A --> D[frontend/]
     A --> E[tests/]
     A --> F[Config Files]
-    
+
     B --> B1[controllers/]
     B --> B2[services/]
     B --> B3[repositories/]
     B --> B4[database/]
     B --> B5[interfaces/]
     B --> B6[core/]
-    
+
     B1 --> B11[library_controller.py]
-    
+
     B2 --> B21[document_library_service.py]
     B2 --> B22[enhanced_rag_service.py]
     B2 --> B23[content_hash_service.py]
     B2 --> B24[rag_cache_service.py]
     B2 --> B25[vector_index_manager.py]
-    
+
     B3 --> B31[base_repository.py]
     B3 --> B32[document_repository.py]
     B3 --> B33[vector_repository.py]
-    
+
     B4 --> B41[connection.py]
     B4 --> B42[models.py]
     B4 --> B43[migrations.py]
-    
+
     B5 --> B51[repository_interfaces.py]
     B5 --> B52[service_interfaces.py]
-    
+
     B6 --> B61[state_manager.py]
-    
+
     C --> C1[api/]
     C1 --> C11[main.py]
     C1 --> C12[dependencies.py]
     C1 --> C13[models.py]
     C1 --> C14[websocket_manager.py]
     C1 --> C15[routes/]
-    
+
     C15 --> C151[documents.py]
     C15 --> C152[library.py]
     C15 --> C153[rag.py]
     C15 --> C154[system.py]
-    
+
     D --> D1[src/]
     D --> D2[package.json]
     D --> D3[vite.config.ts]
-    
+
     D1 --> D11[components/]
     D1 --> D12[contexts/]
     D1 --> D13[lib/]
-    
+
     E --> E1[conftest.py]
     E --> E2[test_database_models.py]
     E --> E3[test_database_connection.py]
     E --> E4[test_database_connection_optimized.py]
     E --> E5[test_content_hash_service.py]
     E --> E6[scripts/benchmark_tests.py]
-    
+
     F --> F1[web_main.py]
     F --> F2[config.py]
     F --> F3[requirements.txt]
@@ -175,7 +175,7 @@ The project includes a **comprehensive performance analysis framework** to valid
 ```ini
 [pytest]
 testpaths = tests
-addopts = 
+addopts =
     -v --tb=short --strict-markers
     --cov=src --cov-report=html:coverage_html
     --cov-report=term-missing --cov-report=xml:coverage.xml
@@ -225,7 +225,7 @@ timeout_method = thread
 ```python
 # Web API mode (only supported mode)
 controller = LibraryController(
-    db_connection=db, 
+    db_connection=db,
     enhanced_rag_service=rag
 )
 documents = controller.get_all_documents()

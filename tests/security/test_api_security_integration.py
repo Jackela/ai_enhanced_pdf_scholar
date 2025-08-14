@@ -16,19 +16,19 @@ from fastapi import FastAPI
 
 class TestAPISecurityIntegration:
     """Integration tests for API-level SQL injection prevention."""
-    
+
     @pytest.fixture
     def app(self):
         """Create test FastAPI app with document router."""
         test_app = FastAPI()
         test_app.include_router(router, prefix="/documents")
         return test_app
-    
+
     @pytest.fixture
     def client(self, app):
         """Create test client for API requests."""
         return TestClient(app)
-    
+
     @pytest.fixture
     def mock_controller(self):
         """Mock library controller dependency."""
@@ -44,11 +44,11 @@ class TestAPISecurityIntegration:
         response = client.get("/documents/", params={
             "search_query": "Machine Learning",
             "sort_by": "title",
-            "sort_order": "asc", 
+            "sort_order": "asc",
             "page": 1,
             "per_page": 10
         })
-        
+
         # Should succeed (even if mocked)
         # The fact that we don't get a validation error is the test
         assert response.status_code != 422  # Validation error status
@@ -61,13 +61,13 @@ class TestAPISecurityIntegration:
             "title' OR '1'='1",
             "invalid_field_with_injection"
         ]
-        
+
         for payload in injection_payloads:
             response = client.get("/documents/", params={
                 "sort_by": payload,
                 "sort_order": "asc"
             })
-            
+
             # Should return validation error
             assert response.status_code == 422
             error_detail = response.json()
@@ -78,17 +78,17 @@ class TestAPISecurityIntegration:
     def test_sql_injection_in_sort_order_rejected(self, client, mock_controller):
         """Test that SQL injection attempts in sort_order are rejected."""
         injection_payloads = [
-            "DESC; DROP TABLE documents; --", 
+            "DESC; DROP TABLE documents; --",
             "ASC UNION SELECT * FROM users",
             "invalid_order_injection"
         ]
-        
+
         for payload in injection_payloads:
             response = client.get("/documents/", params={
                 "sort_by": "title",
                 "sort_order": payload
             })
-            
+
             # Should return validation error
             assert response.status_code == 422
             error_detail = response.json()
@@ -105,15 +105,15 @@ class TestAPISecurityIntegration:
             "search/**/UNION/**/SELECT",
             "query -- malicious comment"
         ]
-        
+
         for query in dangerous_queries:
             response = client.get("/documents/", params={
                 "search_query": query,
                 "sort_by": "title",
                 "sort_order": "asc"
             })
-            
-            # Should return validation error  
+
+            # Should return validation error
             assert response.status_code == 422
             error_detail = response.json()
             assert "detail" in error_detail
@@ -130,10 +130,10 @@ class TestAPISecurityIntegration:
             {"page": 1, "per_page": 0},  # Per_page too low
             {"page": 1, "per_page": 201},  # Per_page too high
         ]
-        
+
         for invalid_params in invalid_params_list:
             response = client.get("/documents/", params=invalid_params)
-            
+
             # Should return validation error
             assert response.status_code == 422
             error_detail = response.json()
@@ -143,13 +143,13 @@ class TestAPISecurityIntegration:
         """Test that excessively long search queries are rejected."""
         # Create query longer than 500 characters
         long_query = "a" * 501
-        
+
         response = client.get("/documents/", params={
             "search_query": long_query,
             "sort_by": "title",
             "sort_order": "asc"
         })
-        
+
         # Should return validation error
         assert response.status_code == 422
         error_detail = response.json()
@@ -162,7 +162,7 @@ class TestAPISecurityIntegration:
             "sort_by": "TITLE",  # Wrong case
             "sort_order": "ASC"   # Wrong case
         })
-        
+
         # Should return validation error for invalid enum values
         assert response.status_code == 422
 
@@ -175,14 +175,14 @@ class TestAPISecurityIntegration:
             "Data Science - Introduction",
             "Algorithm #1: Sorting"
         ]
-        
+
         for query in safe_queries:
             response = client.get("/documents/", params={
                 "search_query": query,
                 "sort_by": "title",
                 "sort_order": "asc"
             })
-            
+
             # Should not return validation error for safe special chars
             assert response.status_code != 422
 
@@ -195,11 +195,11 @@ class TestAPISecurityIntegration:
             "page": 1,
             "per_page": 10
         })
-        
+
         # Verify controller was called with secure parameters
         mock_controller.get_documents.assert_called_once()
         call_args, call_kwargs = mock_controller.get_documents.call_args
-        
+
         # Should receive the enum value, not raw string
         assert call_kwargs['sort_by'] == 'title'
         assert call_kwargs['search_query'] == 'Machine Learning'
@@ -208,16 +208,16 @@ class TestAPISecurityIntegration:
         """Test that error responses don't leak sensitive information."""
         # Simulate internal error
         mock_controller.get_documents.side_effect = Exception("Internal database connection failed with credentials admin:password123")
-        
+
         response = client.get("/documents/", params={
             "sort_by": "title",
             "sort_order": "asc"
         })
-        
+
         # Should return 500 but not leak sensitive details
         assert response.status_code == 500
         error_detail = response.json()
-        
+
         # Should not contain sensitive information
         error_text = str(error_detail).lower()
         assert "password" not in error_text
@@ -232,10 +232,10 @@ class TestAPISecurityIntegration:
             "sort_by": sort_field,
             "sort_order": sort_order
         })
-        
+
         # Should not return validation error for any valid combination
         assert response.status_code != 422
-        
+
         # Verify controller receives the parameters
         if mock_controller.get_documents.called:
             call_kwargs = mock_controller.get_documents.call_args[1]

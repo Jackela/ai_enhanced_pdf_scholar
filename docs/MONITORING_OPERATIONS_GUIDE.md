@@ -10,18 +10,18 @@ This guide provides comprehensive instructions for operating the monitoring infr
 graph TB
     App[AI PDF Scholar Backend] -->|Metrics| Prometheus[Prometheus]
     App -->|Logs| Filebeat[Filebeat]
-    
+
     Filebeat -->|Logs| Logstash[Logstash]
     Logstash -->|Processed Logs| Elasticsearch[Elasticsearch]
-    
+
     Prometheus -->|Alerts| AlertManager[AlertManager]
     AlertManager -->|Notifications| Slack[Slack]
     AlertManager -->|Notifications| Email[Email]
     AlertManager -->|Notifications| PagerDuty[PagerDuty]
-    
+
     Prometheus -->|Data| Grafana[Grafana]
     Elasticsearch -->|Log Data| Kibana[Kibana]
-    
+
     Users[Operations Team] -->|Dashboards| Grafana
     Users -->|Log Analysis| Kibana
 ```
@@ -361,8 +361,8 @@ curl -s http://elasticsearch:9200/_cluster/health?pretty
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-01-19  
-**Next Review**: 2025-04-19  
-**Owner**: DevOps Team  
+**Document Version**: 1.0
+**Last Updated**: 2025-01-19
+**Next Review**: 2025-04-19
+**Owner**: DevOps Team
 **Approved By**: Engineering Manager

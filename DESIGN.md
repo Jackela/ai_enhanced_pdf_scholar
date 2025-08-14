@@ -49,7 +49,7 @@ The application is structured around the following decoupled modules:
 *   **Description:** Manages business logic for various domain areas.
 *   **Responsibilities:**
     *   Document library management
-    *   RAG query processing  
+    *   RAG query processing
     *   Citation extraction and analysis
     *   Content hashing and deduplication
     *   Vector index management
@@ -99,16 +99,16 @@ sequenceDiagram
 
     User->>+PDFViewer: 1. 拖动鼠标选择文本
     PDFViewer-->>-MainWindow: 2. emit text_selection_finished(data)
-    
+
     MainWindow->>+InquiryPopup: 3. 创建并显示弹窗
     User->>+InquiryPopup: 4. 输入问题并点击"Ask"
     InquiryPopup-->>-MainWindow: 5. emit annotation_requested(prompt)
-    
+
     MainWindow->>+LLMWorker: 6. 创建并启动Worker
     LLMWorker->>+LLMService: 7. query_llm(prompt)
     LLMService-->>-LLMWorker: 8. 返回AI响应
     LLMWorker-->>-MainWindow: 9. emit result_ready(response)
-    
+
     MainWindow->>+AnnotationManager: 10. add_annotation(data, response)
     AnnotationManager->>PDFViewer: 11. 在视图上创建并显示注释控件
 ```

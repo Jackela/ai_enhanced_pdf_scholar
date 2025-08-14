@@ -83,7 +83,7 @@ frontend_cache:
   - frontend/dist
   - frontend/node_modules
   - frontend/.vite
-  
+
 backend_cache:
   - ~/.cache/pip
   - ~/.local/lib/python*/site-packages
@@ -115,11 +115,11 @@ inputs:
     description: 'Caching strategy level'
     options: ['minimal', 'standard', 'aggressive', 'ultra']
     default: 'aggressive'
-    
+
   skip_unchanged_tests:
     description: 'Enable incremental test execution'
     default: true
-    
+
   test_parallelism:
     description: 'Test parallelism level (1-8)'
     options: ['1', '2', '4', '8']

@@ -28,7 +28,7 @@
         },
         {
           "id": "log-level-distribution",
-          "type": "visualization", 
+          "type": "visualization",
           "name": "panel_2"
         },
         {

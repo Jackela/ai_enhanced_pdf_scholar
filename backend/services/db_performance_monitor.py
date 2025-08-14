@@ -58,7 +58,7 @@ class PerformanceMetric:
     timestamp: datetime
     labels: Dict[str, str] = field(default_factory=dict)
     description: str = ""
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert metric to dictionary format."""
         return {
@@ -83,7 +83,7 @@ class PerformanceAlert:
     triggered_at: datetime
     resolved_at: Optional[datetime] = None
     acknowledged: bool = False
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert alert to dictionary format."""
         return {
@@ -111,7 +111,7 @@ class DatabaseHealthStatus:
     disk_health: float
     issues: List[str] = field(default_factory=list)
     recommendations: List[str] = field(default_factory=list)
-    
+
     @property
     def status(self) -> str:
         """Get overall status string."""
@@ -130,7 +130,7 @@ class DatabaseHealthStatus:
 class DatabasePerformanceMonitor:
     """
     Real-time Database Performance Monitor
-    
+
     Features:
     - Real-time performance metrics collection
     - Intelligent alerting with thresholds
@@ -141,7 +141,7 @@ class DatabasePerformanceMonitor:
     - Historical trend analysis
     - Integration with external monitoring systems
     """
-    
+
     # Default alert thresholds
     DEFAULT_THRESHOLDS = {
         'connection_pool_utilization': 80.0,  # %
@@ -156,7 +156,7 @@ class DatabasePerformanceMonitor:
         'lock_waits': 10.0,                   # per second
         'deadlocks': 0.1                      # per minute
     }
-    
+
     def __init__(
         self,
         db_connection: DatabaseConnection,
@@ -168,7 +168,7 @@ class DatabasePerformanceMonitor:
     ):
         """
         Initialize the Database Performance Monitor.
-        
+
         Args:
             db_connection: Database connection instance
             query_analyzer: Optional query performance analyzer
@@ -182,31 +182,31 @@ class DatabasePerformanceMonitor:
         self.cache_manager = cache_manager
         self.monitoring_interval_s = monitoring_interval_s
         self.enable_system_monitoring = enable_system_monitoring
-        
+
         # Alert configuration
         self.alert_thresholds = {**self.DEFAULT_THRESHOLDS, **(alert_thresholds or {})}
-        
+
         # Metrics storage
         self._metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))  # Keep last 1000 samples
         self._current_metrics: Dict[str, PerformanceMetric] = {}
         self._alerts: Dict[str, PerformanceAlert] = {}
-        
+
         # Thread safety
         self._metrics_lock = threading.RLock()
         self._alerts_lock = threading.RLock()
-        
+
         # Background monitoring
         self._monitor_thread: Optional[threading.Thread] = None
         self._alert_thread: Optional[threading.Thread] = None
         self._shutdown_event = threading.Event()
-        
+
         # Performance baselines (learned over time)
         self._baselines: Dict[str, Dict[str, float]] = {}
-        
+
         # Initialize monitoring infrastructure
         self._init_monitoring_tables()
         self._start_background_monitoring()
-    
+
     def _init_monitoring_tables(self) -> None:
         """Initialize monitoring tables in database."""
         try:
@@ -222,7 +222,7 @@ class DatabasePerformanceMonitor:
                     INDEX idx_metrics_name_timestamp (metric_name, timestamp)
                 )
             """)
-            
+
             # Performance alerts table
             self.db.execute("""
                 CREATE TABLE IF NOT EXISTS performance_alerts (
@@ -237,7 +237,7 @@ class DatabasePerformanceMonitor:
                     acknowledged BOOLEAN DEFAULT FALSE
                 )
             """)
-            
+
             # Monitoring configuration table
             self.db.execute("""
                 CREATE TABLE IF NOT EXISTS monitoring_config (
@@ -246,12 +246,12 @@ class DatabasePerformanceMonitor:
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
             logger.info("Database performance monitoring tables initialized")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize monitoring tables: {e}")
-    
+
     def _start_background_monitoring(self) -> None:
         """Start background monitoring threads."""
         # Main monitoring thread
@@ -261,7 +261,7 @@ class DatabasePerformanceMonitor:
             name="DBPerformanceMonitor"
         )
         self._monitor_thread.start()
-        
+
         # Alert processing thread
         self._alert_thread = threading.Thread(
             target=self._alert_worker,
@@ -269,9 +269,9 @@ class DatabasePerformanceMonitor:
             name="DBPerformanceAlerts"
         )
         self._alert_thread.start()
-        
+
         logger.info("Database performance monitoring started")
-    
+
     def _monitor_worker(self) -> None:
         """Main monitoring worker thread."""
         while not self._shutdown_event.wait(self.monitoring_interval_s):
@@ -279,16 +279,16 @@ class DatabasePerformanceMonitor:
                 self._collect_database_metrics()
                 self._collect_query_metrics()
                 self._collect_cache_metrics()
-                
+
                 if self.enable_system_monitoring:
                     self._collect_system_metrics()
-                
+
                 self._update_baselines()
                 self._persist_metrics()
-                
+
             except Exception as e:
                 logger.error(f"Monitoring error: {e}")
-    
+
     def _alert_worker(self) -> None:
         """Alert processing worker thread."""
         while not self._shutdown_event.wait(5):  # Check alerts every 5 seconds
@@ -297,15 +297,15 @@ class DatabasePerformanceMonitor:
                 self._resolve_alerts()
             except Exception as e:
                 logger.error(f"Alert processing error: {e}")
-    
+
     def _collect_database_metrics(self) -> None:
         """Collect database-specific metrics."""
         try:
             current_time = datetime.now()
-            
+
             # Connection pool metrics
             pool_stats = self.db.get_pool_stats()
-            
+
             metrics = [
                 PerformanceMetric(
                     name="db_connection_pool_total",
@@ -336,11 +336,11 @@ class DatabasePerformanceMonitor:
                     description="Total connection errors"
                 )
             ]
-            
+
             # Database size and table metrics
             try:
                 db_info = self.db.get_database_info()
-                
+
                 metrics.append(PerformanceMetric(
                     name="db_size_bytes",
                     metric_type=MetricType.GAUGE,
@@ -348,7 +348,7 @@ class DatabasePerformanceMonitor:
                     timestamp=current_time,
                     description="Database size in bytes"
                 ))
-                
+
                 metrics.append(PerformanceMetric(
                     name="db_table_count",
                     metric_type=MetricType.GAUGE,
@@ -356,10 +356,10 @@ class DatabasePerformanceMonitor:
                     timestamp=current_time,
                     description="Number of database tables"
                 ))
-                
+
             except Exception as e:
                 logger.debug(f"Failed to collect database info: {e}")
-            
+
             # SQLite-specific metrics
             try:
                 pragma_stats = [
@@ -368,7 +368,7 @@ class DatabasePerformanceMonitor:
                     ("freelist_count", "PRAGMA freelist_count"),
                     ("wal_checkpoint", "PRAGMA wal_checkpoint(PASSIVE)")
                 ]
-                
+
                 for stat_name, pragma_query in pragma_stats:
                     try:
                         result = self.db.fetch_one(pragma_query)
@@ -383,30 +383,30 @@ class DatabasePerformanceMonitor:
                             ))
                     except Exception:
                         pass  # Skip failed PRAGMA queries
-            
+
             except Exception as e:
                 logger.debug(f"Failed to collect SQLite metrics: {e}")
-            
+
             # Store metrics
             with self._metrics_lock:
                 for metric in metrics:
                     self._current_metrics[metric.name] = metric
                     self._metrics[metric.name].append(metric)
-            
+
         except Exception as e:
             logger.error(f"Failed to collect database metrics: {e}")
-    
+
     def _collect_query_metrics(self) -> None:
         """Collect query performance metrics."""
         if not self.query_analyzer:
             return
-        
+
         try:
             current_time = datetime.now()
-            
+
             # Get query performance summary
             perf_summary = self.query_analyzer.get_performance_summary(time_window_hours=1)
-            
+
             metrics = [
                 PerformanceMetric(
                     name="query_total_count",
@@ -444,12 +444,12 @@ class DatabasePerformanceMonitor:
                     description="Overall query performance score"
                 )
             ]
-            
+
             # Calculate slow query rate
             total_queries = perf_summary.get('total_queries', 0)
             slow_queries = perf_summary.get('slow_queries_count', 0)
             slow_query_rate = (slow_queries / max(total_queries, 1)) * 100
-            
+
             metrics.append(PerformanceMetric(
                 name="query_slow_rate",
                 metric_type=MetricType.GAUGE,
@@ -457,31 +457,31 @@ class DatabasePerformanceMonitor:
                 timestamp=current_time,
                 description="Slow query rate percentage"
             ))
-            
+
             # Store metrics
             with self._metrics_lock:
                 for metric in metrics:
                     self._current_metrics[metric.name] = metric
                     self._metrics[metric.name].append(metric)
-            
+
         except Exception as e:
             logger.error(f"Failed to collect query metrics: {e}")
-    
+
     def _collect_cache_metrics(self) -> None:
         """Collect cache performance metrics."""
         if not self.cache_manager:
             return
-        
+
         try:
             current_time = datetime.now()
-            
+
             # Get cache statistics
             cache_stats = self.cache_manager.get_statistics()
-            
+
             # Calculate cache hit rate
             total_requests = cache_stats.hit_count + cache_stats.miss_count
             hit_rate = (cache_stats.hit_count / max(total_requests, 1)) * 100
-            
+
             metrics = [
                 PerformanceMetric(
                     name="cache_hit_count",
@@ -526,31 +526,31 @@ class DatabasePerformanceMonitor:
                     description="Cache eviction count"
                 )
             ]
-            
+
             # Store metrics
             with self._metrics_lock:
                 for metric in metrics:
                     self._current_metrics[metric.name] = metric
                     self._metrics[metric.name].append(metric)
-            
+
         except Exception as e:
             logger.error(f"Failed to collect cache metrics: {e}")
-    
+
     def _collect_system_metrics(self) -> None:
         """Collect system resource metrics."""
         try:
             current_time = datetime.now()
-            
+
             # CPU metrics
             cpu_percent = psutil.cpu_percent(interval=0.1)
-            
+
             # Memory metrics
             memory = psutil.virtual_memory()
-            
+
             # Disk metrics
             disk_usage = psutil.disk_usage('/')
             disk_io = psutil.disk_io_counters()
-            
+
             metrics = [
                 PerformanceMetric(
                     name="system_cpu_usage",
@@ -588,7 +588,7 @@ class DatabasePerformanceMonitor:
                     description="Free disk space in GB"
                 )
             ]
-            
+
             # Disk I/O metrics
             if disk_io:
                 metrics.extend([
@@ -607,26 +607,26 @@ class DatabasePerformanceMonitor:
                         description="Disk write bytes"
                     )
                 ])
-            
+
             # Store metrics
             with self._metrics_lock:
                 for metric in metrics:
                     self._current_metrics[metric.name] = metric
                     self._metrics[metric.name].append(metric)
-            
+
         except Exception as e:
             logger.error(f"Failed to collect system metrics: {e}")
-    
+
     def _calculate_pool_utilization(self, pool_stats: Dict[str, Any]) -> float:
         """Calculate connection pool utilization percentage."""
         total = pool_stats.get('total_connections', 0)
         active = pool_stats.get('active_connections', 0)
-        
+
         if total == 0:
             return 0.0
-        
+
         return (active / total) * 100
-    
+
     def _update_baselines(self) -> None:
         """Update performance baselines for anomaly detection."""
         try:
@@ -634,7 +634,7 @@ class DatabasePerformanceMonitor:
                 for metric_name, metric_history in self._metrics.items():
                     if len(metric_history) >= 10:  # Need minimum samples
                         values = [m.value for m in metric_history if isinstance(m.value, (int, float))]
-                        
+
                         if values:
                             baseline = {
                                 'mean': statistics.mean(values),
@@ -645,36 +645,36 @@ class DatabasePerformanceMonitor:
                                 'p95': self._calculate_percentile(values, 0.95),
                                 'p99': self._calculate_percentile(values, 0.99)
                             }
-                            
+
                             self._baselines[metric_name] = baseline
-        
+
         except Exception as e:
             logger.debug(f"Failed to update baselines: {e}")
-    
+
     def _calculate_percentile(self, values: List[float], percentile: float) -> float:
         """Calculate percentile value."""
         if not values:
             return 0.0
-        
+
         sorted_values = sorted(values)
         index = int(percentile * len(sorted_values))
         return sorted_values[min(index, len(sorted_values) - 1)]
-    
+
     def _persist_metrics(self) -> None:
         """Persist metrics to database for historical analysis."""
         try:
             current_metrics = []
-            
+
             with self._metrics_lock:
                 # Only persist latest metric for each name
                 for metric in self._current_metrics.values():
                     current_metrics.append(metric)
-            
+
             # Batch insert metrics
             for metric in current_metrics:
                 try:
                     self.db.execute("""
-                        INSERT INTO performance_metrics 
+                        INSERT INTO performance_metrics
                         (metric_name, metric_type, metric_value, labels, timestamp)
                         VALUES (?, ?, ?, ?, ?)
                     """, (
@@ -686,72 +686,72 @@ class DatabasePerformanceMonitor:
                     ))
                 except Exception as e:
                     logger.debug(f"Failed to persist metric {metric.name}: {e}")
-            
+
         except Exception as e:
             logger.debug(f"Failed to persist metrics: {e}")
-    
+
     def _check_alert_conditions(self) -> None:
         """Check alert conditions and trigger alerts."""
         try:
             current_time = datetime.now()
-            
+
             with self._metrics_lock:
                 for metric_name, threshold in self.alert_thresholds.items():
                     if metric_name in self._current_metrics:
                         metric = self._current_metrics[metric_name]
-                        
+
                         if isinstance(metric.value, (int, float)):
                             # Check threshold violation
                             violated = self._check_threshold_violation(
                                 metric_name, metric.value, threshold
                             )
-                            
+
                             if violated:
                                 self._trigger_alert(metric, threshold)
-            
+
         except Exception as e:
             logger.error(f"Failed to check alert conditions: {e}")
-    
+
     def _check_threshold_violation(self, metric_name: str, value: float, threshold: float) -> bool:
         """Check if a metric value violates its threshold."""
         # Different threshold logic for different metrics
         if metric_name in ['cache_hit_rate']:
             # For cache hit rate, alert if BELOW threshold
             return value < threshold
-        elif metric_name in ['db_connection_pool_utilization', 'avg_query_response_time', 
+        elif metric_name in ['db_connection_pool_utilization', 'avg_query_response_time',
                            'slow_query_rate', 'cpu_usage', 'memory_usage', 'disk_usage']:
             # For these metrics, alert if ABOVE threshold
             return value > threshold
         elif metric_name in ['connection_errors', 'lock_waits', 'deadlocks']:
             # For error metrics, alert if above threshold
             return value > threshold
-        
+
         return False
-    
+
     def _trigger_alert(self, metric: PerformanceMetric, threshold: float) -> None:
         """Trigger a performance alert."""
         try:
             # Determine severity based on how much threshold is exceeded
             if isinstance(metric.value, (int, float)):
                 severity = self._calculate_alert_severity(metric.name, metric.value, threshold)
-                
+
                 alert_id = f"{metric.name}_{int(time.time())}"
-                
+
                 # Check if similar alert already exists
                 existing_alert = None
                 with self._alerts_lock:
                     for alert in self._alerts.values():
-                        if (alert.metric_name == metric.name and 
+                        if (alert.metric_name == metric.name and
                             alert.resolved_at is None and
                             (datetime.now() - alert.triggered_at).seconds < 300):  # Within 5 minutes
                             existing_alert = alert
                             break
-                
+
                 if existing_alert:
                     # Update existing alert
                     existing_alert.current_value = metric.value
                     return
-                
+
                 # Create new alert
                 alert = PerformanceAlert(
                     alert_id=alert_id,
@@ -762,18 +762,18 @@ class DatabasePerformanceMonitor:
                     current_value=metric.value,
                     triggered_at=datetime.now()
                 )
-                
+
                 with self._alerts_lock:
                     self._alerts[alert_id] = alert
-                
+
                 # Persist alert
                 self._persist_alert(alert)
-                
+
                 logger.warning(f"Performance alert triggered: {alert.message}")
-        
+
         except Exception as e:
             logger.error(f"Failed to trigger alert: {e}")
-    
+
     def _calculate_alert_severity(self, metric_name: str, value: float, threshold: float) -> AlertSeverity:
         """Calculate alert severity based on threshold violation degree."""
         if metric_name in ['cache_hit_rate']:
@@ -782,14 +782,14 @@ class DatabasePerformanceMonitor:
         else:
             # For other metrics (higher is worse)
             deviation = (value - threshold) / threshold
-        
+
         if deviation >= 0.5:  # 50% over threshold
             return AlertSeverity.CRITICAL
         elif deviation >= 0.25:  # 25% over threshold
             return AlertSeverity.WARNING
         else:
             return AlertSeverity.INFO
-    
+
     def _generate_alert_message(self, metric_name: str, value: float, threshold: float, severity: AlertSeverity) -> str:
         """Generate human-readable alert message."""
         messages = {
@@ -801,20 +801,20 @@ class DatabasePerformanceMonitor:
             'system_memory_usage': f"Memory usage is {value:.1f}% (threshold: {threshold:.1f}%)",
             'system_disk_usage': f"Disk usage is {value:.1f}% (threshold: {threshold:.1f}%)"
         }
-        
+
         base_message = messages.get(
-            metric_name, 
+            metric_name,
             f"Metric {metric_name} is {value} (threshold: {threshold})"
         )
-        
+
         return f"{severity.value.upper()}: {base_message}"
-    
+
     def _persist_alert(self, alert: PerformanceAlert) -> None:
         """Persist alert to database."""
         try:
             self.db.execute("""
-                INSERT INTO performance_alerts 
-                (alert_id, metric_name, severity, message, threshold_value, 
+                INSERT INTO performance_alerts
+                (alert_id, metric_name, severity, message, threshold_value,
                  current_value, triggered_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
@@ -826,69 +826,69 @@ class DatabasePerformanceMonitor:
                 alert.current_value,
                 alert.triggered_at.isoformat()
             ))
-            
+
         except Exception as e:
             logger.debug(f"Failed to persist alert: {e}")
-    
+
     def _resolve_alerts(self) -> None:
         """Check if active alerts should be resolved."""
         try:
             with self._alerts_lock:
                 alerts_to_resolve = []
-                
+
                 for alert in self._alerts.values():
                     if alert.resolved_at is not None:
                         continue
-                    
+
                     # Check if metric is back within threshold
                     if alert.metric_name in self._current_metrics:
                         current_metric = self._current_metrics[alert.metric_name]
-                        
+
                         if isinstance(current_metric.value, (int, float)):
                             violation = self._check_threshold_violation(
                                 alert.metric_name, current_metric.value, alert.threshold_value
                             )
-                            
+
                             if not violation:
                                 alerts_to_resolve.append(alert)
-                
+
                 # Resolve alerts
                 for alert in alerts_to_resolve:
                     alert.resolved_at = datetime.now()
-                    
+
                     # Update in database
                     try:
                         self.db.execute("""
-                            UPDATE performance_alerts 
+                            UPDATE performance_alerts
                             SET resolved_at = ?
                             WHERE alert_id = ?
                         """, (alert.resolved_at.isoformat(), alert.alert_id))
                     except Exception as e:
                         logger.debug(f"Failed to update resolved alert: {e}")
-                    
+
                     logger.info(f"Performance alert resolved: {alert.metric_name}")
-        
+
         except Exception as e:
             logger.error(f"Failed to resolve alerts: {e}")
-    
+
     def get_current_metrics(self) -> Dict[str, PerformanceMetric]:
         """Get current performance metrics."""
         with self._metrics_lock:
             return dict(self._current_metrics)
-    
+
     def get_metric_history(self, metric_name: str, hours: int = 24) -> List[PerformanceMetric]:
         """Get historical data for a specific metric."""
         with self._metrics_lock:
             if metric_name not in self._metrics:
                 return []
-            
+
             cutoff_time = datetime.now() - timedelta(hours=hours)
-            
+
             return [
                 metric for metric in self._metrics[metric_name]
                 if metric.timestamp >= cutoff_time
             ]
-    
+
     def get_active_alerts(self) -> List[PerformanceAlert]:
         """Get list of active (unresolved) alerts."""
         with self._alerts_lock:
@@ -896,14 +896,14 @@ class DatabasePerformanceMonitor:
                 alert for alert in self._alerts.values()
                 if alert.resolved_at is None
             ]
-    
+
     def get_database_health(self) -> DatabaseHealthStatus:
         """Calculate overall database health status."""
         try:
             health_scores = {}
             issues = []
             recommendations = []
-            
+
             with self._metrics_lock:
                 # Connection health
                 if 'db_connection_pool_utilization' in self._current_metrics:
@@ -913,7 +913,7 @@ class DatabasePerformanceMonitor:
                         if utilization > 80:
                             issues.append(f"High connection pool utilization: {utilization:.1f}%")
                             recommendations.append("Consider increasing connection pool size")
-                
+
                 # Query performance health
                 if 'query_performance_score' in self._current_metrics:
                     perf_score = self._current_metrics['query_performance_score'].value
@@ -922,26 +922,26 @@ class DatabasePerformanceMonitor:
                         if perf_score < 70:
                             issues.append(f"Poor query performance score: {perf_score:.1f}")
                             recommendations.append("Review slow queries and add indexes")
-                
+
                 # Resource utilization health
                 cpu_score = 100
                 memory_score = 100
                 disk_score = 100
-                
+
                 if 'system_cpu_usage' in self._current_metrics:
                     cpu_usage = self._current_metrics['system_cpu_usage'].value
                     if isinstance(cpu_usage, (int, float)):
                         cpu_score = max(0, 100 - cpu_usage)
                         if cpu_usage > 80:
                             issues.append(f"High CPU usage: {cpu_usage:.1f}%")
-                
+
                 if 'system_memory_usage' in self._current_metrics:
                     memory_usage = self._current_metrics['system_memory_usage'].value
                     if isinstance(memory_usage, (int, float)):
                         memory_score = max(0, 100 - memory_usage)
                         if memory_usage > 85:
                             issues.append(f"High memory usage: {memory_usage:.1f}%")
-                
+
                 if 'system_disk_usage' in self._current_metrics:
                     disk_usage = self._current_metrics['system_disk_usage'].value
                     if isinstance(disk_usage, (int, float)):
@@ -949,9 +949,9 @@ class DatabasePerformanceMonitor:
                         if disk_usage > 90:
                             issues.append(f"High disk usage: {disk_usage:.1f}%")
                             recommendations.append("Clean up old data or expand storage")
-                
+
                 health_scores['resource_utilization'] = (cpu_score + memory_score + disk_score) / 3
-                
+
                 # Cache efficiency health
                 if 'cache_hit_rate' in self._current_metrics:
                     cache_hit_rate = self._current_metrics['cache_hit_rate'].value
@@ -960,19 +960,19 @@ class DatabasePerformanceMonitor:
                         if cache_hit_rate < 70:
                             issues.append(f"Low cache hit rate: {cache_hit_rate:.1f}%")
                             recommendations.append("Review cache configuration and TTL settings")
-                
+
                 # Replication health (placeholder for future multi-master setup)
                 health_scores['replication'] = 100  # Assume healthy for now
-                
+
                 # Disk health
                 health_scores['disk'] = disk_score
-            
+
             # Calculate overall score
             if health_scores:
                 overall_score = sum(health_scores.values()) / len(health_scores)
             else:
                 overall_score = 50  # Default score if no metrics available
-            
+
             return DatabaseHealthStatus(
                 overall_score=overall_score,
                 connection_health=health_scores.get('connection', 100),
@@ -984,7 +984,7 @@ class DatabasePerformanceMonitor:
                 issues=issues,
                 recommendations=recommendations
             )
-        
+
         except Exception as e:
             logger.error(f"Failed to calculate database health: {e}")
             return DatabaseHealthStatus(
@@ -998,48 +998,48 @@ class DatabasePerformanceMonitor:
                 issues=[f"Health calculation failed: {e}"],
                 recommendations=["Check monitoring system health"]
             )
-    
+
     def acknowledge_alert(self, alert_id: str) -> bool:
         """Acknowledge an alert."""
         try:
             with self._alerts_lock:
                 if alert_id in self._alerts:
                     self._alerts[alert_id].acknowledged = True
-                    
+
                     # Update in database
                     self.db.execute("""
-                        UPDATE performance_alerts 
+                        UPDATE performance_alerts
                         SET acknowledged = TRUE
                         WHERE alert_id = ?
                     """, (alert_id,))
-                    
+
                     return True
-            
+
             return False
-            
+
         except Exception as e:
             logger.error(f"Failed to acknowledge alert {alert_id}: {e}")
             return False
-    
+
     def update_alert_threshold(self, metric_name: str, threshold: float) -> bool:
         """Update alert threshold for a metric."""
         try:
             self.alert_thresholds[metric_name] = threshold
-            
+
             # Store in database
             self.db.execute("""
-                INSERT OR REPLACE INTO monitoring_config 
+                INSERT OR REPLACE INTO monitoring_config
                 (config_key, config_value)
                 VALUES (?, ?)
             """, (f"threshold_{metric_name}", str(threshold)))
-            
+
             logger.info(f"Updated alert threshold for {metric_name}: {threshold}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to update threshold for {metric_name}: {e}")
             return False
-    
+
     def export_metrics(self, format: str = "json") -> str:
         """Export metrics in specified format."""
         try:
@@ -1048,33 +1048,33 @@ class DatabasePerformanceMonitor:
                     metric_name: [m.to_dict() for m in metric_history]
                     for metric_name, metric_history in self._metrics.items()
                 }
-            
+
             if format.lower() == "json":
                 return json.dumps(metrics_data, indent=2, default=str)
             else:
                 raise ValueError(f"Unsupported export format: {format}")
-        
+
         except Exception as e:
             logger.error(f"Failed to export metrics: {e}")
             return ""
-    
+
     def shutdown(self) -> None:
         """Shutdown the performance monitor and cleanup resources."""
         self._shutdown_event.set()
-        
+
         if self._monitor_thread:
             self._monitor_thread.join(timeout=5)
-        
+
         if self._alert_thread:
             self._alert_thread.join(timeout=5)
-        
+
         logger.info("Database performance monitor shutdown complete")
 
 
 def main():
     """CLI interface for the Database Performance Monitor."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Database Performance Monitor")
     parser.add_argument("--db-path", required=True, help="Database file path")
     parser.add_argument("--monitor", action="store_true", help="Start monitoring")
@@ -1083,25 +1083,25 @@ def main():
     parser.add_argument("--metrics", help="Show specific metric history")
     parser.add_argument("--export", help="Export metrics to file")
     parser.add_argument("--duration", type=int, default=60, help="Monitoring duration in seconds")
-    
+
     args = parser.parse_args()
-    
+
     try:
         # Initialize database connection
         db = DatabaseConnection(args.db_path)
-        
+
         # Initialize performance monitor
         monitor = DatabasePerformanceMonitor(
             db_connection=db,
             monitoring_interval_s=5,  # 5-second intervals for demo
             enable_system_monitoring=True
         )
-        
+
         if args.monitor:
             print(f"Starting database monitoring for {args.duration} seconds...")
             time.sleep(args.duration)
             print("Monitoring completed")
-        
+
         if args.health:
             health = monitor.get_database_health()
             print(f"Database Health Status:")
@@ -1110,17 +1110,17 @@ def main():
             print(f"Query Performance: {health.query_performance_health:.1f}")
             print(f"Resource Utilization: {health.resource_utilization_health:.1f}")
             print(f"Cache Efficiency: {health.cache_efficiency_health:.1f}")
-            
+
             if health.issues:
                 print(f"\nIssues:")
                 for issue in health.issues:
                     print(f"  - {issue}")
-            
+
             if health.recommendations:
                 print(f"\nRecommendations:")
                 for rec in health.recommendations:
                     print(f"  - {rec}")
-        
+
         if args.alerts:
             alerts = monitor.get_active_alerts()
             print(f"Active Alerts ({len(alerts)}):")
@@ -1129,25 +1129,25 @@ def main():
                 print(f"    Triggered: {alert.triggered_at}")
                 print(f"    Acknowledged: {alert.acknowledged}")
                 print()
-        
+
         if args.metrics:
             history = monitor.get_metric_history(args.metrics, hours=1)
             print(f"Metric History for {args.metrics} (last hour):")
             for metric in history[-10:]:  # Show last 10 samples
                 print(f"  {metric.timestamp}: {metric.value}")
-        
+
         if args.export:
             exported = monitor.export_metrics()
             with open(args.export, 'w') as f:
                 f.write(exported)
             print(f"Metrics exported to {args.export}")
-        
+
         monitor.shutdown()
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return 1
-        
+
     return 0
 
 

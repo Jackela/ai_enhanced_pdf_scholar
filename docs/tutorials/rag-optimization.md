@@ -69,7 +69,7 @@ graph TD
     E --> F[LLM Generation]
     F --> G[Response Post-processing]
     G --> H[Final Answer]
-    
+
     I[Document] --> J[Text Extraction]
     J --> K[Chunking]
     K --> L[Embedding Generation]
@@ -102,7 +102,7 @@ def configure_semantic_chunking():
             "\n1.",                     # Numbered lists
         ]
     }
-    
+
     response = requests.post("http://localhost:8000/api/rag/configure-chunking",
                            json=chunking_config)
     return response.json()
@@ -121,7 +121,7 @@ def document_type_chunking():
             "overlap": 150
         },
         "technical_manual": {
-            "strategy": "procedure_based", 
+            "strategy": "procedure_based",
             "procedure_markers": ["Step", "Process", "Method"],
             "chunk_size": 1200,
             "overlap": 100
@@ -133,7 +133,7 @@ def document_type_chunking():
             "overlap": 250
         }
     }
-    
+
     return strategies
 ```
 
@@ -149,7 +149,7 @@ def create_content_cleaning_pipeline():
                 "params": {"target_encoding": "utf-8", "handle_errors": "replace"}
             },
             {
-                "name": "whitespace_normalization", 
+                "name": "whitespace_normalization",
                 "params": {"remove_extra_spaces": True, "normalize_line_breaks": True}
             },
             {
@@ -166,7 +166,7 @@ def create_content_cleaning_pipeline():
             }
         ]
     }
-    
+
     return pipeline
 ```
 
@@ -192,7 +192,7 @@ def enrich_chunk_metadata():
             "cross_references": True         # links to figures/tables
         }
     }
-    
+
     return enrichment_config
 ```
 
@@ -235,7 +235,7 @@ def compare_embedding_models():
             "best_for": ["high_accuracy", "complex_documents"]
         }
     }
-    
+
     return models
 ```
 
@@ -276,7 +276,7 @@ def configure_vector_index():
             "parallel_threads": 4         # Parallel processing threads
         }
     }
-    
+
     return index_config
 ```
 
@@ -293,7 +293,7 @@ def setup_multi_level_indexing():
             "use_case": "document_similarity_search"
         },
         "section_level": {
-            "granularity": "major_sections", 
+            "granularity": "major_sections",
             "embedding_source": "section_summaries",
             "use_case": "topic_focused_retrieval"
         },
@@ -303,7 +303,7 @@ def setup_multi_level_indexing():
             "use_case": "precise_information_retrieval"
         }
     }
-    
+
     return indexing_strategy
 ```
 
@@ -335,7 +335,7 @@ def enhance_user_query(original_query, document_context):
             "combine_results": True
         }
     }
-    
+
     enhanced_query = {
         "original": original_query,
         "expanded": f"{original_query} related concepts: machine learning optimization algorithms",
@@ -345,7 +345,7 @@ def enhance_user_query(original_query, document_context):
         ],
         "context_terms": ["neural networks", "gradient descent", "backpropagation"]
     }
-    
+
     return enhanced_query
 ```
 
@@ -355,7 +355,7 @@ def multi_stage_retrieval(query, document_id):
     """
     Implement multi-stage retrieval for better results
     """
-    
+
     # Stage 1: Broad retrieval
     broad_results = requests.post("http://localhost:8000/api/rag/retrieve",
         json={
@@ -365,7 +365,7 @@ def multi_stage_retrieval(query, document_id):
             "threshold": 0.6
         }
     ).json()
-    
+
     # Stage 2: Re-ranking with cross-encoder
     reranked_results = requests.post("http://localhost:8000/api/rag/rerank",
         json={
@@ -375,7 +375,7 @@ def multi_stage_retrieval(query, document_id):
             "top_k": 5
         }
     ).json()
-    
+
     # Stage 3: Context optimization
     optimized_context = requests.post("http://localhost:8000/api/rag/optimize-context",
         json={
@@ -385,7 +385,7 @@ def multi_stage_retrieval(query, document_id):
             "prioritize_relevance": True
         }
     ).json()
-    
+
     return optimized_context
 ```
 
@@ -399,18 +399,18 @@ def optimize_context_window():
         "reserved_for_query": 200,        # Tokens reserved for query
         "reserved_for_response": 800,     # Tokens reserved for response
         "available_for_context": 3000,    # Remaining for retrieved content
-        
+
         "prioritization_strategy": "relevance_first",
         "include_metadata": True,
         "chunk_boundaries": "preserve",
-        
+
         "quality_filters": {
             "min_relevance_score": 0.7,
             "remove_duplicates": True,
             "coherence_check": True
         }
     }
-    
+
     return context_config
 ```
 
@@ -427,7 +427,7 @@ def enhance_context_diversity(retrieved_chunks):
         "source_diversity": True,        # Multiple document sources
         "perspective_diversity": True    # Different viewpoints
     }
-    
+
     # Apply diversity filters
     diverse_chunks = apply_diversity_filters(retrieved_chunks, diversity_config)
     return diverse_chunks
@@ -446,7 +446,7 @@ def configure_generation_parameters():
         "top_p": 0.9,                   # Nucleus sampling threshold
         "frequency_penalty": 0.1,        # Reduce repetition
         "presence_penalty": 0.1,         # Encourage diverse vocabulary
-        
+
         "response_structure": {
             "include_sources": True,     # Show source references
             "confidence_scores": True,   # Include confidence indicators
@@ -454,7 +454,7 @@ def configure_generation_parameters():
             "follow_up_suggestions": True # Suggest related questions
         }
     }
-    
+
     return generation_config
 ```
 
@@ -464,7 +464,7 @@ def post_process_response(raw_response, query_context):
     """
     Enhance response quality through post-processing
     """
-    
+
     processing_steps = {
         "fact_verification": {
             "enabled": True,
@@ -488,7 +488,7 @@ def post_process_response(raw_response, query_context):
             "identify_uncertain_areas": True
         }
     }
-    
+
     return processing_steps
 ```
 
@@ -517,7 +517,7 @@ def verify_answer_accuracy(answer, sources, original_query):
             "suggest_additional_context": True
         }
     }
-    
+
     verification_result = {
         "accuracy_score": 0.92,
         "consistency_score": 0.88,
@@ -529,7 +529,7 @@ def verify_answer_accuracy(answer, sources, original_query):
             "Add quantitative evidence for claim X"
         ]
     }
-    
+
     return verification_result
 ```
 
@@ -558,7 +558,7 @@ def setup_performance_monitoring():
             "performance_recommendations": True
         }
     }
-    
+
     return monitoring_config
 ```
 
@@ -578,7 +578,7 @@ def setup_rag_ab_testing():
             },
             "variant_b": {
                 "name": "optimized_chunking",
-                "chunking_strategy": "semantic_boundary", 
+                "chunking_strategy": "semantic_boundary",
                 "embedding_model": "ada-002",
                 "retrieval_k": 5
             },
@@ -601,7 +601,7 @@ def setup_rag_ab_testing():
             "cost_per_query"
         ]
     }
-    
+
     return ab_test_config
 ```
 
@@ -629,7 +629,7 @@ def setup_hybrid_retrieval():
         "fusion_method": "reciprocal_rank_fusion",
         "final_k": 5
     }
-    
+
     return hybrid_config
 ```
 
@@ -658,7 +658,7 @@ def implement_conversational_rag():
             "conversation_summary": "maintain"
         }
     }
-    
+
     return conversation_config
 ```
 
@@ -690,7 +690,7 @@ def optimize_for_academic_papers():
             "figure_references": True
         }
     }
-    
+
     return academic_config
 ```
 
@@ -707,7 +707,7 @@ def diagnose_retrieval_issues():
             "solution": "upgrade_embedding_model"
         },
         "chunk_granularity": {
-            "check": "chunk_size_analysis", 
+            "check": "chunk_size_analysis",
             "solution": "optimize_chunking_strategy"
         },
         "index_quality": {
@@ -719,7 +719,7 @@ def diagnose_retrieval_issues():
             "solution": "implement_query_enhancement"
         }
     }
-    
+
     return diagnostic_checks
 ```
 
@@ -748,7 +748,7 @@ def optimize_response_speed():
             "Optimize chunk retrieval"
         ]
     }
-    
+
     return optimization_checklist
 ```
 
@@ -777,7 +777,7 @@ def optimize_api_costs():
             "Implement query batching"
         ]
     }
-    
+
     return cost_optimization
 ```
 

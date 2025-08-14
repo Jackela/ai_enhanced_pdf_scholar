@@ -158,7 +158,7 @@ class VersionTracker:
         try:
             # Insert into migration_versions table
             version_sql = """
-            INSERT OR REPLACE INTO migration_versions 
+            INSERT OR REPLACE INTO migration_versions
             (version, description, applied_at, execution_time_ms, rollback_supported, checksum, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """
@@ -270,7 +270,7 @@ class VersionTracker:
     ) -> None:
         """Record migration operation in history table."""
         history_sql = """
-        INSERT INTO migration_history 
+        INSERT INTO migration_history
         (version, operation, description, started_at, execution_time_ms, success, error_message)
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """

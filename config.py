@@ -36,20 +36,20 @@ RESPONSIVE_UI = {
         "large": 1920,      # Desktop monitors
         "xlarge": 2560      # Large displays
     },
-    
+
     # Chat panel responsive settings
     "chat_panel": {
         # Panel width as percentage of total window width
         "width_ratio": {
             "small": 0.35,      # 35% for small screens
-            "medium": 0.30,     # 30% for medium screens  
+            "medium": 0.30,     # 30% for medium screens
             "large": 0.25,      # 25% for large screens
             "xlarge": 0.20      # 20% for very large screens
         },
         # Minimum and maximum absolute widths (in pixels)
         "min_width": 280,
         "max_width": 500,
-        
+
         # Spacing and padding (responsive)
         "spacing": {
             "small": {"margin": 8, "padding": 12, "item_spacing": 8},
@@ -58,20 +58,20 @@ RESPONSIVE_UI = {
             "xlarge": {"margin": 20, "padding": 24, "item_spacing": 20}
         }
     },
-    
+
     # Annotations panel responsive settings
     "annotations_panel": {
         # Panel width as percentage of total window width
         "width_ratio": {
             "small": 0.35,      # 35% for small screens
-            "medium": 0.30,     # 30% for medium screens  
+            "medium": 0.30,     # 30% for medium screens
             "large": 0.25,      # 25% for large screens
             "xlarge": 0.20      # 20% for very large screens
         },
         # Minimum and maximum absolute widths (in pixels)
         "min_width": 280,
         "max_width": 500,
-        
+
         # Spacing and padding (responsive)
         "spacing": {
             "small": {"margin": 8, "padding": 12, "item_spacing": 8},
@@ -80,7 +80,7 @@ RESPONSIVE_UI = {
             "xlarge": {"margin": 20, "padding": 24, "item_spacing": 20}
         }
     },
-    
+
     # Font sizes (responsive)
     "fonts": {
         "small": {"title": 14, "body": 11, "caption": 9},
@@ -115,7 +115,7 @@ AI_CHAT = {
         "label": "💡 Quick Start:",
         "buttons": [
             "📋 Summarize this document",
-            "🔍 Explain key concepts", 
+            "🔍 Explain key concepts",
             "💡 Help with research",
             "❓ General questions"
         ]
@@ -158,7 +158,7 @@ AI_CHAT = {
         },
         "ai_message": {
             "background": "#f8faff",
-            "text": "#1a1a1a", 
+            "text": "#1a1a1a",
             "border": "#e3ecf7"
         },
         "primary": "#0078d4",
@@ -298,7 +298,7 @@ PDF_SELECTION = {
     },
     "screenshot_selection": {
         "fill_color": (0, 120, 215, 30),    # Light blue fill, RGBA
-        "border_color": (0, 120, 215, 160), # Blue border, RGBA  
+        "border_color": (0, 120, 215, 160), # Blue border, RGBA
         "border_width": 2,
         "corner_radius": 1
     }
@@ -353,18 +353,18 @@ class Config:
         1. 环境变量 GEMINI_API_KEY
         2. .env文件中的 GEMINI_API_KEY
         3. Web应用设置文件中存储的用户配置
-        
+
         @returns {string|None} API key or None if not found
         """
         import sys
         import json
         from pathlib import Path
-        
+
         # 1. 环境变量
         env_key = os.getenv('GEMINI_API_KEY')
         if env_key and env_key.strip():
             return env_key.strip()
-        
+
         # 2. 配置文件 (Web UI设置)
         try:
             config_file = Path.home() / ".ai_pdf_scholar" / "settings.json"
@@ -376,14 +376,14 @@ class Config:
                         return api_key.strip()
         except Exception:
             pass  # 配置文件不存在或损坏，使用默认值
-        
+
         return None
-    
+
     @staticmethod
     def is_api_key_configured():
         """
         Check if API key is configured from any source.
-        
+
         @returns {boolean} True if API key is available
         """
-        return Config.get_gemini_api_key() is not None 
+        return Config.get_gemini_api_key() is not None

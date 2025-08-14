@@ -16,7 +16,7 @@ mkdir -p docs/ci-config
 mv .github/workflows/cache-config.yml docs/ci-config/
 ```
 
-### Issue 2: Circular Environment Variable Reference  
+### Issue 2: Circular Environment Variable Reference
 **Problem**: `ci-enhanced.yml` had circular reference to `env.TEST_PARALLELISM`.
 
 **Error**: `Line: 464 Column 34: Unknown Variable Access env`

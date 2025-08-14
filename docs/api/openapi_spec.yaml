@@ -3,7 +3,7 @@ info:
   title: AI Enhanced PDF Scholar API
   description: |
     **Enterprise-grade intelligent document management platform for academic research**
-    
+
     This API provides comprehensive functionality for:
     - 🎯 **Intelligent Document Processing**: Smart import with metadata extraction and duplicate detection
     - 📊 **Advanced Citation Analysis**: Multi-format parsing with network discovery
@@ -11,23 +11,23 @@ info:
     - 🔐 **Enterprise Security**: JWT authentication with RBAC and XSS protection
     - ⚡ **Real-time Features**: WebSocket support for streaming operations
     - 📈 **Performance Monitoring**: APM with metrics and health checks
-    
+
     ## Authentication
-    
+
     Most endpoints require JWT authentication. Include your token in the Authorization header:
     ```
     Authorization: Bearer <your_jwt_token>
     ```
-    
+
     ## Rate Limiting
-    
+
     API endpoints are rate-limited to ensure fair usage:
     - **Default**: 100 requests per minute per IP
     - **Global IP**: 1000 requests per hour per IP
     - **Authenticated users**: Higher limits apply
-    
+
     ## Error Handling
-    
+
     The API uses standard HTTP status codes and provides detailed error information:
     - `400` - Bad Request (validation errors)
     - `401` - Unauthorized (authentication required)
@@ -37,7 +37,7 @@ info:
     - `422` - Unprocessable Entity (business logic errors)
     - `429` - Too Many Requests (rate limited)
     - `500` - Internal Server Error
-    
+
   version: "2.1.0"
   contact:
     name: AI Enhanced PDF Scholar
@@ -623,14 +623,14 @@ paths:
       summary: WebSocket connection (Not REST)
       description: |
         **WebSocket Endpoint - Not a REST API**
-        
+
         Connect to real-time WebSocket for streaming operations:
         - RAG query progress updates
         - Document processing status
         - System notifications
-        
+
         **Connection URL**: `ws://localhost:8000/ws/{client_id}`
-        
+
         **Message Types**:
         - `ping/pong` - Keep alive
         - `rag_query` - Submit RAG query

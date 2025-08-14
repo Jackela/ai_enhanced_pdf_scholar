@@ -59,4 +59,4 @@ python -c "from config import Config; print('API Key:', 'OK' if Config.get_gemin
 python main.py
 ```
 
-应用将自动检测并使用配置的API密钥。 
+应用将自动检测并使用配置的API密钥。

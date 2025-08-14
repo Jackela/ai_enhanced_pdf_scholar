@@ -170,16 +170,16 @@ python test_complete_workflow.py
 
 ---
 
-**记忆创建日期**: 2025-07-13  
-**最后更新**: 2025-01-15  
-**适用版本**: AI Enhanced PDF Scholar v2.1.0+  
+**记忆创建日期**: 2025-07-13
+**最后更新**: 2025-01-15
+**适用版本**: AI Enhanced PDF Scholar v2.1.0+
 **更新要求**: 每次重大架构变更时更新此文档
 
 ## ⚡ 最新开发实践 (2025-01-19)
 
 ### 🎯 引用提取系统架构完成状态
 - **数据层**：CitationModel + CitationRelationModel (24个测试通过)
-- **仓库层**：Repository Pattern + SOLID原则 (21个测试通过)  
+- **仓库层**：Repository Pattern + SOLID原则 (21个测试通过)
 - **服务层**：业务逻辑 + 智能解析 (18个测试通过)
 - **总计**：63个单元测试，100%通过率
 
@@ -232,7 +232,7 @@ class ICitationRepository:     # 接口定义层
 ❌ npx vite build --mode production  # 失败
 Error: Could not load /src/lib/utils (missing .ts extension)
 
-# CI环境 - 修复后 
+# CI环境 - 修复后
 ✅ npx vite build --mode production  # 成功
 ✅ PWA manifest.webmanifest + sw.js 正常生成
 ```
@@ -273,10 +273,10 @@ resolve: {
     // CRITICAL: 具体文件映射优先，PWA插件兼容
     { find: '@/lib/utils', replacement: resolve(__dirname, './src/lib/utils.ts') },
     { find: '@/lib/api', replacement: resolve(__dirname, './src/lib/api.ts') },
-    
+
     // PATTERN: 目录正则匹配
     { find: /^@\/components\/(.*)/, replacement: resolve(__dirname, './src/components/$1') },
-    
+
     // BASE: 根目录映射 (必须最后)
     { find: '@', replacement: resolve(__dirname, './src') }
   ]
@@ -311,7 +311,7 @@ export CI=true && npx vite build --mode production
 
 **关键验证指标**：
 - TypeScript编译: `tsc --noEmit` ✅
-- Vite构建: `vite build` ✅ 
+- Vite构建: `vite build` ✅
 - PWA生成: `manifest.webmanifest + sw.js` ✅
 - 构建时间: ~5.2s (无性能回归) ✅
 

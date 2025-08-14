@@ -37,7 +37,7 @@ class PerformanceOverview(BaseModel):
     system_health_score: float
     status: str
     cache_health: Dict[str, Any]
-    apm_metrics: Dict[str, Any] 
+    apm_metrics: Dict[str, Any]
     active_alerts: int
     recommendations: int
 
@@ -150,7 +150,7 @@ async def get_performance_trends(
     try:
         trends = monitor.get_performance_trends(hours_back)
         return {
-            "status": "success", 
+            "status": "success",
             "data": trends
         }
     except Exception as e:
@@ -170,14 +170,14 @@ async def get_cache_analytics(
     """Get detailed cache analytics."""
     try:
         cache_data = monitor.cache_telemetry.get_dashboard_data()
-        
+
         if layer:
             # Filter to specific layer
             layer_data = cache_data.get("layer_metrics", {}).get(layer.value)
             if not layer_data:
                 raise HTTPException(status_code=404, detail=f"Layer {layer.value} not found")
             cache_data = {"layer_metrics": {layer.value: layer_data}}
-        
+
         return {
             "status": "success",
             "data": cache_data
@@ -255,7 +255,7 @@ async def create_warming_job(
             priority=job_request.priority,
             scheduled_for=job_request.scheduled_for
         )
-        
+
         return {
             "status": "success",
             "data": {
@@ -278,7 +278,7 @@ async def get_warming_job_status(
         job_status = monitor.cache_optimization.get_warming_job_status(job_id)
         if not job_status:
             raise HTTPException(status_code=404, detail="Warming job not found")
-        
+
         return {
             "status": "success",
             "data": job_status
@@ -319,7 +319,7 @@ async def get_slow_traces(
     """Get slow traces."""
     try:
         slow_traces = monitor.amp.get_slow_traces(threshold_ms, limit)
-        
+
         # Convert traces to serializable format
         traces_data = []
         for trace in slow_traces:
@@ -334,7 +334,7 @@ async def get_slow_traces(
                 "root_operation": trace.root_span.operation_name,
                 "start_time": trace.root_span.start_time.isoformat()
             })
-        
+
         return {
             "status": "success",
             "data": traces_data
@@ -352,7 +352,7 @@ async def get_error_traces(
     """Get traces with errors."""
     try:
         error_traces = monitor.amp.get_error_traces(limit)
-        
+
         # Convert traces to serializable format
         traces_data = []
         for trace in error_traces:
@@ -367,7 +367,7 @@ async def get_error_traces(
                 "start_time": trace.root_span.start_time.isoformat(),
                 "root_error": trace.root_span.error
             })
-        
+
         return {
             "status": "success",
             "data": traces_data
@@ -387,7 +387,7 @@ async def get_trace_details(
         trace_details = monitor.dashboard_service._get_trace_details(trace_id)
         if not trace_details:
             raise HTTPException(status_code=404, detail="Trace not found")
-        
+
         return {
             "status": "success",
             "data": trace_details
@@ -462,7 +462,7 @@ async def create_alert_rule(
     try:
         from backend.services.performance_alerting_service import AlertRule
         import uuid
-        
+
         rule = AlertRule(
             rule_id=str(uuid.uuid4()),
             name=rule_request.name,
@@ -478,11 +478,11 @@ async def create_alert_rule(
             tags=rule_request.tags or {},
             custom_message_template=rule_request.custom_message_template
         )
-        
+
         success = monitor.alerting_service.add_alert_rule(rule)
         if not success:
             raise HTTPException(status_code=500, detail="Failed to create alert rule")
-        
+
         return {
             "status": "success",
             "data": {
@@ -508,7 +508,7 @@ async def acknowledge_alert(
         success = monitor.alerting_service.acknowledge_alert(alert_id, acknowledged_by)
         if not success:
             raise HTTPException(status_code=404, detail="Alert not found or already acknowledged")
-        
+
         return {
             "status": "success",
             "data": {
@@ -533,7 +533,7 @@ async def resolve_alert(
         success = monitor.alerting_service.resolve_alert(alert_id, resolution_note)
         if not success:
             raise HTTPException(status_code=404, detail="Alert not found")
-        
+
         return {
             "status": "success",
             "data": {

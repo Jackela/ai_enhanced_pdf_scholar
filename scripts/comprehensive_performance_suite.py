@@ -33,22 +33,22 @@ except ImportError as e:
 
 class ComprehensivePerformanceSuite:
     """Orchestrates comprehensive performance testing"""
-    
+
     def __init__(self, output_dir: Path = None):
         self.output_dir = output_dir or Path("performance_results")
         self.output_dir.mkdir(exist_ok=True)
         self.results = {}
         self.start_time = None
         self.end_time = None
-    
+
     async def run_system_benchmarks(self) -> Dict[str, Any]:
         """Run system-level performance benchmarks"""
         logger.info("Running system performance benchmarks...")
-        
+
         try:
             benchmark = SimpleBenchmark()
             results = benchmark.run_all_benchmarks()
-            
+
             return {
                 "success": True,
                 "results": results,
@@ -61,11 +61,11 @@ class ComprehensivePerformanceSuite:
         except Exception as e:
             logger.error(f"System benchmarks failed: {e}")
             return {"success": False, "error": str(e)}
-    
+
     async def run_api_benchmarks(self, base_url: str = "http://localhost:8000") -> Dict[str, Any]:
         """Run API performance benchmarks"""
         logger.info(f"Running API performance benchmarks against {base_url}...")
-        
+
         try:
             # Check if server is available
             async with httpx.AsyncClient() as client:
@@ -74,77 +74,77 @@ class ComprehensivePerformanceSuite:
                     server_available = response.status_code < 500
                 except:
                     server_available = False
-            
+
             if not server_available:
                 logger.warning("API server not available, skipping API benchmarks")
                 return {
-                    "success": False, 
+                    "success": False,
                     "error": "API server not available",
                     "skipped": True
                 }
-            
+
             # Run API benchmarks using subprocess to avoid import issues
             cmd = [sys.executable, "scripts/api_benchmark.py", "--url", base_url, "--save"]
             result = subprocess.run(cmd, capture_output=True, text=True, cwd=Path.cwd())
-            
+
             if result.returncode != 0:
                 logger.error(f"API benchmarks failed: {result.stderr}")
                 return {"success": False, "error": result.stderr}
-            
+
             # Find and load the results file
             results_files = list(self.output_dir.glob("api_benchmark_results_*.json"))
             if not results_files:
                 results_files = list(Path.cwd().glob("api_benchmark_results_*.json"))
-            
+
             if results_files:
                 with open(results_files[-1], 'r') as f:
                     api_results = json.load(f)
                 return {"success": True, "results": api_results}
             else:
                 return {"success": False, "error": "API benchmark results file not found"}
-                
+
         except Exception as e:
             logger.error(f"API benchmarks failed: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def run_pdf_processing_benchmark(self) -> Dict[str, Any]:
         """Run PDF processing performance benchmark"""
         logger.info("Running PDF processing benchmarks...")
-        
+
         try:
             # Simulate PDF processing benchmarks
             import tempfile
             from pathlib import Path
             import statistics
-            
+
             test_dir = Path(tempfile.mkdtemp())
-            
+
             # Create mock PDF files of different sizes
             small_pdf = test_dir / "small.pdf"
             medium_pdf = test_dir / "medium.pdf"
             large_pdf = test_dir / "large.pdf"
-            
+
             # Mock PDF content
             small_pdf.write_bytes(b"%PDF-1.4\n" + b"Small PDF content " * 100)
             medium_pdf.write_bytes(b"%PDF-1.4\n" + b"Medium PDF content " * 1000)
             large_pdf.write_bytes(b"%PDF-1.4\n" + b"Large PDF content " * 10000)
-            
+
             results = []
-            
+
             for pdf_file in [small_pdf, medium_pdf, large_pdf]:
                 processing_times = []
-                
+
                 for run in range(10):
                     start_time = time.perf_counter()
-                    
+
                     # Simulate PDF processing
                     content = pdf_file.read_bytes()
                     text_content = content.decode('utf-8', errors='ignore')
                     word_count = len(text_content.split())
-                    
+
                     end_time = time.perf_counter()
                     processing_times.append((end_time - start_time) * 1000)
-                
+
                 results.append({
                     "file_type": pdf_file.stem,
                     "file_size_bytes": pdf_file.stat().st_size,
@@ -153,12 +153,12 @@ class ComprehensivePerformanceSuite:
                     "max_time_ms": max(processing_times),
                     "word_count": word_count
                 })
-            
+
             # Cleanup
             for pdf_file in [small_pdf, medium_pdf, large_pdf]:
                 pdf_file.unlink()
             test_dir.rmdir()
-            
+
             return {
                 "success": True,
                 "results": results,
@@ -166,39 +166,39 @@ class ComprehensivePerformanceSuite:
                     "avg_processing_time_ms": statistics.mean([r["avg_processing_time_ms"] for r in results])
                 }
             }
-            
+
         except Exception as e:
             logger.error(f"PDF processing benchmarks failed: {e}")
             return {"success": False, "error": str(e)}
-    
+
     def _extract_avg_metric(self, results: Dict, category: str, metric: str) -> float:
         """Extract average metric from benchmark results"""
         if category not in results:
             return 0.0
-        
+
         values = []
         for item in results[category]:
             if metric in item:
                 values.append(item[metric])
-        
+
         if values:
             return sum(values) / len(values)
         return 0.0
-    
-    async def run_all_benchmarks(self, api_url: str = "http://localhost:8000", 
+
+    async def run_all_benchmarks(self, api_url: str = "http://localhost:8000",
                                 detect_regressions: bool = True) -> Dict[str, Any]:
         """Run comprehensive performance test suite"""
         logger.info("Starting comprehensive performance test suite...")
         self.start_time = time.time()
-        
+
         try:
             # Run all benchmark categories
             system_results = await self.run_system_benchmarks()
             api_results = await self.run_api_benchmarks(api_url)
             pdf_results = self.run_pdf_processing_benchmark()
-            
+
             self.end_time = time.time()
-            
+
             # Compile results
             self.results = {
                 "metadata": {
@@ -214,76 +214,76 @@ class ComprehensivePerformanceSuite:
                 "api_benchmarks": api_results,
                 "pdf_processing": pdf_results,
             }
-            
+
             # Regression detection
             if detect_regressions:
                 regression_analysis = self.perform_regression_analysis()
                 self.results["regression_analysis"] = regression_analysis
-            
+
             logger.info(f"Comprehensive test suite completed in {self.end_time - self.start_time:.2f} seconds")
-            
+
         except Exception as e:
             logger.error(f"Comprehensive test suite failed: {e}")
             self.results["error"] = str(e)
             raise
-        
+
         return self.results
-    
+
     def perform_regression_analysis(self) -> Dict[str, Any]:
         """Perform regression analysis against baselines"""
         logger.info("Performing regression analysis...")
-        
+
         try:
             baseline_detector = PerformanceBaseline(Path("performance_baselines.json"))
-            
+
             # Check if we have baselines, if not establish them
             if not baseline_detector.baselines:
                 logger.info("No baselines found, establishing new baselines...")
                 if self.results.get("system_benchmarks", {}).get("success"):
                     baseline_detector.establish_baselines(
-                        self.results["system_benchmarks"]["results"], 
+                        self.results["system_benchmarks"]["results"],
                         "system"
                     )
-                
+
                 if self.results.get("api_benchmarks", {}).get("success"):
                     baseline_detector.establish_baselines(
-                        self.results["api_benchmarks"]["results"], 
+                        self.results["api_benchmarks"]["results"],
                         "api"
                     )
-                
+
                 return {"status": "baselines_established", "message": "New baselines created"}
-            
+
             # Detect regressions
             analysis = {"system": None, "api": None}
-            
+
             if self.results.get("system_benchmarks", {}).get("success"):
                 analysis["system"] = baseline_detector.generate_report(
-                    self.results["system_benchmarks"]["results"], 
+                    self.results["system_benchmarks"]["results"],
                     "system"
                 )
-            
+
             if self.results.get("api_benchmarks", {}).get("success"):
                 analysis["api"] = baseline_detector.generate_report(
-                    self.results["api_benchmarks"]["results"], 
+                    self.results["api_benchmarks"]["results"],
                     "api"
                 )
-            
+
             return analysis
-            
+
         except Exception as e:
             logger.error(f"Regression analysis failed: {e}")
             return {"error": str(e)}
-    
+
     def print_comprehensive_summary(self):
         """Print comprehensive performance summary"""
         print("\n" + "="*100)
         print("COMPREHENSIVE PERFORMANCE TEST SUITE SUMMARY")
         print("="*100)
-        
+
         if "error" in self.results:
             print(f"❌ SUITE FAILED: {self.results['error']}")
             return
-        
+
         # Metadata
         if "metadata" in self.results:
             meta = self.results["metadata"]
@@ -291,7 +291,7 @@ class ComprehensivePerformanceSuite:
             print(f"📅 Timestamp: {meta['timestamp']}")
             print(f"🐍 Python: {meta['environment']['python_version'].split()[0]}")
             print(f"💻 Platform: {meta['environment']['platform']}")
-        
+
         # System benchmarks
         system = self.results.get("system_benchmarks", {})
         if system.get("success"):
@@ -303,7 +303,7 @@ class ComprehensivePerformanceSuite:
             print("   ✅ System performance: EXCELLENT")
         else:
             print(f"\n❌ SYSTEM PERFORMANCE: {system.get('error', 'Failed')}")
-        
+
         # API benchmarks
         api = self.results.get("api_benchmarks", {})
         if api.get("success"):
@@ -314,7 +314,7 @@ class ComprehensivePerformanceSuite:
             print(f"\n⏭️  API PERFORMANCE: Skipped (server not available)")
         else:
             print(f"\n❌ API PERFORMANCE: {api.get('error', 'Failed')}")
-        
+
         # PDF processing
         pdf = self.results.get("pdf_processing", {})
         if pdf.get("success"):
@@ -326,7 +326,7 @@ class ComprehensivePerformanceSuite:
             print(f"   {status}")
         else:
             print(f"\n❌ PDF PROCESSING: {pdf.get('error', 'Failed')}")
-        
+
         # Regression analysis
         regression = self.results.get("regression_analysis")
         if regression:
@@ -340,18 +340,18 @@ class ComprehensivePerformanceSuite:
                     if analysis and isinstance(analysis, dict):
                         status = analysis.get("overall_status", "Unknown")
                         print(f"   • {category.title()}: {status}")
-                        
+
                         reg_count = analysis.get("regressions", {}).get("count", 0)
                         if reg_count > 0:
                             print(f"     🚨 {reg_count} regression(s) detected")
-                        
+
                         imp_count = analysis.get("improvements", {}).get("count", 0)
                         if imp_count > 0:
                             print(f"     🚀 {imp_count} improvement(s) detected")
-        
+
         # Overall assessment
         print(f"\n🎯 OVERALL ASSESSMENT:")
-        
+
         failed_components = []
         if not system.get("success"):
             failed_components.append("System")
@@ -359,47 +359,47 @@ class ComprehensivePerformanceSuite:
             failed_components.append("API")
         if not pdf.get("success"):
             failed_components.append("PDF Processing")
-        
+
         if not failed_components:
             # Check for critical regressions
             critical_regressions = False
             if regression and isinstance(regression, dict):
                 for analysis in regression.values():
-                    if (isinstance(analysis, dict) and 
+                    if (isinstance(analysis, dict) and
                         analysis.get("regressions", {}).get("critical", 0) > 0):
                         critical_regressions = True
                         break
-            
+
             if critical_regressions:
                 assessment = "🔴 CRITICAL ISSUES DETECTED - Investigate regressions immediately"
             else:
                 assessment = "✅ EXCELLENT - All systems performing optimally"
         else:
             assessment = f"⚠️ ISSUES DETECTED - Failed components: {', '.join(failed_components)}"
-        
+
         print(f"   {assessment}")
-        
+
         print("\n" + "="*100)
-    
+
     def save_results(self, filename: str = None):
         """Save comprehensive results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"comprehensive_performance_results_{timestamp}.json"
-        
+
         output_path = self.output_dir / filename
         with open(output_path, 'w') as f:
             json.dump(self.results, f, indent=2, default=str)
-        
+
         logger.info(f"Comprehensive results saved to: {output_path}")
         return output_path
-    
+
     def generate_html_report(self, filename: str = None):
         """Generate HTML performance report"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"performance_report_{timestamp}.html"
-        
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -429,16 +429,16 @@ class ComprehensivePerformanceSuite:
             <div class="container">
                 <h1>🚀 Comprehensive Performance Report</h1>
                 <div class="timestamp">Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
-                
+
                 <div class="summary-box">
                     <h3>📊 Executive Summary</h3>
                     <p>Comprehensive performance analysis of the AI Enhanced PDF Scholar system with evidence-based metrics and regression detection.</p>
                 </div>
-                
+
                 <h2>🎯 Key Performance Indicators</h2>
                 <div class="metric-grid">
         """
-        
+
         # Add metric cards based on results
         system = self.results.get("system_benchmarks", {})
         if system.get("success"):
@@ -457,7 +457,7 @@ class ComprehensivePerformanceSuite:
                         <div class="metric-value status-excellent">{summary.get('text_processing_avg_chars_s', 0):,.0f}chars/s</div>
                     </div>
             """
-        
+
         pdf = self.results.get("pdf_processing", {})
         if pdf.get("success"):
             avg_time = pdf.get("summary", {}).get("avg_processing_time_ms", 0)
@@ -468,13 +468,13 @@ class ComprehensivePerformanceSuite:
                         <div class="metric-value {status_class}">{avg_time:.2f}ms</div>
                     </div>
             """
-        
+
         html_content += """
                 </div>
-                
+
                 <h2>📈 Performance Analysis</h2>
                 <p>All measurements are based on statistical analysis with multiple runs to ensure reliability and accuracy.</p>
-                
+
                 <div class="timestamp">
                     Report generated by Comprehensive Performance Suite v1.0.0<br>
                     🤖 Generated with <a href="https://claude.ai/code">Claude Code</a>
@@ -483,11 +483,11 @@ class ComprehensivePerformanceSuite:
         </body>
         </html>
         """
-        
+
         output_path = self.output_dir / filename
         with open(output_path, 'w') as f:
             f.write(html_content)
-        
+
         logger.info(f"HTML report saved to: {output_path}")
         return output_path
 
@@ -495,46 +495,46 @@ class ComprehensivePerformanceSuite:
 async def main():
     """Main entry point"""
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Comprehensive Performance Test Suite")
     parser.add_argument("--api-url", default="http://localhost:8000", help="API base URL to test")
     parser.add_argument("--no-regressions", action="store_true", help="Skip regression analysis")
     parser.add_argument("--save", action="store_true", help="Save results to files")
     parser.add_argument("--html", action="store_true", help="Generate HTML report")
     parser.add_argument("--output-dir", help="Output directory for results")
-    
+
     args = parser.parse_args()
-    
+
     try:
         # Initialize suite
         output_dir = Path(args.output_dir) if args.output_dir else None
         suite = ComprehensivePerformanceSuite(output_dir)
-        
+
         # Run comprehensive tests
         results = await suite.run_all_benchmarks(
             api_url=args.api_url,
             detect_regressions=not args.no_regressions
         )
-        
+
         # Print summary
         suite.print_comprehensive_summary()
-        
+
         # Save results if requested
         if args.save:
             json_file = suite.save_results()
             print(f"\n💾 Results saved to: {json_file}")
-        
+
         # Generate HTML report if requested
         if args.html:
             html_file = suite.generate_html_report()
             print(f"📄 HTML report saved to: {html_file}")
-        
+
         # Exit with appropriate code
         if "error" not in results:
             return 0
         else:
             return 1
-    
+
     except Exception as e:
         logger.error(f"Comprehensive performance suite failed: {e}")
         return 1

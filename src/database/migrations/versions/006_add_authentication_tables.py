@@ -245,7 +245,7 @@ class AddAuthenticationTablesMigration(BaseMigration):
 
             admin_user_sql = """
             INSERT INTO users (
-                username, email, password_hash, full_name, role, 
+                username, email, password_hash, full_name, role,
                 is_active, is_verified, account_status, email_verified_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """

@@ -88,22 +88,22 @@ Enhanced with comprehensive search query validation:
 ```python
 class DocumentQueryParams(BaseModel):
     search_query: Optional[str] = Field(None, max_length=MAX_SEARCH_QUERY_LENGTH)
-    
+
     @field_validator('search_query')
     @classmethod
     def validate_search_query(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-        
+
         # Validate against SQL injection patterns
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'search_query', 'sql_injection')
-        
+
         # Validate against XSS patterns
         validate_against_patterns(v, XSS_PATTERNS, 'search_query', 'xss_attempt')
-        
+
         # Sanitize HTML content
         sanitized = sanitize_html_content(v)
-        
+
         return sanitized.strip()
 ```
 
@@ -115,7 +115,7 @@ Enhanced with title and metadata validation:
 class DocumentBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH)
     metadata: Optional[Dict[str, Any]] = Field(None)
-    
+
     @field_validator('title')
     @classmethod
     def validate_title(cls, v: str) -> str:
@@ -124,18 +124,18 @@ class DocumentBase(BaseModel):
         validate_against_patterns(v, XSS_PATTERNS, 'title', 'xss_attempt')
         sanitized = sanitize_html_content(v)
         return sanitized.strip()
-    
+
     @field_validator('metadata')
     @classmethod
     def validate_metadata(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         if v is None:
             return v
-        
+
         # Size limit check
         metadata_json = json.dumps(v)
         if len(metadata_json) > MAX_METADATA_SIZE:
             raise SecurityValidationError('metadata', 'Metadata too large')
-        
+
         # Sanitize string values
         sanitized_metadata = {}
         for key, value in v.items():
@@ -144,7 +144,7 @@ class DocumentBase(BaseModel):
                 sanitized_metadata[key] = sanitize_html_content(value)
             else:
                 sanitized_metadata[key] = value
-        
+
         return sanitized_metadata
 ```
 
@@ -155,14 +155,14 @@ Enhanced with prompt injection detection:
 ```python
 class RAGQueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
-    
+
     @field_validator('query')
     @classmethod
     def validate_query(cls, v: str) -> str:
         # Standard validation
         validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'query', 'sql_injection')
         validate_against_patterns(v, XSS_PATTERNS, 'query', 'xss_attempt')
-        
+
         # Prompt injection detection
         prompt_injection_patterns = [
             r'ignore\s+previous\s+instructions',
@@ -170,9 +170,9 @@ class RAGQueryRequest(BaseModel):
             r'system\s*:',
             r'###\s*instruction',
         ]
-        
+
         validate_against_patterns(v, prompt_injection_patterns, 'query', 'prompt_injection')
-        
+
         return sanitize_html_content(v).strip()
 ```
 
@@ -185,12 +185,12 @@ class SecureFileUpload(BaseModel):
     filename: str = Field(..., min_length=1, max_length=MAX_FILENAME_LENGTH)
     content_type: str = Field(...)
     file_size: int = Field(..., ge=1, le=1024*1024*1024)  # 1GB max
-    
+
     @field_validator('filename')
     @classmethod
     def validate_filename_security(cls, v: str) -> str:
         return validate_filename(v)  # Path traversal and dangerous character check
-    
+
     @field_validator('content_type')
     @classmethod
     def validate_content_type_security(cls, v: str, info) -> str:
@@ -198,7 +198,7 @@ class SecureFileUpload(BaseModel):
         if filename:
             return validate_file_content_type(v, filename)
         return v
-    
+
     @model_validator(mode='after')
     def validate_file_upload(self):
         # Cross-field validation
@@ -214,18 +214,18 @@ class SecureFileUpload(BaseModel):
 #### validate_against_patterns()
 
 ```python
-def validate_against_patterns(value: str, patterns: List[str], field_name: str, 
+def validate_against_patterns(value: str, patterns: List[str], field_name: str,
                             event_type: str = "dangerous_pattern") -> str:
     """Validate string against dangerous patterns."""
     if not value:
         return value
-    
+
     value_lower = value.lower()
     for pattern in patterns:
         if re.search(pattern, value_lower, re.IGNORECASE | re.DOTALL):
             log_security_event(event_type, field_name, value, f"Matched pattern: {pattern}")
             raise SecurityValidationError(
-                field_name, 
+                field_name,
                 f"Contains potentially dangerous pattern: {pattern}",
                 pattern
             )
@@ -239,14 +239,14 @@ def sanitize_html_content(value: str) -> str:
     """Sanitize HTML content to prevent XSS."""
     if not value:
         return value
-    
+
     # HTML encode special characters
     sanitized = html.escape(value, quote=True)
-    
+
     # Additional XSS pattern removal
     for pattern in XSS_PATTERNS:
         sanitized = re.sub(pattern, '', sanitized, flags=re.IGNORECASE | re.DOTALL)
-    
+
     return sanitized.strip()
 ```
 
@@ -257,20 +257,20 @@ def validate_filename(filename: str) -> str:
     """Validate and sanitize filename."""
     if not filename:
         raise SecurityValidationError("filename", "Filename cannot be empty")
-    
+
     if len(filename) > MAX_FILENAME_LENGTH:
         raise SecurityValidationError("filename", f"Filename too long")
-    
+
     # Check for dangerous characters
     dangerous_chars = ['<', '>', ':', '"', '|', '?', '*', '\0']
     for char in dangerous_chars:
         if char in filename:
             raise SecurityValidationError("filename", f"Contains dangerous character: {char}")
-    
+
     # Check for path traversal attempts
     if '..' in filename or filename.startswith('/') or '\\' in filename:
         raise SecurityValidationError("filename", "Path traversal attempt detected")
-    
+
     return filename.strip()
 ```
 
@@ -287,7 +287,7 @@ class SecurityValidationErrorResponse(ErrorResponse):
     field: str = Field(..., description="Field that failed validation")
     attack_type: Optional[str] = Field(None, description="Type of attack detected")
     pattern_matched: Optional[str] = Field(None, description="Dangerous pattern matched")
-    
+
     @classmethod
     def from_security_error(cls, error: SecurityValidationError):
         return cls(
@@ -309,7 +309,7 @@ class ValidationErrorResponse(ErrorResponse):
     success: bool = False
     error_code: str = "VALIDATION_ERROR"
     validation_errors: List[Dict[str, Any]] = Field(default_factory=list)
-    
+
     @classmethod
     def from_pydantic_error(cls, error):
         validation_errors = []
@@ -320,7 +320,7 @@ class ValidationErrorResponse(ErrorResponse):
                 "type": err.get("type", ""),
                 "input": str(err.get("input", ""))[:100]
             })
-        
+
         return cls(
             message="Request validation failed",
             validation_errors=validation_errors
@@ -335,7 +335,7 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
             return response
-            
+
         except SecurityValidationError as e:
             log_security_event(
                 event_type="security_validation_failure",
@@ -343,9 +343,9 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
                 value=str(request.url),
                 details=f"Pattern: {e.pattern}, Client: {request.client.host}"
             )
-            
+
             error_response = SecurityValidationErrorResponse.from_security_error(e)
-            
+
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content=error_response.dict()
@@ -371,7 +371,7 @@ async def upload_document(file: UploadFile = File(...), title: Optional[str] = N
             status_code=status.HTTP_400_BAD_REQUEST,
             content=SecurityValidationErrorResponse.from_security_error(e).dict()
         )
-    
+
     # Continue with secure processing...
 ```
 
@@ -396,18 +396,18 @@ class TestSecurityValidation:
             "1' OR '1'='1",
             "UNION SELECT * FROM passwords",
         ]
-        
+
         for dangerous_input in dangerous_inputs:
             with pytest.raises(SecurityValidationError):
                 validate_against_patterns(dangerous_input, DANGEROUS_SQL_PATTERNS, "test_field")
-    
+
     def test_xss_detection(self):
         xss_inputs = [
             "<script>alert('xss')</script>",
             "javascript:alert('xss')",
             "<img onload='alert(1)' src='x'>",
         ]
-        
+
         for xss_input in xss_inputs:
             with pytest.raises(SecurityValidationError):
                 validate_against_patterns(xss_input, XSS_PATTERNS, "test_field")

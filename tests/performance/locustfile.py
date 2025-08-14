@@ -19,9 +19,9 @@ import gevent
 
 class PDFScholarUser(HttpUser):
     """Simulates a user of the PDF Scholar application"""
-    
+
     wait_time = between(1, 5)  # Wait 1-5 seconds between tasks
-    
+
     def on_start(self):
         """Called when a user starts"""
         # Create a session for the user
@@ -33,7 +33,7 @@ class PDFScholarUser(HttpUser):
             self.session_id = data.get("session_id")
         else:
             self.session_id = None
-        
+
         # Prepare test data
         self.test_queries = [
             "machine learning",
@@ -47,17 +47,17 @@ class PDFScholarUser(HttpUser):
             "transformer models",
             "convolutional networks"
         ]
-        
+
         self.test_documents = []
         for i in range(5):
             content = f"Test Document {i}\n" * 100
             self.test_documents.append(content.encode())
-    
+
     @task(1)
     def health_check(self):
         """Check system health"""
         self.client.get("/health")
-    
+
     @task(10)
     def list_documents(self):
         """List all documents"""
@@ -66,23 +66,23 @@ class PDFScholarUser(HttpUser):
                 response.failure(f"Got status code {response.status_code}")
             else:
                 response.success()
-    
+
     @task(5)
     def get_document(self):
         """Get a specific document"""
         doc_id = random.randint(1, 100)
         self.client.get(f"/api/documents/{doc_id}", name="/api/documents/[id]")
-    
+
     @task(3)
     def upload_document(self):
         """Upload a new document"""
         file_content = random.choice(self.test_documents)
         files = {
-            'file': (f'test_{random.randint(1000, 9999)}.pdf', 
-                    io.BytesIO(file_content), 
+            'file': (f'test_{random.randint(1000, 9999)}.pdf',
+                    io.BytesIO(file_content),
                     'application/pdf')
         }
-        
+
         with self.client.post(
             "/api/documents/upload",
             files=files,
@@ -90,7 +90,7 @@ class PDFScholarUser(HttpUser):
         ) as response:
             if response.status_code not in [200, 201]:
                 response.failure(f"Upload failed: {response.status_code}")
-    
+
     @task(15)
     def simple_rag_query(self):
         """Perform a simple RAG query"""
@@ -99,7 +99,7 @@ class PDFScholarUser(HttpUser):
             "query": query,
             "k": 5
         }
-        
+
         with self.client.post(
             "/api/rag/query",
             json=payload,
@@ -109,20 +109,20 @@ class PDFScholarUser(HttpUser):
                 response.failure(f"Query failed: {response.status_code}")
             elif response.elapsed.total_seconds() > 5:
                 response.failure("Query took too long")
-    
+
     @task(5)
     def complex_rag_query(self):
         """Perform a complex RAG query"""
         # Combine multiple queries for complexity
         queries = random.sample(self.test_queries, 2)
         query = " and ".join(queries)
-        
+
         payload = {
             "query": query,
             "k": 10,
             "rerank": True
         }
-        
+
         with self.client.post(
             "/api/rag/query",
             json=payload,
@@ -133,7 +133,7 @@ class PDFScholarUser(HttpUser):
                 response.failure(f"Complex query failed: {response.status_code}")
             elif response.elapsed.total_seconds() > 10:
                 response.failure("Complex query took too long")
-    
+
     @task(8)
     def search_citations(self):
         """Search for citations"""
@@ -142,7 +142,7 @@ class PDFScholarUser(HttpUser):
             f"/api/citations/search?q={search_term}",
             name="/api/citations/search?q=[term]"
         )
-    
+
     @task(5)
     def vector_search(self):
         """Perform vector similarity search"""
@@ -151,9 +151,9 @@ class PDFScholarUser(HttpUser):
             "query": query,
             "top_k": 10
         }
-        
+
         self.client.post("/api/vectors/search", json=payload)
-    
+
     @task(2)
     def create_citation(self):
         """Create a new citation"""
@@ -164,9 +164,9 @@ class PDFScholarUser(HttpUser):
             "journal": "Test Journal",
             "doi": f"10.1234/test.{random.randint(1000, 9999)}"
         }
-        
+
         self.client.post("/api/citations", json=payload)
-    
+
     @task(3)
     def get_document_citations(self):
         """Get citations for a document"""
@@ -179,25 +179,25 @@ class PDFScholarUser(HttpUser):
 
 class AdminUser(HttpUser):
     """Simulates an admin user with different behavior patterns"""
-    
+
     wait_time = between(2, 8)
     weight = 1  # Lower weight than regular users
-    
+
     @task(5)
     def view_statistics(self):
         """View system statistics"""
         self.client.get("/api/admin/statistics")
-    
+
     @task(3)
     def export_data(self):
         """Export system data"""
         self.client.get("/api/admin/export")
-    
+
     @task(2)
     def system_health(self):
         """Check detailed system health"""
         self.client.get("/api/admin/health/detailed")
-    
+
     @task(10)
     def browse_documents(self):
         """Browse through documents with pagination"""
@@ -207,7 +207,7 @@ class AdminUser(HttpUser):
             f"/api/documents?page={page}&limit={limit}",
             name="/api/documents?page=[n]&limit=[n]"
         )
-    
+
     @task(5)
     def manage_users(self):
         """User management operations"""
@@ -225,10 +225,10 @@ class AdminUser(HttpUser):
 
 class MobileUser(HttpUser):
     """Simulates mobile users with different patterns"""
-    
+
     wait_time = between(3, 10)  # Mobile users typically have longer wait times
     weight = 2  # Moderate weight
-    
+
     def on_start(self):
         """Mobile-specific initialization"""
         # Set mobile headers
@@ -236,7 +236,7 @@ class MobileUser(HttpUser):
             "User-Agent": "MobileApp/1.0",
             "X-Device-Type": "mobile"
         })
-        
+
         self.quick_queries = [
             "summary",
             "abstract",
@@ -244,7 +244,7 @@ class MobileUser(HttpUser):
             "introduction",
             "methodology"
         ]
-    
+
     @task(20)
     def quick_search(self):
         """Quick searches typical for mobile users"""
@@ -253,12 +253,12 @@ class MobileUser(HttpUser):
             f"/api/search/quick?q={query}",
             name="/api/search/quick?q=[query]"
         )
-    
+
     @task(15)
     def view_recent(self):
         """View recent documents"""
         self.client.get("/api/documents/recent")
-    
+
     @task(10)
     def bookmark_document(self):
         """Bookmark a document"""
@@ -267,7 +267,7 @@ class MobileUser(HttpUser):
             f"/api/documents/{doc_id}/bookmark",
             name="/api/documents/[id]/bookmark"
         )
-    
+
     @task(5)
     def sync_data(self):
         """Sync mobile data"""
@@ -279,10 +279,10 @@ class MobileUser(HttpUser):
 
 class StressTestUser(HttpUser):
     """User for stress testing with aggressive patterns"""
-    
+
     wait_time = between(0.1, 0.5)  # Very short wait times
     weight = 0  # Disabled by default, enable for stress tests
-    
+
     @task
     def hammer_endpoint(self):
         """Continuously hit various endpoints"""
@@ -292,9 +292,9 @@ class StressTestUser(HttpUser):
             ("/api/citations/search?q=test", "GET", None),
             ("/health", "GET", None)
         ]
-        
+
         endpoint, method, payload = random.choice(endpoints)
-        
+
         if method == "GET":
             self.client.get(endpoint)
         else:
@@ -303,7 +303,7 @@ class StressTestUser(HttpUser):
 
 # Custom event handlers for detailed metrics
 @events.request.add_listener
-def on_request(request_type, name, response_time, response_length, response, 
+def on_request(request_type, name, response_time, response_length, response,
                context, exception, **kwargs):
     """Custom request handler for detailed logging"""
     if exception:
@@ -325,7 +325,7 @@ def on_test_stop(environment, **kwargs):
     """Cleanup and generate report"""
     print("\nLoad test completed!")
     print("Generating performance report...")
-    
+
     # Generate summary statistics
     stats = environment.stats
     print(f"\nTotal Requests: {stats.total.num_requests}")
@@ -345,27 +345,27 @@ def run_load_test(
 ) -> Dict[str, Any]:
     """
     Run load test programmatically
-    
+
     Args:
         host: Target host URL
         users: Number of concurrent users
         spawn_rate: Users spawned per second
         run_time: Test duration (e.g., "60s", "5m", "1h")
-    
+
     Returns:
         Test results dictionary
     """
     setup_logging("INFO", None)
-    
+
     # Create environment
     env = Environment(
         user_classes=[PDFScholarUser, AdminUser, MobileUser],
         host=host
     )
-    
+
     # Start test
     env.runner.start(users, spawn_rate=spawn_rate)
-    
+
     # Parse run time
     if run_time.endswith('s'):
         duration = int(run_time[:-1])
@@ -375,16 +375,16 @@ def run_load_test(
         duration = int(run_time[:-1]) * 3600
     else:
         duration = int(run_time)
-    
+
     # Run for specified duration
     gevent.spawn_later(duration, lambda: env.runner.quit())
-    
+
     # Start stat printing
     gevent.spawn(stats_printer(env.stats))
-    
+
     # Wait for test to complete
     env.runner.greenlet.join()
-    
+
     # Collect results
     results = {
         "total_requests": env.stats.total.num_requests,
@@ -398,14 +398,14 @@ def run_load_test(
         "users": users,
         "duration_seconds": duration
     }
-    
+
     return results
 
 
 if __name__ == "__main__":
     # Example programmatic execution
     import sys
-    
+
     if len(sys.argv) > 1 and sys.argv[1] == "run":
         results = run_load_test(
             host="http://localhost:8000",
@@ -413,6 +413,6 @@ if __name__ == "__main__":
             spawn_rate=2,
             run_time="5m"
         )
-        
+
         print("\nLoad Test Results:")
         print(json.dumps(results, indent=2))

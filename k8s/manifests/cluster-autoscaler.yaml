@@ -431,20 +431,20 @@ spec:
         - -c
         - |
           echo "Validating cluster autoscaler prerequisites..."
-          
+
           # Check if required node groups have proper tags
           kubectl get nodes -o yaml | grep -E "(k8s.io/cluster-autoscaler|lifecycle)" || {
             echo "WARNING: Nodes may not have proper autoscaling tags"
           }
-          
+
           # Verify AWS permissions (basic check)
           if ! kubectl auth can-i create pods/eviction; then
             echo "ERROR: Cluster autoscaler lacks pod eviction permissions"
             exit 1
           fi
-          
+
           echo "Basic validation completed successfully"
-          
+
           # Create initial metrics
           kubectl create configmap cluster-autoscaler-init \
             --from-literal=initialization-time="$(date -Iseconds)" \
@@ -452,7 +452,7 @@ spec:
             --from-literal=version="1.27.2" \
             -n kube-system \
             --dry-run=client -o yaml | kubectl apply -f -
-          
+
           echo "Cluster autoscaler initialization check completed"
       nodeSelector:
         node.kubernetes.io/lifecycle: on-demand
@@ -487,19 +487,19 @@ spec:
             - -c
             - |
               echo "Starting cluster optimization check..."
-              
+
               # Get cluster metrics
               NODES=$(kubectl get nodes --no-headers | wc -l)
               PODS=$(kubectl get pods --all-namespaces --field-selector=status.phase=Running --no-headers | wc -l)
-              
+
               echo "Cluster Status:"
               echo "  Nodes: $NODES"
               echo "  Running Pods: $PODS"
               echo "  Utilization: $(echo "scale=2; $PODS / $NODES" | bc)"
-              
+
               # Check for underutilized nodes
               kubectl top nodes 2>/dev/null || echo "Metrics server not available"
-              
+
               # Log optimization opportunities
               echo "Optimization check completed at $(date)"
           nodeSelector:

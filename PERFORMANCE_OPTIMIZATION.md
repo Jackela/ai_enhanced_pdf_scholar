@@ -33,11 +33,11 @@ This document outlines the comprehensive performance optimizations implemented i
 
 **pytest Configuration Updates (`pytest.ini`)**
 ```ini
-addopts = 
+addopts =
     -n auto                    # Automatic CPU scaling
     --dist=loadfile           # Optimal test distribution
     --maxfail=10              # Fast failure detection
-    
+
 timeout = 60                  # Reduced from 300s
 timeout_method = thread
 ```
@@ -156,11 +156,11 @@ Automated performance measurement including:
 
 **pytest 配置更新 (`pytest.ini`)**
 ```ini
-addopts = 
+addopts =
     -n auto                    # 自动 CPU 扩展
     --dist=loadfile           # 最优测试分发
     --maxfail=10              # 快速失败检测
-    
+
 timeout = 60                  # 从 300s 减少
 timeout_method = thread
 ```
@@ -248,6 +248,6 @@ timeout_method = thread
 
 ---
 
-**文档版本**: v1.0  
-**最后更新**: 2025-01-15  
+**文档版本**: v1.0
+**最后更新**: 2025-01-15
 **优化状态**: ✅ 已完成基础优化

@@ -13,31 +13,31 @@ from unittest.mock import Mock
 def create_test_app():
     """Create a minimal FastAPI app for testing."""
     app = FastAPI()
-    
+
     @app.get("/")
     async def root():
         return {"message": "Welcome to AI Enhanced PDF Scholar API"}
-    
+
     @app.get("/api/system/health")
     async def health_check():
         return {"status": "healthy", "timestamp": "2025-01-19T12:00:00Z"}
-    
+
     @app.get("/api/system/version")
     async def version_info():
         return {"version": "2.0.0", "api_version": "v1"}
-    
+
     @app.get("/api/system/info")
     async def system_info():
         return {"system": {"status": "ok"}, "database": {"status": "connected"}}
-    
+
     @app.get("/api/documents")
     async def list_documents():
         return {"success": True, "data": [], "message": "No documents found"}
-    
+
     @app.post("/api/documents/upload")
     async def upload_document():
         return {"success": False, "message": "File required"}
-        
+
     @app.get("/api/documents/search")
     async def search_documents(q: str = ""):
         if not q:
@@ -46,15 +46,15 @@ def create_test_app():
         import html
         safe_query = html.escape(q)
         return {"success": True, "data": [], "message": f"Searched for: {safe_query}"}
-        
+
     @app.post("/api/rag/query")
     async def rag_query():
         return {"success": False, "message": "Query data required"}
-        
+
     @app.get("/api/rag/status")
     async def rag_status():
         return {"status": "available", "service": "enhanced_rag"}
-    
+
     return app
 
 
@@ -134,7 +134,7 @@ class TestMinimalAPIEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert "success" in data
-        
+
         # Test with query
         response = client.get("/api/documents/search?q=test")
         assert response.status_code == 200

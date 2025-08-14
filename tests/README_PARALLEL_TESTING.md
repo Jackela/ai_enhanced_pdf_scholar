@@ -64,14 +64,14 @@ import pytest
 @pytest.mark.unit
 def test_basic_operation(parallel_db_connection):
     """Test that can run safely in parallel with shared database."""
-    
+
     # Gets optimized database connection automatically
     parallel_db_connection.execute("CREATE TABLE IF NOT EXISTS demo (id INTEGER, data TEXT)")
     parallel_db_connection.execute("INSERT INTO demo (id, data) VALUES (?, ?)", (1, "test"))
-    
+
     result = parallel_db_connection.fetch_one("SELECT data FROM demo WHERE id = ?", (1,))
     assert result["data"] == "test"
-    
+
     # Automatic cleanup handles database state
 ```
 
@@ -82,10 +82,10 @@ def test_basic_operation(parallel_db_connection):
 @pytest.mark.integration
 def test_complex_integration(parallel_isolated_db):
     """Integration test requiring complete database isolation."""
-    
+
     # Gets dedicated database instance - no sharing with other tests
     parallel_isolated_db.execute("CREATE TABLE integration_test (id INTEGER, data TEXT)")
-    
+
     # Complex operations that might conflict with other tests
     with parallel_isolated_db.transaction():
         parallel_isolated_db.execute("INSERT INTO integration_test (data) VALUES (?)", ("sensitive_data",))
@@ -98,11 +98,11 @@ def test_complex_integration(parallel_isolated_db):
 @pytest.mark.concurrent
 def test_concurrent_operations(concurrent_test_helper):
     """Test concurrent operations with automatic resource management."""
-    
+
     def database_operation(operation_id):
         # Your database operation here
         return f"result_{operation_id}"
-    
+
     # Run operations concurrently with intelligent resource management
     operations = list(range(10))
     results, errors = concurrent_test_helper.run_concurrent_operations(
@@ -110,7 +110,7 @@ def test_concurrent_operations(concurrent_test_helper):
         operation_func=database_operation,
         timeout=30.0
     )
-    
+
     assert len(results) == 10
     assert len(errors) == 0
 ```
@@ -121,12 +121,12 @@ def test_concurrent_operations(concurrent_test_helper):
 @pytest.mark.performance
 def test_with_monitoring():
     """Test with automatic performance monitoring."""
-    
+
     from tests.performance_optimization import get_resource_monitor
-    
+
     monitor = get_resource_monitor()
     monitor_id = monitor.start_monitoring("performance_test")
-    
+
     try:
         # Your performance-critical code here
         pass
@@ -161,7 +161,7 @@ New markers for controlling parallel execution:
 @pytest.mark.parallel_sequential  # Must run sequentially
 @pytest.mark.parallel_worker      # Can share resources within same worker
 
-# Database isolation strategies  
+# Database isolation strategies
 @pytest.mark.db_per_test          # Force per-test database isolation
 @pytest.mark.db_per_worker        # Use per-worker database isolation
 @pytest.mark.db_shared            # Can use shared database with cleanup
@@ -232,12 +232,12 @@ graph TD
     C -->|Integration/Worker| E[Per-Worker Database]
     C -->|E2E/Critical| F[Per-Test Database]
     C -->|CI/Memory Limited| G[Memory Constrained Mode]
-    
+
     D --> H[Execute Test]
     E --> H
     F --> H
     G --> H
-    
+
     H --> I[Monitor Performance]
     I --> J[Cleanup Resources]
     J --> K[Return Metrics]
@@ -282,7 +282,7 @@ The system automatically generates performance reports:
    Success rate: 100.0%
    Databases created: 8
    Average duration: 285.3ms
-   
+
    Isolation Strategy Performance:
      - per_worker: 45 tests, 220.1ms avg, 100.0% success
      - shared: 15 tests, 150.8ms avg, 100.0% success

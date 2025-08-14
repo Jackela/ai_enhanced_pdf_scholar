@@ -7,7 +7,7 @@ This document outlines the comprehensive memory leak fixes implemented for the A
 
 ### 1. Connection Expiry Management
 **Problem**: Long-running connections could accumulate over the 1-hour expiry window
-**Solution**: 
+**Solution**:
 - Reduced connection expiry to 30 minutes
 - Enhanced validation checks for idle connections
 - Aggressive cleanup triggers based on memory pressure
@@ -42,9 +42,9 @@ This document outlines the comprehensive memory leak fixes implemented for the A
 @dataclass
 class ConnectionLeakDetection:
     """Connection leak detection and monitoring system."""
-    
+
     max_idle_time: float = 300.0  # 5 minutes
-    max_transaction_time: float = 600.0  # 10 minutes  
+    max_transaction_time: float = 600.0  # 10 minutes
     max_access_count: int = 1000
     check_interval: float = 60.0  # 1 minute
     memory_threshold: int = 100 * 1024 * 1024  # 100MB
@@ -70,7 +70,7 @@ A connection is considered potentially leaked if:
 @dataclass
 class MemoryMonitor:
     """Memory monitoring and pressure detection system."""
-    
+
     check_interval: float = 30.0  # 30 seconds
     memory_pressure_threshold: float = 0.85  # 85% memory usage
     connection_memory_limit: int = 50 * 1024 * 1024  # 50MB per connection
@@ -138,7 +138,7 @@ max_idle_time: float = 300.0  # 5 minutes
 max_transaction_time: float = 600.0  # 10 minutes
 max_access_count: int = 1000
 
-# Memory monitoring thresholds  
+# Memory monitoring thresholds
 memory_pressure_threshold: float = 0.85  # 85%
 connection_memory_limit: int = 50 * 1024 * 1024  # 50MB
 ```
@@ -147,7 +147,7 @@ connection_memory_limit: int = 50 * 1024 * 1024  # 50MB
 
 ### Benchmarking Results
 - **Insert Operations**: No significant regression (baseline ~0.008s for 100 records)
-- **Query Operations**: No measurable impact (<0.001s for simple queries)  
+- **Query Operations**: No measurable impact (<0.001s for simple queries)
 - **Connection Creation**: Minimal overhead (~1-2ms per connection)
 - **Memory Overhead**: <5MB additional memory usage for monitoring
 
@@ -181,7 +181,7 @@ connection_memory_limit: int = 50 * 1024 * 1024  # 50MB
 ### Test Results
 ```
 ✅ Connection leak detection test completed successfully
-✅ Transaction safety test completed successfully  
+✅ Transaction safety test completed successfully
 ✅ Thread-local cleanup test completed successfully
 ✅ Memory monitoring test completed successfully
 ✅ Performance test passed - no significant regression detected
@@ -310,7 +310,7 @@ The system automatically responds to memory pressure by:
 stats = db.get_pool_stats()
 
 # Check for leaked connections
-leaked = [conn for conn in stats['active_connection_details'] 
+leaked = [conn for conn in stats['active_connection_details']
           if conn['potentially_leaked']]
 
 # Monitor memory usage

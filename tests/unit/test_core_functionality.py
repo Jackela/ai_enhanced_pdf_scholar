@@ -17,7 +17,7 @@ try:
 except ImportError as e:
     # Create mock classes for testing in environments without full dependencies
     IMPORTS_AVAILABLE = False
-    
+
     class DocumentModel:
         def __init__(self, title, file_path, file_hash, file_size, metadata=None):
             self.title = title
@@ -28,13 +28,13 @@ except ImportError as e:
             from datetime import datetime
             self.created_at = datetime.now()
             self.updated_at = datetime.now()
-            
+
             # Validation
             if not file_hash:
                 raise ValueError("File hash cannot be empty")
             if file_size < 0:
                 raise ValueError("File size cannot be negative")
-    
+
     class VectorIndexModel:
         def __init__(self, document_id, index_path, index_hash):
             self.document_id = document_id
@@ -42,46 +42,46 @@ except ImportError as e:
             self.index_hash = index_hash
             from datetime import datetime
             self.created_at = datetime.now()
-            
+
             # Validation
             if document_id <= 0:
                 raise ValueError("Document ID must be positive")
             if not index_path:
                 raise ValueError("Index path cannot be empty")
-    
+
     class DatabaseConnection:
         def __init__(self, db_path):
             self.db_path = Path(db_path)
             self.connection_timeout = 30
             self._connections = {}
-            
+
         def execute(self, query, params=None):
             # Mock execution
             return True
-            
+
         def fetch_one(self, query, params=None):
             # Mock fetch - return test data
             if "test_table" in query and "test_name" in str(params):
                 return {"id": 1, "name": "test_name"}
             return None
-            
+
         def close_all_connections(self):
             pass
-    
+
     class ContentHashService:
         def __init__(self):
             pass
-            
+
         def calculate_file_hash(self, file_path):
             # Mock hash calculation
             import hashlib
             return hashlib.md5(str(file_path).encode()).hexdigest()[:16]
-            
+
         def calculate_content_hash(self, content):
             # Mock content hash
             import hashlib
             return hashlib.sha256(content.encode()).hexdigest()
-        
+
         def calculate_string_hash(self, content):
             # Mock string hash - returns 64-character hash like real implementation
             import hashlib
@@ -99,7 +99,7 @@ class TestCoreModels:
             file_hash="test_hash_123",
             file_size=1024
         )
-        
+
         assert doc.title == "Test Document"
         assert doc.file_path == "/test/path.pdf"
         assert doc.file_hash == "test_hash_123"
@@ -118,7 +118,7 @@ class TestCoreModels:
                 file_hash="",
                 file_size=1024
             )
-        
+
         # Test negative file size validation
         with pytest.raises(ValueError, match="File size cannot be negative"):
             DocumentModel(
@@ -135,7 +135,7 @@ class TestCoreModels:
             index_path="/test/index.faiss",
             index_hash="index_hash_123"
         )
-        
+
         assert index.document_id == 1
         assert index.index_path == "/test/index.faiss"
         assert index.index_hash == "index_hash_123"
@@ -151,7 +151,7 @@ class TestCoreModels:
                 index_path="/test/index.faiss",
                 index_hash="index_hash"
             )
-        
+
         # Test empty index path
         with pytest.raises(ValueError, match="Index path cannot be empty"):
             VectorIndexModel(
@@ -168,13 +168,13 @@ class TestDatabaseConnection:
         """Test DatabaseConnection creation."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
             db_path = temp_db.name
-        
+
         try:
             db = DatabaseConnection(db_path)
             assert str(db.db_path) == str(db_path)
             # Check for any connection management attribute
-            assert (hasattr(db, 'connection_timeout') or 
-                   hasattr(db, 'pool') or 
+            assert (hasattr(db, 'connection_timeout') or
+                   hasattr(db, 'pool') or
                    hasattr(db, '_connections') or
                    hasattr(db, 'connection_pool'))
             db.close_all_connections()
@@ -185,10 +185,10 @@ class TestDatabaseConnection:
         """Test basic database operations."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
             db_path = temp_db.name
-        
+
         try:
             db = DatabaseConnection(db_path)
-            
+
             # Test table creation
             db.execute("""
                 CREATE TABLE test_table (
@@ -196,15 +196,15 @@ class TestDatabaseConnection:
                     name TEXT NOT NULL
                 )
             """)
-            
+
             # Test insert
             db.execute("INSERT INTO test_table (name) VALUES (?)", ("test_name",))
-            
+
             # Test select
             result = db.fetch_one("SELECT * FROM test_table WHERE name = ?", ("test_name",))
             assert result is not None
             assert result["name"] == "test_name"
-            
+
             db.close_all_connections()
         finally:
             Path(db_path).unlink(missing_ok=True)
@@ -221,22 +221,22 @@ class TestContentHashService:
     def test_file_hash_calculation(self):
         """Test file hash calculation."""
         service = ContentHashService()
-        
+
         # Create a temporary file
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_file.write("test content")
             temp_file_path = temp_file.name
-        
+
         try:
             # Calculate hash
             hash_result = service.calculate_file_hash(temp_file_path)
             assert hash_result is not None
             assert len(hash_result) == 16  # 16-character hex length as per implementation
-            
+
             # Verify hash is consistent
             hash_result2 = service.calculate_file_hash(temp_file_path)
             assert hash_result == hash_result2
-            
+
         finally:
             Path(temp_file_path).unlink(missing_ok=True)
 
@@ -244,22 +244,22 @@ class TestContentHashService:
         """Test content hash calculation."""
         import tempfile
         import os
-        
+
         service = ContentHashService()
-        
+
         # Test string content hashing (which is what actually gets called in most cases)
         hash_result = service.calculate_string_hash("Test Content")
         assert hash_result is not None
         assert len(hash_result) == 64  # String hash is 64 characters (full SHA256)
-        
+
         # Verify string hash is consistent
         hash_result2 = service.calculate_string_hash("Test Content")
         assert hash_result == hash_result2
-        
+
         # Test with different content produces different hashes
         different_hash = service.calculate_string_hash("Different Content")
         assert hash_result != different_hash
-        
+
         # Test content_hash with actual file (may fail if PDF parsing unavailable)
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
             # Create minimal PDF content
@@ -299,11 +299,11 @@ endstream
 endobj
 xref
 0 5
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000200 00000 n 
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000200 00000 n
 trailer
 <<
 /Size 5
@@ -314,7 +314,7 @@ startxref
 %%EOF"""
             temp_file.write(pdf_content.encode())
             temp_file.flush()
-            
+
             try:
                 # Try PDF content hash - may succeed with 16 chars or fall back to string hash
                 try:
@@ -322,7 +322,7 @@ startxref
                     assert hash_result is not None
                     # Accept either 16 (successful PDF extraction) or 64 (fallback to string)
                     assert len(hash_result) in [16, 64]
-                    
+
                     # Verify hash is consistent
                     hash_result2 = service.calculate_content_hash(temp_file.name)
                     assert hash_result == hash_result2
@@ -335,7 +335,7 @@ startxref
                     os.unlink(temp_file.name)
                 except (PermissionError, OSError):
                     pass
-        
+
 
 
 class TestImportStructure:
@@ -354,7 +354,7 @@ class TestImportStructure:
             from src.repositories.base_repository import BaseRepository
             from src.repositories.document_repository import DocumentRepository
             from src.repositories.vector_repository import VectorIndexRepository
-            
+
             assert BaseRepository is not None
             assert DocumentRepository is not None
             assert VectorIndexRepository is not None
@@ -384,7 +384,7 @@ class TestPerformanceBasics:
     def test_model_creation_performance(self):
         """Test that model creation is fast."""
         import time
-        
+
         start_time = time.time()
         for i in range(100):
             doc = DocumentModel(
@@ -394,28 +394,28 @@ class TestPerformanceBasics:
                 file_size=1024
             )
             assert doc.title == f"Test Document {i}"
-        
+
         duration = time.time() - start_time
         assert duration < 0.1  # Should be very fast
 
     def test_hash_calculation_performance(self):
         """Test that hash calculation is reasonably fast."""
         import time
-        
+
         service = ContentHashService()
-        
+
         # Create a temporary file for testing
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
             temp_file.write("test content" * 100)
             temp_file_path = temp_file.name
-        
+
         try:
             start_time = time.time()
             hash_result = service.calculate_file_hash(temp_file_path)
             duration = time.time() - start_time
-            
+
             assert hash_result is not None
             assert duration < 0.1  # Should be fast for small content
-            
+
         finally:
             Path(temp_file_path).unlink(missing_ok=True)

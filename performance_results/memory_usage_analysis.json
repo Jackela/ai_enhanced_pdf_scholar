@@ -54,7 +54,7 @@
     "available_headroom_mb": 1335.6,
     "recommended_monitoring": [
       "Set memory alerts at 1.5GB usage",
-      "Monitor growth rate during peak hours", 
+      "Monitor growth rate during peak hours",
       "Implement memory usage metrics in production",
       "Consider periodic garbage collection for long-running operations"
     ]

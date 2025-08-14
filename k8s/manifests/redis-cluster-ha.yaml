@@ -25,51 +25,51 @@ data:
     cluster-config-file nodes-6379.conf
     cluster-node-timeout 15000
     cluster-announce-hostname yes
-    
+
     # Memory and persistence
     maxmemory 1gb
     maxmemory-policy allkeys-lru
-    
+
     # Persistence (AOF + RDB)
     appendonly yes
     appendfsync everysec
     save 900 1
     save 300 10
     save 60 10000
-    
+
     # Security
     requirepass ${REDIS_PASSWORD}
     masterauth ${REDIS_PASSWORD}
-    
+
     # Logging
     loglevel notice
     logfile /var/log/redis/redis.log
-    
+
     # Network
     bind 0.0.0.0
     protected-mode no
     tcp-keepalive 300
-    
+
     # Performance
     timeout 300
     tcp-backlog 511
     databases 16
-    
+
   sentinel.conf: |
     # Redis Sentinel Configuration
     port 26379
     sentinel announce-ip ${POD_IP}
     sentinel announce-port 26379
-    
+
     # Monitor master
     sentinel monitor mymaster redis-master-0.redis-master 6379 2
     sentinel auth-pass mymaster ${REDIS_PASSWORD}
-    
+
     # Failover timing
     sentinel down-after-milliseconds mymaster 30000
     sentinel parallel-syncs mymaster 1
     sentinel failover-timeout mymaster 180000
-    
+
     # Logging
     loglevel notice
     logfile /var/log/sentinel/sentinel.log
@@ -84,7 +84,7 @@ metadata:
 type: Opaque
 stringData:
   password: "your-secure-redis-password-here"  # Change this!
-  
+
 ---
 # Service Account for Redis pods
 apiVersion: v1
@@ -159,11 +159,11 @@ spec:
           # Copy config files and substitute environment variables
           cp /config/redis.conf /data/redis.conf
           envsubst < /config/redis.conf > /data/redis.conf
-          
+
           # Set proper permissions
           chmod 644 /data/redis.conf
           chown 999:999 /data/redis.conf
-          
+
           # Create log directory
           mkdir -p /var/log/redis
           chown 999:999 /var/log/redis
@@ -300,15 +300,15 @@ spec:
           # Copy config and add replica-specific settings
           cp /config/redis.conf /data/redis.conf
           envsubst < /config/redis.conf > /data/redis.conf
-          
+
           # Add replica settings
           echo "replicaof redis-master-0.redis-master 6379" >> /data/redis.conf
           echo "replica-read-only yes" >> /data/redis.conf
-          
+
           # Set permissions
           chmod 644 /data/redis.conf
           chown 999:999 /data/redis.conf
-          
+
           # Create log directory
           mkdir -p /var/log/redis
           chown 999:999 /var/log/redis
@@ -440,11 +440,11 @@ spec:
           # Prepare sentinel config
           cp /config/sentinel.conf /data/sentinel.conf
           envsubst < /config/sentinel.conf > /data/sentinel.conf
-          
+
           # Set permissions
           chmod 644 /data/sentinel.conf
           chown 999:999 /data/sentinel.conf
-          
+
           # Create log directory
           mkdir -p /var/log/sentinel
           chown 999:999 /var/log/sentinel
@@ -657,7 +657,7 @@ spec:
   - port: redis
     interval: 30s
     path: /metrics
-    
+
 ---
 # Redis Exporter Deployment
 apiVersion: apps/v1

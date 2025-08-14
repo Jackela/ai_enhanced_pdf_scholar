@@ -420,7 +420,7 @@ services:
     environment:
       - DEBUG=true
       - DATABASE_URL=sqlite:///./data/documents.db
-    
+
   frontend:
     build:
       context: ./frontend
@@ -669,7 +669,7 @@ python scripts/cache_analysis.py
 # Citation service (separate process)
 python -m src.services.citation_service --port 8001
 
-# RAG service (separate process)  
+# RAG service (separate process)
 python -m src.services.rag_service --port 8002
 
 # Main API server

@@ -64,8 +64,8 @@ class TestDocumentRepositoryEnhancements:
         self.db.execute("DELETE FROM documents")
 
     def _create_test_document(
-        self, 
-        title: str, 
+        self,
+        title: str,
         content_hash: str | None = None,
         file_size: int = 1000
     ) -> DocumentModel:
@@ -92,21 +92,21 @@ class TestDocumentRepositoryEnhancements:
         doc1 = self._create_test_document("AAA Document", file_size=1000)
         doc2 = self._create_test_document("ZZZ Document", file_size=2000)
         doc3 = self._create_test_document("MMM Document", file_size=1500)
-        
+
         # Test sorting by title ascending
         docs = self.repo.get_all(limit=10, offset=0, sort_by="title", sort_order="asc")
         assert len(docs) == 3
         assert docs[0].title == "AAA Document"
         assert docs[1].title == "MMM Document"
         assert docs[2].title == "ZZZ Document"
-        
+
         # Test sorting by title descending
         docs = self.repo.get_all(limit=10, offset=0, sort_by="title", sort_order="desc")
         assert len(docs) == 3
         assert docs[0].title == "ZZZ Document"
         assert docs[1].title == "MMM Document"
         assert docs[2].title == "AAA Document"
-        
+
         # Test sorting by file_size ascending
         docs = self.repo.get_all(limit=10, offset=0, sort_by="file_size", sort_order="asc")
         assert len(docs) == 3
@@ -117,19 +117,19 @@ class TestDocumentRepositoryEnhancements:
     def test_get_all_sorting_security(self):
         """Test that sorting properly validates and secures input."""
         doc = self._create_test_document("Test Document")
-        
+
         # Test with invalid sort field - should default to created_at
         docs = self.repo.get_all(sort_by="invalid_field")
         assert len(docs) == 1
-        
+
         # Test with potential SQL injection attempt - should be safe
         docs = self.repo.get_all(sort_by="title; DROP TABLE documents; --")
         assert len(docs) == 1
-        
+
         # Test with invalid sort order - should default to DESC
         docs = self.repo.get_all(sort_order="invalid_order")
         assert len(docs) == 1
-        
+
         # Test with potential SQL injection in sort order
         docs = self.repo.get_all(sort_order="ASC; DROP TABLE documents; --")
         assert len(docs) == 1
@@ -139,13 +139,13 @@ class TestDocumentRepositoryEnhancements:
         # Create multiple test documents
         for i in range(5):
             self._create_test_document(f"Document {i:02d}", file_size=i * 100)
-        
+
         # Test pagination with sorting
         docs = self.repo.get_all(limit=2, offset=0, sort_by="title", sort_order="asc")
         assert len(docs) == 2
         assert docs[0].title == "Document 00"
         assert docs[1].title == "Document 01"
-        
+
         # Test next page
         docs = self.repo.get_all(limit=2, offset=2, sort_by="title", sort_order="asc")
         assert len(docs) == 2
@@ -160,16 +160,16 @@ class TestDocumentRepositoryEnhancements:
         doc2 = self._create_test_document("Document 2", content_hash="hash123")
         doc3 = self._create_test_document("Document 3", content_hash="hash456")
         doc4 = self._create_test_document("Document 4", content_hash=None)
-        
+
         # Find content duplicates
         duplicates = self.repo.find_duplicates_by_content_hash()
-        
+
         # Should find one group with hash123
         assert len(duplicates) == 1
         content_hash, docs = duplicates[0]
         assert content_hash == "hash123"
         assert len(docs) == 2
-        
+
         doc_ids = [d.id for d in docs]
         assert doc1.id in doc_ids
         assert doc2.id in doc_ids
@@ -180,7 +180,7 @@ class TestDocumentRepositoryEnhancements:
         self._create_test_document("Document 1", content_hash="hash1")
         self._create_test_document("Document 2", content_hash="hash2")
         self._create_test_document("Document 3", content_hash=None)
-        
+
         # Should find no duplicates
         duplicates = self.repo.find_duplicates_by_content_hash()
         assert len(duplicates) == 0
@@ -191,7 +191,7 @@ class TestDocumentRepositoryEnhancements:
         self._create_test_document("Document 1", content_hash=None)
         self._create_test_document("Document 2", content_hash="")
         self._create_test_document("Document 3", content_hash="valid_hash")
-        
+
         # Should not include NULL or empty hashes in results
         duplicates = self.repo.find_duplicates_by_content_hash()
         assert len(duplicates) == 0
@@ -202,23 +202,23 @@ class TestDocumentRepositoryEnhancements:
         # Test identical titles
         similarity = self.repo._calculate_title_similarity("Test Document", "Test Document")
         assert similarity == 1.0
-        
+
         # Test completely different titles
         similarity = self.repo._calculate_title_similarity("Test Document", "Another File")
         assert similarity < 0.5
-        
+
         # Test similar titles
         similarity = self.repo._calculate_title_similarity(
-            "Python Programming Guide", 
+            "Python Programming Guide",
             "Python Programming Tutorial"
         )
         # Use >= instead of > to handle edge cases where similarity might be exactly 0.5
         assert similarity >= 0.4  # Reasonable similarity threshold
-        
+
         # Test empty titles
         similarity = self.repo._calculate_title_similarity("", "Test")
         assert similarity == 0.0
-        
+
         similarity = self.repo._calculate_title_similarity("Test", "")
         assert similarity == 0.0
 
@@ -226,16 +226,16 @@ class TestDocumentRepositoryEnhancements:
         """Test finding similar documents by title."""
         # Create documents with similar and different titles
         doc1 = self._create_test_document("Python Programming Guide")
-        doc2 = self._create_test_document("Python Programming Tutorial") 
+        doc2 = self._create_test_document("Python Programming Tutorial")
         doc3 = self._create_test_document("Java Development Manual")
         doc4 = self._create_test_document("JavaScript Reference")
-        
+
         # Find similar documents with moderate threshold
         similar_groups = self.repo.find_similar_documents_by_title(similarity_threshold=0.3)
-        
+
         # Should find at least the Python Programming group
         assert len(similar_groups) >= 0  # May or may not find similarities depending on algorithm
-        
+
         # Test with very high threshold - should find few or no groups
         similar_groups = self.repo.find_similar_documents_by_title(similarity_threshold=0.9)
         # With high threshold, should find few matches
@@ -247,7 +247,7 @@ class TestDocumentRepositoryEnhancements:
         self._create_test_document("A")  # Single character
         self._create_test_document("A B C D E F G H I J")  # Many words
         self._create_test_document("document document document")  # Repeated words
-        
+
         # Should handle edge cases without errors
         similar_groups = self.repo.find_similar_documents_by_title(similarity_threshold=0.5)
         assert isinstance(similar_groups, list)
@@ -255,12 +255,12 @@ class TestDocumentRepositoryEnhancements:
     def test_find_similar_documents_case_insensitive(self):
         """Test that title similarity is case-insensitive."""
         doc1 = self._create_test_document("Python Programming")
-        doc2 = self._create_test_document("PYTHON PROGRAMMING") 
+        doc2 = self._create_test_document("PYTHON PROGRAMMING")
         doc3 = self._create_test_document("python programming")
-        
+
         # Should find all as similar (case-insensitive)
         similar_groups = self.repo.find_similar_documents_by_title(similarity_threshold=0.8)
-        
+
         # Should find at least one group with multiple documents
         found_similar = False
         for criteria, docs in similar_groups:
@@ -270,19 +270,19 @@ class TestDocumentRepositoryEnhancements:
                 for doc in docs:
                     assert "python" in doc.title.lower()
                     assert "programming" in doc.title.lower()
-        
+
         # Note: This test may be sensitive to the exact similarity algorithm
 
     # ===== Integration Tests =====
     def test_find_by_content_hash_integration(self):
         """Test finding individual documents by content hash."""
         doc = self._create_test_document("Test Document", content_hash="unique_hash")
-        
+
         # Should find the document
         found_doc = self.repo.find_by_content_hash("unique_hash")
         assert found_doc is not None
         assert found_doc.id == doc.id
-        
+
         # Should not find non-existent hash
         not_found = self.repo.find_by_content_hash("non_existent_hash")
         assert not_found is None
@@ -293,20 +293,20 @@ class TestDocumentRepositoryEnhancements:
         doc1 = self._create_test_document("Document A", content_hash="hash1")
         doc2 = self._create_test_document("Document B", content_hash="hash1")
         doc3 = self._create_test_document("Similar Document A", content_hash="hash2")
-        
+
         # Test that new methods integrate well with existing ones
         all_docs = self.repo.find_all()
         assert len(all_docs) == 3
-        
+
         # Test sorting integration
         sorted_docs = self.repo.get_all(sort_by="title", sort_order="asc")
         assert len(sorted_docs) == 3
         assert sorted_docs[0].title == "Document A"
-        
+
         # Test duplicate detection integration
         content_duplicates = self.repo.find_duplicates_by_content_hash()
         assert len(content_duplicates) == 1
-        
+
         size_duplicates = self.repo.find_duplicates_by_size_and_name()
         # All have same default size, so should be considered duplicates
         assert len(size_duplicates) >= 1
@@ -316,10 +316,10 @@ class TestDocumentRepositoryEnhancements:
         # Test with empty database
         duplicates = self.repo.find_duplicates_by_content_hash()
         assert duplicates == []
-        
+
         similar_docs = self.repo.find_similar_documents_by_title()
         assert similar_docs == []
-        
+
         # Test with invalid parameters
         sorted_docs = self.repo.get_all(limit=-1, offset=-1)  # Should handle gracefully
         assert isinstance(sorted_docs, list)
@@ -327,7 +327,7 @@ class TestDocumentRepositoryEnhancements:
     def test_performance_of_enhanced_features(self):
         """Test performance characteristics of enhanced features."""
         import time
-        
+
         # Create a moderate number of test documents
         for i in range(20):
             self._create_test_document(
@@ -335,27 +335,27 @@ class TestDocumentRepositoryEnhancements:
                 content_hash=f"hash_{i % 5}",  # Some duplicates
                 file_size=i * 100
             )
-        
+
         # Test sorting performance
         start_time = time.time()
         sorted_docs = self.repo.get_all(sort_by="title", sort_order="asc")
         sort_time = time.time() - start_time
-        
+
         # Test duplicate detection performance
         start_time = time.time()
         content_duplicates = self.repo.find_duplicates_by_content_hash()
         duplicate_time = time.time() - start_time
-        
+
         # Test similarity detection performance
         start_time = time.time()
         similar_docs = self.repo.find_similar_documents_by_title(similarity_threshold=0.5)
         similarity_time = time.time() - start_time
-        
+
         # All operations should complete reasonably quickly
         assert sort_time < 2.0  # Should be very fast with database-level sorting
         assert duplicate_time < 3.0  # Content duplicate detection should be efficient
         assert similarity_time < 5.0  # Similarity detection may be slower but reasonable
-        
+
         # Verify results are correct
         assert len(sorted_docs) == 20
         assert isinstance(content_duplicates, list)

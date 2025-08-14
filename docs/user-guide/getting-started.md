@@ -218,7 +218,7 @@ curl -X POST "http://localhost:8000/api/library/optimize"
 
 #### "RAG Service Not Available"
 **Problem**: AI features aren't working
-**Solution**: 
+**Solution**:
 1. Go to Settings → API Configuration
 2. Add your Google Gemini API key
 3. Save and restart the application
@@ -309,7 +309,7 @@ documents = client.get_documents()
 for doc in documents:
     if doc.has_vector_index:
         answer = client.rag_query(
-            "Summarize this document", 
+            "Summarize this document",
             doc.id
         )
         print(f"{doc.title}: {answer}")

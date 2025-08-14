@@ -18,7 +18,7 @@ from playwright.sync_api import Page, Response, Request
 
 class TestDataManager:
     """Manage test data lifecycle and cleanup."""
-    
+
     def __init__(self):
         self.created_resources = {
             'documents': [],
@@ -26,12 +26,12 @@ class TestDataManager:
             'queries': [],
             'files': []
         }
-    
+
     def track_resource(self, resource_type: str, resource_id: Any):
         """Track a resource for cleanup."""
         if resource_type in self.created_resources:
             self.created_resources[resource_type].append(resource_id)
-    
+
     def cleanup(self, api_client):
         """Clean up all tracked resources."""
         # Delete documents
@@ -40,21 +40,21 @@ class TestDataManager:
                 api_client.delete(f'/api/documents/{doc_id}')
             except:
                 pass
-        
+
         # Delete users
         for user_id in self.created_resources['users']:
             try:
                 api_client.delete(f'/api/users/{user_id}')
             except:
                 pass
-        
+
         # Delete files
         for file_path in self.created_resources['files']:
             try:
                 Path(file_path).unlink()
             except:
                 pass
-        
+
         # Clear tracking
         for key in self.created_resources:
             self.created_resources[key] = []
@@ -62,18 +62,18 @@ class TestDataManager:
 
 class NetworkMonitor:
     """Monitor network activity during tests."""
-    
+
     def __init__(self, page: Page):
         self.page = page
         self.requests = []
         self.responses = []
         self.failed_requests = []
-        
+
         # Set up listeners
         page.on('request', self._on_request)
         page.on('response', self._on_response)
         page.on('requestfailed', self._on_request_failed)
-    
+
     def _on_request(self, request: Request):
         """Handle request event."""
         self.requests.append({
@@ -82,7 +82,7 @@ class NetworkMonitor:
             'headers': request.headers,
             'timestamp': time.time()
         })
-    
+
     def _on_response(self, response: Response):
         """Handle response event."""
         self.responses.append({
@@ -91,7 +91,7 @@ class NetworkMonitor:
             'headers': response.headers,
             'timestamp': time.time()
         })
-    
+
     def _on_request_failed(self, request: Request):
         """Handle failed request."""
         self.failed_requests.append({
@@ -100,22 +100,22 @@ class NetworkMonitor:
             'failure': request.failure,
             'timestamp': time.time()
         })
-    
+
     def get_api_calls(self, pattern: str = '/api/') -> List[Dict[str, Any]]:
         """Get all API calls matching pattern."""
         return [
             req for req in self.requests
             if pattern in req['url']
         ]
-    
+
     def get_failed_requests(self) -> List[Dict[str, Any]]:
         """Get all failed requests."""
         return self.failed_requests
-    
+
     def get_slow_requests(self, threshold: float = 2.0) -> List[Dict[str, Any]]:
         """Get requests that took longer than threshold."""
         slow_requests = []
-        
+
         for request in self.requests:
             # Find matching response
             response = next(
@@ -123,7 +123,7 @@ class NetworkMonitor:
                  and r['timestamp'] > request['timestamp']),
                 None
             )
-            
+
             if response:
                 duration = response['timestamp'] - request['timestamp']
                 if duration > threshold:
@@ -132,9 +132,9 @@ class NetworkMonitor:
                         'method': request['method'],
                         'duration': duration
                     })
-        
+
         return slow_requests
-    
+
     def get_statistics(self) -> Dict[str, Any]:
         """Get network statistics."""
         return {
@@ -149,17 +149,17 @@ class NetworkMonitor:
 
 class VisualRegression:
     """Visual regression testing utilities."""
-    
+
     def __init__(self, baseline_dir: Path = Path("tests_e2e/visual_baselines")):
         self.baseline_dir = baseline_dir
         self.baseline_dir.mkdir(exist_ok=True)
-    
+
     def capture_screenshot(self, page: Page, name: str) -> Path:
         """Capture a screenshot for comparison."""
         screenshot_path = self.baseline_dir / f"{name}.png"
         page.screenshot(path=str(screenshot_path), full_page=True)
         return screenshot_path
-    
+
     def compare_screenshots(self, current: Path, baseline: Path, threshold: float = 0.1) -> bool:
         """
         Compare two screenshots for visual differences.
@@ -168,50 +168,50 @@ class VisualRegression:
         try:
             from PIL import Image
             import numpy as np
-            
+
             # Load images
             img1 = Image.open(current)
             img2 = Image.open(baseline)
-            
+
             # Resize if needed
             if img1.size != img2.size:
                 img2 = img2.resize(img1.size)
-            
+
             # Convert to arrays
             arr1 = np.array(img1)
             arr2 = np.array(img2)
-            
+
             # Calculate difference
             diff = np.abs(arr1.astype(float) - arr2.astype(float))
             max_diff = np.max(diff) / 255.0
-            
+
             return max_diff <= threshold
-            
+
         except ImportError:
             # PIL not available, use simple hash comparison
             hash1 = hashlib.md5(current.read_bytes()).hexdigest()
             hash2 = hashlib.md5(baseline.read_bytes()).hexdigest()
             return hash1 == hash2
-    
+
     def assert_visual_match(self, page: Page, name: str, update_baseline: bool = False):
         """Assert that current page matches visual baseline."""
         current = self.capture_screenshot(page, f"{name}_current")
         baseline = self.baseline_dir / f"{name}_baseline.png"
-        
+
         if update_baseline or not baseline.exists():
             # Create/update baseline
             current.rename(baseline)
             return True
-        
+
         # Compare with baseline
         matches = self.compare_screenshots(current, baseline)
-        
+
         if not matches:
             # Save diff for debugging
             diff_path = self.baseline_dir / f"{name}_diff.png"
             current.rename(diff_path)
             raise AssertionError(f"Visual regression detected for {name}. Check {diff_path}")
-        
+
         # Clean up current screenshot
         current.unlink()
         return True
@@ -219,18 +219,18 @@ class VisualRegression:
 
 class PerformanceProfiler:
     """Profile performance during tests."""
-    
+
     def __init__(self):
         self.metrics = []
         self.current_operation = None
         self.start_time = None
-    
+
     @contextmanager
     def measure(self, operation: str):
         """Context manager to measure operation time."""
         self.current_operation = operation
         self.start_time = time.time()
-        
+
         try:
             yield self
         finally:
@@ -242,21 +242,21 @@ class PerformanceProfiler:
             })
             self.current_operation = None
             self.start_time = None
-    
+
     def get_report(self) -> Dict[str, Any]:
         """Generate performance report."""
         if not self.metrics:
             return {}
-        
+
         durations = [m['duration'] for m in self.metrics]
         operations = {}
-        
+
         for metric in self.metrics:
             op = metric['operation']
             if op not in operations:
                 operations[op] = []
             operations[op].append(metric['duration'])
-        
+
         return {
             'total_operations': len(self.metrics),
             'total_time': sum(durations),
@@ -277,12 +277,12 @@ class PerformanceProfiler:
 
 class TestReporter:
     """Generate test reports."""
-    
+
     def __init__(self, output_dir: Path = Path("tests_e2e/reports")):
         self.output_dir = output_dir
         self.output_dir.mkdir(exist_ok=True)
         self.test_results = []
-    
+
     def add_test_result(
         self,
         test_name: str,
@@ -298,11 +298,11 @@ class TestReporter:
             'timestamp': datetime.now().isoformat(),
             'details': details or {}
         })
-    
+
     def generate_html_report(self) -> Path:
         """Generate HTML test report."""
         report_path = self.output_dir / f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-        
+
         html_content = """
         <!DOCTYPE html>
         <html>
@@ -344,14 +344,14 @@ class TestReporter:
         </body>
         </html>
         """
-        
+
         # Calculate summary
         total = len(self.test_results)
         passed = sum(1 for r in self.test_results if r['status'] == 'passed')
         failed = sum(1 for r in self.test_results if r['status'] == 'failed')
         skipped = sum(1 for r in self.test_results if r['status'] == 'skipped')
         total_duration = sum(r['duration'] for r in self.test_results)
-        
+
         # Generate test rows
         test_rows = ""
         for result in self.test_results:
@@ -364,7 +364,7 @@ class TestReporter:
                 <td>{result['timestamp']}</td>
             </tr>
             """
-        
+
         # Format HTML
         html = html_content.format(
             total=total,
@@ -374,14 +374,14 @@ class TestReporter:
             duration=total_duration,
             test_rows=test_rows
         )
-        
+
         report_path.write_text(html)
         return report_path
-    
+
     def generate_json_report(self) -> Path:
         """Generate JSON test report."""
         report_path = self.output_dir / f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        
+
         report_data = {
             'timestamp': datetime.now().isoformat(),
             'summary': {
@@ -393,14 +393,14 @@ class TestReporter:
             },
             'tests': self.test_results
         }
-        
+
         report_path.write_text(json.dumps(report_data, indent=2))
         return report_path
 
 
 class WaitHelper:
     """Helper for waiting conditions."""
-    
+
     @staticmethod
     def wait_for_condition(
         condition: Callable[[], bool],
@@ -410,14 +410,14 @@ class WaitHelper:
     ) -> bool:
         """Wait for a condition to become true."""
         start_time = time.time()
-        
+
         while time.time() - start_time < timeout:
             if condition():
                 return True
             time.sleep(interval)
-        
+
         raise TimeoutError(f"{message} after {timeout} seconds")
-    
+
     @staticmethod
     def wait_for_text_change(
         page: Page,
@@ -429,15 +429,15 @@ class WaitHelper:
         def text_changed():
             current = page.locator(selector).text_content()
             return current != initial_text
-        
+
         WaitHelper.wait_for_condition(
             text_changed,
             timeout,
             message=f"Text in {selector} did not change"
         )
-        
+
         return page.locator(selector).text_content()
-    
+
     @staticmethod
     def wait_for_element_count(
         page: Page,
@@ -448,7 +448,7 @@ class WaitHelper:
         """Wait for specific number of elements."""
         def count_matches():
             return page.locator(selector).count() == expected_count
-        
+
         WaitHelper.wait_for_condition(
             count_matches,
             timeout,

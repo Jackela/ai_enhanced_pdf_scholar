@@ -692,7 +692,7 @@
         "targetBlank": true
       },
       {
-        "type": "link", 
+        "type": "link",
         "title": "EKS Console",
         "url": "https://console.aws.amazon.com/eks/home#/clusters",
         "targetBlank": true

@@ -12,7 +12,7 @@ groups:
             (db_query_select_p95_milliseconds / db_baseline_select_p95_milliseconds - 1) * 100 > 20
             or
             (db_query_insert_p95_milliseconds / db_baseline_insert_p95_milliseconds - 1) * 100 > 20
-            or  
+            or
             (db_query_complex_p95_milliseconds / db_baseline_complex_p95_milliseconds - 1) * 100 > 20
           )
         for: 2m
@@ -95,7 +95,7 @@ groups:
             - Endpoint: {{ $labels.endpoint }}
           runbook_url: "https://docs.ai-pdf-scholar.com/alerts/api-critical"
 
-      # Memory Usage Alerts  
+      # Memory Usage Alerts
       - alert: MemoryUsageRegression
         expr: |
           (memory_usage_process_megabytes / memory_baseline_process_megabytes - 1) * 100 > 20
@@ -309,7 +309,7 @@ groups:
             - Review failed performance criteria
           runbook_url: "https://docs.ai-pdf-scholar.com/alerts/production-readiness"
 
-      - alert: ProductionReadinessCritical  
+      - alert: ProductionReadinessCritical
         expr: |
           production_readiness_score_percentage < 70
         for: 5m
@@ -391,5 +391,5 @@ inhibit_rules:
   - source_match:
       alert_type: 'performance_threshold'
     target_match:
-      alert_type: 'performance_regression'  
+      alert_type: 'performance_regression'
     equal: ['component']

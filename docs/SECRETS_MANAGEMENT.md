@@ -297,17 +297,17 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v2
-    
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
-    
+
     - name: Deploy with secrets from AWS
       env:
         SECRET_PROVIDER: aws_secrets_manager
@@ -385,21 +385,21 @@ config = SecretConfig(
 
 ```python
 class SecretsManager:
-    def get_secret(key: str, secret_type: Optional[SecretType] = None, 
+    def get_secret(key: str, secret_type: Optional[SecretType] = None,
                    use_cache: bool = True, version: Optional[str] = None) -> Optional[str]
-    
+
     def set_secret(key: str, value: str, secret_type: SecretType,
                    rotation_interval_days: Optional[int] = None,
                    expires_in_days: Optional[int] = None) -> bool
-    
+
     def rotate_secret(key: str, new_value: str) -> bool
-    
+
     def delete_secret(key: str) -> bool
-    
+
     def list_secrets(prefix: Optional[str] = None) -> List[str]
-    
+
     def check_rotation_needed() -> List[Tuple[str, SecretMetadata]]
-    
+
     def get_audit_log(start_time: Optional[datetime] = None,
                       end_time: Optional[datetime] = None,
                       operation: Optional[str] = None) -> List[Dict]
@@ -411,17 +411,17 @@ class SecretsManager:
 class ApplicationConfig:
     @classmethod
     def from_env(cls, secrets_manager: Optional[SecretsManager] = None) -> ApplicationConfig
-    
+
     def get_database_url() -> str
-    
+
     def get_redis_url() -> Optional[str]
-    
+
     def get_api_key(service: str) -> Optional[str]
-    
+
     def validate_secrets() -> List[str]
-    
+
     def is_production() -> bool
-    
+
     def is_development() -> bool
 ```
 

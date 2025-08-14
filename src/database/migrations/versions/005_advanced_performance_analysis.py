@@ -304,7 +304,7 @@ class AdvancedPerformanceAnalysisMigration(BaseMigration):
             # Insert all baselines
             if baselines:
                 baseline_insert_sql = """
-                INSERT INTO performance_baselines (metric_name, baseline_value, measurement_unit, context_info) 
+                INSERT INTO performance_baselines (metric_name, baseline_value, measurement_unit, context_info)
                 VALUES (?, ?, ?, ?)
                 """
                 for baseline in baselines:

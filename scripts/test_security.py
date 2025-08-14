@@ -15,7 +15,7 @@ def run_command(cmd, cwd=None, timeout=60):
     """Run a command and return the result with timeout"""
     try:
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, 
+            cmd, shell=True, capture_output=True, text=True,
             cwd=cwd, timeout=timeout
         )
         return result.returncode == 0, result.stdout, result.stderr
@@ -27,11 +27,11 @@ def run_command(cmd, cwd=None, timeout=60):
 def test_python_security():
     """Test Python security with bandit (optimized)"""
     print("🔍 Testing Python security with bandit...")
-    
+
     # Use optimized bandit configuration if available
     bandit_config = "-c .bandit" if os.path.exists(".bandit") else ""
     cmd = f"python -m bandit {bandit_config} -r src/ backend/ -f json -ll"
-    
+
     success, stdout, stderr = run_command(cmd, timeout=45)
     if success:
         print("✅ Bandit scan completed successfully")
@@ -43,11 +43,11 @@ def test_python_security():
 def test_frontend_security():
     """Test frontend security with npm audit"""
     print("🔍 Testing frontend security with npm audit...")
-    
+
     os.chdir("frontend")
     success, stdout, stderr = run_command("npm audit --audit-level=high --json")
     os.chdir("..")
-    
+
     if success:
         print("✅ No high/critical vulnerabilities found")
         return True
@@ -74,7 +74,7 @@ def test_frontend_security():
 def test_secrets():
     """Test for secrets in the codebase"""
     print("🔍 Testing for secrets...")
-    
+
     # Simple secrets check
     patterns = [
         r"password\s*=\s*['\"][^'\"]+['\"]",
@@ -82,36 +82,36 @@ def test_secrets():
         r"secret\s*=\s*['\"][^'\"]+['\"]",
         r"token\s*=\s*['\"][^'\"]+['\"]"
     ]
-    
+
     # Check common files
     files_to_check = [
-        "config.py", 
+        "config.py",
         "backend/api/main.py",
         "src/**/*.py",
         "frontend/src/**/*.ts",
         "frontend/src/**/*.tsx"
     ]
-    
+
     # Simple grep-like check
     for pattern in patterns:
         success, stdout, stderr = run_command(f"grep -r -i '{pattern}' --include='*.py' --include='*.ts' --include='*.tsx' .")
         if success and stdout.strip():
             print(f"⚠️ Potential secret pattern found: {pattern}")
             return False
-    
+
     print("✅ No obvious secrets found")
     return True
 
 def main():
     """Run all security tests"""
     print("🔒 Running security tests...")
-    
+
     tests = [
         ("Python Security", test_python_security),
         ("Frontend Security", test_frontend_security),
         ("Secrets Check", test_secrets)
     ]
-    
+
     results = []
     for name, test_func in tests:
         try:
@@ -121,11 +121,11 @@ def main():
         except Exception as e:
             print(f"❌ {name}: ERROR - {e}")
             results.append((name, False))
-    
+
     print("\n📊 Security Test Summary:")
     for name, result in results:
         print(f"  {'✅' if result else '❌'} {name}")
-    
+
     # Exit with error code if any test failed
     if all(result for _, result in results):
         print("\n🎉 All security tests passed!")
