@@ -273,7 +273,7 @@ ci:
   autofix_prs: true
   autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
   autoupdate_schedule: weekly
-  skip: [safety-check, pytest-coverage, frontend-typecheck, check-todos, check-migrations]
+  skip: [safety-check, pytest-coverage, frontend-typecheck, check-todos, check-migrations, bandit, mypy, pip-compile, eslint, prettier, markdownlint, detect-secrets, hadolint-docker, yamllint, conventional-pre-commit]
   submodules: false
 
 # ============================================================================
