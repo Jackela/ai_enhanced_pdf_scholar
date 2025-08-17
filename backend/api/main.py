@@ -81,13 +81,14 @@ app.add_middleware(FastAPIMetricsMiddleware, app, metrics_collector.metrics_serv
 # WebSocket manager
 websocket_manager = WebSocketManager()
 # Include API routes
-from backend.api.routes import documents, library, rag, system, settings, rate_limit_admin, cache_admin
+from backend.api.routes import documents, library, rag, system, settings, rate_limit_admin, cache_admin, multi_document
 from backend.api.auth import routes as auth_routes
 
 app.include_router(auth_routes.router, prefix="/api", tags=["authentication"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
 app.include_router(library.router, prefix="/api/library", tags=["library"])
+app.include_router(multi_document.router, prefix="/api/multi-document", tags=["multi-document"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
 app.include_router(settings.router, prefix="/api")
 app.include_router(rate_limit_admin.router, prefix="/api/admin", tags=["rate-limiting"])

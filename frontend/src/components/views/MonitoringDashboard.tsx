@@ -9,16 +9,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Activity, 
   Server, 
-  Database, 
-  Wifi, 
   AlertTriangle, 
   CheckCircle, 
   XCircle,
-  TrendingUp,
-  TrendingDown,
   RefreshCw,
-  Bell,
-  Settings as SettingsIcon,
   Maximize2,
   Minimize2
 } from 'lucide-react';
@@ -94,7 +88,7 @@ export const MonitoringDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(1000); // 1 second
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([
+  const [selectedMetrics] = useState<string[]>([
     'system', 'database', 'websocket', 'api'
   ]);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -236,13 +230,13 @@ export const MonitoringDashboard: React.FC = () => {
     }
   };
 
-  const handleMetricsToggle = (metricType: string) => {
-    const newSelection = selectedMetrics.includes(metricType)
-      ? selectedMetrics.filter(m => m !== metricType)
-      : [...selectedMetrics, metricType];
-    
-    setSelectedMetrics(newSelection);
-  };
+  // const handleMetricsToggle = (metricType: string) => {
+  //   const newSelection = selectedMetrics.includes(metricType)
+  //     ? selectedMetrics.filter(m => m !== metricType)
+  //     : [...selectedMetrics, metricType];
+  //   
+  //   setSelectedMetrics(newSelection);
+  // };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -405,7 +399,7 @@ export const MonitoringDashboard: React.FC = () => {
         {/* System Metrics Chart - Takes 2/3 width */}
         <div className="xl:col-span-2">
           <SystemMetricsChart 
-            data={metricsData.system}
+            data={metricsData.system as any}
             isConnected={isConnected}
           />
         </div>
@@ -418,7 +412,7 @@ export const MonitoringDashboard: React.FC = () => {
         {/* Database Metrics */}
         <div className="xl:col-span-1">
           <DatabaseMetricsPanel 
-            data={metricsData.database}
+            data={metricsData.database as any}
             isConnected={isConnected}
           />
         </div>
@@ -426,7 +420,7 @@ export const MonitoringDashboard: React.FC = () => {
         {/* WebSocket Metrics */}
         <div className="xl:col-span-1">
           <WebSocketMetricsPanel 
-            data={metricsData.websocket}
+            data={metricsData.websocket as any}
             isConnected={isConnected}
           />
         </div>
@@ -540,3 +534,5 @@ export const MonitoringDashboard: React.FC = () => {
     </div>
   );
 };
+
+export default MonitoringDashboard;

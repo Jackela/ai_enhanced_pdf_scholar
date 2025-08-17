@@ -81,14 +81,18 @@ class WebSocketManager:
         self.rag_config = RAGStreamConfig()
         self._task_counter = 0
         self._cleanup_task: Optional[asyncio.Task] = None
+        self._is_started = False
 
-        # Start background cleanup task
-        self._start_cleanup_task()
+        # Don't start background task immediately - wait until first connection
 
     async def connect(self, websocket: WebSocket, client_id: str):
         """Accept a new WebSocket connection."""
         await websocket.accept()
         self.active_connections[client_id] = websocket
+        
+        # Start cleanup task if not already started
+        self._start_cleanup_task()
+        
         logger.info(
             f"WebSocket client {client_id} connected. Total: {len(self.active_connections)}"
         )
@@ -322,8 +326,15 @@ class WebSocketManager:
 
     def _start_cleanup_task(self):
         """Start background task for cleaning up completed/failed RAG tasks."""
-        if not self._cleanup_task or self._cleanup_task.done():
-            self._cleanup_task = asyncio.create_task(self._cleanup_background())
+        try:
+            # Only start if we have a running event loop and haven't started yet
+            if not self._is_started and (not self._cleanup_task or self._cleanup_task.done()):
+                asyncio.get_running_loop()  # This will raise if no loop is running
+                self._cleanup_task = asyncio.create_task(self._cleanup_background())
+                self._is_started = True
+        except RuntimeError:
+            # No event loop running, task will be started later when needed
+            pass
 
     async def _cleanup_background(self):
         """Background task to clean up old RAG tasks."""
@@ -646,3 +657,30 @@ class WebSocketManager:
             "type": "rag_task_cancelled", "task_id": task_id,
             "timestamp": datetime.now().isoformat(),
         }, client_id)
+
+    async def cleanup(self):
+        """Clean up all resources and cancel background tasks."""
+        # Cancel cleanup task
+        if self._cleanup_task and not self._cleanup_task.done():
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
+            except asyncio.CancelledError:
+                pass
+        
+        # Cancel all RAG tasks
+        for task_id in list(self.rag_tasks.keys()):
+            task = self.rag_tasks[task_id]
+            if task.background_task and not task.background_task.done():
+                task.background_task.cancel()
+            if task.cancellation_token:
+                task.cancellation_token.set()
+        
+        # Clear all data
+        self.active_connections.clear()
+        self.rooms.clear()
+        self.client_tasks.clear()
+        self.rag_tasks.clear()
+        self._is_started = False
+        
+        logger.info("WebSocketManager cleanup completed")

@@ -295,6 +295,23 @@ def pytest_sessionstart(session):
 
 def pytest_sessionfinish(session):
     """Clean up session-wide resources and generate reports."""
+    # Cleanup WebSocket Manager
+    try:
+        import asyncio
+        from backend.api.main import websocket_manager
+        
+        # Only cleanup if there's a running event loop or we can create one
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(websocket_manager.cleanup())
+        except RuntimeError:
+            # No running loop, create one for cleanup
+            asyncio.run(websocket_manager.cleanup())
+            
+        print("   WebSocketManager cleanup completed")
+    except Exception as e:
+        print(f"   Warning: WebSocketManager cleanup error: {e}")
+    
     # Cleanup database manager
     db_manager.cleanup_all()
 

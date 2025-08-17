@@ -255,3 +255,85 @@ export interface PDFViewerState {
   isLoading: boolean
   error: string | null
 }
+
+// Multi-Document Collection types
+export interface DocumentCollection {
+  id: number
+  name: string
+  description: string | null
+  document_ids: number[]
+  document_count: number
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface CreateCollectionRequest {
+  name: string
+  description?: string
+  document_ids: number[]
+}
+
+export interface UpdateCollectionRequest {
+  name?: string
+  description?: string
+}
+
+export interface CollectionListResponse {
+  collections: DocumentCollection[]
+  total_count: number
+  page: number
+  limit: number
+}
+
+export interface DocumentSource {
+  document_id: number
+  relevance_score: number
+  excerpt: string
+  page_number?: number
+  chunk_id?: string
+}
+
+export interface CrossReference {
+  source_doc_id: number
+  target_doc_id: number
+  relation_type: string
+  confidence: number
+  description?: string
+}
+
+export interface CrossDocumentQueryRequest {
+  query: string
+  max_results?: number
+  user_id?: string
+}
+
+export interface MultiDocumentQueryResponse {
+  id: number
+  query: string
+  answer: string
+  confidence: number
+  sources: DocumentSource[]
+  cross_references: CrossReference[]
+  processing_time_ms: number
+  tokens_used?: number
+  status: string
+  created_at: string
+}
+
+export interface QueryHistoryResponse {
+  queries: MultiDocumentQueryResponse[]
+  total_count: number
+  page: number
+  limit: number
+}
+
+export interface CollectionStatistics {
+  collection_id: number
+  name: string
+  document_count: number
+  total_file_size: number
+  avg_file_size: number
+  created_at: string | null
+  recent_queries: number
+  avg_query_time_ms?: number
+}

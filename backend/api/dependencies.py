@@ -16,6 +16,7 @@ from config import Config
 from src.controllers.library_controller import LibraryController
 from src.database.connection import DatabaseConnection
 from src.services.enhanced_rag_service import EnhancedRAGService
+from src.services.multi_document_rag_service import MultiDocumentRAGService
 from backend.api.websocket_manager import WebSocketManager
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 _db_connection: Optional[DatabaseConnection] = None
 _enhanced_rag_service: Optional[EnhancedRAGService] = None
 _library_controller: Optional[LibraryController] = None
+_multi_document_rag_service: Optional[MultiDocumentRAGService] = None
 
 
 @lru_cache()
@@ -202,3 +204,45 @@ def get_websocket_manager() -> WebSocketManager:
                 detail="WebSocket manager initialization failed",
             )
     return _websocket_manager
+
+
+def get_multi_document_rag_service(
+    db: DatabaseConnection = Depends(get_db),
+    enhanced_rag: Optional[EnhancedRAGService] = Depends(get_enhanced_rag),
+) -> MultiDocumentRAGService:
+    """Get multi-document RAG service dependency."""
+    global _multi_document_rag_service
+    if _multi_document_rag_service is None:
+        try:
+            # Import repositories here to avoid circular imports
+            from src.repositories.document_repository import DocumentRepository
+            from src.repositories.multi_document_repositories import (
+                MultiDocumentCollectionRepository,
+                MultiDocumentIndexRepository,
+                CrossDocumentQueryRepository,
+            )
+            
+            # Create repository instances
+            doc_repo = DocumentRepository(db)
+            collection_repo = MultiDocumentCollectionRepository(db)
+            index_repo = MultiDocumentIndexRepository(db)
+            query_repo = CrossDocumentQueryRepository(db)
+            
+            # Create service instance
+            index_storage_path = Path.home() / ".ai_pdf_scholar" / "multi_doc_indexes"
+            _multi_document_rag_service = MultiDocumentRAGService(
+                collection_repository=collection_repo,
+                index_repository=index_repo,
+                query_repository=query_repo,
+                document_repository=doc_repo,
+                enhanced_rag_service=enhanced_rag,
+                index_storage_path=str(index_storage_path)
+            )
+            logger.info("Multi-document RAG service initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize multi-document RAG service: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Multi-document RAG service initialization failed",
+            )
+    return _multi_document_rag_service

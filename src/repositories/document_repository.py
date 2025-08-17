@@ -56,6 +56,21 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
     def get_by_id(self, entity_id: int) -> DocumentModel | None:
         """Interface method - alias for find_by_id."""
         return self.find_by_id(entity_id)
+        
+    def get_by_ids(self, entity_ids: list[int]) -> list[DocumentModel]:
+        """Get multiple documents by their IDs."""
+        if not entity_ids:
+            return []
+            
+        try:
+            # Create placeholders for SQL IN clause
+            placeholders = ",".join("?" * len(entity_ids))
+            query = f"SELECT * FROM documents WHERE id IN ({placeholders})"
+            rows = self.db.fetch_all(query, tuple(entity_ids))
+            return [self.to_model(dict(row)) for row in rows]
+        except Exception as e:
+            logger.error(f"Failed to get documents by IDs {entity_ids}: {e}")
+            raise
 
     def find_by_hash(self, file_hash: str) -> DocumentModel | None:
         """Interface method - alias for find_by_file_hash."""

@@ -1,0 +1,43 @@
+{
+  "overall_status": "CRITICAL_ISSUES",
+  "overall_success_rate": 0,
+  "total_duration": 34.117726,
+  "test_summaries": {
+    "unit_tests": {
+      "total_tests": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "success_rate": 100
+    }
+  },
+  "totals": {
+    "total_tests": 0,
+    "total_passed": 0,
+    "total_failed": 0
+  },
+  "detailed_results": {
+    "tests": {},
+    "summary": {},
+    "performance": {},
+    "quality": {},
+    "unit_tests": {
+      "summary": {
+        "total_tests": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "success_rate": 100
+      },
+      "return_code": 2,
+      "output": "\n\ud83d\ude80 Starting optimized test session\n============================= test session starts =============================\nplatform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.5.0 -- C:\\ProgramData\\miniconda3\\python.exe\ncachedir: .pytest_cache\nbenchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)\nmetadata: {'Python': '3.13.5', 'Platform': 'Windows-11-10.0.26120-SP0', 'Packages': {'pytest': '8.4.1', 'pluggy': '1.5.0'}, 'Plugins': {'anyio': '4.9.0', 'asyncio': '1.1.0', 'base-url': '2.1.0', 'benchmark': '5.1.0', 'cov': '6.2.1', 'html': '4.1.1', 'httpx': '0.35.0', 'metadata': '3.1.1', 'mock': '3.14.1', 'playwright': '0.7.0', 'timeout': '2.4.0', 'xdist': '3.8.0'}, 'JAVA_HOME': 'C:\\\\Program Files\\\\Java\\\\jdk-21', 'Base URL': ''}\nrootdir: E:\\Code\\ai_enhanced_pdf_scholar\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.1.0, base-url-2.1.0, benchmark-5.1.0, cov-6.2.1, html-4.1.1, httpx-0.35.0, metadata-3.1.1, mock-3.14.1, playwright-0.7.0, timeout-2.4.0, xdist-3.8.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ntimeout: 60.0s\ntimeout method: thread\ntimeout func_only: False\ncreated: 8/8 workers\n   Warning: WebSocketManager cleanup error: No module named 'boto3'\n\u2705 Test session cleanup completed\n\n=================================== ERRORS ====================================\n___ ERROR collecting tests/integration/test_complete_system_integration.py ____\nImportError while importing test module 'E:\\Code\\ai_enhanced_pdf_scholar\\tests\\integration\\test_complete_system_integration.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\integration\\test_complete_system_integration.py:21: in <module>\n    from tests.production.test_production_readiness import test_complete_production_readiness\ntests\\production\\test_production_readiness.py:23: in <module>\n    from backend.services.production_monitoring import ProductionMonitoringService, HealthStatus\nbackend\\services\\production_monitoring.py:17: in <module>\n    from .alert_service import AlertingService\nE   ImportError: cannot import name 'AlertingService' from 'backend.services.alert_service' (E:\\Code\\ai_enhanced_pdf_scholar\\backend\\services\\alert_service.py)\n_____________ ERROR collecting tests/load/test_production_load.py _____________\nImportError while importing test module 'E:\\Code\\ai_enhanced_pdf_scholar\\tests\\load\\test_production_load.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\load\\test_production_load.py:12: in <module>\n    import resource\nE   ModuleNotFoundError: No module named 'resource'\n____________ ERROR collecting tests/performance/test_regression.py ____________\nImportError while importing test module 'E:\\Code\\ai_enhanced_pdf_scholar\\tests\\performance\\test_regression.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\performance\\test_regression.py:23: in <module>\n    from backend.api.main import app\nbackend\\api\\main.py:84: in <module>\n    from backend.api.routes import documents, library, rag, system, settings, rate_limit_admin, cache_admin, multi_document\nbackend\\api\\routes\\system.py:24: in <module>\n    from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor\nbackend\\services\\integrated_performance_monitor.py:16: in <module>\n    from backend.services.cache_optimization_service import CacheOptimizationService\nbackend\\services\\cache_optimization_service.py:23: in <module>\n    from backend.services.redis_cache_service import RedisCacheService\nbackend\\services\\redis_cache_service.py:18: in <module>\n    from redis.client import Pipeline\nE   ModuleNotFoundError: No module named 'redis.client'; 'redis' is not a package\n_______ ERROR collecting tests/production/test_production_readiness.py ________\nImportError while importing test module 'E:\\Code\\ai_enhanced_pdf_scholar\\tests\\production\\test_production_readiness.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\production\\test_production_readiness.py:23: in <module>\n    from backend.services.production_monitoring import ProductionMonitoringService, HealthStatus\nbackend\\services\\production_monitoring.py:17: in <module>\n    from .alert_service import AlertingService\nE   ImportError: cannot import name 'AlertingService' from 'backend.services.alert_service' (E:\\Code\\ai_enhanced_pdf_scholar\\backend\\services\\alert_service.py)\n__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________\nImportError while importing test module 'E:\\Code\\ai_enhanced_pdf_scholar\\tests\\resilience\\test_fault_tolerance.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\resilience\\test_fault_tolerance.py:23: in <module>\n    from backend.services.circuit_breaker_service import CircuitBreakerService\nE   ImportError: cannot import name 'CircuitBreakerService' from 'backend.services.circuit_breaker_service' (E:\\Code\\ai_enhanced_pdf_scholar\\backend\\services\\circuit_breaker_service.py)\n=========================== short test summary info ===========================\nERROR tests/integration/test_complete_system_integration.py\nERROR tests/load/test_production_load.py\nERROR tests/performance/test_regression.py\nERROR tests/production/test_production_readiness.py\nERROR tests/resilience/test_fault_tolerance.py\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 5 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!! xdist.dsession.Interrupted: stopping after 5 failures !!!!!!!!!!!!\n================= 1 skipped, 108 warnings, 5 errors in 12.87s =================\n",
+      "errors": "<sys>:0: DeprecationWarning: builtin type swigvarlink has no __module__ attribute\n"
+    }
+  },
+  "timestamp": "2025-08-15T21:05:04.167650",
+  "system_info": {
+    "python_version": "3.13.5",
+    "platform": "win32",
+    "project_root": "E:\\Code\\ai_enhanced_pdf_scholar"
+  }
+}

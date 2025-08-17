@@ -14,8 +14,7 @@ import {
   X, 
   Clock,
   ChevronDown,
-  ChevronUp,
-  Filter
+  ChevronUp
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -60,20 +59,20 @@ export const AlertsPanel: React.FC<AlertsPanelProps> = ({
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return 'bg-red-100 border-red-300 text-red-800';
-      case 'error':
-        return 'bg-red-50 border-red-200 text-red-700';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-700';
-      case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-700';
-      default:
-        return 'bg-gray-50 border-gray-200 text-gray-700';
-    }
-  };
+  // const getSeverityColor = (severity: string) => {
+  //   switch (severity) {
+  //     case 'critical':
+  //       return 'bg-red-100 border-red-300 text-red-800';
+  //     case 'error':
+  //       return 'bg-red-50 border-red-200 text-red-700';
+  //     case 'warning':
+  //       return 'bg-yellow-50 border-yellow-200 text-yellow-700';
+  //     case 'info':
+  //       return 'bg-blue-50 border-blue-200 text-blue-700';
+  //     default:
+  //       return 'bg-gray-50 border-gray-200 text-gray-700';
+  //   }
+  // };
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
