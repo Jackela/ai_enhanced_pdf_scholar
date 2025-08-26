@@ -10,10 +10,10 @@ import os
 import re
 import ssl
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urljoin, urlparse
 import warnings
+from datetime import datetime, timedelta
+from typing import Any
+from urllib.parse import urlparse
 
 import aiohttp
 import pytest
@@ -122,12 +122,12 @@ class SecurityTestResult:
         self.warnings = []
         self.summary = {}
 
-    def add_vulnerability(self, vulnerability: Dict[str, Any]):
+    def add_vulnerability(self, vulnerability: dict[str, Any]):
         """Add a vulnerability finding."""
         vulnerability['timestamp'] = datetime.utcnow().isoformat()
         self.vulnerabilities.append(vulnerability)
 
-    def add_passed_test(self, test_name: str, details: Dict[str, Any] = None):
+    def add_passed_test(self, test_name: str, details: dict[str, Any] = None):
         """Add a passed test."""
         self.passed_tests.append({
             'test': test_name,
@@ -135,7 +135,7 @@ class SecurityTestResult:
             'timestamp': datetime.utcnow().isoformat()
         })
 
-    def add_failed_test(self, test_name: str, error: str, details: Dict[str, Any] = None):
+    def add_failed_test(self, test_name: str, error: str, details: dict[str, Any] = None):
         """Add a failed test."""
         self.failed_tests.append({
             'test': test_name,
@@ -144,7 +144,7 @@ class SecurityTestResult:
             'timestamp': datetime.utcnow().isoformat()
         })
 
-    def add_warning(self, warning: str, details: Dict[str, Any] = None):
+    def add_warning(self, warning: str, details: dict[str, Any] = None):
         """Add a warning."""
         self.warnings.append({
             'warning': warning,
@@ -192,7 +192,7 @@ class SecurityTestResult:
 
         return max(0, base_score)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             'summary': self.summary,
@@ -224,7 +224,7 @@ class SecurityTestBase:
         if self.session:
             await self.session.close()
 
-    async def authenticate_user(self) -> Optional[str]:
+    async def authenticate_user(self) -> str | None:
         """Authenticate as regular user."""
         try:
             async with self.session.post(
@@ -242,7 +242,7 @@ class SecurityTestBase:
             logger.error(f"User authentication failed: {e}")
         return None
 
-    async def authenticate_admin(self) -> Optional[str]:
+    async def authenticate_admin(self) -> str | None:
         """Authenticate as admin user."""
         try:
             async with self.session.post(
@@ -260,7 +260,7 @@ class SecurityTestBase:
             logger.error(f"Admin authentication failed: {e}")
         return None
 
-    def get_auth_headers(self, token: Optional[str] = None) -> Dict[str, str]:
+    def get_auth_headers(self, token: str | None = None) -> dict[str, str]:
         """Get authentication headers."""
         token = token or self.auth_token
         if token:
@@ -1000,7 +1000,7 @@ class SecurityTestRunner:
         self.config = config
         self.results = []
 
-    async def run_all_tests(self) -> Dict[str, Any]:
+    async def run_all_tests(self) -> dict[str, Any]:
         """Run all security tests."""
         logger.info("Starting comprehensive security test suite")
 
@@ -1059,7 +1059,7 @@ class SecurityTestRunner:
         logger.info("Security test suite completed")
         return report
 
-    def _generate_report(self, start_time: datetime, end_time: datetime) -> Dict[str, Any]:
+    def _generate_report(self, start_time: datetime, end_time: datetime) -> dict[str, Any]:
         """Generate comprehensive security test report."""
         total_duration = (end_time - start_time).total_seconds()
 
@@ -1119,7 +1119,7 @@ class SecurityTestRunner:
             'compliance_status': self._check_compliance(all_vulnerabilities)
         }
 
-    def _generate_recommendations(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _generate_recommendations(self, vulnerabilities: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Generate security recommendations based on findings."""
         recommendations = []
 
@@ -1178,7 +1178,7 @@ class SecurityTestRunner:
         }
         return priority_map.get(severity, 'Medium')
 
-    def _check_compliance(self, vulnerabilities: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _check_compliance(self, vulnerabilities: list[dict[str, Any]]) -> dict[str, Any]:
         """Check compliance with security standards."""
         critical_vulns = len([v for v in vulnerabilities if v.get('severity') == 'critical'])
         high_vulns = len([v for v in vulnerabilities if v.get('severity') == 'high'])

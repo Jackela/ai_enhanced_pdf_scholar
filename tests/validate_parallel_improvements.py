@@ -11,26 +11,16 @@ Tests and validates the enhanced parallel testing infrastructure to ensure:
 import asyncio
 import json
 import time
-import statistics
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
-
-import pytest
+from typing import Any
 
 from tests.parallel_test_utils import (
     ParallelDatabaseManager,
-    ParallelTestOrchestrator,
-    ConcurrentTestHelper
 )
-from tests.test_categorization import TestAnalyzer, TestExecutionPlanner
 from tests.performance_optimization import (
     get_performance_cache,
     get_resource_monitor,
-    get_test_distributor,
-    PerformanceMetrics
 )
-from src.database.connection import DatabaseConnection
 
 
 class ParallelTestingValidator:
@@ -45,12 +35,12 @@ class ParallelTestingValidator:
     """
 
     def __init__(self):
-        self.results: Dict[str, Any] = {}
+        self.results: dict[str, Any] = {}
         self.test_count = 0
         self.success_count = 0
-        self.performance_baseline: Dict[str, float] = {}
+        self.performance_baseline: dict[str, float] = {}
 
-    async def run_comprehensive_validation(self) -> Dict[str, Any]:
+    async def run_comprehensive_validation(self) -> dict[str, Any]:
         """Run all validation tests."""
         print("🔍 Starting comprehensive parallel testing validation...")
 
@@ -90,7 +80,7 @@ class ParallelTestingValidator:
         print("✅ Validation completed!")
         return validation_results
 
-    async def _validate_database_isolation(self) -> Dict[str, Any]:
+    async def _validate_database_isolation(self) -> dict[str, Any]:
         """Validate database isolation between parallel tests."""
 
         print("  Testing per-test isolation...")
@@ -118,7 +108,7 @@ class ParallelTestingValidator:
             ])
         }
 
-    async def _test_per_test_isolation(self) -> Dict[str, Any]:
+    async def _test_per_test_isolation(self) -> dict[str, Any]:
         """Test that per-test isolation prevents data leakage."""
         db_manager = ParallelDatabaseManager.get_instance()
 
@@ -173,11 +163,11 @@ class ParallelTestingValidator:
                 "error": str(e)
             }
 
-    async def _test_per_worker_isolation(self) -> Dict[str, Any]:
+    async def _test_per_worker_isolation(self) -> dict[str, Any]:
         """Test per-worker isolation with concurrent access."""
         db_manager = ParallelDatabaseManager.get_instance()
 
-        async def worker_test(worker_id: str) -> Dict[str, Any]:
+        async def worker_test(worker_id: str) -> dict[str, Any]:
             """Simulate test execution in a worker."""
             try:
                 # Each worker gets its own database
@@ -228,7 +218,7 @@ class ParallelTestingValidator:
             "worker_results": worker_results
         }
 
-    async def _test_shared_cleanup(self) -> Dict[str, Any]:
+    async def _test_shared_cleanup(self) -> dict[str, Any]:
         """Test that shared database cleanup works correctly."""
         db_manager = ParallelDatabaseManager.get_instance()
 
@@ -280,10 +270,10 @@ class ParallelTestingValidator:
                 "error": str(e)
             }
 
-    async def _test_concurrent_database_access(self) -> Dict[str, Any]:
+    async def _test_concurrent_database_access(self) -> dict[str, Any]:
         """Test concurrent database access with different isolation levels."""
 
-        async def concurrent_operation(operation_id: int) -> Dict[str, Any]:
+        async def concurrent_operation(operation_id: int) -> dict[str, Any]:
             """Simulate concurrent database operations."""
             db_manager = ParallelDatabaseManager.get_instance()
 
@@ -353,7 +343,7 @@ class ParallelTestingValidator:
             "operation_results": operation_results
         }
 
-    async def _validate_performance_improvements(self) -> Dict[str, Any]:
+    async def _validate_performance_improvements(self) -> dict[str, Any]:
         """Validate that parallel execution provides performance improvements."""
 
         # Test sequential vs parallel execution
@@ -385,7 +375,7 @@ class ParallelTestingValidator:
             "success": speedup >= 1.4 and parallel_results["success_rate"] >= 0.95
         }
 
-    async def _run_sequential_test_batch(self) -> Dict[str, Any]:
+    async def _run_sequential_test_batch(self) -> dict[str, Any]:
         """Run a batch of tests sequentially for baseline measurement."""
 
         start_time = time.time()
@@ -425,10 +415,10 @@ class ParallelTestingValidator:
             "execution_type": "sequential"
         }
 
-    async def _run_parallel_test_batch(self) -> Dict[str, Any]:
+    async def _run_parallel_test_batch(self) -> dict[str, Any]:
         """Run a batch of tests in parallel."""
 
-        async def parallel_test(test_id: int) -> Dict[str, Any]:
+        async def parallel_test(test_id: int) -> dict[str, Any]:
             """Single parallel test."""
             test_start = time.time()
             try:
@@ -476,7 +466,7 @@ class ParallelTestingValidator:
             "concurrency_limit": 8
         }
 
-    async def _test_cache_performance(self) -> Dict[str, Any]:
+    async def _test_cache_performance(self) -> dict[str, Any]:
         """Test cache performance improvements."""
         cache = get_performance_cache()
 
@@ -517,7 +507,7 @@ class ParallelTestingValidator:
             "success": cache_stats["hit_rate"] > 0.5  # At least 50% hit rate
         }
 
-    async def _validate_resource_management(self) -> Dict[str, Any]:
+    async def _validate_resource_management(self) -> dict[str, Any]:
         """Validate resource management capabilities."""
         monitor = get_resource_monitor()
 
@@ -561,11 +551,11 @@ class ParallelTestingValidator:
             "success": metrics.success and metrics.memory_usage_mb > 0
         }
 
-    async def _validate_test_reliability(self) -> Dict[str, Any]:
+    async def _validate_test_reliability(self) -> dict[str, Any]:
         """Validate that parallel execution maintains test reliability."""
 
         # Run the same test multiple times in parallel to check consistency
-        async def reliability_test(iteration: int) -> Dict[str, Any]:
+        async def reliability_test(iteration: int) -> dict[str, Any]:
             """Consistent test that should always pass."""
             db_manager = ParallelDatabaseManager.get_instance()
 
@@ -632,7 +622,7 @@ class ParallelTestingValidator:
             "success": reliability_rate >= 0.99 and consistency_rate >= 0.99
         }
 
-    async def _validate_cache_performance(self) -> Dict[str, Any]:
+    async def _validate_cache_performance(self) -> dict[str, Any]:
         """Validate cache performance improvements."""
         cache = get_performance_cache()
 
@@ -678,7 +668,7 @@ class ParallelTestingValidator:
             "success": hit_count == 100 and miss_count == 100 and final_stats["hit_rate"] > 0.5
         }
 
-    def _generate_validation_summary(self, validation_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_validation_summary(self, validation_results: dict[str, Any]) -> dict[str, Any]:
         """Generate overall validation summary."""
 
         test_results = validation_results["validation_tests"]
@@ -752,25 +742,25 @@ async def main():
 
         # Print summary
         summary = results["summary"]
-        print(f"\n📊 Validation Summary:")
+        print("\n📊 Validation Summary:")
         print(f"   Overall Success: {'✅' if summary['overall_success'] else '❌'}")
         print(f"   Success Rate: {summary['success_rate']:.1%}")
         print(f"   Validations Passed: {summary['successful_validations']}/{summary['total_validations']}")
 
-        print(f"\n⚡ Performance Metrics:")
+        print("\n⚡ Performance Metrics:")
         metrics = summary["key_metrics"]
         print(f"   Speedup: {metrics['performance_speedup']:.2f}x")
         print(f"   Time Savings: {metrics['time_savings_percent']:.1f}%")
         print(f"   Reliability Rate: {metrics['reliability_rate']:.1%}")
         print(f"   Consistency Rate: {metrics['consistency_rate']:.1%}")
 
-        print(f"\n🎯 Targets Met:")
+        print("\n🎯 Targets Met:")
         targets = summary["targets_met"]
         for target, met in targets.items():
             print(f"   {target.replace('_', ' ').title()}: {'✅' if met else '❌'}")
 
         if summary["recommendations"]:
-            print(f"\n💡 Recommendations:")
+            print("\n💡 Recommendations:")
             for rec in summary["recommendations"]:
                 print(f"   - {rec}")
 

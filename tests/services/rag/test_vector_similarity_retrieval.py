@@ -5,20 +5,17 @@ Tests for vector similarity algorithms, semantic search quality,
 and retrieval relevance optimization in RAG systems.
 """
 
-import pytest
-import numpy as np
-from unittest.mock import Mock, patch, AsyncMock
-from typing import List, Dict, Any, Tuple
-import json
-from pathlib import Path
+from unittest.mock import AsyncMock, Mock
 
-from src.services.rag.vector_similarity import (
-    VectorSimilarityCalculator,
-    SemanticSearchOptimizer,
-    RetrievalRelevanceAnalyzer,
-    SimilarityMetrics
-)
+import numpy as np
+import pytest
+
 from src.services.rag.exceptions import RAGVectorError
+from src.services.rag.vector_similarity import (
+    RetrievalRelevanceAnalyzer,
+    SemanticSearchOptimizer,
+    VectorSimilarityCalculator,
+)
 
 
 class TestVectorSimilarityCalculator:

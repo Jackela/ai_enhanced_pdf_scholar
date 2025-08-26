@@ -4,12 +4,11 @@ RAG Query Workflow E2E Tests
 Tests for document querying, response validation, and RAG functionality.
 """
 
-import pytest
-from playwright.sync_api import Page, expect
 import time
-import json
-from typing import List, Dict, Any
+
+import pytest
 from fixtures import *
+from playwright.sync_api import Page, expect
 
 
 class TestRAGQueryWorkflow:

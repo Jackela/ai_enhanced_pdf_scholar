@@ -7,20 +7,18 @@ import pytest
 from pydantic import ValidationError
 
 from backend.api.models import (
-    DocumentQueryParams,
-    DocumentBase,
-    DocumentCreate,
-    DocumentUpdate,
-    RAGQueryRequest,
-    SecureFileUpload,
-    SearchFilter,
-    SecurityValidationError,
-    validate_against_patterns,
-    sanitize_html_content,
-    validate_filename,
-    validate_file_content_type,
     DANGEROUS_SQL_PATTERNS,
     XSS_PATTERNS,
+    DocumentCreate,
+    DocumentQueryParams,
+    RAGQueryRequest,
+    SearchFilter,
+    SecureFileUpload,
+    SecurityValidationError,
+    sanitize_html_content,
+    validate_against_patterns,
+    validate_file_content_type,
+    validate_filename,
 )
 
 

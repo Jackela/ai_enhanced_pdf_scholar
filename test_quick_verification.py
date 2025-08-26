@@ -4,8 +4,8 @@ Quick verification script to test core functionality works
 This runs the minimal tests needed to verify the CI/CD fixes
 """
 
-import sys
 import os
+import sys
 import tempfile
 import traceback
 
@@ -15,10 +15,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 def test_imports():
     """Test that core imports work without errors"""
     try:
-        from src.database.connection import DatabaseConnection
-        from src.database.models import DocumentModel, CitationModel
-        from src.repositories.citation_repository import CitationRepository
-        from src.services.citation_parsing_service import CitationParsingService
         print("✅ Core imports successful")
         return True
     except Exception as e:

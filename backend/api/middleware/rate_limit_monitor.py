@@ -4,13 +4,11 @@ Provides monitoring, metrics collection, and alerting for rate limiting
 """
 
 import json
-import time
-import asyncio
-from collections import defaultdict, deque
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, asdict
 import logging
+import time
+from collections import defaultdict, deque
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -24,10 +22,10 @@ class RateLimitEvent:
     endpoint: str
     status_code: int
     response_time: float
-    user_agent: Optional[str] = None
-    limit_type: Optional[str] = None  # "endpoint", "global", "bypass"
-    limit_value: Optional[int] = None
-    remaining: Optional[int] = None
+    user_agent: str | None = None
+    limit_type: str | None = None  # "endpoint", "global", "bypass"
+    limit_value: int | None = None
+    remaining: int | None = None
 
 
 @dataclass
@@ -39,8 +37,8 @@ class RateLimitMetrics:
     error_requests: int = 0
     unique_ips: int = 0
     avg_response_time: float = 0.0
-    top_endpoints: List[Tuple[str, int]] = None
-    top_ips: List[Tuple[str, int]] = None
+    top_endpoints: list[tuple[str, int]] = None
+    top_ips: list[tuple[str, int]] = None
     rate_limit_effectiveness: float = 0.0
 
     def __post_init__(self):
@@ -57,7 +55,7 @@ class RateLimitMonitor:
                  max_events: int = 10000,
                  metrics_window_minutes: int = 60,
                  alert_threshold: float = 0.8,
-                 log_file: Optional[str] = None):
+                 log_file: str | None = None):
         """
         Initialize rate limit monitor.
 
@@ -165,7 +163,7 @@ class RateLimitMonitor:
             return True
         return current_time - last_alert > self._alert_cooldown
 
-    def _trigger_alert(self, alert_type: str, context: Dict):
+    def _trigger_alert(self, alert_type: str, context: dict):
         """Trigger a rate limiting alert."""
         logger.warning(f"Rate limiting alert [{alert_type}]: {context}")
 
@@ -190,7 +188,7 @@ class RateLimitMonitor:
                     f"({context['rate']:.1%}) rate limited in last 5 minutes"
                 )
 
-    def get_metrics(self, window_minutes: Optional[int] = None) -> RateLimitMetrics:
+    def get_metrics(self, window_minutes: int | None = None) -> RateLimitMetrics:
         """Get rate limiting metrics for specified time window."""
         if window_minutes is None:
             window_minutes = self.metrics_window.total_seconds() / 60
@@ -245,7 +243,7 @@ class RateLimitMonitor:
             rate_limit_effectiveness=min(1.0, effectiveness)
         )
 
-    def get_ip_metrics(self, client_ip: str, window_minutes: int = 60) -> Dict:
+    def get_ip_metrics(self, client_ip: str, window_minutes: int = 60) -> dict:
         """Get metrics for a specific IP address."""
         events = self._get_recent_events_for_ip(client_ip, window_minutes)
 
@@ -277,7 +275,7 @@ class RateLimitMonitor:
             "last_seen": max(timestamps) if timestamps else None
         }
 
-    def get_endpoint_metrics(self, endpoint: str, window_minutes: int = 60) -> Dict:
+    def get_endpoint_metrics(self, endpoint: str, window_minutes: int = 60) -> dict:
         """Get metrics for a specific endpoint."""
         events = self._get_recent_events_for_endpoint(endpoint, window_minutes)
 
@@ -312,17 +310,17 @@ class RateLimitMonitor:
             "top_ips": top_ips
         }
 
-    def _get_recent_events_for_ip(self, client_ip: str, minutes: int) -> List[RateLimitEvent]:
+    def _get_recent_events_for_ip(self, client_ip: str, minutes: int) -> list[RateLimitEvent]:
         """Get recent events for a specific IP."""
         cutoff_time = time.time() - (minutes * 60)
         return [e for e in self._events if e.client_ip == client_ip and e.timestamp >= cutoff_time]
 
-    def _get_recent_events_for_endpoint(self, endpoint: str, minutes: int) -> List[RateLimitEvent]:
+    def _get_recent_events_for_endpoint(self, endpoint: str, minutes: int) -> list[RateLimitEvent]:
         """Get recent events for a specific endpoint."""
         cutoff_time = time.time() - (minutes * 60)
         return [e for e in self._events if e.endpoint == endpoint and e.timestamp >= cutoff_time]
 
-    def get_suspicious_ips(self, window_minutes: int = 60, min_requests: int = 50) -> List[Dict]:
+    def get_suspicious_ips(self, window_minutes: int = 60, min_requests: int = 50) -> list[dict]:
         """Get list of suspicious IP addresses based on request patterns."""
         cutoff_time = time.time() - (window_minutes * 60)
         recent_events = [e for e in self._events if e.timestamp >= cutoff_time]
@@ -381,7 +379,7 @@ class RateLimitMonitor:
 
         return sorted(suspicious_ips, key=lambda x: x["suspicion_score"], reverse=True)
 
-    def export_events(self, filename: str, window_minutes: Optional[int] = None):
+    def export_events(self, filename: str, window_minutes: int | None = None):
         """Export events to JSON file."""
         if window_minutes:
             cutoff_time = time.time() - (window_minutes * 60)
@@ -408,10 +406,10 @@ class RateLimitMonitor:
 
 
 # Global monitor instance
-_monitor_instance: Optional[RateLimitMonitor] = None
+_monitor_instance: RateLimitMonitor | None = None
 
 
-def get_monitor(log_file: Optional[str] = None) -> RateLimitMonitor:
+def get_monitor(log_file: str | None = None) -> RateLimitMonitor:
     """Get or create global monitor instance."""
     global _monitor_instance
     if _monitor_instance is None:
@@ -423,10 +421,10 @@ def record_rate_limit_event(client_ip: str,
                            endpoint: str,
                            status_code: int,
                            response_time: float,
-                           user_agent: Optional[str] = None,
-                           limit_type: Optional[str] = None,
-                           limit_value: Optional[int] = None,
-                           remaining: Optional[int] = None):
+                           user_agent: str | None = None,
+                           limit_type: str | None = None,
+                           limit_value: int | None = None,
+                           remaining: int | None = None):
     """Convenience function to record a rate limiting event."""
     monitor = get_monitor()
     event = RateLimitEvent(

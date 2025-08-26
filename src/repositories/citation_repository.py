@@ -362,6 +362,38 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
             logger.error(f"Failed to find citations by type '{citation_type}': {e}")
             raise
 
+    def get_by_ids(self, citation_ids: list[int]) -> list[CitationModel]:
+        """
+        Get multiple citations by their IDs.
+
+        Args:
+            citation_ids: List of citation IDs to retrieve
+
+        Returns:
+            List of found citations (may be fewer than requested if some don't exist)
+        """
+        if not citation_ids:
+            return []
+
+        try:
+            # Create placeholders for IN clause
+            placeholders = ",".join(["?" for _ in citation_ids])
+            sql = f"""
+                SELECT * FROM citations
+                WHERE id IN ({placeholders})
+                ORDER BY id
+            """
+            results = self.db.fetch_all(sql, tuple(citation_ids))
+
+            citations = [CitationModel.from_database_row(row) for row in results]
+            logger.debug(f"Found {len(citations)} citations from {len(citation_ids)} IDs")
+
+            return citations
+
+        except Exception as e:
+            logger.error(f"Failed to get citations by IDs {citation_ids}: {e}")
+            raise
+
     def get_statistics(self) -> dict[str, Any]:
         """
         Get comprehensive citation statistics.

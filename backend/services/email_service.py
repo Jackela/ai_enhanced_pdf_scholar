@@ -8,7 +8,7 @@ import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, Dict, Optional
+from typing import Any
 
 from backend.core.secrets import secrets_manager
 
@@ -66,7 +66,7 @@ class EmailTemplate:
 class EmailService:
     """Service for sending transactional emails."""
 
-    def __init__(self, config: Optional[EmailConfig] = None):
+    def __init__(self, config: EmailConfig | None = None):
         """Initialize email service with configuration."""
         self.config = config or EmailConfig()
         self.templates = self._load_templates()
@@ -74,7 +74,7 @@ class EmailService:
         if not self.config.is_configured:
             logger.warning("Email service is not configured - emails will be simulated")
 
-    def _load_templates(self) -> Dict[str, EmailTemplate]:
+    def _load_templates(self) -> dict[str, EmailTemplate]:
         """Load email templates."""
         return {
             "verification": EmailTemplate(

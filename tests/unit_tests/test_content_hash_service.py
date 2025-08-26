@@ -3,11 +3,12 @@ Unit tests for ContentHashService.
 Tests hash generation, caching, and collision detection.
 """
 
-import pytest
-import tempfile
 import os
-from unittest.mock import Mock, patch
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 from src.services.content_hash_service import ContentHashService
 
@@ -115,7 +116,7 @@ class TestContentHashService:
         # Common hash lengths (MD5=32, SHA1=40, SHA256=64)
         assert len(content_hash) in [32, 40, 64]
 
-    @patch('builtins.open', side_effect=IOError("Permission denied"))
+    @patch('builtins.open', side_effect=OSError("Permission denied"))
     def test_calculate_file_hash_permission_error(self, mock_open, hash_service):
         """Test file hash generation with permission error."""
         with pytest.raises((IOError, PermissionError, Exception)):

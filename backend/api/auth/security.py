@@ -3,18 +3,19 @@ JWT Security Module
 Implements JWT token generation, verification, and password hashing with enterprise security.
 """
 
+import hashlib
 import os
 import secrets
-import hashlib
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Tuple
 from pathlib import Path
+from typing import Any
 
 import bcrypt
 import jwt
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
+
 
 # Security configuration
 class SecurityConfig:
@@ -159,8 +160,8 @@ def create_access_token(
     user_id: int,
     username: str,
     role: str,
-    additional_claims: Optional[Dict[str, Any]] = None
-) -> Tuple[str, datetime]:
+    additional_claims: dict[str, Any] | None = None
+) -> tuple[str, datetime]:
     """
     Create JWT access token.
 
@@ -209,9 +210,9 @@ def create_access_token(
 
 def create_refresh_token(
     user_id: int,
-    token_family: Optional[str] = None,
-    device_info: Optional[str] = None
-) -> Tuple[str, str, datetime]:
+    token_family: str | None = None,
+    device_info: str | None = None
+) -> tuple[str, str, datetime]:
     """
     Create JWT refresh token with rotation support.
 
@@ -260,7 +261,7 @@ def create_refresh_token(
     return token, jti, expire
 
 
-def verify_token(token: str, token_type: str = "access") -> Optional[Dict[str, Any]]:
+def verify_token(token: str, token_type: str = "access") -> dict[str, Any] | None:
     """
     Verify and decode JWT token.
 
@@ -301,7 +302,7 @@ def verify_token(token: str, token_type: str = "access") -> Optional[Dict[str, A
         return None
 
 
-def decode_token_unsafe(token: str) -> Optional[Dict[str, Any]]:
+def decode_token_unsafe(token: str) -> dict[str, Any] | None:
     """
     Decode JWT token without verification (for debugging/logging only).
     WARNING: Never use this for authentication!
@@ -365,7 +366,7 @@ def generate_password_reset_token(user_id: int, email: str) -> str:
     )
 
 
-def verify_password_reset_token(token: str) -> Optional[Dict[str, Any]]:
+def verify_password_reset_token(token: str) -> dict[str, Any] | None:
     """
     Verify password reset token.
 
@@ -413,7 +414,7 @@ def generate_email_verification_token(user_id: int, email: str) -> str:
     )
 
 
-def verify_email_verification_token(token: str) -> Optional[Dict[str, Any]]:
+def verify_email_verification_token(token: str) -> dict[str, Any] | None:
     """
     Verify email verification token.
 

@@ -4,19 +4,15 @@ B6 Database Performance Integration Tests
 Comprehensive testing of database performance optimizations and integration with Agent B5 caching.
 """
 
-import asyncio
-import concurrent.futures
 import json
 import logging
 import random
-import sqlite3
 import statistics
 import tempfile
-import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-import uuid
+from typing import Any
+
 import pytest
 
 # Setup logging
@@ -25,23 +21,24 @@ logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
     # B6 Components
-    from src.database.connection import DatabaseConnection
-    from scripts.query_performance_analyzer import QueryPerformanceAnalyzer
     from backend.database.query_optimizer import DynamicQueryOptimizer
-    from backend.services.query_cache_manager import IntelligentQueryCacheManager
-    from scripts.index_optimization_advisor import IndexOptimizationAdvisor
     from backend.database.read_write_splitter import ReadWriteSplitter
     from backend.services.connection_pool_manager import AdvancedConnectionPoolManager
     from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+    from scripts.index_optimization_advisor import IndexOptimizationAdvisor
+    from scripts.query_performance_analyzer import QueryPerformanceAnalyzer
+    from src.database.connection import DatabaseConnection
 
     # B5 Components (if available)
     try:
-        from backend.services.redis_cache_service import RedisCacheService
         from backend.services.cache_optimization_service import CacheOptimizationService
+        from backend.services.redis_cache_service import RedisCacheService
         REDIS_AVAILABLE = True
     except ImportError:
         REDIS_AVAILABLE = False
@@ -56,11 +53,11 @@ class PerformanceBenchmark:
 
     def __init__(self, name: str):
         self.name = name
-        self.execution_times: List[float] = []
-        self.throughput_ops_per_sec: Optional[float] = None
-        self.cache_hit_rate: Optional[float] = None
-        self.memory_usage_mb: Optional[float] = None
-        self.connection_efficiency: Optional[float] = None
+        self.execution_times: list[float] = []
+        self.throughput_ops_per_sec: float | None = None
+        self.cache_hit_rate: float | None = None
+        self.memory_usage_mb: float | None = None
+        self.connection_efficiency: float | None = None
 
     def add_execution_time(self, time_ms: float) -> None:
         """Add execution time measurement."""
@@ -81,7 +78,7 @@ class PerformanceBenchmark:
         index = int(0.95 * len(sorted_times))
         return sorted_times[min(index, len(sorted_times) - 1)]
 
-    def calculate_improvement(self, baseline: 'PerformanceBenchmark') -> Dict[str, float]:
+    def calculate_improvement(self, baseline: 'PerformanceBenchmark') -> dict[str, float]:
         """Calculate performance improvement compared to baseline."""
         improvements = {}
 
@@ -103,7 +100,7 @@ class PerformanceBenchmark:
 class B6PerformanceIntegrationTest:
     """Comprehensive B6 database performance integration test suite."""
 
-    def __init__(self, test_db_path: Optional[str] = None):
+    def __init__(self, test_db_path: str | None = None):
         """Initialize the integration test suite."""
         self.test_db_path = test_db_path or self._create_test_database()
         self.test_data_size = 10000  # Number of test records
@@ -111,21 +108,21 @@ class B6PerformanceIntegrationTest:
         self.test_duration_s = 30    # Test duration in seconds
 
         # Components
-        self.db_connection: Optional[DatabaseConnection] = None
-        self.query_analyzer: Optional[QueryPerformanceAnalyzer] = None
-        self.query_optimizer: Optional[DynamicQueryOptimizer] = None
-        self.cache_manager: Optional[IntelligentQueryCacheManager] = None
-        self.index_advisor: Optional[IndexOptimizationAdvisor] = None
-        self.read_write_splitter: Optional[ReadWriteSplitter] = None
-        self.connection_pool: Optional[AdvancedConnectionPoolManager] = None
-        self.performance_monitor: Optional[DatabasePerformanceMonitor] = None
+        self.db_connection: DatabaseConnection | None = None
+        self.query_analyzer: QueryPerformanceAnalyzer | None = None
+        self.query_optimizer: DynamicQueryOptimizer | None = None
+        self.cache_manager: IntelligentQueryCacheManager | None = None
+        self.index_advisor: IndexOptimizationAdvisor | None = None
+        self.read_write_splitter: ReadWriteSplitter | None = None
+        self.connection_pool: AdvancedConnectionPoolManager | None = None
+        self.performance_monitor: DatabasePerformanceMonitor | None = None
 
         # B5 Integration
-        self.redis_cache: Optional[RedisCacheService] = None
-        self.cache_optimizer: Optional[CacheOptimizationService] = None
+        self.redis_cache: RedisCacheService | None = None
+        self.cache_optimizer: CacheOptimizationService | None = None
 
         # Test results
-        self.benchmarks: Dict[str, PerformanceBenchmark] = {}
+        self.benchmarks: dict[str, PerformanceBenchmark] = {}
 
     def _create_test_database(self) -> str:
         """Create a temporary test database."""
@@ -396,7 +393,7 @@ class B6PerformanceIntegrationTest:
 
         concurrent = PerformanceBenchmark("concurrent_load")
 
-        def user_workload(user_id: int, results: List[float]) -> None:
+        def user_workload(user_id: int, results: list[float]) -> None:
             """Workload for a single concurrent user."""
             user_times = []
             test_queries = self._get_test_queries()
@@ -491,7 +488,7 @@ class B6PerformanceIntegrationTest:
 
         logger.info("B6 optimizations applied")
 
-    def _execute_optimized_query(self, query: str, params: Optional[Tuple] = None) -> Any:
+    def _execute_optimized_query(self, query: str, params: tuple | None = None) -> Any:
         """Execute query with all optimizations applied."""
         # Try cache first
         if self.cache_manager:
@@ -534,7 +531,7 @@ class B6PerformanceIntegrationTest:
         result.from_cache = False
         return result
 
-    def _get_test_queries(self) -> List[Tuple[str, Optional[Tuple]]]:
+    def _get_test_queries(self) -> list[tuple[str, tuple | None]]:
         """Get list of test queries for benchmarking."""
         return [
             # Simple queries
@@ -590,7 +587,7 @@ class B6PerformanceIntegrationTest:
                LIMIT 15""", (5,))
         ]
 
-    def validate_10x_improvement(self) -> Dict[str, Any]:
+    def validate_10x_improvement(self) -> dict[str, Any]:
         """Validate 10x performance improvement target."""
         logger.info("Validating 10x performance improvement...")
 
@@ -653,7 +650,7 @@ class B6PerformanceIntegrationTest:
 
         return validation_results
 
-    def generate_performance_report(self) -> Dict[str, Any]:
+    def generate_performance_report(self) -> dict[str, Any]:
         """Generate comprehensive performance report."""
         logger.info("Generating performance report...")
 
@@ -870,14 +867,14 @@ if __name__ == "__main__":
         print("B6 DATABASE PERFORMANCE INTEGRATION TEST RESULTS")
         print("="*80)
 
-        print(f"\nTest Configuration:")
+        print("\nTest Configuration:")
         config = report["test_configuration"]
         print(f"  Test Data Size: {config['test_data_size']:,} records")
         print(f"  Concurrent Users: {config['concurrent_users']}")
         print(f"  Test Duration: {config['test_duration_s']}s")
         print(f"  B5 Integration: {'Enabled' if config['b5_integration_enabled'] else 'Disabled'}")
 
-        print(f"\nBenchmark Results:")
+        print("\nBenchmark Results:")
         for bench_name, bench_data in report["benchmarks"].items():
             print(f"  {bench_name.upper()}:")
             print(f"    Avg Execution Time: {bench_data['avg_execution_time_ms']:.2f}ms")
@@ -889,7 +886,7 @@ if __name__ == "__main__":
 
         if "performance_validation" in report:
             validation = report["performance_validation"]
-            print(f"Performance Improvement Validation:")
+            print("Performance Improvement Validation:")
             print(f"  10x Target Met: {'YES' if validation['target_met'] else 'NO'}")
             print(f"  Actual Improvement: {validation['performance_multiplier']:.1f}x")
             print()

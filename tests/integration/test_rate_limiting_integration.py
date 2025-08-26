@@ -3,13 +3,13 @@ Integration test for rate limiting functionality
 Tests the complete rate limiting system in a realistic scenario
 """
 
-import pytest
-import time
-from fastapi.testclient import TestClient
-
 # Import the FastAPI app
 import sys
+import time
 from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -166,7 +166,7 @@ def test_rate_limiting_system_health():
         assert rule.requests > 0, f"Endpoint {endpoint} has invalid limit: {rule.requests}"
         assert rule.window > 0, f"Endpoint {endpoint} has invalid window: {rule.window}"
 
-    print(f"✓ Rate limiting system health check passed")
+    print("✓ Rate limiting system health check passed")
     print(f"  - Default limit: {config.default_limit.requests}/{config.default_limit.window}s")
     print(f"  - Global IP limit: {config.global_ip_limit.requests}/{config.global_ip_limit.window}s")
     print(f"  - Endpoint-specific rules: {len(config.endpoint_limits)}")

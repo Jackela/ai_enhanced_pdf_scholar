@@ -9,13 +9,11 @@ import traceback
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
-from contextlib import asynccontextmanager
+from typing import Any, Union
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
 
 # Configure error handling logger
 error_logger = logging.getLogger("api.errors")
@@ -90,11 +88,11 @@ class ErrorCode(str, Enum):
 class ErrorDetail(BaseModel):
     """Detailed error information for specific fields or constraints."""
 
-    field: Optional[str] = Field(None, description="Field that caused the error")
-    constraint: Optional[str] = Field(None, description="Constraint that was violated")
-    provided_value: Optional[str] = Field(None, description="Value that caused the error (sanitized)")
-    expected_format: Optional[str] = Field(None, description="Expected format or value")
-    help_text: Optional[str] = Field(None, description="Helpful guidance for fixing the error")
+    field: str | None = Field(None, description="Field that caused the error")
+    constraint: str | None = Field(None, description="Constraint that was violated")
+    provided_value: str | None = Field(None, description="Value that caused the error (sanitized)")
+    expected_format: str | None = Field(None, description="Expected format or value")
+    help_text: str | None = Field(None, description="Helpful guidance for fixing the error")
 
 
 class ErrorContext(BaseModel):
@@ -102,18 +100,18 @@ class ErrorContext(BaseModel):
 
     request_id: str = Field(..., description="Unique request identifier")
     timestamp: datetime = Field(default_factory=datetime.now, description="Error timestamp")
-    endpoint: Optional[str] = Field(None, description="API endpoint where error occurred")
-    method: Optional[str] = Field(None, description="HTTP method")
-    user_agent: Optional[str] = Field(None, description="Client user agent")
-    client_ip: Optional[str] = Field(None, description="Client IP address")
-    trace_id: Optional[str] = Field(None, description="Distributed tracing ID")
+    endpoint: str | None = Field(None, description="API endpoint where error occurred")
+    method: str | None = Field(None, description="HTTP method")
+    user_agent: str | None = Field(None, description="Client user agent")
+    client_ip: str | None = Field(None, description="Client IP address")
+    trace_id: str | None = Field(None, description="Distributed tracing ID")
 
 
 class StandardErrorResponse(BaseModel):
     """Unified error response model with comprehensive information."""
 
     success: bool = Field(False, description="Always false for error responses")
-    error: Dict[str, Any] = Field(..., description="Error information")
+    error: dict[str, Any] = Field(..., description="Error information")
 
     @classmethod
     def create(
@@ -122,11 +120,11 @@ class StandardErrorResponse(BaseModel):
         message: str,
         category: ErrorCategory,
         status_code: int,
-        correlation_id: Optional[str] = None,
-        details: Optional[Union[ErrorDetail, List[ErrorDetail]]] = None,
-        context: Optional[ErrorContext] = None,
-        help_url: Optional[str] = None,
-        localization: Optional[Dict[str, str]] = None
+        correlation_id: str | None = None,
+        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        context: ErrorContext | None = None,
+        help_url: str | None = None,
+        localization: dict[str, str] | None = None
     ) -> "StandardErrorResponse":
         """Create a standardized error response."""
 
@@ -169,9 +167,9 @@ class APIException(HTTPException):
         message: str,
         category: ErrorCategory,
         status_code: int,
-        details: Optional[Union[ErrorDetail, List[ErrorDetail]]] = None,
-        correlation_id: Optional[str] = None,
-        help_url: Optional[str] = None
+        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        correlation_id: str | None = None,
+        help_url: str | None = None
     ):
         self.code = code
         self.message = message
@@ -189,8 +187,8 @@ class ValidationException(APIException):
     def __init__(
         self,
         message: str = "Request validation failed",
-        details: Optional[Union[ErrorDetail, List[ErrorDetail]]] = None,
-        correlation_id: Optional[str] = None
+        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        correlation_id: str | None = None
     ):
         super().__init__(
             code=ErrorCode.VALIDATION_ERROR,
@@ -210,8 +208,8 @@ class SecurityException(APIException):
         self,
         message: str = "Security validation failed",
         security_type: str = "general",
-        details: Optional[Union[ErrorDetail, List[ErrorDetail]]] = None,
-        correlation_id: Optional[str] = None
+        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        correlation_id: str | None = None
     ):
         code_mapping = {
             "sql_injection": ErrorCode.SQL_INJECTION_ATTEMPT,
@@ -237,7 +235,7 @@ class AuthenticationException(APIException):
     def __init__(
         self,
         message: str = "Authentication required",
-        correlation_id: Optional[str] = None
+        correlation_id: str | None = None
     ):
         super().__init__(
             code=ErrorCode.AUTHENTICATION_REQUIRED,
@@ -255,7 +253,7 @@ class AuthorizationException(APIException):
     def __init__(
         self,
         message: str = "Permission denied",
-        correlation_id: Optional[str] = None
+        correlation_id: str | None = None
     ):
         super().__init__(
             code=ErrorCode.PERMISSION_DENIED,
@@ -273,9 +271,9 @@ class ResourceNotFoundException(APIException):
     def __init__(
         self,
         resource_type: str = "resource",
-        resource_id: Optional[str] = None,
-        message: Optional[str] = None,
-        correlation_id: Optional[str] = None
+        resource_id: str | None = None,
+        message: str | None = None,
+        correlation_id: str | None = None
     ):
         if message is None:
             if resource_id:
@@ -307,7 +305,7 @@ class ConflictException(APIException):
         message: str = "Resource conflict detected",
         resource_type: str = "resource",
         conflict_type: str = "duplicate",
-        correlation_id: Optional[str] = None
+        correlation_id: str | None = None
     ):
         code_mapping = {
             "duplicate": ErrorCode.DUPLICATE_RESOURCE,
@@ -331,8 +329,8 @@ class BusinessLogicException(APIException):
         self,
         message: str = "Business rule violation",
         rule_type: str = "general",
-        details: Optional[Union[ErrorDetail, List[ErrorDetail]]] = None,
-        correlation_id: Optional[str] = None
+        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        correlation_id: str | None = None
     ):
         code_mapping = {
             "invalid_operation": ErrorCode.INVALID_OPERATION,
@@ -357,8 +355,8 @@ class RateLimitException(APIException):
     def __init__(
         self,
         message: str = "Rate limit exceeded",
-        retry_after: Optional[int] = None,
-        correlation_id: Optional[str] = None
+        retry_after: int | None = None,
+        correlation_id: str | None = None
     ):
         super().__init__(
             code=ErrorCode.RATE_LIMIT_EXCEEDED,
@@ -380,7 +378,7 @@ class SystemException(APIException):
         self,
         message: str = "An internal server error occurred",
         error_type: str = "general",
-        correlation_id: Optional[str] = None,
+        correlation_id: str | None = None,
         include_traceback: bool = False
     ):
         code_mapping = {
@@ -415,8 +413,8 @@ class ErrorLogger:
     @staticmethod
     def log_error(
         exception: Union[APIException, Exception],
-        request: Optional[Request] = None,
-        extra_context: Optional[Dict[str, Any]] = None
+        request: Request | None = None,
+        extra_context: dict[str, Any] | None = None
     ):
         """Log error with structured information and correlation ID."""
 
@@ -461,7 +459,7 @@ class ErrorLogger:
 
 def create_error_response(
     exception: Union[APIException, HTTPException, Exception],
-    request: Optional[Request] = None,
+    request: Request | None = None,
     include_debug_info: bool = False
 ) -> JSONResponse:
     """Create a standardized error response from any exception."""
@@ -596,7 +594,7 @@ class ErrorTemplates:
         )
 
     @staticmethod
-    def invalid_file_type(provided_type: str, allowed_types: List[str]) -> ValidationException:
+    def invalid_file_type(provided_type: str, allowed_types: list[str]) -> ValidationException:
         """Invalid file type error."""
         return ValidationException(
             message=f"File type '{provided_type}' is not allowed",
@@ -612,7 +610,7 @@ class ErrorTemplates:
     def file_too_large(file_size: int, max_size: int) -> ValidationException:
         """File too large error."""
         return ValidationException(
-            message=f"File size exceeds maximum allowed size",
+            message="File size exceeds maximum allowed size",
             details=ErrorDetail(
                 field="file_size",
                 provided_value=f"{file_size} bytes",

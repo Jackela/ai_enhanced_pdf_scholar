@@ -17,16 +17,19 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Import all test suites
-from tests.production.test_production_readiness import ProductionReadinessTestSuite
-from tests.load.test_production_load import test_complete_load_testing_suite
-from tests.resilience.test_fault_tolerance import test_complete_fault_tolerance_suite
-from tests.security.test_sql_injection_comprehensive import test_complete_sql_injection_protection
-from tests.security.test_xss_comprehensive import test_complete_xss_protection
-from tests.performance.test_regression import test_complete_performance_regression
-from tests.integration.test_complete_system_integration import test_complete_system_integration_suite
-
 # Import certification generator
 from scripts.generate_production_certification import generate_production_certification
+from tests.integration.test_complete_system_integration import (
+    test_complete_system_integration_suite,
+)
+from tests.load.test_production_load import test_complete_load_testing_suite
+from tests.performance.test_regression import test_complete_performance_regression
+from tests.production.test_production_readiness import ProductionReadinessTestSuite
+from tests.resilience.test_fault_tolerance import test_complete_fault_tolerance_suite
+from tests.security.test_sql_injection_comprehensive import (
+    test_complete_sql_injection_protection,
+)
+from tests.security.test_xss_comprehensive import test_complete_xss_protection
 
 # Configure logging
 logging.basicConfig(
@@ -121,7 +124,9 @@ class ProductionValidationOrchestrator:
         await test_suite.setup_production_environment()
 
         # Import and run the complete test
-        from tests.production.test_production_readiness import test_complete_production_readiness
+        from tests.production.test_production_readiness import (
+            test_complete_production_readiness,
+        )
         results = await test_complete_production_readiness(test_suite)
 
         return results
@@ -171,9 +176,9 @@ class ProductionValidationOrchestrator:
     async def _run_single_test_suite(self, test_config):
         """Run a single test suite with error handling and timeout."""
         test_name = test_config["name"]
-        logger.info(f"=" * 60)
+        logger.info("=" * 60)
         logger.info(f"Starting: {test_config['description']}")
-        logger.info(f"=" * 60)
+        logger.info("=" * 60)
 
         # Check prerequisites
         prereq_ok, prereq_msg = self._check_prerequisites(test_config)
@@ -413,7 +418,7 @@ async def main():
             print(f"🏆 Certification Level: {cert_level.replace('_', ' ')}")
             print(f"📊 Overall Score: {cert_score:.1f}%")
 
-        print(f"\n📁 Results saved to: performance_results/")
+        print("\n📁 Results saved to: performance_results/")
         print(f"⏱️ Total time: {validation_summary['total_duration_seconds']:.1f} seconds")
 
         return validation_summary["overall_success"]

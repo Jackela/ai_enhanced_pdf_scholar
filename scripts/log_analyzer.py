@@ -9,18 +9,15 @@ import argparse
 import json
 import logging
 import re
-import sqlite3
 import statistics
-import time
 from collections import Counter, defaultdict, deque
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
+from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
-from dataclasses import dataclass, asdict
-from enum import Enum
-
 
 # Configure logging
 logging.basicConfig(
@@ -60,17 +57,17 @@ class LogEntry:
     level: LogLevel
     logger_name: str
     message: str
-    module: Optional[str] = None
-    function: Optional[str] = None
-    line_number: Optional[int] = None
-    request_id: Optional[str] = None
-    user_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    response_time: Optional[float] = None
-    status_code: Optional[int] = None
-    endpoint: Optional[str] = None
-    raw_line: Optional[str] = None
-    additional_fields: Optional[Dict[str, Any]] = None
+    module: str | None = None
+    function: str | None = None
+    line_number: int | None = None
+    request_id: str | None = None
+    user_id: str | None = None
+    ip_address: str | None = None
+    response_time: float | None = None
+    status_code: int | None = None
+    endpoint: str | None = None
+    raw_line: str | None = None
+    additional_fields: dict[str, Any] | None = None
 
 
 @dataclass
@@ -79,7 +76,7 @@ class PatternMatch:
     pattern_id: str
     pattern_name: str
     pattern_regex: str
-    matches: List[LogEntry]
+    matches: list[LogEntry]
     frequency: int
     first_seen: datetime
     last_seen: datetime
@@ -100,7 +97,7 @@ class PerformanceBottleneck:
     error_rate: float
     trend: str  # "increasing", "decreasing", "stable"
     severity: str
-    recommendations: List[str]
+    recommendations: list[str]
 
 
 @dataclass
@@ -113,8 +110,8 @@ class SecurityEvent:
     first_seen: datetime
     last_seen: datetime
     risk_level: str
-    attack_pattern: Optional[str] = None
-    countermeasures: List[str] = None
+    attack_pattern: str | None = None
+    countermeasures: list[str] = None
 
 
 @dataclass
@@ -124,8 +121,8 @@ class BusinessMetric:
     metric_value: Union[int, float]
     metric_type: str  # "counter", "gauge", "rate"
     time_period: str
-    trend: Optional[str] = None
-    comparison: Optional[Dict[str, Any]] = None
+    trend: str | None = None
+    comparison: dict[str, Any] | None = None
 
 
 @dataclass
@@ -135,11 +132,11 @@ class Anomaly:
     description: str
     severity: str
     confidence: float
-    affected_components: List[str]
-    time_window: Tuple[datetime, datetime]
-    baseline_value: Optional[float] = None
-    anomalous_value: Optional[float] = None
-    deviation_score: Optional[float] = None
+    affected_components: list[str]
+    time_window: tuple[datetime, datetime]
+    baseline_value: float | None = None
+    anomalous_value: float | None = None
+    deviation_score: float | None = None
 
 
 @dataclass
@@ -149,8 +146,8 @@ class PredictiveInsight:
     prediction: str
     confidence: float
     time_horizon: str
-    supporting_data: Dict[str, Any]
-    recommended_actions: List[str]
+    supporting_data: dict[str, Any]
+    recommended_actions: list[str]
     risk_level: str
 
 
@@ -328,7 +325,7 @@ class LogParser:
             )
         }
 
-    def parse_log_line(self, line: str) -> Optional[LogEntry]:
+    def parse_log_line(self, line: str) -> LogEntry | None:
         """Parse a single log line into structured data."""
         line = line.strip()
         if not line:
@@ -448,7 +445,7 @@ class LogParser:
             additional_fields=additional_fields
         )
 
-    def _parse_timestamp(self, timestamp_str: Optional[str]) -> datetime:
+    def _parse_timestamp(self, timestamp_str: str | None) -> datetime:
         """Parse timestamp string into datetime object."""
         if not timestamp_str:
             return datetime.now()
@@ -482,18 +479,18 @@ class LogParser:
 class LogAnalysisEngine:
     """Advanced log analysis engine with pattern recognition and predictive capabilities."""
 
-    def __init__(self, cache_dir: Optional[Path] = None):
+    def __init__(self, cache_dir: Path | None = None):
         self.parser = LogParser()
         self.pattern_library = LogPatternLibrary()
         self.cache_dir = cache_dir or Path("/tmp/log_analysis_cache")
         self.cache_dir.mkdir(exist_ok=True)
 
         # Analysis state
-        self.log_entries: List[LogEntry] = []
-        self.analysis_results: Dict[str, Any] = {}
+        self.log_entries: list[LogEntry] = []
+        self.analysis_results: dict[str, Any] = {}
 
         # Pattern matching cache
-        self.pattern_cache: Dict[str, List[PatternMatch]] = {}
+        self.pattern_cache: dict[str, list[PatternMatch]] = {}
 
         # Performance tracking
         self.performance_metrics = defaultdict(list)
@@ -509,10 +506,10 @@ class LogAnalysisEngine:
         logger.info(f"Log Analysis Engine initialized with cache dir: {self.cache_dir}")
 
     def analyze_logs(self,
-                    log_sources: List[Union[str, Path]],
+                    log_sources: list[Union[str, Path]],
                     timeframe: str = "24h",
-                    analysis_types: Optional[List[AnalysisType]] = None,
-                    output_format: str = "json") -> Dict[str, Any]:
+                    analysis_types: list[AnalysisType] | None = None,
+                    output_format: str = "json") -> dict[str, Any]:
         """Main analysis entry point."""
 
         if analysis_types is None:
@@ -560,7 +557,7 @@ class LogAnalysisEngine:
 
         return results
 
-    def _load_logs(self, log_sources: List[Union[str, Path]], timeframe: str):
+    def _load_logs(self, log_sources: list[Union[str, Path]], timeframe: str):
         """Load and parse log files within the specified timeframe."""
 
         # Calculate time window
@@ -592,7 +589,7 @@ class LogAnalysisEngine:
             logger.info(f"Processing log file: {log_path}")
 
             try:
-                with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(log_path, encoding='utf-8', errors='ignore') as f:
                     line_count = 0
                     parsed_count = 0
 
@@ -613,7 +610,7 @@ class LogAnalysisEngine:
         self.log_entries.sort(key=lambda x: x.timestamp)
         logger.info(f"Total log entries loaded: {len(self.log_entries)}")
 
-    def _analyze_error_patterns(self) -> List[PatternMatch]:
+    def _analyze_error_patterns(self) -> list[PatternMatch]:
         """Analyze error patterns in the logs."""
         logger.info("Analyzing error patterns...")
 
@@ -653,7 +650,7 @@ class LogAnalysisEngine:
         logger.info(f"Found {len(pattern_matches)} error patterns")
         return pattern_matches
 
-    def _analyze_performance_bottlenecks(self) -> List[PerformanceBottleneck]:
+    def _analyze_performance_bottlenecks(self) -> list[PerformanceBottleneck]:
         """Analyze performance bottlenecks from log data."""
         logger.info("Analyzing performance bottlenecks...")
 
@@ -745,7 +742,7 @@ class LogAnalysisEngine:
         logger.info(f"Found {len(bottlenecks)} performance bottlenecks")
         return bottlenecks
 
-    def _analyze_security_events(self) -> List[SecurityEvent]:
+    def _analyze_security_events(self) -> list[SecurityEvent]:
         """Analyze security events and potential threats."""
         logger.info("Analyzing security events...")
 
@@ -839,7 +836,7 @@ class LogAnalysisEngine:
         logger.info(f"Found {len(security_events)} security events")
         return security_events
 
-    def _extract_business_metrics(self) -> List[BusinessMetric]:
+    def _extract_business_metrics(self) -> list[BusinessMetric]:
         """Extract business metrics from log data."""
         logger.info("Extracting business metrics...")
 
@@ -886,7 +883,7 @@ class LogAnalysisEngine:
         logger.info(f"Extracted {len(metrics)} business metrics")
         return metrics
 
-    def _detect_anomalies(self) -> List[Anomaly]:
+    def _detect_anomalies(self) -> list[Anomaly]:
         """Detect anomalies in log patterns and system behavior."""
         logger.info("Detecting anomalies...")
 
@@ -985,7 +982,7 @@ class LogAnalysisEngine:
         logger.info(f"Detected {len(anomalies)} anomalies")
         return anomalies
 
-    def _generate_predictions(self) -> List[PredictiveInsight]:
+    def _generate_predictions(self) -> list[PredictiveInsight]:
         """Generate predictive insights based on log analysis."""
         logger.info("Generating predictive insights...")
 
@@ -1129,7 +1126,7 @@ class OutputFormatter:
     """Format analysis results for different output formats."""
 
     @staticmethod
-    def format_results(results: Dict[str, Any], format_type: str = "json") -> str:
+    def format_results(results: dict[str, Any], format_type: str = "json") -> str:
         """Format analysis results."""
 
         if format_type.lower() == "json":
@@ -1142,7 +1139,7 @@ class OutputFormatter:
             return json.dumps(results, indent=2, default=str)
 
     @staticmethod
-    def _format_json(results: Dict[str, Any]) -> str:
+    def _format_json(results: dict[str, Any]) -> str:
         """Format as JSON."""
         def json_serializer(obj):
             if isinstance(obj, (datetime, LogLevel, AnalysisType)):
@@ -1154,7 +1151,7 @@ class OutputFormatter:
         return json.dumps(results, indent=2, default=json_serializer)
 
     @staticmethod
-    def _format_markdown(results: Dict[str, Any]) -> str:
+    def _format_markdown(results: dict[str, Any]) -> str:
         """Format as Markdown report."""
         md_content = []
 
@@ -1285,7 +1282,7 @@ class OutputFormatter:
         return "\n".join(md_content)
 
     @staticmethod
-    def _format_html(results: Dict[str, Any]) -> str:
+    def _format_html(results: dict[str, Any]) -> str:
         """Format as HTML report."""
         html_content = []
 

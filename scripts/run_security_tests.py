@@ -8,19 +8,20 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from tests.security.test_security_suite import SecurityTestRunner, SecurityTestConfig
-from tests.security.test_penetration_testing import PenetrationTestRunner, PenetrationTestConfig
+from tests.security.test_penetration_testing import (
+    PenetrationTestConfig,
+    PenetrationTestRunner,
+)
+from tests.security.test_security_suite import SecurityTestConfig, SecurityTestRunner
 
 # Configure logging
 logging.basicConfig(
@@ -39,7 +40,7 @@ class SecurityTestOrchestrator:
         self.output_dir.mkdir(exist_ok=True)
         self.timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
 
-    async def run_comprehensive_security_assessment(self) -> Dict[str, Any]:
+    async def run_comprehensive_security_assessment(self) -> dict[str, Any]:
         """Run complete security assessment including all test suites."""
         logger.info(f"Starting comprehensive security assessment for {self.target_url}")
 
@@ -92,10 +93,10 @@ class SecurityTestOrchestrator:
 
     def _generate_combined_analysis(
         self,
-        security_results: Dict[str, Any],
-        pentest_results: Dict[str, Any],
+        security_results: dict[str, Any],
+        pentest_results: dict[str, Any],
         start_time: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate combined analysis from all test results."""
 
         end_time = datetime.utcnow()
@@ -163,7 +164,7 @@ class SecurityTestOrchestrator:
             }
         }
 
-    def _deduplicate_vulnerabilities(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _deduplicate_vulnerabilities(self, vulnerabilities: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Remove duplicate vulnerabilities based on type and description."""
         seen = set()
         unique_vulns = []
@@ -183,7 +184,7 @@ class SecurityTestOrchestrator:
 
         return unique_vulns
 
-    def _determine_security_posture(self, severity_counts: Dict[str, int], risk_score: int) -> Dict[str, Any]:
+    def _determine_security_posture(self, severity_counts: dict[str, int], risk_score: int) -> dict[str, Any]:
         """Determine overall security posture."""
         if severity_counts['critical'] > 0:
             level = 'Critical Risk'
@@ -215,9 +216,9 @@ class SecurityTestOrchestrator:
 
     def _generate_executive_summary(
         self,
-        severity_counts: Dict[str, int],
+        severity_counts: dict[str, int],
         risk_score: int,
-        security_posture: Dict[str, Any],
+        security_posture: dict[str, Any],
         duration_seconds: float
     ) -> str:
         """Generate executive summary of security assessment."""
@@ -255,7 +256,7 @@ KEY FINDINGS:
             summary += "• No significant security vulnerabilities were identified\n"
             summary += "• Application demonstrates strong security controls\n"
 
-        summary += f"""
+        summary += """
 RECOMMENDATIONS:
 • Prioritize remediation of critical and high-severity vulnerabilities
 • Implement a regular security testing schedule
@@ -268,7 +269,7 @@ web application security, and common penetration testing techniques.
 
         return summary.strip()
 
-    def _generate_compliance_assessment(self, vulnerabilities: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _generate_compliance_assessment(self, vulnerabilities: list[dict[str, Any]]) -> dict[str, Any]:
         """Generate compliance assessment against security standards."""
 
         critical_count = len([v for v in vulnerabilities if v.get('severity') == 'critical'])
@@ -305,7 +306,7 @@ web application security, and common penetration testing techniques.
             }
         }
 
-    def _generate_action_plan(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _generate_action_plan(self, vulnerabilities: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Generate prioritized action plan for remediation."""
 
         # Group vulnerabilities by type and severity
@@ -409,7 +410,7 @@ web application security, and common penetration testing techniques.
         }
         return impacts.get(severity, 'Medium - Moderate business impact')
 
-    async def _save_assessment_results(self, results: Dict[str, Any]) -> None:
+    async def _save_assessment_results(self, results: dict[str, Any]) -> None:
         """Save assessment results to various formats."""
 
         # Save JSON report
@@ -431,7 +432,7 @@ web application security, and common penetration testing techniques.
         # Generate HTML report
         await self._generate_html_report(results)
 
-    async def _save_vulnerabilities_csv(self, results: Dict[str, Any]) -> None:
+    async def _save_vulnerabilities_csv(self, results: dict[str, Any]) -> None:
         """Save vulnerabilities in CSV format."""
         import csv
 
@@ -457,7 +458,7 @@ web application security, and common penetration testing techniques.
 
             logger.info(f"CSV report saved: {csv_file}")
 
-    async def _generate_html_report(self, results: Dict[str, Any]) -> None:
+    async def _generate_html_report(self, results: dict[str, Any]) -> None:
         """Generate HTML report."""
         html_file = self.output_dir / f"security_report_{self.timestamp}.html"
 

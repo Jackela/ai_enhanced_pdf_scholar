@@ -4,12 +4,11 @@ Legacy security test script for CI/CD pipeline
 This script is maintained for backward compatibility.
 For optimized security scanning, use optimized_security_scan.py
 """
-import subprocess
-import sys
 import json
 import os
-from pathlib import Path
-import time
+import subprocess
+import sys
+
 
 def run_command(cmd, cwd=None, timeout=60):
     """Run a command and return the result with timeout"""

@@ -10,19 +10,20 @@ import logging
 import pickle
 import time
 from collections import defaultdict, deque
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 
+from .metrics_service import MetricsService
+
 # Import our services
 from .redis_cache_service import RedisCacheService
-from .metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +56,13 @@ class AccessRecord:
     key: str
     timestamp: datetime
     hit: bool
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
-    request_type: Optional[str] = None
+    user_id: str | None = None
+    session_id: str | None = None
+    request_type: str | None = None
     response_size: int = 0
     processing_time_ms: float = 0.0
 
-    def to_feature_vector(self) -> List[float]:
+    def to_feature_vector(self) -> list[float]:
         """Convert to ML feature vector."""
         hour_of_day = self.timestamp.hour
         day_of_week = self.timestamp.weekday()
@@ -93,7 +94,7 @@ class CacheKeyProfile:
 
     # Access timing
     access_times: deque = field(default_factory=lambda: deque(maxlen=100))
-    inter_arrival_times: List[float] = field(default_factory=list)
+    inter_arrival_times: list[float] = field(default_factory=list)
 
     # Size and performance
     avg_response_size: float = 0.0
@@ -106,7 +107,7 @@ class CacheKeyProfile:
     recency_score: float = 0.0
 
     # ML predictions
-    predicted_next_access: Optional[datetime] = None
+    predicted_next_access: datetime | None = None
     access_probability_score: float = 0.0
 
     def update_access(self, access_time: datetime, hit: bool, response_size: int = 0, processing_time: float = 0.0):
@@ -210,7 +211,7 @@ class CacheMLPredictor:
         self.feature_scaler = StandardScaler()
 
         # Training data
-        self.training_data: List[Tuple[List[float], float]] = []
+        self.training_data: list[tuple[list[float], float]] = []
         self.is_trained = False
         self.last_training = None
         self.training_interval_hours = 6  # Retrain every 6 hours
@@ -347,7 +348,7 @@ class SmartCacheManager:
     def __init__(
         self,
         redis_cache: RedisCacheService,
-        metrics_service: Optional[MetricsService] = None
+        metrics_service: MetricsService | None = None
     ):
         """Initialize smart cache manager."""
         self.redis_cache = redis_cache
@@ -357,12 +358,12 @@ class SmartCacheManager:
         self.ml_predictor = CacheMLPredictor()
 
         # Key profiles and access tracking
-        self.key_profiles: Dict[str, CacheKeyProfile] = {}
+        self.key_profiles: dict[str, CacheKeyProfile] = {}
         self.access_history: deque = deque(maxlen=10000)
 
         # Cache strategy configuration
         self.default_strategy = CacheStrategy.ML_PREDICT
-        self.strategy_by_pattern: Dict[AccessPattern, CacheStrategy] = {
+        self.strategy_by_pattern: dict[AccessPattern, CacheStrategy] = {
             AccessPattern.HOTSPOT: CacheStrategy.LFU,
             AccessPattern.TEMPORAL: CacheStrategy.LRU,
             AccessPattern.SEQUENTIAL: CacheStrategy.SLRU,
@@ -382,7 +383,7 @@ class SmartCacheManager:
         }
 
         # Background tasks
-        self.optimization_task: Optional[asyncio.Task] = None
+        self.optimization_task: asyncio.Task | None = None
         self.is_optimizing = False
 
         logger.info("Smart Cache Manager initialized")
@@ -395,9 +396,9 @@ class SmartCacheManager:
         self,
         key: str,
         default: Any = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        request_type: Optional[str] = None
+        user_id: str | None = None,
+        session_id: str | None = None,
+        request_type: str | None = None
     ) -> Any:
         """Intelligent cache get with access tracking."""
         start_time = time.time()
@@ -438,8 +439,8 @@ class SmartCacheManager:
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
-        user_id: Optional[str] = None,
+        ttl: int | None = None,
+        user_id: str | None = None,
         force_eviction: bool = False
     ) -> bool:
         """Intelligent cache set with ML-driven TTL optimization."""
@@ -827,7 +828,7 @@ class SmartCacheManager:
     # API and Reporting
     # ========================================================================
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Generate comprehensive performance report."""
         # Calculate derived metrics
         total_requests = self.performance_stats["total_requests"]
@@ -887,7 +888,7 @@ class SmartCacheManager:
             }
         }
 
-    def get_key_profile(self, key: str) -> Optional[Dict[str, Any]]:
+    def get_key_profile(self, key: str) -> dict[str, Any] | None:
         """Get detailed profile for a specific key."""
         profile = self.key_profiles.get(key)
         if not profile:

@@ -15,14 +15,11 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
-from urllib.parse import urljoin
+from typing import Any
 
-import aiofiles
 import aiohttp
-import httpx
 
-from backend.services.apm_service import APMService, PerformanceAlert
+from backend.services.apm_service import APMService
 from backend.services.cache_telemetry_service import CacheTelemetryService
 
 logger = logging.getLogger(__name__)
@@ -71,17 +68,17 @@ class AlertRule:
     min_data_points: int = 3
     cooldown_minutes: int = 15
     enabled: bool = True
-    tags: Dict[str, str] = field(default_factory=dict)
-    custom_message_template: Optional[str] = None
+    tags: dict[str, str] = field(default_factory=dict)
+    custom_message_template: str | None = None
 
 
 @dataclass
 class NotificationConfig:
     """Notification configuration."""
     channel: NotificationChannel
-    config: Dict[str, Any]
+    config: dict[str, Any]
     enabled: bool = True
-    severity_filter: List[AlertSeverity] = field(
+    severity_filter: list[AlertSeverity] = field(
         default_factory=lambda: list(AlertSeverity)
     )
 
@@ -99,10 +96,10 @@ class AlertEvent:
     metric_value: float
     threshold_value: float
     message: str
-    context: Dict[str, Any] = field(default_factory=dict)
-    acknowledged_by: Optional[str] = None
-    acknowledged_at: Optional[datetime] = None
-    resolved_at: Optional[datetime] = None
+    context: dict[str, Any] = field(default_factory=dict)
+    acknowledged_by: str | None = None
+    acknowledged_at: datetime | None = None
+    resolved_at: datetime | None = None
 
 
 @dataclass
@@ -119,8 +116,8 @@ class AlertInstance:
     current_value: float
     threshold_value: float
     message: str
-    context: Dict[str, Any] = field(default_factory=dict)
-    events: List[AlertEvent] = field(default_factory=list)
+    context: dict[str, Any] = field(default_factory=dict)
+    events: list[AlertEvent] = field(default_factory=list)
 
 
 # ============================================================================
@@ -136,30 +133,30 @@ class PerformanceAlertingService:
         self,
         apm_service: APMService,
         cache_telemetry: CacheTelemetryService,
-        config_path: Optional[Path] = None
+        config_path: Path | None = None
     ):
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.config_path = config_path or Path("alert_config.json")
 
         # Alert management
-        self.alert_rules: Dict[str, AlertRule] = {}
-        self.active_alerts: Dict[str, AlertInstance] = {}
-        self.alert_history: List[AlertEvent] = []
-        self.silenced_rules: Dict[str, datetime] = {}  # rule_id -> until_time
+        self.alert_rules: dict[str, AlertRule] = {}
+        self.active_alerts: dict[str, AlertInstance] = {}
+        self.alert_history: list[AlertEvent] = []
+        self.silenced_rules: dict[str, datetime] = {}  # rule_id -> until_time
 
         # Notification configuration
-        self.notification_configs: List[NotificationConfig] = []
+        self.notification_configs: list[NotificationConfig] = []
 
         # Evaluation state
-        self.metric_history: Dict[str, List[Tuple[datetime, float]]] = {}
-        self.last_evaluation: Optional[datetime] = None
+        self.metric_history: dict[str, list[Tuple[datetime, float]]] = {}
+        self.last_evaluation: datetime | None = None
         self.evaluation_lock = asyncio.Lock()
 
         # Background tasks
         self._running = False
-        self._evaluation_task: Optional[asyncio.Task] = None
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._evaluation_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task | None = None
 
         # Load configuration
         self._load_configuration()
@@ -178,7 +175,7 @@ class PerformanceAlertingService:
         """Load alert configuration from file."""
         try:
             if self.config_path.exists():
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path) as f:
                     config = json.load(f)
 
                 # Load alert rules
@@ -328,7 +325,7 @@ class PerformanceAlertingService:
             logger.error(f"Error adding alert rule: {e}")
             return False
 
-    def update_alert_rule(self, rule_id: str, updates: Dict[str, Any]) -> bool:
+    def update_alert_rule(self, rule_id: str, updates: dict[str, Any]) -> bool:
         """Update an existing alert rule."""
         try:
             if rule_id not in self.alert_rules:
@@ -776,7 +773,7 @@ class PerformanceAlertingService:
 
     async def _send_email_notification(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         alert: AlertInstance,
         event: AlertEvent
     ):
@@ -833,7 +830,7 @@ View Dashboard: http://your-domain/dashboard/performance
 
     async def _send_webhook_notification(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         alert: AlertInstance,
         event: AlertEvent
     ):
@@ -868,7 +865,7 @@ View Dashboard: http://your-domain/dashboard/performance
 
     async def _send_slack_notification(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         alert: AlertInstance,
         event: AlertEvent
     ):
@@ -915,7 +912,7 @@ View Dashboard: http://your-domain/dashboard/performance
 
     async def _send_discord_notification(
         self,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         alert: AlertInstance,
         event: AlertEvent
     ):
@@ -1001,15 +998,15 @@ View Dashboard: http://your-domain/dashboard/performance
     # API Methods
     # ========================================================================
 
-    def get_active_alerts(self) -> List[Dict[str, Any]]:
+    def get_active_alerts(self) -> list[dict[str, Any]]:
         """Get all active alerts."""
         return [asdict(alert) for alert in self.active_alerts.values()]
 
     def get_alert_history(
         self,
         hours_back: int = 24,
-        severity_filter: Optional[List[AlertSeverity]] = None
-    ) -> List[Dict[str, Any]]:
+        severity_filter: list[AlertSeverity] | None = None
+    ) -> list[dict[str, Any]]:
         """Get alert history."""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
 
@@ -1026,7 +1023,7 @@ View Dashboard: http://your-domain/dashboard/performance
 
         return [asdict(event) for event in filtered_events]
 
-    def get_alert_statistics(self) -> Dict[str, Any]:
+    def get_alert_statistics(self) -> dict[str, Any]:
         """Get alert statistics."""
         now = datetime.utcnow()
 

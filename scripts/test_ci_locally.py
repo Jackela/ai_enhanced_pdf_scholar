@@ -4,12 +4,13 @@ Local CI/CD Testing Script
 Tests the CI/CD pipeline locally and identifies issues.
 """
 
+import json
 import os
 import subprocess
 import sys
-import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 
 class LocalCITester:
     def __init__(self, project_root: str = None):

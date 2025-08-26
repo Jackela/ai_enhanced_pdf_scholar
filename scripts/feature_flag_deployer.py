@@ -9,20 +9,18 @@ Agent B1: CI/CD Pipeline Optimization Specialist
 Generated: 2025-01-19
 """
 
+import argparse
 import asyncio
+import hashlib
 import json
 import logging
-import os
-import time
-import yaml
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Set
-import argparse
-import aiohttp
-import hashlib
+from typing import Any
+
+import yaml
 
 # Configure logging
 logging.basicConfig(
@@ -75,7 +73,7 @@ class FeatureFlagConfig:
     description: str
     status: FeatureFlagStatus
     rollout_strategy: RolloutStrategy
-    environments: List[Environment]
+    environments: list[Environment]
 
     # Rollout configuration
     rollout_percentage: float = 0.0
@@ -84,17 +82,17 @@ class FeatureFlagConfig:
     rollout_interval_hours: int = 24
 
     # Targeting rules
-    rules: List[FeatureFlagRule] = None
+    rules: list[FeatureFlagRule] = None
 
     # Dependencies
-    depends_on: List[str] = None
-    conflicts_with: List[str] = None
+    depends_on: list[str] = None
+    conflicts_with: list[str] = None
 
     # Metadata
     created_by: str = "system"
     created_at: datetime = None
     updated_at: datetime = None
-    tags: List[str] = None
+    tags: list[str] = None
 
     def __post_init__(self):
         if self.rules is None:
@@ -110,7 +108,7 @@ class FeatureFlagConfig:
         if self.updated_at is None:
             self.updated_at = self.created_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             'key': self.key,
@@ -146,9 +144,9 @@ class FeatureFlagDeployment:
     deployed_at: datetime
     deployed_by: str
     success: bool = True
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'flag_key': self.flag_key,
             'environment': self.environment.value,
@@ -175,8 +173,8 @@ class FeatureFlagDeployer:
         self.config_dir.mkdir(exist_ok=True)
 
         # In-memory state
-        self.flags: Dict[str, FeatureFlagConfig] = {}
-        self.deployments: List[FeatureFlagDeployment] = []
+        self.flags: dict[str, FeatureFlagConfig] = {}
+        self.deployments: list[FeatureFlagDeployment] = []
 
         # Load existing state
         self.load_state()
@@ -185,7 +183,7 @@ class FeatureFlagDeployer:
         """Load feature flags and deployment history from disk"""
         try:
             if self.state_file.exists():
-                with open(self.state_file, 'r') as f:
+                with open(self.state_file) as f:
                     state = json.load(f)
 
                 # Load flags
@@ -218,7 +216,7 @@ class FeatureFlagDeployer:
         except Exception as e:
             logger.error(f"Failed to save state: {e}")
 
-    def _dict_to_flag(self, data: Dict[str, Any]) -> FeatureFlagConfig:
+    def _dict_to_flag(self, data: dict[str, Any]) -> FeatureFlagConfig:
         """Convert dictionary to FeatureFlagConfig"""
         rules = [
             FeatureFlagRule(
@@ -249,7 +247,7 @@ class FeatureFlagDeployer:
             tags=data.get('tags', [])
         )
 
-    def _dict_to_deployment(self, data: Dict[str, Any]) -> FeatureFlagDeployment:
+    def _dict_to_deployment(self, data: dict[str, Any]) -> FeatureFlagDeployment:
         """Convert dictionary to FeatureFlagDeployment"""
         return FeatureFlagDeployment(
             flag_key=data['flag_key'],
@@ -278,7 +276,7 @@ class FeatureFlagDeployer:
 
         logger.info(f"Created feature flag: {config.key}")
 
-    def update_flag(self, flag_key: str, updates: Dict[str, Any]) -> None:
+    def update_flag(self, flag_key: str, updates: dict[str, Any]) -> None:
         """Update an existing feature flag"""
         if flag_key not in self.flags:
             raise ValueError(f"Feature flag '{flag_key}' not found")
@@ -320,8 +318,8 @@ class FeatureFlagDeployer:
         self,
         flag_key: str,
         environment: Environment,
-        new_status: Optional[FeatureFlagStatus] = None,
-        new_percentage: Optional[float] = None,
+        new_status: FeatureFlagStatus | None = None,
+        new_percentage: float | None = None,
         deployed_by: str = "system"
     ) -> FeatureFlagDeployment:
         """Deploy feature flag to specified environment"""
@@ -559,7 +557,7 @@ class FeatureFlagDeployer:
         flag_key: str,
         environment: Environment,
         deployed_by: str = "system"
-    ) -> List[FeatureFlagDeployment]:
+    ) -> list[FeatureFlagDeployment]:
         """Execute gradual rollout according to flag configuration"""
         if flag_key not in self.flags:
             raise ValueError(f"Feature flag '{flag_key}' not found")
@@ -593,22 +591,22 @@ class FeatureFlagDeployer:
 
             # Wait before next increment (in production, this would be hours/days)
             if current_percentage < target_percentage:
-                logger.info(f"Waiting before next increment...")
+                logger.info("Waiting before next increment...")
                 await asyncio.sleep(2)  # Simulate wait time
 
         logger.info(f"Gradual rollout completed for '{flag_key}'")
         return deployments
 
-    def get_flag(self, flag_key: str) -> Optional[FeatureFlagConfig]:
+    def get_flag(self, flag_key: str) -> FeatureFlagConfig | None:
         """Get feature flag by key"""
         return self.flags.get(flag_key)
 
     def list_flags(
         self,
-        environment: Optional[Environment] = None,
-        status: Optional[FeatureFlagStatus] = None,
-        tags: Optional[List[str]] = None
-    ) -> List[FeatureFlagConfig]:
+        environment: Environment | None = None,
+        status: FeatureFlagStatus | None = None,
+        tags: list[str] | None = None
+    ) -> list[FeatureFlagConfig]:
         """List feature flags with optional filtering"""
         flags = list(self.flags.values())
 
@@ -625,10 +623,10 @@ class FeatureFlagDeployer:
 
     def get_deployment_history(
         self,
-        flag_key: Optional[str] = None,
-        environment: Optional[Environment] = None,
+        flag_key: str | None = None,
+        environment: Environment | None = None,
         limit: int = 10
-    ) -> List[FeatureFlagDeployment]:
+    ) -> list[FeatureFlagDeployment]:
         """Get deployment history with optional filtering"""
         deployments = self.deployments
 
@@ -657,7 +655,7 @@ class FeatureFlagDeployer:
 
     def import_flags(self, input_file: Path) -> None:
         """Import flags from YAML file"""
-        with open(input_file, 'r') as f:
+        with open(input_file) as f:
             flags_data = yaml.safe_load(f)
 
         imported_count = 0
@@ -799,7 +797,7 @@ Examples:
                 deployed_by=args.deployed_by
             )
 
-            print(f"🚀 Deployment Result:")
+            print("🚀 Deployment Result:")
             print(f"  Flag: {deployment.flag_key}")
             print(f"  Environment: {deployment.environment.value}")
             print(f"  Status: {deployment.previous_status.value} → {deployment.new_status.value}")
@@ -813,7 +811,7 @@ Examples:
                 deployed_by=args.deployed_by
             )
 
-            print(f"📈 Gradual Rollout Completed:")
+            print("📈 Gradual Rollout Completed:")
             print(f"  Flag: {args.key}")
             print(f"  Environment: {args.env}")
             print(f"  Deployments: {len(deployments)}")

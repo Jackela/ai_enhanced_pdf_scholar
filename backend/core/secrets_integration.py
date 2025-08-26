@@ -4,18 +4,15 @@ Provides integration points for existing services to use the new secrets managem
 """
 
 import logging
-import os
-from functools import lru_cache
 from pathlib import Path
-from typing import Optional, Tuple
 
 from backend.api.auth.jwt_handler import JWTConfig as OldJWTConfig
-from backend.core.enhanced_config import ApplicationConfig, get_config
+from backend.core.enhanced_config import get_config
 from backend.core.secrets import (
     SecretConfig,
     SecretProvider,
-    SecretType,
     SecretsManager,
+    SecretType,
     get_secrets_manager,
 )
 
@@ -28,12 +25,12 @@ class JWTSecretsAdapter:
     This maintains backward compatibility while using secure storage.
     """
 
-    def __init__(self, secrets_manager: Optional[SecretsManager] = None):
+    def __init__(self, secrets_manager: SecretsManager | None = None):
         """Initialize JWT secrets adapter."""
         self.secrets_manager = secrets_manager or get_secrets_manager()
         self.config = get_config()
 
-    def ensure_keys_exist(self) -> Tuple[bytes, bytes]:
+    def ensure_keys_exist(self) -> tuple[bytes, bytes]:
         """
         Ensure RSA key pair exists in secrets management.
         Replaces the file-based key storage.
@@ -158,13 +155,13 @@ class ConfigSecretsAdapter:
     Provides backward compatibility for existing code.
     """
 
-    def __init__(self, secrets_manager: Optional[SecretsManager] = None):
+    def __init__(self, secrets_manager: SecretsManager | None = None):
         """Initialize config secrets adapter."""
         self.secrets_manager = secrets_manager or get_secrets_manager()
         self.app_config = get_config()
 
     @staticmethod
-    def get_gemini_api_key() -> Optional[str]:
+    def get_gemini_api_key() -> str | None:
         """
         Get Gemini API key from secrets management.
         Maintains compatibility with Config.get_gemini_api_key()
@@ -200,7 +197,7 @@ class ConfigSecretsAdapter:
         try:
             import json
 
-            with open(settings_file, 'r') as f:
+            with open(settings_file) as f:
                 settings = json.load(f)
 
             migrated = []
@@ -334,7 +331,7 @@ def update_dependencies_to_use_secrets():
 
 
 def initialize_secrets_integration(
-    provider: Optional[SecretProvider] = None,
+    provider: SecretProvider | None = None,
     auto_migrate: bool = True,
     monkey_patch: bool = True
 ) -> bool:

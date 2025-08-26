@@ -5,16 +5,14 @@ Comprehensive test suite to verify protection against SQL injection attacks
 in document query endpoints and repository methods.
 """
 
-import pytest
-from unittest.mock import Mock, patch
 import sqlite3
-from fastapi.testclient import TestClient
-from fastapi import HTTPException
+from unittest.mock import Mock
+
+import pytest
 
 from backend.api.models import DocumentQueryParams, DocumentSortField, SortOrder
-from src.repositories.document_repository import DocumentRepository
 from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel
+from src.repositories.document_repository import DocumentRepository
 
 
 class TestSQLInjectionPrevention:

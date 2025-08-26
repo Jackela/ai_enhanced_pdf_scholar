@@ -17,24 +17,19 @@ Features:
 import asyncio
 import json
 import logging
-import os
-import pickle
-import time
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
 import warnings
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
 from prometheus_api_client import PrometheusConnect
-from sklearn.ensemble import RandomForestRegressor, IsolationForest
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import IsolationForest, RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-import joblib
 
 # Kubernetes client
 try:
@@ -62,7 +57,7 @@ class ScalingPrediction:
     predicted_replicas: int
     confidence: float
     reasoning: str
-    metrics_snapshot: Dict[str, float]
+    metrics_snapshot: dict[str, float]
     cost_impact: float
     urgency: str  # low, medium, high, critical
 
@@ -112,7 +107,7 @@ class PrometheusMetricsCollector:
             'memory_cost_per_hour': 'avg(kube_pod_container_resource_requests{resource="memory", namespace="ai-pdf-scholar"}) / 1024 / 1024 / 1024 * 0.01',  # Estimated cost per GB hour
         }
 
-    async def collect_current_metrics(self) -> Dict[str, float]:
+    async def collect_current_metrics(self) -> dict[str, float]:
         """Collect current metric values"""
         metrics = {}
 
@@ -294,7 +289,7 @@ class ScalingPredictor:
         self.models_trained = True
         self.feature_columns = feature_cols
 
-    async def predict_scaling(self, current_metrics: Dict[str, float]) -> ScalingPrediction:
+    async def predict_scaling(self, current_metrics: dict[str, float]) -> ScalingPrediction:
         """Predict scaling requirements"""
         if not self.models_trained:
             await self.load_models()
@@ -394,7 +389,7 @@ class ScalingPredictor:
                 self.scaler = joblib.load(self.model_path / "scaler.pkl")
 
                 # Load feature columns
-                with open(self.model_path / "feature_columns.json", "r") as f:
+                with open(self.model_path / "feature_columns.json") as f:
                     self.feature_columns = json.load(f)
 
                 self.models_trained = True
@@ -647,7 +642,7 @@ class ScalingManager:
                 logger.error(f"Error in continuous loop: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute before retrying
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get current status and metrics"""
         recent_predictions = self.predictions_history[-10:] if self.predictions_history else []
         recent_recommendations = self.recommendations_history[-10:] if self.recommendations_history else []

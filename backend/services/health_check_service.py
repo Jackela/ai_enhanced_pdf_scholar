@@ -8,18 +8,16 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timedelta
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 import psutil
-import redis
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import SQLAlchemyError
 
-from backend.services.redis_cache_service import RedisCacheService
 from backend.database.postgresql_config import PostgreSQLConfig
+from backend.services.redis_cache_service import RedisCacheService
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +49,11 @@ class HealthCheckResult:
     status: HealthStatus
     severity: CheckSeverity
     message: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
     duration_ms: float
     timestamp: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -72,12 +70,12 @@ class HealthCheckResult:
 class SystemHealth:
     """Overall system health summary."""
     status: HealthStatus
-    checks: List[HealthCheckResult]
-    summary: Dict[str, Any]
+    checks: list[HealthCheckResult]
+    summary: dict[str, Any]
     uptime: float
     timestamp: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "status": self.status.value,
@@ -99,8 +97,8 @@ class HealthCheckService:
 
     def __init__(
         self,
-        postgres_config: Optional[PostgreSQLConfig] = None,
-        redis_service: Optional[RedisCacheService] = None
+        postgres_config: PostgreSQLConfig | None = None,
+        redis_service: RedisCacheService | None = None
     ):
         """Initialize health check service."""
         self.postgres_config = postgres_config or PostgreSQLConfig()
@@ -215,7 +213,7 @@ class HealthCheckService:
     async def check_health(
         self,
         include_details: bool = True,
-        check_names: Optional[List[str]] = None
+        check_names: list[str] | None = None
     ) -> SystemHealth:
         """
         Perform comprehensive health check.
@@ -295,7 +293,7 @@ class HealthCheckService:
     async def _run_single_check(
         self,
         name: str,
-        check_config: Dict[str, Any]
+        check_config: dict[str, Any]
     ) -> HealthCheckResult:
         """Run a single health check with timeout."""
         start_time = time.time()
@@ -827,7 +825,7 @@ class HealthCheckService:
     # Health Status Analysis
     # ========================================================================
 
-    def _calculate_overall_status(self, results: List[HealthCheckResult]) -> HealthStatus:
+    def _calculate_overall_status(self, results: list[HealthCheckResult]) -> HealthStatus:
         """Calculate overall system health status."""
         if not results:
             return HealthStatus.UNKNOWN
@@ -853,7 +851,7 @@ class HealthCheckService:
         else:
             return HealthStatus.HEALTHY
 
-    def _generate_summary(self, results: List[HealthCheckResult]) -> Dict[str, Any]:
+    def _generate_summary(self, results: list[HealthCheckResult]) -> dict[str, Any]:
         """Generate health summary statistics."""
         if not results:
             return {}
@@ -891,12 +889,12 @@ class HealthCheckService:
     # Public Health Check Methods
     # ========================================================================
 
-    async def get_health_status(self, detailed: bool = False) -> Dict[str, Any]:
+    async def get_health_status(self, detailed: bool = False) -> dict[str, Any]:
         """Get current health status."""
         health = await self.check_health(include_details=detailed)
         return health.to_dict()
 
-    async def get_liveness_probe(self) -> Dict[str, Any]:
+    async def get_liveness_probe(self) -> dict[str, Any]:
         """Kubernetes liveness probe endpoint."""
         # Only check critical services for liveness
         critical_checks = [
@@ -914,7 +912,7 @@ class HealthCheckService:
             "timestamp": health.timestamp.isoformat()
         }
 
-    async def get_readiness_probe(self) -> Dict[str, Any]:
+    async def get_readiness_probe(self) -> dict[str, Any]:
         """Kubernetes readiness probe endpoint."""
         health = await self.check_health(include_details=False)
 
@@ -927,11 +925,11 @@ class HealthCheckService:
             "timestamp": health.timestamp.isoformat()
         }
 
-    def get_health_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_health_history(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get health check history."""
         return self.health_history[-limit:] if self.health_history else []
 
-    def get_check_status(self, check_name: str) -> Optional[Dict[str, Any]]:
+    def get_check_status(self, check_name: str) -> dict[str, Any] | None:
         """Get status of a specific health check."""
         if check_name not in self.health_checks:
             return None
@@ -947,7 +945,7 @@ class HealthCheckService:
             "last_result": check_config["last_result"].to_dict() if check_config["last_result"] else None
         }
 
-    def get_all_checks_status(self) -> Dict[str, Any]:
+    def get_all_checks_status(self) -> dict[str, Any]:
         """Get status of all registered health checks."""
         return {
             name: self.get_check_status(name)

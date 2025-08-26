@@ -3,10 +3,11 @@ Basic API endpoint tests for essential functionality coverage.
 Tests core API routes and error handling without external dependencies.
 """
 
+import sys
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch, MagicMock
-import sys
 
 # Mock problematic imports before importing main app
 sys.modules['redis'] = MagicMock()

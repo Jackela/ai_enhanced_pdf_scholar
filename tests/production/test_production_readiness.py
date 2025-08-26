@@ -9,25 +9,28 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from unittest.mock import AsyncMock, Mock, patch
+from datetime import datetime
+from unittest.mock import AsyncMock, Mock
 
-import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 import psutil
+import pytest
+
+from backend.config.production import ProductionConfig
+from backend.config.redis_cluster import RedisClusterManager
+from backend.config.secrets_integration import ProductionSecretsIntegration
+from backend.core.secrets_vault import ProductionSecretsManager
+from backend.database.production_config import ProductionDatabaseManager
+from backend.services.alert_service import AlertingService
+from backend.services.metrics_service import MetricsService
+from backend.services.production_monitoring import (
+    HealthStatus,
+    ProductionMonitoringService,
+)
 
 # Import production components from all agents
-from backend.services.secrets_monitoring_service import SecretsMonitoringService, AlertSeverity
-from backend.services.production_monitoring import ProductionMonitoringService, HealthStatus
-from backend.services.metrics_service import MetricsService
-from backend.services.alert_service import AlertingService
-from backend.config.production import ProductionConfig
-from backend.config.secrets_integration import ProductionSecretsIntegration
-from backend.config.redis_cluster import RedisClusterManager
-from backend.database.production_config import ProductionDatabaseManager
-from backend.core.secrets_vault import ProductionSecretsManager
+from backend.services.secrets_monitoring_service import (
+    SecretsMonitoringService,
+)
 from backend.services.secrets_validation_service import SecretValidationService
 
 logger = logging.getLogger(__name__)
@@ -351,7 +354,10 @@ class TestProductionReadiness:
         production_monitoring = production_test_suite.production_components["production_monitoring"]
 
         # Simulate high system metrics
-        from backend.services.production_monitoring import SystemMetrics, ApplicationMetrics
+        from backend.services.production_monitoring import (
+            ApplicationMetrics,
+            SystemMetrics,
+        )
 
         high_cpu_metrics = SystemMetrics(
             cpu_percent=85.0,  # Above threshold of 80%

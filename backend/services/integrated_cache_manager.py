@@ -8,22 +8,22 @@ import logging
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Union
+from datetime import datetime
+from typing import Any
+
+# Import configuration and monitoring
+from ..config.caching_config import CachingConfig
+from .cache_coherency_manager import CacheCoherencyManager, CoherencyConfig
+from .cache_warming_service import CacheWarmingService
 
 # Import cache services
 from .l1_memory_cache import L1MemoryCache, create_l1_cache
 from .l2_redis_cache import L2RedisCache
-from .l3_cdn_cache import L3CDNCache, ContentType
-from .cache_coherency_manager import CacheCoherencyManager, CoherencyConfig
+from .l3_cdn_cache import ContentType, L3CDNCache
+from .metrics_service import ApplicationMetrics
 from .redis_cache_service import RedisCacheService
 from .redis_cluster_manager import RedisClusterManager
 from .smart_cache_manager import SmartCacheManager
-from .cache_warming_service import CacheWarmingService
-
-# Import configuration and monitoring
-from ..config.caching_config import CachingConfig
-from .metrics_service import ApplicationMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +33,11 @@ class CacheOperationResult:
     """Result of a cache operation."""
     success: bool
     value: Any = None
-    cache_level: Optional[str] = None
+    cache_level: str | None = None
     operation_time_ms: float = 0.0
     hit: bool = False
     source: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -67,7 +67,7 @@ class CacheStatistics:
         total_ops = self.total_hits + self.total_misses
         return (self.total_hits / total_ops * 100) if total_ops > 0 else 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for monitoring."""
         return {
             "total_requests": self.total_requests,
@@ -107,32 +107,32 @@ class IntegratedCacheManager:
     def __init__(
         self,
         config: CachingConfig,
-        metrics: Optional[ApplicationMetrics] = None
+        metrics: ApplicationMetrics | None = None
     ):
         """Initialize integrated cache manager."""
         self.config = config
         self.metrics = metrics
 
         # Cache layers
-        self.l1_cache: Optional[L1MemoryCache] = None
-        self.l2_cache: Optional[L2RedisCache] = None
-        self.l3_cache: Optional[L3CDNCache] = None
+        self.l1_cache: L1MemoryCache | None = None
+        self.l2_cache: L2RedisCache | None = None
+        self.l3_cache: L3CDNCache | None = None
 
         # Support services
-        self.redis_cache: Optional[RedisCacheService] = None
-        self.cluster_manager: Optional[RedisClusterManager] = None
-        self.coherency_manager: Optional[CacheCoherencyManager] = None
-        self.smart_manager: Optional[SmartCacheManager] = None
-        self.warming_service: Optional[CacheWarmingService] = None
+        self.redis_cache: RedisCacheService | None = None
+        self.cluster_manager: RedisClusterManager | None = None
+        self.coherency_manager: CacheCoherencyManager | None = None
+        self.smart_manager: SmartCacheManager | None = None
+        self.warming_service: CacheWarmingService | None = None
 
         # Statistics and monitoring
         self.statistics = CacheStatistics()
-        self.response_times: List[float] = []
+        self.response_times: list[float] = []
         self._last_stats_update = datetime.utcnow()
 
         # Operational state
         self._initialized = False
-        self._background_tasks: Set[asyncio.Task] = set()
+        self._background_tasks: set[asyncio.Task] = set()
 
         logger.info("Integrated Cache Manager created")
 
@@ -424,7 +424,7 @@ class IntegratedCacheManager:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
         write_to_l1: bool = True,
         write_to_l2: bool = True,
         write_to_l3: bool = False
@@ -610,11 +610,11 @@ class IntegratedCacheManager:
 
     async def mget(
         self,
-        keys: List[str],
+        keys: list[str],
         use_l1: bool = True,
         use_l2: bool = True,
         use_l3: bool = False
-    ) -> Dict[str, CacheOperationResult]:
+    ) -> dict[str, CacheOperationResult]:
         """Get multiple keys from cache."""
         results = {}
 
@@ -628,19 +628,19 @@ class IntegratedCacheManager:
                 for key in batch_keys
             ])
 
-            for key, result in zip(batch_keys, batch_results):
+            for key, result in zip(batch_keys, batch_results, strict=False):
                 results[key] = result
 
         return results
 
     async def mset(
         self,
-        data: Dict[str, Any],
-        ttl_seconds: Optional[int] = None,
+        data: dict[str, Any],
+        ttl_seconds: int | None = None,
         write_to_l1: bool = True,
         write_to_l2: bool = True,
         write_to_l3: bool = False
-    ) -> Dict[str, CacheOperationResult]:
+    ) -> dict[str, CacheOperationResult]:
         """Set multiple keys in cache."""
         results = {}
 
@@ -655,7 +655,7 @@ class IntegratedCacheManager:
                 for key, value in batch_items
             ])
 
-            for (key, _), result in zip(batch_items, batch_results):
+            for (key, _), result in zip(batch_items, batch_results, strict=False):
                 results[key] = result
 
         return results
@@ -703,7 +703,7 @@ class IntegratedCacheManager:
             logger.error(f"Error invalidating pattern {pattern}: {e}")
             return invalidated_count
 
-    async def warm_cache(self, keys_and_values: Dict[str, Any]) -> int:
+    async def warm_cache(self, keys_and_values: dict[str, Any]) -> int:
         """Warm cache with provided key-value pairs."""
         if not self.warming_service:
             logger.warning("Cache warming service not available")
@@ -719,7 +719,7 @@ class IntegratedCacheManager:
             logger.error(f"Error warming cache: {e}")
             return 0
 
-    async def cleanup_expired(self) -> Dict[str, int]:
+    async def cleanup_expired(self) -> dict[str, int]:
         """Clean up expired entries from all cache layers."""
         cleanup_counts = {"L1": 0, "L2": 0, "L3": 0}
 
@@ -756,7 +756,7 @@ class IntegratedCacheManager:
 
         return self.statistics
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         """Get health status of all cache components."""
         health = {
             "overall_status": "healthy",
@@ -958,8 +958,8 @@ class IntegratedCacheManager:
 # ============================================================================
 
 async def create_integrated_cache_manager(
-    config: Optional[CachingConfig] = None,
-    metrics: Optional[ApplicationMetrics] = None
+    config: CachingConfig | None = None,
+    metrics: ApplicationMetrics | None = None
 ) -> IntegratedCacheManager:
     """
     Create and initialize integrated cache manager.
@@ -988,8 +988,8 @@ async def create_integrated_cache_manager(
 
 @asynccontextmanager
 async def cache_manager_context(
-    config: Optional[CachingConfig] = None,
-    metrics: Optional[ApplicationMetrics] = None
+    config: CachingConfig | None = None,
+    metrics: ApplicationMetrics | None = None
 ):
     """
     Async context manager for integrated cache manager.

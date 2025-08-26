@@ -3,22 +3,19 @@ Authentication System Tests
 Comprehensive test suite for JWT-based authentication.
 """
 
-import json
 import time
 from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import bcrypt
 import jwt
 import pytest
-from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 
-from backend.api.auth.models import UserModel, UserRole
-from backend.api.auth.password_security import PasswordHasher, PasswordPolicy
 from backend.api.auth.jwt_handler import jwt_handler
+from backend.api.auth.models import UserModel
+from backend.api.auth.password_security import PasswordHasher, PasswordPolicy
 from backend.api.auth.service import AuthenticationService
-
 
 # ============================================================================
 # Password Security Tests

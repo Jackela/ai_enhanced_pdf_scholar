@@ -7,20 +7,19 @@ health monitoring, and automatic scaling.
 import logging
 import queue
 import sqlite3
+import statistics
 import threading
 import time
-import weakref
-from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-import statistics
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
@@ -55,7 +54,7 @@ class ConnectionMetrics:
     total_time_ms: float
     avg_query_time_ms: float
     state: ConnectionState
-    thread_id: Optional[int] = None
+    thread_id: int | None = None
     errors: int = 0
 
     def update_usage(self, execution_time_ms: float) -> None:
@@ -179,7 +178,7 @@ class AdvancedConnectionPoolManager:
     def __init__(
         self,
         database_url: str,
-        config: Optional[PoolConfiguration] = None
+        config: PoolConfiguration | None = None
     ):
         """
         Initialize the Advanced Connection Pool Manager.
@@ -193,8 +192,8 @@ class AdvancedConnectionPoolManager:
 
         # Connection pools by priority/type
         self._idle_connections: queue.Queue[ManagedConnection] = queue.Queue()
-        self._active_connections: Dict[str, ManagedConnection] = {}
-        self._all_connections: Dict[str, ManagedConnection] = {}
+        self._active_connections: dict[str, ManagedConnection] = {}
+        self._all_connections: dict[str, ManagedConnection] = {}
 
         # Thread safety
         self._pool_lock = threading.RLock()
@@ -202,12 +201,12 @@ class AdvancedConnectionPoolManager:
 
         # Statistics and monitoring
         self._stats = PoolStatistics()
-        self._wait_times: List[float] = []
-        self._response_times: List[float] = []
+        self._wait_times: list[float] = []
+        self._response_times: list[float] = []
 
         # Background tasks
-        self._health_monitor_thread: Optional[threading.Thread] = None
-        self._pool_optimizer_thread: Optional[threading.Thread] = None
+        self._health_monitor_thread: threading.Thread | None = None
+        self._pool_optimizer_thread: threading.Thread | None = None
         self._shutdown_event = threading.Event()
 
         # Initialize pool
@@ -511,7 +510,7 @@ class AdvancedConnectionPoolManager:
                 if highest_load > 0 and highest_load / max(lowest_load, 1) > 3:
                     logger.debug("Detected connection load imbalance - considering rebalancing")
 
-    def acquire_connection(self, timeout_ms: Optional[int] = None) -> ManagedConnection:
+    def acquire_connection(self, timeout_ms: int | None = None) -> ManagedConnection:
         """
         Acquire a connection from the pool.
 
@@ -694,7 +693,7 @@ class AdvancedConnectionPoolManager:
                 connection_churn_rate=self._stats.connection_churn_rate
             )
 
-    def get_connection_details(self) -> List[Dict[str, Any]]:
+    def get_connection_details(self) -> list[dict[str, Any]]:
         """Get detailed information about all connections."""
         connection_details = []
 
@@ -716,7 +715,7 @@ class AdvancedConnectionPoolManager:
 
         return connection_details
 
-    def warm_pool(self, target_size: Optional[int] = None) -> int:
+    def warm_pool(self, target_size: int | None = None) -> int:
         """
         Warm the connection pool by creating connections up to target size.
 
@@ -779,8 +778,6 @@ class AdvancedConnectionPoolManager:
 def main():
     """CLI interface for testing the Connection Pool Manager."""
     import argparse
-    import json
-    import random
 
     parser = argparse.ArgumentParser(description="Advanced Connection Pool Manager")
     parser.add_argument("--db-url", required=True, help="Database URL")

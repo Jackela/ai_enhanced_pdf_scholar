@@ -8,14 +8,13 @@ import json
 import logging
 import smtplib
 import time
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Callable
-from dataclasses import dataclass, field
+from typing import Any
 
-import aiohttp
 import httpx
 from jinja2 import Template
 
@@ -69,13 +68,13 @@ class Alert:
     description: str
     timestamp: datetime
     source: str
-    labels: Dict[str, str] = field(default_factory=dict)
-    annotations: Dict[str, str] = field(default_factory=dict)
-    runbook_url: Optional[str] = None
+    labels: dict[str, str] = field(default_factory=dict)
+    annotations: dict[str, str] = field(default_factory=dict)
+    runbook_url: str | None = None
     resolved: bool = False
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
     escalated: bool = False
-    escalated_at: Optional[datetime] = None
+    escalated_at: datetime | None = None
 
 
 @dataclass
@@ -83,18 +82,18 @@ class NotificationChannelConfig:
     """Configuration for notification channels."""
     channel: NotificationChannel
     enabled: bool = True
-    config: Dict[str, Any] = field(default_factory=dict)
-    rate_limit: Optional[int] = None  # Max notifications per hour
-    escalation_delay: Optional[int] = None  # Minutes before escalation
+    config: dict[str, Any] = field(default_factory=dict)
+    rate_limit: int | None = None  # Max notifications per hour
+    escalation_delay: int | None = None  # Minutes before escalation
 
 
 @dataclass
 class AlertRule:
     """Alert routing and escalation rules."""
     name: str
-    conditions: Dict[str, Any]
-    channels: List[NotificationChannel]
-    escalation_chain: List[NotificationChannel] = field(default_factory=list)
+    conditions: dict[str, Any]
+    channels: list[NotificationChannel]
+    escalation_chain: list[NotificationChannel] = field(default_factory=list)
     escalation_delay: int = 30  # Minutes
     suppression_duration: int = 60  # Minutes
     enabled: bool = True
@@ -111,12 +110,12 @@ class AlertService:
 
     def __init__(self):
         """Initialize alert service."""
-        self.channels: Dict[NotificationChannel, NotificationChannelConfig] = {}
-        self.rules: List[AlertRule] = []
-        self.active_alerts: Dict[str, Alert] = {}
-        self.suppressed_alerts: Set[str] = set()
-        self.notification_history: List[Dict[str, Any]] = []
-        self.rate_limits: Dict[str, List[datetime]] = {}
+        self.channels: dict[NotificationChannel, NotificationChannelConfig] = {}
+        self.rules: list[AlertRule] = []
+        self.active_alerts: dict[str, Alert] = {}
+        self.suppressed_alerts: set[str] = set()
+        self.notification_history: list[dict[str, Any]] = []
+        self.rate_limits: dict[str, list[datetime]] = {}
 
         # Templates
         self.email_template = Template("""
@@ -221,9 +220,9 @@ class AlertService:
     def configure_channel(
         self,
         channel: NotificationChannel,
-        config: Dict[str, Any],
+        config: dict[str, Any],
         enabled: bool = True,
-        rate_limit: Optional[int] = None
+        rate_limit: int | None = None
     ):
         """Configure a notification channel."""
         self.channels[channel] = NotificationChannelConfig(
@@ -340,7 +339,7 @@ class AlertService:
             logger.error(f"Failed to resolve alert {alert_id}: {e}")
             return False
 
-    def _find_matching_rules(self, alert: Alert) -> List[AlertRule]:
+    def _find_matching_rules(self, alert: Alert) -> list[AlertRule]:
         """Find rules matching the alert."""
         matching_rules = []
 
@@ -707,7 +706,7 @@ class AlertService:
         alert: Alert,
         channel: NotificationChannel,
         success: bool,
-        error: Optional[str] = None
+        error: str | None = None
     ):
         """Record notification attempt in history."""
         record = {
@@ -728,15 +727,15 @@ class AlertService:
     # Management Methods
     # ========================================================================
 
-    def get_active_alerts(self) -> Dict[str, Alert]:
+    def get_active_alerts(self) -> dict[str, Alert]:
         """Get all active alerts."""
         return self.active_alerts.copy()
 
-    def get_notification_history(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_notification_history(self, limit: int = 100) -> list[dict[str, Any]]:
         """Get notification history."""
         return self.notification_history[-limit:]
 
-    def get_channel_stats(self) -> Dict[str, Dict[str, Any]]:
+    def get_channel_stats(self) -> dict[str, dict[str, Any]]:
         """Get statistics for each channel."""
         stats = {}
 
@@ -772,9 +771,9 @@ def create_alert(
     message: str,
     description: str,
     source: str = "ai-pdf-scholar",
-    labels: Optional[Dict[str, str]] = None,
-    annotations: Optional[Dict[str, str]] = None,
-    runbook_url: Optional[str] = None
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
+    runbook_url: str | None = None
 ) -> Alert:
     """Create a new alert."""
     return Alert(
@@ -796,7 +795,7 @@ def create_alert(
 # Singleton Instance
 # ============================================================================
 
-_alert_service_instance: Optional[AlertService] = None
+_alert_service_instance: AlertService | None = None
 
 def get_alert_service() -> AlertService:
     """Get or create the global alert service instance."""

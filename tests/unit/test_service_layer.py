@@ -3,11 +3,11 @@ Unit tests for service layer components.
 Tests business logic and service coordination.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
-from datetime import datetime, timedelta
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Import with error handling for CI/CD environments
 try:
@@ -171,8 +171,8 @@ class TestContentHashService:
 
         if IMPORTS_AVAILABLE:
             # Create large content (1MB) in a temporary PDF file
-            import tempfile
             import os
+            import tempfile
 
             large_content = "x" * (1024 * 1024)
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
@@ -259,8 +259,8 @@ startxref
 
         if IMPORTS_AVAILABLE:
             # Create a temporary PDF file with unicode content
-            import tempfile
             import os
+            import tempfile
 
             unicode_content = "测试内容 🚀 α β γ δ ε"
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
@@ -341,16 +341,16 @@ startxref
 
     def test_hash_service_performance(self):
         """Test hash service performance."""
-        import time
-        import tempfile
         import os
+        import tempfile
+        import time
 
         service = ContentHashService()
 
         # Create a temporary PDF file for testing
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
             # Create minimal PDF content
-            pdf_content = f"""%PDF-1.4
+            pdf_content = """%PDF-1.4
 1 0 obj
 <<
 /Type /Catalog
@@ -472,7 +472,6 @@ class TestServiceLayerIntegration:
     def test_service_thread_safety(self):
         """Test service thread safety."""
         import threading
-        import time
 
         service = ContentHashService()
         results = []

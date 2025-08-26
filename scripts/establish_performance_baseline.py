@@ -16,29 +16,25 @@ Agent C3: Performance Baseline Testing Expert
 Mission: Establish comprehensive performance baselines for production deployment validation
 """
 
-import asyncio
 import json
 import statistics
+import subprocess
+import sys
+import tempfile
 import time
-import psutil
-import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
-import sys
-import subprocess
-import tempfile
+from typing import Any
+
+import psutil
 import requests
-import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.database.connection import DatabaseConnection
-from src.services.enhanced_rag_service import EnhancedRAGService
-from src.repositories.document_repository import DocumentRepository
 from src.repositories.citation_repository import CitationRepository
+from src.repositories.document_repository import DocumentRepository
 from src.services.content_hash_service import ContentHashService
 
 
@@ -70,7 +66,7 @@ class PerformanceBaselineEstablisher:
             'document_processing_s': 10.0
         }
 
-    def establish_comprehensive_baseline(self) -> Dict[str, Any]:
+    def establish_comprehensive_baseline(self) -> dict[str, Any]:
         """Establish complete performance baseline for all system components."""
         print("🚀 Performance Baseline Establishment Started")
         print(f"⏰ Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -88,7 +84,7 @@ class PerformanceBaselineEstablisher:
 
         return self.baselines
 
-    def _benchmark_database_operations(self) -> Dict[str, Any]:
+    def _benchmark_database_operations(self) -> dict[str, Any]:
         """Benchmark core database operations with percentile analysis."""
         print("📊 Database Query Performance:")
 
@@ -197,7 +193,7 @@ class PerformanceBaselineEstablisher:
 
         return db_metrics
 
-    def _benchmark_api_endpoints(self) -> Dict[str, Any]:
+    def _benchmark_api_endpoints(self) -> dict[str, Any]:
         """Benchmark API endpoint response times."""
         print("📊 API Response Times:")
 
@@ -273,7 +269,7 @@ class PerformanceBaselineEstablisher:
 
         return api_metrics
 
-    def _benchmark_rag_processing(self) -> Dict[str, Any]:
+    def _benchmark_rag_processing(self) -> dict[str, Any]:
         """Benchmark RAG query processing performance."""
         print("📊 RAG Processing:")
 
@@ -333,7 +329,7 @@ class PerformanceBaselineEstablisher:
 
         return rag_metrics
 
-    def _analyze_memory_usage(self) -> Dict[str, Any]:
+    def _analyze_memory_usage(self) -> dict[str, Any]:
         """Analyze memory usage patterns and efficiency."""
         print("📊 Memory Usage:")
 
@@ -381,7 +377,7 @@ class PerformanceBaselineEstablisher:
 
         return memory_metrics
 
-    def _benchmark_system_resources(self) -> Dict[str, Any]:
+    def _benchmark_system_resources(self) -> dict[str, Any]:
         """Benchmark system resource utilization."""
         print("📊 System Resources:")
 
@@ -398,7 +394,7 @@ class PerformanceBaselineEstablisher:
 
         # Read performance
         read_start = time.perf_counter()
-        with open(temp_file, 'r') as f:
+        with open(temp_file) as f:
             content = f.read()
         read_time = time.perf_counter() - read_start
 
@@ -418,7 +414,7 @@ class PerformanceBaselineEstablisher:
 
         return resource_metrics
 
-    def _percentile(self, data: List[float], percentile: float) -> float:
+    def _percentile(self, data: list[float], percentile: float) -> float:
         """Calculate percentile value from data list."""
         if not data:
             return 0.0
@@ -488,7 +484,7 @@ class PerformanceBaselineEstablisher:
         memory_perf = self.baselines.get('memory_analysis', {})
         if memory_perf:
             status = "✅ PASS" if memory_perf['meets_target'] else "❌ NEEDS IMPROVEMENT"
-            print(f"\n📊 Memory Usage:")
+            print("\n📊 Memory Usage:")
             print(f"  - Base: {memory_perf['baseline_mb']:.0f}MB, Peak: {memory_perf['peak_mb']:.0f}MB {status}")
             print(f"  - Memory efficiency: {memory_perf['efficiency_mb_per_operation']:.2f}MB/operation")
 

@@ -7,17 +7,23 @@ import logging
 import os
 import threading
 import time
-from datetime import datetime, timedelta
+from collections.abc import Callable
+from datetime import datetime
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from prometheus_client import (
-    Counter, Histogram, Gauge, Info, Enum,
-    CollectorRegistry, generate_latest, CONTENT_TYPE_LATEST,
-    start_http_server, push_to_gateway
+    CollectorRegistry,
+    Counter,
+    Enum,
+    Gauge,
+    Histogram,
+    Info,
+    generate_latest,
+    push_to_gateway,
+    start_http_server,
 )
 from prometheus_client.core import REGISTRY
-from prometheus_client.exposition import basic_auth_handler
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +37,7 @@ class ApplicationMetrics:
     Application-specific metrics for AI Enhanced PDF Scholar.
     """
 
-    def __init__(self, registry: Optional[CollectorRegistry] = None):
+    def __init__(self, registry: CollectorRegistry | None = None):
         """Initialize application metrics."""
         self.registry = registry or REGISTRY
 
@@ -381,7 +387,7 @@ class MetricsService:
         self,
         app_name: str = "ai_pdf_scholar",
         version: str = "2.0.0",
-        registry: Optional[CollectorRegistry] = None,
+        registry: CollectorRegistry | None = None,
         enable_push_gateway: bool = False,
         push_gateway_url: str = "http://localhost:9091"
     ):
@@ -545,7 +551,7 @@ class MetricsService:
         self,
         operation: str,
         cache_type: str,
-        hit: Optional[bool] = None,
+        hit: bool | None = None,
         duration: float = None,
         key_pattern: str = "default"
     ):
@@ -621,7 +627,7 @@ class MetricsService:
     # Decorators
     # ========================================================================
 
-    def track_duration(self, operation: str, labels: Optional[Dict[str, str]] = None):
+    def track_duration(self, operation: str, labels: dict[str, str] | None = None):
         """Decorator to track operation duration."""
         def decorator(func: Callable) -> Callable:
             @wraps(func)
@@ -648,7 +654,7 @@ class MetricsService:
                         )
 
                     return result
-                except Exception as e:
+                except Exception:
                     duration = time.time() - start_time
 
                     # Record failure metric
@@ -679,7 +685,7 @@ class MetricsService:
             def wrapper(*args, **kwargs):
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:
+                except Exception:
                     self.record_security_event(
                         event_type="exception",
                         severity="error"
@@ -705,7 +711,7 @@ class MetricsService:
         except Exception as e:
             logger.error(f"Failed to start metrics server: {e}")
 
-    def push_metrics(self, job: str = None, grouping_key: Dict[str, str] = None):
+    def push_metrics(self, job: str = None, grouping_key: dict[str, str] = None):
         """Push metrics to Prometheus Push Gateway."""
         if not self.enable_push_gateway:
             return
@@ -728,7 +734,7 @@ class MetricsService:
     # Health Monitoring
     # ========================================================================
 
-    def check_health(self) -> Dict[str, Any]:
+    def check_health(self) -> dict[str, Any]:
         """Check application health and update metrics."""
         health_status = {
             "healthy": True,
@@ -768,7 +774,7 @@ class MetricsService:
     # Custom Dashboards
     # ========================================================================
 
-    def get_dashboard_data(self) -> Dict[str, Any]:
+    def get_dashboard_data(self) -> dict[str, Any]:
         """Get data for custom dashboard."""
         from prometheus_client.parser import text_string_to_metric_families
 

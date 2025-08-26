@@ -3,11 +3,11 @@ Unit tests for repository layer components.
 Tests repository pattern implementation and data access logic.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from datetime import datetime, timedelta
+
+import pytest
 
 from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel, VectorIndexModel

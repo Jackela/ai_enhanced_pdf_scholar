@@ -8,25 +8,18 @@ import asyncio
 import json
 import logging
 import os
-import time
-import resource
-import tracemalloc
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from multiprocessing import Manager
 import statistics
+import time
+import tracemalloc
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
-import pytest
 import httpx
 import psutil
-from fastapi.testclient import TestClient
+import pytest
 
 # Import application components
-from backend.api.main import app
-from backend.services.redis_cache_service import RedisCacheService
-from backend.database.production_config import ProductionDatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -214,12 +207,12 @@ class LoadTestMetricsCollector:
 
     def __init__(self):
         """Initialize metrics collector."""
-        self.metrics_history: List[LoadTestMetrics] = []
+        self.metrics_history: list[LoadTestMetrics] = []
         self.start_time = None
         self.database_manager = None
         self.redis_service = None
 
-    async def collect_metrics(self, concurrent_users: int, sessions: Dict[str, UserSession]) -> LoadTestMetrics:
+    async def collect_metrics(self, concurrent_users: int, sessions: dict[str, UserSession]) -> LoadTestMetrics:
         """Collect comprehensive metrics during load test."""
         current_time = time.time()
 
@@ -334,7 +327,7 @@ class MemoryLeakDetector:
             for index, stat in enumerate(top_stats[:3]):
                 logger.info(f"  #{index + 1}: {stat}")
 
-    def detect_leaks(self, threshold_mb: float = 50.0) -> Dict[str, Any]:
+    def detect_leaks(self, threshold_mb: float = 50.0) -> dict[str, Any]:
         """Detect potential memory leaks."""
         if len(self.snapshots) < 3:
             return {"leak_detected": False, "reason": "Insufficient snapshots"}
@@ -561,7 +554,7 @@ class TestProductionLoad:
         duration_seconds: int,
         test_name: str,
         collect_interval: int = 30
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run concurrent load test with specified parameters."""
 
         logger.info(f"Starting {test_name} with {concurrent_users} users for {duration_seconds}s")

@@ -8,23 +8,16 @@ import base64
 import json
 import logging
 import os
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 import hvac
 from boto3 import client as boto3_client
 from botocore.exceptions import ClientError
 from cryptography.fernet import Fernet
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
 logger = logging.getLogger(__name__)
@@ -60,34 +53,34 @@ class SecretMetadata:
     version: int = 1
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    expires_at: Optional[datetime] = None
-    rotation_interval_days: Optional[int] = None
-    last_rotated: Optional[datetime] = None
-    tags: Dict[str, str] = field(default_factory=dict)
-    description: Optional[str] = None
+    expires_at: datetime | None = None
+    rotation_interval_days: int | None = None
+    last_rotated: datetime | None = None
+    tags: dict[str, str] = field(default_factory=dict)
+    description: str | None = None
 
 
 class SecretConfig(BaseModel):
     """Configuration for the secrets management system."""
     # Provider configuration
     primary_provider: SecretProvider = SecretProvider.LOCAL_ENCRYPTED
-    fallback_providers: List[SecretProvider] = Field(default_factory=list)
+    fallback_providers: list[SecretProvider] = Field(default_factory=list)
 
     # Environment configuration
     environment: str = Field(default="development")
     application_name: str = Field(default="ai_pdf_scholar")
 
     # Vault configuration
-    vault_url: Optional[str] = Field(default=None)
-    vault_token: Optional[SecretStr] = Field(default=None)
-    vault_namespace: Optional[str] = Field(default=None)
+    vault_url: str | None = Field(default=None)
+    vault_token: SecretStr | None = Field(default=None)
+    vault_namespace: str | None = Field(default=None)
     vault_mount_point: str = Field(default="secret")
     vault_path_prefix: str = Field(default="ai_pdf_scholar")
 
     # AWS Secrets Manager configuration
     aws_region: str = Field(default="us-east-1")
-    aws_access_key_id: Optional[SecretStr] = Field(default=None)
-    aws_secret_access_key: Optional[SecretStr] = Field(default=None)
+    aws_access_key_id: SecretStr | None = Field(default=None)
+    aws_secret_access_key: SecretStr | None = Field(default=None)
     aws_secret_prefix: str = Field(default="ai-pdf-scholar")
 
     # Local encrypted storage configuration
@@ -149,12 +142,12 @@ class SecretProviderInterface(ABC):
     """Abstract interface for secret storage providers."""
 
     @abstractmethod
-    def get_secret(self, key: str, version: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, key: str, version: str | None = None) -> str | None:
         """Retrieve a secret value."""
         pass
 
     @abstractmethod
-    def set_secret(self, key: str, value: str, metadata: Optional[SecretMetadata] = None) -> bool:
+    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
         """Store a secret value."""
         pass
 
@@ -164,7 +157,7 @@ class SecretProviderInterface(ABC):
         pass
 
     @abstractmethod
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         """List available secret keys."""
         pass
 
@@ -174,7 +167,7 @@ class SecretProviderInterface(ABC):
         pass
 
     @abstractmethod
-    def get_secret_metadata(self, key: str) -> Optional[SecretMetadata]:
+    def get_secret_metadata(self, key: str) -> SecretMetadata | None:
         """Get metadata for a secret."""
         pass
 
@@ -215,7 +208,7 @@ class VaultProvider(SecretProviderInterface):
         prefix = self.config.vault_path_prefix
         return f"{prefix}/{env}/{key}"
 
-    def get_secret(self, key: str, version: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, key: str, version: str | None = None) -> str | None:
         """Retrieve a secret from Vault."""
         try:
             path = self._get_secret_path(key)
@@ -235,7 +228,7 @@ class VaultProvider(SecretProviderInterface):
             logger.error(f"Failed to get secret from Vault: {e}")
             return None
 
-    def set_secret(self, key: str, value: str, metadata: Optional[SecretMetadata] = None) -> bool:
+    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
         """Store a secret in Vault."""
         try:
             path = self._get_secret_path(key)
@@ -278,7 +271,7 @@ class VaultProvider(SecretProviderInterface):
             logger.error(f"Failed to delete secret from Vault: {e}")
             return False
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         """List secrets in Vault."""
         try:
             base_path = f"{self.config.vault_path_prefix}/{self.config.environment}"
@@ -303,7 +296,7 @@ class VaultProvider(SecretProviderInterface):
         # Vault handles versioning automatically
         return self.set_secret(key, new_value)
 
-    def get_secret_metadata(self, key: str) -> Optional[SecretMetadata]:
+    def get_secret_metadata(self, key: str) -> SecretMetadata | None:
         """Get metadata for a secret from Vault."""
         try:
             path = self._get_secret_path(key)
@@ -365,7 +358,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
         """Construct the full secret name for AWS."""
         return f"{self.config.aws_secret_prefix}/{self.config.environment}/{key}"
 
-    def get_secret(self, key: str, version: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, key: str, version: str | None = None) -> str | None:
         """Retrieve a secret from AWS Secrets Manager."""
         try:
             secret_name = self._get_secret_name(key)
@@ -390,7 +383,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
                 logger.error(f"Failed to get secret from AWS: {e}")
             return None
 
-    def set_secret(self, key: str, value: str, metadata: Optional[SecretMetadata] = None) -> bool:
+    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
         """Store a secret in AWS Secrets Manager."""
         try:
             secret_name = self._get_secret_name(key)
@@ -446,7 +439,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
             logger.error(f"Failed to delete secret from AWS: {e}")
             return False
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         """List secrets in AWS Secrets Manager."""
         try:
             base_prefix = f"{self.config.aws_secret_prefix}/{self.config.environment}"
@@ -485,7 +478,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
             logger.error(f"Failed to rotate secret in AWS: {e}")
             return False
 
-    def get_secret_metadata(self, key: str) -> Optional[SecretMetadata]:
+    def get_secret_metadata(self, key: str) -> SecretMetadata | None:
         """Get metadata for a secret from AWS."""
         try:
             secret_name = self._get_secret_name(key)
@@ -552,7 +545,7 @@ class LocalEncryptedProvider(SecretProviderInterface):
 
         return key
 
-    def _load_secrets(self) -> Dict[str, str]:
+    def _load_secrets(self) -> dict[str, str]:
         """Load and decrypt secrets from file."""
         if not self._secrets_file.exists():
             return {}
@@ -567,7 +560,7 @@ class LocalEncryptedProvider(SecretProviderInterface):
             logger.error(f"Failed to load secrets: {e}")
             return {}
 
-    def _save_secrets(self, secrets: Dict[str, str]) -> bool:
+    def _save_secrets(self, secrets: dict[str, str]) -> bool:
         """Encrypt and save secrets to file."""
         try:
             json_data = json.dumps(secrets, indent=2)
@@ -585,19 +578,19 @@ class LocalEncryptedProvider(SecretProviderInterface):
             logger.error(f"Failed to save secrets: {e}")
             return False
 
-    def _load_metadata(self) -> Dict[str, Dict]:
+    def _load_metadata(self) -> dict[str, dict]:
         """Load metadata from file."""
         if not self._metadata_file.exists():
             return {}
 
         try:
-            with open(self._metadata_file, 'r') as f:
+            with open(self._metadata_file) as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to load metadata: {e}")
             return {}
 
-    def _save_metadata(self, metadata: Dict[str, Dict]) -> bool:
+    def _save_metadata(self, metadata: dict[str, dict]) -> bool:
         """Save metadata to file."""
         try:
             with open(self._metadata_file, 'w') as f:
@@ -612,12 +605,12 @@ class LocalEncryptedProvider(SecretProviderInterface):
             logger.error(f"Failed to save metadata: {e}")
             return False
 
-    def get_secret(self, key: str, version: Optional[str] = None) -> Optional[str]:
+    def get_secret(self, key: str, version: str | None = None) -> str | None:
         """Retrieve a secret from encrypted local storage."""
         secrets = self._load_secrets()
         return secrets.get(key)
 
-    def set_secret(self, key: str, value: str, metadata: Optional[SecretMetadata] = None) -> bool:
+    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
         """Store a secret in encrypted local storage."""
         secrets = self._load_secrets()
         secrets[key] = value
@@ -660,7 +653,7 @@ class LocalEncryptedProvider(SecretProviderInterface):
             return success
         return False
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         """List secrets in local storage."""
         secrets = self._load_secrets()
         keys = list(secrets.keys())
@@ -681,7 +674,7 @@ class LocalEncryptedProvider(SecretProviderInterface):
 
         return self.set_secret(key, new_value)
 
-    def get_secret_metadata(self, key: str) -> Optional[SecretMetadata]:
+    def get_secret_metadata(self, key: str) -> SecretMetadata | None:
         """Get metadata for a secret."""
         metadata_dict = self._load_metadata()
         if key in metadata_dict:
@@ -719,12 +712,12 @@ class SecretsManager:
     Implements caching, rotation, audit logging, and fallback mechanisms.
     """
 
-    def __init__(self, config: Optional[SecretConfig] = None):
+    def __init__(self, config: SecretConfig | None = None):
         """Initialize the secrets manager."""
         self.config = config or SecretConfig.from_env()
-        self._providers: Dict[SecretProvider, SecretProviderInterface] = {}
-        self._cache: Dict[str, Tuple[str, datetime]] = {}
-        self._audit_log: List[Dict] = []
+        self._providers: dict[SecretProvider, SecretProviderInterface] = {}
+        self._cache: dict[str, tuple[str, datetime]] = {}
+        self._audit_log: list[dict] = []
         self._initialize_providers()
 
     def _initialize_providers(self):
@@ -759,8 +752,8 @@ class SecretsManager:
         operation: str,
         key: str,
         success: bool,
-        provider: Optional[SecretProvider] = None,
-        error: Optional[str] = None
+        provider: SecretProvider | None = None,
+        error: str | None = None
     ):
         """Log an operation for audit purposes."""
         if self.config.enable_audit_logging:
@@ -781,7 +774,7 @@ class SecretsManager:
             else:
                 logger.error(f"Secret operation: {operation} on {key} failed: {error}")
 
-    def _get_from_cache(self, key: str) -> Optional[str]:
+    def _get_from_cache(self, key: str) -> str | None:
         """Get a secret from cache if available and not expired."""
         if not self.config.cache_enabled:
             return None
@@ -803,10 +796,10 @@ class SecretsManager:
     def get_secret(
         self,
         key: str,
-        secret_type: Optional[SecretType] = None,
+        secret_type: SecretType | None = None,
         use_cache: bool = True,
-        version: Optional[str] = None
-    ) -> Optional[str]:
+        version: str | None = None
+    ) -> str | None:
         """
         Retrieve a secret with fallback support.
 
@@ -863,10 +856,10 @@ class SecretsManager:
         key: str,
         value: str,
         secret_type: SecretType,
-        rotation_interval_days: Optional[int] = None,
-        expires_in_days: Optional[int] = None,
-        tags: Optional[Dict[str, str]] = None,
-        description: Optional[str] = None
+        rotation_interval_days: int | None = None,
+        expires_in_days: int | None = None,
+        tags: dict[str, str] | None = None,
+        description: str | None = None
     ) -> bool:
         """
         Store a secret in the primary provider.
@@ -960,7 +953,7 @@ class SecretsManager:
 
         return deleted
 
-    def list_secrets(self, prefix: Optional[str] = None) -> List[str]:
+    def list_secrets(self, prefix: str | None = None) -> list[str]:
         """
         List all available secrets.
 
@@ -979,7 +972,7 @@ class SecretsManager:
 
         return sorted(list(all_secrets))
 
-    def check_rotation_needed(self) -> List[Tuple[str, SecretMetadata]]:
+    def check_rotation_needed(self) -> list[tuple[str, SecretMetadata]]:
         """
         Check which secrets need rotation.
 
@@ -1003,7 +996,7 @@ class SecretsManager:
 
         return secrets_to_rotate
 
-    def get_secret_metadata(self, key: str) -> Optional[SecretMetadata]:
+    def get_secret_metadata(self, key: str) -> SecretMetadata | None:
         """
         Get metadata for a secret.
 
@@ -1029,7 +1022,7 @@ class SecretsManager:
 
         return None
 
-    def health_check(self) -> Dict[str, bool]:
+    def health_check(self) -> dict[str, bool]:
         """
         Check health of all providers.
 
@@ -1045,10 +1038,10 @@ class SecretsManager:
 
     def get_audit_log(
         self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        operation: Optional[str] = None
-    ) -> List[Dict]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        operation: str | None = None
+    ) -> list[dict]:
         """
         Get audit log entries.
 
@@ -1075,25 +1068,25 @@ class SecretsManager:
 
     # Convenience methods for specific secret types
 
-    def get_database_url(self) -> Optional[str]:
+    def get_database_url(self) -> str | None:
         """Get database connection URL."""
         return self.get_secret("database_url", SecretType.DATABASE_URL)
 
-    def get_api_key(self, service: str) -> Optional[str]:
+    def get_api_key(self, service: str) -> str | None:
         """Get API key for a specific service."""
         return self.get_secret(f"api_key_{service}", SecretType.API_KEY)
 
-    def get_jwt_keys(self) -> Tuple[Optional[str], Optional[str]]:
+    def get_jwt_keys(self) -> tuple[str | None, str | None]:
         """Get JWT private and public keys."""
         private_key = self.get_secret("jwt_private_key", SecretType.JWT_PRIVATE_KEY)
         public_key = self.get_secret("jwt_public_key", SecretType.JWT_PUBLIC_KEY)
         return private_key, public_key
 
-    def get_redis_url(self) -> Optional[str]:
+    def get_redis_url(self) -> str | None:
         """Get Redis connection URL."""
         return self.get_secret("redis_url", SecretType.REDIS_URL)
 
-    def get_smtp_credentials(self) -> Tuple[Optional[str], Optional[str]]:
+    def get_smtp_credentials(self) -> tuple[str | None, str | None]:
         """Get SMTP username and password."""
         username = self.get_secret("smtp_username")
         password = self.get_secret("smtp_password", SecretType.SMTP_PASSWORD)
@@ -1101,7 +1094,7 @@ class SecretsManager:
 
 
 # Global instance for easy access
-_secrets_manager: Optional[SecretsManager] = None
+_secrets_manager: SecretsManager | None = None
 
 
 def get_secrets_manager() -> SecretsManager:
@@ -1112,7 +1105,7 @@ def get_secrets_manager() -> SecretsManager:
     return _secrets_manager
 
 
-def initialize_secrets_manager(config: Optional[SecretConfig] = None) -> SecretsManager:
+def initialize_secrets_manager(config: SecretConfig | None = None) -> SecretsManager:
     """Initialize the global secrets manager with configuration."""
     global _secrets_manager
     _secrets_manager = SecretsManager(config)

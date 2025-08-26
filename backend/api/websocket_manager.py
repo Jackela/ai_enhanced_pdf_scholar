@@ -3,15 +3,16 @@ WebSocket Manager
 Manages WebSocket connections for real-time communication.
 """
 
+import asyncio
 import json
 import logging
-import asyncio
-from typing import Dict, List, Optional, Any, Callable, Set
-from enum import Enum
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +48,12 @@ class RAGTask:
     status: RAGTaskStatus = RAGTaskStatus.PENDING
     created_at: datetime = field(default_factory=datetime.now)
     progress_percentage: float = 0.0
-    current_stage: Optional[str] = None
-    result: Optional[str] = None
-    error: Optional[str] = None
-    processing_time_ms: Optional[float] = None
-    background_task: Optional[asyncio.Task] = None
-    cancellation_token: Optional[asyncio.Event] = field(default_factory=asyncio.Event)
+    current_stage: str | None = None
+    result: str | None = None
+    error: str | None = None
+    processing_time_ms: float | None = None
+    background_task: asyncio.Task | None = None
+    cancellation_token: asyncio.Event | None = field(default_factory=asyncio.Event)
 
 
 @dataclass
@@ -71,24 +72,28 @@ class WebSocketManager:
 
     def __init__(self):
         # Store active connections
-        self.active_connections: Dict[str, WebSocket] = {}
+        self.active_connections: dict[str, WebSocket] = {}
         # Group connections by rooms/channels
-        self.rooms: Dict[str, List[str]] = {}
+        self.rooms: dict[str, list[str]] = {}
 
         # RAG streaming capabilities
-        self.rag_tasks: Dict[str, RAGTask] = {}
-        self.client_tasks: Dict[str, Set[str]] = {}  # client_id -> set of task_ids
+        self.rag_tasks: dict[str, RAGTask] = {}
+        self.client_tasks: dict[str, set[str]] = {}  # client_id -> set of task_ids
         self.rag_config = RAGStreamConfig()
         self._task_counter = 0
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
+        self._is_started = False
 
-        # Start background cleanup task
-        self._start_cleanup_task()
+        # Don't start background task immediately - wait until first connection
 
     async def connect(self, websocket: WebSocket, client_id: str):
         """Accept a new WebSocket connection."""
         await websocket.accept()
         self.active_connections[client_id] = websocket
+
+        # Start cleanup task if not already started
+        self._start_cleanup_task()
+
         logger.info(
             f"WebSocket client {client_id} connected. Total: {len(self.active_connections)}"
         )
@@ -189,7 +194,7 @@ class WebSocketManager:
         """Send JSON data to all clients in a room."""
         await self.send_to_room(json.dumps(data), room_name)
 
-    def get_room_members(self, room_name: str) -> List[str]:
+    def get_room_members(self, room_name: str) -> list[str]:
         """Get list of clients in a room."""
         return self.rooms.get(room_name, [])
 
@@ -322,8 +327,15 @@ class WebSocketManager:
 
     def _start_cleanup_task(self):
         """Start background task for cleaning up completed/failed RAG tasks."""
-        if not self._cleanup_task or self._cleanup_task.done():
-            self._cleanup_task = asyncio.create_task(self._cleanup_background())
+        try:
+            # Only start if we have a running event loop and haven't started yet
+            if not self._is_started and (not self._cleanup_task or self._cleanup_task.done()):
+                asyncio.get_running_loop()  # This will raise if no loop is running
+                self._cleanup_task = asyncio.create_task(self._cleanup_background())
+                self._is_started = True
+        except RuntimeError:
+            # No event loop running, task will be started later when needed
+            pass
 
     async def _cleanup_background(self):
         """Background task to clean up old RAG tasks."""
@@ -579,7 +591,7 @@ class WebSocketManager:
         logger.info(f"RAG task {task_id} cancelled by client {client_id}")
         return True
 
-    async def get_rag_task_status(self, client_id: str, task_id: str) -> Optional[Dict[str, Any]]:
+    async def get_rag_task_status(self, client_id: str, task_id: str) -> dict[str, Any] | None:
         """Get status of a RAG task."""
         if task_id not in self.rag_tasks:
             return None
@@ -602,7 +614,7 @@ class WebSocketManager:
         }, client_id)
 
     async def send_rag_progress_update(self, client_id: str, task_id: str, progress_type: RAGProgressType,
-                                     percentage: float, message: str, stage_data: Optional[Dict[str, Any]] = None):
+                                     percentage: float, message: str, stage_data: dict[str, Any] | None = None):
         """Send detailed RAG progress update."""
         data = {
             "type": "rag_progress_update", "task_id": task_id, "progress_type": progress_type.value,
@@ -616,7 +628,7 @@ class WebSocketManager:
             self.rag_tasks[task_id].current_stage = progress_type.value
 
     async def send_rag_response_chunk(self, client_id: str, task_id: str, chunk: str,
-                                    chunk_index: int, total_chunks: Optional[int] = None):
+                                    chunk_index: int, total_chunks: int | None = None):
         """Send streaming RAG response chunk."""
         await self.send_personal_json({
             "type": "rag_response_chunk", "task_id": task_id, "chunk": chunk,
@@ -646,3 +658,30 @@ class WebSocketManager:
             "type": "rag_task_cancelled", "task_id": task_id,
             "timestamp": datetime.now().isoformat(),
         }, client_id)
+
+    async def cleanup(self):
+        """Clean up all resources and cancel background tasks."""
+        # Cancel cleanup task
+        if self._cleanup_task and not self._cleanup_task.done():
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
+            except asyncio.CancelledError:
+                pass
+
+        # Cancel all RAG tasks
+        for task_id in list(self.rag_tasks.keys()):
+            task = self.rag_tasks[task_id]
+            if task.background_task and not task.background_task.done():
+                task.background_task.cancel()
+            if task.cancellation_token:
+                task.cancellation_token.set()
+
+        # Clear all data
+        self.active_connections.clear()
+        self.rooms.clear()
+        self.client_tasks.clear()
+        self.rag_tasks.clear()
+        self._is_started = False
+
+        logger.info("WebSocketManager cleanup completed")

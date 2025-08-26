@@ -12,18 +12,25 @@ This module tests all error recovery mechanisms including:
 import json
 import tempfile
 import time
-from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-from typing import Dict, Any
+from unittest.mock import MagicMock
 
 import pytest
 
 from src.services.error_recovery import (
-    RetryMechanism, RetryConfig, CircuitBreaker, CircuitBreakerConfig,
-    ResourceCleanupManager, TransactionManager, HealthChecker,
-    RecoveryOrchestrator, CircuitBreakerState, RetryExhaustedException,
-    CircuitBreakerOpenError, with_retry, with_circuit_breaker
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerOpenError,
+    CircuitBreakerState,
+    HealthChecker,
+    RecoveryOrchestrator,
+    ResourceCleanupManager,
+    RetryConfig,
+    RetryExhaustedException,
+    RetryMechanism,
+    TransactionManager,
+    with_circuit_breaker,
+    with_retry,
 )
 
 

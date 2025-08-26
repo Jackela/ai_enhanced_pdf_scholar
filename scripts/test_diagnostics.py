@@ -5,11 +5,9 @@ AI Enhanced PDF Scholar - Test Diagnostics Utility
 Diagnoses common pytest configuration and discovery issues.
 """
 
-import sys
+import importlib.util
 import subprocess
 from pathlib import Path
-import os
-import importlib.util
 
 
 class TestDiagnostics:
@@ -65,7 +63,7 @@ class TestDiagnostics:
             print("✅ pytest.ini exists")
 
             # Check content
-            with open(pytest_ini, 'r', encoding='utf-8') as f:
+            with open(pytest_ini, encoding='utf-8') as f:
                 content = f.read()
 
                 if "testpaths" not in content:

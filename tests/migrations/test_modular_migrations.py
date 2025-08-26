@@ -9,22 +9,21 @@ Tests all components of the modular migration system including:
 - Backward compatibility
 """
 
-import pytest
-import tempfile
-import sqlite3
-from pathlib import Path
-from unittest.mock import Mock, patch
-import sys
 import os
+import sys
+import tempfile
+from pathlib import Path
+
+import pytest
 
 # Add the source directory to the Python path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from database.connection import DatabaseConnection
 from database.migrations.base import BaseMigration, MigrationError
-from database.migrations.version_tracker import VersionTracker
 from database.migrations.manager import MigrationManager
 from database.migrations.runner import MigrationRunner
+from database.migrations.version_tracker import VersionTracker
 from database.modular_migrator import ModularDatabaseMigrator
 
 

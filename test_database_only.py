@@ -7,7 +7,6 @@
 
 import sys
 import tempfile
-import sqlite3
 from pathlib import Path
 
 # 添加项目路径
@@ -57,8 +56,9 @@ def test_database_models():
     print("🧪 测试数据库模型...")
 
     try:
-        from database.models import DocumentModel, VectorIndexModel, TagModel
         from datetime import datetime
+
+        from database.models import DocumentModel, TagModel, VectorIndexModel
 
         # 创建临时PDF文件
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
@@ -374,8 +374,9 @@ def test_duplicate_detection():
 
         # 创建两个相同内容的PDF文件
         try:
-            import fitz
             import os
+
+            import fitz
 
             # 第一个文件
             temp_pdf1_fd, pdf_path1 = tempfile.mkstemp(suffix='.pdf')

@@ -4,13 +4,14 @@ Performance Impact Tests for SQL Injection Prevention
 Verify that security measures don't significantly impact performance.
 """
 
-import time
-import pytest
-from unittest.mock import Mock
 import statistics
+import time
+from unittest.mock import Mock
 
-from src.repositories.document_repository import DocumentRepository
+import pytest
+
 from backend.api.models import DocumentQueryParams, DocumentSortField, SortOrder
+from src.repositories.document_repository import DocumentRepository
 
 
 class TestSecurityPerformanceImpact:
@@ -231,8 +232,8 @@ class TestSecurityPerformanceImpact:
 
     def test_concurrent_validation_performance(self):
         """Test performance under concurrent validation scenarios."""
-        import threading
         import queue
+        import threading
 
         results = queue.Queue()
 

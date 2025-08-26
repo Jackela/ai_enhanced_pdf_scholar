@@ -4,9 +4,7 @@ Creates realistic academic paper fixtures for RAG testing with citations, refere
 and structured content typical of research papers.
 """
 
-import json
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import fitz  # PyMuPDF
 
@@ -21,14 +19,14 @@ class AcademicPDFGenerator:
     - Multi-column layouts where appropriate
     """
 
-    def __init__(self, fixture_dir: Optional[Path] = None):
+    def __init__(self, fixture_dir: Path | None = None):
         """Initialize academic PDF fixture generator."""
         if fixture_dir is None:
             self.fixture_dir = Path(__file__).parent / "pdfs" / "academic"
         else:
             self.fixture_dir = Path(fixture_dir)
         self.fixture_dir.mkdir(parents=True, exist_ok=True)
-        self.fixtures: Dict[str, Path] = {}
+        self.fixtures: dict[str, Path] = {}
 
     def create_ai_research_paper(self, filename: str = "ai_research_sample.pdf") -> Path:
         """Create a sample AI research paper with citations."""
@@ -263,7 +261,7 @@ Topol, E. J. (2019). High-performance medicine: the convergence of human and art
         self.fixtures[filename] = pdf_path
         return pdf_path
 
-    def create_all_academic_fixtures(self) -> Dict[str, Path]:
+    def create_all_academic_fixtures(self) -> dict[str, Path]:
         """Create all academic test fixtures."""
         print("Creating academic PDF test fixtures...")
 
@@ -274,11 +272,11 @@ Topol, E. J. (2019). High-performance medicine: the convergence of human and art
         print(f"Created {len(self.fixtures)} academic PDF fixtures in {self.fixture_dir}")
         return self.fixtures.copy()
 
-    def get_fixture_path(self, fixture_name: str) -> Optional[Path]:
+    def get_fixture_path(self, fixture_name: str) -> Path | None:
         """Get path to a specific fixture."""
         return self.fixtures.get(fixture_name)
 
-    def list_fixtures(self) -> List[str]:
+    def list_fixtures(self) -> list[str]:
         """List all available academic fixtures."""
         return list(self.fixtures.keys())
 

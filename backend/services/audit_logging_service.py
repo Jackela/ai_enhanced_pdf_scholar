@@ -12,16 +12,24 @@ import time
 from collections import deque
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import (
-    Column, String, Text, Integer, Float, DateTime, Boolean,
-    ForeignKey, Index, JSON, create_engine, event
+    JSON,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    event,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 
 logger = logging.getLogger(__name__)
@@ -200,7 +208,7 @@ class AuditLogger:
 
     def __init__(
         self,
-        db_url: Optional[str] = None,
+        db_url: str | None = None,
         buffer_size: int = 1000,
         flush_interval: int = 5,
         enable_compression: bool = True,
@@ -259,7 +267,7 @@ class AuditLogger:
             checksum_data = f"{target.timestamp}{target.event_type}{target.user_id}{target.action}{target.result}"
             target.checksum = hashlib.sha256(checksum_data.encode()).hexdigest()
 
-    def _init_alert_patterns(self) -> List[Dict]:
+    def _init_alert_patterns(self) -> list[dict]:
         """Initialize alert detection patterns."""
         return [
             {
@@ -308,21 +316,21 @@ class AuditLogger:
         event_type: AuditEventType,
         action: str,
         result: str = "success",
-        user_id: Optional[int] = None,
-        user_email: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        resource_name: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        user_id: int | None = None,
+        user_email: str | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        resource_name: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        metadata: dict | None = None,
         severity: AuditSeverity = AuditSeverity.INFO,
-        request_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        correlation_id: Optional[str] = None,
-        duration_ms: Optional[float] = None,
-        error_code: Optional[str] = None,
-        error_message: Optional[str] = None,
+        request_id: str | None = None,
+        session_id: str | None = None,
+        correlation_id: str | None = None,
+        duration_ms: float | None = None,
+        error_code: str | None = None,
+        error_message: str | None = None,
         **kwargs
     ) -> str:
         """
@@ -373,7 +381,7 @@ class AuditLogger:
         user_email: str,
         success: bool,
         ip_address: str,
-        user_agent: Optional[str] = None,
+        user_agent: str | None = None,
         mfa_used: bool = False,
         **kwargs
     ):
@@ -397,7 +405,7 @@ class AuditLogger:
         resource_type: str,
         resource_id: str,
         action: str,
-        fields_accessed: Optional[List[str]] = None,
+        fields_accessed: list[str] | None = None,
         **kwargs
     ):
         """Log data access event."""
@@ -435,9 +443,9 @@ class AuditLogger:
         event_type: AuditEventType,
         user_id: int,
         action: str,
-        legal_basis: Optional[str] = None,
-        data_categories: Optional[List[str]] = None,
-        purposes: Optional[List[str]] = None,
+        legal_basis: str | None = None,
+        data_categories: list[str] | None = None,
+        purposes: list[str] | None = None,
         **kwargs
     ):
         """Log compliance-related event."""
@@ -504,7 +512,7 @@ class AuditLogger:
     # Alert Detection
     # ========================================================================
 
-    def _check_alerts(self, logs: List[AuditLog]):
+    def _check_alerts(self, logs: list[AuditLog]):
         """Check for alert conditions."""
         if not self.enable_alerts:
             return
@@ -513,7 +521,7 @@ class AuditLogger:
             if pattern["condition"](logs):
                 self._create_alert(pattern, logs)
 
-    def _detect_failed_logins(self, logs: List[AuditLog]) -> bool:
+    def _detect_failed_logins(self, logs: list[AuditLog]) -> bool:
         """Detect multiple failed login attempts."""
         failed_logins = [
             log for log in logs
@@ -521,7 +529,7 @@ class AuditLogger:
         ]
         return len(failed_logins) >= 5
 
-    def _detect_privilege_escalation(self, logs: List[AuditLog]) -> bool:
+    def _detect_privilege_escalation(self, logs: list[AuditLog]) -> bool:
         """Detect potential privilege escalation."""
         escalation_events = [
             log for log in logs
@@ -532,7 +540,7 @@ class AuditLogger:
         ]
         return len(escalation_events) > 0
 
-    def _detect_mass_export(self, logs: List[AuditLog]) -> bool:
+    def _detect_mass_export(self, logs: list[AuditLog]) -> bool:
         """Detect mass data export."""
         export_events = [
             log for log in logs
@@ -550,7 +558,7 @@ class AuditLogger:
 
         return total_records > 1000
 
-    def _detect_sql_injection(self, logs: List[AuditLog]) -> bool:
+    def _detect_sql_injection(self, logs: list[AuditLog]) -> bool:
         """Detect SQL injection attempts."""
         sql_patterns = ["' OR '1'='1", "'; DROP TABLE", "UNION SELECT", "/*", "*/"]
 
@@ -563,7 +571,7 @@ class AuditLogger:
 
         return False
 
-    def _detect_unauthorized_pattern(self, logs: List[AuditLog]) -> bool:
+    def _detect_unauthorized_pattern(self, logs: list[AuditLog]) -> bool:
         """Detect unauthorized access patterns."""
         denied_events = [
             log for log in logs
@@ -571,7 +579,7 @@ class AuditLogger:
         ]
         return len(denied_events) >= 10
 
-    def _create_alert(self, pattern: Dict, logs: List[AuditLog]):
+    def _create_alert(self, pattern: dict, logs: list[AuditLog]):
         """Create an alert from detected pattern."""
         session = self.SessionFactory()
 
@@ -625,15 +633,15 @@ class AuditLogger:
 
     def query(
         self,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        event_types: Optional[List[AuditEventType]] = None,
-        user_id: Optional[int] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        severity: Optional[AuditSeverity] = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        event_types: list[AuditEventType] | None = None,
+        user_id: int | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
+        severity: AuditSeverity | None = None,
         limit: int = 1000
-    ) -> List[AuditLog]:
+    ) -> list[AuditLog]:
         """Query audit logs."""
         session = self.SessionFactory()
 
@@ -670,7 +678,7 @@ class AuditLogger:
         self,
         user_id: int,
         days: int = 30
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get user activity summary."""
         start_date = datetime.utcnow() - timedelta(days=days)
 
@@ -692,7 +700,7 @@ class AuditLogger:
         start_date: datetime,
         end_date: datetime,
         compliance_type: str = "GDPR"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate compliance report."""
         logs = self.query(
             start_date=start_date,
@@ -773,7 +781,7 @@ class AuditLogger:
         finally:
             session.close()
 
-    def _serialize_log(self, log: AuditLog) -> Dict:
+    def _serialize_log(self, log: AuditLog) -> dict:
         """Serialize audit log to dictionary."""
         return {
             "id": log.id,
@@ -791,7 +799,7 @@ class AuditLogger:
             "checksum": log.checksum
         }
 
-    def _track_data_deletion(self, user_id: int, resource_id: Optional[str]):
+    def _track_data_deletion(self, user_id: int, resource_id: str | None):
         """Track data deletion for compliance."""
         # Implement based on your compliance requirements
         pass
@@ -809,9 +817,9 @@ class AuditContext:
         audit_logger: AuditLogger,
         event_type: AuditEventType,
         action: str,
-        user_id: Optional[int] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        user_id: int | None = None,
+        resource_type: str | None = None,
+        resource_id: str | None = None,
         **kwargs
     ):
         """Initialize audit context."""

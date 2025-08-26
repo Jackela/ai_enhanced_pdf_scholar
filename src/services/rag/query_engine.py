@@ -13,7 +13,7 @@ a clean interface for document query functionality.
 
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from llama_index.core import VectorStoreIndex
@@ -78,10 +78,10 @@ class RAGQueryEngine:
         self.test_mode = test_mode
 
         # Current state
-        self.current_index: Optional[VectorStoreIndex] = None
-        self.current_document_id: Optional[int] = None
-        self.current_vector_index: Optional[VectorIndexModel] = None
-        self.current_pdf_path: Optional[str] = None
+        self.current_index: VectorStoreIndex | None = None
+        self.current_document_id: int | None = None
+        self.current_vector_index: VectorIndexModel | None = None
+        self.current_pdf_path: str | None = None
 
         logger.info("RAG Query Engine initialized")
 

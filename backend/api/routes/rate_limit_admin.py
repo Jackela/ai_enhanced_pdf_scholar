@@ -4,12 +4,12 @@ Provides admin interface for monitoring and managing rate limiting
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, HTTPException, Query, Depends
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 try:
-    from ..middleware.rate_limit_monitor import get_monitor, RateLimitMetrics
+    from ..middleware.rate_limit_monitor import RateLimitMetrics, get_monitor
     MONITORING_AVAILABLE = True
 except ImportError:
     MONITORING_AVAILABLE = False
@@ -24,8 +24,8 @@ class RateLimitMetricsResponse(BaseModel):
     error_requests: int
     unique_ips: int
     avg_response_time: float
-    top_endpoints: List[tuple]
-    top_ips: List[tuple]
+    top_endpoints: list[tuple]
+    top_ips: list[tuple]
     rate_limit_effectiveness: float
     success_rate: float
     error_rate: float
@@ -56,11 +56,11 @@ class IPAnalysisResponse(BaseModel):
     total_requests: int
     rate_limited_requests: int
     rate_limited_percentage: float
-    endpoints_accessed: List[str]
+    endpoints_accessed: list[str]
     request_rate_per_minute: float
-    first_seen: Optional[float]
-    last_seen: Optional[float]
-    suspicion_score: Optional[int] = None
+    first_seen: float | None
+    last_seen: float | None
+    suspicion_score: int | None = None
 
 
 class EndpointAnalysisResponse(BaseModel):
@@ -73,7 +73,7 @@ class EndpointAnalysisResponse(BaseModel):
     avg_response_time: float
     min_response_time: float
     max_response_time: float
-    top_ips: List[tuple]
+    top_ips: list[tuple]
 
 
 class SuspiciousIPResponse(BaseModel):
@@ -170,7 +170,7 @@ else:
 
         return EndpointAnalysisResponse(**analysis)
 
-    @router.get("/rate-limit/suspicious-ips", response_model=List[SuspiciousIPResponse])
+    @router.get("/rate-limit/suspicious-ips", response_model=list[SuspiciousIPResponse])
     async def get_suspicious_ips(
         window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes"),
         min_requests: int = Query(50, ge=10, le=1000, description="Minimum requests to be considered"),
@@ -222,7 +222,7 @@ else:
 
     @router.post("/rate-limit/export")
     async def export_rate_limit_data(
-        window_minutes: Optional[int] = Query(None, ge=1, le=10080, description="Export window in minutes"),
+        window_minutes: int | None = Query(None, ge=1, le=10080, description="Export window in minutes"),
         filename: str = Query("rate_limit_export.json", description="Export filename")
     ):
         """Export rate limiting data to JSON file."""
@@ -250,7 +250,7 @@ else:
         new_count = len(monitor._events)
 
         return {
-            "message": f"Cleaned up old events",
+            "message": "Cleaned up old events",
             "events_before": old_count,
             "events_after": new_count,
             "events_removed": old_count - new_count,

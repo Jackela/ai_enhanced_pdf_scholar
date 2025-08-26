@@ -5,8 +5,6 @@ Comprehensive database monitoring with real-time metrics, alerting, and optimiza
 
 import json
 import logging
-import psutil
-import sqlite3
 import statistics
 import threading
 import time
@@ -15,19 +13,21 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-import uuid
+from typing import Any, Union
+
+import psutil
 
 logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
-    from src.database.connection import DatabaseConnection
-    from scripts.query_performance_analyzer import QueryPerformanceAnalyzer
     from backend.services.query_cache_manager import IntelligentQueryCacheManager
+    from scripts.query_performance_analyzer import QueryPerformanceAnalyzer
+    from src.database.connection import DatabaseConnection
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     sys.exit(1)
@@ -54,12 +54,12 @@ class PerformanceMetric:
     """Represents a performance metric."""
     name: str
     metric_type: MetricType
-    value: Union[float, int, Dict[str, Any]]
+    value: Union[float, int, dict[str, Any]]
     timestamp: datetime
-    labels: Dict[str, str] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
     description: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metric to dictionary format."""
         return {
             'name': self.name,
@@ -81,10 +81,10 @@ class PerformanceAlert:
     threshold_value: float
     current_value: float
     triggered_at: datetime
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
     acknowledged: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert alert to dictionary format."""
         return {
             'alert_id': self.alert_id,
@@ -109,8 +109,8 @@ class DatabaseHealthStatus:
     cache_efficiency_health: float
     replication_health: float
     disk_health: float
-    issues: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
     @property
     def status(self) -> str:
@@ -160,10 +160,10 @@ class DatabasePerformanceMonitor:
     def __init__(
         self,
         db_connection: DatabaseConnection,
-        query_analyzer: Optional[QueryPerformanceAnalyzer] = None,
-        cache_manager: Optional[IntelligentQueryCacheManager] = None,
+        query_analyzer: QueryPerformanceAnalyzer | None = None,
+        cache_manager: IntelligentQueryCacheManager | None = None,
         monitoring_interval_s: int = 10,
-        alert_thresholds: Optional[Dict[str, float]] = None,
+        alert_thresholds: dict[str, float] | None = None,
         enable_system_monitoring: bool = True
     ):
         """
@@ -187,21 +187,21 @@ class DatabasePerformanceMonitor:
         self.alert_thresholds = {**self.DEFAULT_THRESHOLDS, **(alert_thresholds or {})}
 
         # Metrics storage
-        self._metrics: Dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))  # Keep last 1000 samples
-        self._current_metrics: Dict[str, PerformanceMetric] = {}
-        self._alerts: Dict[str, PerformanceAlert] = {}
+        self._metrics: dict[str, deque] = defaultdict(lambda: deque(maxlen=1000))  # Keep last 1000 samples
+        self._current_metrics: dict[str, PerformanceMetric] = {}
+        self._alerts: dict[str, PerformanceAlert] = {}
 
         # Thread safety
         self._metrics_lock = threading.RLock()
         self._alerts_lock = threading.RLock()
 
         # Background monitoring
-        self._monitor_thread: Optional[threading.Thread] = None
-        self._alert_thread: Optional[threading.Thread] = None
+        self._monitor_thread: threading.Thread | None = None
+        self._alert_thread: threading.Thread | None = None
         self._shutdown_event = threading.Event()
 
         # Performance baselines (learned over time)
-        self._baselines: Dict[str, Dict[str, float]] = {}
+        self._baselines: dict[str, dict[str, float]] = {}
 
         # Initialize monitoring infrastructure
         self._init_monitoring_tables()
@@ -617,7 +617,7 @@ class DatabasePerformanceMonitor:
         except Exception as e:
             logger.error(f"Failed to collect system metrics: {e}")
 
-    def _calculate_pool_utilization(self, pool_stats: Dict[str, Any]) -> float:
+    def _calculate_pool_utilization(self, pool_stats: dict[str, Any]) -> float:
         """Calculate connection pool utilization percentage."""
         total = pool_stats.get('total_connections', 0)
         active = pool_stats.get('active_connections', 0)
@@ -651,7 +651,7 @@ class DatabasePerformanceMonitor:
         except Exception as e:
             logger.debug(f"Failed to update baselines: {e}")
 
-    def _calculate_percentile(self, values: List[float], percentile: float) -> float:
+    def _calculate_percentile(self, values: list[float], percentile: float) -> float:
         """Calculate percentile value."""
         if not values:
             return 0.0
@@ -871,12 +871,12 @@ class DatabasePerformanceMonitor:
         except Exception as e:
             logger.error(f"Failed to resolve alerts: {e}")
 
-    def get_current_metrics(self) -> Dict[str, PerformanceMetric]:
+    def get_current_metrics(self) -> dict[str, PerformanceMetric]:
         """Get current performance metrics."""
         with self._metrics_lock:
             return dict(self._current_metrics)
 
-    def get_metric_history(self, metric_name: str, hours: int = 24) -> List[PerformanceMetric]:
+    def get_metric_history(self, metric_name: str, hours: int = 24) -> list[PerformanceMetric]:
         """Get historical data for a specific metric."""
         with self._metrics_lock:
             if metric_name not in self._metrics:
@@ -889,7 +889,7 @@ class DatabasePerformanceMonitor:
                 if metric.timestamp >= cutoff_time
             ]
 
-    def get_active_alerts(self) -> List[PerformanceAlert]:
+    def get_active_alerts(self) -> list[PerformanceAlert]:
         """Get list of active (unresolved) alerts."""
         with self._alerts_lock:
             return [
@@ -1104,7 +1104,7 @@ def main():
 
         if args.health:
             health = monitor.get_database_health()
-            print(f"Database Health Status:")
+            print("Database Health Status:")
             print(f"Overall Score: {health.overall_score:.1f}/100 ({health.status.upper()})")
             print(f"Connection Health: {health.connection_health:.1f}")
             print(f"Query Performance: {health.query_performance_health:.1f}")
@@ -1112,12 +1112,12 @@ def main():
             print(f"Cache Efficiency: {health.cache_efficiency_health:.1f}")
 
             if health.issues:
-                print(f"\nIssues:")
+                print("\nIssues:")
                 for issue in health.issues:
                     print(f"  - {issue}")
 
             if health.recommendations:
-                print(f"\nRecommendations:")
+                print("\nRecommendations:")
                 for rec in health.recommendations:
                     print(f"  - {rec}")
 

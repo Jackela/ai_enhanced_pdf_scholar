@@ -3,7 +3,7 @@ Service-specific Exception Classes
 Handles errors specific to various services like RAG, vector indexing, etc.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from .base import ServiceError
 
@@ -14,8 +14,8 @@ class RAGServiceError(ServiceError):
     def __init__(
         self,
         message: str,
-        query: Optional[str] = None,
-        document_id: Optional[int] = None,
+        query: str | None = None,
+        document_id: int | None = None,
         **kwargs: Any,
     ):
         """
@@ -47,9 +47,9 @@ class VectorIndexError(ServiceError):
     def __init__(
         self,
         message: str,
-        index_id: Optional[int] = None,
-        index_path: Optional[str] = None,
-        operation: Optional[str] = None,
+        index_id: int | None = None,
+        index_path: str | None = None,
+        operation: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -92,8 +92,8 @@ class ContentHashError(ServiceError):
     def __init__(
         self,
         message: str,
-        file_path: Optional[str] = None,
-        hash_type: Optional[str] = None,
+        file_path: str | None = None,
+        hash_type: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -131,9 +131,9 @@ class EmailServiceError(ServiceError):
     def __init__(
         self,
         message: str,
-        recipient: Optional[str] = None,
-        template: Optional[str] = None,
-        smtp_error: Optional[str] = None,
+        recipient: str | None = None,
+        template: str | None = None,
+        smtp_error: str | None = None,
         **kwargs: Any,
     ):
         """

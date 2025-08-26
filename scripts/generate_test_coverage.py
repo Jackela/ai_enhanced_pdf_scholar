@@ -4,13 +4,13 @@ Test Coverage Generator for AI Enhanced PDF Scholar
 Generates comprehensive test coverage reports with actionable insights.
 """
 
+import argparse
 import json
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-import argparse
+from typing import Any
 
 
 class TestCoverageGenerator:
@@ -22,7 +22,7 @@ class TestCoverageGenerator:
         self.coverage_dir = self.project_root / "coverage_html"
         self.coverage_file = self.project_root / ".coverage"
 
-    def run_pytest_with_coverage(self, test_patterns: List[str] = None, timeout: int = 300) -> bool:
+    def run_pytest_with_coverage(self, test_patterns: list[str] = None, timeout: int = 300) -> bool:
         """Run pytest with coverage collection."""
         print("🧪 Running test suite with coverage collection...")
 
@@ -79,7 +79,7 @@ class TestCoverageGenerator:
             print(f"❌ Error running tests: {e}")
             return False
 
-    def analyze_coverage_data(self) -> Dict[str, Any]:
+    def analyze_coverage_data(self) -> dict[str, Any]:
         """Analyze coverage data and generate insights."""
         coverage_json_path = self.project_root / "coverage.json"
 
@@ -88,7 +88,7 @@ class TestCoverageGenerator:
             return {}
 
         try:
-            with open(coverage_json_path, 'r') as f:
+            with open(coverage_json_path) as f:
                 coverage_data = json.load(f)
 
             analysis = {
@@ -119,7 +119,7 @@ class TestCoverageGenerator:
             print(f"❌ Error analyzing coverage data: {e}")
             return {}
 
-    def _generate_recommendations(self, analysis: Dict[str, Any]) -> List[str]:
+    def _generate_recommendations(self, analysis: dict[str, Any]) -> list[str]:
         """Generate actionable coverage improvement recommendations."""
         recommendations = []
         overall_coverage = analysis.get("overall_coverage", 0)
@@ -165,7 +165,7 @@ class TestCoverageGenerator:
 
         return recommendations
 
-    def generate_summary_report(self, analysis: Dict[str, Any], test_results: Dict[str, Any]) -> str:
+    def generate_summary_report(self, analysis: dict[str, Any], test_results: dict[str, Any]) -> str:
         """Generate a comprehensive summary report."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         overall_coverage = analysis.get("overall_coverage", 0)
@@ -244,7 +244,7 @@ class TestCoverageGenerator:
 
         # HTML report location
         if self.coverage_dir.exists():
-            report += f"\n## 📋 Detailed Report\n\n"
+            report += "\n## 📋 Detailed Report\n\n"
             report += f"Open detailed HTML coverage report: `{self.coverage_dir / 'index.html'}`\n"
 
         return report
@@ -256,7 +256,7 @@ class TestCoverageGenerator:
             f.write(report)
         return report_path
 
-    def run_comprehensive_coverage(self, test_patterns: List[str] = None,
+    def run_comprehensive_coverage(self, test_patterns: list[str] = None,
                                  threshold: float = 80.0, timeout: int = 300) -> bool:
         """Run comprehensive coverage analysis."""
         print("🚀 Starting comprehensive test coverage analysis...")

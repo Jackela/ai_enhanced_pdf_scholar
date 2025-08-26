@@ -6,7 +6,7 @@ Implements business logic for citation management following SOLID principles.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from src.database.models import CitationModel, CitationRelationModel, DocumentModel
 from src.interfaces.repository_interfaces import (
@@ -206,8 +206,8 @@ class CitationService:
         self,
         source_document_id: int,
         source_citation_id: int,
-        target_document_id: Optional[int] = None,
-        target_citation_id: Optional[int] = None,
+        target_document_id: int | None = None,
+        target_citation_id: int | None = None,
         relation_type: str = "cites",
         confidence_score: float = 1.0,
     ) -> CitationRelationModel:

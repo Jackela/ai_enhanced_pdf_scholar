@@ -7,12 +7,11 @@ import asyncio
 import logging
 import threading
 import time
-from collections import OrderedDict, defaultdict, deque
+from collections import OrderedDict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
-from weakref import WeakSet
+from typing import Any
 
 import psutil
 
@@ -51,7 +50,7 @@ class CacheEntry:
     accessed_at: datetime
     access_count: int = 0
     size_bytes: int = 0
-    ttl_seconds: Optional[int] = None
+    ttl_seconds: int | None = None
     level: CacheLevel = CacheLevel.WARM
 
     # Access tracking
@@ -128,7 +127,7 @@ class CacheConfig:
     cleanup_interval_seconds: int = 60  # Background cleanup interval
 
     # Level-specific settings
-    level_configs: Dict[CacheLevel, Dict[str, Any]] = field(default_factory=lambda: {
+    level_configs: dict[CacheLevel, dict[str, Any]] = field(default_factory=lambda: {
         CacheLevel.HOT: {"max_size_mb": 30.0, "ttl_seconds": 1800},  # 30MB, 30min
         CacheLevel.WARM: {"max_size_mb": 50.0, "ttl_seconds": 3600},  # 50MB, 1hour
         CacheLevel.COLD: {"max_size_mb": 20.0, "ttl_seconds": 7200}   # 20MB, 2hours
@@ -158,7 +157,7 @@ class CacheStatistics:
     hit_rate_percent: float = 0.0
 
     # Level statistics
-    level_stats: Dict[CacheLevel, Dict[str, int]] = field(default_factory=lambda: {
+    level_stats: dict[CacheLevel, dict[str, int]] = field(default_factory=lambda: {
         level: {"hits": 0, "misses": 0, "entries": 0, "size_bytes": 0}
         for level in CacheLevel
     })
@@ -168,7 +167,7 @@ class CacheStatistics:
         total = self.hits + self.misses
         self.hit_rate_percent = (self.hits / total * 100) if total > 0 else 0
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         self.calculate_hit_rate()
 
@@ -197,17 +196,17 @@ class L1MemoryCache:
     High-performance in-memory cache with intelligent eviction and multi-level storage.
     """
 
-    def __init__(self, config: Optional[CacheConfig] = None):
+    def __init__(self, config: CacheConfig | None = None):
         """Initialize L1 memory cache."""
         self.config = config or CacheConfig()
 
         # Storage by level
-        self.storage: Dict[CacheLevel, OrderedDict[str, CacheEntry]] = {
+        self.storage: dict[CacheLevel, OrderedDict[str, CacheEntry]] = {
             level: OrderedDict() for level in CacheLevel
         }
 
         # Index for fast lookups
-        self.key_index: Dict[str, CacheLevel] = {}
+        self.key_index: dict[str, CacheLevel] = {}
 
         # Statistics
         self.stats = CacheStatistics()
@@ -217,7 +216,7 @@ class L1MemoryCache:
         self._lock = threading.RLock()
 
         # Background cleanup
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
         self._is_running = False
 
         # Performance tracking
@@ -282,8 +281,8 @@ class L1MemoryCache:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int] = None,
-        level: Optional[CacheLevel] = None
+        ttl_seconds: int | None = None,
+        level: CacheLevel | None = None
     ) -> bool:
         """Set value in cache."""
         try:
@@ -633,13 +632,13 @@ class L1MemoryCache:
     # Statistics and Monitoring
     # ========================================================================
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         with self._lock:
             self.stats.calculate_hit_rate()
             return self.stats.get_summary()
 
-    def get_detailed_stats(self) -> Dict[str, Any]:
+    def get_detailed_stats(self) -> dict[str, Any]:
         """Get detailed cache statistics."""
         with self._lock:
             stats = self.get_stats()
@@ -689,7 +688,7 @@ class L1MemoryCache:
 
             logger.info("Cache cleared")
 
-    def get_memory_usage(self) -> Dict[str, Any]:
+    def get_memory_usage(self) -> dict[str, Any]:
         """Get detailed memory usage information."""
         with self._lock:
             total_entries = sum(len(storage) for storage in self.storage.values())

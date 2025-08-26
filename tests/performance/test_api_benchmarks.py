@@ -9,18 +9,19 @@ Establishes and validates performance baselines for all API endpoints:
 """
 
 import asyncio
-import aiohttp
-import pytest
-import time
 import json
 import statistics
-from typing import Dict, List, Any, Optional, Callable
-from dataclasses import dataclass, field
+import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+import aiohttp
 import numpy as np
+import pytest
 
 from .base_performance import PerformanceTestBase
-from .metrics_collector import MetricsCollector, PerformanceThresholds
+from .metrics_collector import MetricsCollector
 
 
 @dataclass
@@ -29,8 +30,8 @@ class APIEndpointBenchmark:
     name: str
     method: str
     path: str
-    payload: Optional[Dict[str, Any]] = None
-    headers: Optional[Dict[str, str]] = None
+    payload: dict[str, Any] | None = None
+    headers: dict[str, str] | None = None
     expected_response_time_ms: float = 1000.0
     expected_p95_ms: float = 2000.0
     expected_p99_ms: float = 3000.0
@@ -38,10 +39,10 @@ class APIEndpointBenchmark:
     warmup_iterations: int = 10
 
     # Performance baselines
-    baseline_response_time_ms: Optional[float] = None
-    baseline_p95_ms: Optional[float] = None
-    baseline_p99_ms: Optional[float] = None
-    baseline_throughput_rps: Optional[float] = None
+    baseline_response_time_ms: float | None = None
+    baseline_p95_ms: float | None = None
+    baseline_p99_ms: float | None = None
+    baseline_throughput_rps: float | None = None
 
 
 class APIBenchmarkTest(PerformanceTestBase):
@@ -51,9 +52,9 @@ class APIBenchmarkTest(PerformanceTestBase):
         super().__init__(base_url)
         self.collector = MetricsCollector(storage_path=Path("api_benchmarks.db"))
         self.endpoints = self._define_endpoints()
-        self.baselines: Dict[str, Dict[str, float]] = {}
+        self.baselines: dict[str, dict[str, float]] = {}
 
-    def _define_endpoints(self) -> List[APIEndpointBenchmark]:
+    def _define_endpoints(self) -> list[APIEndpointBenchmark]:
         """Define API endpoints to benchmark"""
         return [
             # Health check
@@ -177,8 +178,8 @@ class APIBenchmarkTest(PerformanceTestBase):
     async def benchmark_endpoint(
         self,
         endpoint: APIEndpointBenchmark,
-        session: Optional[aiohttp.ClientSession] = None
-    ) -> Dict[str, Any]:
+        session: aiohttp.ClientSession | None = None
+    ) -> dict[str, Any]:
         """Benchmark a single API endpoint"""
 
         # Create session if not provided
@@ -276,8 +277,8 @@ class APIBenchmarkTest(PerformanceTestBase):
     def _check_performance(
         self,
         endpoint: APIEndpointBenchmark,
-        metrics: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        metrics: dict[str, Any]
+    ) -> dict[str, Any]:
         """Check if performance meets expectations"""
         status = {
             "meets_expectations": True,
@@ -334,7 +335,7 @@ class APIBenchmarkTest(PerformanceTestBase):
 
         return status
 
-    async def run_all_benchmarks(self) -> Dict[str, Any]:
+    async def run_all_benchmarks(self) -> dict[str, Any]:
         """Run benchmarks for all endpoints"""
         print("API Performance Benchmark Suite")
         print("=" * 80)
@@ -353,7 +354,7 @@ class APIBenchmarkTest(PerformanceTestBase):
 
                 if "error" not in metrics:
                     rt = metrics["response_times"]
-                    print(f"  Results:")
+                    print("  Results:")
                     print(f"    Mean: {rt['mean']:.2f}ms")
                     print(f"    Median: {rt['median']:.2f}ms")
                     print(f"    P95: {rt['p95']:.2f}ms")
@@ -374,7 +375,7 @@ class APIBenchmarkTest(PerformanceTestBase):
 
         return results
 
-    async def establish_baselines(self, iterations: int = 1000) -> Dict[str, Any]:
+    async def establish_baselines(self, iterations: int = 1000) -> dict[str, Any]:
         """Establish performance baselines for all endpoints"""
         print("Establishing Performance Baselines")
         print("=" * 80)
@@ -401,7 +402,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                     baselines[endpoint.name] = baseline
                     self.baselines[endpoint.name] = baseline
 
-                    print(f"  Baseline established:")
+                    print("  Baseline established:")
                     print(f"    Mean: {baseline['mean']:.2f}ms")
                     print(f"    P95: {baseline['p95']:.2f}ms")
                     print(f"    P99: {baseline['p99']:.2f}ms")
@@ -411,14 +412,14 @@ class APIBenchmarkTest(PerformanceTestBase):
         with open("api_baselines.json", "w") as f:
             json.dump(baselines, f, indent=2)
 
-        print(f"\nBaselines saved to api_baselines.json")
+        print("\nBaselines saved to api_baselines.json")
 
         return baselines
 
     def load_baselines(self, filepath: str = "api_baselines.json") -> bool:
         """Load performance baselines from file"""
         try:
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 self.baselines = json.load(f)
             print(f"Loaded baselines from {filepath}")
             return True
@@ -429,7 +430,7 @@ class APIBenchmarkTest(PerformanceTestBase):
             print(f"Error loading baselines: {e}")
             return False
 
-    async def compare_with_baselines(self) -> Dict[str, Any]:
+    async def compare_with_baselines(self) -> dict[str, Any]:
         """Compare current performance with baselines"""
         if not self.baselines:
             if not self.load_baselines():
@@ -490,15 +491,15 @@ class APIBenchmarkTest(PerformanceTestBase):
 
                     # Check for regression
                     if delta["mean_percent"] > 10:
-                        print(f"  ⚠ WARNING: Performance regression detected!")
+                        print("  ⚠ WARNING: Performance regression detected!")
                     elif delta["mean_percent"] < -10:
-                        print(f"  ✓ Performance improvement detected!")
+                        print("  ✓ Performance improvement detected!")
                     else:
-                        print(f"  ✓ Performance stable")
+                        print("  ✓ Performance stable")
 
         return comparison
 
-    def generate_benchmark_report(self, results: Dict[str, Any]) -> str:
+    def generate_benchmark_report(self, results: dict[str, Any]) -> str:
         """Generate detailed benchmark report"""
         report = []
         report.append("=" * 80)
@@ -513,7 +514,7 @@ class APIBenchmarkTest(PerformanceTestBase):
             if "error" not in r and r.get("performance_status", {}).get("meets_expectations", False)
         )
 
-        report.append(f"\nSummary:")
+        report.append("\nSummary:")
         report.append(f"  Total Endpoints: {total_endpoints}")
         report.append(f"  Successful: {successful}")
         report.append(f"  Meeting Expectations: {meeting_expectations}")
@@ -530,7 +531,7 @@ class APIBenchmarkTest(PerformanceTestBase):
                 report.append(f"  ERROR: {metrics['error']}")
             else:
                 rt = metrics["response_times"]
-                report.append(f"  Response Times:")
+                report.append("  Response Times:")
                 report.append(f"    Mean: {rt['mean']:.2f}ms")
                 report.append(f"    Median: {rt['median']:.2f}ms")
                 report.append(f"    Std Dev: {rt['stdev']:.2f}ms")
@@ -546,11 +547,11 @@ class APIBenchmarkTest(PerformanceTestBase):
 
                 status = metrics.get("performance_status", {})
                 if status.get("meets_expectations"):
-                    report.append(f"  Status: PASS")
+                    report.append("  Status: PASS")
                 else:
-                    report.append(f"  Status: FAIL")
+                    report.append("  Status: FAIL")
                     if status.get("warnings"):
-                        report.append(f"  Warnings:")
+                        report.append("  Warnings:")
                         for warning in status["warnings"]:
                             report.append(f"    - {warning}")
 

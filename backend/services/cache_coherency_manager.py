@@ -9,16 +9,15 @@ import json
 import logging
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
-from weakref import WeakSet
+from typing import Any, Union
 
 # Import our cache services
 from .l1_memory_cache import L1MemoryCache
 from .l2_redis_cache import L2RedisCache
-from .l3_cdn_cache import L3CDNCache, ContentType
+from .l3_cdn_cache import ContentType, L3CDNCache
 
 logger = logging.getLogger(__name__)
 
@@ -99,10 +98,10 @@ class CoherencyEvent:
     key: str
     cache_level: str
     timestamp: datetime
-    version: Optional[CacheEntryVersion] = None
+    version: CacheEntryVersion | None = None
     data_size: int = 0
     success: bool = True
-    error: Optional[str] = None
+    error: str | None = None
 
 
 # ============================================================================
@@ -128,7 +127,7 @@ class CacheLevelWrapper:
         self.supports_ttl = True
         self.supports_versioning = True
 
-    async def get(self, key: str, default: Any = None) -> Tuple[Any, Optional[CacheEntryVersion]]:
+    async def get(self, key: str, default: Any = None) -> tuple[Any, CacheEntryVersion | None]:
         """Get value with version information."""
         try:
             # L1 Memory Cache
@@ -173,8 +172,8 @@ class CacheLevelWrapper:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int] = None,
-        version: Optional[CacheEntryVersion] = None
+        ttl_seconds: int | None = None,
+        version: CacheEntryVersion | None = None
     ) -> bool:
         """Set value with version information."""
         try:
@@ -306,16 +305,16 @@ class CacheCoherencyManager:
 
     def __init__(
         self,
-        l1_cache: Optional[L1MemoryCache] = None,
-        l2_cache: Optional[L2RedisCache] = None,
-        l3_cache: Optional[L3CDNCache] = None,
-        config: Optional[CoherencyConfig] = None
+        l1_cache: L1MemoryCache | None = None,
+        l2_cache: L2RedisCache | None = None,
+        l3_cache: L3CDNCache | None = None,
+        config: CoherencyConfig | None = None
     ):
         """Initialize cache coherency manager."""
         self.config = config or CoherencyConfig()
 
         # Cache levels
-        self.cache_levels: Dict[str, CacheLevelWrapper] = {}
+        self.cache_levels: dict[str, CacheLevelWrapper] = {}
 
         if l1_cache:
             self.cache_levels["L1"] = CacheLevelWrapper(l1_cache, "L1", self)
@@ -325,7 +324,7 @@ class CacheCoherencyManager:
             self.cache_levels["L3"] = CacheLevelWrapper(l3_cache, "L3", self)
 
         # Coherency tracking
-        self.entry_versions: Dict[str, Dict[str, CacheEntryVersion]] = defaultdict(dict)
+        self.entry_versions: dict[str, dict[str, CacheEntryVersion]] = defaultdict(dict)
         self.coherency_events: deque = deque(maxlen=10000)
         self.invalidation_queue: deque = deque()
 
@@ -340,7 +339,7 @@ class CacheCoherencyManager:
         }
 
         # Background tasks
-        self.background_tasks: List[asyncio.Task] = []
+        self.background_tasks: list[asyncio.Task] = []
         self.is_running = False
 
         logger.info(f"Cache Coherency Manager initialized with {len(self.cache_levels)} levels")
@@ -392,8 +391,8 @@ class CacheCoherencyManager:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int] = None,
-        tags: Optional[List[str]] = None
+        ttl_seconds: int | None = None,
+        tags: list[str] | None = None
     ) -> bool:
         """Set value with coherency management."""
         start_time = time.time()
@@ -469,7 +468,7 @@ class CacheCoherencyManager:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int],
+        ttl_seconds: int | None,
         version: CacheEntryVersion
     ) -> bool:
         """Write-through coherency protocol."""
@@ -493,7 +492,7 @@ class CacheCoherencyManager:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int],
+        ttl_seconds: int | None,
         version: CacheEntryVersion
     ) -> bool:
         """Write-behind coherency protocol."""
@@ -525,7 +524,7 @@ class CacheCoherencyManager:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int],
+        ttl_seconds: int | None,
         version: CacheEntryVersion
     ) -> bool:
         """Write with invalidation protocol."""
@@ -554,7 +553,7 @@ class CacheCoherencyManager:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int],
+        ttl_seconds: int | None,
         version: CacheEntryVersion
     ) -> bool:
         """Broadcast write protocol."""
@@ -596,7 +595,7 @@ class CacheCoherencyManager:
         level: CacheLevelWrapper,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int],
+        ttl_seconds: int | None,
         version: CacheEntryVersion
     ) -> bool:
         """Safely write to cache level with error handling."""
@@ -650,7 +649,7 @@ class CacheCoherencyManager:
     # Version Management and Conflict Resolution
     # ========================================================================
 
-    async def check_coherency(self, key: str) -> Dict[str, Any]:
+    async def check_coherency(self, key: str) -> dict[str, Any]:
         """Check coherency status for a key."""
         coherency_info = {
             "key": key,
@@ -701,8 +700,8 @@ class CacheCoherencyManager:
     async def _generate_coherency_recommendations(
         self,
         key: str,
-        versions: Dict[str, Dict[str, Any]]
-    ) -> List[str]:
+        versions: dict[str, dict[str, Any]]
+    ) -> list[str]:
         """Generate recommendations for resolving coherency issues."""
         recommendations = []
 
@@ -955,7 +954,7 @@ class CacheCoherencyManager:
             if event.event_type in ["write", "invalidate"]:
                 logger.debug(f"Coherency event: {event.event_type} for key {event.key} in {event.cache_level}")
 
-    def get_coherency_stats(self) -> Dict[str, Any]:
+    def get_coherency_stats(self) -> dict[str, Any]:
         """Get coherency statistics."""
         return {
             "stats": self.stats.copy(),
@@ -970,7 +969,7 @@ class CacheCoherencyManager:
             }
         }
 
-    def get_coherency_health(self) -> Dict[str, Any]:
+    def get_coherency_health(self) -> dict[str, Any]:
         """Get coherency health status."""
         total_keys = len(self.entry_versions)
         violations = self.stats.get("coherency_violations", 0)
@@ -993,7 +992,7 @@ class CacheCoherencyManager:
             "recommendations": self._get_health_recommendations(violation_rate)
         }
 
-    def _get_health_recommendations(self, violation_rate: float) -> List[str]:
+    def _get_health_recommendations(self, violation_rate: float) -> list[str]:
         """Get health recommendations."""
         recommendations = []
 

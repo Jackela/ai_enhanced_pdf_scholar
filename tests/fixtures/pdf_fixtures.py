@@ -5,11 +5,8 @@ the application. These fixtures support content hash testing,
 deduplication testing, and various edge cases.
 """
 
-import os
 import shutil
-import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import fitz  # PyMuPDF
 
@@ -24,7 +21,7 @@ class PDFFixtureGenerator:
     - Various edge cases (empty, large, corrupted)
     """
 
-    def __init__(self, fixture_dir: Optional[Path] = None):
+    def __init__(self, fixture_dir: Path | None = None):
         """
         Initialize PDF fixture generator.
         Args:
@@ -35,7 +32,7 @@ class PDFFixtureGenerator:
         else:
             self.fixture_dir = Path(fixture_dir)
         self.fixture_dir.mkdir(parents=True, exist_ok=True)
-        self.fixtures: Dict[str, Path] = {}
+        self.fixtures: dict[str, Path] = {}
 
     def create_simple_text_pdf(self, filename: str = "simple_text.pdf") -> Path:
         """
@@ -104,7 +101,7 @@ class PDFFixtureGenerator:
 
     def create_identical_content_pdfs(
         self, base_filename: str = "identical_content"
-    ) -> List[Path]:
+    ) -> list[Path]:
         """
         Create multiple PDFs with identical text content but different file metadata.
         Args:
@@ -137,7 +134,7 @@ class PDFFixtureGenerator:
 
     def create_different_content_pdfs(
         self, base_filename: str = "different_content"
-    ) -> List[Path]:
+    ) -> list[Path]:
         """
         Create multiple PDFs with different text content.
         Args:
@@ -223,7 +220,7 @@ class PDFFixtureGenerator:
 
     def create_binary_identical_pdfs(
         self, filename: str = "binary_identical.pdf"
-    ) -> List[Path]:
+    ) -> list[Path]:
         """
         Create binary identical PDF files for exact duplication testing.
         Args:
@@ -259,7 +256,7 @@ class PDFFixtureGenerator:
         self.fixtures[filename] = pdf_path
         return pdf_path
 
-    def create_all_fixtures(self) -> Dict[str, Path]:
+    def create_all_fixtures(self) -> dict[str, Path]:
         """
         Create all standard test fixtures.
         Returns:
@@ -289,11 +286,11 @@ class PDFFixtureGenerator:
             shutil.rmtree(self.fixture_dir)
         self.fixtures.clear()
 
-    def get_fixture_path(self, fixture_name: str) -> Optional[Path]:
+    def get_fixture_path(self, fixture_name: str) -> Path | None:
         """Get path to a specific fixture."""
         return self.fixtures.get(fixture_name)
 
-    def list_fixtures(self) -> List[str]:
+    def list_fixtures(self) -> list[str]:
         """List all available fixtures."""
         return list(self.fixtures.keys())
 

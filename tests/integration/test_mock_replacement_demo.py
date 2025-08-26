@@ -22,21 +22,19 @@ This approach provides much higher confidence that the system actually
 works with real documents, while maintaining reasonable test performance.
 """
 
-import json
 import tempfile
 import time
 from pathlib import Path
 
-import pytest
 import fitz
 
 from src.database.connection import DatabaseConnection
-from src.services.document_library_service import DocumentLibraryService
-from src.services.enhanced_rag_service import EnhancedRAGService
+from src.repositories.citation_relation_repository import CitationRelationRepository
+from src.repositories.citation_repository import CitationRepository
 from src.services.citation_parsing_service import CitationParsingService
 from src.services.citation_service import CitationService
-from src.repositories.citation_repository import CitationRepository
-from src.repositories.citation_relation_repository import CitationRelationRepository
+from src.services.document_library_service import DocumentLibraryService
+from src.services.enhanced_rag_service import EnhancedRAGService
 from tests.fixtures.academic_pdf_generator import AcademicPDFGenerator
 
 
@@ -336,7 +334,7 @@ class TestMockReplacementDemo:
         assert total_citations >= 5, "Should extract meaningful citations"
         assert len(vector_indexes) == len(imported_documents), "All docs should be indexed"
 
-        print(f"   ✓ Performance within limits:")
+        print("   ✓ Performance within limits:")
         print(f"     - Import: {avg_import_time:.2f}s avg")
         print(f"     - Indexing: {avg_index_time:.2f}s avg")
         print(f"     - Queries: {avg_query_time:.2f}s avg")
@@ -351,11 +349,11 @@ class TestMockReplacementDemo:
         print("   ✓ Citations extracted from real papers")
         print("   ✓ End-to-end RAG pipeline functional")
 
-        print(f"\n🎉 DEMONSTRATION SUCCESSFUL!")
+        print("\n🎉 DEMONSTRATION SUCCESSFUL!")
         print(f"   Processed {len(imported_documents)} real academic papers")
         print(f"   Created {total_chunks} text chunks")
         print(f"   Extracted {total_citations} real citations")
-        print(f"   Zero mocks used - all real processing!")
+        print("   Zero mocks used - all real processing!")
 
         return {
             'documents_processed': len(imported_documents),
@@ -410,7 +408,7 @@ class TestMockReplacementDemo:
 
         # Demonstrate actual content extraction
         sample_text = actual_text[:200].replace('\n', ' ')
-        print(f"\nReal extracted text sample:")
+        print("\nReal extracted text sample:")
         print(f"   \"{sample_text}...\"")
 
         assert len(actual_text) > 1000, "Should extract substantial real content"
@@ -441,18 +439,18 @@ class TestMockReplacementDemo:
         response = self.rag_service.query_document("What is BERT?", document.id)
         query_time = time.time() - start_time
 
-        print(f"\nREAL PERFORMANCE METRICS:")
+        print("\nREAL PERFORMANCE METRICS:")
         print(f"   Import time: {import_time:.3f}s")
         print(f"   Index time: {index_time:.3f}s")
         print(f"   Query time: {query_time:.3f}s")
         print(f"   Total pipeline: {import_time + index_time + query_time:.3f}s")
 
-        print(f"\nPERFORMED OPERATIONS:")
-        print(f"   ✓ Real PDF parsing and text extraction")
-        print(f"   ✓ File and content hash calculation")
+        print("\nPERFORMED OPERATIONS:")
+        print("   ✓ Real PDF parsing and text extraction")
+        print("   ✓ File and content hash calculation")
         print(f"   ✓ Vector embedding creation ({vector_index.chunk_count} chunks)")
-        print(f"   ✓ Vector index storage and persistence")
-        print(f"   ✓ Similarity search and response generation")
+        print("   ✓ Vector index storage and persistence")
+        print("   ✓ Similarity search and response generation")
 
         # Validate performance is acceptable for real processing
         assert import_time < 5, "Real import should be reasonably fast"
@@ -460,6 +458,6 @@ class TestMockReplacementDemo:
         assert query_time < 5, "Real queries should be responsive"
 
         total_time = import_time + index_time + query_time
-        print(f"\n🚀 PERFORMANCE VALIDATION PASSED!")
+        print("\n🚀 PERFORMANCE VALIDATION PASSED!")
         print(f"   Complete real processing pipeline: {total_time:.2f}s")
         print("   Ready for production workloads!")

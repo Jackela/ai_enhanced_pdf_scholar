@@ -14,20 +14,10 @@ import hmac
 import json
 import time
 import uuid
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
 
 import jwt
 import pytest
-from fastapi.testclient import TestClient
-
-from tests.security.security_test_utils import (
-    AttackType,
-    SecurityTestResult,
-    SecurityTestRunner,
-    SeverityLevel,
-)
 
 
 class TestAuthenticationSecurity:
@@ -43,7 +33,7 @@ class TestAuthenticationSecurity:
         return service
 
     @pytest.fixture
-    def weak_passwords(self) -> List[str]:
+    def weak_passwords(self) -> list[str]:
         """Common weak passwords for testing."""
         return [
             "password", "123456", "password123", "admin", "letmein",
@@ -53,7 +43,7 @@ class TestAuthenticationSecurity:
         ]
 
     @pytest.fixture
-    def sql_injection_passwords(self) -> List[str]:
+    def sql_injection_passwords(self) -> list[str]:
         """SQL injection attempts in password field."""
         return [
             "' OR '1'='1",
@@ -117,7 +107,7 @@ class TestAuthenticationSecurity:
         def constant_time_auth(username: str, password: str) -> bool:
             # Always perform the same operations regardless of validity
             expected_username = "admin"
-            expected_password_hash = hashlib.sha256("correct_password".encode()).hexdigest()
+            expected_password_hash = hashlib.sha256(b"correct_password").hexdigest()
 
             provided_password_hash = hashlib.sha256(password.encode()).hexdigest()
 
@@ -156,7 +146,7 @@ class TestAuthenticationSecurity:
         }
 
         # Victim logs in with the fixed session ID
-        def login_with_session(username: str, password: str, session_id: Optional[str] = None):
+        def login_with_session(username: str, password: str, session_id: str | None = None):
             # Should regenerate session ID after successful login
             if session_id and session_id in mock_auth_service.sessions:
                 # Delete old session
@@ -256,7 +246,7 @@ class TestAuthenticationSecurity:
             }
             return token
 
-        def validate_reset_token(token: str) -> Optional[str]:
+        def validate_reset_token(token: str) -> str | None:
             if token not in mock_auth_service.reset_tokens:
                 return None
 
@@ -316,7 +306,7 @@ class TestAuthenticationSecurity:
 
     def test_weak_password_detection(self, weak_passwords):
         """Test detection and prevention of weak passwords."""
-        def validate_password_strength(password: str) -> Dict[str, any]:
+        def validate_password_strength(password: str) -> dict[str, any]:
             issues = []
 
             # Check length
@@ -382,7 +372,7 @@ class TestAuthorizationSecurity:
 
     def test_privilege_escalation_horizontal(self, mock_rbac_system):
         """Test protection against horizontal privilege escalation."""
-        def access_user_data(requesting_user: str, target_user: str) -> Dict:
+        def access_user_data(requesting_user: str, target_user: str) -> dict:
             # Check if user can access another user's data
             if requesting_user == target_user:
                 return {"allowed": True, "data": f"Data for {target_user}"}
@@ -409,7 +399,7 @@ class TestAuthorizationSecurity:
 
     def test_privilege_escalation_vertical(self, mock_rbac_system):
         """Test protection against vertical privilege escalation."""
-        def perform_admin_action(user: str, action: str) -> Dict:
+        def perform_admin_action(user: str, action: str) -> dict:
             user_data = mock_rbac_system["users"].get(user)
             if not user_data:
                 return {"allowed": False, "error": "User not found"}
@@ -437,7 +427,7 @@ class TestAuthorizationSecurity:
 
     def test_insecure_direct_object_reference(self, mock_rbac_system):
         """Test protection against IDOR vulnerabilities."""
-        def access_document(user: str, document_id: str) -> Dict:
+        def access_document(user: str, document_id: str) -> dict:
             user_data = mock_rbac_system["users"].get(user)
             if not user_data:
                 return {"allowed": False, "error": "User not found"}
@@ -473,10 +463,10 @@ class TestAuthorizationSecurity:
         """Test protection against JWT token manipulation."""
         secret_key = "super-secret-key-12345"
 
-        def create_jwt_token(payload: Dict) -> str:
+        def create_jwt_token(payload: dict) -> str:
             return jwt.encode(payload, secret_key, algorithm="HS256")
 
-        def validate_jwt_token(token: str) -> Optional[Dict]:
+        def validate_jwt_token(token: str) -> dict | None:
             try:
                 # Verify signature and decode
                 decoded = jwt.decode(token, secret_key, algorithms=["HS256"])
@@ -664,7 +654,7 @@ class TestTokenSecurity:
                 }
                 return key
 
-            def validate_api_key(self, key: str) -> Optional[Dict]:
+            def validate_api_key(self, key: str) -> dict | None:
                 if key not in self.keys:
                     return None
 

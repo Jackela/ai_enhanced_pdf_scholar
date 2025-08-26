@@ -9,20 +9,15 @@ Agent B1: CI/CD Pipeline Optimization Specialist
 Generated: 2025-01-19
 """
 
+import argparse
 import json
 import logging
-import os
-import subprocess
 import sys
-import yaml
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Set
-import argparse
-import re
-import hashlib
+from typing import Any
 
 # Configure logging
 logging.basicConfig(
@@ -67,10 +62,10 @@ class ComplianceFinding:
     requirement: str
     severity: Severity
     status: ComplianceLevel
-    evidence: List[str]
-    remediation: Optional[str] = None
+    evidence: list[str]
+    remediation: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'control_id': self.control_id,
             'control_name': self.control_name,
@@ -88,11 +83,11 @@ class ComplianceReport:
     standard: ComplianceStandard
     assessment_date: datetime
     overall_status: ComplianceLevel
-    findings: List[ComplianceFinding]
-    summary_stats: Dict[str, int]
-    recommendations: List[str]
+    findings: list[ComplianceFinding]
+    summary_stats: dict[str, int]
+    recommendations: list[str]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'standard': self.standard.value,
             'assessment_date': self.assessment_date.isoformat(),
@@ -108,13 +103,13 @@ class ComplianceValidator:
 
     def __init__(self, project_root: Path = None):
         self.project_root = project_root or Path.cwd()
-        self.findings: List[ComplianceFinding] = []
-        self.recommendations: List[str] = []
+        self.findings: list[ComplianceFinding] = []
+        self.recommendations: list[str] = []
 
         # Load compliance control definitions
         self.controls = self._load_control_definitions()
 
-    def _load_control_definitions(self) -> Dict[str, Dict]:
+    def _load_control_definitions(self) -> dict[str, dict]:
         """Load compliance control definitions"""
         controls = {
             # SOC2 Type II Controls
@@ -261,7 +256,7 @@ class ComplianceValidator:
         control_id: str,
         control_name: str,
         requirement: str,
-        checks: List[str],
+        checks: list[str],
         standard: ComplianceStandard
     ) -> ComplianceFinding:
         """Validate a specific compliance control"""
@@ -309,7 +304,7 @@ class ComplianceValidator:
             remediation=remediation
         )
 
-    def _execute_check(self, check_type: str) -> Dict[str, Any]:
+    def _execute_check(self, check_type: str) -> dict[str, Any]:
         """Execute a specific compliance check"""
 
         if check_type == 'security_policy':
@@ -347,7 +342,7 @@ class ComplianceValidator:
         else:
             return {'passed': False, 'evidence': [f'Unknown check type: {check_type}']}
 
-    def _check_security_policy(self) -> Dict[str, Any]:
+    def _check_security_policy(self) -> dict[str, Any]:
         """Check for security policy documentation"""
         policy_files = [
             'SECURITY.md',
@@ -380,7 +375,7 @@ class ComplianceValidator:
 
         return {'passed': found_policy, 'evidence': evidence}
 
-    def _check_code_of_conduct(self) -> Dict[str, Any]:
+    def _check_code_of_conduct(self) -> dict[str, Any]:
         """Check for code of conduct"""
         conduct_files = [
             'CODE_OF_CONDUCT.md',
@@ -402,7 +397,7 @@ class ComplianceValidator:
 
         return {'passed': found_conduct, 'evidence': evidence}
 
-    def _check_documentation(self) -> Dict[str, Any]:
+    def _check_documentation(self) -> dict[str, Any]:
         """Check for adequate documentation"""
         required_docs = {
             'README.md': 'Project documentation',
@@ -430,7 +425,7 @@ class ComplianceValidator:
 
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_access_controls(self) -> Dict[str, Any]:
+    def _check_access_controls(self) -> dict[str, Any]:
         """Check for access control implementation"""
         evidence = []
 
@@ -457,7 +452,7 @@ class ComplianceValidator:
         passed = len(auth_files) > 0
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_authentication(self) -> Dict[str, Any]:
+    def _check_authentication(self) -> dict[str, Any]:
         """Check for authentication implementation"""
         evidence = []
 
@@ -485,7 +480,7 @@ class ComplianceValidator:
         passed = len(unique_implementations) > 0
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_authorization(self) -> Dict[str, Any]:
+    def _check_authorization(self) -> dict[str, Any]:
         """Check for authorization controls"""
         evidence = []
 
@@ -513,7 +508,7 @@ class ComplianceValidator:
         passed = len(unique_patterns) > 0
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_mfa(self) -> Dict[str, Any]:
+    def _check_mfa(self) -> dict[str, Any]:
         """Check for multi-factor authentication"""
         evidence = []
 
@@ -541,7 +536,7 @@ class ComplianceValidator:
 
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_encryption(self) -> Dict[str, Any]:
+    def _check_encryption(self) -> dict[str, Any]:
         """Check for encryption implementation"""
         evidence = []
 
@@ -574,7 +569,7 @@ class ComplianceValidator:
 
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_monitoring(self) -> Dict[str, Any]:
+    def _check_monitoring(self) -> dict[str, Any]:
         """Check for monitoring systems"""
         evidence = []
 
@@ -591,7 +586,7 @@ class ComplianceValidator:
 
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_logging(self) -> Dict[str, Any]:
+    def _check_logging(self) -> dict[str, Any]:
         """Check for logging implementation"""
         evidence = []
 
@@ -618,7 +613,7 @@ class ComplianceValidator:
 
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_backup_procedures(self) -> Dict[str, Any]:
+    def _check_backup_procedures(self) -> dict[str, Any]:
         """Check for backup and recovery procedures"""
         evidence = []
 
@@ -645,7 +640,7 @@ class ComplianceValidator:
 
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_incident_response(self) -> Dict[str, Any]:
+    def _check_incident_response(self) -> dict[str, Any]:
         """Check for incident response procedures"""
         evidence = []
 
@@ -668,7 +663,7 @@ class ComplianceValidator:
 
         return {'passed': found_incident, 'evidence': evidence}
 
-    def _check_change_management(self) -> Dict[str, Any]:
+    def _check_change_management(self) -> dict[str, Any]:
         """Check for change management processes"""
         evidence = []
 
@@ -700,7 +695,7 @@ class ComplianceValidator:
         passed = len(workflow_files) > 0
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_secure_coding(self) -> Dict[str, Any]:
+    def _check_secure_coding(self) -> dict[str, Any]:
         """Check for secure coding practices"""
         evidence = []
 
@@ -741,7 +736,7 @@ class ComplianceValidator:
         passed = len(found_security_tools) > 0 or len(security_tools_in_reqs) > 0
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_code_review_process(self) -> Dict[str, Any]:
+    def _check_code_review_process(self) -> dict[str, Any]:
         """Check for code review processes"""
         evidence = []
 
@@ -766,7 +761,7 @@ class ComplianceValidator:
         passed = len(codeowners_files) > 0 or len(pr_templates) > 0
         return {'passed': passed, 'evidence': evidence}
 
-    def _check_security_testing(self) -> Dict[str, Any]:
+    def _check_security_testing(self) -> dict[str, Any]:
         """Check for security testing implementation"""
         evidence = []
 
@@ -808,7 +803,7 @@ class ComplianceValidator:
         else:
             return ComplianceLevel.PARTIAL
 
-    def _generate_summary_stats(self) -> Dict[str, int]:
+    def _generate_summary_stats(self) -> dict[str, int]:
         """Generate summary statistics"""
         stats = {
             'total_controls': len(self.findings),
@@ -861,7 +856,7 @@ class ComplianceValidator:
         if non_compliant:
             self.recommendations.append(f"Prioritize remediation of {len(non_compliant)} non-compliant controls")
 
-    def _generate_remediation(self, control_id: str, checks: List[str], standard: ComplianceStandard) -> str:
+    def _generate_remediation(self, control_id: str, checks: list[str], standard: ComplianceStandard) -> str:
         """Generate specific remediation guidance"""
 
         remediation_map = {
@@ -1119,7 +1114,7 @@ Examples:
             validator.export_report(report, args.output_format, output_file)
 
             # Print summary
-            print(f"\n📊 Compliance Assessment Summary:")
+            print("\n📊 Compliance Assessment Summary:")
             print(f"  Standard: {report.standard.value.upper()}")
             print(f"  Overall Status: {report.overall_status.value.upper()}")
             print(f"  Total Controls: {report.summary_stats['total_controls']}")
@@ -1128,10 +1123,10 @@ Examples:
             print(f"  Critical Findings: {report.summary_stats['critical_findings']}")
 
             if report.overall_status == ComplianceLevel.NON_COMPLIANT:
-                print(f"\n❌ Compliance validation failed")
+                print("\n❌ Compliance validation failed")
                 sys.exit(1)
             else:
-                print(f"\n✅ Compliance validation completed")
+                print("\n✅ Compliance validation completed")
 
         elif args.command == 'validate-all':
             output_dir = Path(args.output_dir)
@@ -1151,7 +1146,7 @@ Examples:
                 print(f"✅ {standard.value.upper()} report saved to {output_file}")
 
             # Generate combined summary
-            print(f"\n📊 Combined Compliance Summary:")
+            print("\n📊 Combined Compliance Summary:")
             for report in reports:
                 status_icon = "✅" if report.overall_status == ComplianceLevel.COMPLIANT else "❌"
                 print(f"  {status_icon} {report.standard.value.upper()}: {report.overall_status.value}")

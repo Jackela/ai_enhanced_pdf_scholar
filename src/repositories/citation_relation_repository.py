@@ -204,6 +204,38 @@ class CitationRelationRepository(
             logger.error(f"Failed to delete citation relation {relation_id}: {e}")
             raise
 
+    def get_by_ids(self, relation_ids: list[int]) -> list[CitationRelationModel]:
+        """
+        Get multiple citation relations by their IDs.
+
+        Args:
+            relation_ids: List of relation IDs to retrieve
+
+        Returns:
+            List of found relations (may be fewer than requested if some don't exist)
+        """
+        if not relation_ids:
+            return []
+
+        try:
+            # Create placeholders for IN clause
+            placeholders = ",".join(["?" for _ in relation_ids])
+            sql = f"""
+                SELECT * FROM citation_relations
+                WHERE id IN ({placeholders})
+                ORDER BY id
+            """
+            results = self.db.fetch_all(sql, tuple(relation_ids))
+
+            relations = [CitationRelationModel.from_database_row(row) for row in results]
+            logger.debug(f"Found {len(relations)} relations from {len(relation_ids)} IDs")
+
+            return relations
+
+        except Exception as e:
+            logger.error(f"Failed to get citation relations by IDs {relation_ids}: {e}")
+            raise
+
     def find_by_source_document(
         self, source_document_id: int
     ) -> list[CitationRelationModel]:

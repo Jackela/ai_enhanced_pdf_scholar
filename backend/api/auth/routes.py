@@ -6,10 +6,8 @@ API endpoints for user authentication and management.
 import logging
 import secrets
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from backend.api.auth.dependencies import (
@@ -34,7 +32,7 @@ from backend.api.auth.models import (
 )
 from backend.api.auth.service import AuthenticationService
 from backend.api.dependencies import get_db
-from backend.api.models import BaseResponse, ErrorResponse
+from backend.api.models import BaseResponse
 
 logger = logging.getLogger(__name__)
 
@@ -224,9 +222,9 @@ async def refresh_tokens(
 
 @router.post("/logout", response_model=BaseResponse)
 async def logout(
-    token_data: Optional[TokenRefresh] = None,
+    token_data: TokenRefresh | None = None,
     response: Response = None,
-    user: Optional[UserModel] = Depends(get_optional_user),
+    user: UserModel | None = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ) -> BaseResponse:
     """
@@ -512,10 +510,9 @@ async def get_active_sessions(
     - Can be used to manage logged-in devices
     - Marks current session for identification
     """
-    from backend.api.auth.models import RefreshTokenModel
+
     from backend.api.auth.jwt_handler import jwt_handler
-    from fastapi.security import HTTPBearer
-    from fastapi import Cookie
+    from backend.api.auth.models import RefreshTokenModel
 
     # Extract current token to identify current session
     current_token_id = None

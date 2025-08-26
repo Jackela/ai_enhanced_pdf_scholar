@@ -6,12 +6,10 @@ AI Enhanced PDF Scholar - Environment Health Check
 
 import os
 import sys
-import subprocess
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 
-def check_python_environment() -> Dict[str, any]:
+def check_python_environment() -> dict[str, any]:
     """检查Python环境配置"""
     return {
         "version": sys.version,
@@ -22,7 +20,7 @@ def check_python_environment() -> Dict[str, any]:
     }
 
 
-def check_core_dependencies() -> Dict[str, str]:
+def check_core_dependencies() -> dict[str, str]:
     """检查核心依赖包"""
     results = {}
 
@@ -65,11 +63,11 @@ def check_core_dependencies() -> Dict[str, str]:
     return results
 
 
-def test_pdf_processing() -> Tuple[bool, str]:
+def test_pdf_processing() -> tuple[bool, str]:
     """测试PDF处理功能"""
     try:
+
         import fitz
-        import io
 
         # Create test PDF
         doc = fitz.open()
@@ -92,11 +90,12 @@ def test_pdf_processing() -> Tuple[bool, str]:
         return False, f"PDF processing error: {e}"
 
 
-def test_gemini_api() -> Tuple[bool, str]:
+def test_gemini_api() -> tuple[bool, str]:
     """测试Google Gemini API连接"""
     try:
-        import google.generativeai as genai
         import os
+
+        import google.generativeai as genai
 
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
@@ -118,7 +117,7 @@ def test_gemini_api() -> Tuple[bool, str]:
         return False, f"API connection failed: {e}"
 
 
-def check_database_status() -> Tuple[bool, str]:
+def check_database_status() -> tuple[bool, str]:
     """检查数据库状态"""
     try:
         import sys
@@ -130,7 +129,9 @@ def check_database_status() -> Tuple[bool, str]:
             sys.path.insert(0, str(project_root))
 
         from src.database.connection import DatabaseConnection
-        from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
+        from src.database.modular_migrator import (
+            ModularDatabaseMigrator as DatabaseMigrator,
+        )
 
         db_path = os.getenv('DATABASE_PATH', './data/library.db')
         db_connection = DatabaseConnection(db_path=db_path)
@@ -150,7 +151,7 @@ def check_database_status() -> Tuple[bool, str]:
         return False, f"Database error: {e}"
 
 
-def check_directory_structure() -> Dict[str, bool]:
+def check_directory_structure() -> dict[str, bool]:
     """检查必要的目录结构"""
     required_dirs = [
         'data',
@@ -170,7 +171,7 @@ def check_directory_structure() -> Dict[str, bool]:
     return results
 
 
-def check_environment_config() -> Dict[str, any]:
+def check_environment_config() -> dict[str, any]:
     """检查环境配置文件"""
     config_files = ['.env', '.env.example', '.env.test']
     results = {}
@@ -189,7 +190,7 @@ def check_environment_config() -> Dict[str, any]:
     return results
 
 
-def run_health_check() -> Dict[str, any]:
+def run_health_check() -> dict[str, any]:
     """运行完整的环境健康检查"""
     print("🔍 Running AI Enhanced PDF Scholar Environment Health Check...")
     print("=" * 60)

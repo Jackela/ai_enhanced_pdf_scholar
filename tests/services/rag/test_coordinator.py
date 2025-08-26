@@ -5,21 +5,20 @@ Tests for the RAG service orchestrator that coordinates between all RAG modules
 using dependency injection and SOLID principles.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, call
-from pathlib import Path
 import asyncio
-from typing import Dict, Any
+from unittest.mock import AsyncMock, Mock
 
+import pytest
+
+from src.database.models import DocumentModel
 from src.services.rag.coordinator import RAGCoordinator
+from src.services.rag.exceptions import RAGIndexError, RAGProcessingError, RAGQueryError
 from src.services.rag.interfaces import (
+    IRAGFileManager,
     IRAGIndexBuilder,
     IRAGQueryEngine,
     IRAGRecoveryService,
-    IRAGFileManager
 )
-from src.database.models import DocumentModel
-from src.services.rag.exceptions import RAGProcessingError, RAGIndexError, RAGQueryError
 
 
 class TestRAGCoordinator:

@@ -4,11 +4,11 @@ Library Management E2E Tests
 Tests for document library management including search, filter, and bulk operations.
 """
 
-import pytest
-from playwright.sync_api import Page, expect
 import time
-from typing import List
+
+import pytest
 from fixtures import *
+from playwright.sync_api import Page, expect
 
 
 class TestLibraryManagement:
@@ -177,7 +177,7 @@ class TestLibraryManagement:
         page.goto(f"{web_server}/library")
 
         # Get initial order
-        def get_document_titles() -> List[str]:
+        def get_document_titles() -> list[str]:
             cards = page.locator('[data-testid="document-card"]')
             titles = []
             for i in range(cards.count()):

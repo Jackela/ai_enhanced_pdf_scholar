@@ -7,13 +7,11 @@ Automated index recommendations based on query patterns and performance analysis
 import json
 import logging
 import re
-import sqlite3
 import time
-from collections import defaultdict, Counter
+from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-import statistics
+from typing import Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -21,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from src.database.connection import DatabaseConnection
     from scripts.query_performance_analyzer import QueryPerformanceAnalyzer
+    from src.database.connection import DatabaseConnection
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     sys.exit(1)
@@ -35,14 +34,14 @@ except ImportError as e:
 class IndexRecommendation:
     """Represents an index optimization recommendation."""
     table_name: str
-    columns: List[str]
+    columns: list[str]
     index_type: str  # btree, unique, partial, covering
     recommendation_type: str  # missing, redundant, optimize, composite
     priority: str  # critical, high, medium, low
     estimated_benefit: float  # Performance improvement percentage
     estimated_cost: float  # Storage cost in KB
     rationale: str
-    supporting_queries: List[str] = field(default_factory=list)
+    supporting_queries: list[str] = field(default_factory=list)
     usage_frequency: int = 0
     current_performance_impact: float = 0.0
 
@@ -68,11 +67,11 @@ class TableAnalysis:
     table_name: str
     row_count: int
     data_size_kb: float
-    existing_indexes: List[Dict[str, Any]]
-    query_patterns: List[Dict[str, Any]]
-    column_usage: Dict[str, int]
-    join_patterns: List[Dict[str, Any]]
-    performance_issues: List[str]
+    existing_indexes: list[dict[str, Any]]
+    query_patterns: list[dict[str, Any]]
+    column_usage: dict[str, int]
+    join_patterns: list[dict[str, Any]]
+    performance_issues: list[str]
 
 
 class IndexOptimizationAdvisor:
@@ -92,7 +91,7 @@ class IndexOptimizationAdvisor:
     def __init__(
         self,
         db_connection: DatabaseConnection,
-        query_analyzer: Optional[QueryPerformanceAnalyzer] = None
+        query_analyzer: QueryPerformanceAnalyzer | None = None
     ):
         """
         Initialize the Index Optimization Advisor.
@@ -105,9 +104,9 @@ class IndexOptimizationAdvisor:
         self.query_analyzer = query_analyzer
 
         # Analysis data
-        self._table_analyses: Dict[str, TableAnalysis] = {}
-        self._query_patterns: Dict[str, List[Dict[str, Any]]] = {}
-        self._index_usage_stats: Dict[str, Dict[str, Any]] = {}
+        self._table_analyses: dict[str, TableAnalysis] = {}
+        self._query_patterns: dict[str, list[dict[str, Any]]] = {}
+        self._index_usage_stats: dict[str, dict[str, Any]] = {}
 
         # Refresh database metadata
         self._refresh_database_metadata()
@@ -258,7 +257,7 @@ class IndexOptimizationAdvisor:
             table1, col1, table2, col2 = pattern
             self._record_join_pattern(table1, col1, table2, col2, frequency)
 
-    def _analyze_where_clause(self, where_clause: str, tables: Set[str], frequency: int) -> None:
+    def _analyze_where_clause(self, where_clause: str, tables: set[str], frequency: int) -> None:
         """Analyze WHERE clause for column usage patterns."""
         # Extract column conditions
         condition_patterns = [
@@ -277,7 +276,7 @@ class IndexOptimizationAdvisor:
                     if table in self._table_analyses:
                         self._record_column_usage(table, column, frequency)
 
-    def _analyze_order_clause(self, order_clause: str, tables: Set[str], frequency: int) -> None:
+    def _analyze_order_clause(self, order_clause: str, tables: set[str], frequency: int) -> None:
         """Analyze ORDER BY clause for column usage patterns."""
         # Extract column names from ORDER BY
         columns = re.findall(r'(\w+)(?:\s+(?:ASC|DESC))?', order_clause, re.IGNORECASE)
@@ -313,7 +312,7 @@ class IndexOptimizationAdvisor:
                 # Record high column usage for JOIN columns
                 self._record_column_usage(table, col, frequency * 3)
 
-    def generate_recommendations(self) -> List[IndexRecommendation]:
+    def generate_recommendations(self) -> list[IndexRecommendation]:
         """
         Generate comprehensive index recommendations.
 
@@ -352,7 +351,7 @@ class IndexOptimizationAdvisor:
         logger.info(f"Generated {len(recommendations)} index recommendations")
         return recommendations
 
-    def _recommend_missing_indexes(self, analysis: TableAnalysis) -> List[IndexRecommendation]:
+    def _recommend_missing_indexes(self, analysis: TableAnalysis) -> list[IndexRecommendation]:
         """Recommend missing single-column indexes."""
         recommendations = []
         existing_columns = set()
@@ -390,7 +389,7 @@ class IndexOptimizationAdvisor:
 
         return recommendations
 
-    def _recommend_composite_indexes(self, analysis: TableAnalysis) -> List[IndexRecommendation]:
+    def _recommend_composite_indexes(self, analysis: TableAnalysis) -> list[IndexRecommendation]:
         """Recommend composite indexes for multi-column queries."""
         recommendations = []
 
@@ -442,7 +441,7 @@ class IndexOptimizationAdvisor:
 
         return recommendations
 
-    def _recommend_covering_indexes(self, analysis: TableAnalysis) -> List[IndexRecommendation]:
+    def _recommend_covering_indexes(self, analysis: TableAnalysis) -> list[IndexRecommendation]:
         """Recommend covering indexes to avoid table lookups."""
         recommendations = []
 
@@ -489,7 +488,7 @@ class IndexOptimizationAdvisor:
 
         return recommendations
 
-    def _identify_redundant_indexes(self, analysis: TableAnalysis) -> List[IndexRecommendation]:
+    def _identify_redundant_indexes(self, analysis: TableAnalysis) -> list[IndexRecommendation]:
         """Identify redundant indexes that can be removed."""
         recommendations = []
 
@@ -517,7 +516,7 @@ class IndexOptimizationAdvisor:
 
         return recommendations
 
-    def _identify_unused_indexes(self, analysis: TableAnalysis) -> List[IndexRecommendation]:
+    def _identify_unused_indexes(self, analysis: TableAnalysis) -> list[IndexRecommendation]:
         """Identify indexes that appear to be unused."""
         recommendations = []
 
@@ -566,7 +565,7 @@ class IndexOptimizationAdvisor:
         scores = {"critical": 1, "high": 2, "medium": 3, "low": 4}
         return scores.get(priority, 5)
 
-    def analyze_index_effectiveness(self) -> Dict[str, Any]:
+    def analyze_index_effectiveness(self) -> dict[str, Any]:
         """Analyze the effectiveness of existing indexes."""
         effectiveness_report = {
             "total_tables": len(self._table_analyses),
@@ -616,7 +615,7 @@ class IndexOptimizationAdvisor:
 
         return effectiveness_report
 
-    def generate_optimization_report(self) -> Dict[str, Any]:
+    def generate_optimization_report(self) -> dict[str, Any]:
         """Generate a comprehensive optimization report."""
         recommendations = self.generate_recommendations()
         effectiveness = self.analyze_index_effectiveness()
@@ -718,7 +717,7 @@ def main():
             effectiveness = advisor.analyze_index_effectiveness()
             results['effectiveness'] = effectiveness
 
-            print(f"Index Effectiveness Analysis:")
+            print("Index Effectiveness Analysis:")
             print(f"Total Tables: {effectiveness['total_tables']}")
             print(f"Total Indexes: {effectiveness['total_indexes']}")
             print(f"Overall Effectiveness: {effectiveness['overall_score']:.1f}%")
@@ -752,13 +751,13 @@ def main():
             report = advisor.generate_optimization_report()
             results['full_report'] = report
 
-            print(f"\nOptimization Report Summary:")
+            print("\nOptimization Report Summary:")
             print(f"Total Recommendations: {report['summary']['total_recommendations']}")
             print(f"Estimated Benefit: {report['summary']['total_estimated_benefit']:.1f}%")
             print(f"Estimated Cost: {report['summary']['total_estimated_cost_kb']:.1f}KB")
             print(f"Net Benefit Ratio: {report['summary']['net_benefit_ratio']:.2f}")
 
-            print(f"\nBy Priority:")
+            print("\nBy Priority:")
             for priority, count in report['by_priority'].items():
                 print(f"  {priority.upper()}: {count}")
 

@@ -3,7 +3,7 @@ Authentication and Authorization Exception Classes
 Handles errors related to user authentication, authorization, and sessions.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from .base import PDFScholarError
 
@@ -11,7 +11,7 @@ from .base import PDFScholarError
 class AuthenticationError(PDFScholarError):
     """Base class for authentication-related errors."""
 
-    def __init__(self, message: str, username: Optional[str] = None, **kwargs: Any):
+    def __init__(self, message: str, username: str | None = None, **kwargs: Any):
         """
         Initialize authentication error.
 
@@ -37,9 +37,9 @@ class AuthorizationError(PDFScholarError):
     def __init__(
         self,
         message: str,
-        user_id: Optional[int] = None,
-        required_permission: Optional[str] = None,
-        resource: Optional[str] = None,
+        user_id: int | None = None,
+        required_permission: str | None = None,
+        resource: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -75,8 +75,8 @@ class TokenError(AuthenticationError):
     def __init__(
         self,
         message: str,
-        token_type: Optional[str] = None,
-        reason: Optional[str] = None,
+        token_type: str | None = None,
+        reason: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -112,8 +112,8 @@ class AccountError(PDFScholarError):
     def __init__(
         self,
         message: str,
-        username: Optional[str] = None,
-        account_status: Optional[str] = None,
+        username: str | None = None,
+        account_status: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -151,8 +151,8 @@ class PasswordError(AuthenticationError):
     def __init__(
         self,
         message: str,
-        username: Optional[str] = None,
-        reason: Optional[str] = None,
+        username: str | None = None,
+        reason: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -187,8 +187,8 @@ class SessionError(AuthenticationError):
     def __init__(
         self,
         message: str,
-        session_id: Optional[str] = None,
-        reason: Optional[str] = None,
+        session_id: str | None = None,
+        reason: str | None = None,
         **kwargs: Any,
     ):
         """

@@ -4,9 +4,10 @@ Handles security validation errors and provides consistent error responses.
 """
 
 import logging
-from typing import Callable, Any
+from collections.abc import Callable
+from typing import Any
 
-from fastapi import Request, Response, HTTPException, status
+from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -15,7 +16,7 @@ from backend.api.models import (
     SecurityValidationError,
     SecurityValidationErrorResponse,
     ValidationErrorResponse,
-    log_security_event
+    log_security_event,
 )
 
 logger = logging.getLogger(__name__)

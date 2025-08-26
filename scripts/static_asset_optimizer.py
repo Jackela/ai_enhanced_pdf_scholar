@@ -9,18 +9,15 @@ import hashlib
 import json
 import logging
 import mimetypes
-import os
 import sys
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Union
 
 import aiofiles
-import aiohttp
-from PIL import Image, ImageOpt
+from PIL import Image
 
 # Asset optimization libraries
 try:
@@ -45,7 +42,7 @@ class OptimizationConfig:
     # Image optimization
     enable_image_optimization: bool = True
     image_quality: int = 85  # JPEG quality (0-100)
-    image_formats: List[str] = field(default_factory=lambda: ["webp", "avif", "original"])
+    image_formats: list[str] = field(default_factory=lambda: ["webp", "avif", "original"])
     max_image_width: int = 1920
     max_image_height: int = 1080
 
@@ -73,7 +70,7 @@ class OptimizationConfig:
     optimization_timeout_seconds: int = 30
 
     # CDN settings
-    cdn_base_url: Optional[str] = None
+    cdn_base_url: str | None = None
     enable_cdn_upload: bool = False
 
 
@@ -88,13 +85,13 @@ class AssetInfo:
     processing_time_ms: float = 0.0
 
     # Versions and formats
-    versions: Dict[str, Path] = field(default_factory=dict)
+    versions: dict[str, Path] = field(default_factory=dict)
     hash_original: str = ""
     hash_optimized: str = ""
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.utcnow)
-    last_optimized: Optional[datetime] = None
+    last_optimized: datetime | None = None
     optimization_count: int = 0
 
     def calculate_optimization_ratio(self):
@@ -104,7 +101,7 @@ class AssetInfo:
                 (self.original_size - self.optimized_size) / self.original_size * 100
             )
 
-    def get_best_version(self) -> Tuple[str, Path]:
+    def get_best_version(self) -> tuple[str, Path]:
         """Get the best optimized version."""
         if not self.versions:
             return "original", self.file_path
@@ -138,8 +135,8 @@ class OptimizationStatistics:
     avg_processing_time_ms: float = 0.0
 
     # File type statistics
-    files_by_type: Dict[str, int] = field(default_factory=dict)
-    optimization_by_type: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    files_by_type: dict[str, int] = field(default_factory=dict)
+    optimization_by_type: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def calculate_totals(self):
         """Calculate total statistics."""
@@ -149,7 +146,7 @@ class OptimizationStatistics:
         if self.optimized_files > 0:
             self.avg_processing_time_ms = self.total_processing_time_ms / self.optimized_files
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary statistics."""
         self.calculate_totals()
 
@@ -348,7 +345,7 @@ class CSSOptimizer:
 
         try:
             # Read CSS content
-            async with aiofiles.open(input_path, 'r', encoding='utf-8') as f:
+            async with aiofiles.open(input_path, encoding='utf-8') as f:
                 css_content = await f.read()
 
             original_size = len(css_content.encode('utf-8'))
@@ -428,7 +425,7 @@ class JavaScriptOptimizer:
 
         try:
             # Read JavaScript content
-            async with aiofiles.open(input_path, 'r', encoding='utf-8') as f:
+            async with aiofiles.open(input_path, encoding='utf-8') as f:
                 js_content = await f.read()
 
             original_size = len(js_content.encode('utf-8'))
@@ -519,7 +516,7 @@ class StaticAssetOptimizer:
         self.stats = OptimizationStatistics()
 
         # Asset tracking
-        self.optimized_assets: Dict[str, AssetInfo] = {}
+        self.optimized_assets: dict[str, AssetInfo] = {}
 
         # Semaphore for concurrent operations
         self._semaphore = asyncio.Semaphore(config.max_concurrent_operations)
@@ -529,7 +526,7 @@ class StaticAssetOptimizer:
     async def optimize_directory(
         self,
         input_dir: Union[str, Path],
-        output_dir: Optional[Union[str, Path]] = None
+        output_dir: Union[str, Path] | None = None
     ) -> OptimizationStatistics:
         """Optimize all assets in a directory."""
         input_path = Path(input_dir)
@@ -585,7 +582,7 @@ class StaticAssetOptimizer:
 
         return self.stats
 
-    async def _find_assets(self, input_dir: Path) -> List[Path]:
+    async def _find_assets(self, input_dir: Path) -> list[Path]:
         """Find all assets to optimize."""
         assets = []
 
@@ -608,7 +605,7 @@ class StaticAssetOptimizer:
         asset_path: Path,
         input_dir: Path,
         output_dir: Path
-    ) -> Optional[AssetInfo]:
+    ) -> AssetInfo | None:
         """Optimize a single asset."""
         async with self._semaphore:
             try:
@@ -693,7 +690,7 @@ class StaticAssetOptimizer:
     # Asset Versioning and Cache Busting
     # ========================================================================
 
-    async def generate_versioned_assets(self, output_dir: Path) -> Dict[str, str]:
+    async def generate_versioned_assets(self, output_dir: Path) -> dict[str, str]:
         """Generate versioned asset URLs for cache busting."""
         if not self.config.enable_asset_versioning:
             return {}
@@ -795,7 +792,7 @@ class StaticAssetOptimizer:
     # Utility Methods
     # ========================================================================
 
-    def get_optimization_report(self) -> Dict[str, Any]:
+    def get_optimization_report(self) -> dict[str, Any]:
         """Get detailed optimization report."""
         return {
             "summary": self.stats.get_summary(),
@@ -866,7 +863,7 @@ async def main():
 
         # Print results
         summary = stats.get_summary()
-        print(f"\nOptimization Complete!")
+        print("\nOptimization Complete!")
         print(f"Files processed: {summary['files']['total']}")
         print(f"Files optimized: {summary['files']['optimized']}")
         print(f"Success rate: {summary['files']['success_rate']:.1f}%")

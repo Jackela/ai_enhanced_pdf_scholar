@@ -5,16 +5,16 @@ Provides distributed load testing capabilities using Locust framework.
 Run with: locust -f locustfile.py --host=http://localhost:8000
 """
 
-from locust import HttpUser, task, between, events
-from locust.env import Environment
-from locust.stats import stats_printer, stats_history
-from locust.log import setup_logging
-import random
-import json
-import time
 import io
-from typing import Dict, Any
+import json
+import random
+from typing import Any
+
 import gevent
+from locust import HttpUser, between, events, task
+from locust.env import Environment
+from locust.log import setup_logging
+from locust.stats import stats_printer
 
 
 class PDFScholarUser(HttpUser):
@@ -342,7 +342,7 @@ def run_load_test(
     users: int = 10,
     spawn_rate: int = 1,
     run_time: str = "60s"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Run load test programmatically
 

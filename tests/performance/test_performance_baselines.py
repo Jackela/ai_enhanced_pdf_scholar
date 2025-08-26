@@ -10,22 +10,20 @@ Mission: Validate system performance against established baselines
 """
 
 import json
-import pytest
-import time
 import statistics
 import sys
+import time
 from pathlib import Path
-from typing import Dict, Any, List
+
 import psutil
+import pytest
 
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.database.connection import DatabaseConnection
 from src.repositories.document_repository import DocumentRepository
-from src.repositories.citation_repository import CitationRepository
 from src.services.content_hash_service import ContentHashService
-from scripts.establish_performance_baseline import PerformanceBaselineEstablisher
 
 
 @pytest.fixture(scope="session")
@@ -36,7 +34,7 @@ def baseline_data():
     if not baseline_file.exists():
         pytest.skip("Performance baselines not established. Run establish_performance_baseline.py first.")
 
-    with open(baseline_file, 'r') as f:
+    with open(baseline_file) as f:
         data = json.load(f)
 
     return data.get('baselines', {})
@@ -189,7 +187,7 @@ class TestDatabasePerformanceBaselines:
         assert regression < performance_targets['regression_threshold'], \
             f"Complex query regression {regression:.1%} exceeds threshold"
 
-    def _percentile(self, data: List[float], percentile: float) -> float:
+    def _percentile(self, data: list[float], percentile: float) -> float:
         """Calculate percentile value from data list."""
         if not data:
             return 0.0
@@ -311,7 +309,7 @@ class TestRAGPerformanceBaselines:
         assert regression < performance_targets['regression_threshold'], \
             f"Query processing regression {regression:.1%} exceeds threshold"
 
-    def _percentile(self, data: List[float], percentile: float) -> float:
+    def _percentile(self, data: list[float], percentile: float) -> float:
         """Calculate percentile value."""
         if not data:
             return 0.0
@@ -400,11 +398,7 @@ def test_comprehensive_performance_regression(baseline_data, performance_targets
 
     for metric, value in performance_metrics.items():
         total_targets += 1
-        if 'api' in metric and value < performance_targets['api_response_95th_percentile_ms']:
-            targets_met += 1
-        elif 'memory' in metric and value < performance_targets['memory_sustained_mb']:
-            targets_met += 1
-        elif 'rag' in metric and value < performance_targets['rag_query_90th_percentile_s']:
+        if 'api' in metric and value < performance_targets['api_response_95th_percentile_ms'] or 'memory' in metric and value < performance_targets['memory_sustained_mb'] or 'rag' in metric and value < performance_targets['rag_query_90th_percentile_s']:
             targets_met += 1
 
     if total_targets > 0:

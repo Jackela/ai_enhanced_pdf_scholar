@@ -140,6 +140,7 @@ class EnhancedRAGService:
         db_connection: DatabaseConnection,
         vector_storage_dir: str = "vector_indexes",
         test_mode: bool = False,
+        prompt_manager: PromptManager = None,
     ) -> None:
         """
         Initialize enhanced RAG service with database integration.
@@ -148,10 +149,12 @@ class EnhancedRAGService:
             db_connection: Database connection instance
             vector_storage_dir: Directory for storing vector indexes
             test_mode: If True, skip actual API initialization for testing
+            prompt_manager: An instance of PromptManager.
         """
         # Store API key and configuration
         self.api_key: str = api_key
         self.test_mode: bool = test_mode
+        self.prompt_manager = prompt_manager
         # RAG service attributes (previously from base class)
         self.current_index: VectorStoreIndex | None = None
         self.current_pdf_path: str | None = None
@@ -360,8 +363,22 @@ class EnhancedRAGService:
         try:
             if self.test_mode:
                 return f"Test mode response for query: {query_text}"
+
+            from llama_index.core import PromptTemplate
+
+            # Default query engine arguments
+            query_engine_args = {}
+
+            # Use prompt manager if available
+            if self.prompt_manager:
+                prompt_data = self.prompt_manager.get_prompt("default_qa")
+                if prompt_data and "template" in prompt_data:
+                    qa_template = PromptTemplate(prompt_data["template"])
+                    query_engine_args["text_qa_template"] = qa_template
+
             # Create query engine
-            query_engine = self.current_index.as_query_engine()
+            query_engine = self.current_index.as_query_engine(**query_engine_args)
+
             # Execute query
             response = query_engine.query(query_text)
             return str(response)

@@ -5,30 +5,26 @@ Comprehensive stress testing for RAG system including concurrent operations,
 high-load scenarios, resource contention, and performance degradation analysis.
 """
 
-import pytest
 import asyncio
-import time
-import threading
 import concurrent.futures
-import psutil
 import gc
-from unittest.mock import Mock, patch, AsyncMock
-from pathlib import Path
-import tempfile
 import random
 import statistics
-from typing import List, Dict, Any, Callable
-import json
-import numpy as np
+import threading
+import time
+from unittest.mock import AsyncMock, Mock
 
+import numpy as np
+import psutil
+import pytest
+
+from src.database.models import DocumentModel
 from src.services.rag.coordinator import RAGCoordinator
+from src.services.rag.file_manager import RAGFileManager
 from src.services.rag.index_builder import RAGIndexBuilder
+from src.services.rag.performance_monitor import RAGPerformanceMonitor
 from src.services.rag.query_engine import RAGQueryEngine
 from src.services.rag.recovery_service import RAGRecoveryService
-from src.services.rag.file_manager import RAGFileManager
-from src.services.rag.performance_monitor import RAGPerformanceMonitor
-from src.services.rag.exceptions import RAGProcessingError, RAGPerformanceError
-from src.database.models import DocumentModel
 
 
 class TestRAGConcurrencyStress:
@@ -193,7 +189,7 @@ class TestRAGConcurrencyStress:
 
         query_tasks = [
             stress_test_coordinator.query_document(doc.id, query)
-            for doc, query in zip(query_documents, queries)
+            for doc, query in zip(query_documents, queries, strict=False)
         ]
 
         all_tasks = processing_tasks + query_tasks
@@ -482,8 +478,6 @@ class TestRAGConcurrencyStress:
 
     def test_thread_safety_stress(self, stress_test_coordinator):
         """Test thread safety under concurrent access from multiple threads."""
-        import threading
-        import concurrent.futures
 
         # Given - operations to execute from multiple threads
         thread_results = []
@@ -512,7 +506,7 @@ class TestRAGConcurrencyStress:
                     if result:
                         successes += 1
 
-                except Exception as e:
+                except Exception:
                     pass  # Count as failure
 
             thread_time = time.time() - thread_start_time

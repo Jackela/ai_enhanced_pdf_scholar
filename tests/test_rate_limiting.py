@@ -4,20 +4,18 @@ Tests IP-based and endpoint-specific rate limiting with various scenarios
 """
 
 import asyncio
-import pytest
 import time
-from unittest.mock import Mock, AsyncMock, patch
-from typing import Dict, Any
+from unittest.mock import patch
 
-from fastapi import FastAPI, Request, Response
+import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.api.middleware.rate_limiting import (
-    RateLimitMiddleware,
+    InMemoryStore,
     RateLimitConfig,
+    RateLimitMiddleware,
     RateLimitRule,
-    InMemoryStore
 )
 
 # Try to import RedisStore, but don't fail if Redis is not available
@@ -372,7 +370,10 @@ class TestEnvironmentConfig:
     @patch.dict('os.environ', {'RATE_LIMIT_DISABLE': 'true'})
     def test_rate_limit_disable(self):
         """Test disabling rate limiting via environment variable."""
-        from backend.api.rate_limit_config import get_env_override_config, get_rate_limit_config
+        from backend.api.rate_limit_config import (
+            get_env_override_config,
+            get_rate_limit_config,
+        )
 
         base_config = get_rate_limit_config()
         config = get_env_override_config(base_config)

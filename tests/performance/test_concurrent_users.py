@@ -9,27 +9,23 @@ Tests system behavior with multiple simultaneous users performing various operat
 """
 
 import asyncio
-import aiohttp
-import pytest
-import random
-import string
 import io
-from typing import List, Dict, Any, Optional
-from pathlib import Path
-import json
+import random
 from datetime import datetime
 
+import aiohttp
+import pytest
+
 from .base_performance import (
-    PerformanceTestBase,
-    LoadTestScenario,
     LoadPattern,
-    PerformanceMetrics
+    LoadTestScenario,
+    PerformanceTestBase,
 )
 from .metrics_collector import (
     MetricsCollector,
-    PerformanceThresholds,
+    MetricsSnapshot,
     PerformanceReport,
-    MetricsSnapshot
+    PerformanceThresholds,
 )
 
 
@@ -50,7 +46,7 @@ class ConcurrentUserTest(PerformanceTestBase):
         )
         self.test_files = self._prepare_test_files()
 
-    def _prepare_test_files(self) -> List[bytes]:
+    def _prepare_test_files(self) -> list[bytes]:
         """Prepare test PDF files for upload"""
         # Generate simple test PDFs (in reality, use actual PDF files)
         test_files = []

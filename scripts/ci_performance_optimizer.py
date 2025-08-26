@@ -14,13 +14,11 @@ Features:
 """
 
 import json
-import time
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta, timezone
-import statistics
+from typing import Any
 
 
 class CIPerformanceOptimizer:
@@ -32,7 +30,7 @@ class CIPerformanceOptimizer:
         self.cache_stats = {}
         self.performance_data = {}
 
-    def collect_pipeline_metrics(self) -> Dict[str, Any]:
+    def collect_pipeline_metrics(self) -> dict[str, Any]:
         """Collect comprehensive CI/CD pipeline performance metrics."""
         print("📊 Collecting ultra-comprehensive pipeline metrics...")
 
@@ -46,7 +44,7 @@ class CIPerformanceOptimizer:
 
         return metrics
 
-    def _collect_performance_metrics(self) -> Dict[str, Any]:
+    def _collect_performance_metrics(self) -> dict[str, Any]:
         """Collect detailed performance metrics."""
         print("⚡ Analyzing pipeline performance...")
 
@@ -77,7 +75,7 @@ class CIPerformanceOptimizer:
 
         return performance
 
-    def _measure_stage_performance(self, stage_name: str, baseline_seconds: int) -> Dict[str, Any]:
+    def _measure_stage_performance(self, stage_name: str, baseline_seconds: int) -> dict[str, Any]:
         """Measure individual stage performance with optimization factors."""
 
         # Apply optimization factors based on caching and smart execution
@@ -115,7 +113,7 @@ class CIPerformanceOptimizer:
         else:
             return "📊 Standard"
 
-    def _analyze_cache_performance(self) -> Dict[str, Any]:
+    def _analyze_cache_performance(self) -> dict[str, Any]:
         """Analyze cache performance and hit rates."""
         print("💾 Analyzing cache performance...")
 
@@ -155,7 +153,7 @@ class CIPerformanceOptimizer:
 
         return cache_analysis
 
-    def _collect_resource_metrics(self) -> Dict[str, Any]:
+    def _collect_resource_metrics(self) -> dict[str, Any]:
         """Collect system resource utilization metrics."""
         print("🖥️ Collecting resource utilization metrics...")
 
@@ -194,7 +192,7 @@ class CIPerformanceOptimizer:
                 'resource_optimization_score': 0.80
             }
 
-    def _generate_recommendations(self) -> List[Dict[str, str]]:
+    def _generate_recommendations(self) -> list[dict[str, str]]:
         """Generate optimization recommendations based on analysis."""
         print("💡 Generating optimization recommendations...")
 
@@ -238,7 +236,7 @@ class CIPerformanceOptimizer:
 
         return recommendations
 
-    def generate_performance_report(self) -> Dict[str, Any]:
+    def generate_performance_report(self) -> dict[str, Any]:
         """Generate comprehensive performance analysis report."""
         print("📋 Generating ultra-comprehensive performance report...")
 
@@ -268,7 +266,7 @@ class CIPerformanceOptimizer:
 
         return report
 
-    def _generate_trend_analysis(self) -> Dict[str, Any]:
+    def _generate_trend_analysis(self) -> dict[str, Any]:
         """Generate performance trend analysis."""
         return {
             'pipeline_time_trend': 'Decreasing (-60% over 30 days)',
@@ -277,7 +275,7 @@ class CIPerformanceOptimizer:
             'optimization_impact': 'Significant improvement'
         }
 
-    def _generate_optimization_roadmap(self) -> Dict[str, List[str]]:
+    def _generate_optimization_roadmap(self) -> dict[str, list[str]]:
         """Generate optimization implementation roadmap."""
         return {
             'immediate_actions': [
@@ -297,7 +295,7 @@ class CIPerformanceOptimizer:
             ]
         }
 
-    def save_report(self, report: Dict[str, Any], output_path: Optional[Path] = None) -> Path:
+    def save_report(self, report: dict[str, Any], output_path: Path | None = None) -> Path:
         """Save performance report to JSON file."""
         if output_path is None:
             output_path = self.project_root / 'performance_optimization_report.json'
@@ -308,7 +306,7 @@ class CIPerformanceOptimizer:
         print(f"📊 Performance report saved to: {output_path}")
         return output_path
 
-    def print_summary(self, report: Dict[str, Any]) -> None:
+    def print_summary(self, report: dict[str, Any]) -> None:
         """Print executive summary of performance analysis."""
         summary = report['executive_summary']
 
@@ -319,7 +317,7 @@ class CIPerformanceOptimizer:
         print(f"📈 Overall Performance Score: {summary['overall_performance_score']:.1%}")
         print(f"🎯 Optimization Level: {summary['optimization_level']}")
 
-        print(f"\n🏆 Key Achievements:")
+        print("\n🏆 Key Achievements:")
         for achievement in summary['key_achievements']:
             print(f"   ✅ {achievement}")
 
@@ -330,14 +328,14 @@ class CIPerformanceOptimizer:
         total_time = perf['total_pipeline_time']
         time_saved = perf['optimization_impact']['time_saved']
 
-        print(f"\n⏱️ Performance Metrics:")
+        print("\n⏱️ Performance Metrics:")
         print(f"   Pipeline Time: {total_time:.1f}s ({total_time/60:.1f} minutes)")
         print(f"   Time Saved: {time_saved:.1f}s ({time_saved/60:.1f} minutes)")
         print(f"   Efficiency Gain: {(time_saved/(total_time+time_saved)):.1%}")
 
         # Cache performance
         cache = report['detailed_metrics']['cache_analysis']
-        print(f"\n💾 Cache Performance:")
+        print("\n💾 Cache Performance:")
         print(f"   Test Results: {cache['test_results_cache']['hit_rate']:.1%} hit rate")
         print(f"   Build Artifacts: {cache['build_artifacts_cache']['hit_rate']:.1%} hit rate")
         print(f"   Dependencies: {cache['dependencies_cache']['hit_rate']:.1%} hit rate")

@@ -1762,3 +1762,71 @@ TASK_MANAGER_CONFIG = {
 - **实时处理**: ✅ 并发任务管理，进度跟踪，流式响应
 - **内存管理**: ✅ 智能内存监控，垃圾回收，压力控制
 - **错误恢复**: ✅ 熔断保护，指数退避，自动重试
+
+## Prompt Management System
+
+### Overview
+
+To enhance flexibility and streamline prompt engineering, the AI Enhanced PDF Scholar now includes a dedicated Prompt Management System. This system decouples prompts from the application's business logic, treating them as manageable, versionable assets. This allows for rapid iteration, A/B testing, and easier collaboration between developers and AI engineers.
+
+### Architecture
+
+The system is composed of three main parts:
+
+1.  **YAML-based Prompt Templates**: Prompts are stored in a centralized `prompt_templates/` directory. Each `.yml` file can contain one or more prompt definitions.
+2.  **Structured Prompt Definition**: Each prompt is defined with rich metadata, including a unique ID, version, description, and the placeholders it uses.
+3.  **PromptManager Service**: A central service (`src/prompt_management/manager.py`) that loads, caches, and formats prompts for use by the application.
+
+### Prompt Template Structure
+
+Prompts are defined in YAML files within the `prompt_templates/` directory. Here is an example of a prompt definition:
+
+```yaml
+- id: "default_qa"
+  name: "Default Question Answering"
+  description: "A standard prompt for answering questions based on provided context."
+  version: "1.0.0"
+  placeholders:
+    - "context_str"
+    - "query_str"
+  template: |
+    Context information is below.
+    ---------------------
+    {context_str}
+    ---------------------
+    Given the context information and not prior knowledge, answer the query.
+    Query: {query_str}
+    Answer:
+```
+
+### How to Use
+
+1.  **Adding a New Prompt**:
+    *   Create or open a `.yml` file in the `prompt_templates/` directory.
+    *   Define your new prompt using the structure above, ensuring it has a unique `id`.
+
+2.  **Using a Prompt in the Code**:
+    *   The `PromptManager` is automatically initialized and injected into the `EnhancedRAGService`.
+    *   The `query` method of the `EnhancedRAGService` now uses the prompt with the ID `"default_qa"` by default.
+    *   To use a different prompt, you would modify the service logic to request a different prompt ID from the `prompt_manager`.
+
+### Data Flow
+
+```mermaid
+graph TD
+    A[Application Startup] --> B[PromptManager Initialization]
+    B --> C[Scans `prompt_templates/` directory]
+    C --> D[Loads and caches all YAML prompt files]
+
+    E[RAG Service Query] --> F[Request 'default_qa' prompt]
+    F --> G[PromptManager]
+    G --> H{Prompt Found?}
+    H -->|Yes| I[Get Template from Cache]
+    I --> J[Format Prompt with Context/Query]
+    J --> K[Pass to LlamaIndex Query Engine]
+    K --> L[Query LLM]
+    H -->|No| M[Use LlamaIndex Default Prompt]
+    M --> K
+```
+
+This new system provides a robust foundation for all future prompt engineering and optimization efforts.

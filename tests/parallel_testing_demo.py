@@ -8,21 +8,18 @@ parallel testing infrastructure for AI Enhanced PDF Scholar.
 import asyncio
 import time
 from pathlib import Path
+
 import pytest
 
 # Import the enhanced parallel testing utilities
 from tests.parallel_test_utils import (
-    ParallelDatabaseManager,
     ParallelTestOrchestrator,
-    ConcurrentTestHelper
 )
-from tests.test_categorization import TestAnalyzer, TestExecutionPlanner
 from tests.performance_optimization import (
     get_performance_cache,
     get_resource_monitor,
-    get_test_distributor
 )
-
+from tests.test_categorization import TestAnalyzer
 
 # =============================================================================
 # Demo Test Cases Using Enhanced Parallel Features
@@ -240,7 +237,7 @@ async def demonstrate_parallel_orchestration():
     execution_time = time.time() - start_time
 
     print(f"✅ Parallel execution completed in {execution_time:.2f}s")
-    print(f"📊 Test Results:")
+    print("📊 Test Results:")
     summary = results["execution_summary"]
     print(f"   Total Tests: {summary['total_tests']}")
     print(f"   Successful Tests: {summary['successful_tests']}")
@@ -316,7 +313,7 @@ def demonstrate_performance_caching():
 
     # Show cache statistics
     stats = cache.get_stats()
-    print(f"\n📊 Cache Statistics:")
+    print("\n📊 Cache Statistics:")
     print(f"   Hit Rate: {stats['hit_rate']:.1%}")
     print(f"   Total Requests: {stats['total_requests']}")
     print(f"   Memory Usage: {stats['memory_usage_mb']:.1f}MB")
@@ -347,17 +344,17 @@ def demonstrate_resource_monitoring():
     # Stop monitoring
     metrics = monitor.stop_monitoring(monitor_id)
 
-    print(f"📊 Resource Usage:")
+    print("📊 Resource Usage:")
     print(f"   Memory Usage: {metrics.memory_usage_mb:.1f}MB")
     print(f"   CPU Usage: {metrics.cpu_usage_percent:.1f}%")
 
     # Check for resource pressure
     pressure_check = monitor.check_resource_pressure()
     if pressure_check["resource_pressure"]:
-        print(f"⚠️ Resource Pressure Detected:")
+        print("⚠️ Resource Pressure Detected:")
         for alert in pressure_check["alerts"]:
             print(f"   - {alert['message']}")
-        print(f"💡 Recommendations:")
+        print("💡 Recommendations:")
         for rec in pressure_check["recommendations"]:
             print(f"   - {rec}")
     else:

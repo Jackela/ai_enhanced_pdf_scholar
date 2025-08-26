@@ -9,16 +9,15 @@ Agent C3: Performance Baseline Testing Expert
 Mission: Validate comprehensive production readiness through performance validation
 """
 
-import asyncio
+import argparse
 import json
+import statistics
 import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
-import statistics
-import argparse
+from typing import Any
 
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -68,7 +67,7 @@ class ProductionPerformanceValidator:
         # Minimum production readiness score
         self.minimum_production_score = 85.0
 
-    def validate_production_readiness(self) -> Dict[str, Any]:
+    def validate_production_readiness(self) -> dict[str, Any]:
         """Run comprehensive production performance validation."""
         print("🚀 Production Performance Validation Report")
         print("="*60)
@@ -104,7 +103,7 @@ class ProductionPerformanceValidator:
 
         return validation_report
 
-    def _run_baseline_establishment(self) -> Dict[str, Any]:
+    def _run_baseline_establishment(self) -> dict[str, Any]:
         """Run performance baseline establishment."""
         print("📊 Baseline Validation:")
 
@@ -123,7 +122,7 @@ class ProductionPerformanceValidator:
             print(f"  ❌ Baseline establishment error: {e}")
             return {}
 
-    def _validate_baseline_performance(self, baseline_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_baseline_performance(self, baseline_results: dict[str, Any]) -> dict[str, Any]:
         """Validate baseline performance against production criteria."""
         print("🎯 Baseline Validation:")
 
@@ -185,7 +184,7 @@ class ProductionPerformanceValidator:
 
         return validation
 
-    def _validate_database_performance(self, db_perf: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_database_performance(self, db_perf: dict[str, Any]) -> dict[str, Any]:
         """Validate database performance against production criteria."""
         score = 0
         max_score = 0
@@ -240,7 +239,7 @@ class ProductionPerformanceValidator:
             'passes': final_score >= 80.0  # 80% threshold
         }
 
-    def _validate_api_performance(self, api_perf: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_api_performance(self, api_perf: dict[str, Any]) -> dict[str, Any]:
         """Validate API performance against production criteria."""
         score = 0
         max_score = 0
@@ -282,7 +281,7 @@ class ProductionPerformanceValidator:
             'passes': final_score >= 80.0
         }
 
-    def _validate_rag_performance(self, rag_perf: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_rag_performance(self, rag_perf: dict[str, Any]) -> dict[str, Any]:
         """Validate RAG performance against production criteria."""
         score = 0
         max_score = 0
@@ -324,7 +323,7 @@ class ProductionPerformanceValidator:
             'passes': final_score >= 80.0
         }
 
-    def _validate_memory_analysis(self, memory_perf: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_memory_analysis(self, memory_perf: dict[str, Any]) -> dict[str, Any]:
         """Validate memory performance against production criteria."""
         score = 0
         max_score = 0
@@ -365,7 +364,7 @@ class ProductionPerformanceValidator:
             'passes': final_score >= 80.0
         }
 
-    def _run_memory_validation(self) -> Dict[str, Any]:
+    def _run_memory_validation(self) -> dict[str, Any]:
         """Run extended memory leak detection."""
         print("🔍 Memory Health Assessment:")
 
@@ -391,7 +390,7 @@ class ProductionPerformanceValidator:
             print(f"  ❌ Memory validation error: {e}")
             return {'passes': False, 'score': 0, 'error': str(e)}
 
-    def _run_load_testing_validation(self) -> Dict[str, Any]:
+    def _run_load_testing_validation(self) -> dict[str, Any]:
         """Run load testing validation (basic scenario)."""
         print("🔥 Load Testing Assessment:")
 
@@ -424,10 +423,10 @@ class ProductionPerformanceValidator:
             return {'passes': True, 'score': 50, 'error': str(e)}
 
     def _calculate_production_readiness_score(
-        self, baseline_validation: Dict[str, Any],
-        memory_validation: Dict[str, Any],
-        load_validation: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, baseline_validation: dict[str, Any],
+        memory_validation: dict[str, Any],
+        load_validation: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculate overall production readiness score."""
 
         total_weighted_score = 0
@@ -498,11 +497,11 @@ class ProductionPerformanceValidator:
         }
 
     def _generate_validation_report(
-        self, baseline_validation: Dict[str, Any],
-        memory_validation: Dict[str, Any],
-        load_validation: Dict[str, Any],
-        production_score: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, baseline_validation: dict[str, Any],
+        memory_validation: dict[str, Any],
+        load_validation: dict[str, Any],
+        production_score: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate comprehensive validation report."""
 
         # Calculate total runtime
@@ -529,7 +528,7 @@ class ProductionPerformanceValidator:
 
         return report
 
-    def _generate_performance_summary(self, baseline_validation: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_performance_summary(self, baseline_validation: dict[str, Any]) -> dict[str, Any]:
         """Generate performance summary."""
         summary = {}
 
@@ -566,10 +565,10 @@ class ProductionPerformanceValidator:
         return summary
 
     def _generate_recommendations(
-        self, baseline_validation: Dict[str, Any],
-        memory_validation: Dict[str, Any],
-        production_score: Dict[str, Any]
-    ) -> List[str]:
+        self, baseline_validation: dict[str, Any],
+        memory_validation: dict[str, Any],
+        production_score: dict[str, Any]
+    ) -> list[str]:
         """Generate specific recommendations based on validation results."""
         recommendations = []
 
@@ -621,7 +620,7 @@ class ProductionPerformanceValidator:
 
         return recommendations
 
-    def _print_final_report(self, report: Dict[str, Any]) -> None:
+    def _print_final_report(self, report: dict[str, Any]) -> None:
         """Print final validation report."""
         print("\n" + "="*60)
         print("🎯 PRODUCTION PERFORMANCE VALIDATION COMPLETE")
@@ -634,14 +633,14 @@ class ProductionPerformanceValidator:
         print(f"💡 Recommendation: {production['recommendation']}")
 
         # Component scores
-        print(f"\n📊 Component Performance Scores:")
+        print("\n📊 Component Performance Scores:")
         for component, score in production.get('component_scores', {}).items():
             print(f"  - {component.title()}: {score:.0f}/100")
 
         # Performance summary
         perf_summary = report.get('performance_summary', {})
         if perf_summary:
-            print(f"\n📈 Performance Summary:")
+            print("\n📈 Performance Summary:")
             if 'database' in perf_summary:
                 db = perf_summary['database']
                 print(f"  - Database: {db['avg_response_time_ms']:.1f}ms avg ({db['operations_tested']} ops)")
@@ -657,13 +656,13 @@ class ProductionPerformanceValidator:
         # Recommendations
         recommendations = report.get('recommendations', [])
         if recommendations:
-            print(f"\n📋 Recommendations:")
+            print("\n📋 Recommendations:")
             for rec in recommendations:
                 print(f"  {rec}")
 
         print("="*60)
 
-    def _save_validation_results(self, report: Dict[str, Any]) -> None:
+    def _save_validation_results(self, report: dict[str, Any]) -> None:
         """Save validation results to file."""
         results_dir = self.project_root / "performance_results"
         results_dir.mkdir(exist_ok=True)
@@ -686,7 +685,7 @@ class ProductionPerformanceValidator:
         print(f"💾 Detailed report saved to: {json_file}")
         print(f"📋 HTML report saved to: {html_file}")
 
-    def _generate_html_report(self, report: Dict[str, Any], html_file: Path) -> None:
+    def _generate_html_report(self, report: dict[str, Any], html_file: Path) -> None:
         """Generate HTML report for easy viewing."""
         production = report['production_readiness']
 

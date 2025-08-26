@@ -9,11 +9,11 @@ Expected improvements:
 - 40% improvement in CI/CD pipeline speed
 """
 
+import json
 import subprocess
 import time
-import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 
 
 class TestBenchmark:
@@ -23,7 +23,7 @@ class TestBenchmark:
         self.project_root = Path(__file__).parent.parent
         self.results = {}
 
-    def run_benchmark_suite(self) -> Dict[str, Any]:
+    def run_benchmark_suite(self) -> dict[str, Any]:
         """Run complete benchmark suite and return results."""
         print("🚀 Starting Test Performance Benchmark...")
 
@@ -42,7 +42,7 @@ class TestBenchmark:
         self._generate_report()
         return self.results
 
-    def _benchmark_unit_tests(self) -> Dict[str, Any]:
+    def _benchmark_unit_tests(self) -> dict[str, Any]:
         """Benchmark unit test execution."""
         print("📊 Benchmarking unit tests...")
 
@@ -77,7 +77,7 @@ class TestBenchmark:
             'stderr': result.stderr
         }
 
-    def _benchmark_integration_tests(self) -> Dict[str, Any]:
+    def _benchmark_integration_tests(self) -> dict[str, Any]:
         """Benchmark integration test execution."""
         print("📊 Benchmarking integration tests...")
 
@@ -109,7 +109,7 @@ class TestBenchmark:
             'stderr': result.stderr
         }
 
-    def _benchmark_database_tests(self) -> Dict[str, Any]:
+    def _benchmark_database_tests(self) -> dict[str, Any]:
         """Benchmark database-specific tests."""
         print("📊 Benchmarking database tests...")
 
@@ -141,7 +141,7 @@ class TestBenchmark:
             'stderr': result.stderr
         }
 
-    def _benchmark_parallel_tests(self) -> Dict[str, Any]:
+    def _benchmark_parallel_tests(self) -> dict[str, Any]:
         """Benchmark parallel test execution."""
         print("📊 Benchmarking parallel test execution...")
 
@@ -214,7 +214,7 @@ class TestBenchmark:
         # Unit tests performance
         unit_results = self.results.get('unit_tests', {})
         if unit_results.get('success'):
-            print(f"📋 Unit Tests:")
+            print("📋 Unit Tests:")
             print(f"   Duration: {unit_results.get('duration', 0):.2f}s")
             print(f"   Tests: {unit_results.get('test_count', 0)}")
             print(f"   Speed: {unit_results.get('tests_per_second', 0):.1f} tests/sec")
@@ -222,7 +222,7 @@ class TestBenchmark:
         # Integration tests performance
         integration_results = self.results.get('integration_tests', {})
         if integration_results.get('success'):
-            print(f"\n🔗 Integration Tests:")
+            print("\n🔗 Integration Tests:")
             print(f"   Duration: {integration_results.get('duration', 0):.2f}s")
             print(f"   Tests: {integration_results.get('test_count', 0)}")
             print(f"   Speed: {integration_results.get('tests_per_second', 0):.1f} tests/sec")
@@ -230,7 +230,7 @@ class TestBenchmark:
         # Database tests performance
         db_results = self.results.get('database_tests', {})
         if db_results.get('success'):
-            print(f"\n💾 Database Tests:")
+            print("\n💾 Database Tests:")
             print(f"   Duration: {db_results.get('duration', 0):.2f}s")
             print(f"   Tests: {db_results.get('test_count', 0)}")
             print(f"   Speed: {db_results.get('tests_per_second', 0):.1f} tests/sec")
@@ -238,7 +238,7 @@ class TestBenchmark:
         # Parallel execution performance
         parallel_results = self.results.get('parallel_tests', {})
         if parallel_results:
-            print(f"\n⚡ Parallel Execution:")
+            print("\n⚡ Parallel Execution:")
             print(f"   Serial Duration: {parallel_results.get('serial_duration', 0):.2f}s")
             print(f"   Parallel Duration: {parallel_results.get('parallel_duration', 0):.2f}s")
             print(f"   Speedup Factor: {parallel_results.get('speedup_factor', 0):.1f}x")
@@ -246,7 +246,7 @@ class TestBenchmark:
 
         # Overall performance
         total_time = self.results.get('total_time', 0)
-        print(f"\n📊 Overall Performance:")
+        print("\n📊 Overall Performance:")
         print(f"   Total Test Time: {total_time:.2f}s")
 
         if total_time < 60:
@@ -257,7 +257,7 @@ class TestBenchmark:
             print("   ⚠️  Consider further optimizations (>2 minutes total)")
 
         # Performance targets
-        print(f"\n🎯 Performance Targets:")
+        print("\n🎯 Performance Targets:")
         print(f"   Target: <30s unit tests (Current: {unit_results.get('duration', 0):.1f}s)")
         print(f"   Target: <60s integration tests (Current: {integration_results.get('duration', 0):.1f}s)")
         print(f"   Target: >2x parallel speedup (Current: {parallel_results.get('speedup_factor', 0):.1f}x)")

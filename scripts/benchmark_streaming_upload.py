@@ -5,13 +5,12 @@ Demonstrates memory efficiency and performance characteristics of the streaming 
 """
 
 import asyncio
-import os
-import psutil
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
 from uuid import uuid4
+
+import psutil
 
 from backend.api.streaming_models import StreamingUploadRequest
 from backend.services.streaming_upload_service import StreamingUploadService
@@ -38,7 +37,7 @@ class MemoryMonitor:
         self.samples.append((time.time(), current, label))
         return current
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get memory statistics."""
         current = self.get_current_memory()
         return {
@@ -87,9 +86,9 @@ def create_test_file(size_mb: int, filename: str) -> Path:
     return file_path
 
 
-async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMonitor) -> Dict:
+async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMonitor) -> dict:
     """Benchmark traditional upload (loading entire file into memory)."""
-    print(f"\n=== Traditional Upload Benchmark ===")
+    print("\n=== Traditional Upload Benchmark ===")
 
     start_time = time.time()
     memory_monitor.sample("Traditional upload start")
@@ -123,7 +122,7 @@ async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMo
         'throughput_mbps': (file_size / (1024 * 1024)) / (end_time - start_time),
     }
 
-    print(f"Traditional upload completed:")
+    print("Traditional upload completed:")
     print(f"  Duration: {stats['duration_seconds']:.2f}s")
     print(f"  Memory increase: {stats['memory_stats']['peak_increase_mb']:.1f}MB")
     print(f"  Throughput: {stats['throughput_mbps']:.1f} MB/s")
@@ -131,9 +130,9 @@ async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMo
     return stats
 
 
-async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMonitor) -> Dict:
+async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMonitor) -> dict:
     """Benchmark streaming upload with chunked processing."""
-    print(f"\n=== Streaming Upload Benchmark ===")
+    print("\n=== Streaming Upload Benchmark ===")
 
     # Setup streaming service
     upload_dir = Path(tempfile.gettempdir()) / "streaming_uploads"
@@ -229,7 +228,7 @@ async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMoni
         'progress_updates': len(mock_websocket.progress_updates),
     }
 
-    print(f"Streaming upload completed:")
+    print("Streaming upload completed:")
     print(f"  Duration: {stats['duration_seconds']:.2f}s")
     print(f"  Chunks processed: {stats['chunks_processed']}")
     print(f"  Memory increase: {stats['memory_stats']['peak_increase_mb']:.1f}MB")
@@ -239,16 +238,16 @@ async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMoni
     return stats
 
 
-def print_comparison(traditional_stats: Dict, streaming_stats: Dict):
+def print_comparison(traditional_stats: dict, streaming_stats: dict):
     """Print comparison between traditional and streaming methods."""
     print(f"\n{'='*60}")
-    print(f"PERFORMANCE COMPARISON")
+    print("PERFORMANCE COMPARISON")
     print(f"{'='*60}")
 
     file_size_mb = traditional_stats['file_size_mb']
     print(f"File size: {file_size_mb:.1f} MB")
 
-    print(f"\nMemory Usage:")
+    print("\nMemory Usage:")
     trad_memory = traditional_stats['memory_stats']['peak_increase_mb']
     stream_memory = streaming_stats['memory_stats']['peak_increase_mb']
     memory_reduction = ((trad_memory - stream_memory) / trad_memory) * 100
@@ -257,7 +256,7 @@ def print_comparison(traditional_stats: Dict, streaming_stats: Dict):
     print(f"  Streaming:   {stream_memory:.1f} MB")
     print(f"  Reduction:   {memory_reduction:.1f}%")
 
-    print(f"\nThroughput:")
+    print("\nThroughput:")
     print(f"  Traditional: {traditional_stats['throughput_mbps']:.1f} MB/s")
     print(f"  Streaming:   {streaming_stats['throughput_mbps']:.1f} MB/s")
 
@@ -267,7 +266,7 @@ def print_comparison(traditional_stats: Dict, streaming_stats: Dict):
     else:
         print(f"  Traditional is {1/throughput_ratio:.1f}x faster")
 
-    print(f"\nAdditional Streaming Benefits:")
+    print("\nAdditional Streaming Benefits:")
     print(f"  Chunks processed: {streaming_stats['chunks_processed']}")
     print(f"  Progress updates: {streaming_stats['progress_updates']}")
     print(f"  Memory efficiency: {memory_reduction:.1f}% reduction")
@@ -328,7 +327,7 @@ async def run_benchmark_suite():
 
     # Print summary
     print(f"\n{'='*60}")
-    print(f"BENCHMARK SUMMARY")
+    print("BENCHMARK SUMMARY")
     print(f"{'='*60}")
 
     print(f"{'Size (MB)':<10} {'Memory Reduction':<18} {'Throughput Ratio':<18}")
@@ -362,11 +361,11 @@ async def run_benchmark_suite():
     print("-" * 50)
     print(f"{'Average':<10} {avg_memory_reduction:>6.1f}%{'':<11} {avg_throughput_ratio:>6.2f}x")
 
-    print(f"\n🎯 Key Findings:")
+    print("\n🎯 Key Findings:")
     print(f"   • Average memory reduction: {avg_memory_reduction:.1f}%")
-    print(f"   • Streaming provides consistent memory usage regardless of file size")
-    print(f"   • Progress tracking enables better user experience")
-    print(f"   • Upload resumption prevents data loss on interruption")
+    print("   • Streaming provides consistent memory usage regardless of file size")
+    print("   • Progress tracking enables better user experience")
+    print("   • Upload resumption prevents data loss on interruption")
 
     return results
 

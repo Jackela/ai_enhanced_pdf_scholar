@@ -6,6 +6,7 @@ It follows a modular approach to keep settings organized and easy to manage.
 """
 
 import os
+
 from dotenv import load_dotenv
 
 # Load .env file if it exists
@@ -356,7 +357,6 @@ class Config:
 
         @returns {string|None} API key or None if not found
         """
-        import sys
         import json
         from pathlib import Path
 
@@ -369,7 +369,7 @@ class Config:
         try:
             config_file = Path.home() / ".ai_pdf_scholar" / "settings.json"
             if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
+                with open(config_file, encoding='utf-8') as f:
                     settings = json.load(f)
                     api_key = settings.get('gemini_api_key', '')
                     if api_key and api_key.strip():

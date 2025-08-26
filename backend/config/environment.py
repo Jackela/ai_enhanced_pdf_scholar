@@ -4,10 +4,9 @@ Environment Detection and Management
 Provides unified environment detection across all configuration modules.
 """
 
-import os
 import logging
+import os
 from enum import Enum
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +94,7 @@ def get_current_environment() -> Environment:
     return Environment.DEVELOPMENT
 
 
-def validate_environment_consistency() -> Optional[str]:
+def validate_environment_consistency() -> str | None:
     """
     Validate that environment configuration is consistent.
 

@@ -8,10 +8,11 @@ in the AI Enhanced PDF Scholar application.
 
 import gc
 import sys
-import tracemalloc
-import psutil
 import time
+import tracemalloc
 from pathlib import Path
+
+import psutil
 
 # Add project root to path
 sys.path.append('.')
@@ -68,7 +69,7 @@ def analyze_memory_usage():
         memory_growth = memory_samples[-1] - memory_samples[0]
         avg_growth_per_op = memory_growth / len(memory_samples)
 
-        print(f"\n   📊 Database Memory Analysis:")
+        print("\n   📊 Database Memory Analysis:")
         print(f"   - Total growth: {memory_growth:.3f} MB")
         print(f"   - Average per operation: {avg_growth_per_op:.3f} MB")
 
@@ -84,8 +85,8 @@ def analyze_memory_usage():
         print("\n2. Testing RAG service memory usage...")
 
         try:
-            from src.services.enhanced_rag_service import EnhancedRAGService
             from config import Config
+            from src.services.enhanced_rag_service import EnhancedRAGService
 
             # Get API key for testing
             api_key = Config.get_gemini_api_key() or "test-api-key"
@@ -121,7 +122,7 @@ def analyze_memory_usage():
             rag_growth = rag_memory_samples[-1] - rag_memory_samples[0]
             avg_rag_growth = rag_growth / len(rag_memory_samples)
 
-            print(f"\n   📊 RAG Service Memory Analysis:")
+            print("\n   📊 RAG Service Memory Analysis:")
             print(f"   - Total growth: {rag_growth:.3f} MB")
             print(f"   - Average per operation: {avg_rag_growth:.3f} MB")
 
@@ -141,7 +142,7 @@ def analyze_memory_usage():
         final_memory = process.memory_info().rss / 1024 / 1024
         total_growth = final_memory - initial_memory
 
-        print(f"\n🎯 Memory Analysis Summary:")
+        print("\n🎯 Memory Analysis Summary:")
         print(f"   Initial: {initial_memory:.2f} MB")
         print(f"   Final: {final_memory:.2f} MB")
         print(f"   Growth: {total_growth:.2f} MB")

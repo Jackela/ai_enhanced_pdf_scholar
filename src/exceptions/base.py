@@ -4,7 +4,7 @@ Provides the foundation for the exception hierarchy.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ class PDFScholarError(Exception):
         self,
         message: str,
         *,
-        error_code: Optional[str] = None,
-        context: Optional[dict[str, Any]] = None,
-        user_message: Optional[str] = None,
+        error_code: str | None = None,
+        context: dict[str, Any] | None = None,
+        user_message: str | None = None,
         log_level: int = logging.ERROR,
     ):
         """
@@ -90,7 +90,7 @@ class ValidationError(PDFScholarError):
     def __init__(
         self,
         message: str,
-        field: Optional[str] = None,
+        field: str | None = None,
         value: Any = None,
         **kwargs: Any,
     ):
@@ -122,7 +122,7 @@ class ValidationError(PDFScholarError):
 class ConfigurationError(PDFScholarError):
     """Raised when configuration is invalid or missing."""
 
-    def __init__(self, message: str, config_key: Optional[str] = None, **kwargs: Any):
+    def __init__(self, message: str, config_key: str | None = None, **kwargs: Any):
         """
         Initialize configuration error.
 
@@ -148,8 +148,8 @@ class ServiceError(PDFScholarError):
     def __init__(
         self,
         message: str,
-        service_name: Optional[str] = None,
-        operation: Optional[str] = None,
+        service_name: str | None = None,
+        operation: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -183,8 +183,8 @@ class RepositoryError(PDFScholarError):
     def __init__(
         self,
         message: str,
-        repository: Optional[str] = None,
-        operation: Optional[str] = None,
+        repository: str | None = None,
+        operation: str | None = None,
         **kwargs: Any,
     ):
         """

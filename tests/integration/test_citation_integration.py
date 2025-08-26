@@ -4,20 +4,21 @@ Tests the complete citation extraction workflow with real database.
 Follows enterprise testing patterns with modular architecture.
 """
 
-import pytest
-import tempfile
-import os
 import logging
-from pathlib import Path
-from typing import Any, Generator
+import os
+import tempfile
+from collections.abc import Generator
+from typing import Any
 
-from src.database.connection import DatabaseConnection
+import pytest
+
 from src.database import DatabaseMigrator
-from src.database.models import DocumentModel, CitationModel
-from src.repositories.citation_repository import CitationRepository
+from src.database.connection import DatabaseConnection
+from src.database.models import CitationModel, DocumentModel
 from src.repositories.citation_relation_repository import CitationRelationRepository
-from src.services.citation_service import CitationService
+from src.repositories.citation_repository import CitationRepository
 from src.services.citation_parsing_service import CitationParsingService
+from src.services.citation_service import CitationService
 
 logger = logging.getLogger(__name__)
 

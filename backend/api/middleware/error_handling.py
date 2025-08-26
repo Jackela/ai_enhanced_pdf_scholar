@@ -7,28 +7,24 @@ error logging, monitoring, and response standardization.
 import json
 import logging
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from fastapi import FastAPI, Request, Response
-from fastapi.exceptions import RequestValidationError, HTTPException
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from ..error_handling import (
     APIException,
-    ErrorLogger,
-    ValidationException,
-    SecurityException,
-    SystemException,
-    create_error_response,
-    ErrorCode,
-    ErrorCategory,
     ErrorDetail,
-    StandardErrorResponse
+    SecurityException,
+    ValidationException,
+    create_error_response,
 )
-from ..models import SecurityValidationError, ValidationErrorResponse, SecurityValidationErrorResponse
-
+from ..models import (
+    SecurityValidationError,
+)
 
 logger = logging.getLogger(__name__)
 

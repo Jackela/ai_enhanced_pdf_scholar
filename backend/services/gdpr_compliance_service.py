@@ -8,18 +8,23 @@ import json
 import logging
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import (
-    Column, String, Text, Integer, DateTime, Boolean,
-    ForeignKey, JSON, create_engine
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, relationship, sessionmaker
+from sqlalchemy.orm import Session
 
-from backend.services.audit_logging_service import AuditLogger, AuditEventType
+from backend.services.audit_logging_service import AuditEventType, AuditLogger
 from backend.services.encryption_service import EncryptionService
 
 logger = logging.getLogger(__name__)
@@ -232,12 +237,12 @@ class GDPRComplianceService:
         self,
         user_id: int,
         purpose: ProcessingPurpose,
-        data_categories: List[DataCategory],
+        data_categories: list[DataCategory],
         legal_basis: LegalBasis = LegalBasis.CONSENT,
         consent_text: str = None,
-        expires_in_days: Optional[int] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        expires_in_days: int | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None
     ) -> str:
         """
         Record user consent for data processing.
@@ -291,9 +296,9 @@ class GDPRComplianceService:
     def withdraw_consent(
         self,
         user_id: int,
-        consent_id: Optional[str] = None,
-        purpose: Optional[ProcessingPurpose] = None,
-        reason: Optional[str] = None
+        consent_id: str | None = None,
+        purpose: ProcessingPurpose | None = None,
+        reason: str | None = None
     ) -> bool:
         """
         Withdraw user consent.
@@ -345,7 +350,7 @@ class GDPRComplianceService:
         self,
         user_id: int,
         active_only: bool = True
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get all consents for a user."""
         query = self.db.query(ConsentRecord).filter(
             ConsentRecord.user_id == user_id
@@ -376,8 +381,8 @@ class GDPRComplianceService:
     def handle_access_request(
         self,
         user_id: int,
-        include_categories: Optional[List[DataCategory]] = None
-    ) -> Dict[str, Any]:
+        include_categories: list[DataCategory] | None = None
+    ) -> dict[str, Any]:
         """
         Handle GDPR Article 15 - Right of access.
 
@@ -430,7 +435,7 @@ class GDPRComplianceService:
         self,
         user_id: int,
         format: str = "json"
-    ) -> Tuple[bytes, str]:
+    ) -> tuple[bytes, str]:
         """
         Handle GDPR Article 20 - Right to data portability.
 
@@ -489,8 +494,8 @@ class GDPRComplianceService:
         self,
         user_id: int,
         verification_token: str,
-        categories: Optional[List[DataCategory]] = None
-    ) -> Dict[str, Any]:
+        categories: list[DataCategory] | None = None
+    ) -> dict[str, Any]:
         """
         Handle GDPR Article 17 - Right to erasure (right to be forgotten).
 
@@ -564,7 +569,7 @@ class GDPRComplianceService:
     def handle_rectification_request(
         self,
         user_id: int,
-        corrections: Dict[str, Any]
+        corrections: dict[str, Any]
     ) -> bool:
         """
         Handle GDPR Article 16 - Right to rectification.
@@ -610,7 +615,7 @@ class GDPRComplianceService:
     def handle_restriction_request(
         self,
         user_id: int,
-        purposes: List[ProcessingPurpose]
+        purposes: list[ProcessingPurpose]
     ) -> bool:
         """
         Handle GDPR Article 18 - Right to restriction of processing.
@@ -651,10 +656,10 @@ class GDPRComplianceService:
         self,
         breach_type: str,
         severity: str,
-        affected_users: Optional[int] = None,
-        affected_records: Optional[int] = None,
-        data_categories: Optional[List[DataCategory]] = None,
-        detected_at: Optional[datetime] = None
+        affected_users: int | None = None,
+        affected_records: int | None = None,
+        data_categories: list[DataCategory] | None = None,
+        detected_at: datetime | None = None
     ) -> str:
         """
         Report a data breach (GDPR Article 33/34).
@@ -737,7 +742,7 @@ class GDPRComplianceService:
     def notify_affected_users(
         self,
         breach_id: str,
-        user_ids: Optional[List[int]] = None
+        user_ids: list[int] | None = None
     ) -> int:
         """Notify affected users of data breach."""
         breach = self.db.query(DataBreach).filter_by(id=breach_id).first()
@@ -771,8 +776,8 @@ class GDPRComplianceService:
 
     def implement_data_minimization(
         self,
-        data_schema: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        data_schema: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Implement data minimization principle.
 
@@ -794,7 +799,7 @@ class GDPRComplianceService:
 
         return minimized_schema
 
-    def configure_privacy_defaults(self) -> Dict[str, Any]:
+    def configure_privacy_defaults(self) -> dict[str, Any]:
         """
         Configure privacy-friendly defaults.
 
@@ -836,7 +841,7 @@ class GDPRComplianceService:
         self,
         start_date: datetime,
         end_date: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate GDPR compliance report."""
         report = {
             "period": {
@@ -852,7 +857,7 @@ class GDPRComplianceService:
 
         return report
 
-    def export_records_of_processing(self) -> Dict[str, Any]:
+    def export_records_of_processing(self) -> dict[str, Any]:
         """Export records of processing activities (Article 30)."""
         activities = self.db.query(DataProcessingActivity).filter_by(
             is_active=True
@@ -888,7 +893,7 @@ class GDPRComplianceService:
         self,
         user_id: int,
         request_type: str,
-        details: Optional[Dict] = None
+        details: dict | None = None
     ) -> DataSubjectRequest:
         """Create a data subject request."""
         deadline = datetime.utcnow() + timedelta(days=30)  # GDPR 30-day deadline
@@ -909,9 +914,9 @@ class GDPRComplianceService:
     def _collect_user_data(
         self,
         user_id: int,
-        categories: Optional[List[DataCategory]] = None,
+        categories: list[DataCategory] | None = None,
         portable_only: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Collect all user data."""
         # This would collect data from all tables
         # Implementation depends on your data model
@@ -925,8 +930,8 @@ class GDPRComplianceService:
     def _perform_data_erasure(
         self,
         user_id: int,
-        categories: Optional[List[DataCategory]] = None
-    ) -> List[str]:
+        categories: list[DataCategory] | None = None
+    ) -> list[str]:
         """Perform actual data erasure."""
         erased_items = []
 
@@ -943,7 +948,7 @@ class GDPRComplianceService:
     def _generate_consent_text(
         self,
         purpose: ProcessingPurpose,
-        categories: List[DataCategory]
+        categories: list[DataCategory]
     ) -> str:
         """Generate consent text."""
         return f"I consent to the processing of my {', '.join([c.value for c in categories])} data for {purpose.value}"
@@ -951,7 +956,7 @@ class GDPRComplianceService:
     def _check_erasure_eligibility(
         self,
         user_id: int
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Check if user data can be erased."""
         # Check for legal obligations to retain data
         # Check for ongoing contracts

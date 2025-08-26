@@ -9,16 +9,13 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
-from urllib.parse import quote, unquote
-from html import escape, unescape
+from datetime import datetime
+from typing import Any
 
-import pytest
 import httpx
+import pytest
 from fastapi.testclient import TestClient
-from bs4 import BeautifulSoup
 
 # Import application components
 from backend.api.main import app
@@ -36,7 +33,7 @@ class XSSPayload:
     expected_blocked: bool
     severity: str
     target_location: str
-    encoding_type: Optional[str] = None
+    encoding_type: str | None = None
 
 
 class XSSTestSuite:
@@ -65,7 +62,7 @@ class XSSTestSuite:
             {"method": "POST", "url": "/api/auth/login", "param": "username", "context": "json_body"},
         ]
 
-    def _get_xss_payloads(self) -> List[XSSPayload]:
+    def _get_xss_payloads(self) -> list[XSSPayload]:
         """Get comprehensive list of XSS attack payloads."""
         return [
             # Basic Script Injection
@@ -356,9 +353,9 @@ class XSSTestSuite:
 
     async def test_endpoint_with_xss_payload(
         self,
-        endpoint: Dict[str, str],
+        endpoint: dict[str, str],
         payload: XSSPayload
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test a specific endpoint with an XSS payload."""
 
         test_start = time.time()
@@ -475,7 +472,7 @@ class XSSTestSuite:
 
         return False
 
-    def _is_xss_blocked(self, response: httpx.Response, payload: XSSPayload, result: Dict[str, Any]) -> bool:
+    def _is_xss_blocked(self, response: httpx.Response, payload: XSSPayload, result: dict[str, Any]) -> bool:
         """Determine if XSS attack was successfully blocked."""
 
         # Check for explicit rejection status codes
@@ -534,7 +531,7 @@ class XSSTestSuite:
         # Default: assume potential vulnerability if payload reflected
         return False
 
-    async def run_comprehensive_xss_tests(self) -> Dict[str, Any]:
+    async def run_comprehensive_xss_tests(self) -> dict[str, Any]:
         """Run comprehensive XSS tests against all endpoints."""
         logger.info("Starting comprehensive XSS protection testing")
 
@@ -609,7 +606,7 @@ class XSSTestSuite:
 
         return test_summary
 
-    def _analyze_security_headers(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_security_headers(self, results: list[dict[str, Any]]) -> dict[str, Any]:
         """Analyze security headers presence across all responses."""
 
         header_counts = {
@@ -860,7 +857,7 @@ async def test_complete_xss_protection():
         if coverage > 0:  # If header is implemented, it should be consistent
             assert coverage >= 80.0, f"Inconsistent {header} implementation: {coverage:.1f}% coverage"
 
-    logger.info(f"Complete XSS protection testing PASSED")
+    logger.info("Complete XSS protection testing PASSED")
     logger.info(f"Protection rate: {summary['overall_protection_rate']:.1f}%")
     logger.info(f"Tests completed: {summary['total_tests']}")
     logger.info(f"Critical vulnerabilities: {summary['critical_vulnerabilities_count']}")

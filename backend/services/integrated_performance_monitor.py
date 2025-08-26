@@ -8,9 +8,9 @@ and optimization services into a unified performance monitoring solution.
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from backend.services.apm_service import APMService
 from backend.services.cache_optimization_service import CacheOptimizationService
@@ -37,7 +37,7 @@ class IntegratedPerformanceMonitor:
         self,
         redis_cache: RedisCacheService,
         rag_cache: RAGCacheService,
-        config_path: Optional[Path] = None
+        config_path: Path | None = None
     ):
         """Initialize integrated performance monitor."""
         self.config_path = config_path or Path("performance_config.json")
@@ -75,7 +75,7 @@ class IntegratedPerformanceMonitor:
 
         # Service state
         self._running = False
-        self._health_check_task: Optional[asyncio.Task] = None
+        self._health_check_task: asyncio.Task | None = None
 
         # Performance tracking
         self.system_health_score = 0.0
@@ -282,7 +282,7 @@ class IntegratedPerformanceMonitor:
     # Unified Data Access
     # ========================================================================
 
-    def get_comprehensive_performance_report(self) -> Dict[str, Any]:
+    def get_comprehensive_performance_report(self) -> dict[str, Any]:
         """Get comprehensive performance report from all services."""
         return {
             "timestamp": datetime.utcnow().isoformat(),
@@ -301,7 +301,7 @@ class IntegratedPerformanceMonitor:
             "dashboard_data": self.dashboard_service.get_api_metrics()
         }
 
-    def get_real_time_metrics(self) -> Dict[str, Any]:
+    def get_real_time_metrics(self) -> dict[str, Any]:
         """Get real-time performance metrics."""
         return {
             "timestamp": datetime.utcnow().isoformat(),
@@ -333,7 +333,7 @@ class IntegratedPerformanceMonitor:
     # Configuration Management
     # ========================================================================
 
-    def update_configuration(self, config: Dict[str, Any]) -> bool:
+    def update_configuration(self, config: dict[str, Any]) -> bool:
         """Update configuration for all services."""
         try:
             # Update alerting configuration
@@ -348,7 +348,9 @@ class IntegratedPerformanceMonitor:
                                 rule_data["rule_id"], rule_data
                             )
                         else:
-                            from backend.services.performance_alerting_service import AlertRule, AlertSeverity
+                            from backend.services.performance_alerting_service import (
+                                AlertRule,
+                            )
                             rule = AlertRule(**rule_data)
                             self.alerting_service.add_alert_rule(rule)
 
@@ -386,7 +388,7 @@ class IntegratedPerformanceMonitor:
             logger.error(f"Error updating configuration: {e}")
             return False
 
-    def _save_configuration(self, config: Dict[str, Any]):
+    def _save_configuration(self, config: dict[str, Any]):
         """Save configuration to file."""
         try:
             with open(self.config_path, 'w') as f:
@@ -398,7 +400,7 @@ class IntegratedPerformanceMonitor:
     # Advanced Operations
     # ========================================================================
 
-    async def trigger_comprehensive_analysis(self) -> Dict[str, Any]:
+    async def trigger_comprehensive_analysis(self) -> dict[str, Any]:
         """Trigger comprehensive analysis across all services."""
         results = {}
 
@@ -458,7 +460,7 @@ class IntegratedPerformanceMonitor:
                 "error": str(e)
             }
 
-    async def emergency_optimization(self) -> Dict[str, Any]:
+    async def emergency_optimization(self) -> dict[str, Any]:
         """Trigger emergency optimization procedures."""
         try:
             results = {}
@@ -509,7 +511,7 @@ class IntegratedPerformanceMonitor:
     # Monitoring and Diagnostics
     # ========================================================================
 
-    def get_service_health_status(self) -> Dict[str, Any]:
+    def get_service_health_status(self) -> dict[str, Any]:
         """Get health status of all monitoring services."""
         return {
             "timestamp": datetime.utcnow().isoformat(),
@@ -547,7 +549,7 @@ class IntegratedPerformanceMonitor:
             }
         }
 
-    def get_performance_trends(self, hours_back: int = 24) -> Dict[str, Any]:
+    def get_performance_trends(self, hours_back: int = 24) -> dict[str, Any]:
         """Get performance trends across all monitored metrics."""
         try:
             # Get APM trends
@@ -581,7 +583,7 @@ class IntegratedPerformanceMonitor:
         else:
             return "declining"
 
-    def _generate_trend_summary(self, apm_trends: Dict, cache_trends: Dict) -> str:
+    def _generate_trend_summary(self, apm_trends: dict, cache_trends: dict) -> str:
         """Generate human-readable trend summary."""
         try:
             summaries = []

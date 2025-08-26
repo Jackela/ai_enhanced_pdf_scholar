@@ -3,11 +3,9 @@ Unit tests for database models.
 Tests model creation, validation, and serialization.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import Mock
 
-from src.database.models import DocumentModel, CitationModel, CitationRelationModel
+from src.database.models import CitationModel, CitationRelationModel, DocumentModel
 
 
 class TestDocumentModel:

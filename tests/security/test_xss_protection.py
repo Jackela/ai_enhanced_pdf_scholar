@@ -4,15 +4,15 @@ Tests for DOMPurify integration and content sanitization across all components.
 """
 
 import json
+
 import pytest
-from typing import Dict, List, Any
-from unittest.mock import Mock, patch, MagicMock
-from fastapi import status
 from fastapi.testclient import TestClient
 
 from tests.security.enhanced_security_utils import (
-    PayloadGenerator, SecurityScanner, SecurityTestResult,
-    AttackVector, SecuritySeverity, SecurityMonitor
+    AttackVector,
+    PayloadGenerator,
+    SecurityMonitor,
+    SecurityScanner,
 )
 
 
@@ -20,7 +20,7 @@ class TestXSSProtection:
     """Comprehensive XSS protection testing."""
 
     @pytest.fixture
-    def xss_payloads(self) -> List[str]:
+    def xss_payloads(self) -> list[str]:
         """Get comprehensive XSS test payloads."""
         return PayloadGenerator.XSS_PAYLOADS
 

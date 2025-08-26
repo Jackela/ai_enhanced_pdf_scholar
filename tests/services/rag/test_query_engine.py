@@ -5,17 +5,15 @@ Tests for the specialized service responsible for executing RAG queries,
 including index loading, semantic search, and response generation.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from pathlib import Path
 import tempfile
-import json
 import time
-from typing import List, Dict, Any
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock
 
+import pytest
+
+from src.services.rag.exceptions import RAGIndexError, RAGQueryError
 from src.services.rag.query_engine import RAGQueryEngine
-from src.services.rag.exceptions import RAGQueryError, RAGIndexError
-from src.utils.performance_utils import PerformanceTracker
 
 
 class TestRAGQueryEngine:
@@ -24,7 +22,7 @@ class TestRAGQueryEngine:
     @pytest.fixture
     def temp_directory(self):
         """Create temporary directory for test indexes."""
-        import tempfile, shutil
+        import shutil
         temp_dir = Path(tempfile.mkdtemp())
         yield temp_dir
         shutil.rmtree(temp_dir)

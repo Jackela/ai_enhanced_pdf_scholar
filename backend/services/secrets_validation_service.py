@@ -4,26 +4,14 @@ Implements comprehensive validation, monitoring, and compliance checking
 for secrets across all environments with automated remediation suggestions.
 """
 
-import asyncio
-import json
 import logging
 import os
-import re
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
-from dataclasses import dataclass, field
+from typing import Any
 
-from pydantic import BaseModel, Field
-
-from ..core.secrets_vault import (
-    ProductionSecretsManager,
-    validate_prod_secrets,
-    validate_secret_strength,
-    calculate_entropy,
-    SecretStrength
-)
+from ..core.secrets_vault import ProductionSecretsManager, calculate_entropy
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +41,9 @@ class ValidationRule:
     name: str
     description: str
     severity: ValidationSeverity
-    compliance_standards: List[ComplianceStandard] = field(default_factory=list)
+    compliance_standards: list[ComplianceStandard] = field(default_factory=list)
     enabled: bool = True
-    custom_params: Dict[str, Any] = field(default_factory=dict)
+    custom_params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -65,9 +53,9 @@ class ValidationResult:
     passed: bool
     severity: ValidationSeverity
     message: str
-    details: Dict[str, Any] = field(default_factory=dict)
-    remediation: Optional[str] = None
-    compliance_impact: List[ComplianceStandard] = field(default_factory=list)
+    details: dict[str, Any] = field(default_factory=dict)
+    remediation: str | None = None
+    compliance_impact: list[ComplianceStandard] = field(default_factory=list)
 
 
 @dataclass
@@ -77,9 +65,9 @@ class SecretValidationReport:
     environment: str
     timestamp: datetime
     overall_status: str  # "pass", "warning", "fail"
-    compliance_status: Dict[ComplianceStandard, str] = field(default_factory=dict)
-    validation_results: List[ValidationResult] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    compliance_status: dict[ComplianceStandard, str] = field(default_factory=dict)
+    validation_results: list[ValidationResult] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class SecretValidationService:
@@ -88,15 +76,15 @@ class SecretValidationService:
     automated monitoring, and remediation recommendations.
     """
 
-    def __init__(self, secrets_manager: Optional[ProductionSecretsManager] = None):
+    def __init__(self, secrets_manager: ProductionSecretsManager | None = None):
         """Initialize the validation service."""
         self.secrets_manager = secrets_manager or ProductionSecretsManager()
         self.validation_rules = self._initialize_validation_rules()
         self.compliance_mappings = self._initialize_compliance_mappings()
-        self.validation_cache: Dict[str, Tuple[datetime, SecretValidationReport]] = {}
+        self.validation_cache: dict[str, tuple[datetime, SecretValidationReport]] = {}
         self.cache_ttl_minutes = 30
 
-    def _initialize_validation_rules(self) -> Dict[str, ValidationRule]:
+    def _initialize_validation_rules(self) -> dict[str, ValidationRule]:
         """Initialize comprehensive validation rules."""
         rules = {}
 
@@ -280,7 +268,7 @@ class SecretValidationService:
 
         return rules
 
-    def _initialize_compliance_mappings(self) -> Dict[ComplianceStandard, Dict[str, Any]]:
+    def _initialize_compliance_mappings(self) -> dict[ComplianceStandard, dict[str, Any]]:
         """Initialize compliance standard mappings."""
         return {
             ComplianceStandard.NIST_800_53: {
@@ -325,7 +313,7 @@ class SecretValidationService:
         secret_name: str,
         secret_value: str,
         environment: str = "production",
-        compliance_standards: Optional[List[ComplianceStandard]] = None
+        compliance_standards: list[ComplianceStandard] | None = None
     ) -> SecretValidationReport:
         """
         Validate a single secret against all applicable rules.
@@ -403,10 +391,10 @@ class SecretValidationService:
 
     async def validate_environment_secrets(
         self,
-        secrets_dict: Dict[str, str],
+        secrets_dict: dict[str, str],
         environment: str = "production",
-        compliance_standards: Optional[List[ComplianceStandard]] = None
-    ) -> Dict[str, SecretValidationReport]:
+        compliance_standards: list[ComplianceStandard] | None = None
+    ) -> dict[str, SecretValidationReport]:
         """
         Validate all secrets in an environment.
 
@@ -834,7 +822,7 @@ class SecretValidationService:
             compliance_impact=rule.compliance_standards
         )
 
-    def _detect_sequential_patterns(self, text: str) -> List[str]:
+    def _detect_sequential_patterns(self, text: str) -> list[str]:
         """Detect sequential character patterns."""
         patterns = []
         text_lower = text.lower()
@@ -853,7 +841,7 @@ class SecretValidationService:
 
         return patterns
 
-    def _detect_keyboard_patterns(self, text: str) -> List[str]:
+    def _detect_keyboard_patterns(self, text: str) -> list[str]:
         """Detect keyboard pattern sequences."""
         patterns = []
 
@@ -879,7 +867,7 @@ class SecretValidationService:
 
         return sum([has_upper, has_lower, has_digits, has_special])
 
-    def _get_environment_compliance_standards(self, environment: str) -> List[ComplianceStandard]:
+    def _get_environment_compliance_standards(self, environment: str) -> list[ComplianceStandard]:
         """Get applicable compliance standards for environment."""
         if environment == "production":
             return [
@@ -894,7 +882,7 @@ class SecretValidationService:
 
     def _calculate_compliance_status(
         self,
-        validation_results: List[ValidationResult],
+        validation_results: list[ValidationResult],
         standard: ComplianceStandard
     ) -> str:
         """Calculate compliance status for a standard."""
@@ -930,10 +918,10 @@ class SecretValidationService:
 
     def generate_compliance_report(
         self,
-        validation_reports: Dict[str, SecretValidationReport],
+        validation_reports: dict[str, SecretValidationReport],
         environment: str,
-        compliance_standards: Optional[List[ComplianceStandard]] = None
-    ) -> Dict[str, Any]:
+        compliance_standards: list[ComplianceStandard] | None = None
+    ) -> dict[str, Any]:
         """Generate comprehensive compliance report."""
         if compliance_standards is None:
             compliance_standards = self._get_environment_compliance_standards(environment)
@@ -1010,7 +998,7 @@ class SecretValidationService:
 
         return report
 
-    def _calculate_overall_compliance_status(self, results: Dict[str, int]) -> str:
+    def _calculate_overall_compliance_status(self, results: dict[str, int]) -> str:
         """Calculate overall compliance status from results."""
         total = sum(results.values())
         if total == 0:

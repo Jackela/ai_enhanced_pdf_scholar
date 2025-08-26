@@ -4,19 +4,19 @@ Citation Network Analysis Demo Script
 Demonstrates the enhanced citation network analysis capabilities.
 """
 
-import logging
 import json
-from pathlib import Path
+import logging
 import sys
+from pathlib import Path
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.database.connection import DatabaseConnection
+from src.database.models import CitationModel, CitationRelationModel, DocumentModel
 from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
-from src.database.models import DocumentModel, CitationModel, CitationRelationModel
-from src.repositories.citation_repository import CitationRepository
 from src.repositories.citation_relation_repository import CitationRelationRepository
+from src.repositories.citation_repository import CitationRepository
 from src.repositories.document_repository import DocumentRepository
 from src.services.citation_service import CitationService
 
@@ -263,7 +263,7 @@ def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dic
     gpt3_id = doc_ids["Language Models are Few-Shot Learners"]
     network = citation_service.build_citation_network(gpt3_id, depth=2)
 
-    print(f"Network Statistics:")
+    print("Network Statistics:")
     print(f"  • Total Nodes: {network['total_nodes']}")
     print(f"  • Total Edges: {network['total_edges']}")
     print(f"  • Network Depth: {network['depth']}")
@@ -271,7 +271,7 @@ def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dic
     # Show analytics
     if 'analytics' in network:
         analytics = network['analytics']
-        print(f"\\nNetwork Analytics:")
+        print("\\nNetwork Analytics:")
         print(f"  • Density: {analytics.get('density', 0):.3f}")
         print(f"  • Average Degree: {analytics.get('avg_degree', 0):.2f}")
 
@@ -328,7 +328,7 @@ def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dic
 
     if 'edge_metrics' in network:
         edge_metrics = network['edge_metrics']
-        print(f"Edge Confidence Statistics:")
+        print("Edge Confidence Statistics:")
         print(f"  • Average Confidence: {edge_metrics.get('avg_confidence', 0):.3f}")
         print(f"  • Min Confidence: {edge_metrics.get('min_confidence', 0):.3f}")
         print(f"  • Max Confidence: {edge_metrics.get('max_confidence', 0):.3f}")

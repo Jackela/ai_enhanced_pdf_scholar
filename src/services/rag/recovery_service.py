@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.database.models import VectorIndexModel
 from src.repositories.vector_repository import VectorIndexRepository
@@ -59,7 +59,7 @@ class RAGRecoveryService:
         self,
         vector_repo: VectorIndexRepository,
         file_manager: RAGFileManager,
-        health_checker: Optional[HealthChecker] = None,
+        health_checker: HealthChecker | None = None,
     ):
         """
         Initialize RAG recovery service.
@@ -296,7 +296,7 @@ class RAGRecoveryService:
         self,
         vector_index: VectorIndexModel,
         force_rebuild: bool = False,
-        rebuild_callback: Optional[callable] = None,
+        rebuild_callback: callable | None = None,
     ) -> dict[str, Any]:
         """
         Recover a corrupted vector index with comprehensive repair strategies.

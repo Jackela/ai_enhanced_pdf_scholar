@@ -3,8 +3,8 @@ Smoke tests for basic functionality.
 Ensures core modules can be imported and basic functionality works.
 """
 
+
 import pytest
-from pathlib import Path
 
 
 def test_imports():

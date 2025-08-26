@@ -10,24 +10,20 @@ This module tests all error recovery mechanisms in the Enhanced RAG Service incl
 - API failure handling with retry and circuit breaker
 """
 
-import json
 import shutil
 import tempfile
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
-from typing import Dict, Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel, VectorIndexModel
+from src.database.models import DocumentModel
 from src.services.enhanced_rag_service import (
-    EnhancedRAGService, RAGIndexError, RAGRecoveryError,
-    InsufficientResourcesError, IndexCorruptionError
-)
-from src.services.error_recovery import (
-    RetryExhaustedException, CircuitBreakerOpenError
+    EnhancedRAGService,
+    InsufficientResourcesError,
+    RAGIndexError,
+    RAGRecoveryError,
 )
 
 

@@ -6,18 +6,13 @@ and automated cache management strategies for all cache layers.
 """
 
 import asyncio
-import json
 import logging
-import time
-from collections import defaultdict, deque
+from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-from statistics import mean, median
-
-import psutil
+from statistics import mean
+from typing import Any
 
 from backend.services.cache_telemetry_service import CacheLayer, CacheTelemetryService
 from backend.services.redis_cache_service import RedisCacheService
@@ -58,7 +53,7 @@ class CachePattern:
     hit_rate: float           # Current hit rate for this pattern
     avg_access_time: float    # Average time between accesses
     last_seen: datetime
-    sample_keys: List[str] = field(default_factory=list)
+    sample_keys: list[str] = field(default_factory=list)
     predictable: bool = False  # Whether access pattern is predictable
 
 
@@ -72,8 +67,8 @@ class WarmingCandidate:
     priority: WarmingPriority
     estimated_hit_improvement: float
     warming_cost: float        # Cost to warm (computation, I/O, etc.)
-    predicted_access_time: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    predicted_access_time: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -86,9 +81,9 @@ class OptimizationRecommendation:
     description: str
     impact_score: float        # 0-100, higher is better
     implementation_effort: str # "low", "medium", "high"
-    estimated_improvement: Dict[str, float]  # metric -> improvement %
-    action_items: List[str] = field(default_factory=list)
-    prerequisites: List[str] = field(default_factory=list)
+    estimated_improvement: dict[str, float]  # metric -> improvement %
+    action_items: list[str] = field(default_factory=list)
+    prerequisites: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -96,15 +91,15 @@ class WarmingJob:
     """Cache warming job."""
     job_id: str
     cache_layer: CacheLayer
-    keys_to_warm: List[str]
+    keys_to_warm: list[str]
     priority: WarmingPriority
     created_at: datetime
-    scheduled_for: Optional[datetime] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    scheduled_for: datetime | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     status: str = "pending"    # pending, running, completed, failed
     progress: int = 0          # 0-100
-    results: Dict[str, Any] = field(default_factory=dict)
+    results: dict[str, Any] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -127,17 +122,17 @@ class CacheOptimizationService:
         self.rag_cache = rag_cache
 
         # Pattern analysis
-        self.access_patterns: Dict[str, CachePattern] = {}
-        self.warming_candidates: List[WarmingCandidate] = []
-        self.optimization_recommendations: List[OptimizationRecommendation] = []
+        self.access_patterns: dict[str, CachePattern] = {}
+        self.warming_candidates: list[WarmingCandidate] = []
+        self.optimization_recommendations: list[OptimizationRecommendation] = []
 
         # Warming job management
-        self.warming_jobs: Dict[str, WarmingJob] = {}
-        self.active_jobs: Set[str] = set()
+        self.warming_jobs: dict[str, WarmingJob] = {}
+        self.active_jobs: set[str] = set()
 
         # Learning and prediction
-        self.access_history: Dict[str, List[Tuple[datetime, str]]] = defaultdict(list)
-        self.pattern_models: Dict[str, Dict[str, Any]] = {}
+        self.access_history: dict[str, list[tuple[datetime, str]]] = defaultdict(list)
+        self.pattern_models: dict[str, dict[str, Any]] = {}
 
         # Configuration
         self.min_pattern_frequency = 5  # Minimum accesses to consider a pattern
@@ -147,8 +142,8 @@ class CacheOptimizationService:
 
         # Background tasks
         self._running = False
-        self._analysis_task: Optional[asyncio.Task] = None
-        self._warming_task: Optional[asyncio.Task] = None
+        self._analysis_task: asyncio.Task | None = None
+        self._warming_task: asyncio.Task | None = None
 
         logger.info("Cache optimization service initialized")
 
@@ -299,7 +294,7 @@ class CacheOptimizationService:
                 predictable=self._is_pattern_predictable(stats['access_times'])
             )
 
-    def _is_pattern_predictable(self, access_times: List[datetime]) -> bool:
+    def _is_pattern_predictable(self, access_times: list[datetime]) -> bool:
         """Determine if an access pattern is predictable."""
         if len(access_times) < 5:
             return False
@@ -339,7 +334,7 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error updating pattern models: {e}")
 
-    def _build_simple_prediction_model(self, pattern: CachePattern) -> Optional[Dict[str, Any]]:
+    def _build_simple_prediction_model(self, pattern: CachePattern) -> dict[str, Any] | None:
         """Build simple prediction model for cache access pattern."""
         try:
             # Get historical access data
@@ -432,7 +427,7 @@ class CacheOptimizationService:
     async def _generate_warming_candidates_for_pattern(
         self,
         pattern: CachePattern
-    ) -> List[WarmingCandidate]:
+    ) -> list[WarmingCandidate]:
         """Generate warming candidates for a specific pattern."""
         candidates = []
 
@@ -691,7 +686,7 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error generating optimization recommendations: {e}")
 
-    async def _generate_layer_recommendations(self, layer: CacheLayer, metrics) -> List[OptimizationRecommendation]:
+    async def _generate_layer_recommendations(self, layer: CacheLayer, metrics) -> list[OptimizationRecommendation]:
         """Generate optimization recommendations for a specific cache layer."""
         recommendations = []
 
@@ -797,9 +792,9 @@ class CacheOptimizationService:
     def schedule_warming_job(
         self,
         cache_layer: CacheLayer,
-        keys: List[str],
+        keys: list[str],
         priority: WarmingPriority = WarmingPriority.MEDIUM,
-        scheduled_for: Optional[datetime] = None
+        scheduled_for: datetime | None = None
     ) -> str:
         """Schedule a cache warming job."""
         job_id = f"warming_{cache_layer.value}_{datetime.utcnow().timestamp()}"
@@ -820,9 +815,9 @@ class CacheOptimizationService:
 
     def get_warming_candidates(
         self,
-        cache_layer: Optional[CacheLayer] = None,
+        cache_layer: CacheLayer | None = None,
         limit: int = 50
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get current cache warming candidates."""
         candidates = self.warming_candidates
 
@@ -833,8 +828,8 @@ class CacheOptimizationService:
 
     def get_optimization_recommendations(
         self,
-        cache_layer: Optional[CacheLayer] = None
-    ) -> List[Dict[str, Any]]:
+        cache_layer: CacheLayer | None = None
+    ) -> list[dict[str, Any]]:
         """Get current optimization recommendations."""
         recommendations = self.optimization_recommendations
 
@@ -843,16 +838,16 @@ class CacheOptimizationService:
 
         return [asdict(rec) for rec in recommendations]
 
-    def get_warming_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_warming_job_status(self, job_id: str) -> dict[str, Any] | None:
         """Get status of a warming job."""
         job = self.warming_jobs.get(job_id)
         return asdict(job) if job else None
 
     def get_access_patterns(
         self,
-        cache_layer: Optional[CacheLayer] = None,
+        cache_layer: CacheLayer | None = None,
         limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get identified access patterns."""
         patterns = list(self.access_patterns.values())
 
@@ -864,7 +859,7 @@ class CacheOptimizationService:
 
         return [asdict(pattern) for pattern in patterns[:limit]]
 
-    def trigger_immediate_analysis(self) -> Dict[str, Any]:
+    def trigger_immediate_analysis(self) -> dict[str, Any]:
         """Trigger immediate pattern analysis and optimization."""
         try:
             # Run analysis synchronously for immediate results
@@ -905,7 +900,7 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error cleaning up warming jobs: {e}")
 
-    def get_optimization_summary(self) -> Dict[str, Any]:
+    def get_optimization_summary(self) -> dict[str, Any]:
         """Get comprehensive optimization summary."""
         return {
             "timestamp": datetime.utcnow().isoformat(),

@@ -4,15 +4,14 @@ Test Suite Health Checker for AI Enhanced PDF Scholar
 Comprehensive validation of test suite health and readiness for production.
 """
 
+import argparse
 import json
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Tuple, Optional
-from dataclasses import dataclass
-import argparse
 
 
 @dataclass
@@ -37,8 +36,8 @@ class TestSuiteHealthReport:
     total_failed: int
     total_skipped: int
     overall_pass_rate: float
-    categories: List[TestCategoryResult]
-    recommendations: List[str]
+    categories: list[TestCategoryResult]
+    recommendations: list[str]
     production_ready: bool
 
 
@@ -61,7 +60,7 @@ class TestSuiteHealthChecker:
             "Integration Tests": ["tests/integration/test_api_endpoints.py", "--ignore-import-errors"]
         }
 
-    def run_test_category(self, category: str, test_patterns: List[str], timeout: int = 120) -> TestCategoryResult:
+    def run_test_category(self, category: str, test_patterns: list[str], timeout: int = 120) -> TestCategoryResult:
         """Run tests for a specific category."""
         print(f"🧪 Running {category}...")
 
@@ -206,7 +205,7 @@ class TestSuiteHealthChecker:
                 status="critical"
             )
 
-    def calculate_health_score(self, categories: List[TestCategoryResult]) -> float:
+    def calculate_health_score(self, categories: list[TestCategoryResult]) -> float:
         """Calculate overall health score based on category results."""
         if not categories:
             return 0.0
@@ -231,7 +230,7 @@ class TestSuiteHealthChecker:
 
         return weighted_score / total_weight if total_weight > 0 else 0.0
 
-    def generate_recommendations(self, categories: List[TestCategoryResult], health_score: float) -> List[str]:
+    def generate_recommendations(self, categories: list[TestCategoryResult], health_score: float) -> list[str]:
         """Generate actionable recommendations based on test results."""
         recommendations = []
 
@@ -277,7 +276,7 @@ class TestSuiteHealthChecker:
 
         return recommendations
 
-    def check_production_readiness(self, health_score: float, categories: List[TestCategoryResult]) -> bool:
+    def check_production_readiness(self, health_score: float, categories: list[TestCategoryResult]) -> bool:
         """Determine if system is ready for production based on test health."""
         # Minimum requirements for production
         min_health_score = 70.0
@@ -296,7 +295,7 @@ class TestSuiteHealthChecker:
 
         return True
 
-    def generate_health_report(self, categories: List[TestCategoryResult]) -> TestSuiteHealthReport:
+    def generate_health_report(self, categories: list[TestCategoryResult]) -> TestSuiteHealthReport:
         """Generate comprehensive health report."""
         health_score = self.calculate_health_score(categories)
 
@@ -343,7 +342,7 @@ class TestSuiteHealthChecker:
             print("⚠️  NOT PRODUCTION READY: Address critical issues before deployment")
 
         # Category breakdown
-        print(f"\n📋 Test Category Results:")
+        print("\n📋 Test Category Results:")
         print("-" * 60)
 
         status_icons = {
@@ -359,7 +358,7 @@ class TestSuiteHealthChecker:
             print(f"{icon} {category.category}: {category.passed_tests}/{category.total_tests} passed ({category.pass_rate:.1f}%)")
 
         # Recommendations
-        print(f"\n🎯 Recommendations:")
+        print("\n🎯 Recommendations:")
         print("-" * 60)
         for rec in report.recommendations:
             print(rec)

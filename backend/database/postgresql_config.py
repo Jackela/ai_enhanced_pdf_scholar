@@ -5,21 +5,32 @@ Production-ready PostgreSQL setup with connection pooling and optimization.
 
 import logging
 import os
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any
 
 import psycopg2
-from psycopg2 import pool, extras
 from sqlalchemy import (
-    create_engine, event, text, MetaData, Table,
-    Column, Integer, String, DateTime, Boolean, Text, JSON, Float,
-    ForeignKey, Index, UniqueConstraint, CheckConstraint
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Index,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
+    create_engine,
+    event,
+    text,
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker, scoped_session
-from sqlalchemy.pool import QueuePool, NullPool
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool, QueuePool
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +87,7 @@ class PostgreSQLConfig:
 
         return f"{driver}://{self.user}:{self.password}@{host}:{port}/{self.database}"
 
-    def get_connection_params(self, read_only: bool = False) -> Dict[str, Any]:
+    def get_connection_params(self, read_only: bool = False) -> dict[str, Any]:
         """Get connection parameters dictionary."""
         if read_only:
             host = self.read_replica_host
@@ -374,7 +385,7 @@ class SQLiteToPostgresMigration:
             sqlite_session.close()
             postgres_session.close()
 
-    def verify_migration(self) -> Dict[str, Any]:
+    def verify_migration(self) -> dict[str, Any]:
         """Verify migration integrity."""
         logger.info("Verifying migration...")
 
@@ -427,7 +438,6 @@ class SQLiteToPostgresMigration:
 
     def _convert_column(self, sqlite_column):
         """Convert SQLite column to PostgreSQL column."""
-        from sqlalchemy import BigInteger, SmallInteger
 
         # Map SQLite types to PostgreSQL types
         type_mapping = {
@@ -605,7 +615,7 @@ class PostgreSQLOptimizer:
                 conn.execute(text(f"VACUUM ANALYZE {table[0]}"))
                 logger.info(f"Vacuumed and analyzed table: {table[0]}")
 
-    def get_slow_queries(self, min_duration_ms: int = 1000) -> List[Dict]:
+    def get_slow_queries(self, min_duration_ms: int = 1000) -> list[dict]:
         """Get slow queries from pg_stat_statements."""
         with self.engine.connect() as conn:
             # Enable pg_stat_statements if not already enabled

@@ -4,12 +4,13 @@ Security Workflows E2E Tests
 Comprehensive security testing including XSS, injection, authentication, and authorization.
 """
 
-import pytest
-from playwright.sync_api import Page, expect
-import time
 import json
+import time
 from pathlib import Path
+
+import pytest
 from fixtures import *
+from playwright.sync_api import Page
 
 
 class TestSecurityWorkflows:
@@ -566,6 +567,7 @@ class TestSecurityWorkflows:
     ):
         """Test DDoS and rate limiting protection."""
         import asyncio
+
         import aiohttp
 
         async def make_concurrent_requests(url: str, count: int):

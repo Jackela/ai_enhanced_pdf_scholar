@@ -5,19 +5,20 @@ Comprehensive tests for CORS security configuration and enforcement.
 Validates that CORS policies are properly configured and enforced across different environments.
 """
 
-import pytest
 import os
-from unittest.mock import patch, Mock
-from fastapi.testclient import TestClient
-from fastapi.middleware.cors import CORSMiddleware
+from unittest.mock import patch
+
+import pytest
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.testclient import TestClient
 
 from backend.api.cors_config import (
     CORSConfig,
     Environment,
     get_cors_config,
+    get_safe_cors_origins,
     validate_origin_format,
-    get_safe_cors_origins
 )
 
 

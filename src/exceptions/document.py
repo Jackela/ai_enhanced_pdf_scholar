@@ -3,7 +3,7 @@ Document-related Exception Classes
 Handles errors related to document management, import, and processing.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from .base import PDFScholarError
 
@@ -14,8 +14,8 @@ class DocumentError(PDFScholarError):
     def __init__(
         self,
         message: str,
-        document_id: Optional[int] = None,
-        file_path: Optional[str] = None,
+        document_id: int | None = None,
+        file_path: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -44,7 +44,7 @@ class DocumentError(PDFScholarError):
 class DocumentNotFoundError(DocumentError):
     """Raised when a requested document cannot be found."""
 
-    def __init__(self, message: str, document_id: Optional[int] = None, **kwargs: Any):
+    def __init__(self, message: str, document_id: int | None = None, **kwargs: Any):
         super().__init__(message, document_id=document_id, **kwargs)
 
     def _get_default_user_message(self) -> str:
@@ -59,8 +59,8 @@ class DocumentImportError(DocumentError):
     def __init__(
         self,
         message: str,
-        file_path: Optional[str] = None,
-        reason: Optional[str] = None,
+        file_path: str | None = None,
+        reason: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -93,8 +93,8 @@ class DuplicateDocumentError(DocumentImportError):
     def __init__(
         self,
         message: str,
-        file_path: Optional[str] = None,
-        existing_document_id: Optional[int] = None,
+        file_path: str | None = None,
+        existing_document_id: int | None = None,
         **kwargs: Any,
     ):
         """
@@ -129,8 +129,8 @@ class DocumentValidationError(DocumentError):
     def __init__(
         self,
         message: str,
-        file_path: Optional[str] = None,
-        validation_issue: Optional[str] = None,
+        file_path: str | None = None,
+        validation_issue: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -161,8 +161,8 @@ class DocumentProcessingError(DocumentError):
     def __init__(
         self,
         message: str,
-        document_id: Optional[int] = None,
-        processing_stage: Optional[str] = None,
+        document_id: int | None = None,
+        processing_stage: str | None = None,
         **kwargs: Any,
     ):
         """

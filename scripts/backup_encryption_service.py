@@ -12,25 +12,25 @@ import json
 import logging
 import os
 import secrets
-import struct
+
+# Add backend to path for imports
+import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
 import aiofiles
-from cryptography.fernet import Fernet, MultiFernet
+from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
-# Add backend to path for imports
-import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from backend.core.secrets import get_secrets_manager
@@ -68,7 +68,7 @@ class EncryptionMetadata:
     file_size_encrypted: int
     checksum_original: str
     checksum_encrypted: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -79,19 +79,19 @@ class EncryptionKey:
     key_data: bytes
     version: int
     created_at: datetime
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
     is_active: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class BackupEncryptionService:
     """Service for encrypting and decrypting backup files."""
 
-    def __init__(self, metrics_service: Optional[MetricsService] = None):
+    def __init__(self, metrics_service: MetricsService | None = None):
         """Initialize backup encryption service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
-        self.encryption_keys: Dict[str, EncryptionKey] = {}
+        self.encryption_keys: dict[str, EncryptionKey] = {}
         self.key_rotation_interval = timedelta(days=30)
         self.backup_encryption_path = Path("/var/backups/encryption")
 
@@ -161,7 +161,7 @@ class BackupEncryptionService:
         self,
         key_id: str,
         algorithm: EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
-        expires_after: Optional[timedelta] = None
+        expires_after: timedelta | None = None
     ) -> EncryptionKey:
         """Generate a new encryption key."""
         if algorithm == EncryptionAlgorithm.AES_256_GCM:
@@ -248,7 +248,7 @@ class BackupEncryptionService:
         except Exception as e:
             logger.warning(f"Failed to store key in secrets manager: {e}")
 
-    async def load_encryption_key(self, key_id: str) -> Optional[EncryptionKey]:
+    async def load_encryption_key(self, key_id: str) -> EncryptionKey | None:
         """Load encryption key from storage."""
         if key_id in self.encryption_keys:
             return self.encryption_keys[key_id]
@@ -391,7 +391,7 @@ class BackupEncryptionService:
         self,
         input_file: Union[str, Path],
         output_file: Union[str, Path],
-        metadata_file: Optional[Union[str, Path]] = None
+        metadata_file: Union[str, Path] | None = None
     ) -> bool:
         """Decrypt a backup file."""
         start_time = time.time()
@@ -451,7 +451,7 @@ class BackupEncryptionService:
         output_path: Path,
         key: EncryptionKey,
         compression: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Encrypt file using AES-256-GCM."""
         aesgcm = AESGCM(key.key_data)
         nonce = secrets.token_bytes(12)  # 96-bit nonce
@@ -519,7 +519,7 @@ class BackupEncryptionService:
         output_path: Path,
         key: EncryptionKey,
         compression: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Encrypt file using Fernet."""
         fernet = Fernet(key.key_data)
 
@@ -610,13 +610,13 @@ class BackupEncryptionService:
         async with aiofiles.open(metadata_file, 'w') as f:
             await f.write(json.dumps(metadata_dict, indent=2))
 
-    async def _load_encryption_metadata(self, metadata_file: Path) -> Optional[EncryptionMetadata]:
+    async def _load_encryption_metadata(self, metadata_file: Path) -> EncryptionMetadata | None:
         """Load encryption metadata from file."""
         if not metadata_file.exists():
             return None
 
         try:
-            async with aiofiles.open(metadata_file, 'r') as f:
+            async with aiofiles.open(metadata_file) as f:
                 metadata_dict = json.loads(await f.read())
 
             return EncryptionMetadata(
@@ -640,7 +640,7 @@ class BackupEncryptionService:
             logger.error(f"Failed to load encryption metadata: {e}")
             return None
 
-    async def rotate_keys(self, key_age_threshold: Optional[timedelta] = None) -> int:
+    async def rotate_keys(self, key_age_threshold: timedelta | None = None) -> int:
         """Rotate encryption keys based on age threshold."""
         if not key_age_threshold:
             key_age_threshold = self.key_rotation_interval
@@ -672,7 +672,7 @@ class BackupEncryptionService:
 
         return rotated_count
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get encryption service status."""
         now = datetime.utcnow()
 
@@ -715,7 +715,7 @@ async def main():
     print(f"Decryption success: {success}")
 
     # Verify content
-    async with aiofiles.open(decrypted_file, 'r') as f:
+    async with aiofiles.open(decrypted_file) as f:
         content = await f.read()
         print(f"Decrypted content: {content}")
 

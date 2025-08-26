@@ -6,27 +6,28 @@ Production-ready distributed tracing implementation.
 import logging
 import os
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Union
 
-from opentelemetry import trace, baggage, context
+from opentelemetry import baggage, context, trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.exporter.zipkin.json import ZipkinExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.propagate import set_global_textmap
 from opentelemetry.propagators.b3 import B3MultiFormat, B3SingleFormat
-from opentelemetry.propagators.jaeger import JaegerPropagator
 from opentelemetry.propagators.composite import CompositePropagator
+from opentelemetry.propagators.jaeger import JaegerPropagator
 from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.semantic_conventions.trace import SpanAttributes
-from opentelemetry.trace import Status, StatusCode, Span
+from opentelemetry.trace import Status, StatusCode
 from opentelemetry.util.http import get_excluded_urls
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ class TracingService:
     Comprehensive OpenTelemetry tracing service.
     """
 
-    def __init__(self, config: Optional[TracingConfig] = None):
+    def __init__(self, config: TracingConfig | None = None):
         """Initialize tracing service."""
         self.config = config or TracingConfig()
         self.tracer_provider = None
@@ -187,9 +188,9 @@ class TracingService:
     def start_span(
         self,
         name: str,
-        kind: Optional[trace.SpanKind] = None,
-        attributes: Optional[Dict[str, Any]] = None,
-        parent: Optional[Union[trace.Span, trace.SpanContext]] = None
+        kind: trace.SpanKind | None = None,
+        attributes: dict[str, Any] | None = None,
+        parent: Union[trace.Span, trace.SpanContext] | None = None
     ) -> trace.Span:
         """
         Start a new span.
@@ -216,8 +217,8 @@ class TracingService:
     def trace(
         self,
         name: str,
-        kind: Optional[trace.SpanKind] = None,
-        attributes: Optional[Dict[str, Any]] = None
+        kind: trace.SpanKind | None = None,
+        attributes: dict[str, Any] | None = None
     ):
         """
         Context manager for tracing operations.
@@ -243,9 +244,9 @@ class TracingService:
 
     def trace_decorator(
         self,
-        name: Optional[str] = None,
-        kind: Optional[trace.SpanKind] = None,
-        attributes: Optional[Dict[str, Any]] = None,
+        name: str | None = None,
+        kind: trace.SpanKind | None = None,
+        attributes: dict[str, Any] | None = None,
         record_exception: bool = True
     ):
         """
@@ -327,10 +328,10 @@ class TracingService:
         self,
         method: str,
         url: str,
-        status_code: Optional[int] = None,
-        user_id: Optional[str] = None,
-        request_size: Optional[int] = None,
-        response_size: Optional[int] = None
+        status_code: int | None = None,
+        user_id: str | None = None,
+        request_size: int | None = None,
+        response_size: int | None = None
     ):
         """Trace HTTP request with standard attributes."""
         span = trace.get_current_span()
@@ -358,9 +359,9 @@ class TracingService:
         self,
         operation: str,
         table: str,
-        query: Optional[str] = None,
-        rows_affected: Optional[int] = None,
-        duration: Optional[float] = None
+        query: str | None = None,
+        rows_affected: int | None = None,
+        duration: float | None = None
     ):
         """Trace database query with standard attributes."""
         span = trace.get_current_span()
@@ -383,9 +384,9 @@ class TracingService:
         self,
         document_id: str,
         operation: str,
-        file_type: Optional[str] = None,
-        file_size: Optional[int] = None,
-        page_count: Optional[int] = None
+        file_type: str | None = None,
+        file_size: int | None = None,
+        page_count: int | None = None
     ):
         """Trace document processing operations."""
         span = trace.get_current_span()
@@ -406,10 +407,10 @@ class TracingService:
     def trace_rag_query(
         self,
         query: str,
-        document_id: Optional[str] = None,
-        retrieval_count: Optional[int] = None,
-        relevance_scores: Optional[List[float]] = None,
-        model_used: Optional[str] = None
+        document_id: str | None = None,
+        retrieval_count: int | None = None,
+        relevance_scores: list[float] | None = None,
+        model_used: str | None = None
     ):
         """Trace RAG (Retrieval-Augmented Generation) queries."""
         span = trace.get_current_span()
@@ -438,9 +439,9 @@ class TracingService:
         self,
         operation: str,
         key: str,
-        hit: Optional[bool] = None,
-        size: Optional[int] = None,
-        ttl: Optional[int] = None
+        hit: bool | None = None,
+        size: int | None = None,
+        ttl: int | None = None
     ):
         """Trace cache operations."""
         span = trace.get_current_span()
@@ -470,7 +471,7 @@ class TracingService:
         ctx = baggage.set_baggage(key, value)
         context.attach(ctx)
 
-    def get_baggage(self, key: str) -> Optional[str]:
+    def get_baggage(self, key: str) -> str | None:
         """Get baggage value."""
         return baggage.get_baggage(key)
 
@@ -483,27 +484,27 @@ class TracingService:
     # Correlation and Context
     # ========================================================================
 
-    def get_trace_id(self) -> Optional[str]:
+    def get_trace_id(self) -> str | None:
         """Get current trace ID."""
         span = trace.get_current_span()
         if span and span.get_span_context().is_valid:
             return f"{span.get_span_context().trace_id:032x}"
         return None
 
-    def get_span_id(self) -> Optional[str]:
+    def get_span_id(self) -> str | None:
         """Get current span ID."""
         span = trace.get_current_span()
         if span and span.get_span_context().is_valid:
             return f"{span.get_span_context().span_id:016x}"
         return None
 
-    def inject_trace_context(self, headers: Dict[str, str]) -> Dict[str, str]:
+    def inject_trace_context(self, headers: dict[str, str]) -> dict[str, str]:
         """Inject trace context into HTTP headers."""
         from opentelemetry.propagate import inject
         inject(headers)
         return headers
 
-    def extract_trace_context(self, headers: Dict[str, str]):
+    def extract_trace_context(self, headers: dict[str, str]):
         """Extract trace context from HTTP headers."""
         from opentelemetry.propagate import extract
         return extract(headers)
@@ -512,13 +513,13 @@ class TracingService:
     # Custom Events and Logs
     # ========================================================================
 
-    def add_event(self, name: str, attributes: Optional[Dict[str, Any]] = None):
+    def add_event(self, name: str, attributes: dict[str, Any] | None = None):
         """Add an event to the current span."""
         span = trace.get_current_span()
         if span:
             span.add_event(name, attributes or {})
 
-    def log_error(self, error: Exception, attributes: Optional[Dict[str, Any]] = None):
+    def log_error(self, error: Exception, attributes: dict[str, Any] | None = None):
         """Log an error to the current span."""
         span = trace.get_current_span()
         if span:
@@ -529,7 +530,7 @@ class TracingService:
                 for key, value in attributes.items():
                     span.set_attribute(key, value)
 
-    def set_user_context(self, user_id: str, user_email: Optional[str] = None, user_role: Optional[str] = None):
+    def set_user_context(self, user_id: str, user_email: str | None = None, user_role: str | None = None):
         """Set user context in current span."""
         span = trace.get_current_span()
         if span:
@@ -617,7 +618,7 @@ class TracingService:
 # ============================================================================
 
 # Global tracing service instance
-_tracing_service: Optional[TracingService] = None
+_tracing_service: TracingService | None = None
 
 def get_tracer() -> TracingService:
     """Get global tracing service instance."""
@@ -628,7 +629,7 @@ def get_tracer() -> TracingService:
 
     return _tracing_service
 
-def initialize_tracing(config: Optional[TracingConfig] = None) -> TracingService:
+def initialize_tracing(config: TracingConfig | None = None) -> TracingService:
     """Initialize global tracing service."""
     global _tracing_service
     _tracing_service = TracingService(config)

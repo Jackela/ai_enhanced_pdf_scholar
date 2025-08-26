@@ -14,15 +14,12 @@ Usage:
 import argparse
 import ast
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 import requests
-import yaml
-from fastapi.openapi.utils import get_openapi
 
 
 class APIDocumentationSync:
@@ -51,12 +48,12 @@ class APIDocumentationSync:
             "breaking_changes": []
         }
 
-        print(f"🔄 API Documentation Sync initialized")
+        print("🔄 API Documentation Sync initialized")
         print(f"   Project: {self.project_root}")
         print(f"   API Base: {self.api_base_url}")
         print(f"   Docs Dir: {self.docs_dir}")
 
-    def extract_api_endpoints(self) -> Dict[str, Any]:
+    def extract_api_endpoints(self) -> dict[str, Any]:
         """Extract API endpoints from FastAPI application code."""
         endpoints = {}
 
@@ -68,7 +65,7 @@ class APIDocumentationSync:
 
         for route_file in route_files:
             try:
-                with open(route_file, 'r', encoding='utf-8') as f:
+                with open(route_file, encoding='utf-8') as f:
                     content = f.read()
                     tree = ast.parse(content)
 
@@ -80,7 +77,7 @@ class APIDocumentationSync:
 
         return endpoints
 
-    def _parse_fastapi_routes(self, tree: ast.AST, file_path: Path, content: str) -> Dict[str, Any]:
+    def _parse_fastapi_routes(self, tree: ast.AST, file_path: Path, content: str) -> dict[str, Any]:
         """Parse FastAPI route definitions from AST."""
         endpoints = {}
         lines = content.split('\n')
@@ -104,7 +101,7 @@ class APIDocumentationSync:
 
         return endpoints
 
-    def _extract_endpoint_info(self, decorator: ast.AST, func_node: ast.FunctionDef, lines: List[str]) -> Optional[Dict[str, Any]]:
+    def _extract_endpoint_info(self, decorator: ast.AST, func_node: ast.FunctionDef, lines: list[str]) -> dict[str, Any] | None:
         """Extract endpoint information from FastAPI decorators."""
         if not isinstance(decorator, ast.Call):
             return None
@@ -159,7 +156,7 @@ class APIDocumentationSync:
             'metadata': metadata
         }
 
-    def _extract_function_parameters(self, func_node: ast.FunctionDef) -> List[Dict[str, Any]]:
+    def _extract_function_parameters(self, func_node: ast.FunctionDef) -> list[dict[str, Any]]:
         """Extract function parameter information."""
         parameters = []
 
@@ -183,7 +180,7 @@ class APIDocumentationSync:
 
         return parameters
 
-    def _get_annotation_string(self, annotation: Optional[ast.AST]) -> Optional[str]:
+    def _get_annotation_string(self, annotation: ast.AST | None) -> str | None:
         """Convert AST annotation to string representation."""
         if not annotation:
             return None
@@ -215,13 +212,13 @@ class APIDocumentationSync:
         else:
             return str(default)
 
-    def _extract_list_values(self, node: ast.AST) -> List[Any]:
+    def _extract_list_values(self, node: ast.AST) -> list[Any]:
         """Extract values from a list AST node."""
         if isinstance(node, ast.List):
             return [self._get_default_value(item) for item in node.elts]
         return []
 
-    def fetch_live_openapi_spec(self) -> Optional[Dict[str, Any]]:
+    def fetch_live_openapi_spec(self) -> dict[str, Any] | None:
         """Fetch OpenAPI specification from running server."""
         try:
             response = requests.get(f"{self.api_base_url}/api/openapi.json", timeout=10)
@@ -234,7 +231,7 @@ class APIDocumentationSync:
             print(f"⚠️  Cannot connect to API server: {e}")
             return None
 
-    def compare_endpoints(self, code_endpoints: Dict[str, Any], live_spec: Optional[Dict[str, Any]]) -> None:
+    def compare_endpoints(self, code_endpoints: dict[str, Any], live_spec: dict[str, Any] | None) -> None:
         """Compare endpoints from code analysis with live API specification."""
         if not live_spec:
             print("⚠️  Skipping live API comparison (server not available)")
@@ -287,7 +284,7 @@ class APIDocumentationSync:
                     'live_version': live_endpoint
                 })
 
-    def _endpoints_differ(self, code_endpoint: Dict[str, Any], live_endpoint: Dict[str, Any]) -> bool:
+    def _endpoints_differ(self, code_endpoint: dict[str, Any], live_endpoint: dict[str, Any]) -> bool:
         """Check if code and live endpoints differ significantly."""
         # This is a simplified comparison - you might want to make it more sophisticated
         code_summary = code_endpoint.get('metadata', {}).get('summary', '')
@@ -298,7 +295,7 @@ class APIDocumentationSync:
 
         return code_summary != live_summary or code_description != live_description
 
-    def update_api_reference_doc(self, endpoints: Dict[str, Any]) -> None:
+    def update_api_reference_doc(self, endpoints: dict[str, Any]) -> None:
         """Update the API reference documentation file."""
         doc_file = self.doc_files['api_reference']
 
@@ -307,7 +304,7 @@ class APIDocumentationSync:
             return
 
         # Read current documentation
-        with open(doc_file, 'r', encoding='utf-8') as f:
+        with open(doc_file, encoding='utf-8') as f:
             content = f.read()
 
         # Generate new endpoints section
@@ -332,7 +329,7 @@ class APIDocumentationSync:
         else:
             print(f"⚠️  Auto-update markers not found in {doc_file.name}")
 
-    def _generate_endpoints_markdown(self, endpoints: Dict[str, Any]) -> str:
+    def _generate_endpoints_markdown(self, endpoints: dict[str, Any]) -> str:
         """Generate Markdown documentation for endpoints."""
         md_content = []
         md_content.append("## Auto-Generated API Endpoints\n")
@@ -385,7 +382,7 @@ class APIDocumentationSync:
 
         return "\n".join(md_content)
 
-    def save_openapi_spec(self, spec: Dict[str, Any]) -> None:
+    def save_openapi_spec(self, spec: dict[str, Any]) -> None:
         """Save OpenAPI specification to file."""
         spec_file = self.doc_files['openapi_spec']
 
@@ -439,7 +436,7 @@ class APIDocumentationSync:
         # Read existing changelog or create new one
         existing_content = ""
         if changelog_file.exists():
-            with open(changelog_file, 'r', encoding='utf-8') as f:
+            with open(changelog_file, encoding='utf-8') as f:
                 existing_content = f.read()
 
         # Prepend new entry
@@ -452,7 +449,7 @@ class APIDocumentationSync:
 
         print(f"✅ Updated API changelog: {changelog_file.name}")
 
-    def check_inconsistencies(self) -> List[str]:
+    def check_inconsistencies(self) -> list[str]:
         """Check for inconsistencies between code and documentation."""
         issues = []
 

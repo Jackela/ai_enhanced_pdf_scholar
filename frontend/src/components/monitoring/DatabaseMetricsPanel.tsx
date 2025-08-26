@@ -13,9 +13,7 @@ import {
   Users, 
   Activity,
   AlertTriangle,
-  CheckCircle,
-  TrendingUp,
-  TrendingDown
+  CheckCircle
 } from 'lucide-react';
 
 interface DatabaseData {

@@ -3,11 +3,11 @@ Citation Network Analysis Tests
 Tests the enhanced network analysis functionality in CitationService.
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
 from src.services.citation_service import CitationService
-from src.database.models import CitationRelationModel
 
 
 class TestCitationNetworkAnalysis:

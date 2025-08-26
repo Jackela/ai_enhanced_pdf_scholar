@@ -4,12 +4,12 @@ Complete Document Workflow E2E Tests
 Tests the entire document lifecycle from upload to querying.
 """
 
-import pytest
-from pathlib import Path
-from playwright.sync_api import Page, expect
 import time
-from typing import Dict, Any
+from pathlib import Path
+
+import pytest
 from fixtures import *
+from playwright.sync_api import Page, expect
 
 
 class TestCompleteDocumentWorkflow:
@@ -375,10 +375,10 @@ class TestCompleteDocumentWorkflow:
         processing_time = time.time() - processing_start
 
         # Log performance metrics
-        print(f"Large document processing metrics:")
+        print("Large document processing metrics:")
         print(f"  - Upload time: {upload_time:.2f}s")
         print(f"  - Processing time: {processing_time:.2f}s")
-        print(f"  - File size: 50 pages")
+        print("  - File size: 50 pages")
 
     @pytest.mark.e2e
     @pytest.mark.workflow

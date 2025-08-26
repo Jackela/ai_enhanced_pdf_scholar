@@ -4,12 +4,12 @@ Test Infrastructure Optimization Script
 Analyzes and optimizes test performance and infrastructure.
 """
 
+import argparse
 import json
 import subprocess
 import time
 from pathlib import Path
-from typing import Dict, List, Any
-import argparse
+from typing import Any
 
 
 class TestOptimizer:
@@ -20,7 +20,7 @@ class TestOptimizer:
         self.test_dir = self.project_root / "tests"
         self.results = {}
 
-    def analyze_test_structure(self) -> Dict[str, Any]:
+    def analyze_test_structure(self) -> dict[str, Any]:
         """Analyze current test structure and complexity."""
         print("🔍 Analyzing test structure...")
 
@@ -55,7 +55,7 @@ class TestOptimizer:
         self.results["structure"] = structure
         return structure
 
-    def _categorize_tests(self, test_files: List[Path]) -> Dict[str, int]:
+    def _categorize_tests(self, test_files: list[Path]) -> dict[str, int]:
         """Categorize tests by type."""
         categories = {
             "unit": 0,
@@ -90,7 +90,7 @@ class TestOptimizer:
 
         return categories
 
-    def benchmark_test_performance(self, subset: str = "smoke") -> Dict[str, Any]:
+    def benchmark_test_performance(self, subset: str = "smoke") -> dict[str, Any]:
         """Benchmark test execution performance."""
         print(f"⚡ Benchmarking test performance ({subset})...")
 
@@ -155,7 +155,7 @@ class TestOptimizer:
         self.results["benchmark"] = benchmark
         return benchmark
 
-    def _parse_pytest_output(self, output_lines: List[str]) -> Dict[str, int]:
+    def _parse_pytest_output(self, output_lines: list[str]) -> dict[str, int]:
         """Parse pytest output to extract test counts."""
         results = {"total": 0, "passed": 0, "failed": 0, "skipped": 0}
 
@@ -182,7 +182,7 @@ class TestOptimizer:
         results["total"] = results["passed"] + results["failed"] + results["skipped"]
         return results
 
-    def analyze_dependencies(self) -> Dict[str, Any]:
+    def analyze_dependencies(self) -> dict[str, Any]:
         """Analyze test dependencies and imports."""
         print("📦 Analyzing test dependencies...")
 
@@ -230,7 +230,7 @@ class TestOptimizer:
         self.results["dependencies"] = dependencies
         return dependencies
 
-    def generate_optimization_recommendations(self) -> List[Dict[str, str]]:
+    def generate_optimization_recommendations(self) -> list[dict[str, str]]:
         """Generate actionable optimization recommendations."""
         print("💡 Generating optimization recommendations...")
 
@@ -246,7 +246,7 @@ class TestOptimizer:
                     recommendations.append({
                         "type": "fixture_optimization",
                         "priority": "high",
-                        "title": f"Simplify complex conftest.py",
+                        "title": "Simplify complex conftest.py",
                         "description": f"{conftest['file']} has {conftest['lines']} lines and {conftest['fixtures']} fixtures. Consider splitting or optimizing.",
                         "action": "Split large conftest.py files and optimize fixture scopes"
                     })

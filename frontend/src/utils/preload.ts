@@ -6,9 +6,11 @@
 // Route preloading map
 const routePreloaders = {
   library: () => import('../components/views/LibraryView'),
+  collections: () => import('../components/views/CollectionsView'),
   document: () => import('../components/views/DocumentViewer'),
   chat: () => import('../components/views/ChatView'),
   settings: () => import('../components/views/SettingsView'),
+  monitoring: () => import('../components/views/MonitoringDashboard'),
   upload: () => import('../components/DocumentUpload'),
 } as const
 

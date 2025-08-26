@@ -4,10 +4,7 @@ Performance-optimized version of database connection tests using shared fixtures
 and parallel execution strategies to reduce test time by ~80%.
 """
 
-import threading
 import time
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 

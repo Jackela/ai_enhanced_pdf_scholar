@@ -6,17 +6,15 @@ and performance monitoring for enhanced parallel test execution.
 """
 
 import hashlib
-import json
 import pickle
-import psutil
+import tempfile
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import tempfile
-import sqlite3
+from typing import Any
+
+import psutil
 
 
 @dataclass
@@ -44,7 +42,7 @@ class PerformanceMetrics:
 
     # Quality metrics
     success: bool = True
-    error_message: Optional[str] = None
+    error_message: str | None = None
     retry_count: int = 0
 
 
@@ -58,7 +56,7 @@ class CacheEntry:
     accessed_at: float
     access_count: int = 0
     size_bytes: int = 0
-    ttl_seconds: Optional[float] = None
+    ttl_seconds: float | None = None
 
     def is_expired(self) -> bool:
         """Check if cache entry is expired."""
@@ -94,7 +92,7 @@ class IntelligentTestCache:
         self.default_ttl = default_ttl_seconds
 
         # Memory cache
-        self.memory_cache: Dict[str, CacheEntry] = {}
+        self.memory_cache: dict[str, CacheEntry] = {}
         self.memory_usage_bytes = 0
 
         # Disk cache setup
@@ -120,7 +118,7 @@ class IntelligentTestCache:
             "eviction_time_ms": []
         }
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get item from cache with intelligent promotion."""
         start_time = time.perf_counter()
 
@@ -168,7 +166,7 @@ class IntelligentTestCache:
         self,
         key: str,
         data: Any,
-        ttl_seconds: Optional[float] = None,
+        ttl_seconds: float | None = None,
         priority: str = "normal"  # "low", "normal", "high"
     ):
         """Set item in cache with intelligent placement."""
@@ -218,7 +216,7 @@ class IntelligentTestCache:
         self.memory_cache[key] = entry
         self.memory_usage_bytes += entry.size_bytes
 
-    def _add_to_disk(self, key: str, entry: CacheEntry, serialized_data: Optional[bytes] = None):
+    def _add_to_disk(self, key: str, entry: CacheEntry, serialized_data: bytes | None = None):
         """Add entry to disk cache."""
         try:
             disk_path = self._get_disk_path(key)
@@ -299,7 +297,7 @@ class IntelligentTestCache:
             # Reset stats
             self.stats = {k: 0 for k in self.stats}
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         with self.lock:
             total_requests = self.stats["total_requests"]
@@ -331,9 +329,9 @@ class TestResourceMonitor:
 
     def __init__(self):
         self.monitoring_active = False
-        self.metrics: List[Dict[str, Any]] = []
-        self.baseline_metrics: Optional[Dict[str, Any]] = None
-        self.resource_alerts: List[Dict[str, Any]] = []
+        self.metrics: list[dict[str, Any]] = []
+        self.baseline_metrics: dict[str, Any] | None = None
+        self.resource_alerts: list[dict[str, Any]] = []
         self.lock = threading.Lock()
 
         # Thresholds
@@ -389,7 +387,7 @@ class TestResourceMonitor:
                 cpu_usage_percent=current_metrics["cpu_percent"]
             )
 
-    def _get_current_metrics(self) -> Dict[str, Any]:
+    def _get_current_metrics(self) -> dict[str, Any]:
         """Get current system metrics."""
         try:
             # Memory metrics
@@ -433,7 +431,7 @@ class TestResourceMonitor:
                 "network_io_mb": 0
             }
 
-    def check_resource_pressure(self) -> Dict[str, Any]:
+    def check_resource_pressure(self) -> dict[str, Any]:
         """Check for resource pressure and return recommendations."""
         current = self._get_current_metrics()
 
@@ -482,7 +480,7 @@ class TestResourceMonitor:
             "current_metrics": current
         }
 
-    def get_resource_summary(self) -> Dict[str, Any]:
+    def get_resource_summary(self) -> dict[str, Any]:
         """Get summary of resource usage during monitoring."""
         with self.lock:
             if not self.metrics:
@@ -517,15 +515,15 @@ class IntelligentTestDistribution:
     def __init__(self, cache: IntelligentTestCache, monitor: TestResourceMonitor):
         self.cache = cache
         self.monitor = monitor
-        self.historical_data: Dict[str, List[PerformanceMetrics]] = {}
-        self.worker_capabilities: Dict[str, Dict[str, Any]] = {}
+        self.historical_data: dict[str, list[PerformanceMetrics]] = {}
+        self.worker_capabilities: dict[str, dict[str, Any]] = {}
 
     def distribute_tests(
         self,
-        tests: List[Tuple[str, Dict[str, Any]]],  # (test_name, characteristics)
+        tests: list[tuple[str, dict[str, Any]]],  # (test_name, characteristics)
         available_workers: int,
-        resource_constraints: Dict[str, Any]
-    ) -> Dict[str, List[str]]:
+        resource_constraints: dict[str, Any]
+    ) -> dict[str, list[str]]:
         """
         Distribute tests optimally across workers.
 
@@ -558,11 +556,11 @@ class IntelligentTestDistribution:
 
     def _calculate_optimal_distribution(
         self,
-        tests: List[Tuple[str, Dict[str, Any]]],
+        tests: list[tuple[str, dict[str, Any]]],
         available_workers: int,
-        resource_constraints: Dict[str, Any],
-        resource_state: Dict[str, Any]
-    ) -> Dict[str, List[str]]:
+        resource_constraints: dict[str, Any],
+        resource_state: dict[str, Any]
+    ) -> dict[str, list[str]]:
         """Calculate optimal test distribution."""
 
         # Sort tests by estimated duration (longest first for better load balancing)
@@ -573,7 +571,7 @@ class IntelligentTestDistribution:
         )
 
         # Initialize worker assignments
-        worker_loads: Dict[str, Dict[str, Any]] = {}
+        worker_loads: dict[str, dict[str, Any]] = {}
         for i in range(available_workers):
             worker_id = f"worker_{i}"
             worker_loads[worker_id] = {
@@ -609,9 +607,9 @@ class IntelligentTestDistribution:
     def _find_best_worker(
         self,
         test_name: str,
-        characteristics: Dict[str, Any],
-        worker_loads: Dict[str, Dict[str, Any]],
-        resource_state: Dict[str, Any]
+        characteristics: dict[str, Any],
+        worker_loads: dict[str, dict[str, Any]],
+        resource_state: dict[str, Any]
     ) -> str:
         """Find the best worker for a specific test."""
 
@@ -655,7 +653,7 @@ class IntelligentTestDistribution:
         self,
         test_memory_mb: float,
         worker_current_mb: float,
-        resource_state: Dict[str, Any]
+        resource_state: dict[str, Any]
     ) -> float:
         """Calculate memory compatibility score (0-1)."""
 
@@ -721,8 +719,8 @@ class IntelligentTestDistribution:
 
     def _calculate_affinity_score(
         self,
-        test_characteristics: Dict[str, Any],
-        worker_tests: List[str]
+        test_characteristics: dict[str, Any],
+        worker_tests: list[str]
     ) -> float:
         """Calculate affinity score based on similar test characteristics."""
 
@@ -749,7 +747,7 @@ class IntelligentTestDistribution:
         # Cache the updated historical data
         self.cache.set("test_performance_history", self.historical_data, ttl_seconds=86400)  # 24 hours
 
-    def get_optimization_recommendations(self) -> List[str]:
+    def get_optimization_recommendations(self) -> list[str]:
         """Get recommendations for test execution optimization."""
         recommendations = []
 
@@ -782,9 +780,9 @@ class IntelligentTestDistribution:
 
 
 # Global instances for performance optimization
-_global_cache: Optional[IntelligentTestCache] = None
-_global_monitor: Optional[TestResourceMonitor] = None
-_global_distributor: Optional[IntelligentTestDistribution] = None
+_global_cache: IntelligentTestCache | None = None
+_global_monitor: TestResourceMonitor | None = None
+_global_distributor: IntelligentTestDistribution | None = None
 
 def get_performance_cache() -> IntelligentTestCache:
     """Get global performance cache instance."""

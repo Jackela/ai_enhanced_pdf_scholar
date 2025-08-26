@@ -9,6 +9,7 @@ import { LoadingFallback } from './ui/LoadingFallback'
 const LibraryView = lazy(() => import('./views/LibraryView'))
 const DocumentViewer = lazy(() => import('./views/DocumentViewer'))
 const ChatView = lazy(() => import('./views/ChatView'))
+const CollectionsView = lazy(() => import('./views/CollectionsView'))
 const SettingsView = lazy(() => import('./views/SettingsView'))
 const MonitoringDashboard = lazy(() => import('./views/MonitoringDashboard'))
 
@@ -33,6 +34,7 @@ export function Layout() {
             <Routes>
               <Route path='/' element={<LibraryView />} />
               <Route path='/library' element={<LibraryView />} />
+              <Route path='/collections' element={<CollectionsView />} />
               <Route path='/document/:id' element={<DocumentViewer />} />
               <Route path='/chat' element={<ChatView />} />
               <Route path='/chat/:documentId' element={<ChatView />} />

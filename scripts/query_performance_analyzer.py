@@ -4,16 +4,13 @@ Advanced Query Performance Analyzer for AI Enhanced PDF Scholar
 Automated slow query detection, analysis, and optimization recommendations.
 """
 
-import logging
-import sqlite3
-import time
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-import statistics
 import json
+import logging
 import threading
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
@@ -35,15 +33,15 @@ class QueryExecutionStats:
     """Statistics for a single query execution."""
     query_id: str
     query_text: str
-    parameters: Optional[Tuple[Any, ...]]
+    parameters: tuple[Any, ...] | None
     execution_time_ms: float
     rows_affected: int
     rows_returned: int
-    execution_plan: List[Dict[str, Any]]
+    execution_plan: list[dict[str, Any]]
     timestamp: datetime
     thread_id: int
-    memory_usage: Optional[int] = None
-    io_operations: Optional[int] = None
+    memory_usage: int | None = None
+    io_operations: int | None = None
 
 
 @dataclass
@@ -57,10 +55,10 @@ class QueryAnalysisResult:
     execution_count: int
     total_time: float
     performance_rating: str  # excellent, good, fair, poor
-    bottlenecks: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    index_usage: Dict[str, Any] = field(default_factory=dict)
-    similar_queries: List[str] = field(default_factory=list)
+    bottlenecks: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
+    index_usage: dict[str, Any] = field(default_factory=dict)
+    similar_queries: list[str] = field(default_factory=list)
 
 
 class QueryPerformanceAnalyzer:
@@ -94,12 +92,12 @@ class QueryPerformanceAnalyzer:
         self.enable_monitoring = enable_monitoring
 
         # Query execution history
-        self._query_history: List[QueryExecutionStats] = []
-        self._query_patterns: Dict[str, List[QueryExecutionStats]] = {}
+        self._query_history: list[QueryExecutionStats] = []
+        self._query_patterns: dict[str, list[QueryExecutionStats]] = {}
         self._lock = threading.RLock()
 
         # Performance baselines
-        self._performance_baselines: Dict[str, float] = {}
+        self._performance_baselines: dict[str, float] = {}
 
         # Initialize monitoring table if needed
         if self.enable_monitoring:
@@ -157,10 +155,10 @@ class QueryPerformanceAnalyzer:
         self,
         query_text: str,
         execution_time_ms: float,
-        parameters: Optional[Tuple[Any, ...]] = None,
+        parameters: tuple[Any, ...] | None = None,
         rows_affected: int = 0,
         rows_returned: int = 0,
-        execution_plan: Optional[List[Dict[str, Any]]] = None
+        execution_plan: list[dict[str, Any]] | None = None
     ) -> None:
         """
         Record a query execution for performance analysis.
@@ -252,10 +250,10 @@ class QueryPerformanceAnalyzer:
 
     def get_slow_queries(
         self,
-        threshold_ms: Optional[float] = None,
+        threshold_ms: float | None = None,
         limit: int = 50,
-        time_window_hours: Optional[int] = None
-    ) -> List[QueryAnalysisResult]:
+        time_window_hours: int | None = None
+    ) -> list[QueryAnalysisResult]:
         """
         Get slow queries with analysis.
 
@@ -483,7 +481,7 @@ class QueryPerformanceAnalyzer:
             logger.debug(f"Failed to analyze index usage: {e}")
             analysis.index_usage = {"error": str(e)}
 
-    def get_performance_summary(self, time_window_hours: int = 24) -> Dict[str, Any]:
+    def get_performance_summary(self, time_window_hours: int = 24) -> dict[str, Any]:
         """
         Get overall performance summary.
 
@@ -590,7 +588,7 @@ class QueryPerformanceAnalyzer:
         else:
             return "poor"
 
-    def optimize_query_automatically(self, query_text: str) -> Dict[str, Any]:
+    def optimize_query_automatically(self, query_text: str) -> dict[str, Any]:
         """
         Attempt to automatically optimize a query.
 
@@ -637,7 +635,7 @@ class QueryPerformanceAnalyzer:
             logger.error(f"Failed to optimize query automatically: {e}")
             return {"error": str(e)}
 
-    def _extract_where_columns(self, query_text: str) -> List[str]:
+    def _extract_where_columns(self, query_text: str) -> list[str]:
         """Extract column names from WHERE clause (basic implementation)."""
         try:
             import re

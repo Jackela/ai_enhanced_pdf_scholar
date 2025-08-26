@@ -19,7 +19,7 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +88,8 @@ class RecoveryMetrics:
     failed_recoveries: int = 0
     circuit_breaker_trips: int = 0
     cleanup_operations: int = 0
-    last_failure_time: Optional[datetime] = None
-    last_success_time: Optional[datetime] = None
+    last_failure_time: datetime | None = None
+    last_success_time: datetime | None = None
     error_types: dict[str, int] = field(default_factory=dict)
 
 
@@ -180,7 +180,7 @@ class CircuitBreaker:
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time: Optional[datetime] = None
+        self.last_failure_time: datetime | None = None
         self.metrics = RecoveryMetrics()
         self._lock = threading.Lock()
 
@@ -363,7 +363,7 @@ class TransactionManager:
         self.metrics = RecoveryMetrics()
 
     @contextmanager
-    def transaction_scope(self, savepoint_name: Optional[str] = None):
+    def transaction_scope(self, savepoint_name: str | None = None):
         """Context manager for transactional operations with rollback."""
         try:
             with self.db.transaction(savepoint_name):
@@ -433,10 +433,10 @@ class RecoveryOrchestrator:
     def with_recovery(
         self,
         operation: Callable,
-        cleanup_paths: Optional[list[Union[str, Path]]] = None,
-        cleanup_handlers: Optional[list[Callable]] = None,
-        retry_config: Optional[RetryConfig] = None,
-        circuit_breaker_config: Optional[CircuitBreakerConfig] = None,
+        cleanup_paths: list[Union[str, Path]] | None = None,
+        cleanup_handlers: list[Callable] | None = None,
+        retry_config: RetryConfig | None = None,
+        circuit_breaker_config: CircuitBreakerConfig | None = None,
     ) -> Any:
         """Execute operation with full recovery support."""
 

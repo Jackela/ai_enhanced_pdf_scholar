@@ -6,19 +6,16 @@ Collects comprehensive business and system metrics for AI Enhanced PDF Scholar.
 import asyncio
 import logging
 import os
-import psutil
-import time
-from datetime import datetime, timedelta
-from functools import wraps
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
 import sqlite3
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
+import time
+from datetime import datetime
+from functools import wraps
+from typing import Any
 
-from backend.services.metrics_service import MetricsService, ApplicationMetrics
+import psutil
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+from backend.services.metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
 
@@ -398,7 +395,7 @@ class EnhancedMetricsCollector:
             activity_type="rag_query_complex" if document_count > 1 else "rag_query_simple"
         ).inc()
 
-    def record_security_incident(self, incident_type: str, severity: str, details: Dict[str, Any]):
+    def record_security_incident(self, incident_type: str, severity: str, details: dict[str, Any]):
         """Record security incident with detailed context."""
         self.metrics_service.record_security_event(incident_type, severity)
 
@@ -418,7 +415,7 @@ class EnhancedMetricsCollector:
     # Health Checking
     # ========================================================================
 
-    async def check_comprehensive_health(self) -> Dict[str, Any]:
+    async def check_comprehensive_health(self) -> dict[str, Any]:
         """Perform comprehensive health check with detailed diagnostics."""
         health_status = {
             "healthy": True,
@@ -517,7 +514,7 @@ class EnhancedMetricsCollector:
         """Get metrics in Prometheus format with proper content type."""
         return generate_latest(self.metrics_service.registry), CONTENT_TYPE_LATEST
 
-    def get_dashboard_metrics(self) -> Dict[str, Any]:
+    def get_dashboard_metrics(self) -> dict[str, Any]:
         """Get formatted metrics for custom dashboard."""
         return self.metrics_service.get_dashboard_data()
 
@@ -527,7 +524,7 @@ class EnhancedMetricsCollector:
 # ============================================================================
 
 # Global metrics collector instance
-_metrics_collector_instance: Optional[EnhancedMetricsCollector] = None
+_metrics_collector_instance: EnhancedMetricsCollector | None = None
 
 def get_metrics_collector() -> EnhancedMetricsCollector:
     """Get or create the global metrics collector instance."""

@@ -4,11 +4,8 @@ Apply Security to All API Endpoints
 This script updates all API routes to use authentication and RBAC.
 """
 
-import ast
-import os
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 # Endpoint security mapping
 ENDPOINT_SECURITY_MAP = {
@@ -64,7 +61,7 @@ PUBLIC_ROUTES = [
 ]
 
 
-def analyze_route_file(file_path: Path) -> List[Dict]:
+def analyze_route_file(file_path: Path) -> list[dict]:
     """
     Analyze a route file to find all endpoints.
 
@@ -76,7 +73,7 @@ def analyze_route_file(file_path: Path) -> List[Dict]:
     """
     endpoints = []
 
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         content = f.read()
 
     # Find all route decorators
@@ -110,7 +107,7 @@ def analyze_route_file(file_path: Path) -> List[Dict]:
     return endpoints
 
 
-def get_security_requirements(endpoint: Dict) -> Optional[Tuple[str, str, bool]]:
+def get_security_requirements(endpoint: dict) -> tuple[str, str, bool] | None:
     """
     Get security requirements for an endpoint.
 
@@ -148,7 +145,7 @@ def get_security_requirements(endpoint: Dict) -> Optional[Tuple[str, str, bool]]
     return ("resource", "read", False)  # Default to read permission
 
 
-def generate_security_update(endpoint: Dict, requirements: Tuple[str, str, bool]) -> str:
+def generate_security_update(endpoint: dict, requirements: tuple[str, str, bool]) -> str:
     """
     Generate code to add security to an endpoint.
 
@@ -171,7 +168,7 @@ def generate_security_update(endpoint: Dict, requirements: Tuple[str, str, bool]
         parameters.append("current_user: User = Depends(get_current_user)")
 
     # Add RBAC
-    imports.append(f"from backend.api.auth.rbac import require_permission, ResourceTypes, Actions")
+    imports.append("from backend.api.auth.rbac import require_permission, ResourceTypes, Actions")
     decorators.append(f"@require_permission(ResourceTypes.{resource.upper()}, Actions.{action.upper()})")
 
     # Add database dependency if needed
@@ -196,7 +193,7 @@ def generate_security_update(endpoint: Dict, requirements: Tuple[str, str, bool]
     }
 
 
-def update_route_file(file_path: Path, updates: List[Dict]):
+def update_route_file(file_path: Path, updates: list[dict]):
     """
     Update a route file with security enhancements.
 
@@ -204,7 +201,7 @@ def update_route_file(file_path: Path, updates: List[Dict]):
         file_path: Path to the route file
         updates: List of updates to apply
     """
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         lines = f.readlines()
 
     # Add imports at the top (after existing imports)
@@ -250,7 +247,7 @@ from backend.api.security.endpoint_protection import secure_endpoint
         f.writelines(lines)
 
 
-def generate_security_report(all_endpoints: List[Dict]) -> str:
+def generate_security_report(all_endpoints: list[dict]) -> str:
     """
     Generate a security report for all endpoints.
 

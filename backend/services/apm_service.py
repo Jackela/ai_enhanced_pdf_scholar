@@ -5,22 +5,21 @@ Provides comprehensive application performance monitoring, distributed tracing,
 and real-time performance analytics for the AI Enhanced PDF Scholar system.
 """
 
-import asyncio
 import json
 import logging
-import os
 import threading
 import time
 import traceback
 import uuid
 from collections import defaultdict, deque
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 import psutil
 
@@ -71,7 +70,7 @@ class TraceContext:
     """Trace context for distributed tracing."""
     trace_id: str
     span_id: str
-    parent_span_id: Optional[str] = None
+    parent_span_id: str | None = None
 
     def child_context(self) -> 'TraceContext':
         """Create a child trace context."""
@@ -87,18 +86,18 @@ class Span:
     """Individual span within a trace."""
     trace_id: str
     span_id: str
-    parent_span_id: Optional[str]
+    parent_span_id: str | None
     operation_name: str
     span_type: SpanType
     start_time: datetime
-    end_time: Optional[datetime] = None
-    duration_ms: Optional[float] = None
-    tags: Dict[str, Any] = field(default_factory=dict)
-    logs: List[Dict[str, Any]] = field(default_factory=list)
-    error: Optional[str] = None
-    status_code: Optional[int] = None
+    end_time: datetime | None = None
+    duration_ms: float | None = None
+    tags: dict[str, Any] = field(default_factory=dict)
+    logs: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
+    status_code: int | None = None
 
-    def finish(self, error: Optional[Exception] = None):
+    def finish(self, error: Exception | None = None):
         """Finish the span."""
         self.end_time = datetime.utcnow()
         if self.start_time:
@@ -114,7 +113,7 @@ class Span:
                 'traceback': traceback.format_exc()
             })
 
-    def log_event(self, event_type: str, fields: Dict[str, Any]):
+    def log_event(self, event_type: str, fields: dict[str, Any]):
         """Log an event in the span."""
         self.logs.append({
             'timestamp': datetime.utcnow().isoformat(),
@@ -128,10 +127,10 @@ class Trace:
     """Complete trace with all spans."""
     trace_id: str
     root_span: Span
-    spans: List[Span] = field(default_factory=list)
+    spans: list[Span] = field(default_factory=list)
     trace_type: TraceType = TraceType.HTTP_REQUEST
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
+    user_id: str | None = None
+    session_id: str | None = None
 
     @property
     def duration_ms(self) -> float:
@@ -158,11 +157,11 @@ class PerformanceAlert:
     title: str
     description: str
     timestamp: datetime
-    affected_components: List[str] = field(default_factory=list)
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    recommendations: List[str] = field(default_factory=list)
+    affected_components: list[str] = field(default_factory=list)
+    metrics: dict[str, Any] = field(default_factory=dict)
+    recommendations: list[str] = field(default_factory=list)
     resolved: bool = False
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
 
 
 @dataclass
@@ -225,17 +224,17 @@ class APMService:
 
         # Trace storage
         self.traces: deque[Trace] = deque(maxlen=max_traces)
-        self.active_spans: Dict[str, Span] = {}  # span_id -> Span
-        self.trace_contexts: Dict[str, TraceContext] = {}  # thread_id -> context
+        self.active_spans: dict[str, Span] = {}  # span_id -> Span
+        self.trace_contexts: dict[str, TraceContext] = {}  # thread_id -> context
 
         # Performance monitoring
         self.performance_snapshots: deque[PerformanceSnapshot] = deque(maxlen=1440)  # 24h at 1min intervals
-        self.alerts: List[PerformanceAlert] = []
-        self.alert_rules: List[Callable[[PerformanceSnapshot], Optional[PerformanceAlert]]] = []
+        self.alerts: list[PerformanceAlert] = []
+        self.alert_rules: list[Callable[[PerformanceSnapshot], PerformanceAlert | None]] = []
 
         # Real-time metrics
         self.request_latencies: deque = deque(maxlen=1000)
-        self.error_counts: Dict[str, int] = defaultdict(int)
+        self.error_counts: dict[str, int] = defaultdict(int)
         self.throughput_window: deque = deque(maxlen=60)  # 60 seconds
 
         # Thread-local storage for trace contexts
@@ -257,9 +256,9 @@ class APMService:
         self,
         operation_name: str,
         trace_type: TraceType = TraceType.HTTP_REQUEST,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        tags: Optional[Dict[str, Any]] = None
+        user_id: str | None = None,
+        session_id: str | None = None,
+        tags: dict[str, Any] | None = None
     ) -> TraceContext:
         """Start a new trace."""
         # Check sampling
@@ -305,8 +304,8 @@ class APMService:
         self,
         operation_name: str,
         span_type: SpanType = SpanType.COMPUTATION,
-        parent_context: Optional[TraceContext] = None,
-        tags: Optional[Dict[str, Any]] = None
+        parent_context: TraceContext | None = None,
+        tags: dict[str, Any] | None = None
     ) -> TraceContext:
         """Start a new span within existing trace."""
         parent_context = parent_context or self._get_current_context()
@@ -345,9 +344,9 @@ class APMService:
 
     def finish_span(
         self,
-        context: Optional[TraceContext] = None,
-        error: Optional[Exception] = None,
-        tags: Optional[Dict[str, Any]] = None
+        context: TraceContext | None = None,
+        error: Exception | None = None,
+        tags: dict[str, Any] | None = None
     ):
         """Finish a span."""
         context = context or self._get_current_context()
@@ -398,7 +397,7 @@ class APMService:
         self,
         operation_name: str,
         span_type: SpanType = SpanType.COMPUTATION,
-        tags: Optional[Dict[str, Any]] = None
+        tags: dict[str, Any] | None = None
     ):
         """Context manager for tracing operations."""
         context = self.start_span(operation_name, span_type=span_type, tags=tags)
@@ -412,9 +411,9 @@ class APMService:
 
     def trace_decorator(
         self,
-        operation_name: Optional[str] = None,
+        operation_name: str | None = None,
         span_type: SpanType = SpanType.COMPUTATION,
-        tags: Optional[Dict[str, Any]] = None
+        tags: dict[str, Any] | None = None
     ):
         """Decorator for automatic tracing."""
         def decorator(func: Callable) -> Callable:
@@ -522,7 +521,7 @@ class APMService:
     def _setup_default_alert_rules(self):
         """Setup default performance alert rules."""
 
-        def high_latency_rule(snapshot: PerformanceSnapshot) -> Optional[PerformanceAlert]:
+        def high_latency_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
             if snapshot.p95_response_time_ms > 2000:  # 2 seconds
                 return PerformanceAlert(
                     alert_id=str(uuid.uuid4()),
@@ -541,7 +540,7 @@ class APMService:
                 )
             return None
 
-        def high_error_rate_rule(snapshot: PerformanceSnapshot) -> Optional[PerformanceAlert]:
+        def high_error_rate_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
             if snapshot.error_rate_percent > 5:  # 5% error rate
                 return PerformanceAlert(
                     alert_id=str(uuid.uuid4()),
@@ -560,7 +559,7 @@ class APMService:
                 )
             return None
 
-        def high_cpu_rule(snapshot: PerformanceSnapshot) -> Optional[PerformanceAlert]:
+        def high_cpu_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
             if snapshot.cpu_percent > 85:  # 85% CPU usage
                 return PerformanceAlert(
                     alert_id=str(uuid.uuid4()),
@@ -579,7 +578,7 @@ class APMService:
                 )
             return None
 
-        def cache_miss_spike_rule(snapshot: PerformanceSnapshot) -> Optional[PerformanceAlert]:
+        def cache_miss_spike_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
             if snapshot.cache_miss_rate_percent > 70:  # 70% miss rate
                 return PerformanceAlert(
                     alert_id=str(uuid.uuid4()),
@@ -653,7 +652,7 @@ class APMService:
     # Context Management
     # ========================================================================
 
-    def _get_current_context(self) -> Optional[TraceContext]:
+    def _get_current_context(self) -> TraceContext | None:
         """Get current trace context for this thread."""
         return getattr(self._local, 'context', None)
 
@@ -679,7 +678,7 @@ class APMService:
         self,
         threshold_ms: float = 1000,
         limit: int = 50
-    ) -> List[Trace]:
+    ) -> list[Trace]:
         """Get slowest traces above threshold."""
         slow_traces = [
             trace for trace in self.traces
@@ -691,7 +690,7 @@ class APMService:
 
         return slow_traces[:limit]
 
-    def get_error_traces(self, limit: int = 50) -> List[Trace]:
+    def get_error_traces(self, limit: int = 50) -> list[Trace]:
         """Get traces with errors."""
         error_traces = [trace for trace in self.traces if trace.has_errors]
 
@@ -706,7 +705,7 @@ class APMService:
     def analyze_performance_trends(
         self,
         hours_back: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze performance trends over time."""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
         recent_snapshots = [
@@ -723,7 +722,7 @@ class APMService:
         cpu_usage = [s.cpu_percent for s in recent_snapshots]
         memory_usage = [s.memory_percent for s in recent_snapshots]
 
-        def calculate_trend(values: List[float]) -> str:
+        def calculate_trend(values: list[float]) -> str:
             if len(values) < 2:
                 return "stable"
 
@@ -762,7 +761,7 @@ class APMService:
             }
         }
 
-    def get_performance_summary(self) -> Dict[str, Any]:
+    def get_performance_summary(self) -> dict[str, Any]:
         """Get comprehensive performance summary."""
         recent_snapshot = self.performance_snapshots[-1] if self.performance_snapshots else None
 
@@ -805,7 +804,7 @@ class APMService:
         self,
         output_path: Path,
         format: str = "json",
-        filter_func: Optional[Callable[[Trace], bool]] = None
+        filter_func: Callable[[Trace], bool] | None = None
     ):
         """Export traces to file."""
         traces_to_export = self.traces
@@ -835,7 +834,7 @@ class APMService:
 
         logger.info(f"Exported {len(export_data)} traces to {output_path}")
 
-    def get_opentelemetry_spans(self) -> List[Dict[str, Any]]:
+    def get_opentelemetry_spans(self) -> list[dict[str, Any]]:
         """Export spans in OpenTelemetry format for external tools."""
         otel_spans = []
 
@@ -849,7 +848,7 @@ class APMService:
 
         return otel_spans
 
-    def _convert_to_otel_format(self, span: Span) -> Dict[str, Any]:
+    def _convert_to_otel_format(self, span: Span) -> dict[str, Any]:
         """Convert span to OpenTelemetry format."""
         return {
             "trace_id": span.trace_id,
@@ -935,9 +934,9 @@ class FastAPIAPMMiddleware:
 
 
 def apm_trace(
-    operation_name: Optional[str] = None,
+    operation_name: str | None = None,
     span_type: SpanType = SpanType.COMPUTATION,
-    tags: Optional[Dict[str, Any]] = None
+    tags: dict[str, Any] | None = None
 ):
     """Decorator for APM tracing."""
     def decorator(func: Callable) -> Callable:

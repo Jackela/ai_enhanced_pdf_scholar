@@ -10,15 +10,11 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 import uvicorn
 from fastapi import (
-    Depends,
     FastAPI,
-    File,
     HTTPException,
-    UploadFile,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -29,20 +25,21 @@ from fastapi.staticfiles import StaticFiles
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
-from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
 from backend.api.cors_config import get_cors_config
-from backend.api.rate_limit_config import get_rate_limit_config, get_env_override_config
-from backend.api.middleware.rate_limiting import RateLimitMiddleware
+from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
 from backend.api.middleware.error_handling import setup_comprehensive_error_handling
-from backend.api.middleware.security_headers import setup_security_headers, SecurityHeadersConfig
+from backend.api.middleware.rate_limiting import RateLimitMiddleware
+from backend.api.middleware.security_headers import (
+    SecurityHeadersConfig,
+    setup_security_headers,
+)
+from backend.api.rate_limit_config import get_env_override_config, get_rate_limit_config
 
 # Models are used in individual route modules
 from backend.api.routes import settings
 from backend.api.websocket_manager import WebSocketManager
-from src.controllers.library_controller import LibraryController
-from src.database.connection import DatabaseConnection
 from src.database import DatabaseMigrator
-from src.services.enhanced_rag_service import EnhancedRAGService
+from src.database.connection import DatabaseConnection
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize metrics collector
 from backend.services.metrics_collector import get_metrics_collector
+
 metrics_collector = get_metrics_collector()
 # Create FastAPI app
 app = FastAPI(
@@ -76,18 +74,28 @@ app.add_middleware(CORSMiddleware, **cors_config.get_middleware_config())
 
 # Add metrics collection middleware
 from backend.services.metrics_service import FastAPIMetricsMiddleware
+
 app.add_middleware(FastAPIMetricsMiddleware, app, metrics_collector.metrics_service)
 
 # WebSocket manager
 websocket_manager = WebSocketManager()
 # Include API routes
-from backend.api.routes import documents, library, rag, system, settings, rate_limit_admin, cache_admin
 from backend.api.auth import routes as auth_routes
+from backend.api.routes import (
+    cache_admin,
+    documents,
+    library,
+    multi_document,
+    rag,
+    rate_limit_admin,
+    system,
+)
 
 app.include_router(auth_routes.router, prefix="/api", tags=["authentication"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
 app.include_router(library.router, prefix="/api/library", tags=["library"])
+app.include_router(multi_document.router, prefix="/api/multi-document", tags=["multi-document"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
 app.include_router(settings.router, prefix="/api")
 app.include_router(rate_limit_admin.router, prefix="/api/admin", tags=["rate-limiting"])
@@ -240,7 +248,7 @@ async def startup_event() -> None:
         cors_config.log_security_info()
 
         # Log security headers configuration
-        logger.info(f"Security headers initialized:")
+        logger.info("Security headers initialized:")
         logger.info(f"  - Environment: {security_headers_config.environment.value}")
         logger.info(f"  - CSP: {'Enabled' if security_headers_config.csp_enabled else 'Disabled'}")
         logger.info(f"  - CSP Mode: {'Report-Only' if security_headers_config.csp_report_only else 'Enforcing'}")
@@ -248,7 +256,7 @@ async def startup_event() -> None:
         logger.info(f"  - Nonce-based CSP: {'Enabled' if security_headers_config.nonce_enabled else 'Disabled'}")
 
         # Log rate limiting configuration
-        logger.info(f"Rate limiting initialized:")
+        logger.info("Rate limiting initialized:")
         logger.info(f"  - Default limit: {rate_limit_config.default_limit.requests} requests/{rate_limit_config.default_limit.window}s")
         logger.info(f"  - Global IP limit: {rate_limit_config.global_ip_limit.requests} requests/{rate_limit_config.global_ip_limit.window}s")
         logger.info(f"  - Storage backend: {'Redis' if rate_limit_config.redis_url else 'In-Memory'}")
@@ -266,7 +274,9 @@ async def startup_event() -> None:
             migrator.migrate()
         # Initialize cache system
         try:
-            from backend.services.cache_service_integration import initialize_application_cache
+            from backend.services.cache_service_integration import (
+                initialize_application_cache,
+            )
             cache_initialized = await initialize_application_cache(metrics=metrics_collector.metrics_service)
             if cache_initialized:
                 logger.info("Multi-layer cache system initialized")
@@ -289,7 +299,9 @@ async def shutdown_event() -> None:
 
     # Shutdown cache system
     try:
-        from backend.services.cache_service_integration import shutdown_application_cache
+        from backend.services.cache_service_integration import (
+            shutdown_application_cache,
+        )
         await shutdown_application_cache()
         logger.info("Cache system shutdown completed")
     except Exception as cache_error:

@@ -4,7 +4,6 @@ FastAPI dependency injection for authentication and authorization.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -29,7 +28,7 @@ class AuthenticationRequired:
 
     def __init__(
         self,
-        required_roles: Optional[list[UserRole]] = None,
+        required_roles: list[UserRole] | None = None,
         allow_unverified: bool = False
     ):
         """
@@ -45,8 +44,8 @@ class AuthenticationRequired:
     async def __call__(
         self,
         request: Request,
-        credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-        access_token_cookie: Optional[str] = Cookie(None, alias="access_token"),
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+        access_token_cookie: str | None = Cookie(None, alias="access_token"),
         db: Session = Depends(get_db)
     ) -> UserModel:
         """
@@ -187,10 +186,10 @@ def get_admin_user(
 
 def get_optional_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    access_token_cookie: Optional[str] = Cookie(None, alias="access_token"),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    access_token_cookie: str | None = Cookie(None, alias="access_token"),
     db: Session = Depends(get_db)
-) -> Optional[UserModel]:
+) -> UserModel | None:
     """
     Get current user if authenticated, None otherwise.
     Used for endpoints that have different behavior for authenticated vs anonymous users.
@@ -255,7 +254,7 @@ class RateLimitByUser:
     async def __call__(
         self,
         request: Request,
-        user: Optional[UserModel] = Depends(get_optional_user)
+        user: UserModel | None = Depends(get_optional_user)
     ) -> str:
         """
         Get rate limit key for the current request.
@@ -299,7 +298,7 @@ class PermissionChecker:
     async def __call__(
         self,
         user: UserModel = Depends(get_current_user),
-        resource_id: Optional[int] = None
+        resource_id: int | None = None
     ) -> bool:
         """
         Check if user has permission for the action.
@@ -356,7 +355,7 @@ class PermissionChecker:
 
 # Decorator for protecting routes
 def require_auth(
-    roles: Optional[list[UserRole]] = None,
+    roles: list[UserRole] | None = None,
     allow_unverified: bool = False
 ):
     """

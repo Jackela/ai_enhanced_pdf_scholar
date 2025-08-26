@@ -12,8 +12,8 @@ Covers all common repository operations and patterns including:
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -39,7 +39,7 @@ class TestModel:
         self.created_at = created_at or datetime.now()
         self.metadata = metadata
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert model to dictionary."""
         return {
             "id": self.id,
@@ -50,7 +50,7 @@ class TestModel:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TestModel":
+    def from_dict(cls, data: dict[str, Any]) -> "TestModel":
         """Create model from dictionary."""
         created_at = None
         if data.get("created_at"):
@@ -75,11 +75,11 @@ class TestRepository(BaseRepository[TestModel]):
         """Get the database table name."""
         return "test_models"
 
-    def to_model(self, row: Dict[str, Any]) -> TestModel:
+    def to_model(self, row: dict[str, Any]) -> TestModel:
         """Convert database row to TestModel."""
         return TestModel.from_dict(row)
 
-    def to_database_dict(self, model: TestModel) -> Dict[str, Any]:
+    def to_database_dict(self, model: TestModel) -> dict[str, Any]:
         """Convert TestModel to database dictionary."""
         return model.to_dict()
 

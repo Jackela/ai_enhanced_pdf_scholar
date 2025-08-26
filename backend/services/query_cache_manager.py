@@ -7,25 +7,24 @@ import hashlib
 import json
 import logging
 import pickle
-import sqlite3
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-import weakref
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
-    from src.database.connection import DatabaseConnection
     from backend.services.redis_cache_service import RedisCacheService
+    from src.database.connection import DatabaseConnection
 except ImportError as e:
     logger.warning(f"Optional import failed: {e}")
     RedisCacheService = None
@@ -49,10 +48,10 @@ class CacheEntry:
     created_at: datetime
     last_accessed: datetime
     access_count: int
-    ttl_seconds: Optional[int]
+    ttl_seconds: int | None
     size_bytes: int
-    tags: Set[str] = field(default_factory=set)
-    invalidation_triggers: Set[str] = field(default_factory=set)
+    tags: set[str] = field(default_factory=set)
+    invalidation_triggers: set[str] = field(default_factory=set)
 
     def is_expired(self) -> bool:
         """Check if cache entry is expired."""
@@ -98,7 +97,7 @@ class IntelligentQueryCacheManager:
     def __init__(
         self,
         db_connection: DatabaseConnection,
-        redis_service: Optional[RedisCacheService] = None,
+        redis_service: RedisCacheService | None = None,
         max_entries: int = DEFAULT_MAX_ENTRIES,
         max_memory_mb: int = DEFAULT_MAX_MEMORY_MB,
         eviction_policy: CacheEvictionPolicy = CacheEvictionPolicy.HYBRID,
@@ -127,7 +126,7 @@ class IntelligentQueryCacheManager:
         self.enable_warming = enable_warming
 
         # In-memory cache storage
-        self._cache: Dict[str, CacheEntry] = {}
+        self._cache: dict[str, CacheEntry] = {}
         self._cache_lock = threading.RLock()
 
         # Cache statistics
@@ -135,16 +134,16 @@ class IntelligentQueryCacheManager:
         self._stats_lock = threading.Lock()
 
         # Query pattern tracking for cache warming
-        self._query_patterns: Dict[str, Dict[str, Any]] = {}
+        self._query_patterns: dict[str, dict[str, Any]] = {}
         self._pattern_lock = threading.Lock()
 
         # Invalidation tracking
-        self._table_watchers: Dict[str, Set[str]] = {}  # table -> cache_keys
+        self._table_watchers: dict[str, set[str]] = {}  # table -> cache_keys
         self._invalidation_lock = threading.Lock()
 
         # Background tasks
-        self._cleanup_thread: Optional[threading.Thread] = None
-        self._warming_thread: Optional[threading.Thread] = None
+        self._cleanup_thread: threading.Thread | None = None
+        self._warming_thread: threading.Thread | None = None
         self._shutdown_event = threading.Event()
 
         # Initialize cache infrastructure
@@ -204,7 +203,7 @@ class IntelligentQueryCacheManager:
 
         logger.info("Cache background tasks started")
 
-    def _generate_cache_key(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> str:
+    def _generate_cache_key(self, query: str, parameters: tuple[Any, ...] | None = None) -> str:
         """Generate a unique cache key for a query and its parameters."""
         # Normalize query
         normalized_query = ' '.join(query.strip().split())
@@ -237,9 +236,9 @@ class IntelligentQueryCacheManager:
     def get(
         self,
         query: str,
-        parameters: Optional[Tuple[Any, ...]] = None,
-        tags: Optional[Set[str]] = None
-    ) -> Optional[Any]:
+        parameters: tuple[Any, ...] | None = None,
+        tags: set[str] | None = None
+    ) -> Any | None:
         """
         Get cached query result.
 
@@ -282,10 +281,10 @@ class IntelligentQueryCacheManager:
         self,
         query: str,
         result: Any,
-        parameters: Optional[Tuple[Any, ...]] = None,
-        ttl_seconds: Optional[int] = None,
-        tags: Optional[Set[str]] = None,
-        invalidation_triggers: Optional[Set[str]] = None
+        parameters: tuple[Any, ...] | None = None,
+        ttl_seconds: int | None = None,
+        tags: set[str] | None = None,
+        invalidation_triggers: set[str] | None = None
     ) -> bool:
         """
         Store query result in cache.
@@ -400,7 +399,7 @@ class IntelligentQueryCacheManager:
 
             logger.debug(f"Evicted {evicted_count} cache entries, freed {freed_bytes} bytes")
 
-    def _update_invalidation_tracking(self, cache_key: str, triggers: Set[str]) -> None:
+    def _update_invalidation_tracking(self, cache_key: str, triggers: set[str]) -> None:
         """Update invalidation tracking for a cache entry."""
         with self._invalidation_lock:
             for table_name in triggers:
@@ -440,7 +439,7 @@ class IntelligentQueryCacheManager:
 
         return invalidated_count
 
-    def invalidate_by_tags(self, tags: Set[str]) -> int:
+    def invalidate_by_tags(self, tags: set[str]) -> int:
         """
         Invalidate all cache entries with specific tags.
 
@@ -485,7 +484,7 @@ class IntelligentQueryCacheManager:
         logger.info(f"Cleared all {count} cache entries")
         return count
 
-    def _track_query_pattern(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> None:
+    def _track_query_pattern(self, query: str, parameters: tuple[Any, ...] | None = None) -> None:
         """Track query patterns for cache warming."""
         if not self.enable_warming:
             return
@@ -687,7 +686,7 @@ class IntelligentQueryCacheManager:
                 memory_usage_mb=self._stats.memory_usage_mb
             )
 
-    def get_cache_info(self) -> Dict[str, Any]:
+    def get_cache_info(self) -> dict[str, Any]:
         """Get detailed cache information."""
         stats = self.get_statistics()
 
@@ -759,7 +758,7 @@ def main():
             stats = cache_manager.get_statistics()
             results['statistics'] = stats.__dict__
 
-            print(f"Cache Statistics:")
+            print("Cache Statistics:")
             print(f"Total Entries: {stats.total_entries}")
             print(f"Memory Usage: {stats.memory_usage_mb:.2f} MB")
             print(f"Hit Rate: {stats.hit_rate:.1f}%")
@@ -771,7 +770,7 @@ def main():
             info = cache_manager.get_cache_info()
             results['cache_info'] = info
 
-            print(f"Cache Configuration:")
+            print("Cache Configuration:")
             config = info['configuration']
             print(f"Max Entries: {config['max_entries']}")
             print(f"Max Memory: {config['max_memory_mb']} MB")

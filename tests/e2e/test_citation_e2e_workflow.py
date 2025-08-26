@@ -4,22 +4,22 @@ Tests complete citation extraction from real document processing to analysis.
 Implements enterprise testing patterns with data-driven validation.
 """
 
-import pytest
-import tempfile
-import os
 import logging
-from pathlib import Path
-from typing import Any, Generator
-import json
+import os
+import tempfile
+from collections.abc import Generator
+from typing import Any
 
-from src.database.connection import DatabaseConnection
+import pytest
+
 from src.database import DatabaseMigrator
-from src.database.models import DocumentModel, CitationModel, CitationRelationModel
-from src.repositories.citation_repository import CitationRepository
+from src.database.connection import DatabaseConnection
+from src.database.models import CitationModel, CitationRelationModel, DocumentModel
 from src.repositories.citation_relation_repository import CitationRelationRepository
+from src.repositories.citation_repository import CitationRepository
 from src.repositories.document_repository import DocumentRepository
-from src.services.citation_service import CitationService
 from src.services.citation_parsing_service import CitationParsingService
+from src.services.citation_service import CitationService
 
 logger = logging.getLogger(__name__)
 

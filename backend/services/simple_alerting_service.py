@@ -5,13 +5,13 @@ Provides basic alerting capabilities for system performance monitoring
 with configurable thresholds and notification channels.
 """
 
-import asyncio
 import logging
 import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Callable, Any
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +41,13 @@ class Alert:
     message: str
     source: str
     timestamp: datetime
-    value: Optional[float] = None
-    threshold: Optional[float] = None
+    value: float | None = None
+    threshold: float | None = None
     status: AlertStatus = AlertStatus.ACTIVE
-    acknowledged_by: Optional[str] = None
-    acknowledged_at: Optional[datetime] = None
-    resolved_at: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    acknowledged_by: str | None = None
+    acknowledged_at: datetime | None = None
+    resolved_at: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -71,11 +71,11 @@ class SimpleAlertingService:
     """
 
     def __init__(self):
-        self.rules: Dict[str, AlertRule] = {}
-        self.active_alerts: Dict[str, Alert] = {}
-        self.alert_history: List[Alert] = []
-        self.alert_callbacks: List[Callable[[Alert], None]] = []
-        self.rule_cooldowns: Dict[str, float] = {}
+        self.rules: dict[str, AlertRule] = {}
+        self.active_alerts: dict[str, Alert] = {}
+        self.alert_history: list[Alert] = []
+        self.alert_callbacks: list[Callable[[Alert], None]] = []
+        self.rule_cooldowns: dict[str, float] = {}
 
         # Default alert rules
         self._initialize_default_rules()
@@ -245,7 +245,7 @@ class SimpleAlertingService:
         except ValueError:
             pass
 
-    def evaluate_metrics(self, metrics_data: Dict[str, Any]):
+    def evaluate_metrics(self, metrics_data: dict[str, Any]):
         """Evaluate metrics against alert rules and trigger alerts."""
         try:
             current_time = time.time()
@@ -275,7 +275,7 @@ class SimpleAlertingService:
         except Exception as e:
             logger.error(f"Error evaluating metrics: {e}")
 
-    def _extract_metric_value(self, metrics_data: Dict[str, Any], metric_name: str) -> Optional[float]:
+    def _extract_metric_value(self, metrics_data: dict[str, Any], metric_name: str) -> float | None:
         """Extract metric value from nested metrics data structure."""
         try:
             # Direct lookup
@@ -392,11 +392,11 @@ class SimpleAlertingService:
             logger.error(f"Error resolving alert: {e}")
             return False
 
-    def get_active_alerts(self) -> List[Alert]:
+    def get_active_alerts(self) -> list[Alert]:
         """Get list of active alerts."""
         return list(self.active_alerts.values())
 
-    def get_alert_history(self, hours_back: int = 24) -> List[Alert]:
+    def get_alert_history(self, hours_back: int = 24) -> list[Alert]:
         """Get alert history for specified time period."""
         try:
             cutoff_time = datetime.now() - timedelta(hours=hours_back)
@@ -408,7 +408,7 @@ class SimpleAlertingService:
             logger.error(f"Error getting alert history: {e}")
             return []
 
-    def get_alert_statistics(self) -> Dict[str, Any]:
+    def get_alert_statistics(self) -> dict[str, Any]:
         """Get alert statistics."""
         try:
             recent_alerts = self.get_alert_history(24)

@@ -10,24 +10,22 @@ Mission: Detect memory leaks and assess long-term memory stability
 """
 
 import argparse
+import gc
 import json
-import psutil
-import sqlite3
+import statistics
+import sys
 import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
-import sys
-import statistics
-import gc
+from typing import Any
+
+import psutil
 
 # Add project root to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.database.connection import DatabaseConnection
-from src.repositories.document_repository import DocumentRepository
-from src.services.content_hash_service import ContentHashService
 
 
 class MemoryLeakDetector:
@@ -39,8 +37,8 @@ class MemoryLeakDetector:
         self.project_root = Path(__file__).parent.parent
 
         # Memory tracking data
-        self.memory_samples: List[Dict[str, Any]] = []
-        self.operation_logs: List[Dict[str, Any]] = []
+        self.memory_samples: list[dict[str, Any]] = []
+        self.operation_logs: list[dict[str, Any]] = []
 
         # Detection thresholds
         self.thresholds = {
@@ -53,7 +51,7 @@ class MemoryLeakDetector:
         # Database connection for testing
         self.db = None
 
-    def run_memory_analysis(self) -> Dict[str, Any]:
+    def run_memory_analysis(self) -> dict[str, Any]:
         """Run comprehensive memory leak analysis."""
         print(f"🔍 Memory Leak Detection Analysis ({self.duration_minutes} minutes)")
         print(f"⏰ Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -123,7 +121,7 @@ class MemoryLeakDetector:
         thread.start()
         return thread
 
-    def _collect_memory_sample(self) -> Dict[str, Any]:
+    def _collect_memory_sample(self) -> dict[str, Any]:
         """Collect comprehensive memory usage sample."""
         process = psutil.Process()
         system_memory = psutil.virtual_memory()
@@ -233,7 +231,7 @@ class MemoryLeakDetector:
 
                 conn.commit()
 
-        except Exception as e:
+        except Exception:
             # Silently handle database errors during stress testing
             pass
 
@@ -279,7 +277,7 @@ class MemoryLeakDetector:
         if operation_id % 20 == 0:
             gc.collect()
 
-    def _analyze_memory_patterns(self) -> Dict[str, Any]:
+    def _analyze_memory_patterns(self) -> dict[str, Any]:
         """Analyze memory usage patterns for leaks and anomalies."""
         if not self.memory_samples:
             return {'error': 'No memory samples collected'}
@@ -336,7 +334,7 @@ class MemoryLeakDetector:
 
         return analysis
 
-    def _calculate_memory_trend(self, memory_values: List[float]) -> Dict[str, Any]:
+    def _calculate_memory_trend(self, memory_values: list[float]) -> dict[str, Any]:
         """Calculate memory usage trend using linear regression."""
         n = len(memory_values)
         if n < 2:
@@ -347,7 +345,7 @@ class MemoryLeakDetector:
         # Linear regression calculations
         sum_x = sum(x_values)
         sum_y = sum(memory_values)
-        sum_xy = sum(x * y for x, y in zip(x_values, memory_values))
+        sum_xy = sum(x * y for x, y in zip(x_values, memory_values, strict=False))
         sum_xx = sum(x * x for x in x_values)
 
         # Slope (trend)
@@ -361,7 +359,7 @@ class MemoryLeakDetector:
         mean_x = sum_x / n
         mean_y = sum_y / n
 
-        numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, memory_values))
+        numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, memory_values, strict=False))
         sum_sq_x = sum((x - mean_x) ** 2 for x in x_values)
         sum_sq_y = sum((y - mean_y) ** 2 for y in memory_values)
 
@@ -377,7 +375,7 @@ class MemoryLeakDetector:
             'trend_direction': 'increasing' if slope > 0 else 'decreasing' if slope < 0 else 'stable'
         }
 
-    def _analyze_memory_stability(self, memory_values: List[float]) -> Dict[str, Any]:
+    def _analyze_memory_stability(self, memory_values: list[float]) -> dict[str, Any]:
         """Analyze memory usage stability."""
         if len(memory_values) < 3:
             return {'error': 'Insufficient data for stability analysis'}
@@ -408,7 +406,7 @@ class MemoryLeakDetector:
             'is_stable': overall_cv < 0.1  # CV < 10% considered stable
         }
 
-    def _analyze_gc_effectiveness(self) -> Dict[str, Any]:
+    def _analyze_gc_effectiveness(self) -> dict[str, Any]:
         """Analyze garbage collection effectiveness."""
         if not self.memory_samples:
             return {'error': 'No GC data available'}
@@ -442,8 +440,8 @@ class MemoryLeakDetector:
 
     def _assess_memory_health(
         self, growth_rate: float, peak_memory: float, initial_memory: float,
-        stability_analysis: Dict[str, Any], gc_analysis: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        stability_analysis: dict[str, Any], gc_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """Assess overall memory health and detect leaks."""
 
         # Leak detection criteria
@@ -463,7 +461,7 @@ class MemoryLeakDetector:
 
         # Stability analysis
         if not stability_analysis.get('is_stable', True):
-            leak_indicators.append(f"Memory instability detected")
+            leak_indicators.append("Memory instability detected")
             health_score -= 20
 
         # GC effectiveness
@@ -501,7 +499,7 @@ class MemoryLeakDetector:
             'memory_stability': stability_analysis.get('is_stable', False)
         }
 
-    def _generate_memory_report(self, analysis: Dict[str, Any]) -> None:
+    def _generate_memory_report(self, analysis: dict[str, Any]) -> None:
         """Generate comprehensive memory analysis report."""
         print("\n" + "="*70)
         print("🔍 MEMORY LEAK DETECTION ANALYSIS COMPLETE")
@@ -514,7 +512,7 @@ class MemoryLeakDetector:
 
         # Memory statistics
         stats = analysis.get('memory_statistics', {})
-        print(f"\n📈 Memory Pattern Analysis:")
+        print("\n📈 Memory Pattern Analysis:")
         print(f"  - Initial Memory: {stats.get('initial_mb', 0):.1f} MB")
         print(f"  - Final Memory: {stats.get('final_mb', 0):.1f} MB")
         print(f"  - Peak Memory: {stats.get('peak_mb', 0):.1f} MB")
@@ -540,23 +538,23 @@ class MemoryLeakDetector:
 
         # Health assessment
         health = analysis.get('health_assessment', {})
-        print(f"\n🎯 Memory Health Assessment:")
+        print("\n🎯 Memory Health Assessment:")
         print(f"  - Status: {health.get('status', 'Unknown')}")
         print(f"  - Health Score: {health.get('health_score', 0):.0f}/100")
 
         leak_indicators = health.get('leak_indicators', [])
         if leak_indicators:
-            print(f"  - Issues Detected:")
+            print("  - Issues Detected:")
             for indicator in leak_indicators:
                 print(f"    • {indicator}")
         else:
-            print(f"  - No memory leaks detected")
+            print("  - No memory leaks detected")
 
         print(f"  - Recommendation: {health.get('recommendation', 'No recommendation')}")
 
         print("="*70)
 
-    def _save_analysis_results(self, analysis: Dict[str, Any]) -> None:
+    def _save_analysis_results(self, analysis: dict[str, Any]) -> None:
         """Save memory analysis results to file."""
         results_dir = self.project_root / "performance_results"
         results_dir.mkdir(exist_ok=True)

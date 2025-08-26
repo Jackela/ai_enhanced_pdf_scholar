@@ -5,13 +5,21 @@ RESTful API endpoints for document management operations.
 
 import asyncio
 import logging
-import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, JSONResponse
 
 from backend.api.dependencies import (
@@ -20,7 +28,10 @@ from backend.api.dependencies import (
     get_upload_directory,
     validate_document_access,
 )
-from backend.api.websocket_manager import WebSocketManager
+from backend.api.error_handling import (
+    ErrorTemplates,
+    SystemException,
+)
 from backend.api.models import (
     BaseResponse,
     DocumentImportResponse,
@@ -32,44 +43,33 @@ from backend.api.models import (
     SecureFileUpload,
     SecurityValidationError,
     SecurityValidationErrorResponse,
-    ValidationErrorResponse,
 )
 from backend.api.streaming_models import (
-    ChunkUploadRequest,
     ChunkUploadResponse,
     StreamingUploadRequest,
     StreamingUploadResponse,
     UploadCancellationRequest,
     UploadMemoryStats,
-    UploadProgress,
     UploadResumeRequest,
     UploadStatus,
 )
-from backend.api.error_handling import (
-    ResourceNotFoundException,
-    ValidationException,
-    ConflictException,
-    SystemException,
-    ErrorTemplates,
-    ErrorDetail
-)
+from backend.api.websocket_manager import WebSocketManager
+from backend.services.streaming_pdf_service import StreamingPDFProcessor
 from backend.services.streaming_upload_service import StreamingUploadService
 from backend.services.streaming_validation_service import StreamingValidationService
 from backend.services.upload_resumption_service import UploadResumptionService
-from backend.services.streaming_pdf_service import StreamingPDFProcessor
 from src.controllers.library_controller import LibraryController
-from src.database.models import DocumentModel
 from src.services.document_library_service import DuplicateDocumentError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Initialize streaming services (these should be dependency injected in production)
-_streaming_upload_service: Optional[StreamingUploadService] = None
-_validation_service: Optional[StreamingValidationService] = None
-_resumption_service: Optional[UploadResumptionService] = None
-_pdf_processor: Optional[StreamingPDFProcessor] = None
-_websocket_manager: Optional[WebSocketManager] = None
+_streaming_upload_service: StreamingUploadService | None = None
+_validation_service: StreamingValidationService | None = None
+_resumption_service: UploadResumptionService | None = None
+_pdf_processor: StreamingPDFProcessor | None = None
+_websocket_manager: WebSocketManager | None = None
 
 
 def get_streaming_upload_service(upload_dir: Path = Depends(get_upload_directory)) -> StreamingUploadService:
@@ -183,7 +183,7 @@ async def get_document(
 @router.post("/upload", response_model=DocumentImportResponse)
 async def upload_document(
     file: UploadFile = File(...),
-    title: Optional[str] = None,
+    title: str | None = None,
     check_duplicates: bool = True,
     auto_build_index: bool = False,
     controller: LibraryController = Depends(get_library_controller),
@@ -259,11 +259,11 @@ async def upload_document(
                 message="Document imported but could not retrieve details",
                 error_type="database"
             )
-        except DuplicateDocumentError as e:
+        except DuplicateDocumentError:
             # Clean up temp file on duplicate error
             Path(temp_path).unlink(missing_ok=True)
             raise ErrorTemplates.duplicate_document(filename or "uploaded file")
-        except Exception as e:
+        except Exception:
             # Clean up temp file on any error
             Path(temp_path).unlink(missing_ok=True)
             raise
@@ -338,7 +338,7 @@ async def upload_chunk(
     chunk_id: int = Form(...),
     chunk_offset: int = Form(...),
     is_final: bool = Form(default=False),
-    checksum: Optional[str] = Form(None),
+    checksum: str | None = Form(None),
     file: UploadFile = File(...),
     streaming_service: StreamingUploadService = Depends(get_streaming_upload_service),
     validation_service: StreamingValidationService = Depends(get_validation_service),
@@ -526,7 +526,7 @@ async def complete_streaming_upload(
                 error_type="database"
             )
 
-        except DuplicateDocumentError as e:
+        except DuplicateDocumentError:
             # Clean up on duplicate error
             await streaming_service.cancel_upload(session_id, "Duplicate document")
             await resumption_service.delete_resumable_session(session_id)
@@ -648,11 +648,11 @@ async def resume_streaming_upload(
         )
 
 
-@router.get("/streaming/resumable", response_model=List[dict])
+@router.get("/streaming/resumable", response_model=list[dict])
 async def get_resumable_uploads(
-    client_id: Optional[str] = Query(None),
+    client_id: str | None = Query(None),
     resumption_service: UploadResumptionService = Depends(get_resumption_service),
-) -> List[dict]:
+) -> list[dict]:
     """Get list of resumable upload sessions."""
     try:
         resumable_sessions = await resumption_service.get_resumable_sessions(client_id)

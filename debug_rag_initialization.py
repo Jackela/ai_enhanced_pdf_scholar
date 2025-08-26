@@ -4,7 +4,6 @@ Debug script to test RAG service initialization
 """
 
 import logging
-import os
 import sys
 from pathlib import Path
 

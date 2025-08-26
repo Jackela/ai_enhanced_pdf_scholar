@@ -9,19 +9,16 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
-from urllib.parse import quote, unquote
+from datetime import datetime
+from typing import Any
 
-import pytest
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 # Import application components
 from backend.api.main import app
-from src.database.connection import get_database_connection
-from src.database.models import Document, User
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +61,7 @@ class SQLInjectionTestSuite:
             {"method": "POST", "url": "/api/auth/login", "param": "password"},
         ]
 
-    def _get_injection_payloads(self) -> List[SQLInjectionPayload]:
+    def _get_injection_payloads(self) -> list[SQLInjectionPayload]:
         """Get comprehensive list of SQL injection attack payloads."""
         return [
             # Basic SQL Injection
@@ -275,9 +272,9 @@ class SQLInjectionTestSuite:
 
     async def test_endpoint_with_payload(
         self,
-        endpoint: Dict[str, str],
+        endpoint: dict[str, str],
         payload: SQLInjectionPayload
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Test a specific endpoint with an SQL injection payload."""
 
         test_start = time.time()
@@ -403,7 +400,7 @@ class SQLInjectionTestSuite:
         # Default: assume blocked if not clearly successful
         return True
 
-    async def run_comprehensive_sql_injection_tests(self) -> Dict[str, Any]:
+    async def run_comprehensive_sql_injection_tests(self) -> dict[str, Any]:
         """Run comprehensive SQL injection tests against all endpoints."""
         logger.info("Starting comprehensive SQL injection testing")
 
@@ -641,7 +638,7 @@ async def test_complete_sql_injection_protection():
         if attack_type != "benign":  # Benign inputs should pass through
             assert stats["protection_rate"] >= 90.0, f"Low protection rate for {attack_type}: {stats['protection_rate']:.1f}%"
 
-    logger.info(f"Complete SQL injection protection testing PASSED")
+    logger.info("Complete SQL injection protection testing PASSED")
     logger.info(f"Protection rate: {summary['overall_protection_rate']:.1f}%")
     logger.info(f"Tests completed: {summary['total_tests']}")
     logger.info(f"Critical vulnerabilities: {summary['critical_vulnerabilities_count']}")

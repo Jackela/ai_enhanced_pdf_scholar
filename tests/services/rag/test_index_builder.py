@@ -5,18 +5,17 @@ Tests for the specialized service responsible for building and managing vector i
 for RAG operations, with focus on PDF processing and index creation.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from pathlib import Path
-import tempfile
-import shutil
 import json
-from typing import List, Dict, Any
+import shutil
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock
 
-from src.services.rag.index_builder import RAGIndexBuilder
+import pytest
+
 from src.database.models import DocumentModel
-from src.services.rag.exceptions import RAGIndexError, RAGProcessingError
-from src.utils.file_utils import FileUtils
+from src.services.rag.exceptions import RAGIndexError
+from src.services.rag.index_builder import RAGIndexBuilder
 
 
 class TestRAGIndexBuilder:

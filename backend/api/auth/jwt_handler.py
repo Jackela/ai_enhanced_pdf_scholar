@@ -8,7 +8,7 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import jwt
 from cryptography.hazmat.backends import default_backend
@@ -26,8 +26,8 @@ class TokenPayload(BaseModel):
     iat: datetime  # Issued at
     jti: str  # JWT ID (unique identifier)
     token_type: str  # "access" or "refresh"
-    token_family: Optional[str] = None  # For refresh token rotation
-    version: Optional[int] = None  # User's token version
+    token_family: str | None = None  # For refresh token rotation
+    version: int | None = None  # User's token version
 
 
 class JWTConfig:
@@ -53,7 +53,7 @@ class JWTConfig:
     KEY_SIZE = 4096  # Use 4096 for production
 
     @classmethod
-    def ensure_keys_exist(cls) -> Tuple[bytes, bytes]:
+    def ensure_keys_exist(cls) -> tuple[bytes, bytes]:
         """
         Ensure RSA key pair exists, generate if not.
         Returns: (private_key_bytes, public_key_bytes)
@@ -116,7 +116,7 @@ class JWTHandler:
         username: str,
         role: str,
         version: int = 0,
-        custom_claims: Optional[Dict[str, Any]] = None
+        custom_claims: dict[str, Any] | None = None
     ) -> str:
         """
         Create a new access token.
@@ -164,8 +164,8 @@ class JWTHandler:
         username: str,
         role: str,
         version: int = 0,
-        token_family: Optional[str] = None
-    ) -> Tuple[str, str, datetime]:
+        token_family: str | None = None
+    ) -> tuple[str, str, datetime]:
         """
         Create a new refresh token with rotation support.
 
@@ -212,8 +212,8 @@ class JWTHandler:
         self,
         token: str,
         verify_exp: bool = True,
-        token_type: Optional[str] = None
-    ) -> Optional[TokenPayload]:
+        token_type: str | None = None
+    ) -> TokenPayload | None:
         """
         Decode and validate a JWT token.
 
@@ -259,8 +259,8 @@ class JWTHandler:
         self,
         token: str,
         token_type: str = "access",
-        user_version: Optional[int] = None
-    ) -> Optional[TokenPayload]:
+        user_version: int | None = None
+    ) -> TokenPayload | None:
         """
         Verify a token with additional security checks.
 
@@ -357,7 +357,7 @@ class JWTHandler:
         self,
         token: str,
         token_type: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Decode a verification token (email or password reset).
 
@@ -385,7 +385,7 @@ class JWTHandler:
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
             return None
 
-    def extract_token_from_header(self, authorization: str) -> Optional[str]:
+    def extract_token_from_header(self, authorization: str) -> str | None:
         """
         Extract token from Authorization header.
 
@@ -405,7 +405,7 @@ class JWTHandler:
 
         return parts[1]
 
-    def get_token_remaining_time(self, token: str) -> Optional[int]:
+    def get_token_remaining_time(self, token: str) -> int | None:
         """
         Get remaining time in seconds for a token.
 

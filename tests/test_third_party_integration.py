@@ -3,8 +3,9 @@ Third-Party Library Integration Tests
 Tests integration with optional citation parsing libraries for enhanced accuracy.
 """
 
+
 import pytest
-from unittest.mock import Mock, patch
+
 from src.services.citation_parsing_service import CitationParsingService
 
 

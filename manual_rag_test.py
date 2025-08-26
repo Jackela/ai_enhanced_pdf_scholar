@@ -6,13 +6,13 @@ Tests the actual RAG functionality end-to-end using the working EnhancedRAGServi
 This bypasses the blocked test suite to validate core functionality.
 """
 
+import json
 import os
 import sys
-import json
-import time
 import tempfile
+import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent
@@ -20,9 +20,9 @@ sys.path.insert(0, str(project_root))
 
 from src.database.connection import DatabaseConnection
 from src.database.migrations import MigrationManager, MigrationRunner
-from src.services.enhanced_rag_service import EnhancedRAGService
 from src.database.models import DocumentModel
 from src.repositories.document_repository import DocumentRepository
+from src.services.enhanced_rag_service import EnhancedRAGService
 
 # Test configuration
 TEST_MODE = True  # Set to False to test with real API
@@ -31,8 +31,8 @@ GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "test-key-for-testing")
 def create_test_pdf() -> str:
     """Create a simple test PDF file for testing."""
     try:
-        from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
 
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
         c = canvas.Canvas(temp_file.name, pagesize=letter)
@@ -67,7 +67,7 @@ Large Language Models can process and generate human-like text.
         temp_file.close()
         return temp_file.name
 
-def run_rag_workflow_test() -> Dict[str, Any]:
+def run_rag_workflow_test() -> dict[str, Any]:
     """Run comprehensive RAG workflow test."""
     test_results = {
         "test_start_time": time.time(),

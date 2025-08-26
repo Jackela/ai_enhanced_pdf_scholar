@@ -8,7 +8,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import fitz
 import pytest
 
 from src.services.content_hash_service import ContentHashError, ContentHashService

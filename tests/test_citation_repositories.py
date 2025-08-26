@@ -4,13 +4,15 @@ Tests for CitationRepository and CitationRelationRepository.
 Follows SOLID principles and Repository pattern testing.
 """
 
-import pytest
-from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-from src.database.models import CitationModel, CitationRelationModel, DocumentModel
-from src.database.connection import DatabaseConnection
-from src.interfaces.repository_interfaces import ICitationRepository, ICitationRelationRepository
+import pytest
+
+from src.database.models import CitationModel, CitationRelationModel
+from src.interfaces.repository_interfaces import (
+    ICitationRelationRepository,
+    ICitationRepository,
+)
 
 
 class TestCitationRepositoryInterface:
@@ -445,7 +447,9 @@ class TestCitationRelationRepositoryInterface:
     def test_citation_relation_repository_create_new_relation(self, mock_db_connection):
         """Test creating a new citation relation."""
         # Arrange
-        from src.repositories.citation_relation_repository import CitationRelationRepository
+        from src.repositories.citation_relation_repository import (
+            CitationRelationRepository,
+        )
         repo = CitationRelationRepository(mock_db_connection)
 
         new_relation = CitationRelationModel(
@@ -473,7 +477,9 @@ class TestCitationRelationRepositoryInterface:
     def test_citation_relation_repository_find_by_source_document(self, mock_db_connection):
         """Test finding relations by source document."""
         # Arrange
-        from src.repositories.citation_relation_repository import CitationRelationRepository
+        from src.repositories.citation_relation_repository import (
+            CitationRelationRepository,
+        )
         repo = CitationRelationRepository(mock_db_connection)
 
         # Mock database response
@@ -501,7 +507,9 @@ class TestCitationRelationRepositoryInterface:
     def test_citation_relation_repository_find_by_target_document(self, mock_db_connection):
         """Test finding relations by target document."""
         # Arrange
-        from src.repositories.citation_relation_repository import CitationRelationRepository
+        from src.repositories.citation_relation_repository import (
+            CitationRelationRepository,
+        )
         repo = CitationRelationRepository(mock_db_connection)
 
         # Mock database response
@@ -529,7 +537,9 @@ class TestCitationRelationRepositoryInterface:
     def test_citation_relation_repository_get_citation_network(self, mock_db_connection):
         """Test getting citation network for a document."""
         # Arrange
-        from src.repositories.citation_relation_repository import CitationRelationRepository
+        from src.repositories.citation_relation_repository import (
+            CitationRelationRepository,
+        )
         repo = CitationRelationRepository(mock_db_connection)
 
         # Mock database response - return empty relations for simplicity
@@ -551,7 +561,9 @@ class TestCitationRelationRepositoryInterface:
     def test_citation_relation_repository_get_most_cited_documents(self, mock_db_connection):
         """Test getting most cited documents."""
         # Arrange
-        from src.repositories.citation_relation_repository import CitationRelationRepository
+        from src.repositories.citation_relation_repository import (
+            CitationRelationRepository,
+        )
         repo = CitationRelationRepository(mock_db_connection)
 
         # Mock database response
@@ -576,7 +588,9 @@ class TestCitationRelationRepositoryInterface:
     def test_citation_relation_repository_cleanup_orphaned_relations(self, mock_db_connection):
         """Test cleaning up orphaned relations."""
         # Arrange
-        from src.repositories.citation_relation_repository import CitationRelationRepository
+        from src.repositories.citation_relation_repository import (
+            CitationRelationRepository,
+        )
         repo = CitationRelationRepository(mock_db_connection)
 
         # Mock database response
@@ -598,7 +612,6 @@ class TestCitationRepositorySOLIDCompliance:
         """Test that each repository has a single responsibility."""
         # CitationRepository should only handle citation data operations
         # CitationRelationRepository should only handle relation operations
-        from src.interfaces.repository_interfaces import ICitationRepository, ICitationRelationRepository
 
         # Check that interfaces are properly segregated
         citation_methods = [method for method in dir(ICitationRepository) if not method.startswith('_')]
@@ -615,9 +628,6 @@ class TestCitationRepositorySOLIDCompliance:
 
     def test_interface_segregation_principle(self):
         """Test that interfaces are properly segregated."""
-        from src.interfaces.repository_interfaces import (
-            IRepository, ICitationRepository, ICitationRelationRepository
-        )
 
         # Check that clients only depend on methods they need
         base_methods = {"create", "get_by_id", "update", "delete"}
@@ -643,7 +653,6 @@ class TestCitationRepositorySOLIDCompliance:
         # This will be verified when we implement the actual repositories
 
         # For now, verify that interfaces exist and are properly abstract
-        from src.interfaces.repository_interfaces import ICitationRepository
 
         # Check that interface methods are abstract
         assert hasattr(ICitationRepository, '__abstractmethods__')

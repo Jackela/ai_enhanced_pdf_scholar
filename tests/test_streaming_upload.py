@@ -4,24 +4,21 @@ Comprehensive tests for memory-efficient streaming upload functionality.
 """
 
 import asyncio
-import hashlib
 import tempfile
 import time
 from pathlib import Path
-from typing import AsyncGenerator
-from uuid import UUID, uuid4
 
 import pytest
 
 from backend.api.streaming_models import (
     StreamingUploadRequest,
-    UploadStatus,
     UploadResumeRequest,
+    UploadStatus,
 )
+from backend.services.streaming_pdf_service import StreamingPDFProcessor
 from backend.services.streaming_upload_service import StreamingUploadService
 from backend.services.streaming_validation_service import StreamingValidationService
 from backend.services.upload_resumption_service import UploadResumptionService
-from backend.services.streaming_pdf_service import StreamingPDFProcessor
 
 
 class MockWebSocketManager:
@@ -689,7 +686,7 @@ async def test_performance_benchmarks(temp_upload_dir):
         stats = await streaming_service.get_memory_stats()
         assert stats.memory_usage_mb < 200.0, f"Memory usage too high: {stats.memory_usage_mb}MB"
 
-        print(f"Performance Results:")
+        print("Performance Results:")
         print(f"  Upload initiation: {initiation_time:.3f}s")
         print(f"  Average chunk processing: {avg_chunk_time:.3f}s")
         print(f"  Memory usage: {stats.memory_usage_mb:.1f}MB")

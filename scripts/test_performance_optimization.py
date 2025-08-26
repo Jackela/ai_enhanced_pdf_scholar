@@ -6,7 +6,6 @@ Tests the new migration 005 and performance monitoring features.
 
 import logging
 import tempfile
-import time
 from pathlib import Path
 
 # Setup logging
@@ -15,8 +14,10 @@ logger = logging.getLogger(__name__)
 
 try:
     from src.database.connection import DatabaseConnection
-    from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
     from src.database.models import DocumentModel
+    from src.database.modular_migrator import (
+        ModularDatabaseMigrator as DatabaseMigrator,
+    )
     from src.repositories.document_repository import DocumentRepository
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")

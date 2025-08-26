@@ -4,23 +4,25 @@ API Fixtures for E2E Testing
 Provides API client fixtures and utilities for testing API endpoints.
 """
 
+import json
+import time
+from collections.abc import Generator
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+from urllib.parse import urljoin
+
 import pytest
 import requests
-from typing import Dict, Any, Optional, Generator
-import json
-from pathlib import Path
-import time
-from dataclasses import dataclass
-from urllib.parse import urljoin
 
 
 @dataclass
 class APIResponse:
     """Enhanced API response wrapper."""
     status_code: int
-    json_data: Optional[Dict[str, Any]]
+    json_data: dict[str, Any] | None
     text: str
-    headers: Dict[str, str]
+    headers: dict[str, str]
     elapsed_time: float
     request_url: str
     request_method: str
@@ -38,14 +40,14 @@ class APIResponse:
         return self.json_data
 
     @property
-    def message(self) -> Optional[str]:
+    def message(self) -> str | None:
         """Get the message field from JSON response."""
         if self.json_data and "message" in self.json_data:
             return self.json_data["message"]
         return None
 
     @property
-    def error(self) -> Optional[str]:
+    def error(self) -> str | None:
         """Get the error field from JSON response."""
         if self.json_data and "error" in self.json_data:
             return self.json_data["error"]
@@ -158,7 +160,7 @@ class APIClient:
         endpoint: str,
         file_path: Path,
         field_name: str = 'file',
-        additional_data: Dict[str, Any] = None
+        additional_data: dict[str, Any] = None
     ) -> APIResponse:
         """
         Upload a file with optional additional form data.
@@ -213,7 +215,7 @@ class APIClient:
 
     def batch_request(
         self,
-        requests_data: list[Dict[str, Any]]
+        requests_data: list[dict[str, Any]]
     ) -> list[APIResponse]:
         """
         Execute multiple requests in sequence.
@@ -227,7 +229,7 @@ class APIClient:
             responses.append(response)
         return responses
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """
         Get performance metrics for all requests made.
         """
@@ -288,7 +290,6 @@ class WebSocketClient:
     """
 
     def __init__(self, url: str):
-        import websocket
         self.url = url
         self.ws = None
         self.messages = []
@@ -301,13 +302,13 @@ class WebSocketClient:
         self.ws.connect(self.url)
         self.is_connected = True
 
-    def send(self, message: Dict[str, Any]):
+    def send(self, message: dict[str, Any]):
         """Send a message to the WebSocket server."""
         if not self.is_connected:
             self.connect()
         self.ws.send(json.dumps(message))
 
-    def receive(self, timeout: int = 5) -> Optional[Dict[str, Any]]:
+    def receive(self, timeout: int = 5) -> dict[str, Any] | None:
         """Receive a message from the WebSocket server."""
         if not self.is_connected:
             return None
@@ -352,7 +353,7 @@ class MockAPIServer:
         self,
         method: str,
         endpoint: str,
-        response_data: Dict[str, Any],
+        response_data: dict[str, Any],
         status_code: int = 200,
         delay: float = 0
     ):
@@ -364,7 +365,7 @@ class MockAPIServer:
             'delay': delay
         }
 
-    def get_response(self, method: str, endpoint: str) -> Optional[Dict[str, Any]]:
+    def get_response(self, method: str, endpoint: str) -> dict[str, Any] | None:
         """Get the mock response for an endpoint."""
         key = f"{method}:{endpoint}"
         if key in self.responses:

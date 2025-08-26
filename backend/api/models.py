@@ -4,11 +4,11 @@ Pydantic models for API request/response serialization with comprehensive securi
 """
 
 import html
-import re
 import logging
+import re
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -70,13 +70,13 @@ MAX_METADATA_SIZE = 10240  # 10KB
 
 class SecurityValidationError(ValueError):
     """Custom exception for security validation failures."""
-    def __init__(self, field: str, message: str, pattern: Optional[str] = None):
+    def __init__(self, field: str, message: str, pattern: str | None = None):
         self.field = field
         self.pattern = pattern
         super().__init__(f"Security validation failed for field '{field}': {message}")
 
 
-def log_security_event(event_type: str, field: str, value: str, details: Optional[str] = None):
+def log_security_event(event_type: str, field: str, value: str, details: str | None = None):
     """Log security validation events."""
     security_logger.warning(
         f"Security event - Type: {event_type}, Field: {field}, "
@@ -85,7 +85,7 @@ def log_security_event(event_type: str, field: str, value: str, details: Optiona
     )
 
 
-def validate_against_patterns(value: str, patterns: List[str], field_name: str,
+def validate_against_patterns(value: str, patterns: list[str], field_name: str,
                             event_type: str = "dangerous_pattern") -> str:
     """Validate string against dangerous patterns."""
     if not value:
@@ -165,15 +165,15 @@ class BaseResponse(BaseModel):
     """Base response model."""
 
     success: bool = True
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class ErrorResponse(BaseResponse):
     """Error response model."""
 
     success: bool = False
-    error_code: Optional[str] = None
-    details: Optional[Dict[str, Any]] = None
+    error_code: str | None = None
+    details: dict[str, Any] | None = None
 
 
 class SecurityValidationErrorResponse(ErrorResponse):
@@ -182,8 +182,8 @@ class SecurityValidationErrorResponse(ErrorResponse):
     success: bool = False
     error_code: str = "SECURITY_VALIDATION_ERROR"
     field: str = Field(..., description="Field that failed validation")
-    attack_type: Optional[str] = Field(None, description="Type of attack detected")
-    pattern_matched: Optional[str] = Field(None, description="Dangerous pattern matched")
+    attack_type: str | None = Field(None, description="Type of attack detected")
+    pattern_matched: str | None = Field(None, description="Dangerous pattern matched")
 
     @classmethod
     def from_security_error(cls, error: SecurityValidationError) -> "SecurityValidationErrorResponse":
@@ -205,7 +205,7 @@ class ValidationErrorResponse(ErrorResponse):
 
     success: bool = False
     error_code: str = "VALIDATION_ERROR"
-    validation_errors: List[Dict[str, Any]] = Field(default_factory=list,
+    validation_errors: list[dict[str, Any]] = Field(default_factory=list,
                                                    description="List of validation errors")
 
     @classmethod
@@ -251,7 +251,7 @@ class SortOrder(str, Enum):
 class DocumentQueryParams(BaseModel):
     """Secure document query parameters with comprehensive validation."""
 
-    search_query: Optional[str] = Field(
+    search_query: str | None = Field(
         None,
         max_length=MAX_SEARCH_QUERY_LENGTH,
         description="Search documents by title"
@@ -283,7 +283,7 @@ class DocumentQueryParams(BaseModel):
 
     @field_validator('search_query')
     @classmethod
-    def validate_search_query(cls, v: Optional[str]) -> Optional[str]:
+    def validate_search_query(cls, v: str | None) -> str | None:
         """Validate and sanitize search query for security threats."""
         if v is None:
             return v
@@ -313,13 +313,13 @@ class DocumentBase(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH,
                       description="Document title")
-    file_path: Optional[str] = Field(None, max_length=MAX_PATH_LENGTH,
+    file_path: str | None = Field(None, max_length=MAX_PATH_LENGTH,
                                     description="File system path")
     file_size: int = Field(..., ge=0, le=1024*1024*1024,  # 1GB max
                           description="File size in bytes")
-    page_count: Optional[int] = Field(None, ge=0, le=10000,
+    page_count: int | None = Field(None, ge=0, le=10000,
                                      description="Number of pages")
-    metadata: Optional[Dict[str, Any]] = Field(None,
+    metadata: dict[str, Any] | None = Field(None,
                                               description="Document metadata")
 
     @field_validator('title')
@@ -346,7 +346,7 @@ class DocumentBase(BaseModel):
 
     @field_validator('file_path')
     @classmethod
-    def validate_file_path(cls, v: Optional[str]) -> Optional[str]:
+    def validate_file_path(cls, v: str | None) -> str | None:
         """Validate file path for security issues."""
         if v is None:
             return v
@@ -369,7 +369,7 @@ class DocumentBase(BaseModel):
 
     @field_validator('metadata')
     @classmethod
-    def validate_metadata(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def validate_metadata(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
         """Validate metadata for security and size limits."""
         if v is None:
             return v
@@ -410,14 +410,14 @@ class DocumentCreate(DocumentBase):
 class DocumentUpdate(BaseModel):
     """Document update model with security validation."""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=MAX_TITLE_LENGTH,
+    title: str | None = Field(None, min_length=1, max_length=MAX_TITLE_LENGTH,
                                 description="Updated document title")
-    metadata: Optional[Dict[str, Any]] = Field(None,
+    metadata: dict[str, Any] | None = Field(None,
                                               description="Updated document metadata")
 
     @field_validator('title')
     @classmethod
-    def validate_title(cls, v: Optional[str]) -> Optional[str]:
+    def validate_title(cls, v: str | None) -> str | None:
         """Validate and sanitize document title."""
         if v is None:
             return v
@@ -442,7 +442,7 @@ class DocumentUpdate(BaseModel):
 
     @field_validator('metadata')
     @classmethod
-    def validate_metadata(cls, v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def validate_metadata(cls, v: dict[str, Any] | None) -> dict[str, Any] | None:
         """Validate metadata for security and size limits."""
         if v is None:
             return v
@@ -480,7 +480,7 @@ class DocumentResponse(DocumentBase):
     file_hash: str
     created_at: datetime
     updated_at: datetime
-    last_accessed: Optional[datetime] = None
+    last_accessed: datetime | None = None
     is_file_available: bool = True
 
     class Config:
@@ -490,7 +490,7 @@ class DocumentResponse(DocumentBase):
 class DocumentListResponse(BaseResponse):
     """Document list response."""
 
-    documents: List[DocumentResponse]
+    documents: list[DocumentResponse]
     total: int
     page: int = 1
     per_page: int = 50
@@ -499,7 +499,7 @@ class DocumentListResponse(BaseResponse):
 class DocumentImportRequest(BaseModel):
     """Document import request."""
 
-    title: Optional[str] = None
+    title: str | None = None
     check_duplicates: bool = True
     auto_build_index: bool = False
 
@@ -578,7 +578,7 @@ class RAGQueryResponse(BaseResponse):
     response: str
     document_id: int
     from_cache: bool = False
-    processing_time_ms: Optional[float] = None
+    processing_time_ms: float | None = None
 
 
 class IndexBuildRequest(BaseModel):
@@ -594,9 +594,9 @@ class IndexStatusResponse(BaseResponse):
     document_id: int
     has_index: bool = False
     index_valid: bool = False
-    index_path: Optional[str] = None
+    index_path: str | None = None
     chunk_count: int = 0
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
     can_query: bool = False
 
 
@@ -611,24 +611,24 @@ class IndexBuildResponse(BaseResponse):
 class LibraryStatsResponse(BaseResponse):
     """Library statistics response."""
 
-    documents: Dict[str, Any]
-    vector_indexes: Dict[str, Any]
-    cache: Optional[Dict[str, Any]] = None
-    storage: Optional[Dict[str, Any]] = None
-    health: Dict[str, Any]
+    documents: dict[str, Any]
+    vector_indexes: dict[str, Any]
+    cache: dict[str, Any] | None = None
+    storage: dict[str, Any] | None = None
+    health: dict[str, Any]
 
 
 class DuplicateGroup(BaseModel):
     """Duplicate document group."""
 
     criteria: str
-    documents: List[DocumentResponse]
+    documents: list[DocumentResponse]
 
 
 class DuplicatesResponse(BaseResponse):
     """Duplicates detection response."""
 
-    duplicate_groups: List[DuplicateGroup]
+    duplicate_groups: list[DuplicateGroup]
     total_duplicates: int
 
 
@@ -660,8 +660,8 @@ class IntegrityCheckResponse(BaseResponse):
     vector_index_exists: bool
     vector_index_valid: bool
     is_healthy: bool
-    errors: List[str] = []
-    warnings: List[str] = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
 
 # File upload models with security validation
@@ -704,7 +704,7 @@ class SecureFileUpload(BaseModel):
 class SearchFilter(BaseModel):
     """Search and filter parameters with security validation."""
 
-    query: Optional[str] = Field(None, max_length=MAX_SEARCH_QUERY_LENGTH,
+    query: str | None = Field(None, max_length=MAX_SEARCH_QUERY_LENGTH,
                                 description="Search query")
     show_missing_files: bool = Field(False, description="Include missing files")
     sort_by: str = Field(
@@ -719,7 +719,7 @@ class SearchFilter(BaseModel):
 
     @field_validator('query')
     @classmethod
-    def validate_search_query(cls, v: Optional[str]) -> Optional[str]:
+    def validate_search_query(cls, v: str | None) -> str | None:
         """Validate and sanitize search query for security threats."""
         if v is None:
             return v
@@ -745,7 +745,7 @@ class WebSocketMessage(BaseModel):
     """WebSocket message base."""
 
     type: str
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 class RAGProgressMessage(WebSocketMessage):
@@ -753,7 +753,7 @@ class RAGProgressMessage(WebSocketMessage):
 
     type: str = "rag_progress"
     message: str
-    document_id: Optional[int] = None
+    document_id: int | None = None
 
 
 class RAGResponseMessage(WebSocketMessage):
@@ -763,7 +763,7 @@ class RAGResponseMessage(WebSocketMessage):
     query: str
     response: str
     document_id: int
-    processing_time_ms: Optional[float] = None
+    processing_time_ms: float | None = None
 
 
 class IndexBuildProgressMessage(WebSocketMessage):
@@ -773,7 +773,7 @@ class IndexBuildProgressMessage(WebSocketMessage):
     document_id: int
     document_title: str
     status: str
-    progress_percentage: Optional[int] = None
+    progress_percentage: int | None = None
 
 
 class ErrorMessage(WebSocketMessage):
@@ -781,7 +781,7 @@ class ErrorMessage(WebSocketMessage):
 
     type: str = "error"
     error: str
-    error_code: Optional[str] = None
+    error_code: str | None = None
 
 
 # System models
@@ -793,14 +793,14 @@ class SystemHealthResponse(BaseResponse):
     rag_service_available: bool = False
     api_key_configured: bool = False
     storage_health: str = "unknown"
-    uptime_seconds: Optional[float] = None
+    uptime_seconds: float | None = None
 
 
 class ConfigurationResponse(BaseResponse):
     """Configuration response."""
 
-    features: Dict[str, bool]
-    limits: Dict[str, Any]
+    features: dict[str, bool]
+    limits: dict[str, Any]
     version: str = "2.0.0"
 
 
@@ -821,7 +821,7 @@ class CacheStatsResponse(BaseResponse):
     total_entries: int = 0
     hit_rate_percent: float = 0.0
     total_storage_kb: float = 0.0
-    configuration: Dict[str, Any]
+    configuration: dict[str, Any]
 
 
 class CacheClearResponse(BaseResponse):

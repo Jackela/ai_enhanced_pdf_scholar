@@ -6,17 +6,14 @@ Tests for the newly implemented TODO items:
 - Advanced cleanup operations
 """
 
-import os
 import shutil
 import tempfile
-from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel
 from src.services.document_library_service import DocumentLibraryService
 from tests.fixtures.pdf_fixtures import PDFFixtureGenerator
 

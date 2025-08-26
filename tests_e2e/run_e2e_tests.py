@@ -5,14 +5,14 @@ E2E Test Runner
 Comprehensive test runner with various execution modes and reporting.
 """
 
-import sys
 import argparse
-from pathlib import Path
-import subprocess
 import json
+import subprocess
+import sys
 import time
 from datetime import datetime
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import Any
 
 
 class E2ETestRunner:
@@ -28,7 +28,7 @@ class E2ETestRunner:
         test_suite: str = "all",
         parallel: bool = False,
         headless: bool = True,
-        markers: List[str] = None,
+        markers: list[str] = None,
         verbose: bool = True
     ) -> int:
         """
@@ -113,7 +113,7 @@ class E2ETestRunner:
 
         return result.returncode
 
-    def run_suite_sequence(self, suites: List[str]) -> Dict[str, Any]:
+    def run_suite_sequence(self, suites: list[str]) -> dict[str, Any]:
         """Run multiple test suites in sequence."""
         results = {}
 
@@ -193,7 +193,7 @@ class E2ETestRunner:
         # Return failure if any suite failed
         return 0 if all(r["success"] for r in results.values()) else 1
 
-    def generate_summary_report(self, results: Dict[str, Any]):
+    def generate_summary_report(self, results: dict[str, Any]):
         """Generate a summary report of test results."""
         report_path = self.reports_dir / f"summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 

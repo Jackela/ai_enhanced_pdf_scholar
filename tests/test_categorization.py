@@ -6,13 +6,11 @@ optimization for parallel test execution.
 """
 
 import ast
-import inspect
 import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Any, Tuple
-import importlib.util
+from typing import Any
 
 
 class TestCategory(Enum):
@@ -82,12 +80,12 @@ class TestCharacteristics:
     thread_safe: bool = True
 
     # Dependencies
-    dependencies: List[TestDependency] = field(default_factory=list)
-    conflicts: List[str] = field(default_factory=list)  # Tests that conflict
+    dependencies: list[TestDependency] = field(default_factory=list)
+    conflicts: list[str] = field(default_factory=list)  # Tests that conflict
 
     # Markers and metadata
-    pytest_markers: Set[str] = field(default_factory=set)
-    custom_attributes: Dict[str, Any] = field(default_factory=dict)
+    pytest_markers: set[str] = field(default_factory=set)
+    custom_attributes: dict[str, Any] = field(default_factory=dict)
 
 
 class TestAnalyzer:
@@ -136,13 +134,13 @@ class TestAnalyzer:
             r'await '
         ]
 
-    def analyze_test_file(self, file_path: Path) -> List[TestCharacteristics]:
+    def analyze_test_file(self, file_path: Path) -> list[TestCharacteristics]:
         """Analyze a test file and extract characteristics for all tests."""
         if not file_path.exists():
             return []
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
 
             # Parse AST
@@ -235,7 +233,7 @@ class TestAnalyzer:
         node: ast.ClassDef,
         file_path: Path,
         content: str
-    ) -> List[TestCharacteristics]:
+    ) -> list[TestCharacteristics]:
         """Analyze all test methods in a test class."""
         characteristics = []
 
@@ -326,7 +324,7 @@ class TestAnalyzer:
 
         return IsolationLevel.SHARED
 
-    def _count_pattern_matches(self, content: str, patterns: List[str]) -> int:
+    def _count_pattern_matches(self, content: str, patterns: list[str]) -> int:
         """Count pattern matches in content."""
         count = 0
         for pattern in patterns:
@@ -485,7 +483,7 @@ class TestAnalyzer:
 
         return not any(pattern in content.lower() for pattern in unsafe_patterns)
 
-    def _extract_pytest_markers(self, node: ast.FunctionDef, content: str) -> Set[str]:
+    def _extract_pytest_markers(self, node: ast.FunctionDef, content: str) -> set[str]:
         """Extract pytest markers from test function."""
         markers = set()
 
@@ -512,7 +510,7 @@ class TestAnalyzer:
 
         return markers
 
-    def _analyze_dependencies(self, content: str, test_name: str) -> List[TestDependency]:
+    def _analyze_dependencies(self, content: str, test_name: str) -> list[TestDependency]:
         """Analyze test dependencies."""
         dependencies = []
 
@@ -554,9 +552,9 @@ class TestExecutionPlanner:
 
     def __init__(self):
         self.analyzer = TestAnalyzer()
-        self.test_characteristics: Dict[str, TestCharacteristics] = {}
+        self.test_characteristics: dict[str, TestCharacteristics] = {}
 
-    def analyze_test_directory(self, test_dir: Path) -> Dict[str, TestCharacteristics]:
+    def analyze_test_directory(self, test_dir: Path) -> dict[str, TestCharacteristics]:
         """Analyze all test files in directory."""
         characteristics = {}
 
@@ -570,10 +568,10 @@ class TestExecutionPlanner:
 
     def create_execution_plan(
         self,
-        test_characteristics: Dict[str, TestCharacteristics],
+        test_characteristics: dict[str, TestCharacteristics],
         max_workers: int = 8,
         memory_limit_mb: int = 2048
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create optimal execution plan for parallel testing."""
 
         # Categorize tests by isolation requirements
@@ -635,10 +633,10 @@ class TestExecutionPlanner:
 
     def _allocate_workers(
         self,
-        isolation_groups: Dict[IsolationLevel, List[Tuple[str, TestCharacteristics]]],
+        isolation_groups: dict[IsolationLevel, list[tuple[str, TestCharacteristics]]],
         max_workers: int,
         memory_limit_mb: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Allocate workers optimally across isolation groups."""
 
         # Calculate test counts and complexity
@@ -683,8 +681,8 @@ class TestExecutionPlanner:
 
     def _create_execution_phases(
         self,
-        isolation_groups: Dict[IsolationLevel, List[Tuple[str, TestCharacteristics]]]
-    ) -> List[Dict[str, Any]]:
+        isolation_groups: dict[IsolationLevel, list[tuple[str, TestCharacteristics]]]
+    ) -> list[dict[str, Any]]:
         """Create execution phases for optimal parallel execution."""
 
         phases = []
@@ -749,9 +747,9 @@ class TestExecutionPlanner:
 
     def _predict_performance(
         self,
-        isolation_groups: Dict[IsolationLevel, List[Tuple[str, TestCharacteristics]]],
-        worker_allocation: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        isolation_groups: dict[IsolationLevel, list[tuple[str, TestCharacteristics]]],
+        worker_allocation: dict[str, Any]
+    ) -> dict[str, Any]:
         """Predict parallel execution performance."""
 
         # Sequential execution time

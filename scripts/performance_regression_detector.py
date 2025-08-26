@@ -6,11 +6,9 @@ Compares current performance metrics against established baselines to detect reg
 
 import json
 import logging
-import statistics
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-import sys
+from typing import Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -40,14 +38,14 @@ class PerformanceBaseline:
         self.baseline_file = baseline_file or Path("performance_baselines.json")
         self.baselines = self.load_baselines()
 
-    def load_baselines(self) -> Dict[str, Any]:
+    def load_baselines(self) -> dict[str, Any]:
         """Load performance baselines from file"""
         if not self.baseline_file.exists():
             logger.info("No baseline file found, will create one")
             return {}
 
         try:
-            with open(self.baseline_file, 'r') as f:
+            with open(self.baseline_file) as f:
                 baselines = json.load(f)
             logger.info(f"Loaded baselines from {self.baseline_file}")
             return baselines
@@ -64,7 +62,7 @@ class PerformanceBaseline:
         except Exception as e:
             logger.error(f"Failed to save baselines: {e}")
 
-    def establish_baselines(self, benchmark_results: Dict[str, Any],
+    def establish_baselines(self, benchmark_results: dict[str, Any],
                           category: str = "default") -> None:
         """Establish new performance baselines from benchmark results"""
         logger.info(f"Establishing baselines for category: {category}")
@@ -90,7 +88,7 @@ class PerformanceBaseline:
         logger.info(f"Established {len(metrics)} baseline metrics")
         self.save_baselines()
 
-    def _extract_metrics_from_results(self, results: Dict[str, Any]) -> Dict[str, float]:
+    def _extract_metrics_from_results(self, results: dict[str, Any]) -> dict[str, float]:
         """Extract numeric metrics from various result formats"""
         metrics = {}
 
@@ -130,9 +128,9 @@ class PerformanceBaseline:
 
         return metrics
 
-    def detect_regressions(self, current_results: Dict[str, Any],
+    def detect_regressions(self, current_results: dict[str, Any],
                           category: str = "default",
-                          regression_threshold: float = 20.0) -> List[PerformanceRegression]:
+                          regression_threshold: float = 20.0) -> list[PerformanceRegression]:
         """Detect performance regressions compared to baselines"""
 
         if category not in self.baselines:
@@ -185,9 +183,9 @@ class PerformanceBaseline:
 
         return regressions
 
-    def check_improvements(self, current_results: Dict[str, Any],
+    def check_improvements(self, current_results: dict[str, Any],
                           category: str = "default",
-                          improvement_threshold: float = 15.0) -> List[Dict[str, Any]]:
+                          improvement_threshold: float = 15.0) -> list[dict[str, Any]]:
         """Detect performance improvements"""
 
         if category not in self.baselines:
@@ -228,8 +226,8 @@ class PerformanceBaseline:
 
         return improvements
 
-    def generate_report(self, current_results: Dict[str, Any],
-                       category: str = "default") -> Dict[str, Any]:
+    def generate_report(self, current_results: dict[str, Any],
+                       category: str = "default") -> dict[str, Any]:
         """Generate comprehensive performance comparison report"""
 
         regressions = self.detect_regressions(current_results, category)
@@ -264,7 +262,7 @@ class PerformanceBaseline:
 
         return report
 
-    def _determine_overall_status(self, regressions: List[PerformanceRegression]) -> str:
+    def _determine_overall_status(self, regressions: list[PerformanceRegression]) -> str:
         """Determine overall performance status"""
         if not regressions:
             return "✅ GOOD - No performance regressions detected"
@@ -279,8 +277,8 @@ class PerformanceBaseline:
         else:
             return f"🟠 CAUTION - {len(regressions)} minor regression(s) detected"
 
-    def _generate_recommendations(self, regressions: List[PerformanceRegression],
-                                 improvements: List[Dict]) -> List[str]:
+    def _generate_recommendations(self, regressions: list[PerformanceRegression],
+                                 improvements: list[dict]) -> list[str]:
         """Generate recommendations based on analysis"""
         recommendations = []
 
@@ -314,7 +312,7 @@ class PerformanceBaseline:
 
         return recommendations
 
-    def print_report(self, report: Dict[str, Any]):
+    def print_report(self, report: dict[str, Any]):
         """Print formatted performance report"""
         print("\n" + "="*80)
         print("PERFORMANCE REGRESSION ANALYSIS REPORT")
@@ -352,7 +350,7 @@ class PerformanceBaseline:
                 print(f"   ✅ {imp['metric_name']}: {imp['change_percent']:+.1f}% improvement")
 
         # Recommendations
-        print(f"\n💡 RECOMMENDATIONS:")
+        print("\n💡 RECOMMENDATIONS:")
         for i, rec in enumerate(report['recommendations'], 1):
             print(f"   {i}. {rec}")
 
@@ -375,7 +373,7 @@ def main():
 
     # Load current results
     try:
-        with open(args.results, 'r') as f:
+        with open(args.results) as f:
             current_results = json.load(f)
         logger.info(f"Loaded benchmark results from {args.results}")
     except Exception as e:

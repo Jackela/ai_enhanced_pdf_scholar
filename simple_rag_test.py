@@ -6,13 +6,13 @@ Tests core RAG functionality without complex database migrations.
 Focuses on answering: Does the RAG system actually work?
 """
 
+import json
 import os
 import sys
-import json
-import time
 import tempfile
+import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent
@@ -74,7 +74,7 @@ Large Language Models can process and generate human-like text.
     temp_file.close()
     return temp_file.name
 
-def run_simple_rag_test() -> Dict[str, Any]:
+def run_simple_rag_test() -> dict[str, Any]:
     """Run simplified RAG test focusing on core functionality."""
     test_results = {
         "test_start_time": time.time(),

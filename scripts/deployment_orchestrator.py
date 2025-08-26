@@ -9,20 +9,16 @@ Agent B1: CI/CD Pipeline Optimization Specialist
 Generated: 2025-01-19
 """
 
+import argparse
 import asyncio
 import json
 import logging
 import os
-import sys
-import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
-import argparse
-import subprocess
-import yaml
+from typing import Any
 
 # Configure logging
 logging.basicConfig(
@@ -67,8 +63,8 @@ class DeploymentConfig:
     commit_sha: str
 
     # Strategy-specific configuration
-    canary_percentage: Optional[int] = 5
-    monitoring_duration: Optional[int] = 30  # minutes
+    canary_percentage: int | None = 5
+    monitoring_duration: int | None = 30  # minutes
     rollback_on_failure: bool = True
     health_check_timeout: int = 300  # seconds
 
@@ -77,7 +73,7 @@ class DeploymentConfig:
     deployment_slots: int = 2
     maintenance_mode: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             'environment': self.environment.value,
@@ -102,11 +98,11 @@ class DeploymentResult:
     status: DeploymentStatus
     config: DeploymentConfig
     start_time: datetime
-    end_time: Optional[datetime] = None
-    deployment_url: Optional[str] = None
-    logs: List[str] = None
-    metrics: Dict[str, Any] = None
-    error_message: Optional[str] = None
+    end_time: datetime | None = None
+    deployment_url: str | None = None
+    logs: list[str] = None
+    metrics: dict[str, Any] = None
+    error_message: str | None = None
 
     def __post_init__(self):
         if self.logs is None:
@@ -115,13 +111,13 @@ class DeploymentResult:
             self.metrics = {}
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Calculate deployment duration"""
         if self.end_time:
             return (self.end_time - self.start_time).total_seconds()
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             'deployment_id': self.deployment_id,
@@ -142,7 +138,7 @@ class DeploymentOrchestrator:
 
     def __init__(self, work_dir: Path = None):
         self.work_dir = work_dir or Path.cwd()
-        self.deployments: Dict[str, DeploymentResult] = {}
+        self.deployments: dict[str, DeploymentResult] = {}
         self.github_token = os.getenv('GITHUB_TOKEN')
         self.repository = os.getenv('GITHUB_REPOSITORY', 'ai-enhanced-pdf-scholar')
 
@@ -285,7 +281,7 @@ class DeploymentOrchestrator:
     async def _trigger_github_workflow(
         self,
         workflow_file: str,
-        inputs: Dict[str, str],
+        inputs: dict[str, str],
         result: DeploymentResult
     ) -> None:
         """Trigger GitHub Actions workflow"""
@@ -332,7 +328,7 @@ class DeploymentOrchestrator:
     async def _simulate_workflow_execution(
         self,
         workflow_file: str,
-        inputs: Dict[str, str],
+        inputs: dict[str, str],
         result: DeploymentResult
     ) -> None:
         """Simulate workflow execution for testing"""
@@ -396,15 +392,15 @@ class DeploymentOrchestrator:
 
         result.logs.append("Deployment rolled back successfully")
 
-    def get_deployment(self, deployment_id: str) -> Optional[DeploymentResult]:
+    def get_deployment(self, deployment_id: str) -> DeploymentResult | None:
         """Get deployment result by ID"""
         return self.deployments.get(deployment_id)
 
     def list_deployments(
         self,
-        environment: Optional[Environment] = None,
-        status: Optional[DeploymentStatus] = None
-    ) -> List[DeploymentResult]:
+        environment: Environment | None = None,
+        status: DeploymentStatus | None = None
+    ) -> list[DeploymentResult]:
         """List deployments with optional filtering"""
         deployments = list(self.deployments.values())
 
@@ -443,7 +439,7 @@ class DeploymentOrchestrator:
             logger.info("No deployment history file found")
             return
 
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             history = json.load(f)
 
         # Reconstruct deployment objects
@@ -568,7 +564,7 @@ Examples:
 
             result = await orchestrator.deploy(config)
 
-            print(f"🚀 Deployment Result:")
+            print("🚀 Deployment Result:")
             print(f"  ID: {result.deployment_id}")
             print(f"  Status: {result.status.value}")
             print(f"  Duration: {result.duration_seconds:.1f}s" if result.duration_seconds else "  Duration: N/A")
@@ -624,7 +620,7 @@ Examples:
                 print(f"  Error: {deployment.error_message}")
 
             if deployment.logs:
-                print(f"  Logs:")
+                print("  Logs:")
                 for log in deployment.logs[-5:]:  # Show last 5 log entries
                     print(f"    - {log}")
 
@@ -632,14 +628,14 @@ Examples:
             total_deployments = len(orchestrator.deployments)
             recent_deployments = orchestrator.list_deployments()[:5]
 
-            print(f"🎯 Deployment Orchestrator Status")
+            print("🎯 Deployment Orchestrator Status")
             print(f"  Total Deployments: {total_deployments}")
             print(f"  Work Directory: {orchestrator.work_dir}")
             print(f"  GitHub Token: {'✅ Available' if orchestrator.github_token else '❌ Not Available'}")
             print()
 
             if recent_deployments:
-                print(f"📊 Recent Activity:")
+                print("📊 Recent Activity:")
                 for deployment in recent_deployments:
                     age_hours = (datetime.now(timezone.utc) - deployment.start_time).total_seconds() / 3600
                     print(f"  - {deployment.deployment_id} ({deployment.status.value}, {age_hours:.1f}h ago)")

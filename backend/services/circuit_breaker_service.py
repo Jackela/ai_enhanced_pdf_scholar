@@ -6,13 +6,13 @@ Production-ready circuit breaker pattern implementation for external services.
 import asyncio
 import logging
 import time
-from abc import ABC, abstractmethod
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import wraps
 from threading import Lock
-from typing import Any, Callable, Dict, List, Optional, Union, TypeVar, Generic
-from dataclasses import dataclass, field
+from typing import Any, Generic, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +68,9 @@ class CallResult:
     success: bool
     duration: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    failure_type: Optional[FailureType] = None
-    error: Optional[str] = None
-    response_data: Optional[Any] = None
+    failure_type: FailureType | None = None
+    error: str | None = None
+    response_data: Any | None = None
 
 
 @dataclass
@@ -84,8 +84,8 @@ class CircuitBreakerStats:
     failure_rate: float
     slow_call_rate: float
     last_state_change: datetime
-    next_retry_time: Optional[datetime]
-    recent_calls: List[CallResult] = field(default_factory=list)
+    next_retry_time: datetime | None
+    recent_calls: list[CallResult] = field(default_factory=list)
 
 
 # ============================================================================
@@ -118,8 +118,8 @@ class CircuitBreaker(Generic[T]):
     def __init__(
         self,
         name: str,
-        config: Optional[CircuitBreakerConfig] = None,
-        on_state_change: Optional[Callable[[CircuitBreakerState, CircuitBreakerState], None]] = None
+        config: CircuitBreakerConfig | None = None,
+        on_state_change: Callable[[CircuitBreakerState, CircuitBreakerState], None] | None = None
     ):
         """Initialize circuit breaker."""
         self.name = name
@@ -129,14 +129,14 @@ class CircuitBreaker(Generic[T]):
         # State management
         self._state = CircuitBreakerState.CLOSED
         self._last_state_change = datetime.utcnow()
-        self._next_retry_time: Optional[datetime] = None
+        self._next_retry_time: datetime | None = None
         self._lock = Lock()
 
         # Counters and metrics
         self._failure_count = 0
         self._success_count = 0
         self._consecutive_successes = 0
-        self._recent_calls: List[CallResult] = []
+        self._recent_calls: list[CallResult] = []
         self._backoff_count = 0
 
         logger.info(f"Circuit breaker '{name}' initialized")
@@ -497,7 +497,7 @@ class CircuitBreakerManager:
 
     def __init__(self):
         """Initialize circuit breaker manager."""
-        self._circuit_breakers: Dict[str, CircuitBreaker] = {}
+        self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self._default_config = CircuitBreakerConfig()
         self._lock = Lock()
 
@@ -506,7 +506,7 @@ class CircuitBreakerManager:
     def get_circuit_breaker(
         self,
         name: str,
-        config: Optional[CircuitBreakerConfig] = None
+        config: CircuitBreakerConfig | None = None
     ) -> CircuitBreaker:
         """
         Get or create a circuit breaker.
@@ -534,7 +534,7 @@ class CircuitBreakerManager:
         # This could be used for alerting, metrics, etc.
         pass
 
-    def get_all_stats(self) -> Dict[str, CircuitBreakerStats]:
+    def get_all_stats(self) -> dict[str, CircuitBreakerStats]:
         """Get statistics for all circuit breakers."""
         with self._lock:
             return {
@@ -572,7 +572,7 @@ _global_manager = CircuitBreakerManager()
 
 def circuit_breaker(
     name: str,
-    config: Optional[CircuitBreakerConfig] = None
+    config: CircuitBreakerConfig | None = None
 ):
     """
     Decorator for circuit breaker protection.
@@ -611,7 +611,7 @@ def circuit_breaker(
 class HTTPCircuitBreaker(CircuitBreaker):
     """Specialized circuit breaker for HTTP services."""
 
-    def __init__(self, name: str, base_url: str, config: Optional[CircuitBreakerConfig] = None):
+    def __init__(self, name: str, base_url: str, config: CircuitBreakerConfig | None = None):
         """Initialize HTTP circuit breaker."""
         super().__init__(name, config)
         self.base_url = base_url
@@ -698,9 +698,10 @@ class CircuitBreakerContext:
 
 if __name__ == "__main__":
     # Example usage
-    import requests
     import asyncio
+
     import aiohttp
+    import requests
 
     # Example 1: Using decorator
     @circuit_breaker("external_api", CircuitBreakerConfig(failure_threshold=3, recovery_timeout=30))

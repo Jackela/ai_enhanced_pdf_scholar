@@ -10,18 +10,15 @@ import json
 import logging
 import os
 import shutil
-import subprocess
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 import aiofiles
-import psutil
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
 
 from backend.core.secrets import get_secrets_manager
 from backend.services.metrics_service import MetricsService
@@ -59,9 +56,9 @@ class LogSegment:
     file_size: int
     checksum: str
     created_at: datetime
-    archived_at: Optional[datetime] = None
+    archived_at: datetime | None = None
     backup_status: LogBackupStatus = LogBackupStatus.STREAMING
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -99,7 +96,7 @@ class BackupConfiguration:
     parallel_backup_workers: int = 2
     backup_buffer_size: str = "64MB"
 
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class PostgreSQLWALBackup:
@@ -109,8 +106,8 @@ class PostgreSQLWALBackup:
         """Initialize PostgreSQL WAL backup."""
         self.config = config
         self.engine = create_engine(config.connection_url)
-        self.active_segments: Dict[str, LogSegment] = {}
-        self.backup_process: Optional[asyncio.subprocess.Process] = None
+        self.active_segments: dict[str, LogSegment] = {}
+        self.backup_process: asyncio.subprocess.Process | None = None
         self.is_streaming = False
 
         # Create directories
@@ -310,7 +307,7 @@ class PostgreSQLWALBackup:
             segment.backup_status = LogBackupStatus.FAILED
             logger.error(f"Error backing up WAL segment {segment.segment_id}: {e}")
 
-    async def _compress_wal_file(self, file_path: Path) -> Optional[Path]:
+    async def _compress_wal_file(self, file_path: Path) -> Path | None:
         """Compress WAL file using gzip."""
         try:
             compressed_path = Path(self.config.backup_log_dir) / "compressed" / f"{file_path.name}.gz"
@@ -339,7 +336,7 @@ class PostgreSQLWALBackup:
             logger.error(f"Error compressing WAL file: {e}")
             return None
 
-    async def _encrypt_wal_file(self, file_path: Path) -> Optional[Path]:
+    async def _encrypt_wal_file(self, file_path: Path) -> Path | None:
         """Encrypt WAL file using AES-256."""
         try:
             encrypted_path = Path(self.config.backup_log_dir) / "encrypted" / f"{file_path.name}.enc"
@@ -471,7 +468,7 @@ class PostgreSQLWALBackup:
                 logger.error(f"Error in cleanup task: {e}")
                 await asyncio.sleep(3600)
 
-    async def _parse_wal_file_info(self, wal_file: Path) -> Dict[str, Any]:
+    async def _parse_wal_file_info(self, wal_file: Path) -> dict[str, Any]:
         """Parse WAL file information."""
         try:
             # Use pg_waldump to get WAL file information
@@ -563,7 +560,7 @@ class PostgreSQLWALBackup:
 
         return hash_sha256.hexdigest()
 
-    def _parse_connection_url(self) -> Dict[str, Any]:
+    def _parse_connection_url(self) -> dict[str, Any]:
         """Parse PostgreSQL connection URL."""
         from urllib.parse import urlparse
 
@@ -592,7 +589,7 @@ class PostgreSQLWALBackup:
 
         logger.info("Continuous WAL backup stopped")
 
-    def get_backup_status(self) -> Dict[str, Any]:
+    def get_backup_status(self) -> dict[str, Any]:
         """Get current backup status."""
         return {
             'is_streaming': self.is_streaming,
@@ -617,13 +614,13 @@ class PostgreSQLWALBackup:
 class TransactionLogBackupService:
     """Main transaction log backup service."""
 
-    def __init__(self, metrics_service: Optional[MetricsService] = None):
+    def __init__(self, metrics_service: MetricsService | None = None):
         """Initialize transaction log backup service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
 
         # Active backup instances
-        self.backup_instances: Dict[str, PostgreSQLWALBackup] = {}
+        self.backup_instances: dict[str, PostgreSQLWALBackup] = {}
 
     def register_database(self, database_id: str, config: BackupConfiguration):
         """Register a database for transaction log backup."""
@@ -632,7 +629,7 @@ class TransactionLogBackupService:
 
         logger.info(f"Registered database for log backup: {database_id}")
 
-    async def start_all_backups(self) -> Dict[str, bool]:
+    async def start_all_backups(self) -> dict[str, bool]:
         """Start transaction log backup for all registered databases."""
         results = {}
 
@@ -667,7 +664,7 @@ class TransactionLogBackupService:
             except Exception as e:
                 logger.error(f"Failed to stop backup for {database_id}: {e}")
 
-    def get_service_status(self) -> Dict[str, Any]:
+    def get_service_status(self) -> dict[str, Any]:
         """Get overall service status."""
         database_statuses = {}
 

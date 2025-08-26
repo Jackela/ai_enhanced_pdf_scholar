@@ -6,22 +6,21 @@ QueryEngine, RecoveryService, FileManager) to ensure proper collaboration
 and SOLID principle compliance.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from pathlib import Path
-import tempfile
-import shutil
 import asyncio
-import json
-from typing import Dict, Any
+import shutil
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock
 
+import pytest
+
+from src.database.models import DocumentModel
 from src.services.rag.coordinator import RAGCoordinator
+from src.services.rag.exceptions import RAGIndexError, RAGProcessingError
+from src.services.rag.file_manager import RAGFileManager
 from src.services.rag.index_builder import RAGIndexBuilder
 from src.services.rag.query_engine import RAGQueryEngine
 from src.services.rag.recovery_service import RAGRecoveryService
-from src.services.rag.file_manager import RAGFileManager
-from src.database.models import DocumentModel
-from src.services.rag.exceptions import RAGProcessingError, RAGIndexError
 
 
 class TestRAGModuleIntegration:
@@ -415,8 +414,10 @@ class TestRAGModuleSOLIDCompliance:
     def mock_interfaces(self):
         """Create mock implementations of RAG interfaces."""
         from src.services.rag.interfaces import (
-            IRAGIndexBuilder, IRAGQueryEngine,
-            IRAGRecoveryService, IRAGFileManager
+            IRAGFileManager,
+            IRAGIndexBuilder,
+            IRAGQueryEngine,
+            IRAGRecoveryService,
         )
 
         mock_index_builder = Mock(spec=IRAGIndexBuilder)

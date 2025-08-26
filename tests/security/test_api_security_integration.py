@@ -5,13 +5,13 @@ Test SQL injection prevention at the FastAPI endpoint level,
 verifying that malicious requests are properly handled and blocked.
 """
 
-import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch
 
-from backend.api.routes.documents import router
-from backend.api.models import DocumentQueryParams
+import pytest
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from backend.api.routes.documents import router
 
 
 class TestAPISecurityIntegration:

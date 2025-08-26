@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Activity,
+  FolderOpen,
 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { cn } from '../lib/utils.ts'
@@ -23,6 +24,7 @@ interface SidebarProps {
 
 const navigation = [
   { name: 'Library', href: '/library', icon: Library, preloadRoute: 'library' as const },
+  { name: 'Collections', href: '/collections', icon: FolderOpen, preloadRoute: 'collections' as const },
   { name: 'Chat', href: '/chat', icon: MessageSquare, preloadRoute: 'chat' as const },
   { name: 'Monitoring', href: '/monitoring', icon: Activity, preloadRoute: 'monitoring' as const },
   { name: 'Settings', href: '/settings', icon: Settings, preloadRoute: 'settings' as const },
@@ -75,7 +77,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             const Icon = item.icon
             const isActive =
               location.pathname === item.href ||
-              (item.href === '/library' && location.pathname === '/')
+              (item.href === '/library' && location.pathname === '/') ||
+              (item.href === '/collections' && location.pathname.startsWith('/collections'))
 
             return (
               <NavLink

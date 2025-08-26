@@ -4,15 +4,18 @@ Browser Fixtures for E2E Testing
 Provides various browser configurations and utilities for comprehensive testing.
 """
 
-import pytest
-from typing import Generator, Dict, Any, List
-from playwright.sync_api import (
-    Playwright, Browser, BrowserContext, Page,
-    BrowserType, ViewportSize
-)
-from pathlib import Path
 import json
+from collections.abc import Generator
+from pathlib import Path
+from typing import Any
 
+import pytest
+from playwright.sync_api import (
+    Browser,
+    BrowserContext,
+    Page,
+    Playwright,
+)
 
 # Browser configurations
 BROWSER_CONFIGS = {
@@ -193,7 +196,7 @@ def mobile_browser(playwright: Playwright) -> Generator[BrowserContext, None, No
 
 
 @pytest.fixture
-def multi_browser(playwright: Playwright) -> Generator[Dict[str, Browser], None, None]:
+def multi_browser(playwright: Playwright) -> Generator[dict[str, Browser], None, None]:
     """
     Create multiple browser instances for cross-browser testing.
     """
@@ -234,7 +237,7 @@ class PageHelper:
         else:
             self.page.click(selector)
 
-    def fill_form(self, form_data: Dict[str, Any]):
+    def fill_form(self, form_data: dict[str, Any]):
         """Fill a form with multiple fields."""
         for selector, value in form_data.items():
             if isinstance(value, bool):
@@ -250,7 +253,7 @@ class PageHelper:
                 # Handle text inputs
                 self.page.fill(selector, str(value))
 
-    def get_table_data(self, table_selector: str) -> List[Dict[str, str]]:
+    def get_table_data(self, table_selector: str) -> list[dict[str, str]]:
         """Extract data from a table."""
         headers = self.page.eval_on_selector_all(
             f"{table_selector} thead th",
@@ -265,14 +268,14 @@ class PageHelper:
             })"""
         )
 
-        return [dict(zip(headers, row)) for row in rows]
+        return [dict(zip(headers, row, strict=False)) for row in rows]
 
     def wait_for_api_response(self, url_pattern: str, timeout: int = 10000):
         """Wait for a specific API response."""
         with self.page.expect_response(url_pattern, timeout=timeout) as response_info:
             return response_info.value
 
-    def mock_api_response(self, url_pattern: str, response_data: Dict[str, Any], status: int = 200):
+    def mock_api_response(self, url_pattern: str, response_data: dict[str, Any], status: int = 200):
         """Mock an API response."""
         def handle(route):
             route.fulfill(

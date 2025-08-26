@@ -7,10 +7,10 @@
 
 import sys
 import tempfile
-import time
 import threading
+import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # 添加项目路径
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -21,7 +21,7 @@ def test_error_handling():
 
     try:
         from database.connection import DatabaseConnection, DatabaseConnectionError
-        from database.models import DocumentModel, VectorIndexModel
+        from database.models import DocumentModel
         from repositories.document_repository import DocumentRepository
 
         # 测试无效数据库路径
@@ -75,8 +75,8 @@ def test_concurrent_operations():
     try:
         from database.connection import DatabaseConnection
         from database.migrations import DatabaseMigrator
-        from repositories.document_repository import DocumentRepository
         from database.models import DocumentModel
+        from repositories.document_repository import DocumentRepository
 
         # 初始化数据库
         with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
@@ -136,7 +136,7 @@ def test_concurrent_operations():
         assert total_docs == 15, f"数据库中期望15个文档，实际{total_docs}个"
 
         print(f"  ✅ 成功处理 {len(results)} 个并发操作")
-        print(f"  📊 数据库一致性验证通过")
+        print("  📊 数据库一致性验证通过")
 
         # 清理
         db.close_connection()
@@ -158,8 +158,8 @@ def test_large_data_handling():
     try:
         from database.connection import DatabaseConnection
         from database.migrations import DatabaseMigrator
-        from repositories.document_repository import DocumentRepository
         from database.models import DocumentModel
+        from repositories.document_repository import DocumentRepository
 
         # 初始化数据库
         with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
@@ -213,9 +213,9 @@ def test_large_data_handling():
         print(f"  ⚡ 平均插入时间: {avg_insert_time:.2f}ms/文档")
 
         if avg_insert_time > 100:  # 如果超过100ms/文档则警告
-            print(f"  ⚠️ 插入性能可能需要优化")
+            print("  ⚠️ 插入性能可能需要优化")
         else:
-            print(f"  ✅ 插入性能良好")
+            print("  ✅ 插入性能良好")
 
         # 清理
         db.close_connection()
@@ -237,7 +237,7 @@ def test_content_hash_edge_cases():
     try:
         # 直接导入避免依赖问题
         sys.path.insert(0, str(Path(__file__).parent / "src" / "services"))
-        from content_hash_service import ContentHashService, ContentHashError
+        from content_hash_service import ContentHashError, ContentHashService
 
         # 测试空文件
         with tempfile.NamedTemporaryFile(delete=False) as empty_file:
@@ -327,8 +327,8 @@ def test_transaction_rollback():
     try:
         from database.connection import DatabaseConnection
         from database.migrations import DatabaseMigrator
-        from repositories.document_repository import DocumentRepository
         from database.models import DocumentModel
+        from repositories.document_repository import DocumentRepository
 
         # 初始化数据库
         with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
@@ -452,16 +452,17 @@ def test_memory_usage():
     print("🧪 测试内存使用...")
 
     try:
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
         from database.connection import DatabaseConnection
         from database.migrations import DatabaseMigrator
-        from repositories.document_repository import DocumentRepository
         from database.models import DocumentModel
+        from repositories.document_repository import DocumentRepository
 
         # 初始化数据库
         with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
@@ -491,9 +492,9 @@ def test_memory_usage():
 
         # 内存使用应该合理（小于50MB增长）
         if memory_increase > 50:
-            print(f"  ⚠️ 内存使用可能过高")
+            print("  ⚠️ 内存使用可能过高")
         else:
-            print(f"  ✅ 内存使用合理")
+            print("  ✅ 内存使用合理")
 
         # 清理
         db.close_connection()

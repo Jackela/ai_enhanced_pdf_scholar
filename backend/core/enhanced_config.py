@@ -5,15 +5,13 @@ Integrates with the secrets management system for secure configuration.
 
 import logging
 import os
-from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
 from backend.core.secrets import (
-    SecretType,
     SecretsManager,
     get_secrets_manager,
 )
@@ -31,12 +29,12 @@ class Environment(str, Enum):
 
 class DatabaseConfig(BaseModel):
     """Database configuration."""
-    url: Optional[SecretStr] = None
+    url: SecretStr | None = None
     host: str = Field(default="localhost")
     port: int = Field(default=5432)
     database: str = Field(default="ai_pdf_scholar")
-    username: Optional[str] = None
-    password: Optional[SecretStr] = None
+    username: str | None = None
+    password: SecretStr | None = None
     pool_size: int = Field(default=10)
     max_overflow: int = Field(default=20)
     pool_timeout: int = Field(default=30)
@@ -86,11 +84,11 @@ class DatabaseConfig(BaseModel):
 
 class RedisConfig(BaseModel):
     """Redis configuration."""
-    url: Optional[SecretStr] = None
+    url: SecretStr | None = None
     host: str = Field(default="localhost")
     port: int = Field(default=6379)
     database: int = Field(default=0)
-    password: Optional[SecretStr] = None
+    password: SecretStr | None = None
     ssl: bool = Field(default=False)
     connection_pool_max_connections: int = Field(default=50)
 
@@ -133,8 +131,8 @@ class RedisConfig(BaseModel):
 
 class JWTConfig(BaseModel):
     """JWT configuration."""
-    private_key: Optional[SecretStr] = None
-    public_key: Optional[SecretStr] = None
+    private_key: SecretStr | None = None
+    public_key: SecretStr | None = None
     algorithm: str = Field(default="RS256")
     access_token_expire_minutes: int = Field(default=15)
     refresh_token_expire_days: int = Field(default=7)
@@ -165,11 +163,11 @@ class JWTConfig(BaseModel):
 
 class APIKeysConfig(BaseModel):
     """API keys configuration."""
-    gemini: Optional[SecretStr] = None
-    openai: Optional[SecretStr] = None
-    anthropic: Optional[SecretStr] = None
-    cohere: Optional[SecretStr] = None
-    huggingface: Optional[SecretStr] = None
+    gemini: SecretStr | None = None
+    openai: SecretStr | None = None
+    anthropic: SecretStr | None = None
+    cohere: SecretStr | None = None
+    huggingface: SecretStr | None = None
 
     @classmethod
     def from_secrets(cls, secrets_manager: SecretsManager) -> "APIKeysConfig":
@@ -184,7 +182,7 @@ class APIKeysConfig(BaseModel):
 
         return cls(**config)
 
-    def get_api_key(self, service: str) -> Optional[str]:
+    def get_api_key(self, service: str) -> str | None:
         """Get API key for a specific service."""
         key = getattr(self, service, None)
         return key.get_secret_value() if key else None
@@ -194,8 +192,8 @@ class SMTPConfig(BaseModel):
     """SMTP configuration for email."""
     host: str = Field(default="localhost")
     port: int = Field(default=587)
-    username: Optional[str] = None
-    password: Optional[SecretStr] = None
+    username: str | None = None
+    password: SecretStr | None = None
     use_tls: bool = Field(default=True)
     use_ssl: bool = Field(default=False)
     from_email: str = Field(default="noreply@ai-pdf-scholar.com")
@@ -233,15 +231,15 @@ class SMTPConfig(BaseModel):
 
 class SecurityConfig(BaseModel):
     """Security configuration."""
-    secret_key: Optional[SecretStr] = None
-    encryption_key: Optional[SecretStr] = None
-    allowed_hosts: List[str] = Field(default_factory=lambda: ["localhost", "127.0.0.1"])
-    cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    secret_key: SecretStr | None = None
+    encryption_key: SecretStr | None = None
+    allowed_hosts: list[str] = Field(default_factory=lambda: ["localhost", "127.0.0.1"])
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     cors_allow_credentials: bool = Field(default=True)
-    cors_allow_methods: List[str] = Field(default_factory=lambda: ["GET", "POST", "PUT", "DELETE"])
-    cors_allow_headers: List[str] = Field(default_factory=lambda: ["*"])
+    cors_allow_methods: list[str] = Field(default_factory=lambda: ["GET", "POST", "PUT", "DELETE"])
+    cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
     csrf_enabled: bool = Field(default=True)
-    csrf_secret: Optional[SecretStr] = None
+    csrf_secret: SecretStr | None = None
 
     @classmethod
     def from_secrets(cls, secrets_manager: SecretsManager, environment: Environment) -> "SecurityConfig":
@@ -281,10 +279,10 @@ class ApplicationConfig(BaseModel):
 
     # Sub-configurations
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
-    redis: Optional[RedisConfig] = None
+    redis: RedisConfig | None = None
     jwt: JWTConfig = Field(default_factory=JWTConfig)
     api_keys: APIKeysConfig = Field(default_factory=APIKeysConfig)
-    smtp: Optional[SMTPConfig] = None
+    smtp: SMTPConfig | None = None
     security: SecurityConfig = Field(default_factory=SecurityConfig)
 
     # Application settings
@@ -296,7 +294,7 @@ class ApplicationConfig(BaseModel):
 
     # File handling
     max_file_size_mb: int = Field(default=100)
-    allowed_file_types: List[str] = Field(default_factory=lambda: [".pdf"])
+    allowed_file_types: list[str] = Field(default_factory=lambda: [".pdf"])
     upload_directory: Path = Field(default=Path.home() / ".ai_pdf_scholar" / "uploads")
     documents_directory: Path = Field(default=Path.home() / ".ai_pdf_scholar" / "documents")
 
@@ -309,7 +307,7 @@ class ApplicationConfig(BaseModel):
     # Logging
     log_level: str = Field(default="INFO")
     log_format: str = Field(default="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    log_file: Optional[Path] = None
+    log_file: Path | None = None
 
     @field_validator('environment')
     def validate_environment(cls, v):
@@ -318,7 +316,7 @@ class ApplicationConfig(BaseModel):
         return v
 
     @classmethod
-    def from_env(cls, secrets_manager: Optional[SecretsManager] = None) -> "ApplicationConfig":
+    def from_env(cls, secrets_manager: SecretsManager | None = None) -> "ApplicationConfig":
         """Create configuration from environment and secrets."""
         if not secrets_manager:
             secrets_manager = get_secrets_manager()
@@ -387,15 +385,15 @@ class ApplicationConfig(BaseModel):
         """Get database connection URL."""
         return self.database.get_connection_string()
 
-    def get_redis_url(self) -> Optional[str]:
+    def get_redis_url(self) -> str | None:
         """Get Redis connection URL."""
         return self.redis.get_connection_string() if self.redis else None
 
-    def get_api_key(self, service: str) -> Optional[str]:
+    def get_api_key(self, service: str) -> str | None:
         """Get API key for a service."""
         return self.api_keys.get_api_key(service)
 
-    def validate_secrets(self) -> List[str]:
+    def validate_secrets(self) -> list[str]:
         """
         Validate that required secrets are configured.
 
@@ -426,7 +424,7 @@ class ApplicationConfig(BaseModel):
 
         return errors
 
-    def to_dict(self, include_secrets: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_secrets: bool = False) -> dict[str, Any]:
         """
         Convert configuration to dictionary.
 
@@ -459,7 +457,7 @@ class ApplicationConfig(BaseModel):
 
 
 # Global configuration instance
-_config: Optional[ApplicationConfig] = None
+_config: ApplicationConfig | None = None
 
 
 def get_config() -> ApplicationConfig:
@@ -471,8 +469,8 @@ def get_config() -> ApplicationConfig:
 
 
 def initialize_config(
-    secrets_manager: Optional[SecretsManager] = None,
-    override_config: Optional[Dict[str, Any]] = None
+    secrets_manager: SecretsManager | None = None,
+    override_config: dict[str, Any] | None = None
 ) -> ApplicationConfig:
     """
     Initialize the global configuration.

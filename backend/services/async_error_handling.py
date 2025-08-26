@@ -4,15 +4,15 @@ Comprehensive error handling, recovery strategies, and resilience patterns for a
 """
 
 import asyncio
+import functools
 import logging
 import time
-import traceback
-from typing import Dict, Any, Optional, List, Callable, Union, Type
+from collections.abc import Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from contextlib import asynccontextmanager
-import functools
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +54,13 @@ class ErrorContext:
     error: Exception
     category: ErrorCategory
     severity: ErrorSeverity
-    task_id: Optional[str] = None
-    client_id: Optional[str] = None
-    operation: Optional[str] = None
+    task_id: str | None = None
+    client_id: str | None = None
+    operation: str | None = None
     attempt_count: int = 1
     first_occurrence: datetime = field(default_factory=datetime.now)
     last_occurrence: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def update_occurrence(self):
         """Update last occurrence timestamp."""
@@ -76,8 +76,8 @@ class RecoveryConfig:
     max_delay: float = 60.0
     backoff_multiplier: float = 2.0
     jitter: bool = True
-    timeout_seconds: Optional[float] = None
-    fallback_handler: Optional[Callable] = None
+    timeout_seconds: float | None = None
+    fallback_handler: Callable | None = None
     circuit_breaker_failure_threshold: int = 5
     circuit_breaker_recovery_timeout: float = 300.0
 
@@ -89,7 +89,7 @@ class AsyncCircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_timeout: float = 300.0,
-        expected_exception: Type[Exception] = Exception
+        expected_exception: type[Exception] = Exception
     ):
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
@@ -150,9 +150,9 @@ class AsyncErrorHandler:
     """Comprehensive async error handling with recovery strategies."""
 
     def __init__(self):
-        self.error_history: Dict[str, List[ErrorContext]] = {}
-        self.circuit_breakers: Dict[str, AsyncCircuitBreaker] = {}
-        self.recovery_configs: Dict[ErrorCategory, RecoveryConfig] = {
+        self.error_history: dict[str, list[ErrorContext]] = {}
+        self.circuit_breakers: dict[str, AsyncCircuitBreaker] = {}
+        self.recovery_configs: dict[ErrorCategory, RecoveryConfig] = {
             ErrorCategory.NETWORK: RecoveryConfig(max_retries=3, base_delay=1.0),
             ErrorCategory.MEMORY: RecoveryConfig(max_retries=1, base_delay=2.0),
             ErrorCategory.TIMEOUT: RecoveryConfig(max_retries=2, base_delay=0.5),
@@ -222,9 +222,9 @@ class AsyncErrorHandler:
         self,
         error: Exception,
         operation: str,
-        task_id: Optional[str] = None,
-        client_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        task_id: str | None = None,
+        client_id: str | None = None,
+        metadata: dict[str, Any] | None = None
     ) -> ErrorContext:
         """Handle an error with appropriate categorization and logging."""
 
@@ -266,9 +266,9 @@ class AsyncErrorHandler:
     async def with_retry(
         self,
         operation: str,
-        config: Optional[RecoveryConfig] = None,
-        task_id: Optional[str] = None,
-        client_id: Optional[str] = None
+        config: RecoveryConfig | None = None,
+        task_id: str | None = None,
+        client_id: str | None = None
     ):
         """Context manager for retry logic with exponential backoff."""
 
@@ -357,7 +357,7 @@ class AsyncErrorHandler:
             )
             raise
 
-    def get_error_statistics(self) -> Dict[str, Any]:
+    def get_error_statistics(self) -> dict[str, Any]:
         """Get comprehensive error statistics."""
 
         total_errors = sum(len(errors) for errors in self.error_history.values())
@@ -437,7 +437,7 @@ def with_async_error_handling(
     operation_name: str = None,
     max_retries: int = 3,
     circuit_breaker: bool = False,
-    timeout_seconds: Optional[float] = None
+    timeout_seconds: float | None = None
 ):
     """Decorator for automatic async error handling."""
 
@@ -482,7 +482,7 @@ def with_async_error_handling(
 
 
 # Global error handler instance
-_error_handler: Optional[AsyncErrorHandler] = None
+_error_handler: AsyncErrorHandler | None = None
 
 
 def get_error_handler() -> AsyncErrorHandler:

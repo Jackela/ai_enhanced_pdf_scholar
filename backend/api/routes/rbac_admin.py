@@ -5,7 +5,6 @@ Endpoints for managing roles, permissions, and user access control.
 
 import logging
 from datetime import datetime, timedelta
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -14,15 +13,15 @@ from sqlalchemy.orm import Session
 from backend.api.auth.dependencies import get_current_user
 from backend.api.auth.models import UserModel as User
 from backend.api.auth.rbac import (
-    RBACService,
-    SystemRoles,
-    ResourceTypes,
     Actions,
-    Role,
     Permission,
+    RBACService,
+    ResourceTypes,
+    Role,
+    SystemRoles,
     get_rbac_service,
+    require_permission,
     require_role,
-    require_permission
 )
 from backend.api.dependencies import get_db
 
@@ -39,23 +38,23 @@ class RoleAssignmentRequest(BaseModel):
     """Request model for role assignment."""
     user_id: int
     role_name: str
-    expires_in_hours: Optional[int] = Field(None, description="Hours until role expires")
-    reason: Optional[str] = Field(None, max_length=500)
+    expires_in_hours: int | None = Field(None, description="Hours until role expires")
+    reason: str | None = Field(None, max_length=500)
 
 
 class RoleCreationRequest(BaseModel):
     """Request model for creating custom roles."""
     name: str = Field(..., min_length=3, max_length=100)
     description: str = Field(..., max_length=500)
-    permissions: List[str] = Field(..., description="List of permission names")
-    parent_role: Optional[str] = Field(None, description="Parent role for inheritance")
+    permissions: list[str] = Field(..., description="List of permission names")
+    parent_role: str | None = Field(None, description="Parent role for inheritance")
 
 
 class PermissionGrantRequest(BaseModel):
     """Request model for direct permission grants."""
     user_id: int
     permission_name: str
-    expires_in_hours: Optional[int] = Field(None, description="Hours until permission expires")
+    expires_in_hours: int | None = Field(None, description="Hours until permission expires")
     reason: str = Field(..., max_length=500, description="Reason for direct grant")
 
 
@@ -66,10 +65,10 @@ class RoleResponse(BaseModel):
     description: str
     is_system_role: bool
     priority: int
-    permissions: List[str]
+    permissions: list[str]
     user_count: int
     created_at: datetime
-    parent_role: Optional[str] = None
+    parent_role: str | None = None
 
 
 class PermissionResponse(BaseModel):
@@ -87,9 +86,9 @@ class UserPermissionsResponse(BaseModel):
     """Response model for user permissions."""
     user_id: int
     email: str
-    roles: List[str]
-    direct_permissions: List[str]
-    effective_permissions: List[str]
+    roles: list[str]
+    direct_permissions: list[str]
+    effective_permissions: list[str]
     permission_count: int
 
 
@@ -108,17 +107,17 @@ class AuditLogResponse(BaseModel):
     action: str
     actor_id: int
     actor_email: str
-    target_id: Optional[int]
-    target_email: Optional[str]
+    target_id: int | None
+    target_email: str | None
     details: dict
-    ip_address: Optional[str]
+    ip_address: str | None
 
 
 # ============================================================================
 # Role Management Endpoints
 # ============================================================================
 
-@router.get("/roles", response_model=List[RoleResponse])
+@router.get("/roles", response_model=list[RoleResponse])
 @require_permission(ResourceTypes.SYSTEM, Actions.READ)
 async def list_roles(
     include_system: bool = Query(True, description="Include system roles"),
@@ -293,7 +292,7 @@ async def assign_role_to_user(
 async def revoke_role_from_user(
     user_id: int,
     role_name: str,
-    reason: Optional[str] = None,
+    reason: str | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     rbac: RBACService = Depends(get_rbac_service)
@@ -344,10 +343,10 @@ async def revoke_role_from_user(
 # Permission Management Endpoints
 # ============================================================================
 
-@router.get("/permissions", response_model=List[PermissionResponse])
+@router.get("/permissions", response_model=list[PermissionResponse])
 @require_permission(ResourceTypes.SYSTEM, Actions.READ)
 async def list_permissions(
-    resource: Optional[str] = Query(None, description="Filter by resource type"),
+    resource: str | None = Query(None, description="Filter by resource type"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -501,7 +500,7 @@ async def get_my_permissions(
 async def check_permission(
     resource: str,
     action: str,
-    resource_id: Optional[str] = None,
+    resource_id: str | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     rbac: RBACService = Depends(get_rbac_service)
@@ -567,14 +566,14 @@ async def create_resource_policy(
 # Audit Log Endpoints
 # ============================================================================
 
-@router.get("/audit-logs", response_model=List[AuditLogResponse])
+@router.get("/audit-logs", response_model=list[AuditLogResponse])
 @require_permission(ResourceTypes.AUDIT, Actions.READ)
 async def get_rbac_audit_logs(
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
-    actor_id: Optional[int] = Query(None),
-    target_id: Optional[int] = Query(None),
-    action: Optional[str] = Query(None),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
+    actor_id: int | None = Query(None),
+    target_id: int | None = Query(None),
+    action: str | None = Query(None),
     limit: int = Query(100, le=1000),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)

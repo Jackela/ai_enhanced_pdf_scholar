@@ -7,16 +7,14 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 from backend.core.secrets import (
     SecretConfig,
-    SecretMetadata,
     SecretProvider,
-    SecretType,
     SecretsManager,
+    SecretType,
     initialize_secrets_manager,
 )
 
@@ -51,7 +49,7 @@ class SecretsMigration:
         self.secrets_manager = initialize_secrets_manager(config)
         return self.secrets_manager
 
-    def find_existing_secrets(self) -> Dict[str, Tuple[str, str]]:
+    def find_existing_secrets(self) -> dict[str, tuple[str, str]]:
         """
         Find secrets in existing configuration files and environment.
 
@@ -78,7 +76,7 @@ class SecretsMigration:
 
         return secrets
 
-    def _find_env_secrets(self) -> Dict[str, Tuple[str, str]]:
+    def _find_env_secrets(self) -> dict[str, tuple[str, str]]:
         """Find secrets in environment variables."""
         secrets = {}
 
@@ -105,7 +103,7 @@ class SecretsMigration:
 
         return secrets
 
-    def _find_config_secrets(self) -> Dict[str, Tuple[str, str]]:
+    def _find_config_secrets(self) -> dict[str, tuple[str, str]]:
         """Find secrets in config.py file."""
         secrets = {}
 
@@ -125,7 +123,7 @@ class SecretsMigration:
 
         return secrets
 
-    def _find_jwt_keys(self) -> Dict[str, Tuple[str, str]]:
+    def _find_jwt_keys(self) -> dict[str, tuple[str, str]]:
         """Find JWT RSA keys."""
         secrets = {}
 
@@ -136,20 +134,20 @@ class SecretsMigration:
             public_key_path = jwt_keys_dir / "public_key.pem"
 
             if private_key_path.exists():
-                with open(private_key_path, 'r') as f:
+                with open(private_key_path) as f:
                     private_key = f.read()
                     secrets['jwt_private_key'] = (private_key, f"file:{private_key_path}")
                     logger.info(f"Found JWT private key at {private_key_path}")
 
             if public_key_path.exists():
-                with open(public_key_path, 'r') as f:
+                with open(public_key_path) as f:
                     public_key = f.read()
                     secrets['jwt_public_key'] = (public_key, f"file:{public_key_path}")
                     logger.info(f"Found JWT public key at {public_key_path}")
 
         return secrets
 
-    def _find_settings_secrets(self) -> Dict[str, Tuple[str, str]]:
+    def _find_settings_secrets(self) -> dict[str, tuple[str, str]]:
         """Find secrets in settings.json file."""
         secrets = {}
 
@@ -157,7 +155,7 @@ class SecretsMigration:
 
         if settings_file.exists():
             try:
-                with open(settings_file, 'r') as f:
+                with open(settings_file) as f:
                     settings = json.load(f)
 
                 # Check for API keys
@@ -176,9 +174,9 @@ class SecretsMigration:
 
     def migrate_secrets(
         self,
-        secrets: Dict[str, Tuple[str, str]],
-        rotation_days: Optional[int] = 90
-    ) -> Dict[str, bool]:
+        secrets: dict[str, tuple[str, str]],
+        rotation_days: int | None = 90
+    ) -> dict[str, bool]:
         """
         Migrate secrets to the new management system.
 
@@ -280,7 +278,7 @@ class SecretsMigration:
         else:
             return SecretType.API_KEY  # Default
 
-    def cleanup_old_secrets(self, secrets: Dict[str, Tuple[str, str]]) -> None:
+    def cleanup_old_secrets(self, secrets: dict[str, tuple[str, str]]) -> None:
         """
         Clean up old secret storage locations after successful migration.
 
@@ -308,7 +306,7 @@ class SecretsMigration:
 
                     # Special handling for settings.json (don't delete entire file)
                     if file_path.name == "settings.json":
-                        with open(file_path, 'r') as f:
+                        with open(file_path) as f:
                             settings = json.load(f)
 
                         # Backup original

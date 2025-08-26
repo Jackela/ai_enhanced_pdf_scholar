@@ -16,7 +16,7 @@ import os
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from llama_index.core import VectorStoreIndex
@@ -248,8 +248,8 @@ class RAGIndexBuilder:
             "error": None,
         }
 
-        temp_dir_path: Optional[Path] = None
-        final_index_path: Optional[Path] = None
+        temp_dir_path: Path | None = None
+        final_index_path: Path | None = None
 
         try:
             # Validate document file

@@ -5,27 +5,27 @@ Comprehensive security testing with reporting and CI/CD integration.
 """
 
 import argparse
-import sys
 import json
+import sys
 import time
-from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Any
-import subprocess
+from pathlib import Path
+from typing import Any
+
 import pytest
 
 
 class SecurityTestRunner:
     """Run and manage security tests."""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         self.config = config or self.get_default_config()
         self.results = []
         self.report_dir = Path("tests/security/reports")
         self.report_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def get_default_config() -> Dict[str, Any]:
+    def get_default_config() -> dict[str, Any]:
         """Get default test configuration."""
         return {
             "parallel": True,
@@ -39,7 +39,7 @@ class SecurityTestRunner:
             "baseline_comparison": True
         }
 
-    def run_all_tests(self) -> Dict[str, Any]:
+    def run_all_tests(self) -> dict[str, Any]:
         """Run all security tests."""
         print("=" * 80)
         print("SECURITY TEST SUITE - COMPREHENSIVE SCAN")
@@ -109,7 +109,7 @@ class SecurityTestRunner:
 
         return overall_results
 
-    def run_test_suite(self, test_spec: str, suite_name: str) -> Dict[str, Any]:
+    def run_test_suite(self, test_spec: str, suite_name: str) -> dict[str, Any]:
         """Run a specific test suite."""
         pytest_args = [
             "tests/security",
@@ -143,7 +143,7 @@ class SecurityTestRunner:
         # Parse results
         report_file = self.report_dir / f"temp_{suite_name.replace(' ', '_')}.json"
         if report_file.exists():
-            with open(report_file, 'r') as f:
+            with open(report_file) as f:
                 report_data = json.load(f)
 
                 return {
@@ -167,7 +167,7 @@ class SecurityTestRunner:
             "exit_code": result
         }
 
-    def run_quick_scan(self) -> Dict[str, Any]:
+    def run_quick_scan(self) -> dict[str, Any]:
         """Run quick security scan (critical tests only)."""
         print("=" * 80)
         print("QUICK SECURITY SCAN - CRITICAL TESTS ONLY")
@@ -175,7 +175,7 @@ class SecurityTestRunner:
 
         return self.run_test_suite("-m critical", "Quick Scan")
 
-    def run_specific_tests(self, test_types: List[str]) -> Dict[str, Any]:
+    def run_specific_tests(self, test_types: list[str]) -> dict[str, Any]:
         """Run specific types of security tests."""
         results = {}
 
@@ -200,7 +200,7 @@ class SecurityTestRunner:
 
         return results
 
-    def generate_report(self, results: Dict[str, Any]):
+    def generate_report(self, results: dict[str, Any]):
         """Generate test report in various formats."""
         timestamp = int(time.time())
 
@@ -217,12 +217,12 @@ class SecurityTestRunner:
         md_report = self.report_dir / f"security_report_{timestamp}.md"
         self.generate_markdown_report(results, md_report)
 
-        print(f"\n[+] Reports generated:")
+        print("\n[+] Reports generated:")
         print(f"    - JSON: {json_report}")
         print(f"    - HTML: {html_report}")
         print(f"    - Markdown: {md_report}")
 
-    def generate_html_report(self, results: Dict[str, Any], output_file: Path):
+    def generate_html_report(self, results: dict[str, Any], output_file: Path):
         """Generate HTML report."""
         html_content = f"""
 <!DOCTYPE html>
@@ -301,7 +301,7 @@ class SecurityTestRunner:
         with open(output_file, 'w') as f:
             f.write(html_content)
 
-    def generate_markdown_report(self, results: Dict[str, Any], output_file: Path):
+    def generate_markdown_report(self, results: dict[str, Any], output_file: Path):
         """Generate Markdown report for CI/CD."""
         md_content = f"""# Security Test Report
 
@@ -339,7 +339,7 @@ class SecurityTestRunner:
         with open(output_file, 'w') as f:
             f.write(md_content)
 
-    def compare_with_baseline(self, results: Dict[str, Any]):
+    def compare_with_baseline(self, results: dict[str, Any]):
         """Compare results with security baseline."""
         baseline_file = Path("tests/security/security_baseline.json")
 
@@ -348,7 +348,7 @@ class SecurityTestRunner:
             self.create_baseline(results)
             return
 
-        with open(baseline_file, 'r') as f:
+        with open(baseline_file) as f:
             baseline = json.load(f)
 
         print("\n[*] Comparing with baseline...")
@@ -370,7 +370,7 @@ class SecurityTestRunner:
         if fixed_vulns:
             print(f"[+] FIXED VULNERABILITIES: {fixed_vulns}")
 
-    def create_baseline(self, results: Dict[str, Any]):
+    def create_baseline(self, results: dict[str, Any]):
         """Create security baseline from current results."""
         baseline = {
             "version": "1.0.0",
@@ -389,7 +389,7 @@ class SecurityTestRunner:
 
         print(f"[+] Baseline created: {baseline_file}")
 
-    def print_summary(self, results: Dict[str, Any]):
+    def print_summary(self, results: dict[str, Any]):
         """Print test summary to console."""
         print("\n" + "=" * 80)
         print("SECURITY TEST SUMMARY")

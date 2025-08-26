@@ -3,17 +3,16 @@ Rate Limiting Middleware for FastAPI
 Implements comprehensive IP-based and endpoint-specific rate limiting with Redis support
 """
 
-import asyncio
 import json
-import time
-from datetime import datetime, timedelta
-from typing import Dict, Optional, Tuple, Any, Callable
-from collections import defaultdict
-import os
 import logging
+import os
+import time
+from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
-from fastapi import Request, Response, HTTPException
+from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -42,7 +41,7 @@ class RateLimitRule:
     """Rate limit rule configuration."""
     requests: int  # Number of requests allowed
     window: int    # Time window in seconds
-    burst: Optional[int] = None  # Burst capacity (if different from requests)
+    burst: int | None = None  # Burst capacity (if different from requests)
 
 
 @dataclass
@@ -52,7 +51,7 @@ class RateLimitConfig:
     default_limit: RateLimitRule = field(default_factory=lambda: RateLimitRule(60, 60))  # 60 req/min
 
     # Endpoint-specific limits
-    endpoint_limits: Dict[str, RateLimitRule] = field(default_factory=lambda: {
+    endpoint_limits: dict[str, RateLimitRule] = field(default_factory=lambda: {
         # Upload endpoints - strict limits
         "/api/documents/upload": RateLimitRule(10, 60),           # 10 uploads/min
         "/api/library/upload": RateLimitRule(10, 60),             # 10 uploads/min
@@ -75,7 +74,7 @@ class RateLimitConfig:
     global_ip_limit: RateLimitRule = field(default_factory=lambda: RateLimitRule(1000, 3600))  # 1000/hour
 
     # Redis configuration
-    redis_url: Optional[str] = None
+    redis_url: str | None = None
     redis_key_prefix: str = "rate_limit:"
 
     # Environment-specific multipliers
@@ -92,14 +91,14 @@ class RateLimitConfig:
 
     # Monitoring configuration
     enable_monitoring: bool = True
-    monitoring_log_file: Optional[str] = None
+    monitoring_log_file: str | None = None
 
 
 class InMemoryStore:
     """In-memory rate limiting store with automatic cleanup."""
 
     def __init__(self):
-        self._data: Dict[str, Dict[str, Any]] = defaultdict(dict)
+        self._data: dict[str, dict[str, Any]] = defaultdict(dict)
         self._cleanup_interval = 300  # 5 minutes
         self._last_cleanup = time.time()
 
@@ -120,17 +119,17 @@ class InMemoryStore:
         self._last_cleanup = current_time
         logger.debug(f"Cleaned up {len(expired_keys)} expired rate limit entries")
 
-    async def get(self, key: str) -> Optional[Dict[str, Any]]:
+    async def get(self, key: str) -> dict[str, Any] | None:
         """Get rate limit data for key."""
         await self._cleanup_expired()
         return self._data.get(key)
 
-    async def set(self, key: str, data: Dict[str, Any], ttl: int) -> None:
+    async def set(self, key: str, data: dict[str, Any], ttl: int) -> None:
         """Set rate limit data with TTL."""
         data['expires'] = time.time() + ttl
         self._data[key] = data
 
-    async def incr(self, key: str, window: int) -> Tuple[int, int]:
+    async def incr(self, key: str, window: int) -> tuple[int, int]:
         """Increment counter and return (current_count, ttl)."""
         await self._cleanup_expired()
         current_time = time.time()
@@ -171,7 +170,7 @@ class RedisStore:
             self._redis = aioredis.from_url(self.redis_url, decode_responses=True)
         return self._redis
 
-    async def get(self, key: str) -> Optional[Dict[str, Any]]:
+    async def get(self, key: str) -> dict[str, Any] | None:
         """Get rate limit data for key."""
         try:
             redis_client = await self._get_redis()
@@ -181,7 +180,7 @@ class RedisStore:
             logger.warning(f"Redis get failed: {e}")
             return None
 
-    async def set(self, key: str, data: Dict[str, Any], ttl: int) -> None:
+    async def set(self, key: str, data: dict[str, Any], ttl: int) -> None:
         """Set rate limit data with TTL."""
         try:
             redis_client = await self._get_redis()
@@ -193,7 +192,7 @@ class RedisStore:
         except Exception as e:
             logger.warning(f"Redis set failed: {e}")
 
-    async def incr(self, key: str, window: int) -> Tuple[int, int]:
+    async def incr(self, key: str, window: int) -> tuple[int, int]:
         """Increment counter using Redis sliding window."""
         try:
             redis_client = await self._get_redis()
@@ -221,7 +220,7 @@ class RedisStore:
             # Fallback to simple increment
             return await self._simple_incr(key, window)
 
-    async def _simple_incr(self, key: str, window: int) -> Tuple[int, int]:
+    async def _simple_incr(self, key: str, window: int) -> tuple[int, int]:
         """Simple increment fallback."""
         try:
             redis_client = await self._get_redis()
@@ -239,7 +238,7 @@ class RedisStore:
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """FastAPI middleware for rate limiting with Redis support and graceful fallback."""
 
-    def __init__(self, app: ASGIApp, config: Optional[RateLimitConfig] = None):
+    def __init__(self, app: ASGIApp, config: RateLimitConfig | None = None):
         super().__init__(app)
         self.config = config or RateLimitConfig()
 
@@ -250,7 +249,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._apply_env_multipliers()
 
         # Cache for bypass decisions
-        self._bypass_cache: Dict[str, bool] = {}
+        self._bypass_cache: dict[str, bool] = {}
 
         logger.info(f"Rate limiting initialized with {type(self._store).__name__}")
 

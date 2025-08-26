@@ -6,21 +6,21 @@ and distributed caching strategies for production deployment.
 
 import asyncio
 import logging
-import random
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union, Tuple, AsyncIterator
 from enum import Enum
+from typing import Any, Union
 
 import redis
 import redis.asyncio as aioredis
 from redis.cluster import RedisCluster
-from redis.sentinel import Sentinel
 from redis.exceptions import (
-    ConnectionError, TimeoutError, RedisError,
-    ClusterError, ResponseError
+    ConnectionError,
+    TimeoutError,
 )
+from redis.sentinel import Sentinel
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +49,13 @@ class RedisNodeConfig:
     """Configuration for a Redis node."""
     host: str
     port: int = 6379
-    password: Optional[str] = None
+    password: str | None = None
     db: int = 0
     ssl: bool = False
-    ssl_cert_reqs: Optional[str] = None
-    ssl_ca_certs: Optional[str] = None
-    ssl_certfile: Optional[str] = None
-    ssl_keyfile: Optional[str] = None
+    ssl_cert_reqs: str | None = None
+    ssl_ca_certs: str | None = None
+    ssl_certfile: str | None = None
+    ssl_keyfile: str | None = None
     weight: int = 1  # For load balancing
 
 
@@ -67,7 +67,7 @@ class ConnectionPoolConfig:
     socket_timeout: float = 5.0
     socket_connect_timeout: float = 5.0
     socket_keepalive: bool = True
-    socket_keepalive_options: Dict[str, int] = field(default_factory=lambda: {
+    socket_keepalive_options: dict[str, int] = field(default_factory=lambda: {
         1: 1,  # TCP_KEEPIDLE
         2: 3,  # TCP_KEEPINTVL
         3: 5,  # TCP_KEEPCNT
@@ -80,7 +80,7 @@ class ConnectionPoolConfig:
 @dataclass
 class ClusterConfig:
     """Redis cluster configuration."""
-    startup_nodes: List[RedisNodeConfig] = field(default_factory=list)
+    startup_nodes: list[RedisNodeConfig] = field(default_factory=list)
     max_connections: int = 50
     skip_full_coverage_check: bool = False
     require_full_coverage: bool = True
@@ -93,11 +93,11 @@ class ClusterConfig:
 @dataclass
 class SentinelConfig:
     """Redis Sentinel configuration."""
-    sentinel_nodes: List[Tuple[str, int]] = field(default_factory=list)
+    sentinel_nodes: list[tuple[str, int]] = field(default_factory=list)
     service_name: str = "mymaster"
     socket_timeout: float = 0.5
-    sentinel_kwargs: Dict[str, Any] = field(default_factory=dict)
-    password: Optional[str] = None
+    sentinel_kwargs: dict[str, Any] = field(default_factory=dict)
+    password: str | None = None
     db: int = 0
 
 
@@ -133,11 +133,11 @@ class RedisClusterManager:
     def __init__(
         self,
         backend_type: RedisBackendType = RedisBackendType.STANDALONE,
-        nodes: Optional[List[RedisNodeConfig]] = None,
-        pool_config: Optional[ConnectionPoolConfig] = None,
-        cluster_config: Optional[ClusterConfig] = None,
-        sentinel_config: Optional[SentinelConfig] = None,
-        caching_config: Optional[CachingConfig] = None
+        nodes: list[RedisNodeConfig] | None = None,
+        pool_config: ConnectionPoolConfig | None = None,
+        cluster_config: ClusterConfig | None = None,
+        sentinel_config: SentinelConfig | None = None,
+        caching_config: CachingConfig | None = None
     ):
         """Initialize Redis cluster manager."""
         self.backend_type = backend_type
@@ -148,20 +148,20 @@ class RedisClusterManager:
         self.caching_config = caching_config or CachingConfig()
 
         # Connection management
-        self._redis_client: Optional[Union[redis.Redis, RedisCluster]] = None
-        self._async_redis_client: Optional[Union[aioredis.Redis, aioredis.RedisCluster]] = None
-        self._connection_pools: Dict[str, redis.ConnectionPool] = {}
-        self._health_status: Dict[str, bool] = {}
+        self._redis_client: Union[redis.Redis, RedisCluster] | None = None
+        self._async_redis_client: Union[aioredis.Redis, aioredis.RedisCluster] | None = None
+        self._connection_pools: dict[str, redis.ConnectionPool] = {}
+        self._health_status: dict[str, bool] = {}
 
         # Failover and load balancing
-        self._current_master: Optional[RedisNodeConfig] = None
-        self._available_nodes: List[RedisNodeConfig] = []
-        self._failed_nodes: List[RedisNodeConfig] = []
+        self._current_master: RedisNodeConfig | None = None
+        self._available_nodes: list[RedisNodeConfig] = []
+        self._failed_nodes: list[RedisNodeConfig] = []
         self._last_health_check: float = 0
 
         # Performance monitoring
-        self._connection_stats: Dict[str, Dict[str, int]] = {}
-        self._operation_metrics: Dict[str, List[float]] = {
+        self._connection_stats: dict[str, dict[str, int]] = {}
+        self._operation_metrics: dict[str, list[float]] = {
             "response_times": [],
             "error_rates": [],
             "throughput": []
@@ -386,7 +386,7 @@ class RedisClusterManager:
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         nx: bool = False,
         xx: bool = False
     ) -> bool:
@@ -487,7 +487,7 @@ class RedisClusterManager:
         except Exception as e:
             logger.error(f"Pipeline execution failed: {e}")
 
-    async def mget(self, *keys: str) -> List[Any]:
+    async def mget(self, *keys: str) -> list[Any]:
         """Get multiple values efficiently."""
         full_keys = [f"{self.caching_config.key_prefix}{key}" for key in keys]
 
@@ -498,7 +498,7 @@ class RedisClusterManager:
             logger.error(f"Redis mget error: {e}")
             return [None] * len(keys)
 
-    async def mset(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    async def mset(self, mapping: dict[str, Any], ttl: int | None = None) -> bool:
         """Set multiple values efficiently."""
         full_mapping = {
             f"{self.caching_config.key_prefix}{key}": self._serialize(value)
@@ -523,7 +523,7 @@ class RedisClusterManager:
             logger.error(f"Redis mset error: {e}")
             return False
 
-    async def increment(self, key: str, amount: int = 1) -> Optional[int]:
+    async def increment(self, key: str, amount: int = 1) -> int | None:
         """Increment a counter."""
         full_key = f"{self.caching_config.key_prefix}{key}"
 
@@ -533,7 +533,7 @@ class RedisClusterManager:
             logger.error(f"Redis increment error: {e}")
             return None
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get Redis cluster statistics."""
         stats = {
             "backend_type": self.backend_type.value,
@@ -561,8 +561,8 @@ class RedisClusterManager:
 
     def _serialize(self, value: Any) -> bytes:
         """Serialize value based on configuration."""
-        import pickle
         import json
+        import pickle
 
         try:
             if self.caching_config.serialization_format == "json":
@@ -589,8 +589,8 @@ class RedisClusterManager:
 
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize value based on configuration."""
-        import pickle
         import json
+        import pickle
 
         try:
             # Check if compressed
@@ -679,7 +679,7 @@ class RedisClusterManager:
 # ============================================================================
 
 def create_redis_cluster_manager(
-    nodes: List[str],
+    nodes: list[str],
     backend_type: str = "standalone",
     max_connections: int = 50,
     **kwargs

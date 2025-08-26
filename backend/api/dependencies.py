@@ -6,26 +6,27 @@ Dependency injection for FastAPI endpoints.
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 
 from backend.api.error_handling import ResourceNotFoundException, SystemException
-
+from backend.api.websocket_manager import WebSocketManager
 from config import Config
 from src.controllers.library_controller import LibraryController
 from src.database.connection import DatabaseConnection
+from src.prompt_management.manager import PromptManager
 from src.services.enhanced_rag_service import EnhancedRAGService
-from backend.api.websocket_manager import WebSocketManager
+from src.services.multi_document_rag_service import MultiDocumentRAGService
 
 logger = logging.getLogger(__name__)
 # Global instances
-_db_connection: Optional[DatabaseConnection] = None
-_enhanced_rag_service: Optional[EnhancedRAGService] = None
-_library_controller: Optional[LibraryController] = None
+_db_connection: DatabaseConnection | None = None
+_enhanced_rag_service: EnhancedRAGService | None = None
+_library_controller: LibraryController | None = None
+_multi_document_rag_service: MultiDocumentRAGService | None = None
 
 
-@lru_cache()
+@lru_cache
 def get_database_path() -> str:
     """Get database file path."""
     db_dir = Path.home() / ".ai_pdf_scholar"
@@ -52,7 +53,7 @@ def get_db() -> DatabaseConnection:
 
 def get_enhanced_rag(
     db: DatabaseConnection = Depends(get_db),
-) -> Optional[EnhancedRAGService]:
+) -> EnhancedRAGService | None:
     """Get enhanced RAG service dependency."""
     global _enhanced_rag_service
     if _enhanced_rag_service is None:
@@ -79,6 +80,9 @@ def get_enhanced_rag(
                     "Initializing RAG service in test mode"
                 )
 
+            # Initialize PromptManager
+            prompt_manager = PromptManager(template_dir="prompt_templates")
+
             # Initialize enhanced RAG service
             vector_storage_dir = Path.home() / ".ai_pdf_scholar" / "vector_indexes"
             _enhanced_rag_service = EnhancedRAGService(
@@ -86,6 +90,7 @@ def get_enhanced_rag(
                 db_connection=db,
                 vector_storage_dir=str(vector_storage_dir),
                 test_mode=is_test_mode,
+                prompt_manager=prompt_manager,
             )
 
             if is_test_mode:
@@ -101,7 +106,7 @@ def get_enhanced_rag(
 
 def get_library_controller(
     db: DatabaseConnection = Depends(get_db),
-    enhanced_rag: Optional[EnhancedRAGService] = Depends(get_enhanced_rag),
+    enhanced_rag: EnhancedRAGService | None = Depends(get_enhanced_rag),
 ) -> LibraryController:
     """Get library controller dependency."""
     global _library_controller
@@ -121,7 +126,7 @@ def get_library_controller(
 
 
 def require_rag_service(
-    rag_service: Optional[EnhancedRAGService] = Depends(get_enhanced_rag),
+    rag_service: EnhancedRAGService | None = Depends(get_enhanced_rag),
 ) -> EnhancedRAGService:
     """Require RAG service to be available."""
     if rag_service is None:
@@ -171,7 +176,7 @@ def validate_document_access(
 
 
 # Configuration helpers
-@lru_cache()
+@lru_cache
 def get_api_config() -> dict:
     """Get API configuration."""
     return {
@@ -185,7 +190,7 @@ def get_api_config() -> dict:
 
 
 # WebSocket Manager dependency
-_websocket_manager: Optional[WebSocketManager] = None
+_websocket_manager: WebSocketManager | None = None
 
 
 def get_websocket_manager() -> WebSocketManager:
@@ -202,3 +207,45 @@ def get_websocket_manager() -> WebSocketManager:
                 detail="WebSocket manager initialization failed",
             )
     return _websocket_manager
+
+
+def get_multi_document_rag_service(
+    db: DatabaseConnection = Depends(get_db),
+    enhanced_rag: EnhancedRAGService | None = Depends(get_enhanced_rag),
+) -> MultiDocumentRAGService:
+    """Get multi-document RAG service dependency."""
+    global _multi_document_rag_service
+    if _multi_document_rag_service is None:
+        try:
+            # Import repositories here to avoid circular imports
+            from src.repositories.document_repository import DocumentRepository
+            from src.repositories.multi_document_repositories import (
+                CrossDocumentQueryRepository,
+                MultiDocumentCollectionRepository,
+                MultiDocumentIndexRepository,
+            )
+
+            # Create repository instances
+            doc_repo = DocumentRepository(db)
+            collection_repo = MultiDocumentCollectionRepository(db)
+            index_repo = MultiDocumentIndexRepository(db)
+            query_repo = CrossDocumentQueryRepository(db)
+
+            # Create service instance
+            index_storage_path = Path.home() / ".ai_pdf_scholar" / "multi_doc_indexes"
+            _multi_document_rag_service = MultiDocumentRAGService(
+                collection_repository=collection_repo,
+                index_repository=index_repo,
+                query_repository=query_repo,
+                document_repository=doc_repo,
+                enhanced_rag_service=enhanced_rag,
+                index_storage_path=str(index_storage_path)
+            )
+            logger.info("Multi-document RAG service initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize multi-document RAG service: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Multi-document RAG service initialization failed",
+            )
+    return _multi_document_rag_service

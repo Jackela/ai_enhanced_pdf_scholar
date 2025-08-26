@@ -13,11 +13,11 @@ Examples:
     python web_main.py --host 0.0.0.0     # Start on all interfaces
 """
 
-import sys
 import argparse
 import logging
+import sys
+
 import uvicorn
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -82,10 +82,10 @@ def main():
     logger.info("Starting AI Enhanced PDF Scholar - Web Interface")
     logger.info(f"Configuration: host={args.host}, port={args.port}, debug={args.debug}")
 
-    print(f"\n🚀 AI Enhanced PDF Scholar Web Interface")
+    print("\n🚀 AI Enhanced PDF Scholar Web Interface")
     print(f"📄 Server starting on: http://{args.host}:{args.port}")
-    print(f"🌐 Open your browser and navigate to the URL above")
-    print(f"📋 Press Ctrl+C to stop the server\n")
+    print("🌐 Open your browser and navigate to the URL above")
+    print("📋 Press Ctrl+C to stop the server\n")
 
     try:
         # Start uvicorn server with the FastAPI app from backend.api.main

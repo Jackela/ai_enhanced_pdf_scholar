@@ -8,21 +8,15 @@ import asyncio
 import hashlib
 import json
 import logging
-import os
-import sqlite3
-import struct
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-from urllib.parse import urlparse
+from typing import Any, Union
 
 import aiofiles
-import psutil
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
 
 from backend.core.secrets import get_secrets_manager
 from backend.services.metrics_service import MetricsService
@@ -54,7 +48,7 @@ class ChangeRecord:
     timestamp: datetime
     size: int = 0
     checksum: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -66,19 +60,19 @@ class IncrementalSnapshot:
     created_at: datetime
     files_tracked: int
     total_size: int
-    checksum_map: Dict[str, str] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    checksum_map: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class FileSystemTracker:
     """Tracks file system changes for incremental backup."""
 
-    def __init__(self, base_path: str, exclude_patterns: Optional[List[str]] = None):
+    def __init__(self, base_path: str, exclude_patterns: list[str] | None = None):
         """Initialize file system tracker."""
         self.base_path = Path(base_path)
         self.exclude_patterns = exclude_patterns or []
         self.snapshot_file = self.base_path.parent / f".{self.base_path.name}_snapshot.json"
-        self.last_snapshot: Optional[IncrementalSnapshot] = None
+        self.last_snapshot: IncrementalSnapshot | None = None
 
     async def create_snapshot(self, snapshot_id: str) -> IncrementalSnapshot:
         """Create a snapshot of the current file system state."""
@@ -134,7 +128,7 @@ class FileSystemTracker:
         logger.info(f"Created filesystem snapshot: {files_tracked} files, {total_size} bytes")
         return snapshot
 
-    async def detect_changes(self, since_snapshot_id: Optional[str] = None) -> List[ChangeRecord]:
+    async def detect_changes(self, since_snapshot_id: str | None = None) -> list[ChangeRecord]:
         """Detect changes since the specified snapshot."""
         if not self.last_snapshot and self.snapshot_file.exists():
             await self._load_snapshot()
@@ -204,7 +198,7 @@ class FileSystemTracker:
         logger.info(f"Detected {len(changes)} changes since last snapshot")
         return changes
 
-    def _scan_files(self) -> List[Path]:
+    def _scan_files(self) -> list[Path]:
         """Scan files in base path, excluding patterns."""
         files = []
 
@@ -260,7 +254,7 @@ class FileSystemTracker:
             return
 
         try:
-            async with aiofiles.open(self.snapshot_file, 'r') as f:
+            async with aiofiles.open(self.snapshot_file) as f:
                 content = await f.read()
                 data = json.loads(content)
 
@@ -283,7 +277,7 @@ class FileSystemTracker:
 class DatabaseTracker:
     """Tracks database changes for incremental backup."""
 
-    def __init__(self, connection_url: str, tables: Optional[List[str]] = None):
+    def __init__(self, connection_url: str, tables: list[str] | None = None):
         """Initialize database tracker."""
         self.connection_url = connection_url
         self.tables = tables
@@ -379,7 +373,7 @@ class DatabaseTracker:
         logger.info(f"Created database snapshot: {len(tables_to_track)} tables, {total_records} records")
         return snapshot
 
-    async def detect_changes(self, since_snapshot_id: str) -> List[ChangeRecord]:
+    async def detect_changes(self, since_snapshot_id: str) -> list[ChangeRecord]:
         """Detect database changes since snapshot."""
         changes = []
 
@@ -423,7 +417,7 @@ class DatabaseTracker:
         logger.info(f"Detected {len(changes)} database table changes")
         return changes
 
-    async def _get_all_tables(self) -> List[str]:
+    async def _get_all_tables(self) -> list[str]:
         """Get all tables in the database."""
         with self.engine.connect() as conn:
             result = conn.execute(text("""
@@ -437,18 +431,18 @@ class DatabaseTracker:
 class IncrementalBackupService:
     """Main incremental backup service."""
 
-    def __init__(self, metrics_service: Optional[MetricsService] = None):
+    def __init__(self, metrics_service: MetricsService | None = None):
         """Initialize incremental backup service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
-        self.trackers: Dict[str, Union[FileSystemTracker, DatabaseTracker]] = {}
-        self.backup_history: Dict[str, List[IncrementalSnapshot]] = {}
+        self.trackers: dict[str, Union[FileSystemTracker, DatabaseTracker]] = {}
+        self.backup_history: dict[str, list[IncrementalSnapshot]] = {}
 
     def register_filesystem_source(
         self,
         source_id: str,
         path: str,
-        exclude_patterns: Optional[List[str]] = None
+        exclude_patterns: list[str] | None = None
     ):
         """Register a file system source for tracking."""
         tracker = FileSystemTracker(path, exclude_patterns)
@@ -459,7 +453,7 @@ class IncrementalBackupService:
         self,
         source_id: str,
         connection_url: str,
-        tables: Optional[List[str]] = None
+        tables: list[str] | None = None
     ):
         """Register a database source for tracking."""
         tracker = DatabaseTracker(connection_url, tables)
@@ -473,7 +467,7 @@ class IncrementalBackupService:
                 await tracker.setup_tracking()
                 logger.info(f"Initialized database tracking: {source_id}")
 
-    async def create_full_snapshot(self, source_id: str) -> Optional[IncrementalSnapshot]:
+    async def create_full_snapshot(self, source_id: str) -> IncrementalSnapshot | None:
         """Create a full snapshot for a source."""
         if source_id not in self.trackers:
             logger.error(f"Source not registered: {source_id}")
@@ -519,8 +513,8 @@ class IncrementalBackupService:
     async def detect_changes(
         self,
         source_id: str,
-        since_snapshot_id: Optional[str] = None
-    ) -> List[ChangeRecord]:
+        since_snapshot_id: str | None = None
+    ) -> list[ChangeRecord]:
         """Detect changes for a source."""
         if source_id not in self.trackers:
             logger.error(f"Source not registered: {source_id}")
@@ -556,7 +550,7 @@ class IncrementalBackupService:
             logger.error(f"Failed to detect changes for {source_id}: {e}")
             return []
 
-    async def get_backup_plan(self, source_id: str) -> Dict[str, Any]:
+    async def get_backup_plan(self, source_id: str) -> dict[str, Any]:
         """Get optimal backup plan based on change patterns."""
         changes = await self.detect_changes(source_id)
 
@@ -612,7 +606,7 @@ class IncrementalBackupService:
                 "change_size": change_size
             }
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get service status."""
         return {
             "registered_sources": len(self.trackers),

@@ -6,32 +6,28 @@ memory-efficient processing, intelligent chunking strategies, and
 performance optimization for multi-page PDF documents.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
 import asyncio
 import time
-import psutil
-from pathlib import Path
-import tempfile
-import numpy as np
-from typing import List, Dict, Any, Generator
-import json
+from collections.abc import Generator
+from unittest.mock import AsyncMock, Mock
 
-from src.services.rag.large_document_processor import (
-    LargeDocumentProcessor,
-    ChunkingStrategy,
-    MemoryEfficientProcessor,
-    AcademicDocumentProcessor
-)
+import numpy as np
+import psutil
+import pytest
+
+from src.database.models import DocumentModel
 from src.services.rag.chunking_strategies import (
-    FixedSizeChunking,
+    AdaptiveChunking,
+    CitationAwareChunking,
     SemanticChunking,
     StructureAwareChunking,
-    AdaptiveChunking,
-    CitationAwareChunking
 )
-from src.services.rag.exceptions import RAGProcessingError, RAGMemoryError
-from src.database.models import DocumentModel
+from src.services.rag.exceptions import RAGProcessingError
+from src.services.rag.large_document_processor import (
+    AcademicDocumentProcessor,
+    LargeDocumentProcessor,
+    MemoryEfficientProcessor,
+)
 
 
 class TestLargeDocumentProcessor:

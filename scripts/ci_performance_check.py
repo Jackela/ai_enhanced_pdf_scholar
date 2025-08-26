@@ -11,7 +11,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from scripts.simple_benchmark import SimpleBenchmark
     from scripts.performance_regression_detector import PerformanceBaseline
+    from scripts.simple_benchmark import SimpleBenchmark
 except ImportError as e:
     logger.error(f"Failed to import performance modules: {e}")
     sys.exit(1)
@@ -45,7 +45,7 @@ class CIPerformanceCheck:
         self.violations = []
         self.warnings = []
 
-    def run_quick_benchmarks(self) -> Dict[str, Any]:
+    def run_quick_benchmarks(self) -> dict[str, Any]:
         """Run quick performance benchmarks suitable for CI"""
         logger.info("Running quick performance benchmarks for CI...")
 
@@ -85,7 +85,7 @@ class CIPerformanceCheck:
             logger.error(f"Quick benchmarks failed: {e}")
             raise
 
-    def validate_performance_thresholds(self, results: Dict[str, Any]) -> bool:
+    def validate_performance_thresholds(self, results: dict[str, Any]) -> bool:
         """Validate performance results against CI thresholds"""
         logger.info("Validating performance against CI thresholds...")
 
@@ -142,7 +142,7 @@ class CIPerformanceCheck:
 
         return passed
 
-    def check_regressions(self, results: Dict[str, Any]) -> bool:
+    def check_regressions(self, results: dict[str, Any]) -> bool:
         """Check for performance regressions against baselines"""
         logger.info("Checking for performance regressions...")
 
@@ -256,10 +256,10 @@ class CIPerformanceCheck:
         # Overall result
         overall_passed = thresholds_passed and regressions_passed
         if overall_passed:
-            print(f"\n✅ OVERALL RESULT: PASSED")
+            print("\n✅ OVERALL RESULT: PASSED")
             print("   Performance meets all CI requirements")
         else:
-            print(f"\n❌ OVERALL RESULT: FAILED")
+            print("\n❌ OVERALL RESULT: FAILED")
             print("   Performance does not meet CI requirements")
 
         print("="*70)
@@ -294,7 +294,7 @@ def main():
         # Load custom thresholds if provided
         if args.thresholds:
             try:
-                with open(args.thresholds, 'r') as f:
+                with open(args.thresholds) as f:
                     custom_thresholds = json.load(f)
                 validator.PERFORMANCE_THRESHOLDS.update(custom_thresholds)
                 logger.info(f"Loaded custom thresholds from {args.thresholds}")

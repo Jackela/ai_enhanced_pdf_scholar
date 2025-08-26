@@ -4,45 +4,36 @@ Tests encryption, rotation, validation, monitoring, and compliance features.
 """
 
 import asyncio
-import json
-import os
 import tempfile
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from backend.core.secrets_vault import (
+    EncryptionAlgorithm,
     ProductionSecretsManager,
     SecretEncryptionContext,
-    EncryptionAlgorithm,
+    SecretStrength,
     SecretValidationError,
-    SecretRotationError,
-    SecretBackupError,
-    validate_prod_secrets,
-    validate_secret_strength,
     calculate_entropy,
     generate_secure_secret,
-    SecretStrength
-)
-from backend.services.secrets_validation_service import (
-    SecretValidationService,
-    ValidationSeverity,
-    ComplianceStandard,
-    ValidationRule,
-    SecretValidationReport
+    validate_prod_secrets,
 )
 from backend.services.secrets_monitoring_service import (
-    SecretsMonitoringService,
-    AlertSeverity,
     AlertChannel,
-    MonitoringMetric,
-    Alert,
+    AlertingConfig,
     AlertRule,
+    AlertSeverity,
     MetricData,
-    AlertingConfig
+    MonitoringMetric,
+    SecretsMonitoringService,
+)
+from backend.services.secrets_validation_service import (
+    ComplianceStandard,
+    SecretValidationReport,
+    SecretValidationService,
 )
 
 

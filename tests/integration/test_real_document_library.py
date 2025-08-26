@@ -14,26 +14,22 @@ Key differences from mock tests:
 """
 
 import json
-import os
 import shutil
 import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List
 
-import pytest
 import fitz  # PyMuPDF for PDF validation
+import pytest
 
 from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel
 from src.services.document_library_service import (
     DocumentLibraryService,
-    DocumentImportError,
     DuplicateDocumentError,
 )
-from tests.fixtures.pdf_fixtures import PDFFixtureGenerator
 from tests.fixtures.academic_pdf_generator import AcademicPDFGenerator
+from tests.fixtures.pdf_fixtures import PDFFixtureGenerator
 
 
 class TestRealDocumentLibrary:
@@ -202,7 +198,7 @@ class TestRealDocumentLibrary:
         all_docs = self.service.get_documents()
         assert len(all_docs) == 1
 
-        print(f"Content-based duplicate detection working correctly")
+        print("Content-based duplicate detection working correctly")
         print(f"Original content hash: {doc1.content_hash[:16]}...")
         print(f"Content length: {len(text1)} characters")
 
@@ -227,7 +223,7 @@ class TestRealDocumentLibrary:
         assert doc1.file_hash == doc2.file_hash  # Binary identical
         assert doc1.content_hash == doc2.content_hash  # Same content
 
-        print(f"File hash validation:")
+        print("File hash validation:")
         print(f"  Doc1 file hash: {doc1.file_hash[:16]}...")
         print(f"  Doc2 file hash: {doc2.file_hash[:16]}...")
         print(f"  Hashes match: {doc1.file_hash == doc2.file_hash}")
@@ -265,7 +261,7 @@ class TestRealDocumentLibrary:
         assert actual_metadata['page_count'] == document.page_count
         assert actual_metadata['file_size'] == document.file_size
 
-        print(f"PDF metadata validation:")
+        print("PDF metadata validation:")
         print(f"  Stored page count: {document.page_count}")
         print(f"  Actual page count: {actual_metadata['page_count']}")
         print(f"  File size: {document.file_size} bytes")
@@ -309,7 +305,7 @@ class TestRealDocumentLibrary:
         assert stats["unique_content_count"] == expected_total_docs
         assert stats["duplicate_groups"] == 0
 
-        print(f"Library statistics validation:")
+        print("Library statistics validation:")
         print(f"  Documents: {stats['total_documents']} (expected {expected_total_docs})")
         print(f"  Total size: {stats['total_size_mb']:.2f} MB")
         print(f"  Total pages: {stats['total_pages']}")
@@ -346,7 +342,7 @@ class TestRealDocumentLibrary:
         error_messages = " ".join(integrity["errors"]).lower()
         assert "hash mismatch" in error_messages
 
-        print(f"Integrity verification test:")
+        print("Integrity verification test:")
         print(f"  Original size: {original_size} bytes")
         print(f"  Corrupted size: {managed_path.stat().st_size} bytes")
         print(f"  Detected integrity issues: {len(integrity['errors'])}")
@@ -387,7 +383,7 @@ class TestRealDocumentLibrary:
         # Verify orphaned file was removed
         assert not orphaned_file.exists()
 
-        print(f"Cleanup operation results:")
+        print("Cleanup operation results:")
         print(f"  Documents checked: {cleanup_results['total_documents_checked']}")
         print(f"  Invalid documents removed: {cleanup_results['invalid_documents_removed']}")
         print(f"  Orphaned files removed: {cleanup_results['orphaned_files_removed']}")
@@ -430,7 +426,7 @@ class TestRealDocumentLibrary:
             )
             assert any(d.id == doc.id for d in size_search)
 
-        print(f"Search functionality validation:")
+        print("Search functionality validation:")
         print(f"  Total documents: {len(imported_docs)}")
         print(f"  Title search results: {len(bert_search)}")
         print(f"  Recent documents: {len(recent_search)}")
@@ -497,7 +493,7 @@ class TestRealDocumentLibrary:
             print(f"    Integrity: {result['integrity_time']:.3f}s")
             print(f"    Total: {result['total_time']:.3f}s")
 
-        print(f"Average times:")
+        print("Average times:")
         print(f"  Import: {avg_import_time:.3f}s")
         print(f"  Extract: {avg_extract_time:.3f}s")
 
@@ -517,7 +513,7 @@ class TestRealDocumentLibrary:
             print(f"Warning: Could not extract text from {pdf_path}: {e}")
             return ""
 
-    def _get_real_pdf_metadata(self, pdf_path: Path) -> Dict:
+    def _get_real_pdf_metadata(self, pdf_path: Path) -> dict:
         """Get actual PDF metadata using PyMuPDF."""
         try:
             doc = fitz.open(str(pdf_path))

@@ -3,10 +3,9 @@
 Quick test script for authentication API endpoints.
 """
 
-import json
 import time
+
 import requests
-from typing import Optional
 
 BASE_URL = "http://localhost:8000/api"
 
@@ -54,7 +53,7 @@ def test_authentication_flow():
         token_data = response.json()
         access_token = token_data.get("access_token")
         refresh_token = token_data.get("refresh_token")
-        print(f"   ✓ Login successful")
+        print("   ✓ Login successful")
         print(f"   Access token (first 50 chars): {access_token[:50]}...")
         print(f"   Token type: {token_data.get('token_type')}")
         print(f"   Expires in: {token_data.get('expires_in')} seconds")
@@ -69,7 +68,7 @@ def test_authentication_flow():
     print(f"   Status: {response.status_code}")
     if response.status_code == 200:
         user_profile = response.json()
-        print(f"   ✓ User profile retrieved:")
+        print("   ✓ User profile retrieved:")
         print(f"     - Username: {user_profile.get('username')}")
         print(f"     - Email: {user_profile.get('email')}")
         print(f"     - Role: {user_profile.get('role')}")
@@ -84,7 +83,7 @@ def test_authentication_flow():
     if response.status_code == 200:
         new_token_data = response.json()
         new_access_token = new_token_data.get("access_token")
-        print(f"   ✓ Token refreshed successfully")
+        print("   ✓ Token refreshed successfully")
         print(f"   New access token (first 50 chars): {new_access_token[:50]}...")
     else:
         print(f"   ✗ Token refresh failed: {response.text}")
@@ -95,7 +94,7 @@ def test_authentication_flow():
     response = requests.post(f"{BASE_URL}/auth/logout", json=logout_data, headers=headers)
     print(f"   Status: {response.status_code}")
     if response.status_code == 200:
-        print(f"   ✓ Logged out successfully")
+        print("   ✓ Logged out successfully")
     else:
         print(f"   ✗ Logout failed: {response.text}")
 
@@ -104,9 +103,9 @@ def test_authentication_flow():
     response = requests.post(f"{BASE_URL}/auth/refresh", json=refresh_data)
     print(f"   Status: {response.status_code}")
     if response.status_code == 401:
-        print(f"   ✓ Revoked token correctly rejected")
+        print("   ✓ Revoked token correctly rejected")
     else:
-        print(f"   ✗ Security issue: revoked token still works!")
+        print("   ✗ Security issue: revoked token still works!")
 
     print("\n" + "=" * 60)
     print("Authentication API Test Complete!")

@@ -11,15 +11,14 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
-from cryptography.fernet import Fernet, MultiFernet
+from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
-from sqlalchemy import Column, String, Text, LargeBinary, DateTime, Boolean, Integer
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
@@ -77,15 +76,15 @@ class EncryptionService:
     def __init__(
         self,
         db: Session,
-        secrets_manager: Optional[SecretsManagerService] = None,
+        secrets_manager: SecretsManagerService | None = None,
         key_rotation_days: int = 90
     ):
         """Initialize encryption service."""
         self.db = db
         self.secrets_manager = secrets_manager or SecretsManagerService()
         self.key_rotation_days = key_rotation_days
-        self._key_cache: Dict[str, bytes] = {}
-        self._master_key: Optional[bytes] = None
+        self._key_cache: dict[str, bytes] = {}
+        self._master_key: bytes | None = None
 
         # Initialize master key
         self._initialize_master_key()
@@ -121,9 +120,9 @@ class EncryptionService:
     def encrypt_data(
         self,
         data: Union[str, bytes, dict],
-        key_id: Optional[str] = None,
-        additional_data: Optional[bytes] = None
-    ) -> Tuple[bytes, Dict[str, Any]]:
+        key_id: str | None = None,
+        additional_data: bytes | None = None
+    ) -> tuple[bytes, dict[str, Any]]:
         """
         Encrypt data using AES-256-GCM.
 
@@ -189,8 +188,8 @@ class EncryptionService:
     def decrypt_data(
         self,
         encrypted_data: bytes,
-        metadata: Dict[str, Any],
-        additional_data: Optional[bytes] = None
+        metadata: dict[str, Any],
+        additional_data: bytes | None = None
     ) -> Union[str, bytes, dict]:
         """
         Decrypt data encrypted with AES-256-GCM.
@@ -328,9 +327,9 @@ class EncryptionService:
     def encrypt_file(
         self,
         input_path: Path,
-        output_path: Optional[Path] = None,
+        output_path: Path | None = None,
         chunk_size: int = 64 * 1024  # 64KB chunks
-    ) -> Tuple[Path, Dict[str, Any]]:
+    ) -> tuple[Path, dict[str, Any]]:
         """
         Encrypt a file using streaming encryption.
 
@@ -411,7 +410,7 @@ class EncryptionService:
     def decrypt_file(
         self,
         input_path: Path,
-        output_path: Optional[Path] = None,
+        output_path: Path | None = None,
         chunk_size: int = 64 * 1024
     ) -> Path:
         """
@@ -436,7 +435,7 @@ class EncryptionService:
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
 
-        with open(metadata_path, 'r') as f:
+        with open(metadata_path) as f:
             metadata = json.load(f)
 
         # Get decryption key
@@ -487,7 +486,7 @@ class EncryptionService:
     # Asymmetric Encryption (RSA)
     # ========================================================================
 
-    def generate_key_pair(self, key_size: int = 2048) -> Tuple[bytes, bytes]:
+    def generate_key_pair(self, key_size: int = 2048) -> tuple[bytes, bytes]:
         """
         Generate RSA key pair.
 
@@ -633,7 +632,7 @@ class EncryptionService:
 
         return key
 
-    def rotate_keys(self, force: bool = False) -> Dict[str, int]:
+    def rotate_keys(self, force: bool = False) -> dict[str, int]:
         """
         Rotate encryption keys based on age.
 
@@ -739,13 +738,13 @@ class TLSConfiguration:
     TLS/SSL configuration for secure communication.
     """
 
-    def __init__(self, cert_path: Optional[Path] = None, key_path: Optional[Path] = None):
+    def __init__(self, cert_path: Path | None = None, key_path: Path | None = None):
         """Initialize TLS configuration."""
         self.cert_path = cert_path or Path("certs/server.crt")
         self.key_path = key_path or Path("certs/server.key")
         self.ca_path = Path("certs/ca.crt")
 
-    def generate_self_signed_cert(self, common_name: str = "localhost") -> Tuple[Path, Path]:
+    def generate_self_signed_cert(self, common_name: str = "localhost") -> tuple[Path, Path]:
         """
         Generate self-signed certificate for development.
 
@@ -854,9 +853,9 @@ class SecureChannel:
     def __init__(self, encryption_service: EncryptionService):
         """Initialize secure channel."""
         self.encryption_service = encryption_service
-        self.session_keys: Dict[str, bytes] = {}
+        self.session_keys: dict[str, bytes] = {}
 
-    def establish_session(self, client_id: str, client_public_key: bytes) -> Dict[str, Any]:
+    def establish_session(self, client_id: str, client_public_key: bytes) -> dict[str, Any]:
         """
         Establish secure session with client.
 

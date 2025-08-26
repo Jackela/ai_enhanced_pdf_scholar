@@ -4,20 +4,18 @@ Automatic routing of read and write operations to optimize database performance.
 """
 
 import logging
-import random
-import sqlite3
 import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-import weakref
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
@@ -52,8 +50,8 @@ class DatabaseEndpoint:
     lag_threshold_ms: int = 1000
     weight: int = 100  # Load balancing weight
     is_healthy: bool = True
-    last_health_check: Optional[float] = None
-    lag_ms: Optional[float] = None
+    last_health_check: float | None = None
+    lag_ms: float | None = None
     connection_count: int = 0
 
     def __post_init__(self):
@@ -103,7 +101,7 @@ class ReadWriteSplitter:
     def __init__(
         self,
         primary_connection_string: str,
-        replica_connection_strings: Optional[List[str]] = None,
+        replica_connection_strings: list[str] | None = None,
         enable_read_splitting: bool = True,
         max_lag_ms: int = 1000,
         health_check_interval: int = 30,
@@ -126,8 +124,8 @@ class ReadWriteSplitter:
         self.failover_enabled = failover_enabled
 
         # Database endpoints
-        self._endpoints: Dict[str, DatabaseEndpoint] = {}
-        self._connections: Dict[str, DatabaseConnection] = {}
+        self._endpoints: dict[str, DatabaseEndpoint] = {}
+        self._connections: dict[str, DatabaseConnection] = {}
         self._connection_lock = threading.RLock()
 
         # Routing statistics
@@ -135,11 +133,11 @@ class ReadWriteSplitter:
         self._stats_lock = threading.Lock()
 
         # Health monitoring
-        self._health_check_thread: Optional[threading.Thread] = None
+        self._health_check_thread: threading.Thread | None = None
         self._shutdown_event = threading.Event()
 
         # Session management for transaction consistency
-        self._session_connections: Dict[int, str] = {}  # thread_id -> endpoint_id
+        self._session_connections: dict[int, str] = {}  # thread_id -> endpoint_id
         self._session_lock = threading.Lock()
 
         # Initialize endpoints
@@ -148,7 +146,7 @@ class ReadWriteSplitter:
         # Start health monitoring
         self._start_health_monitoring()
 
-    def _init_endpoints(self, primary: str, replicas: List[str]) -> None:
+    def _init_endpoints(self, primary: str, replicas: list[str]) -> None:
         """Initialize database endpoints."""
         try:
             # Add primary endpoint
@@ -309,10 +307,10 @@ class ReadWriteSplitter:
     def route_query(
         self,
         query: str,
-        parameters: Optional[Tuple[Any, ...]] = None,
+        parameters: tuple[Any, ...] | None = None,
         force_primary: bool = False,
         session_consistency: bool = False
-    ) -> Tuple[DatabaseConnection, str]:
+    ) -> tuple[DatabaseConnection, str]:
         """
         Route a query to the appropriate database endpoint.
 
@@ -454,7 +452,7 @@ class ReadWriteSplitter:
     def execute_query(
         self,
         query: str,
-        parameters: Optional[Tuple[Any, ...]] = None,
+        parameters: tuple[Any, ...] | None = None,
         force_primary: bool = False,
         session_consistency: bool = False
     ) -> Any:
@@ -507,7 +505,7 @@ class ReadWriteSplitter:
                 endpoint = self._endpoints[endpoint_id]
                 endpoint.connection_count = max(0, endpoint.connection_count - 1)
 
-    def begin_transaction(self, force_primary: bool = True) -> Tuple[DatabaseConnection, str]:
+    def begin_transaction(self, force_primary: bool = True) -> tuple[DatabaseConnection, str]:
         """
         Begin a database transaction.
 
@@ -586,7 +584,7 @@ class ReadWriteSplitter:
                 lag_violations=self._stats.lag_violations
             )
 
-    def get_endpoint_health(self) -> Dict[str, Dict[str, Any]]:
+    def get_endpoint_health(self) -> dict[str, dict[str, Any]]:
         """Get health status of all endpoints."""
         health_status = {}
 
@@ -608,7 +606,7 @@ class ReadWriteSplitter:
         self._check_endpoint_health()
         self._check_replication_lag()
 
-    def clear_session_routing(self, thread_id: Optional[int] = None) -> None:
+    def clear_session_routing(self, thread_id: int | None = None) -> None:
         """
         Clear session routing for a thread.
 
@@ -642,7 +640,6 @@ class ReadWriteSplitter:
 def main():
     """CLI interface for testing the Read/Write Splitter."""
     import argparse
-    import json
 
     parser = argparse.ArgumentParser(description="Read/Write Database Splitter")
     parser.add_argument("--primary", required=True, help="Primary database connection string")
@@ -685,7 +682,7 @@ def main():
 
         if args.stats:
             stats = splitter.get_statistics()
-            print(f"Routing Statistics:")
+            print("Routing Statistics:")
             print(f"Total Queries: {stats.total_queries}")
             print(f"Read Queries: {stats.read_queries}")
             print(f"Write Queries: {stats.write_queries}")

@@ -5,24 +5,20 @@ Distributed L2 cache with intelligent data management and cluster support.
 
 import asyncio
 import hashlib
-import json
 import logging
 import pickle
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
-import redis
-from redis import Redis, RedisError
-from redis.cluster import RedisCluster
+from .l1_memory_cache import CacheLevel, L1MemoryCache
 
 # Import our services
 from .redis_cache_service import RedisCacheService
 from .redis_cluster_manager import RedisClusterManager
-from .l1_memory_cache import L1MemoryCache, CacheLevel
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +92,7 @@ class L2CacheEntry:
     is_compressed: bool = False
     compression_ratio: float = 1.0
     hit_count: int = 0
-    node_affinity: Optional[str] = None  # Preferred node for this key
+    node_affinity: str | None = None  # Preferred node for this key
 
     def to_redis_value(self) -> bytes:
         """Convert to Redis storage format."""
@@ -162,9 +158,9 @@ class L2RedisCache:
     def __init__(
         self,
         redis_cache: RedisCacheService,
-        cluster_manager: Optional[RedisClusterManager] = None,
-        l1_cache: Optional[L1MemoryCache] = None,
-        config: Optional[L2CacheConfig] = None
+        cluster_manager: RedisClusterManager | None = None,
+        l1_cache: L1MemoryCache | None = None,
+        config: L2CacheConfig | None = None
     ):
         """Initialize L2 Redis cache."""
         self.redis_cache = redis_cache
@@ -187,18 +183,18 @@ class L2RedisCache:
 
         # Write-behind queue
         self.write_behind_queue: deque = deque()
-        self.write_behind_task: Optional[asyncio.Task] = None
+        self.write_behind_task: asyncio.Task | None = None
         self._write_behind_running = False
 
         # Hot data tracking
-        self.hot_keys: Set[str] = set()
-        self.key_hit_counts: Dict[str, int] = defaultdict(int)
+        self.hot_keys: set[str] = set()
+        self.key_hit_counts: dict[str, int] = defaultdict(int)
 
         # Access logging
         self.access_log: deque = deque(maxlen=1000)
 
         # Performance tracking
-        self.operation_times: Dict[str, deque] = {
+        self.operation_times: dict[str, deque] = {
             "get": deque(maxlen=100),
             "set": deque(maxlen=100),
             "delete": deque(maxlen=100)
@@ -283,8 +279,8 @@ class L2RedisCache:
         self,
         key: str,
         value: Any,
-        ttl_seconds: Optional[int] = None,
-        compress: Optional[bool] = None
+        ttl_seconds: int | None = None,
+        compress: bool | None = None
     ) -> bool:
         """Set value in L2 cache."""
         start_time = time.time()
@@ -397,7 +393,7 @@ class L2RedisCache:
     # Batch Operations
     # ========================================================================
 
-    async def mget(self, keys: List[str]) -> Dict[str, Any]:
+    async def mget(self, keys: list[str]) -> dict[str, Any]:
         """Get multiple keys from cache."""
         results = {}
 
@@ -448,7 +444,7 @@ class L2RedisCache:
 
         return results
 
-    async def mset(self, data: Dict[str, Any], ttl_seconds: Optional[int] = None) -> bool:
+    async def mset(self, data: dict[str, Any], ttl_seconds: int | None = None) -> bool:
         """Set multiple keys in cache."""
         success_count = 0
 
@@ -552,7 +548,7 @@ class L2RedisCache:
 
         logger.debug(f"Promoted key {key} to hot data with TTL {new_ttl}")
 
-    async def _get_target_node(self, key: str) -> Optional[str]:
+    async def _get_target_node(self, key: str) -> str | None:
         """Get target node for distributed storage."""
         if not self.cluster_manager:
             return None
@@ -693,7 +689,7 @@ class L2RedisCache:
     # Statistics and Health
     # ========================================================================
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get L2 cache statistics."""
         total_operations = self.stats["hits"] + self.stats["misses"]
         hit_rate = (self.stats["hits"] / total_operations * 100) if total_operations > 0 else 0
@@ -715,7 +711,7 @@ class L2RedisCache:
 
         return stats
 
-    def get_hot_keys_analysis(self) -> Dict[str, Any]:
+    def get_hot_keys_analysis(self) -> dict[str, Any]:
         """Get analysis of hot keys."""
         return {
             "hot_keys_count": len(self.hot_keys),
@@ -727,7 +723,7 @@ class L2RedisCache:
             "hot_keys_list": list(self.hot_keys)[:50]  # First 50 hot keys
         }
 
-    def get_performance_metrics(self) -> Dict[str, Any]:
+    def get_performance_metrics(self) -> dict[str, Any]:
         """Get detailed performance metrics."""
         metrics = {
             "operation_times": {},
@@ -759,7 +755,7 @@ class L2RedisCache:
         # This is simplified - in practice would track compression ratios
         return 2.5  # Average compression ratio estimate
 
-    def _analyze_access_patterns(self) -> Dict[str, Any]:
+    def _analyze_access_patterns(self) -> dict[str, Any]:
         """Analyze access patterns from logs."""
         if not self.access_log:
             return {}
@@ -798,8 +794,8 @@ class L2RedisCache:
 # Example usage
 if __name__ == "__main__":
     async def main():
-        from .redis_cache_service import RedisCacheService, RedisConfig
         from .l1_memory_cache import create_l1_cache
+        from .redis_cache_service import RedisCacheService, RedisConfig
 
         # Create services
         redis_config = RedisConfig()

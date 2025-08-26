@@ -3,15 +3,15 @@ Rate Limiting Performance and Load Testing Script
 Tests rate limiting under high load conditions
 """
 
-import asyncio
-import aiohttp
-import time
-import statistics
-from typing import List, Dict, Tuple
-from dataclasses import dataclass
 import argparse
+import asyncio
+import statistics
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
+
+import aiohttp
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -54,7 +54,7 @@ class RateLimitTester:
                           endpoint: str,
                           method: str = "GET",
                           client_ip: str = None,
-                          data: dict = None) -> Tuple[int, float]:
+                          data: dict = None) -> tuple[int, float]:
         """Make a single request and return (status_code, response_time)."""
         headers = {}
         if client_ip:
@@ -70,7 +70,7 @@ class RateLimitTester:
                 async with self.session.post(f"{self.base_url}{endpoint}", headers=headers, json=data) as response:
                     await response.text()
                     return response.status, time.time() - start_time
-        except Exception as e:
+        except Exception:
             return 0, time.time() - start_time  # Error status
 
     async def burst_test(self,
@@ -208,7 +208,7 @@ class RateLimitTester:
             requests_per_second=total_requests / total_time if total_time > 0 else 0
         )
 
-    async def test_endpoint_specific_limits(self) -> Dict[str, TestResult]:
+    async def test_endpoint_specific_limits(self) -> dict[str, TestResult]:
         """Test different endpoints to verify specific rate limits."""
         endpoints = [
             ("/api/system/health", "GET", None),

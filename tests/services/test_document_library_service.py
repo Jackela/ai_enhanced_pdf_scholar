@@ -8,17 +8,16 @@ Tests all aspects of document library management including:
 - Error handling and edge cases
 """
 
-import os
 import shutil
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel, VectorIndexModel
+from src.database.models import VectorIndexModel
 from src.services.content_hash_service import ContentHashError
 from src.services.document_library_service import (
     DocumentImportError,

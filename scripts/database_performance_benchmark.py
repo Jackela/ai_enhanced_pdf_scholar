@@ -11,7 +11,7 @@ import logging
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,10 +23,12 @@ try:
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
     from src.database.connection import DatabaseConnection
-    from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
-    from src.database.models import DocumentModel, CitationModel, VectorIndexModel
-    from src.repositories.document_repository import DocumentRepository
+    from src.database.models import CitationModel, DocumentModel, VectorIndexModel
+    from src.database.modular_migrator import (
+        ModularDatabaseMigrator as DatabaseMigrator,
+    )
     from src.repositories.citation_repository import CitationRepository
+    from src.repositories.document_repository import DocumentRepository
     from src.repositories.vector_repository import VectorIndexRepository
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
@@ -148,7 +150,7 @@ class DatabasePerformanceBenchmark:
 
         logger.info(f"Created sample data: {len(sample_documents)} documents, citations, and vector indexes")
 
-    def run_query_performance_tests(self) -> Dict[str, Any]:
+    def run_query_performance_tests(self) -> dict[str, Any]:
         """Run comprehensive query performance tests."""
         logger.info("Running query performance tests...")
 
@@ -196,7 +198,7 @@ class DatabasePerformanceBenchmark:
 
         return benchmark_results
 
-    def run_index_effectiveness_analysis(self) -> Dict[str, Any]:
+    def run_index_effectiveness_analysis(self) -> dict[str, Any]:
         """Analyze the effectiveness of database indexes."""
         logger.info("Analyzing index effectiveness...")
 
@@ -218,7 +220,7 @@ class DatabasePerformanceBenchmark:
 
         return comprehensive_analysis
 
-    def _assess_index_performance_impact(self) -> Dict[str, Any]:
+    def _assess_index_performance_impact(self) -> dict[str, Any]:
         """Assess the performance impact of indexes by testing with/without scenarios."""
         logger.info("Assessing index performance impact...")
 
@@ -286,7 +288,7 @@ class DatabasePerformanceBenchmark:
             "overall_index_health": self._calculate_overall_index_health(impact_results),
         }
 
-    def _calculate_overall_index_health(self, impact_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _calculate_overall_index_health(self, impact_results: list[dict[str, Any]]) -> dict[str, Any]:
         """Calculate overall index health based on impact test results."""
         total_tests = len(impact_results)
         if total_tests == 0:
@@ -320,7 +322,7 @@ class DatabasePerformanceBenchmark:
             },
         }
 
-    def run_performance_regression_tests(self) -> Dict[str, Any]:
+    def run_performance_regression_tests(self) -> dict[str, Any]:
         """Run performance regression tests against baselines."""
         logger.info("Running performance regression tests...")
 
@@ -400,7 +402,7 @@ class DatabasePerformanceBenchmark:
 
         return regression_results
 
-    def generate_optimization_recommendations(self) -> List[str]:
+    def generate_optimization_recommendations(self) -> list[str]:
         """Generate comprehensive optimization recommendations."""
         logger.info("Generating optimization recommendations...")
 
@@ -461,7 +463,7 @@ class DatabasePerformanceBenchmark:
 
         return recommendations
 
-    def run_full_benchmark_suite(self) -> Dict[str, Any]:
+    def run_full_benchmark_suite(self) -> dict[str, Any]:
         """Run the complete benchmark suite."""
         logger.info("Starting full database performance benchmark suite...")
 
@@ -559,7 +561,7 @@ class DatabasePerformanceBenchmark:
         # Performance highlights
         if "performance_tests" in self.benchmark_results:
             perf = self.benchmark_results["performance_tests"]
-            print(f"\nQuery Performance:")
+            print("\nQuery Performance:")
             print(f"  Average Query Time: {perf.get('average_time', 'N/A'):.2f}ms")
             print(f"  Fastest Query: {perf.get('fastest_query', 'N/A')}")
             print(f"  Slowest Query: {perf.get('slowest_query', 'N/A')}")
@@ -574,7 +576,7 @@ class DatabasePerformanceBenchmark:
         # Key recommendations
         if "optimization_recommendations" in self.benchmark_results:
             recommendations = self.benchmark_results["optimization_recommendations"]
-            print(f"\nTop Recommendations:")
+            print("\nTop Recommendations:")
             for i, rec in enumerate(recommendations[:5], 1):
                 print(f"  {i}. {rec}")
 

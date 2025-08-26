@@ -4,15 +4,14 @@ Comprehensive security headers implementation for enterprise production environm
 Provides defense-in-depth with CSP, HSTS, and other critical security headers.
 """
 
-import hashlib
 import json
 import logging
 import os
 import secrets
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
-from urllib.parse import urlparse
+from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
@@ -93,7 +92,7 @@ class CSPSource:
 class SecurityHeadersConfig:
     """Configuration for security headers."""
 
-    def __init__(self, environment: Optional[Environment] = None):
+    def __init__(self, environment: Environment | None = None):
         """Initialize security headers configuration."""
         self.environment = environment or self._detect_environment()
         self.nonce_enabled = self.environment != Environment.DEVELOPMENT
@@ -157,7 +156,7 @@ class SecurityHeadersConfig:
         self.cross_origin_opener_policy = os.getenv("COOP", "same-origin-allow-popups")
         self.cross_origin_resource_policy = os.getenv("CORP", "same-site")
 
-    def get_csp_policy(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
+    def get_csp_policy(self, nonce: str | None = None) -> dict[CSPDirective, list[str]]:
         """Get Content Security Policy configuration for current environment."""
         if self.environment == Environment.DEVELOPMENT:
             return self._get_development_csp(nonce)
@@ -168,7 +167,7 @@ class SecurityHeadersConfig:
         else:  # PRODUCTION
             return self._get_production_csp(nonce)
 
-    def _get_development_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
+    def _get_development_csp(self, nonce: str | None = None) -> dict[CSPDirective, list[str]]:
         """Get CSP for development environment (relaxed for debugging)."""
         policy = {
             CSPDirective.DEFAULT_SRC: [CSPSource.SELF],
@@ -216,7 +215,7 @@ class SecurityHeadersConfig:
 
         return policy
 
-    def _get_testing_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
+    def _get_testing_csp(self, nonce: str | None = None) -> dict[CSPDirective, list[str]]:
         """Get CSP for testing environment."""
         policy = {
             CSPDirective.DEFAULT_SRC: [CSPSource.SELF],
@@ -238,7 +237,7 @@ class SecurityHeadersConfig:
 
         return policy
 
-    def _get_staging_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
+    def _get_staging_csp(self, nonce: str | None = None) -> dict[CSPDirective, list[str]]:
         """Get CSP for staging environment (production-like but with reporting)."""
         policy = {
             CSPDirective.DEFAULT_SRC: [CSPSource.NONE],
@@ -288,7 +287,7 @@ class SecurityHeadersConfig:
 
         return policy
 
-    def _get_production_csp(self, nonce: Optional[str] = None) -> Dict[CSPDirective, List[str]]:
+    def _get_production_csp(self, nonce: str | None = None) -> dict[CSPDirective, list[str]]:
         """Get CSP for production environment (maximum security)."""
         policy = {
             CSPDirective.DEFAULT_SRC: [CSPSource.NONE],
@@ -345,7 +344,7 @@ class SecurityHeadersConfig:
 
         return policy
 
-    def get_permissions_policy(self) -> Dict[str, List[str]]:
+    def get_permissions_policy(self) -> dict[str, list[str]]:
         """Get Permissions Policy (Feature Policy) configuration."""
         if self.environment == Environment.DEVELOPMENT:
             # Relaxed for development
@@ -404,12 +403,12 @@ class SecurityHeadersConfig:
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add comprehensive security headers to responses."""
 
-    def __init__(self, app: ASGIApp, config: Optional[SecurityHeadersConfig] = None):
+    def __init__(self, app: ASGIApp, config: SecurityHeadersConfig | None = None):
         """Initialize security headers middleware."""
         super().__init__(app)
         self.config = config or SecurityHeadersConfig()
-        self._csp_violations: List[Dict[str, Any]] = []
-        self._ct_violations: List[Dict[str, Any]] = []
+        self._csp_violations: list[dict[str, Any]] = []
+        self._ct_violations: list[dict[str, Any]] = []
 
         logger.info(f"Security headers middleware initialized for {self.config.environment.value} environment")
 
@@ -434,7 +433,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         """Generate a cryptographically secure nonce."""
         return secrets.token_urlsafe(32)
 
-    def _add_security_headers(self, response: Response, request: Request, nonce: Optional[str] = None) -> None:
+    def _add_security_headers(self, response: Response, request: Request, nonce: str | None = None) -> None:
         """Add all security headers to the response."""
         # Content Security Policy
         if self.config.csp_enabled:
@@ -484,7 +483,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["X-API-Version"] = "2.0.0"
             response.headers["X-Request-ID"] = request.headers.get("X-Request-ID", self._generate_request_id())
 
-    def _add_csp_header(self, response: Response, nonce: Optional[str] = None) -> None:
+    def _add_csp_header(self, response: Response, nonce: str | None = None) -> None:
         """Add Content Security Policy header."""
         policy = self.config.get_csp_policy(nonce)
 
@@ -644,10 +643,10 @@ class CSPViolationReport:
     def __init__(self, max_reports: int = 1000):
         """Initialize CSP violation report handler."""
         self.max_reports = max_reports
-        self.reports: List[Dict[str, Any]] = []
-        self.report_counts: Dict[str, int] = {}
+        self.reports: list[dict[str, Any]] = []
+        self.report_counts: dict[str, int] = {}
 
-    def add_report(self, report: Dict[str, Any]) -> None:
+    def add_report(self, report: dict[str, Any]) -> None:
         """Add a CSP violation report."""
         # Extract key fields for deduplication
         blocked_uri = report.get("blocked-uri", "")
@@ -674,7 +673,7 @@ class CSPViolationReport:
             f"CSP Violation: {violated_directive} blocked {blocked_uri} on {document_uri}"
         )
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary of CSP violations."""
         if not self.reports:
             return {"total_reports": 0, "unique_violations": 0, "top_violations": []}
@@ -777,7 +776,7 @@ Policy: https://example.com/security-policy
 """
 
 
-def setup_security_headers(app: FastAPI, config: Optional[SecurityHeadersConfig] = None) -> None:
+def setup_security_headers(app: FastAPI, config: SecurityHeadersConfig | None = None) -> None:
     """Setup security headers middleware and endpoints."""
     # Add security headers middleware
     config = config or SecurityHeadersConfig()

@@ -9,21 +9,14 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from backend.api.middleware.security_headers import (
-    SecurityHeadersConfig,
-    Environment,
-    CSPDirective,
-    CSPSource,
-)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -51,7 +44,7 @@ class SecurityHeadersMigration:
     def _load_current_phase(self) -> MigrationPhase:
         """Load current migration phase from config."""
         if self.config_file.exists():
-            with open(self.config_file, 'r') as f:
+            with open(self.config_file) as f:
                 data = json.load(f)
                 return MigrationPhase(data.get("current_phase", MigrationPhase.PHASE_1_MONITORING))
         return MigrationPhase.PHASE_1_MONITORING
@@ -66,7 +59,7 @@ class SecurityHeadersMigration:
         with open(self.config_file, 'w') as f:
             json.dump(data, f, indent=2)
 
-    def get_phase_config(self, phase: Optional[MigrationPhase] = None) -> Dict[str, any]:
+    def get_phase_config(self, phase: MigrationPhase | None = None) -> dict[str, any]:
         """Get configuration for a specific migration phase."""
         phase = phase or self.current_phase
 
@@ -132,7 +125,7 @@ class SecurityHeadersMigration:
 
         return configs[phase]
 
-    def validate_phase_requirements(self, phase: MigrationPhase) -> Tuple[bool, List[str]]:
+    def validate_phase_requirements(self, phase: MigrationPhase) -> tuple[bool, list[str]]:
         """Validate requirements for moving to a specific phase."""
         issues = []
 
@@ -172,7 +165,7 @@ class SecurityHeadersMigration:
         if not self.config_file.exists():
             return False
 
-        with open(self.config_file, 'r') as f:
+        with open(self.config_file) as f:
             data = json.load(f)
             updated_at = datetime.fromisoformat(data.get("updated_at", datetime.utcnow().isoformat()))
             return (datetime.utcnow() - updated_at).days >= days
@@ -208,7 +201,7 @@ class SecurityHeadersMigration:
         # In a real implementation, this would check CT logs
         return True
 
-    def advance_phase(self) -> Tuple[bool, str]:
+    def advance_phase(self) -> tuple[bool, str]:
         """Advance to the next migration phase."""
         phase_order = [
             MigrationPhase.PHASE_1_MONITORING,
@@ -235,7 +228,7 @@ class SecurityHeadersMigration:
 
         return True, f"Advanced to {next_phase.value}"
 
-    def rollback_phase(self) -> Tuple[bool, str]:
+    def rollback_phase(self) -> tuple[bool, str]:
         """Rollback to the previous migration phase."""
         phase_order = [
             MigrationPhase.PHASE_1_MONITORING,
@@ -257,7 +250,7 @@ class SecurityHeadersMigration:
 
         return True, f"Rolled back to {prev_phase.value}"
 
-    def generate_env_file(self, output_file: Optional[Path] = None) -> None:
+    def generate_env_file(self, output_file: Path | None = None) -> None:
         """Generate .env file for current migration phase."""
         output_file = output_file or Path(".env.security")
 
@@ -280,7 +273,7 @@ class SecurityHeadersMigration:
 
         logger.info(f"Generated environment file: {output_file}")
 
-    def test_headers(self, url: str = "http://localhost:8000") -> Dict[str, str]:
+    def test_headers(self, url: str = "http://localhost:8000") -> dict[str, str]:
         """Test security headers on a URL."""
         import requests
 
@@ -323,12 +316,12 @@ class SecurityHeadersMigration:
         config = self.get_phase_config()
         print(f"Description: {config.get('description', '')}")
 
-        print(f"\nCurrent Configuration:")
+        print("\nCurrent Configuration:")
         for key, value in config.items():
             if key != "description":
                 print(f"  {key}: {value}")
 
-        print(f"\nPhase Progression:")
+        print("\nPhase Progression:")
         phases = [
             MigrationPhase.PHASE_1_MONITORING,
             MigrationPhase.PHASE_2_REPORT_ONLY,
@@ -345,9 +338,9 @@ class SecurityHeadersMigration:
 
     def generate_rollback_script(self) -> None:
         """Generate emergency rollback script."""
-        script_content = """#!/bin/bash
+        script_content = f"""#!/bin/bash
 # Emergency Security Headers Rollback Script
-# Generated: {timestamp}
+# Generated: {datetime.utcnow().isoformat()}
 
 echo "🚨 Emergency Security Headers Rollback"
 echo "======================================"
@@ -372,7 +365,7 @@ export COOKIE_SAMESITE=lax
 
 echo "✅ Security headers rolled back to minimal configuration"
 echo "⚠️  Remember to restart the application for changes to take effect"
-""".format(timestamp=datetime.utcnow().isoformat())
+"""
 
         rollback_file = Path("rollback_security_headers.sh")
         with open(rollback_file, 'w') as f:
@@ -444,7 +437,7 @@ def main():
         headers = migration.test_headers(args.url)
 
         if headers:
-            print(f"\nSecurity Headers Found:")
+            print("\nSecurity Headers Found:")
             for name, value in headers.items():
                 # Truncate long values for display
                 display_value = value if len(value) <= 100 else f"{value[:97]}..."

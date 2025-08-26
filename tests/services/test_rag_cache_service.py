@@ -13,13 +13,12 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.database.connection import DatabaseConnection
 from src.services.rag_cache_service import (
-    CacheEntry,
     RAGCacheService,
     RAGCacheServiceError,
 )

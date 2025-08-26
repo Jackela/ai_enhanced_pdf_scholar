@@ -3,10 +3,10 @@ Minimal API endpoint tests that avoid complex dependency issues.
 Tests core functionality using a simplified FastAPI app instance.
 """
 
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import Mock
 
 
 # Create a minimal test app to avoid dependency issues

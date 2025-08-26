@@ -4,9 +4,7 @@ Test Infrastructure Migration Script
 Helps migrate existing tests to use the optimized infrastructure.
 """
 
-import re
 from pathlib import Path
-from typing import List, Dict, Tuple
 
 
 class TestMigrationHelper:
@@ -31,7 +29,7 @@ class TestMigrationHelper:
                 '# Use test_data_directory fixture instead\n',
         }
 
-    def scan_test_files(self) -> List[Path]:
+    def scan_test_files(self) -> list[Path]:
         """Scan for test files that might need migration."""
         test_files = list(self.test_dir.rglob("test_*.py"))
         conftest_files = list(self.test_dir.rglob("conftest.py"))
@@ -60,7 +58,7 @@ class TestMigrationHelper:
 
         return files_to_migrate
 
-    def suggest_migrations(self, file_path: Path) -> List[Dict]:
+    def suggest_migrations(self, file_path: Path) -> list[dict]:
         """Suggest specific migrations for a file."""
         suggestions = []
 
@@ -131,13 +129,13 @@ class TestMigrationHelper:
                 for suggestion in suggestions:
                     report_lines.extend([
                         f"**Line {suggestion['line']}** ({suggestion['type']}):",
-                        f"```python",
-                        f"# Current:",
+                        "```python",
+                        "# Current:",
                         f"{suggestion['current']}",
-                        f"",
-                        f"# Suggested:",
+                        "",
+                        "# Suggested:",
                         f"{suggestion['replacement']}",
-                        f"```",
+                        "```",
                         f"*{suggestion['suggestion']}*",
                         ""
                     ])

@@ -4,9 +4,9 @@ E2E Test Fixtures Package
 This package contains reusable test fixtures for end-to-end testing.
 """
 
+from .api_fixtures import *
 from .browser_fixtures import *
 from .data_fixtures import *
-from .api_fixtures import *
 from .database_fixtures import *
 
 __all__ = [

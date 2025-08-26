@@ -15,28 +15,28 @@ Test Coverage:
 All tests use the FastAPI TestClient with real HTTP requests (not internal function calls).
 """
 
-import json
-import tempfile
-import time
-from io import BytesIO
-from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import Mock, patch
-
-import pytest
-import requests
-from fastapi.testclient import TestClient
-
 # Import system under test
 import sys
+from io import BytesIO
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
+    from backend.api.dependencies import (
+        get_db,
+        get_enhanced_rag,
+        get_library_controller,
+    )
     from backend.api.main import app
-    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
     from src.database.connection import DatabaseConnection
-    from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
+    from src.database.modular_migrator import (
+        ModularDatabaseMigrator as DatabaseMigrator,
+    )
     INTEGRATION_AVAILABLE = True
 except ImportError as e:
     print(f"Integration test skipped due to import error: {e}")
@@ -890,8 +890,8 @@ def test_api_endpoints_coverage():
         print(f"  {category}: {len(endpoints)} endpoints")
 
     print(f"  Total documented endpoints: {total_endpoints}")
-    print(f"  Total test classes: 7")
-    print(f"  Integration tests ready: ✅")
+    print("  Total test classes: 7")
+    print("  Integration tests ready: ✅")
 
     assert total_endpoints > 0
     assert total_endpoints >= 20  # Meeting requirement for 20+ endpoints

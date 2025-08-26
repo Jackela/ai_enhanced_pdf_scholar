@@ -6,7 +6,7 @@ Pydantic models for streaming file upload operations and progress tracking.
 import hashlib
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_validator
@@ -40,11 +40,11 @@ class StreamingChunk(BaseModel):
     size: int = Field(..., description="Chunk size in bytes")
     offset: int = Field(..., description="Chunk offset in the original file")
     is_final: bool = Field(default=False, description="Whether this is the last chunk")
-    checksum: Optional[str] = Field(None, description="Chunk SHA-256 checksum")
+    checksum: str | None = Field(None, description="Chunk SHA-256 checksum")
 
     @field_validator('checksum')
     @classmethod
-    def validate_checksum(cls, v: Optional[str], info) -> Optional[str]:
+    def validate_checksum(cls, v: str | None, info) -> str | None:
         """Validate or generate chunk checksum."""
         if v is None and hasattr(info, 'data'):
             # Generate checksum if not provided
@@ -70,11 +70,11 @@ class UploadSession(BaseModel):
     status: UploadStatus = Field(default=UploadStatus.INITIALIZING, description="Current upload status")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Session creation time")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update time")
-    error_message: Optional[str] = Field(None, description="Error message if upload failed")
-    temp_file_path: Optional[str] = Field(None, description="Temporary file path")
-    expected_hash: Optional[str] = Field(None, description="Expected file SHA-256 hash")
-    actual_hash: Optional[str] = Field(None, description="Calculated file SHA-256 hash")
-    metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict, description="Additional metadata")
+    error_message: str | None = Field(None, description="Error message if upload failed")
+    temp_file_path: str | None = Field(None, description="Temporary file path")
+    expected_hash: str | None = Field(None, description="Expected file SHA-256 hash")
+    actual_hash: str | None = Field(None, description="Calculated file SHA-256 hash")
+    metadata: dict[str, Union[str, int, float, bool]] = Field(default_factory=dict, description="Additional metadata")
 
     @field_validator('total_chunks')
     @classmethod
@@ -99,11 +99,11 @@ class UploadProgress(BaseModel):
     uploaded_chunks: int = Field(..., ge=0, description="Chunks uploaded")
     total_chunks: int = Field(..., gt=0, description="Total chunks")
     progress_percentage: float = Field(..., ge=0, le=100, description="Upload progress percentage")
-    upload_speed_bps: Optional[float] = Field(None, ge=0, description="Upload speed in bytes per second")
-    estimated_time_remaining: Optional[int] = Field(None, ge=0, description="Estimated time remaining in seconds")
-    current_chunk: Optional[int] = Field(None, description="Currently processing chunk")
-    message: Optional[str] = Field(None, description="Status message")
-    error_details: Optional[str] = Field(None, description="Error details if failed")
+    upload_speed_bps: float | None = Field(None, ge=0, description="Upload speed in bytes per second")
+    estimated_time_remaining: int | None = Field(None, ge=0, description="Estimated time remaining in seconds")
+    current_chunk: int | None = Field(None, description="Currently processing chunk")
+    message: str | None = Field(None, description="Status message")
+    error_details: str | None = Field(None, description="Error details if failed")
 
 
 class StreamingUploadRequest(BaseModel):
@@ -113,10 +113,10 @@ class StreamingUploadRequest(BaseModel):
     file_size: int = Field(..., gt=0, le=1073741824, description="File size in bytes (max 1GB)")
     chunk_size: int = Field(default=8388608, gt=0, le=16777216, description="Preferred chunk size")
     client_id: str = Field(..., min_length=1, description="WebSocket client ID")
-    title: Optional[str] = Field(None, max_length=500, description="Document title")
+    title: str | None = Field(None, max_length=500, description="Document title")
     check_duplicates: bool = Field(default=True, description="Check for duplicate documents")
     auto_build_index: bool = Field(default=False, description="Auto-build vector index after upload")
-    expected_hash: Optional[str] = Field(None, min_length=64, max_length=64, description="Expected SHA-256 hash")
+    expected_hash: str | None = Field(None, min_length=64, max_length=64, description="Expected SHA-256 hash")
 
     @field_validator('filename')
     @classmethod
@@ -132,7 +132,7 @@ class StreamingUploadRequest(BaseModel):
 
     @field_validator('expected_hash')
     @classmethod
-    def validate_expected_hash(cls, v: Optional[str]) -> Optional[str]:
+    def validate_expected_hash(cls, v: str | None) -> str | None:
         """Validate SHA-256 hash format."""
         if v is not None:
             if not re.match(r'^[a-fA-F0-9]{64}$', v):
@@ -157,17 +157,17 @@ class ChunkUploadRequest(BaseModel):
     chunk_size: int = Field(..., gt=0, description="Chunk size in bytes")
     chunk_offset: int = Field(..., ge=0, description="Chunk offset in original file")
     is_final: bool = Field(default=False, description="Whether this is the last chunk")
-    checksum: Optional[str] = Field(None, description="Chunk SHA-256 checksum")
+    checksum: str | None = Field(None, description="Chunk SHA-256 checksum")
 
 
 class ChunkUploadResponse(BaseModel):
     """Response model for chunk upload."""
     success: bool = Field(..., description="Whether chunk upload succeeded")
     chunk_id: int = Field(..., description="Processed chunk ID")
-    next_chunk_id: Optional[int] = Field(None, description="Next expected chunk ID")
+    next_chunk_id: int | None = Field(None, description="Next expected chunk ID")
     upload_complete: bool = Field(default=False, description="Whether entire upload is complete")
     message: str = Field(..., description="Response message")
-    retry_after: Optional[int] = Field(None, description="Seconds to wait before retry if failed")
+    retry_after: int | None = Field(None, description="Seconds to wait before retry if failed")
 
 
 class UploadMemoryStats(BaseModel):
@@ -178,31 +178,31 @@ class UploadMemoryStats(BaseModel):
     temp_files_count: int = Field(..., description="Number of temporary files")
     temp_files_size_mb: float = Field(..., description="Total size of temporary files in MB")
     concurrent_uploads: int = Field(..., description="Number of concurrent uploads")
-    memory_limit_mb: Optional[float] = Field(None, description="Memory limit in MB")
+    memory_limit_mb: float | None = Field(None, description="Memory limit in MB")
     disk_space_available_mb: float = Field(..., description="Available disk space in MB")
 
 
 class UploadCancellationRequest(BaseModel):
     """Request model for cancelling an upload."""
     session_id: UUID = Field(..., description="Upload session ID to cancel")
-    reason: Optional[str] = Field(None, max_length=200, description="Cancellation reason")
+    reason: str | None = Field(None, max_length=200, description="Cancellation reason")
 
 
 class UploadResumeRequest(BaseModel):
     """Request model for resuming an interrupted upload."""
     session_id: UUID = Field(..., description="Upload session ID to resume")
     client_id: str = Field(..., description="New WebSocket client ID")
-    last_chunk_id: Optional[int] = Field(None, description="Last successfully uploaded chunk")
+    last_chunk_id: int | None = Field(None, description="Last successfully uploaded chunk")
 
 
 class StreamingValidationResult(BaseModel):
     """Result of streaming file validation."""
     is_valid: bool = Field(..., description="Whether file passed validation")
-    detected_mime_type: Optional[str] = Field(None, description="Detected MIME type")
-    file_signature: Optional[str] = Field(None, description="File signature/magic bytes")
-    validation_errors: List[str] = Field(default_factory=list, description="Validation error messages")
-    warnings: List[str] = Field(default_factory=list, description="Validation warnings")
+    detected_mime_type: str | None = Field(None, description="Detected MIME type")
+    file_signature: str | None = Field(None, description="File signature/magic bytes")
+    validation_errors: list[str] = Field(default_factory=list, description="Validation error messages")
+    warnings: list[str] = Field(default_factory=list, description="Validation warnings")
     is_pdf: bool = Field(default=False, description="Whether file is a valid PDF")
-    pdf_version: Optional[str] = Field(None, description="PDF version if detected")
-    page_count: Optional[int] = Field(None, description="Number of PDF pages")
+    pdf_version: str | None = Field(None, description="PDF version if detected")
+    page_count: int | None = Field(None, description="Number of PDF pages")
     is_encrypted: bool = Field(default=False, description="Whether PDF is encrypted")

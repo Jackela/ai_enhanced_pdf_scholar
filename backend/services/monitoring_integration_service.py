@@ -7,10 +7,10 @@ infrastructure including WebSocket manager and performance monitor.
 
 import asyncio
 import logging
-from typing import Optional
-from backend.services.real_time_metrics_collector import RealTimeMetricsCollector
-from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor
+
 from backend.api.websocket_manager import WebSocketManager
+from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor
+from backend.services.real_time_metrics_collector import RealTimeMetricsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +23,8 @@ class MonitoringIntegrationService:
 
     def __init__(
         self,
-        websocket_manager: Optional[WebSocketManager] = None,
-        integrated_monitor: Optional[IntegratedPerformanceMonitor] = None
+        websocket_manager: WebSocketManager | None = None,
+        integrated_monitor: IntegratedPerformanceMonitor | None = None
     ):
         self.websocket_manager = websocket_manager
         self.integrated_monitor = integrated_monitor
@@ -35,7 +35,7 @@ class MonitoringIntegrationService:
             integrated_monitor=integrated_monitor
         )
 
-        self._integration_task: Optional[asyncio.Task] = None
+        self._integration_task: asyncio.Task | None = None
         self._running = False
 
         logger.info("MonitoringIntegrationService initialized")
@@ -275,12 +275,12 @@ class MonitoringIntegrationService:
 
 
 # Global integration service instance
-integration_service: Optional[MonitoringIntegrationService] = None
+integration_service: MonitoringIntegrationService | None = None
 
 
 def initialize_monitoring_integration(
-    websocket_manager: Optional[WebSocketManager] = None,
-    integrated_monitor: Optional[IntegratedPerformanceMonitor] = None
+    websocket_manager: WebSocketManager | None = None,
+    integrated_monitor: IntegratedPerformanceMonitor | None = None
 ) -> MonitoringIntegrationService:
     """Initialize the monitoring integration service."""
     global integration_service
@@ -294,6 +294,6 @@ def initialize_monitoring_integration(
     return integration_service
 
 
-def get_monitoring_integration() -> Optional[MonitoringIntegrationService]:
+def get_monitoring_integration() -> MonitoringIntegrationService | None:
     """Get the global monitoring integration service instance."""
     return integration_service

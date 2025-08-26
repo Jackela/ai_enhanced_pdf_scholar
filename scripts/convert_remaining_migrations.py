@@ -7,7 +7,6 @@ into individual modular migration files.
 Run this script to complete the migration system refactoring.
 """
 
-import os
 import logging
 from pathlib import Path
 

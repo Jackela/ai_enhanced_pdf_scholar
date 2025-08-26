@@ -7,17 +7,15 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Union
 
-import redis
-from redis import Redis, RedisError
-from redis.cluster import RedisCluster
-from redis.sentinel import Sentinel
+from redis import Redis
 from redis.backoff import ExponentialBackoff
+from redis.cluster import RedisCluster
 from redis.retry import Retry
-from redis.connection import ConnectionPool
+from redis.sentinel import Sentinel
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,7 @@ class RedisNodeConfig:
     host: str
     port: int
     role: NodeRole
-    password: Optional[str] = None
+    password: str | None = None
     db: int = 0
     max_connections: int = 100
     socket_timeout: float = 5.0
@@ -64,13 +62,13 @@ class RedisNodeConfig:
 class ClusterConfig:
     """Redis cluster configuration."""
     mode: ClusterMode = ClusterMode.CLUSTER
-    nodes: List[RedisNodeConfig] = field(default_factory=list)
+    nodes: list[RedisNodeConfig] = field(default_factory=list)
     service_name: str = "mymaster"  # For Sentinel
-    sentinel_nodes: List[RedisNodeConfig] = field(default_factory=list)
+    sentinel_nodes: list[RedisNodeConfig] = field(default_factory=list)
 
     # Connection settings
     max_connections_per_node: int = 100
-    connection_pool_kwargs: Dict[str, Any] = field(default_factory=dict)
+    connection_pool_kwargs: dict[str, Any] = field(default_factory=dict)
 
     # Cluster settings
     skip_full_coverage_check: bool = False
@@ -117,7 +115,7 @@ class NodeHealth:
     cpu_usage_percent: float = 0.0
     connections_count: int = 0
     operations_per_second: int = 0
-    last_error: Optional[str] = None
+    last_error: str | None = None
 
     def update_success(self, response_time_ms: float):
         """Update health on successful check."""
@@ -152,12 +150,12 @@ class RedisClusterManager:
     def __init__(self, config: ClusterConfig):
         """Initialize cluster manager."""
         self.config = config
-        self._clients: Dict[str, Redis] = {}
-        self._cluster_client: Optional[Union[RedisCluster, Redis]] = None
-        self._sentinel_client: Optional[Sentinel] = None
-        self._node_health: Dict[str, NodeHealth] = {}
+        self._clients: dict[str, Redis] = {}
+        self._cluster_client: Union[RedisCluster, Redis] | None = None
+        self._sentinel_client: Sentinel | None = None
+        self._node_health: dict[str, NodeHealth] = {}
         self._is_monitoring = False
-        self._monitoring_task: Optional[asyncio.Task] = None
+        self._monitoring_task: asyncio.Task | None = None
 
         # Performance metrics
         self._metrics = {
@@ -440,7 +438,7 @@ class RedisClusterManager:
             raise RuntimeError("Cluster not initialized")
         return self._cluster_client
 
-    def get_node_client(self, node_id: str) -> Optional[Redis]:
+    def get_node_client(self, node_id: str) -> Redis | None:
         """Get client for a specific node."""
         return self._clients.get(node_id)
 
@@ -449,7 +447,7 @@ class RedisClusterManager:
         command: str,
         *args,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a command on all healthy nodes."""
         results = {}
 
@@ -469,7 +467,7 @@ class RedisClusterManager:
 
         return results
 
-    async def get_cluster_info(self) -> Dict[str, Any]:
+    async def get_cluster_info(self) -> dict[str, Any]:
         """Get comprehensive cluster information."""
         info = {
             "mode": self.config.mode,
@@ -570,7 +568,7 @@ class RedisClusterManager:
     # Backup and Maintenance
     # ========================================================================
 
-    async def create_cluster_backup(self) -> Dict[str, Any]:
+    async def create_cluster_backup(self) -> dict[str, Any]:
         """Create backup of cluster data."""
         backup_info = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -599,7 +597,7 @@ class RedisClusterManager:
 
         return backup_info
 
-    async def get_cluster_metrics(self) -> Dict[str, Any]:
+    async def get_cluster_metrics(self) -> dict[str, Any]:
         """Get detailed cluster performance metrics."""
         metrics = self._metrics.copy()
 
@@ -677,7 +675,7 @@ class RedisClusterFactory:
     """Factory for creating Redis cluster managers."""
 
     @staticmethod
-    def create_from_config(config_dict: Dict[str, Any]) -> RedisClusterManager:
+    def create_from_config(config_dict: dict[str, Any]) -> RedisClusterManager:
         """Create cluster manager from configuration dictionary."""
         # Parse nodes
         nodes = []
@@ -723,7 +721,7 @@ class RedisClusterFactory:
 
     @staticmethod
     def create_sentinel(
-        sentinel_hosts: List[Tuple[str, int]],
+        sentinel_hosts: list[tuple[str, int]],
         service_name: str = "mymaster",
         **kwargs
     ) -> RedisClusterManager:

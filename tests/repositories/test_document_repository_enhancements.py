@@ -7,10 +7,7 @@ Tests for the newly implemented repository functionality:
 """
 
 import tempfile
-from datetime import datetime
 from pathlib import Path
-
-import pytest
 
 from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel

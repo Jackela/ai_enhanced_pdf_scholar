@@ -7,9 +7,10 @@ Check for memory leaks and apply basic optimizations.
 
 import gc
 import sys
-import psutil
 import traceback
 from pathlib import Path
+
+import psutil
 
 # Add project root to path
 sys.path.append('.')

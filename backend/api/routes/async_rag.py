@@ -6,28 +6,34 @@ Async WebSocket-enabled RAG endpoints for real-time streaming processing.
 import asyncio
 import logging
 import time
-from typing import Optional, Dict, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from pydantic import BaseModel
 
 from backend.api.dependencies import (
     get_library_controller,
+    get_websocket_manager,
     require_rag_service,
     validate_document_access,
-    get_websocket_manager
 )
-from backend.api.websocket_manager import WebSocketManager, RAGProgressType
+from backend.api.error_handling import (
+    ErrorTemplates,
+    ResourceNotFoundException,
+    SystemException,
+)
 from backend.api.models import (
     RAGQueryRequest,
     RAGQueryResponse,
 )
-from backend.api.error_handling import (
-    ResourceNotFoundException,
-    BusinessLogicException,
-    SystemException,
-    ErrorTemplates,
-)
+from backend.api.websocket_manager import RAGProgressType, WebSocketManager
 from src.controllers.library_controller import LibraryController
 from src.services.enhanced_rag_service import EnhancedRAGService
 
@@ -212,7 +218,7 @@ async def async_query_document(
         )
 
 
-@router.get("/query/async/{task_id}", response_model=Dict[str, Any])
+@router.get("/query/async/{task_id}", response_model=dict[str, Any])
 async def get_async_query_status(
     task_id: str,
     client_id: str,
@@ -334,7 +340,7 @@ async def websocket_rag_endpoint(
             ws_manager.disconnect(client_id)
 
 
-@router.get("/stream/stats", response_model=Dict[str, Any])
+@router.get("/stream/stats", response_model=dict[str, Any])
 async def get_streaming_stats(
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
 ):
@@ -357,7 +363,7 @@ async def get_streaming_stats(
 @router.post("/query/hybrid", response_model=RAGQueryResponse)
 async def hybrid_query_document(
     query_request: RAGQueryRequest,
-    client_id: Optional[str] = None,
+    client_id: str | None = None,
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
     ws_manager: WebSocketManager = Depends(get_websocket_manager),

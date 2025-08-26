@@ -4,18 +4,19 @@ Enterprise-grade role and permission management for production environments.
 """
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set, Union
+from typing import Any
 
-from fastapi import Depends, HTTPException, Request, status
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table
+from fastapi import Depends, HTTPException, status
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy.orm import Session, relationship
 
-from backend.api.auth.jwt_auth import get_current_user, User
+from backend.api.auth.jwt_auth import User
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ class PermissionCheck:
     """Result of a permission check."""
     allowed: bool
     reason: str = ""
-    context: Dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
     cached: bool = False
     ttl: int = 300  # Cache TTL in seconds
 
@@ -169,16 +170,16 @@ class RBACService:
         """Initialize RBAC service."""
         self.db = db
         self.cache_enabled = cache_enabled
-        self._permission_cache: Dict[str, tuple[PermissionCheck, datetime]] = {}
-        self._role_hierarchy_cache: Dict[int, Set[int]] = {}
+        self._permission_cache: dict[str, tuple[PermissionCheck, datetime]] = {}
+        self._role_hierarchy_cache: dict[int, set[int]] = {}
 
     def check_permission(
         self,
         user: User,
         resource: str,
         action: str,
-        resource_id: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        resource_id: str | None = None,
+        context: dict[str, Any] | None = None
     ) -> PermissionCheck:
         """
         Check if user has permission to perform action on resource.
@@ -217,7 +218,7 @@ class RBACService:
         if self._has_role_permission(user, resource, action):
             result = PermissionCheck(
                 allowed=True,
-                reason=f"Permission granted through role",
+                reason="Permission granted through role",
                 context={"method": "role"}
             )
             self._cache_permission(cache_key, result)
@@ -257,7 +258,7 @@ class RBACService:
         user: User,
         role_name: str,
         assigned_by: User,
-        expires_at: Optional[datetime] = None
+        expires_at: datetime | None = None
     ) -> bool:
         """
         Assign a role to a user.
@@ -357,8 +358,8 @@ class RBACService:
         user: User,
         permission_name: str,
         granted_by: User,
-        expires_at: Optional[datetime] = None,
-        reason: Optional[str] = None
+        expires_at: datetime | None = None,
+        reason: str | None = None
     ) -> bool:
         """
         Grant a direct permission to a user.
@@ -401,7 +402,7 @@ class RBACService:
 
         return True
 
-    def get_user_permissions(self, user: User) -> List[str]:
+    def get_user_permissions(self, user: User) -> list[str]:
         """
         Get all permissions for a user (from roles and direct grants).
 
@@ -427,9 +428,9 @@ class RBACService:
         self,
         name: str,
         description: str,
-        permissions: List[str],
+        permissions: list[str],
         created_by: User,
-        parent_role: Optional[str] = None
+        parent_role: str | None = None
     ) -> Role:
         """
         Create a custom role with specified permissions.
@@ -516,7 +517,7 @@ class RBACService:
         resource: str,
         action: str,
         resource_id: str,
-        context: Optional[Dict[str, Any]]
+        context: dict[str, Any] | None
     ) -> bool:
         """Check resource-level policies."""
         # Example: Check if user owns the resource
@@ -537,7 +538,7 @@ class RBACService:
 
         return False
 
-    def _get_role_permissions_recursive(self, role: Role) -> Set[str]:
+    def _get_role_permissions_recursive(self, role: Role) -> set[str]:
         """Get all permissions for a role including inherited permissions."""
         if role.id in self._role_hierarchy_cache:
             return self._role_hierarchy_cache[role.id]

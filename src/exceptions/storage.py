@@ -3,7 +3,7 @@ Storage and Database Exception Classes
 Handles errors related to file storage, database operations, and connections.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from .base import PDFScholarError, RepositoryError
 
@@ -14,8 +14,8 @@ class StorageError(PDFScholarError):
     def __init__(
         self,
         message: str,
-        path: Optional[str] = None,
-        operation: Optional[str] = None,
+        path: str | None = None,
+        operation: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -46,7 +46,7 @@ class StorageError(PDFScholarError):
 class FileNotFoundError(StorageError):
     """Raised when a requested file cannot be found."""
 
-    def __init__(self, message: str, path: Optional[str] = None, **kwargs: Any):
+    def __init__(self, message: str, path: str | None = None, **kwargs: Any):
         super().__init__(message, path=path, operation="locate file", **kwargs)
 
     def _get_default_user_message(self) -> str:
@@ -61,8 +61,8 @@ class FileAccessError(StorageError):
     def __init__(
         self,
         message: str,
-        path: Optional[str] = None,
-        access_type: Optional[str] = None,
+        path: str | None = None,
+        access_type: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -96,9 +96,9 @@ class DatabaseError(RepositoryError):
     def __init__(
         self,
         message: str,
-        query: Optional[str] = None,
-        table: Optional[str] = None,
-        constraint: Optional[str] = None,
+        query: str | None = None,
+        table: str | None = None,
+        constraint: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -136,8 +136,8 @@ class ConnectionError(DatabaseError):
     def __init__(
         self,
         message: str,
-        host: Optional[str] = None,
-        database: Optional[str] = None,
+        host: str | None = None,
+        database: str | None = None,
         **kwargs: Any,
     ):
         """

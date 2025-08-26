@@ -9,20 +9,18 @@ real vector operations (in test mode for performance).
 import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List
 
 import pytest
 
 from src.database.connection import DatabaseConnection
-from src.database.models import DocumentModel
-from src.services.document_library_service import DocumentLibraryService
-from src.services.enhanced_rag_service import EnhancedRAGService
+from src.repositories.citation_relation_repository import CitationRelationRepository
+from src.repositories.citation_repository import CitationRepository
 from src.services.citation_parsing_service import CitationParsingService
 from src.services.citation_service import CitationService
-from src.repositories.citation_repository import CitationRepository
-from src.repositories.citation_relation_repository import CitationRelationRepository
-from tests.fixtures.pdf_fixtures import PDFFixtureGenerator
+from src.services.document_library_service import DocumentLibraryService
+from src.services.enhanced_rag_service import EnhancedRAGService
 from tests.fixtures.academic_pdf_generator import AcademicPDFGenerator
+from tests.fixtures.pdf_fixtures import PDFFixtureGenerator
 
 
 class TestRealPDFProcessing:
@@ -534,7 +532,7 @@ class TestRealPDFProcessing:
         # Check for vector store file (contains actual embeddings in test mode)
         vector_store_file = index_path / "default__vector_store.json"
         if vector_store_file.exists():
-            with open(vector_store_file, 'r') as f:
+            with open(vector_store_file) as f:
                 vector_data = json.load(f)
 
             # Verify embeddings exist

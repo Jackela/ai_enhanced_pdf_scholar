@@ -11,12 +11,11 @@ Usage:
 
 import importlib
 import logging
-import os
 import sys
 import tempfile
 import traceback
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Any
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -41,7 +40,7 @@ class TestEnvironmentValidator:
         self.overall_health = 0
         self.issues = []
 
-    def validate_all(self) -> Dict[str, Any]:
+    def validate_all(self) -> dict[str, Any]:
         """Run all validation checks."""
         print("🔍 AI Enhanced PDF Scholar - Test Environment Validator")
         print("=" * 60)
@@ -139,7 +138,7 @@ class TestEnvironmentValidator:
                 installed_packages[package_name] = version
                 print(f"✅ {package_name}: {version}")
 
-            except ImportError as e:
+            except ImportError:
                 missing_packages.append(package_name)
                 print(f"❌ {package_name}: Not installed")
 
@@ -306,7 +305,8 @@ class TestEnvironmentValidator:
         print("\n🎭 Checking mock framework...")
 
         try:
-            from unittest.mock import Mock, MagicMock, patch
+            from unittest.mock import Mock
+
             from tests.test_utils import MockFactory
 
             # Test basic mock creation

@@ -9,23 +9,17 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Callable
-from dataclasses import dataclass
-from unittest.mock import Mock, patch, AsyncMock
+from collections.abc import Callable
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+from unittest.mock import patch
 
-import pytest
 import httpx
-import psutil
+import pytest
 
 # Import system components
-from backend.services.circuit_breaker_service import CircuitBreakerService
-from backend.services.health_check_service import HealthCheckService
-from backend.database.production_config import ProductionDatabaseManager
-from backend.config.redis_cluster import RedisClusterManager
-from backend.services.production_monitoring import ProductionMonitoringService
-from backend.services.secrets_monitoring_service import SecretsMonitoringService
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +33,7 @@ class FailureScenario:
     duration_seconds: int
     expected_recovery_time: int
     critical: bool = False
-    recovery_validation: Optional[Callable] = None
+    recovery_validation: Callable | None = None
 
 
 @dataclass
@@ -51,8 +45,8 @@ class ResilienceTestResult:
     recovery_time_seconds: float
     system_degraded_during_failure: bool
     auto_recovery_successful: bool
-    error_message: Optional[str] = None
-    metrics: Dict[str, Any] = None
+    error_message: str | None = None
+    metrics: dict[str, Any] = None
 
 
 class ChaosEngineeringSimulator:

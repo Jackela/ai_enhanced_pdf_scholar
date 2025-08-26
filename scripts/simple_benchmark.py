@@ -7,12 +7,11 @@ Establishes factual performance baselines for core AI Enhanced PDF Scholar opera
 import json
 import logging
 import statistics
+import sys
 import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
-import sys
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -21,8 +20,8 @@ logger = logging.getLogger(__name__)
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.database.connection import DatabaseConnection
 from src.database import DatabaseMigrator
+from src.database.connection import DatabaseConnection
 
 
 class SimpleBenchmark:
@@ -254,7 +253,7 @@ class SimpleBenchmark:
 
         # Database queries
         if "database_queries" in self.results:
-            print(f"\n📊 DATABASE QUERY PERFORMANCE:")
+            print("\n📊 DATABASE QUERY PERFORMANCE:")
             for metric in self.results["database_queries"]:
                 print(f"   {metric['operation']}:")
                 print(f"     • Average: {metric['avg_ms']:.2f}ms")
@@ -264,7 +263,7 @@ class SimpleBenchmark:
 
         # File operations
         if "file_operations" in self.results:
-            print(f"\n📁 FILE I/O PERFORMANCE:")
+            print("\n📁 FILE I/O PERFORMANCE:")
             for metric in self.results["file_operations"]:
                 print(f"   {metric['operation']}:")
                 print(f"     • Average: {metric['avg_ms']:.2f}ms")
@@ -273,7 +272,7 @@ class SimpleBenchmark:
 
         # Text processing
         if "text_processing" in self.results:
-            print(f"\n📝 TEXT PROCESSING PERFORMANCE:")
+            print("\n📝 TEXT PROCESSING PERFORMANCE:")
             for metric in self.results["text_processing"]:
                 print(f"   {metric['operation']}:")
                 print(f"     • Average: {metric['avg_ms']:.2f}ms")
@@ -281,7 +280,7 @@ class SimpleBenchmark:
                 print(f"     • Throughput: {metric['throughput_chars_per_sec']:,.0f} chars/s")
 
         # Performance assessment
-        print(f"\n🎯 PERFORMANCE ASSESSMENT:")
+        print("\n🎯 PERFORMANCE ASSESSMENT:")
         all_avg_times = []
 
         for category in ["database_queries", "file_operations", "text_processing"]:

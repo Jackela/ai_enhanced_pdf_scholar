@@ -13,6 +13,11 @@ from src.database.models import (
     DocumentModel,
     VectorIndexModel,
 )
+from src.database.multi_document_models import (
+    CrossDocumentQueryModel,
+    MultiDocumentCollectionModel,
+    MultiDocumentIndexModel,
+)
 
 T = TypeVar("T")
 
@@ -32,6 +37,11 @@ class IRepository(ABC, Generic[T]):
     @abstractmethod
     def get_by_id(self, entity_id: int) -> T | None:
         """Get entity by ID."""
+        pass
+
+    @abstractmethod
+    def get_by_ids(self, entity_ids: list[int]) -> list[T]:
+        """Get multiple entities by IDs."""
         pass
 
     @abstractmethod
@@ -205,4 +215,100 @@ class ICitationRelationRepository(IRepository[CitationRelationModel]):
     @abstractmethod
     def cleanup_orphaned_relations(self) -> int:
         """Remove relations pointing to non-existent documents/citations."""
+        pass
+
+
+class IMultiDocumentCollectionRepository(IRepository[MultiDocumentCollectionModel]):
+    """
+    Multi-document collection repository interface.
+    Provides operations for managing document collections.
+    """
+
+    @abstractmethod
+    def get_all(self, limit: int = 50, offset: int = 0) -> list[MultiDocumentCollectionModel]:
+        """Get all collections with pagination."""
+        pass
+
+    @abstractmethod
+    def find_by_name(self, name: str) -> MultiDocumentCollectionModel | None:
+        """Find collection by name."""
+        pass
+
+    @abstractmethod
+    def search(self, query: str, limit: int = 50) -> list[MultiDocumentCollectionModel]:
+        """Search collections by name or description."""
+        pass
+
+    @abstractmethod
+    def get_collections_containing_document(self, document_id: int) -> list[MultiDocumentCollectionModel]:
+        """Get all collections that contain a specific document."""
+        pass
+
+    @abstractmethod
+    def count(self) -> int:
+        """Get total collection count."""
+        pass
+
+
+class IMultiDocumentIndexRepository(IRepository[MultiDocumentIndexModel]):
+    """
+    Multi-document index repository interface.
+    Provides operations for managing collection indexes.
+    """
+
+    @abstractmethod
+    def get_by_collection_id(self, collection_id: int) -> MultiDocumentIndexModel | None:
+        """Get index by collection ID."""
+        pass
+
+    @abstractmethod
+    def find_by_hash(self, index_hash: str) -> MultiDocumentIndexModel | None:
+        """Find index by hash."""
+        pass
+
+    @abstractmethod
+    def get_orphaned_indexes(self) -> list[MultiDocumentIndexModel]:
+        """Get indexes without corresponding collections."""
+        pass
+
+    @abstractmethod
+    def cleanup_orphaned(self) -> int:
+        """Remove orphaned indexes."""
+        pass
+
+
+class ICrossDocumentQueryRepository(IRepository[CrossDocumentQueryModel]):
+    """
+    Cross-document query repository interface.
+    Provides operations for managing cross-document queries and results.
+    """
+
+    @abstractmethod
+    def find_by_collection_id(self, collection_id: int, limit: int = 50) -> list[CrossDocumentQueryModel]:
+        """Find queries by collection ID."""
+        pass
+
+    @abstractmethod
+    def find_by_user_id(self, user_id: str, limit: int = 50) -> list[CrossDocumentQueryModel]:
+        """Find queries by user ID."""
+        pass
+
+    @abstractmethod
+    def find_by_status(self, status: str, limit: int = 50) -> list[CrossDocumentQueryModel]:
+        """Find queries by status."""
+        pass
+
+    @abstractmethod
+    def get_recent_queries(self, days: int = 7, limit: int = 50) -> list[CrossDocumentQueryModel]:
+        """Get recent queries within specified days."""
+        pass
+
+    @abstractmethod
+    def get_query_statistics(self) -> dict:
+        """Get query performance statistics."""
+        pass
+
+    @abstractmethod
+    def cleanup_old_queries(self, days_old: int = 30) -> int:
+        """Remove old query records."""
         pass

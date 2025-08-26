@@ -5,20 +5,16 @@ Specialized testing for document upload, processing, and RAG query performance
 with various document sizes and concurrent users
 """
 
-import asyncio
 import concurrent.futures
 import json
 import logging
-import os
 import statistics
-import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-import threading
+from typing import Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,7 +27,7 @@ class DocumentTestResult:
     file_size_mb: float
     processing_time_ms: float
     success: bool
-    error_message: Optional[str]
+    error_message: str | None
     memory_used_mb: float
     concurrent_user_id: int
     timestamp: float
@@ -43,7 +39,7 @@ class LoadTestScenario:
     name: str
     concurrent_users: int
     documents_per_user: int
-    document_sizes_mb: List[float]
+    document_sizes_mb: list[float]
     duration_seconds: int
     target_throughput: float  # Documents per second
 
@@ -63,7 +59,7 @@ class LoadTestResults:
     error_rate_percent: float
     duration_seconds: float
     concurrent_users: int
-    individual_results: List[DocumentTestResult]
+    individual_results: list[DocumentTestResult]
 
 
 class DocumentLoadTester:
@@ -167,7 +163,7 @@ class DocumentLoadTester:
         )
 
     def run_single_user_test(self, user_id: int, documents_per_user: int,
-                           document_sizes_mb: List[float]) -> List[DocumentTestResult]:
+                           document_sizes_mb: list[float]) -> list[DocumentTestResult]:
         """Run document processing test for a single simulated user"""
         results = []
 
@@ -277,7 +273,7 @@ class DocumentLoadTester:
 
         return load_test_results
 
-    def run_comprehensive_document_load_tests(self) -> Dict[str, Any]:
+    def run_comprehensive_document_load_tests(self) -> dict[str, Any]:
         """Run comprehensive document processing load tests"""
         logger.info("Starting comprehensive document load testing...")
 
@@ -365,7 +361,7 @@ class DocumentLoadTester:
 
         return comprehensive_results
 
-    def analyze_load_test_results(self, test_results: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_load_test_results(self, test_results: dict[str, Any]) -> dict[str, Any]:
         """Analyze load test results and generate insights"""
 
         # Extract successful scenarios
@@ -486,7 +482,7 @@ class DocumentLoadTester:
             }
         }
 
-    def identify_bottlenecks(self, test_results: Dict[str, Any]) -> List[str]:
+    def identify_bottlenecks(self, test_results: dict[str, Any]) -> list[str]:
         """Identify performance bottlenecks from test results"""
         bottlenecks = []
 
@@ -543,7 +539,7 @@ class DocumentLoadTester:
 
         # Performance metrics
         metrics = analysis.get("performance_metrics", {})
-        print(f"\n📊 Performance Metrics:")
+        print("\n📊 Performance Metrics:")
         print(f"   • Average Throughput: {metrics.get('avg_throughput_docs_per_sec', 0):.2f} docs/sec")
         print(f"   • Average Error Rate: {metrics.get('avg_error_rate_percent', 0):.2f}%")
         print(f"   • Average Processing Time: {metrics.get('avg_processing_time_ms', 0)/1000:.2f} seconds")
@@ -551,7 +547,7 @@ class DocumentLoadTester:
 
         # Capacity planning
         capacity = analysis.get("capacity_planning", {})
-        print(f"\n🏗️ Capacity Planning:")
+        print("\n🏗️ Capacity Planning:")
         print(f"   • Recommended Max Users: {capacity.get('recommended_max_concurrent_users', 0)}")
         print(f"   • Document Size Limit: {capacity.get('recommended_document_size_limit_mb', 0):.1f}MB")
         print(f"   • Estimated Capacity: {capacity.get('estimated_documents_per_hour', 0):.0f} docs/hour")
@@ -564,14 +560,14 @@ class DocumentLoadTester:
         # Bottlenecks
         bottlenecks = readiness.get("performance_bottlenecks", [])
         if bottlenecks:
-            print(f"\n⚠️ Performance Bottlenecks:")
+            print("\n⚠️ Performance Bottlenecks:")
             for bottleneck in bottlenecks[:5]:  # Show top 5
                 print(f"   • {bottleneck}")
 
         # Top recommendations
         recommendations = analysis.get("recommendations", [])
         if recommendations:
-            print(f"\n💡 Top Recommendations:")
+            print("\n💡 Top Recommendations:")
             for i, rec in enumerate(recommendations[:5], 1):
                 print(f"   {i}. {rec}")
 

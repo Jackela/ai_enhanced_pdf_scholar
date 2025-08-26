@@ -7,7 +7,7 @@ These interfaces enable dependency injection, testing, and modular architecture.
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.database.models import DocumentModel
 
@@ -115,7 +115,7 @@ class IRAGFileManager(ABC):
 
     @abstractmethod
     async def cleanup_temp_files(
-        self, document_id: Optional[int] = None, **kwargs
+        self, document_id: int | None = None, **kwargs
     ) -> int:
         """Clean up temporary files."""
         pass
@@ -126,7 +126,7 @@ class IRAGFileManager(ABC):
         pass
 
     @abstractmethod
-    def get_storage_stats(self, document_id: Optional[int] = None) -> dict[str, Any]:
+    def get_storage_stats(self, document_id: int | None = None) -> dict[str, Any]:
         """Get storage usage statistics."""
         pass
 
@@ -154,7 +154,7 @@ class IRAGFileManager(ABC):
 
     @abstractmethod
     def verify_file_integrity(
-        self, file_path: Path, expected_checksum: Optional[str] = None
+        self, file_path: Path, expected_checksum: str | None = None
     ) -> dict[str, Any]:
         """Verify file integrity."""
         pass
@@ -186,7 +186,7 @@ class IRAGCoordinator(ABC):
 
     @abstractmethod
     async def cleanup_resources(
-        self, document_id: Optional[int] = None, **kwargs
+        self, document_id: int | None = None, **kwargs
     ) -> dict[str, Any]:
         """Clean up system resources."""
         pass

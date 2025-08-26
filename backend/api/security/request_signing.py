@@ -6,16 +6,14 @@ key rotation, and comprehensive security monitoring.
 
 import hashlib
 import hmac
-import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Any, Tuple, Union
-from urllib.parse import urlencode, urlparse, parse_qs
 from enum import Enum
+from typing import Any, Union
 
-from fastapi import Request, HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ...config.production import ProductionConfig
 from ...core.secrets_vault import ProductionSecretsManager
@@ -43,13 +41,13 @@ class SigningKey:
     secret: bytes
     algorithm: SigningAlgorithm
     created_at: float
-    expires_at: Optional[float] = None
+    expires_at: float | None = None
     is_active: bool = True
     usage_count: int = 0
-    last_used: Optional[float] = None
-    allowed_methods: Set[str] = field(default_factory=lambda: {"GET", "POST", "PUT", "DELETE"})
-    allowed_paths: Set[str] = field(default_factory=set)  # Empty = allow all
-    client_id: Optional[str] = None
+    last_used: float | None = None
+    allowed_methods: set[str] = field(default_factory=lambda: {"GET", "POST", "PUT", "DELETE"})
+    allowed_paths: set[str] = field(default_factory=set)  # Empty = allow all
+    client_id: str | None = None
     description: str = ""
 
 
@@ -57,10 +55,10 @@ class SigningKey:
 class SignatureValidationResult:
     """Result of signature validation."""
     is_valid: bool
-    key_id: Optional[str] = None
-    algorithm: Optional[SigningAlgorithm] = None
-    timestamp: Optional[float] = None
-    error_message: Optional[str] = None
+    key_id: str | None = None
+    algorithm: SigningAlgorithm | None = None
+    timestamp: float | None = None
+    error_message: str | None = None
     validation_time: float = 0.0
 
 
@@ -71,8 +69,8 @@ class RequestSignature:
     signature: str
     algorithm: SigningAlgorithm
     timestamp: float
-    nonce: Optional[str] = None
-    headers_to_sign: List[str] = field(default_factory=list)
+    nonce: str | None = None
+    headers_to_sign: list[str] = field(default_factory=list)
 
 
 class ProductionRequestSigning:
@@ -83,9 +81,9 @@ class ProductionRequestSigning:
 
     def __init__(
         self,
-        secrets_manager: Optional[ProductionSecretsManager] = None,
-        production_config: Optional[ProductionConfig] = None,
-        metrics_service: Optional[MetricsService] = None
+        secrets_manager: ProductionSecretsManager | None = None,
+        production_config: ProductionConfig | None = None,
+        metrics_service: MetricsService | None = None
     ):
         """Initialize request signing system."""
         self.secrets_manager = secrets_manager
@@ -93,16 +91,16 @@ class ProductionRequestSigning:
         self.metrics_service = metrics_service
 
         # Signing keys management
-        self.signing_keys: Dict[str, SigningKey] = {}
+        self.signing_keys: dict[str, SigningKey] = {}
 
         # Replay attack prevention
-        self.used_nonces: Set[str] = set()
-        self.used_signatures: Dict[str, float] = {}  # signature_hash -> timestamp
+        self.used_nonces: set[str] = set()
+        self.used_signatures: dict[str, float] = {}  # signature_hash -> timestamp
         self.signature_ttl = 300  # 5 minutes
         self.clock_skew_tolerance = 60  # 1 minute
 
         # Performance optimization
-        self.signature_cache: Dict[str, SignatureValidationResult] = {}
+        self.signature_cache: dict[str, SignatureValidationResult] = {}
         self.cache_ttl = 60  # Cache validation results for 1 minute
 
         # Security settings
@@ -144,10 +142,10 @@ class ProductionRequestSigning:
         key_id: str,
         secret: Union[str, bytes],
         algorithm: SigningAlgorithm = SigningAlgorithm.SHA256,
-        expires_in: Optional[int] = None,
-        allowed_methods: Optional[Set[str]] = None,
-        allowed_paths: Optional[Set[str]] = None,
-        client_id: Optional[str] = None,
+        expires_in: int | None = None,
+        allowed_methods: set[str] | None = None,
+        allowed_paths: set[str] | None = None,
+        client_id: str | None = None,
         description: str = ""
     ) -> bool:
         """
@@ -243,7 +241,7 @@ class ProductionRequestSigning:
             return True
         return False
 
-    def _parse_authorization_header(self, auth_header: str) -> Optional[RequestSignature]:
+    def _parse_authorization_header(self, auth_header: str) -> RequestSignature | None:
         """
         Parse Authorization header for request signature.
 
@@ -553,7 +551,7 @@ class ProductionRequestSigning:
             timestamp=signature_info.timestamp
         )
 
-    def get_signing_statistics(self) -> Dict[str, Any]:
+    def get_signing_statistics(self) -> dict[str, Any]:
         """Get signing system statistics."""
         stats = {
             "total_keys": len(self.signing_keys),
@@ -589,7 +587,7 @@ class RequestSigningMiddleware:
     def __init__(
         self,
         request_signing: ProductionRequestSigning,
-        exempt_paths: Optional[Set[str]] = None
+        exempt_paths: set[str] | None = None
     ):
         """Initialize request signing middleware."""
         self.request_signing = request_signing
@@ -653,9 +651,9 @@ async def validate_signature(
 
 
 def create_production_request_signing(
-    secrets_manager: Optional[ProductionSecretsManager] = None,
-    production_config: Optional[ProductionConfig] = None,
-    metrics_service: Optional[MetricsService] = None
+    secrets_manager: ProductionSecretsManager | None = None,
+    production_config: ProductionConfig | None = None,
+    metrics_service: MetricsService | None = None
 ) -> ProductionRequestSigning:
     """Create production request signing instance."""
     return ProductionRequestSigning(secrets_manager, production_config, metrics_service)
@@ -663,10 +661,10 @@ def create_production_request_signing(
 
 def setup_request_signing_middleware(
     app,
-    secrets_manager: Optional[ProductionSecretsManager] = None,
-    production_config: Optional[ProductionConfig] = None,
-    metrics_service: Optional[MetricsService] = None,
-    exempt_paths: Optional[Set[str]] = None
+    secrets_manager: ProductionSecretsManager | None = None,
+    production_config: ProductionConfig | None = None,
+    metrics_service: MetricsService | None = None,
+    exempt_paths: set[str] | None = None
 ) -> ProductionRequestSigning:
     """Set up request signing middleware for FastAPI application."""
     request_signing = create_production_request_signing(
@@ -688,8 +686,8 @@ def setup_request_signing_middleware(
         key_id: str,
         secret: str,
         algorithm: str = "sha256",
-        expires_in: Optional[int] = None,
-        client_id: Optional[str] = None,
+        expires_in: int | None = None,
+        client_id: str | None = None,
         description: str = ""
     ):
         """Add new signing key."""

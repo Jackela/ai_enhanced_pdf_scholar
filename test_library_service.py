@@ -7,7 +7,6 @@
 
 import sys
 import tempfile
-import sqlite3
 from pathlib import Path
 
 # 添加项目路径
@@ -174,7 +173,10 @@ def test_document_library_service():
         from database.migrations import DatabaseMigrator
         # 直接导入服务层模块
         sys.path.insert(0, str(Path(__file__).parent / "src" / "services"))
-        from document_library_service import DocumentLibraryService, DuplicateDocumentError
+        from document_library_service import (
+            DocumentLibraryService,
+            DuplicateDocumentError,
+        )
 
         # 初始化数据库
         with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
@@ -368,8 +370,9 @@ def test_library_cleanup():
         # 直接导入服务层模块
         sys.path.insert(0, str(Path(__file__).parent / "src" / "services"))
         from document_library_service import DocumentLibraryService
-        from repositories.vector_repository import VectorIndexRepository
+
         from database.models import VectorIndexModel
+        from repositories.vector_repository import VectorIndexRepository
 
         # 初始化数据库
         with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:

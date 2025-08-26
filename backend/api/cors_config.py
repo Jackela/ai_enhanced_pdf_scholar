@@ -5,10 +5,10 @@ Provides environment-specific CORS configuration with security best practices.
 Replaces the vulnerable wildcard origins configuration with proper environment-based settings.
 """
 
-import os
 import logging
-from typing import List, Dict, Any
+import os
 from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class CORSConfig:
 
         return env_mapping.get(env_value, Environment.DEVELOPMENT)
 
-    def _parse_origins(self, origins_str: str) -> List[str]:
+    def _parse_origins(self, origins_str: str) -> list[str]:
         """Parse CORS origins from environment variable string."""
         if not origins_str:
             return []
@@ -60,7 +60,7 @@ class CORSConfig:
 
         return origins
 
-    def _get_development_config(self) -> Dict[str, Any]:
+    def _get_development_config(self) -> dict[str, Any]:
         """Get CORS configuration for development environment."""
         # Parse origins from environment or use safe defaults
         origins_str = os.getenv(
@@ -86,7 +86,7 @@ class CORSConfig:
             "max_age": 86400,  # 24 hours
         }
 
-    def _get_testing_config(self) -> Dict[str, Any]:
+    def _get_testing_config(self) -> dict[str, Any]:
         """Get CORS configuration for testing environment."""
         # Testing should be restrictive but allow test origins
         origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
@@ -106,7 +106,7 @@ class CORSConfig:
             "max_age": 3600,  # 1 hour
         }
 
-    def _get_staging_config(self) -> Dict[str, Any]:
+    def _get_staging_config(self) -> dict[str, Any]:
         """Get CORS configuration for staging environment."""
         # Staging should mirror production security but allow staging domains
         origins_str = os.getenv("CORS_ORIGINS", "")
@@ -130,7 +130,7 @@ class CORSConfig:
             "max_age": 3600,  # 1 hour
         }
 
-    def _get_production_config(self) -> Dict[str, Any]:
+    def _get_production_config(self) -> dict[str, Any]:
         """Get CORS configuration for production environment."""
         # Production must be explicitly configured - no defaults
         origins_str = os.getenv("CORS_ORIGINS", "")
@@ -155,7 +155,7 @@ class CORSConfig:
             "max_age": 3600,  # 1 hour
         }
 
-    def _get_cors_config(self) -> Dict[str, Any]:
+    def _get_cors_config(self) -> dict[str, Any]:
         """Get CORS configuration for current environment."""
         config_methods = {
             Environment.DEVELOPMENT: self._get_development_config,
@@ -207,7 +207,7 @@ class CORSConfig:
             logger.error(error_msg)
             raise ValueError(error_msg)
 
-    def get_middleware_config(self) -> Dict[str, Any]:
+    def get_middleware_config(self) -> dict[str, Any]:
         """Get configuration dict for FastAPI CORS middleware."""
         return self.config.copy()
 
@@ -260,7 +260,7 @@ def validate_origin_format(origin: str) -> bool:
     return True
 
 
-def get_safe_cors_origins() -> List[str]:
+def get_safe_cors_origins() -> list[str]:
     """Get list of safe CORS origins for current environment."""
     cors_config = get_cors_config()
     origins = cors_config.get_middleware_config().get("allow_origins", [])

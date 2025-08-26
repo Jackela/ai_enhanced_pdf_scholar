@@ -15,23 +15,22 @@ Features:
 """
 
 import asyncio
-import json
 import logging
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
-from pathlib import Path
 import statistics
+import time
+from dataclasses import dataclass
+from datetime import datetime
 
 import psutil
-from prometheus_client import CollectorRegistry, Gauge, Counter, Histogram, start_http_server
+from prometheus_client import (
+    CollectorRegistry,
+    Gauge,
+    start_http_server,
+)
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.secrets import SecretsManager
 from backend.database.postgresql_config import get_async_session
-from src.services.enhanced_rag_service import EnhancedRAGService
 
 # Configure logging
 logging.basicConfig(
@@ -45,14 +44,14 @@ class BusinessMetric:
     """Business-specific metric data"""
     name: str
     value: float
-    labels: Dict[str, str]
+    labels: dict[str, str]
     timestamp: datetime
     description: str
 
 class CustomMetricsCollector:
     """Collect custom business and application metrics for scaling decisions"""
 
-    def __init__(self, registry: Optional[CollectorRegistry] = None):
+    def __init__(self, registry: CollectorRegistry | None = None):
         self.registry = registry or CollectorRegistry()
         self.secrets_manager = SecretsManager()
 
@@ -233,7 +232,7 @@ class CustomMetricsCollector:
             registry=self.registry
         )
 
-    async def collect_database_metrics(self) -> Dict[str, float]:
+    async def collect_database_metrics(self) -> dict[str, float]:
         """Collect database-related metrics"""
         metrics = {}
 
@@ -300,7 +299,7 @@ class CustomMetricsCollector:
 
         return metrics
 
-    async def collect_system_metrics(self) -> Dict[str, float]:
+    async def collect_system_metrics(self) -> dict[str, float]:
         """Collect system resource metrics"""
         metrics = {}
 
@@ -343,7 +342,7 @@ class CustomMetricsCollector:
 
         return metrics
 
-    async def collect_application_metrics(self) -> Dict[str, float]:
+    async def collect_application_metrics(self) -> dict[str, float]:
         """Collect application-specific metrics"""
         metrics = {}
 
@@ -417,8 +416,8 @@ class CustomMetricsCollector:
 
         return metrics
 
-    async def calculate_efficiency_metrics(self, system_metrics: Dict[str, float],
-                                         app_metrics: Dict[str, float]) -> Dict[str, float]:
+    async def calculate_efficiency_metrics(self, system_metrics: dict[str, float],
+                                         app_metrics: dict[str, float]) -> dict[str, float]:
         """Calculate efficiency and quality metrics"""
         metrics = {}
 
@@ -494,7 +493,7 @@ class CustomMetricsCollector:
 
         return metrics
 
-    async def update_prometheus_metrics(self, all_metrics: Dict[str, float]):
+    async def update_prometheus_metrics(self, all_metrics: dict[str, float]):
         """Update Prometheus metrics with collected values"""
         try:
             # Update all Prometheus gauges
@@ -535,7 +534,7 @@ class CustomMetricsCollector:
         except Exception as e:
             logger.error(f"Error updating Prometheus metrics: {e}")
 
-    async def collect_all_metrics(self) -> Dict[str, float]:
+    async def collect_all_metrics(self) -> dict[str, float]:
         """Collect all metrics and return combined dictionary"""
         try:
             # Collect metrics from different sources

@@ -4,20 +4,17 @@ Comprehensive security wrapper for all API endpoints with authentication and RBA
 """
 
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import HTTPException, status
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
-from backend.api.auth.jwt_auth import get_current_user, User, decode_token
+from backend.api.auth.jwt_auth import User, get_current_user
 from backend.api.auth.rbac import (
     RBACService,
-    ResourceTypes,
-    Actions,
-    get_rbac_service,
-    PermissionCheck
 )
 from backend.api.dependencies import get_db
 
@@ -35,7 +32,7 @@ def secure_endpoint(
     resource: str,
     action: str,
     allow_anonymous: bool = False,
-    rate_limit: Optional[str] = None,
+    rate_limit: str | None = None,
     audit_log: bool = True,
     validate_input: bool = True
 ):
@@ -280,7 +277,7 @@ def secure_owner_only(resource_type: str, get_owner_func: Callable):
 def rate_limited(
     requests: int = 100,
     window: int = 60,
-    key_func: Optional[Callable] = None
+    key_func: Callable | None = None
 ):
     """
     Rate limiting decorator for endpoints.
@@ -320,16 +317,16 @@ class BatchSecurityValidator:
         """Initialize batch validator."""
         self.user = user
         self.rbac = RBACService(db)
-        self.failed_items: List[Dict[str, Any]] = []
-        self.successful_items: List[Any] = []
+        self.failed_items: list[dict[str, Any]] = []
+        self.successful_items: list[Any] = []
 
     def validate_batch(
         self,
-        items: List[Any],
+        items: list[Any],
         resource: str,
         action: str,
         id_func: Callable[[Any], str]
-    ) -> tuple[List[Any], List[Dict[str, Any]]]:
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         Validate permissions for a batch of items.
 
@@ -379,7 +376,7 @@ class APIKeyAuth:
         """Initialize API key auth."""
         self.db = db
 
-    async def validate_api_key(self, api_key: str) -> Optional[User]:
+    async def validate_api_key(self, api_key: str) -> User | None:
         """
         Validate an API key and return associated service account.
 
@@ -394,7 +391,7 @@ class APIKeyAuth:
         return None
 
 
-def require_api_key(scopes: List[str] = None):
+def require_api_key(scopes: list[str] = None):
     """
     Decorator to require API key authentication.
 
@@ -543,7 +540,7 @@ class AutoSecurityMiddleware:
     Middleware that automatically applies security to all endpoints.
     """
 
-    def __init__(self, app, config: Dict[str, Any]):
+    def __init__(self, app, config: dict[str, Any]):
         """Initialize middleware."""
         self.app = app
         self.config = config
@@ -574,7 +571,7 @@ class AutoSecurityMiddleware:
 # Security Utilities
 # ============================================================================
 
-def mask_sensitive_data(data: Dict[str, Any], fields: List[str]) -> Dict[str, Any]:
+def mask_sensitive_data(data: dict[str, Any], fields: list[str]) -> dict[str, Any]:
     """
     Mask sensitive fields in response data.
 

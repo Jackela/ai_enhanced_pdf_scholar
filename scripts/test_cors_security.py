@@ -6,9 +6,9 @@ This script demonstrates the new secure CORS configuration system and shows
 how it prevents security vulnerabilities while maintaining proper functionality.
 """
 
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
 
 # Add project root to path
@@ -88,7 +88,7 @@ def test_environment_configurations():
             middleware_config = config.get_middleware_config()
 
             if test_case["should_pass"]:
-                print(f"✅ SUCCESS: Configuration valid")
+                print("✅ SUCCESS: Configuration valid")
                 print(f"   Environment: {config.environment.value}")
                 print(f"   Origins: {len(middleware_config['allow_origins'])} configured")
                 print(f"   Credentials: {middleware_config['allow_credentials']}")
@@ -101,14 +101,14 @@ def test_environment_configurations():
                     print(f"   Origin Details: [Hidden for security in {config.environment.value}]")
 
             else:
-                print(f"❌ UNEXPECTED: Configuration should have failed but passed")
+                print("❌ UNEXPECTED: Configuration should have failed but passed")
 
         except ValueError as e:
             if not test_case["should_pass"]:
-                print(f"✅ SUCCESS: Security validation correctly blocked vulnerable config")
+                print("✅ SUCCESS: Security validation correctly blocked vulnerable config")
                 print(f"   Error: {e}")
             else:
-                print(f"❌ FAILED: Valid configuration was rejected")
+                print("❌ FAILED: Valid configuration was rejected")
                 print(f"   Error: {e}")
         except Exception as e:
             print(f"❌ ERROR: Unexpected error: {e}")

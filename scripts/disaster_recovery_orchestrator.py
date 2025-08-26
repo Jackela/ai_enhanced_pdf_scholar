@@ -9,21 +9,20 @@ import asyncio
 import json
 import logging
 import os
+
+# Add backend to path for imports
+import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 import aiohttp
 import boto3
-import kubernetes
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
-# Add backend to path for imports
-import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from backend.core.secrets import get_secrets_manager
@@ -69,7 +68,7 @@ class RecoveryPlan:
     plan_id: str
     name: str
     description: str
-    disaster_types: List[DisasterType]
+    disaster_types: list[DisasterType]
     priority: RecoveryPriority
     rto_target: timedelta  # Recovery Time Objective
     rpo_target: timedelta  # Recovery Point Objective
@@ -77,19 +76,19 @@ class RecoveryPlan:
     # Infrastructure configuration
     primary_region: str
     secondary_region: str
-    tertiary_region: Optional[str] = None
+    tertiary_region: str | None = None
 
     # Recovery steps
-    pre_recovery_checks: List[str] = field(default_factory=list)
-    recovery_steps: List[Dict[str, Any]] = field(default_factory=list)
-    post_recovery_validation: List[str] = field(default_factory=list)
-    rollback_steps: List[Dict[str, Any]] = field(default_factory=list)
+    pre_recovery_checks: list[str] = field(default_factory=list)
+    recovery_steps: list[dict[str, Any]] = field(default_factory=list)
+    post_recovery_validation: list[str] = field(default_factory=list)
+    rollback_steps: list[dict[str, Any]] = field(default_factory=list)
 
     # Dependencies
-    dependencies: List[str] = field(default_factory=list)
-    notification_channels: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    notification_channels: list[str] = field(default_factory=list)
 
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -99,11 +98,11 @@ class DisasterEvent:
     disaster_type: DisasterType
     severity: RecoveryPriority
     description: str
-    affected_services: List[str]
-    affected_regions: List[str]
+    affected_services: list[str]
+    affected_regions: list[str]
     detected_at: datetime
-    recovery_plan_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    recovery_plan_id: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -114,15 +113,15 @@ class RecoveryExecution:
     disaster_event: DisasterEvent
     state: RecoveryState
     started_at: datetime
-    estimated_completion: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    estimated_completion: datetime | None = None
+    completed_at: datetime | None = None
 
     current_step: int = 0
     total_steps: int = 0
-    step_results: List[Dict[str, Any]] = field(default_factory=list)
+    step_results: list[dict[str, Any]] = field(default_factory=list)
 
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
+    metrics: dict[str, Any] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
 
 
 class InfrastructureManager:
@@ -137,7 +136,7 @@ class InfrastructureManager:
         self.route53 = aws_session.client('route53')
         self.cloudformation = aws_session.client('cloudformation')
 
-    async def assess_infrastructure_health(self, region: str) -> Dict[str, Any]:
+    async def assess_infrastructure_health(self, region: str) -> dict[str, Any]:
         """Assess infrastructure health in a region."""
         health_status = {
             'region': region,
@@ -206,8 +205,8 @@ class InfrastructureManager:
         self,
         source_region: str,
         target_region: str,
-        services: List[str]
-    ) -> Dict[str, Any]:
+        services: list[str]
+    ) -> dict[str, Any]:
         """Failover services from source to target region."""
         failover_results = {
             'source_region': source_region,
@@ -239,7 +238,7 @@ class InfrastructureManager:
         failover_results['completed_at'] = datetime.utcnow().isoformat()
         return failover_results
 
-    async def _failover_rds(self, source_region: str, target_region: str) -> Dict[str, Any]:
+    async def _failover_rds(self, source_region: str, target_region: str) -> dict[str, Any]:
         """Failover RDS instances."""
         try:
             source_rds = self.aws_session.client('rds', region_name=source_region)
@@ -291,7 +290,7 @@ class InfrastructureManager:
         except Exception as e:
             return {'status': 'failed', 'error': str(e)}
 
-    async def _failover_ec2(self, source_region: str, target_region: str) -> Dict[str, Any]:
+    async def _failover_ec2(self, source_region: str, target_region: str) -> dict[str, Any]:
         """Failover EC2 instances using AMIs."""
         try:
             source_ec2 = self.aws_session.client('ec2', region_name=source_region)
@@ -325,7 +324,7 @@ class InfrastructureManager:
         except Exception as e:
             return {'status': 'failed', 'error': str(e)}
 
-    async def _failover_dns(self, source_region: str, target_region: str) -> Dict[str, Any]:
+    async def _failover_dns(self, source_region: str, target_region: str) -> dict[str, Any]:
         """Failover DNS using Route 53 health checks."""
         try:
             # Update Route 53 health checks to point to target region
@@ -366,7 +365,7 @@ class KubernetesManager:
         self.apps_v1 = client.AppsV1Api()
         self.batch_v1 = client.BatchV1Api()
 
-    async def assess_cluster_health(self, namespace: str = "ai-pdf-scholar") -> Dict[str, Any]:
+    async def assess_cluster_health(self, namespace: str = "ai-pdf-scholar") -> dict[str, Any]:
         """Assess Kubernetes cluster health."""
         health_status = {
             'namespace': namespace,
@@ -441,8 +440,8 @@ class KubernetesManager:
         self,
         source_namespace: str,
         dr_namespace: str,
-        resources: List[str]
-    ) -> Dict[str, Any]:
+        resources: list[str]
+    ) -> dict[str, Any]:
         """Deploy resources to DR namespace."""
         deployment_results = {
             'source_namespace': source_namespace,
@@ -476,7 +475,7 @@ class KubernetesManager:
         deployment_results['completed_at'] = datetime.utcnow().isoformat()
         return deployment_results
 
-    async def _deploy_deployments(self, source_ns: str, dr_ns: str) -> Dict[str, Any]:
+    async def _deploy_deployments(self, source_ns: str, dr_ns: str) -> dict[str, Any]:
         """Deploy deployments to DR namespace."""
         deployments = self.apps_v1.list_namespaced_deployment(namespace=source_ns)
         results = []
@@ -505,7 +504,7 @@ class KubernetesManager:
 
         return {'status': 'completed', 'deployments': results}
 
-    async def _deploy_services(self, source_ns: str, dr_ns: str) -> Dict[str, Any]:
+    async def _deploy_services(self, source_ns: str, dr_ns: str) -> dict[str, Any]:
         """Deploy services to DR namespace."""
         services = self.v1.list_namespaced_service(namespace=source_ns)
         results = []
@@ -534,7 +533,7 @@ class KubernetesManager:
 
         return {'status': 'completed', 'services': results}
 
-    async def _deploy_configmaps(self, source_ns: str, dr_ns: str) -> Dict[str, Any]:
+    async def _deploy_configmaps(self, source_ns: str, dr_ns: str) -> dict[str, Any]:
         """Deploy configmaps to DR namespace."""
         configmaps = self.v1.list_namespaced_config_map(namespace=source_ns)
         results = []
@@ -558,7 +557,7 @@ class KubernetesManager:
 
         return {'status': 'completed', 'configmaps': results}
 
-    async def _deploy_secrets(self, source_ns: str, dr_ns: str) -> Dict[str, Any]:
+    async def _deploy_secrets(self, source_ns: str, dr_ns: str) -> dict[str, Any]:
         """Deploy secrets to DR namespace."""
         secrets = self.v1.list_namespaced_secret(namespace=source_ns)
         results = []
@@ -590,7 +589,7 @@ class KubernetesManager:
 class DisasterRecoveryOrchestrator:
     """Main disaster recovery orchestrator."""
 
-    def __init__(self, metrics_service: Optional[MetricsService] = None):
+    def __init__(self, metrics_service: MetricsService | None = None):
         """Initialize disaster recovery orchestrator."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -602,8 +601,8 @@ class DisasterRecoveryOrchestrator:
         self.kubernetes_manager = KubernetesManager()
 
         # Recovery plans and executions
-        self.recovery_plans: Dict[str, RecoveryPlan] = {}
-        self.active_executions: Dict[str, RecoveryExecution] = {}
+        self.recovery_plans: dict[str, RecoveryPlan] = {}
+        self.active_executions: dict[str, RecoveryExecution] = {}
 
         # Load recovery plans
         self._load_recovery_plans()
@@ -657,7 +656,7 @@ class DisasterRecoveryOrchestrator:
 
         logger.info(f"Loaded {len(self.recovery_plans)} recovery plans")
 
-    async def detect_disaster(self, health_metrics: Dict[str, Any]) -> Optional[DisasterEvent]:
+    async def detect_disaster(self, health_metrics: dict[str, Any]) -> DisasterEvent | None:
         """Detect disaster from health metrics."""
         current_time = datetime.utcnow()
 
@@ -692,7 +691,7 @@ class DisasterRecoveryOrchestrator:
     async def execute_recovery(
         self,
         disaster_event: DisasterEvent,
-        plan_id: Optional[str] = None
+        plan_id: str | None = None
     ) -> RecoveryExecution:
         """Execute disaster recovery plan."""
         if not plan_id:
@@ -806,10 +805,10 @@ class DisasterRecoveryOrchestrator:
 
     async def _execute_recovery_step(
         self,
-        step_config: Dict[str, Any],
+        step_config: dict[str, Any],
         plan: RecoveryPlan,
         execution: RecoveryExecution
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a single recovery step."""
         step_type = step_config['type']
         timeout = step_config.get('timeout', 600)  # Default 10 minutes
@@ -837,7 +836,7 @@ class DisasterRecoveryOrchestrator:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    async def _assess_damage_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _assess_damage_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Assess damage to infrastructure and services."""
         damage_assessment = {
             'regions': {},
@@ -878,7 +877,7 @@ class DisasterRecoveryOrchestrator:
             'recommended_action': 'proceed' if damage_assessment['overall_status'] != 'severe' else 'manual_intervention'
         }
 
-    async def _failover_dns_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _failover_dns_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Failover DNS to secondary region."""
         try:
             result = await self.infrastructure_manager.failover_to_region(
@@ -894,7 +893,7 @@ class DisasterRecoveryOrchestrator:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    async def _failover_database_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _failover_database_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Failover database to secondary region."""
         try:
             result = await self.infrastructure_manager.failover_to_region(
@@ -910,7 +909,7 @@ class DisasterRecoveryOrchestrator:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    async def _deploy_application_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _deploy_application_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Deploy application to DR environment."""
         try:
             # Create DR namespace
@@ -927,7 +926,7 @@ class DisasterRecoveryOrchestrator:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    async def _validate_services_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _validate_services_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Validate that services are running correctly."""
         try:
             # Check application health
@@ -945,22 +944,22 @@ class DisasterRecoveryOrchestrator:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    async def _isolate_corrupted_systems_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _isolate_corrupted_systems_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Isolate corrupted systems to prevent spread."""
         # Implementation would isolate affected systems
         return {'success': True, 'action': 'systems_isolated'}
 
-    async def _restore_from_backup_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _restore_from_backup_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Restore data from backup."""
         # Implementation would trigger backup restoration
         return {'success': True, 'action': 'backup_restored'}
 
-    async def _validate_data_integrity_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _validate_data_integrity_step(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Validate data integrity after restoration."""
         # Implementation would validate restored data
         return {'success': True, 'action': 'data_validated'}
 
-    async def _validate_recovery(self, plan: RecoveryPlan, execution: RecoveryExecution) -> Dict[str, Any]:
+    async def _validate_recovery(self, plan: RecoveryPlan, execution: RecoveryExecution) -> dict[str, Any]:
         """Validate that recovery was successful."""
         validation_results = {
             'overall_success': True,
@@ -1005,7 +1004,7 @@ class DisasterRecoveryOrchestrator:
 
     async def _send_notifications(
         self,
-        channels: List[str],
+        channels: list[str],
         subject: str,
         message: str
     ):
@@ -1054,7 +1053,7 @@ class DisasterRecoveryOrchestrator:
         # Implementation would send SMS via service like Twilio
         logger.info(f"SMS notification: {subject}")
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get orchestrator status."""
         return {
             'recovery_plans_loaded': len(self.recovery_plans),

@@ -6,7 +6,6 @@ Handles password hashing, verification, and security policies.
 import hashlib
 import secrets
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
 
 import bcrypt
 
@@ -115,11 +114,11 @@ class PasswordPolicy:
         "dragon", "baseball", "111111", "iloveyou", "master",
         "sunshine", "ashley", "bailey", "passw0rd", "shadow",
         "123123", "654321", "superman", "qazwsx", "michael",
-        "football", "password1", "password123", "welcome", "admin"
+        "football", "password1", "welcome", "admin"
     }
 
     @classmethod
-    def validate_password_strength(cls, password: str, username: Optional[str] = None) -> Tuple[bool, List[str]]:
+    def validate_password_strength(cls, password: str, username: str | None = None) -> tuple[bool, list[str]]:
         """
         Validate password against security policy.
 
@@ -196,7 +195,7 @@ class PasswordPolicy:
             return 1.0
 
         # Count matching characters
-        matches = sum(1 for a, b in zip(str1, str2) if a == b)
+        matches = sum(1 for a, b in zip(str1, str2, strict=False) if a == b)
         return matches / longer
 
     @staticmethod
@@ -258,7 +257,7 @@ class PasswordPolicy:
         return False
 
     @classmethod
-    def check_password_history(cls, new_password: str, password_history: List[str]) -> bool:
+    def check_password_history(cls, new_password: str, password_history: list[str]) -> bool:
         """
         Check if password was recently used.
 
@@ -275,7 +274,7 @@ class PasswordPolicy:
         return True
 
     @classmethod
-    def check_password_age(cls, last_changed: Optional[datetime]) -> Tuple[bool, str]:
+    def check_password_age(cls, last_changed: datetime | None) -> tuple[bool, str]:
         """
         Check if password has reached minimum or maximum age.
 
@@ -393,7 +392,7 @@ class AccountLockoutPolicy:
         return min(duration, 1440)
 
     @classmethod
-    def should_reset_counter(cls, last_failed_attempt: Optional[datetime]) -> bool:
+    def should_reset_counter(cls, last_failed_attempt: datetime | None) -> bool:
         """
         Check if failed attempt counter should be reset.
 
@@ -410,7 +409,7 @@ class AccountLockoutPolicy:
         return time_since_last > timedelta(minutes=cls.LOCKOUT_RESET_WINDOW_MINUTES)
 
     @classmethod
-    def get_remaining_lockout_time(cls, locked_until: Optional[datetime]) -> int:
+    def get_remaining_lockout_time(cls, locked_until: datetime | None) -> int:
         """
         Get remaining lockout time in seconds.
 

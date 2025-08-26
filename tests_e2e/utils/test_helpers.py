@@ -4,16 +4,16 @@ Test Helper Utilities for E2E Testing
 Common utilities and helpers for end-to-end tests.
 """
 
-import time
-import json
 import hashlib
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Callable
-from datetime import datetime, timedelta
-import random
-import string
+import json
+import time
+from collections.abc import Callable
 from contextlib import contextmanager
-from playwright.sync_api import Page, Response, Request
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from playwright.sync_api import Page, Request, Response
 
 
 class TestDataManager:
@@ -101,18 +101,18 @@ class NetworkMonitor:
             'timestamp': time.time()
         })
 
-    def get_api_calls(self, pattern: str = '/api/') -> List[Dict[str, Any]]:
+    def get_api_calls(self, pattern: str = '/api/') -> list[dict[str, Any]]:
         """Get all API calls matching pattern."""
         return [
             req for req in self.requests
             if pattern in req['url']
         ]
 
-    def get_failed_requests(self) -> List[Dict[str, Any]]:
+    def get_failed_requests(self) -> list[dict[str, Any]]:
         """Get all failed requests."""
         return self.failed_requests
 
-    def get_slow_requests(self, threshold: float = 2.0) -> List[Dict[str, Any]]:
+    def get_slow_requests(self, threshold: float = 2.0) -> list[dict[str, Any]]:
         """Get requests that took longer than threshold."""
         slow_requests = []
 
@@ -135,7 +135,7 @@ class NetworkMonitor:
 
         return slow_requests
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get network statistics."""
         return {
             'total_requests': len(self.requests),
@@ -166,8 +166,8 @@ class VisualRegression:
         Returns True if similar within threshold.
         """
         try:
-            from PIL import Image
             import numpy as np
+            from PIL import Image
 
             # Load images
             img1 = Image.open(current)
@@ -243,7 +243,7 @@ class PerformanceProfiler:
             self.current_operation = None
             self.start_time = None
 
-    def get_report(self) -> Dict[str, Any]:
+    def get_report(self) -> dict[str, Any]:
         """Generate performance report."""
         if not self.metrics:
             return {}
@@ -288,7 +288,7 @@ class TestReporter:
         test_name: str,
         status: str,
         duration: float,
-        details: Dict[str, Any] = None
+        details: dict[str, Any] = None
     ):
         """Add a test result."""
         self.test_results.append({

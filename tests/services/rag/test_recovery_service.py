@@ -5,18 +5,18 @@ Tests for the specialized service responsible for detecting and recovering
 from RAG index corruption, system failures, and data integrity issues.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from pathlib import Path
-import tempfile
-import shutil
 import json
+import shutil
+import tempfile
 import time
-from typing import List, Dict, Any
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock
 
-from src.services.rag.recovery_service import RAGRecoveryService
-from src.services.rag.exceptions import RAGRecoveryError, RAGIndexError
+import pytest
+
 from src.database.models import DocumentModel
+from src.services.rag.exceptions import RAGRecoveryError
+from src.services.rag.recovery_service import RAGRecoveryService
 
 
 class TestRAGRecoveryService:

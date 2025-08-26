@@ -10,25 +10,23 @@ import logging
 import smtplib
 import time
 from datetime import datetime, timedelta
+
 try:
-    from email.mime.text import MimeText
     from email.mime.multipart import MimeMultipart
+    from email.mime.text import MimeText
 except ImportError:
     # Python 3.13+ compatibility
-    from email.mime.text import MIMEText as MimeText
     from email.mime.multipart import MIMEMultipart as MimeMultipart
-from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+    from email.mime.text import MIMEText as MimeText
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
+
 import httpx
 from pydantic import BaseModel, Field
 
 from ..core.secrets_vault import ProductionSecretsManager
-from ..services.secrets_validation_service import (
-    SecretValidationService,
-    ValidationSeverity,
-    ComplianceStandard
-)
+from ..services.secrets_validation_service import SecretValidationService
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +75,8 @@ class AlertRule:
     severity: AlertSeverity
     enabled: bool = True
     cooldown_minutes: int = 60
-    channels: List[AlertChannel] = field(default_factory=list)
-    tags: Dict[str, str] = field(default_factory=dict)
+    channels: list[AlertChannel] = field(default_factory=list)
+    tags: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -87,10 +85,10 @@ class Alert:
     rule_name: str
     severity: AlertSeverity
     message: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
     timestamp: datetime = field(default_factory=datetime.utcnow)
     resolved: bool = False
-    resolution_time: Optional[datetime] = None
+    resolution_time: datetime | None = None
     alert_id: str = field(default_factory=lambda: f"alert_{int(time.time())}")
 
 
@@ -100,8 +98,8 @@ class MetricData:
     metric: MonitoringMetric
     value: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    labels: Dict[str, str] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class AlertingConfig(BaseModel):
@@ -109,20 +107,20 @@ class AlertingConfig(BaseModel):
     # Email configuration
     smtp_host: str = Field(default="localhost")
     smtp_port: int = Field(default=587)
-    smtp_username: Optional[str] = None
-    smtp_password: Optional[str] = None
+    smtp_username: str | None = None
+    smtp_password: str | None = None
     smtp_use_tls: bool = Field(default=True)
     from_email: str = Field(default="alerts@ai-pdf-scholar.com")
 
     # Slack configuration
-    slack_webhook_url: Optional[str] = None
+    slack_webhook_url: str | None = None
     slack_channel: str = Field(default="#security-alerts")
 
     # PagerDuty configuration
-    pagerduty_integration_key: Optional[str] = None
+    pagerduty_integration_key: str | None = None
 
     # Webhook configuration
-    webhook_urls: List[str] = Field(default_factory=list)
+    webhook_urls: list[str] = Field(default_factory=list)
     webhook_timeout: int = Field(default=30)
 
     # General settings
@@ -142,7 +140,7 @@ class SecretsMonitoringService:
         self,
         secrets_manager: ProductionSecretsManager,
         validation_service: SecretValidationService,
-        config: Optional[AlertingConfig] = None
+        config: AlertingConfig | None = None
     ):
         """Initialize the monitoring service."""
         self.secrets_manager = secrets_manager
@@ -150,18 +148,18 @@ class SecretsMonitoringService:
         self.config = config or AlertingConfig()
 
         # Monitoring state
-        self.alert_rules: Dict[str, AlertRule] = {}
-        self.active_alerts: Dict[str, Alert] = {}
-        self.metric_history: List[MetricData] = []
-        self.alert_history: List[Alert] = []
+        self.alert_rules: dict[str, AlertRule] = {}
+        self.active_alerts: dict[str, Alert] = {}
+        self.metric_history: list[MetricData] = []
+        self.alert_history: list[Alert] = []
 
         # Alert rate limiting
-        self.alert_counts: Dict[str, List[datetime]] = {}
-        self.last_alert_times: Dict[str, datetime] = {}
+        self.alert_counts: dict[str, list[datetime]] = {}
+        self.last_alert_times: dict[str, datetime] = {}
 
         # Background tasks
-        self.monitoring_task: Optional[asyncio.Task] = None
-        self.cleanup_task: Optional[asyncio.Task] = None
+        self.monitoring_task: asyncio.Task | None = None
+        self.cleanup_task: asyncio.Task | None = None
 
         # Initialize alert rules
         self._initialize_alert_rules()
@@ -410,7 +408,7 @@ class SecretsMonitoringService:
             logger.error(f"Error checking compliance status: {e}")
             self._record_metric(MonitoringMetric.COMPLIANCE_STATUS, 0.0)
 
-    async def _analyze_access_patterns(self, audit_entries: List[Dict[str, Any]]):
+    async def _analyze_access_patterns(self, audit_entries: list[dict[str, Any]]):
         """Analyze access patterns for anomalies."""
         try:
             # Simple anomaly detection based on access patterns
@@ -458,8 +456,8 @@ class SecretsMonitoringService:
         self,
         metric: MonitoringMetric,
         value: float,
-        labels: Optional[Dict[str, str]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        labels: dict[str, str] | None = None,
+        metadata: dict[str, Any] | None = None
     ):
         """Record a metric data point."""
         metric_data = MetricData(
@@ -582,7 +580,7 @@ class SecretsMonitoringService:
         self.alert_counts[rule_name].append(now)
         return True
 
-    async def _send_alert_notifications(self, alert: Alert, channels: List[AlertChannel]):
+    async def _send_alert_notifications(self, alert: Alert, channels: list[AlertChannel]):
         """Send alert notifications to configured channels."""
         notification_tasks = []
 
@@ -856,16 +854,16 @@ class SecretsMonitoringService:
             del self.alert_rules[rule_name]
             logger.info(f"Removed alert rule: {rule_name}")
 
-    def get_active_alerts(self) -> List[Alert]:
+    def get_active_alerts(self) -> list[Alert]:
         """Get all active alerts."""
         return list(self.active_alerts.values())
 
     def get_alert_history(
         self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        severity: Optional[AlertSeverity] = None
-    ) -> List[Alert]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        severity: AlertSeverity | None = None
+    ) -> list[Alert]:
         """Get alert history with optional filtering."""
         alerts = self.alert_history
 
@@ -882,10 +880,10 @@ class SecretsMonitoringService:
 
     def get_metrics(
         self,
-        metric: Optional[MonitoringMetric] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
-    ) -> List[MetricData]:
+        metric: MonitoringMetric | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None
+    ) -> list[MetricData]:
         """Get metric history with optional filtering."""
         metrics = self.metric_history
 
@@ -900,7 +898,7 @@ class SecretsMonitoringService:
 
         return metrics
 
-    def get_monitoring_status(self) -> Dict[str, Any]:
+    def get_monitoring_status(self) -> dict[str, Any]:
         """Get overall monitoring status."""
         return {
             "monitoring_active": self.monitoring_task and not self.monitoring_task.done(),

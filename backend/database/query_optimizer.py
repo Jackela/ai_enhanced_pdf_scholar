@@ -5,17 +5,17 @@ Intelligent query optimization with automatic query rewriting and execution plan
 
 import logging
 import re
-import sqlite3
 import time
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
@@ -41,7 +41,7 @@ class QueryOptimization:
     optimized_fragment: str
     estimated_improvement: float  # Percentage improvement estimate
     risk_level: str  # low, medium, high
-    applicable_conditions: List[str]
+    applicable_conditions: list[str]
 
 
 @dataclass
@@ -49,13 +49,13 @@ class OptimizationResult:
     """Result of query optimization process."""
     original_query: str
     optimized_query: str
-    optimizations_applied: List[QueryOptimization]
+    optimizations_applied: list[QueryOptimization]
     estimated_performance_gain: float
-    execution_plan_before: List[Dict[str, Any]]
-    execution_plan_after: List[Dict[str, Any]]
+    execution_plan_before: list[dict[str, Any]]
+    execution_plan_after: list[dict[str, Any]]
     optimization_time_ms: float
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class DynamicQueryOptimizer:
@@ -83,9 +83,9 @@ class DynamicQueryOptimizer:
         self.optimization_level = optimization_level
 
         # Table schema cache for optimization decisions
-        self._table_schemas: Dict[str, Dict[str, Any]] = {}
-        self._index_info: Dict[str, List[Dict[str, Any]]] = {}
-        self._table_statistics: Dict[str, Dict[str, Any]] = {}
+        self._table_schemas: dict[str, dict[str, Any]] = {}
+        self._index_info: dict[str, list[dict[str, Any]]] = {}
+        self._table_statistics: dict[str, dict[str, Any]] = {}
 
         # Optimization rules based on level
         self._load_optimization_rules()
@@ -180,7 +180,7 @@ class DynamicQueryOptimizer:
         except Exception as e:
             logger.error(f"Failed to refresh schema cache: {e}")
 
-    def optimize_query(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> OptimizationResult:
+    def optimize_query(self, query: str, parameters: tuple[Any, ...] | None = None) -> OptimizationResult:
         """
         Optimize a SQL query for better performance.
 
@@ -242,7 +242,7 @@ class DynamicQueryOptimizer:
                 error_message=str(e)
             )
 
-    def _get_execution_plan(self, query: str) -> List[Dict[str, Any]]:
+    def _get_execution_plan(self, query: str) -> list[dict[str, Any]]:
         """Get query execution plan."""
         try:
             plan_rows = self.db.fetch_all(f"EXPLAIN QUERY PLAN {query}")
@@ -254,8 +254,8 @@ class DynamicQueryOptimizer:
         self,
         query: str,
         optimization_type: str,
-        parameters: Optional[Tuple[Any, ...]] = None
-    ) -> Optional[QueryOptimization]:
+        parameters: tuple[Any, ...] | None = None
+    ) -> QueryOptimization | None:
         """Apply a specific optimization to the query."""
         try:
             method_name = f"_optimize_{optimization_type}"
@@ -266,7 +266,7 @@ class DynamicQueryOptimizer:
 
         return None
 
-    def _optimize_constant_folding(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_constant_folding(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Optimize by folding constant expressions."""
         original_query = query
 
@@ -303,7 +303,7 @@ class DynamicQueryOptimizer:
 
         return None
 
-    def _optimize_predicate_simplification(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_predicate_simplification(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Simplify WHERE clause predicates."""
         original_query = query
 
@@ -337,7 +337,7 @@ class DynamicQueryOptimizer:
 
         return None
 
-    def _optimize_index_hint_insertion(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_index_hint_insertion(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Insert index hints for better query performance."""
         query_lower = query.lower()
 
@@ -379,7 +379,7 @@ class DynamicQueryOptimizer:
             applicable_conditions=[f"Index {best_index['name']} exists and matches query conditions"]
         )
 
-    def _find_best_index(self, table_name: str, where_clause: str) -> Optional[Dict[str, Any]]:
+    def _find_best_index(self, table_name: str, where_clause: str) -> dict[str, Any] | None:
         """Find the best index for a WHERE clause."""
         if table_name not in self._index_info:
             return None
@@ -426,7 +426,7 @@ class DynamicQueryOptimizer:
 
         return best_index
 
-    def _optimize_select_column_optimization(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_select_column_optimization(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Optimize SELECT * queries by suggesting specific columns."""
         if 'select *' not in query.lower():
             return None
@@ -463,7 +463,7 @@ class DynamicQueryOptimizer:
             ]
         )
 
-    def _optimize_subquery_to_join(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_subquery_to_join(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Convert correlated subqueries to JOINs where possible."""
         query_lower = query.lower()
 
@@ -486,7 +486,7 @@ class DynamicQueryOptimizer:
 
         return None
 
-    def _optimize_limit_pushdown(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_limit_pushdown(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Push LIMIT down to subqueries where applicable."""
         query_lower = query.lower()
 
@@ -512,7 +512,7 @@ class DynamicQueryOptimizer:
 
         return None
 
-    def _optimize_where_clause_optimization(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_where_clause_optimization(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Optimize WHERE clause for better index utilization."""
         query_lower = query.lower()
 
@@ -550,7 +550,7 @@ class DynamicQueryOptimizer:
 
         return None
 
-    def _optimize_join_reordering(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[QueryOptimization]:
+    def _optimize_join_reordering(self, query: str, parameters: tuple[Any, ...] | None = None) -> QueryOptimization | None:
         """Suggest optimal JOIN order based on table sizes."""
         query_lower = query.lower()
 
@@ -575,7 +575,7 @@ class DynamicQueryOptimizer:
 
         return None
 
-    def get_optimization_statistics(self) -> Dict[str, Any]:
+    def get_optimization_statistics(self) -> dict[str, Any]:
         """Get statistics about optimization operations."""
         return {
             "optimization_level": self.optimization_level.value,
@@ -585,7 +585,7 @@ class DynamicQueryOptimizer:
             "schema_cache_size": len(self._table_schemas)
         }
 
-    def analyze_query_complexity(self, query: str) -> Dict[str, Any]:
+    def analyze_query_complexity(self, query: str) -> dict[str, Any]:
         """Analyze query complexity and provide optimization recommendations."""
         query_lower = query.lower()
 
@@ -654,7 +654,7 @@ def main():
         if args.query:
             query = args.query
         elif args.query_file:
-            with open(args.query_file, 'r') as f:
+            with open(args.query_file) as f:
                 query = f.read()
         else:
             print("Error: Must provide either --query or --query-file")
@@ -672,12 +672,12 @@ def main():
             analysis = optimizer.analyze_query_complexity(query)
             results['complexity_analysis'] = analysis
 
-            print(f"Query Complexity Analysis:")
+            print("Query Complexity Analysis:")
             print(f"Complexity Level: {analysis['complexity_level']}")
             print(f"Complexity Score: {analysis['complexity_score']}")
             print(f"Metrics: {analysis['metrics']}")
             if analysis['recommendations']:
-                print(f"Recommendations:")
+                print("Recommendations:")
                 for rec in analysis['recommendations']:
                     print(f"  - {rec}")
 
@@ -699,7 +699,7 @@ def main():
                 'optimization_time_ms': result.optimization_time_ms
             }
 
-            print(f"Query Optimization Results:")
+            print("Query Optimization Results:")
             print(f"Success: {result.success}")
             print(f"Estimated Performance Gain: {result.estimated_performance_gain:.1f}%")
             print(f"Optimizations Applied: {len(result.optimizations_applied)}")
@@ -712,7 +712,7 @@ def main():
                     print(f"    Improvement: {opt.estimated_improvement:.1f}%, Risk: {opt.risk_level}")
 
             if result.optimized_query != result.original_query:
-                print(f"\nOptimized Query:")
+                print("\nOptimized Query:")
                 print(result.optimized_query)
 
         # Save results if requested

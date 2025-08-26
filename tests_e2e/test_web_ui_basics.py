@@ -3,8 +3,9 @@ Basic Web UI Tests for AI Enhanced PDF Scholar
 测试基础的Web界面功能
 """
 
-import pytest
 import time
+
+import pytest
 from playwright.sync_api import Page, expect
 
 

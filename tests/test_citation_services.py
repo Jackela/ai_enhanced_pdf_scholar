@@ -4,14 +4,16 @@ Tests for CitationService and CitationParsingService.
 Follows SOLID principles and Service pattern testing.
 """
 
-import pytest
-from datetime import datetime
-from unittest.mock import Mock, patch, MagicMock
-from typing import Any
+from unittest.mock import Mock
 
-from src.database.models import CitationModel, CitationRelationModel, DocumentModel
+import pytest
+
 from src.database.connection import DatabaseConnection
-from src.interfaces.repository_interfaces import ICitationRepository, ICitationRelationRepository
+from src.database.models import CitationModel, CitationRelationModel, DocumentModel
+from src.interfaces.repository_interfaces import (
+    ICitationRelationRepository,
+    ICitationRepository,
+)
 
 
 class TestCitationServiceInterface:

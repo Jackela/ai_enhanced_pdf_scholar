@@ -5,17 +5,23 @@ FastAPI routes for accessing all performance monitoring, caching telemetry,
 APM, alerting, and optimization capabilities.
 """
 
-import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor
 from backend.services.cache_telemetry_service import CacheLayer
+from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor
 from backend.services.performance_alerting_service import AlertSeverity, WarmingPriority
 
 logger = logging.getLogger(__name__)
@@ -24,7 +30,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/performance", tags=["performance"])
 
 # Performance monitor instance (will be injected)
-performance_monitor: Optional[IntegratedPerformanceMonitor] = None
+performance_monitor: IntegratedPerformanceMonitor | None = None
 
 
 # ============================================================================
@@ -36,8 +42,8 @@ class PerformanceOverview(BaseModel):
     timestamp: datetime
     system_health_score: float
     status: str
-    cache_health: Dict[str, Any]
-    apm_metrics: Dict[str, Any]
+    cache_health: dict[str, Any]
+    apm_metrics: dict[str, Any]
     active_alerts: int
     recommendations: int
 
@@ -45,10 +51,10 @@ class PerformanceOverview(BaseModel):
 class CacheAnalytics(BaseModel):
     """Cache analytics response model."""
     timestamp: datetime
-    layer_metrics: Dict[str, Dict[str, Any]]
-    health_assessment: Dict[str, Any]
-    optimization_recommendations: List[Dict[str, Any]]
-    warming_candidates: List[Dict[str, Any]]
+    layer_metrics: dict[str, dict[str, Any]]
+    health_assessment: dict[str, Any]
+    optimization_recommendations: list[dict[str, Any]]
+    warming_candidates: list[dict[str, Any]]
 
 
 class AlertRuleCreate(BaseModel):
@@ -63,16 +69,16 @@ class AlertRuleCreate(BaseModel):
     min_data_points: int = Field(3, ge=1, le=20)
     cooldown_minutes: int = Field(15, ge=1, le=120)
     enabled: bool = True
-    tags: Optional[Dict[str, str]] = None
-    custom_message_template: Optional[str] = None
+    tags: dict[str, str] | None = None
+    custom_message_template: str | None = None
 
 
 class WarmingJobCreate(BaseModel):
     """Create cache warming job request model."""
     cache_layer: CacheLayer
-    keys: List[str] = Field(..., min_items=1, max_items=1000)
+    keys: list[str] = Field(..., min_items=1, max_items=1000)
     priority: WarmingPriority = WarmingPriority.MEDIUM
-    scheduled_for: Optional[datetime] = None
+    scheduled_for: datetime | None = None
 
 
 # ============================================================================
@@ -93,10 +99,10 @@ def get_performance_monitor() -> IntegratedPerformanceMonitor:
 # Performance Overview Routes
 # ============================================================================
 
-@router.get("/overview", response_model=Dict[str, Any])
+@router.get("/overview", response_model=dict[str, Any])
 async def get_performance_overview(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get comprehensive performance overview."""
     try:
         real_time_metrics = monitor.get_real_time_metrics()
@@ -112,7 +118,7 @@ async def get_performance_overview(
 @router.get("/health")
 async def get_system_health(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get system health status."""
     try:
         health_status = monitor.get_service_health_status()
@@ -128,7 +134,7 @@ async def get_system_health(
 @router.get("/report/comprehensive")
 async def get_comprehensive_report(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get comprehensive performance report from all services."""
     try:
         report = monitor.get_comprehensive_performance_report()
@@ -145,7 +151,7 @@ async def get_comprehensive_report(
 async def get_performance_trends(
     hours_back: int = Query(24, ge=1, le=168),  # Max 1 week
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get performance trends over time."""
     try:
         trends = monitor.get_performance_trends(hours_back)
@@ -164,9 +170,9 @@ async def get_performance_trends(
 
 @router.get("/cache/analytics")
 async def get_cache_analytics(
-    layer: Optional[CacheLayer] = None,
+    layer: CacheLayer | None = None,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get detailed cache analytics."""
     try:
         cache_data = monitor.cache_telemetry.get_dashboard_data()
@@ -191,9 +197,9 @@ async def get_cache_analytics(
 
 @router.get("/cache/recommendations")
 async def get_cache_recommendations(
-    layer: Optional[CacheLayer] = None,
+    layer: CacheLayer | None = None,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get cache optimization recommendations."""
     try:
         recommendations = monitor.cache_optimization.get_optimization_recommendations(layer)
@@ -208,10 +214,10 @@ async def get_cache_recommendations(
 
 @router.get("/cache/patterns")
 async def get_cache_patterns(
-    layer: Optional[CacheLayer] = None,
+    layer: CacheLayer | None = None,
     limit: int = Query(100, ge=1, le=500),
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get identified cache access patterns."""
     try:
         patterns = monitor.cache_optimization.get_access_patterns(layer, limit)
@@ -226,10 +232,10 @@ async def get_cache_patterns(
 
 @router.get("/cache/warming/candidates")
 async def get_warming_candidates(
-    layer: Optional[CacheLayer] = None,
+    layer: CacheLayer | None = None,
     limit: int = Query(50, ge=1, le=200),
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get cache warming candidates."""
     try:
         candidates = monitor.cache_optimization.get_warming_candidates(layer, limit)
@@ -246,7 +252,7 @@ async def get_warming_candidates(
 async def create_warming_job(
     job_request: WarmingJobCreate,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a cache warming job."""
     try:
         job_id = monitor.cache_optimization.schedule_warming_job(
@@ -272,7 +278,7 @@ async def create_warming_job(
 async def get_warming_job_status(
     job_id: str,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get status of a cache warming job."""
     try:
         job_status = monitor.cache_optimization.get_warming_job_status(job_id)
@@ -297,7 +303,7 @@ async def get_warming_job_status(
 @router.get("/apm/summary")
 async def get_apm_summary(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get APM performance summary."""
     try:
         summary = monitor.amp.get_performance_summary()
@@ -315,7 +321,7 @@ async def get_slow_traces(
     threshold_ms: float = Query(1000, ge=100, le=30000),
     limit: int = Query(50, ge=1, le=200),
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get slow traces."""
     try:
         slow_traces = monitor.amp.get_slow_traces(threshold_ms, limit)
@@ -348,7 +354,7 @@ async def get_slow_traces(
 async def get_error_traces(
     limit: int = Query(50, ge=1, le=200),
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get traces with errors."""
     try:
         error_traces = monitor.amp.get_error_traces(limit)
@@ -381,7 +387,7 @@ async def get_error_traces(
 async def get_trace_details(
     trace_id: str,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get detailed information for a specific trace."""
     try:
         trace_details = monitor.dashboard_service._get_trace_details(trace_id)
@@ -406,7 +412,7 @@ async def get_trace_details(
 @router.get("/alerts")
 async def get_active_alerts(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get active performance alerts."""
     try:
         alerts = monitor.alerting_service.get_active_alerts()
@@ -422,9 +428,9 @@ async def get_active_alerts(
 @router.get("/alerts/history")
 async def get_alert_history(
     hours_back: int = Query(24, ge=1, le=168),
-    severity: Optional[List[AlertSeverity]] = Query(None),
+    severity: list[AlertSeverity] | None = Query(None),
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get alert history."""
     try:
         history = monitor.alerting_service.get_alert_history(hours_back, severity)
@@ -440,7 +446,7 @@ async def get_alert_history(
 @router.get("/alerts/statistics")
 async def get_alert_statistics(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get alert statistics."""
     try:
         stats = monitor.alerting_service.get_alert_statistics()
@@ -457,11 +463,12 @@ async def get_alert_statistics(
 async def create_alert_rule(
     rule_request: AlertRuleCreate,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a new alert rule."""
     try:
-        from backend.services.performance_alerting_service import AlertRule
         import uuid
+
+        from backend.services.performance_alerting_service import AlertRule
 
         rule = AlertRule(
             rule_id=str(uuid.uuid4()),
@@ -502,7 +509,7 @@ async def acknowledge_alert(
     alert_id: str,
     acknowledged_by: str,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Acknowledge an active alert."""
     try:
         success = monitor.alerting_service.acknowledge_alert(alert_id, acknowledged_by)
@@ -527,7 +534,7 @@ async def resolve_alert(
     alert_id: str,
     resolution_note: str = "",
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Manually resolve an active alert."""
     try:
         success = monitor.alerting_service.resolve_alert(alert_id, resolution_note)
@@ -554,7 +561,7 @@ async def resolve_alert(
 @router.post("/analyze/comprehensive")
 async def trigger_comprehensive_analysis(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Trigger comprehensive performance analysis."""
     try:
         result = await monitor.trigger_comprehensive_analysis()
@@ -570,7 +577,7 @@ async def trigger_comprehensive_analysis(
 @router.post("/optimize/emergency")
 async def trigger_emergency_optimization(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Trigger emergency optimization procedures."""
     try:
         result = await monitor.emergency_optimization()
@@ -586,7 +593,7 @@ async def trigger_emergency_optimization(
 @router.post("/cache/optimize/trigger")
 async def trigger_cache_optimization(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Trigger immediate cache optimization analysis."""
     try:
         result = monitor.cache_optimization.trigger_immediate_analysis()
@@ -632,7 +639,7 @@ async def websocket_dashboard(
 @router.get("/dashboard/data")
 async def get_dashboard_data(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get dashboard data via HTTP API."""
     try:
         data = monitor.dashboard_service.get_api_metrics()
@@ -653,7 +660,7 @@ async def get_dashboard_data(
 async def export_telemetry_data(
     format: str = Query("json", regex="^(json)$"),
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Export telemetry data."""
     try:
         data = monitor.cache_telemetry.export_telemetry_report()
@@ -675,7 +682,7 @@ async def export_telemetry_data(
 async def export_dashboard_data(
     format: str = Query("json", regex="^(json)$"),
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Export dashboard data."""
     try:
         data = monitor.dashboard_service.get_export_data(format)
@@ -695,7 +702,7 @@ async def export_dashboard_data(
 @router.post("/services/start")
 async def start_performance_monitoring(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Start performance monitoring services."""
     try:
         await monitor.start_monitoring()
@@ -713,7 +720,7 @@ async def start_performance_monitoring(
 @router.post("/services/stop")
 async def stop_performance_monitoring(
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Stop performance monitoring services."""
     try:
         await monitor.stop_monitoring()

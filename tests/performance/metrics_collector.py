@@ -8,18 +8,15 @@ Provides advanced metrics collection, monitoring, and reporting capabilities:
 - Alert generation
 """
 
-import asyncio
-import time
-import json
 import csv
+import json
 import sqlite3
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field, asdict
+import statistics
+from collections import deque
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from collections import deque
-import statistics
-import warnings
+from typing import Any
 
 
 @dataclass
@@ -37,7 +34,7 @@ class PerformanceThresholds:
     response_time_degradation_percent: float = 20.0
     throughput_degradation_percent: float = 15.0
 
-    def validate_metrics(self, metrics: Dict[str, Any]) -> List[str]:
+    def validate_metrics(self, metrics: dict[str, Any]) -> list[str]:
         """Validate metrics against thresholds and return violations"""
         violations = []
 
@@ -101,7 +98,7 @@ class MetricsSnapshot:
     memory_mb: float
     cpu_percent: float
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         data = asdict(self)
         data['timestamp'] = self.timestamp.isoformat()
@@ -112,7 +109,7 @@ class MetricsCollector:
     """Collects and aggregates performance metrics"""
 
     def __init__(self,
-                 storage_path: Optional[Path] = None,
+                 storage_path: Path | None = None,
                  window_size: int = 100):
         """
         Initialize metrics collector
@@ -130,7 +127,7 @@ class MetricsCollector:
         self.error_rate_window = deque(maxlen=window_size)
 
         # Historical data
-        self.snapshots: List[MetricsSnapshot] = []
+        self.snapshots: list[MetricsSnapshot] = []
 
         # Initialize database
         self._init_database()
@@ -211,7 +208,7 @@ class MetricsCollector:
         conn.commit()
         conn.close()
 
-    def get_real_time_stats(self) -> Dict[str, Any]:
+    def get_real_time_stats(self) -> dict[str, Any]:
         """Get real-time statistics from sliding windows"""
         stats = {}
 
@@ -235,7 +232,7 @@ class MetricsCollector:
 
         return stats
 
-    def _calculate_trend(self, values: List[float]) -> str:
+    def _calculate_trend(self, values: list[float]) -> str:
         """Calculate trend direction"""
         if len(values) < 2:
             return "stable"
@@ -264,10 +261,10 @@ class MetricsCollector:
 
     def get_historical_metrics(
         self,
-        scenario: Optional[str] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
-    ) -> List[MetricsSnapshot]:
+        scenario: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None
+    ) -> list[MetricsSnapshot]:
         """Retrieve historical metrics from database"""
         conn = sqlite3.connect(self.storage_path)
         cursor = conn.cursor()
@@ -313,10 +310,10 @@ class MetricsCollector:
 
     def detect_regression(
         self,
-        current_metrics: Dict[str, Any],
+        current_metrics: dict[str, Any],
         baseline_scenario: str,
         threshold_percent: float = 10.0
-    ) -> List[str]:
+    ) -> list[str]:
         """Detect performance regression compared to baseline"""
         # Get baseline metrics
         baseline_snapshots = self.get_historical_metrics(
@@ -360,7 +357,7 @@ class MetricsCollector:
 
         return regressions
 
-    def export_metrics(self, format: str = "json", output_path: Optional[Path] = None):
+    def export_metrics(self, format: str = "json", output_path: Path | None = None):
         """Export metrics to file"""
         output_path = output_path or Path(f"metrics_export_{datetime.now():%Y%m%d_%H%M%S}.{format}")
 
@@ -388,7 +385,7 @@ class PerformanceReport:
         self.collector = collector
         self.thresholds = thresholds
 
-    def generate_summary(self, scenarios: List[str]) -> str:
+    def generate_summary(self, scenarios: list[str]) -> str:
         """Generate summary report for multiple scenarios"""
         report = []
         report.append("=" * 80)
@@ -453,7 +450,7 @@ class PerformanceReport:
         report.append("\n" + "=" * 80)
         return "\n".join(report)
 
-    def generate_html_report(self, scenarios: List[str]) -> str:
+    def generate_html_report(self, scenarios: list[str]) -> str:
         """Generate HTML performance report with charts"""
         html = []
         html.append("""
@@ -485,7 +482,7 @@ class PerformanceReport:
         <body>
         """)
 
-        html.append(f"<h1>Performance Test Report</h1>")
+        html.append("<h1>Performance Test Report</h1>")
         html.append(f"<p>Generated: {datetime.now():%Y-%m-%d %H:%M:%S}</p>")
 
         for scenario in scenarios:

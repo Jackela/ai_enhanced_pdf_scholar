@@ -5,9 +5,9 @@ AI Enhanced PDF Scholar - Test Runner Utility
 Provides different test execution modes for various development scenarios.
 """
 
-import sys
-import subprocess
 import argparse
+import subprocess
+import sys
 from pathlib import Path
 
 

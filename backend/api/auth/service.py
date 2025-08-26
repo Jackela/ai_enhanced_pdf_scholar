@@ -6,7 +6,6 @@ Core authentication business logic and user management.
 import logging
 import secrets
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
@@ -53,9 +52,9 @@ class AuthenticationService:
         username: str,
         email: str,
         password: str,
-        full_name: Optional[str] = None,
+        full_name: str | None = None,
         auto_verify: bool = False
-    ) -> Tuple[Optional[UserModel], Optional[str]]:
+    ) -> tuple[UserModel | None, str | None]:
         """
         Register a new user.
 
@@ -130,8 +129,8 @@ class AuthenticationService:
         self,
         username: str,
         password: str,
-        ip_address: Optional[str] = None
-    ) -> Tuple[Optional[UserModel], Optional[str]]:
+        ip_address: str | None = None
+    ) -> tuple[UserModel | None, str | None]:
         """
         Authenticate a user with username/email and password.
 
@@ -217,8 +216,8 @@ class AuthenticationService:
     def create_tokens(
         self,
         user: UserModel,
-        device_info: Optional[str] = None
-    ) -> Tuple[str, str, int]:
+        device_info: str | None = None
+    ) -> tuple[str, str, int]:
         """
         Create access and refresh tokens for a user.
 
@@ -265,8 +264,8 @@ class AuthenticationService:
     def refresh_tokens(
         self,
         refresh_token: str,
-        device_info: Optional[str] = None
-    ) -> Tuple[Optional[str], Optional[str], Optional[int], Optional[str]]:
+        device_info: str | None = None
+    ) -> tuple[str | None, str | None, int | None, str | None]:
         """
         Refresh access and refresh tokens using refresh token rotation.
 
@@ -465,7 +464,7 @@ class AuthenticationService:
         user_id: int,
         current_password: str,
         new_password: str
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Change user password.
 
@@ -513,7 +512,7 @@ class AuthenticationService:
             logger.error(f"Password change failed: {str(e)}")
             return False, "Password change failed"
 
-    def request_password_reset(self, email: str) -> Tuple[Optional[str], Optional[str]]:
+    def request_password_reset(self, email: str) -> tuple[str | None, str | None]:
         """
         Request password reset token.
 
@@ -552,7 +551,7 @@ class AuthenticationService:
         self,
         token: str,
         new_password: str
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Reset password using reset token.
 
@@ -612,7 +611,7 @@ class AuthenticationService:
     # Email Verification
     # ============================================================================
 
-    def verify_email(self, token: str) -> Tuple[bool, Optional[str]]:
+    def verify_email(self, token: str) -> tuple[bool, str | None]:
         """
         Verify user email address.
 
@@ -658,17 +657,17 @@ class AuthenticationService:
     # User Management
     # ============================================================================
 
-    def get_user_by_id(self, user_id: int) -> Optional[UserModel]:
+    def get_user_by_id(self, user_id: int) -> UserModel | None:
         """Get user by ID."""
         return self.db.query(UserModel).filter(UserModel.id == user_id).first()
 
-    def get_user_by_username(self, username: str) -> Optional[UserModel]:
+    def get_user_by_username(self, username: str) -> UserModel | None:
         """Get user by username."""
         return self.db.query(UserModel).filter(
             UserModel.username == username.lower()
         ).first()
 
-    def get_user_by_email(self, email: str) -> Optional[UserModel]:
+    def get_user_by_email(self, email: str) -> UserModel | None:
         """Get user by email."""
         return self.db.query(UserModel).filter(
             UserModel.email == email.lower()

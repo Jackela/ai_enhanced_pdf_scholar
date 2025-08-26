@@ -5,16 +5,13 @@ Memory-efficient PDF processing for large files with incremental indexing.
 
 import asyncio
 import logging
-import tempfile
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
-import aiofiles
 from llama_index.core import Document
 from llama_index.readers.file import PDFReader
 
 from backend.api.streaming_models import UploadSession
-
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +176,7 @@ class StreamingPDFProcessor:
     async def _process_pdf_chunks(
         self,
         pdf_path: str
-    ) -> AsyncGenerator[Dict, None]:
+    ) -> AsyncGenerator[dict, None]:
         """
         Process PDF file in chunks to minimize memory usage.
 
@@ -235,10 +232,10 @@ class StreamingPDFProcessor:
 
     async def _extract_text_from_chunk(
         self,
-        page_chunk: Dict,
+        page_chunk: dict,
         filename: str,
         processed_pages: int,
-    ) -> List[Document]:
+    ) -> list[Document]:
         """
         Extract text from a chunk of pages and create LlamaIndex documents.
 
@@ -306,7 +303,7 @@ class StreamingPDFProcessor:
 
         return documents
 
-    async def get_pdf_info_streaming(self, pdf_path: str) -> Dict:
+    async def get_pdf_info_streaming(self, pdf_path: str) -> dict:
         """
         Get PDF information without loading the entire file into memory.
 
@@ -359,7 +356,7 @@ class StreamingPDFProcessor:
         self,
         pdf_path: str,
         available_memory_mb: float
-    ) -> Tuple[bool, List[str], List[str]]:
+    ) -> tuple[bool, list[str], list[str]]:
         """
         Validate if PDF is ready for streaming processing.
 
@@ -418,7 +415,7 @@ class StreamingPDFProcessor:
             errors.append(f"Validation error: {str(e)}")
             return False, errors, warnings
 
-    def get_processing_stats(self) -> Dict:
+    def get_processing_stats(self) -> dict:
         """Get current processing statistics."""
         return self.processing_stats.copy()
 

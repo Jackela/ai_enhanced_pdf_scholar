@@ -4,15 +4,13 @@ Optimized Security Scanning Script for CI/CD
 Focuses on performance and timeout prevention while maintaining security coverage.
 """
 
-import subprocess
-import sys
 import json
 import os
+import subprocess
+import sys
 import time
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import tempfile
-from typing import List, Dict, Tuple, Optional
+from pathlib import Path
 
 
 class SecurityScanner:
@@ -28,7 +26,7 @@ class SecurityScanner:
         }
         self.start_time = time.time()
 
-    def run_command_with_timeout(self, cmd: List[str], timeout: int = 60, cwd: Optional[Path] = None) -> Tuple[bool, str, str]:
+    def run_command_with_timeout(self, cmd: list[str], timeout: int = 60, cwd: Path | None = None) -> tuple[bool, str, str]:
         """Run command with timeout and error handling."""
         try:
             result = subprocess.run(
@@ -163,7 +161,7 @@ class SecurityScanner:
         try:
             if os.path.exists("bandit-report.json"):
                 try:
-                    with open("bandit-report.json", "r") as f:
+                    with open("bandit-report.json") as f:
                         content = f.read().strip()
                         if content:
                             bandit_data = json.loads(content)

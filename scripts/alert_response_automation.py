@@ -8,18 +8,16 @@ import asyncio
 import json
 import logging
 import os
-import psutil
-import redis
-import shutil
 import subprocess
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
+import psutil
+import redis
 import requests
 from pydantic import BaseModel, Field
-
 
 # Configure logging
 logging.basicConfig(
@@ -40,10 +38,10 @@ class AlertData(BaseModel):
     severity: str
     category: str
     instance: str
-    labels: Dict[str, str] = {}
-    annotations: Dict[str, str] = {}
+    labels: dict[str, str] = {}
+    annotations: dict[str, str] = {}
     starts_at: datetime = Field(alias='startsAt')
-    ends_at: Optional[datetime] = Field(alias='endsAt', default=None)
+    ends_at: datetime | None = Field(alias='endsAt', default=None)
 
     class Config:
         allow_population_by_field_name = True
@@ -55,7 +53,7 @@ class RemediationAction(BaseModel):
     status: str  # success, failed, skipped
     message: str
     execution_time: float
-    metrics: Dict[str, Any] = {}
+    metrics: dict[str, Any] = {}
 
 
 class AutoRemediationConfig:
@@ -93,7 +91,7 @@ class AlertResponseAutomation:
     def __init__(self, config: AutoRemediationConfig = None):
         self.config = config or AutoRemediationConfig()
         self.redis_client = None
-        self.action_history: List[RemediationAction] = []
+        self.action_history: list[RemediationAction] = []
 
         # Initialize Redis connection
         self._init_redis()
@@ -128,7 +126,7 @@ class AlertResponseAutomation:
             logger.warning(f"Redis connection failed: {e}. Proceeding without Redis.")
             self.redis_client = None
 
-    async def process_alert(self, alert: AlertData) -> List[RemediationAction]:
+    async def process_alert(self, alert: AlertData) -> list[RemediationAction]:
         """Process incoming alert and execute appropriate remediation actions."""
         actions = []
 
@@ -458,7 +456,7 @@ class AlertResponseAutomation:
                             # Increment restart counter
                             self.redis_client.setex(restart_key, 3600, restart_count + 1)  # 1 hour window
 
-                            actions_taken.append(f"restarted_service")
+                            actions_taken.append("restarted_service")
                             restart_attempted = True
 
                             # Wait and check if restart was successful
@@ -554,7 +552,7 @@ class AlertResponseAutomation:
                             # Make API call to /api/rag/query to warm cache
                             try:
                                 # This would be an actual API call in production
-                                actions_taken.append(f"warmed_cache_for_query")
+                                actions_taken.append("warmed_cache_for_query")
                             except Exception:
                                 continue
 
@@ -1093,11 +1091,11 @@ class AlertResponseAutomation:
         except Exception as e:
             logger.warning(f"Failed to send remediation notification: {e}")
 
-    def get_action_history(self, limit: int = 50) -> List[RemediationAction]:
+    def get_action_history(self, limit: int = 50) -> list[RemediationAction]:
         """Get recent remediation action history."""
         return self.action_history[-limit:] if self.action_history else []
 
-    def get_metrics_summary(self) -> Dict[str, Any]:
+    def get_metrics_summary(self) -> dict[str, Any]:
         """Get summary of remediation metrics."""
         if not self.action_history:
             return {"total_actions": 0}
@@ -1167,7 +1165,7 @@ async def main():
     # Handle test alert file
     if args.alert_file:
         try:
-            with open(args.alert_file, 'r') as f:
+            with open(args.alert_file) as f:
                 alert_data = json.load(f)
 
             alert = AlertData(**alert_data)

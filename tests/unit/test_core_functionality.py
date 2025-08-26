@@ -3,18 +3,18 @@ Core functionality tests for essential backend components.
 Tests the most critical backend functions with fast execution times.
 """
 
-import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Import with error handling for CI/CD environments
 try:
-    from src.database.models import DocumentModel, VectorIndexModel
     from src.database.connection import DatabaseConnection
+    from src.database.models import DocumentModel, VectorIndexModel
     from src.services.content_hash_service import ContentHashService
     IMPORTS_AVAILABLE = True
-except ImportError as e:
+except ImportError:
     # Create mock classes for testing in environments without full dependencies
     IMPORTS_AVAILABLE = False
 
@@ -242,8 +242,8 @@ class TestContentHashService:
 
     def test_content_hash_calculation(self):
         """Test content hash calculation."""
-        import tempfile
         import os
+        import tempfile
 
         service = ContentHashService()
 

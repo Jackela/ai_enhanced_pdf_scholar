@@ -4,8 +4,10 @@ Tests for CitationModel and CitationRelationModel data classes.
 Ensures proper validation, creation, and data handling.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
+
 from src.database.models import CitationModel, CitationRelationModel
 
 

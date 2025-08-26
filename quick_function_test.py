@@ -4,10 +4,10 @@ Quick Function Test for AI Enhanced PDF Scholar
 Tests actual functionality without starting full test suite
 """
 
-import json
-import requests
 import tempfile
 from pathlib import Path
+
+import requests
 
 BASE_URL = "http://localhost:8000/api"
 
@@ -85,8 +85,8 @@ def test_settings():
 def create_test_pdf():
     """Create a simple test PDF for upload testing"""
     try:
-        from reportlab.pdfgen import canvas
         from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
 
         # Create temporary PDF
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')

@@ -5,25 +5,22 @@ Validates comprehensive security header implementation.
 
 import json
 import os
-from typing import Dict, Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
 from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.api.middleware.security_headers import (
-    SecurityHeadersConfig,
-    SecurityHeadersMiddleware,
-    Environment,
     CSPDirective,
     CSPSource,
     CSPViolationReport,
+    Environment,
+    SecurityHeadersConfig,
+    SecurityHeadersMiddleware,
+    create_security_txt_content,
     handle_csp_report,
     handle_ct_report,
-    create_security_txt_content,
     setup_security_headers,
 )
 

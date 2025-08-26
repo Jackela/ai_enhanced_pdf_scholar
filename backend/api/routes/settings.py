@@ -6,22 +6,18 @@ and system status.
 
 import json
 import logging
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
 
-from backend.api.error_handling import SystemException
 from backend.api.dependencies import get_db
+from backend.api.error_handling import SystemException
 from backend.api.models import (
-    SecurityValidationError,
-    validate_against_patterns,
     DANGEROUS_SQL_PATTERNS,
     XSS_PATTERNS,
-    sanitize_html_content,
-    log_security_event
+    SecurityValidationError,
+    validate_against_patterns,
 )
 from src.database.connection import DatabaseConnection
 
@@ -61,13 +57,13 @@ class ApiKeyRequest(BaseModel):
 
 class SettingsRequest(BaseModel):
     """Settings update request with security validation."""
-    gemini_api_key: Optional[str] = Field(None, min_length=10, max_length=200,
+    gemini_api_key: str | None = Field(None, min_length=10, max_length=200,
                                          description="Google Gemini API key")
     rag_enabled: bool = Field(False, description="Enable RAG functionality")
 
     @field_validator('gemini_api_key')
     @classmethod
-    def validate_gemini_api_key(cls, v: Optional[str]) -> Optional[str]:
+    def validate_gemini_api_key(cls, v: str | None) -> str | None:
         """Validate Gemini API key."""
         if v is None:
             return v
@@ -107,7 +103,7 @@ class SettingsResponse(BaseModel):
 class ApiKeyTestResponse(BaseModel):
     """API key test response model."""
     valid: bool = Field(..., description="Whether API key is valid")
-    error: Optional[str] = Field(None, description="Error message if invalid")
+    error: str | None = Field(None, description="Error message if invalid")
 
 
 class SettingsManager:
@@ -179,7 +175,7 @@ class SettingsManager:
             logger.error(f"Failed to set setting {key}: {e}")
             return False
 
-    def get_all_settings(self) -> Dict[str, Any]:
+    def get_all_settings(self) -> dict[str, Any]:
         """Get all settings as a dictionary."""
         try:
             results = self.db.fetch_all("SELECT key, value FROM system_settings")

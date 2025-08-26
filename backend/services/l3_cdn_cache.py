@@ -4,15 +4,13 @@ Global content delivery network cache integration with edge optimization.
 """
 
 import asyncio
-import hashlib
-import json
 import logging
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Union
 from urllib.parse import urlencode, urlparse
 
 import aiohttp
@@ -55,8 +53,8 @@ class CDNConfig:
     origin_domain: str = ""
 
     # AWS CloudFront specific
-    aws_access_key_id: Optional[str] = None
-    aws_secret_access_key: Optional[str] = None
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
     aws_region: str = "us-east-1"
 
     # Caching policies
@@ -65,7 +63,7 @@ class CDNConfig:
     min_ttl_seconds: int = 300  # 5 minutes
 
     # Content type specific TTLs
-    content_ttls: Dict[ContentType, int] = field(default_factory=lambda: {
+    content_ttls: dict[ContentType, int] = field(default_factory=lambda: {
         ContentType.STATIC_ASSETS: 2592000,  # 30 days
         ContentType.API_RESPONSES: 3600,     # 1 hour
         ContentType.DOCUMENTS: 86400,        # 24 hours
@@ -74,7 +72,7 @@ class CDNConfig:
     })
 
     # Edge locations and routing
-    edge_locations: List[str] = field(default_factory=lambda: [
+    edge_locations: list[str] = field(default_factory=lambda: [
         "us-east-1", "us-west-1", "eu-west-1", "ap-southeast-1"
     ])
 
@@ -85,11 +83,11 @@ class CDNConfig:
 
     # Security settings
     enable_ssl: bool = True
-    ssl_protocols: List[str] = field(default_factory=lambda: ["TLSv1.2", "TLSv1.3"])
+    ssl_protocols: list[str] = field(default_factory=lambda: ["TLSv1.2", "TLSv1.3"])
 
     # Cache behaviors
     query_string_caching: bool = False  # Cache based on query strings
-    header_caching: List[str] = field(default_factory=lambda: ["Accept", "Accept-Language"])
+    header_caching: list[str] = field(default_factory=lambda: ["Accept", "Accept-Language"])
 
     # Monitoring
     enable_real_user_monitoring: bool = True
@@ -104,10 +102,10 @@ class CDNCacheEntry:
     size_bytes: int
     created_at: datetime
     expires_at: datetime
-    etag: Optional[str] = None
-    last_modified: Optional[datetime] = None
+    etag: str | None = None
+    last_modified: datetime | None = None
     cache_hit_ratio: float = 0.0
-    edge_location: Optional[str] = None
+    edge_location: str | None = None
     compression_enabled: bool = False
 
     def is_expired(self) -> bool:
@@ -138,13 +136,13 @@ class CDNStatistics:
     error_rate_percent: float = 0.0
 
     # Geographic distribution
-    requests_by_region: Dict[str, int] = field(default_factory=dict)
+    requests_by_region: dict[str, int] = field(default_factory=dict)
 
     # Content type distribution
-    requests_by_content_type: Dict[str, int] = field(default_factory=dict)
+    requests_by_content_type: dict[str, int] = field(default_factory=dict)
 
     # Edge performance
-    edge_hit_ratios: Dict[str, float] = field(default_factory=dict)
+    edge_hit_ratios: dict[str, float] = field(default_factory=dict)
 
     def calculate_hit_rate(self) -> float:
         """Calculate overall cache hit rate."""
@@ -175,7 +173,7 @@ class L3CDNCache:
         self.stats = CDNStatistics()
 
         # Cache tracking
-        self.cached_urls: Dict[str, CDNCacheEntry] = {}
+        self.cached_urls: dict[str, CDNCacheEntry] = {}
         self.cache_access_log: deque = deque(maxlen=10000)
 
         # Performance tracking
@@ -183,7 +181,7 @@ class L3CDNCache:
 
         # CDN client initialization
         self._cdn_client = None
-        self._http_session: Optional[aiohttp.ClientSession] = None
+        self._http_session: aiohttp.ClientSession | None = None
 
         # Initialize CDN client based on provider
         self._initialize_cdn_client()
@@ -238,7 +236,7 @@ class L3CDNCache:
         self,
         original_url: str,
         content_type: ContentType = ContentType.API_RESPONSES,
-        query_params: Optional[Dict[str, Any]] = None
+        query_params: dict[str, Any] | None = None
     ) -> str:
         """Get CDN-cached URL for content."""
         # Generate CDN URL
@@ -261,8 +259,8 @@ class L3CDNCache:
         content_url: str,
         content_data: bytes,
         content_type: ContentType = ContentType.API_RESPONSES,
-        ttl_seconds: Optional[int] = None,
-        headers: Optional[Dict[str, str]] = None
+        ttl_seconds: int | None = None,
+        headers: dict[str, str] | None = None
     ) -> str:
         """Cache content directly to CDN."""
         start_time = time.time()
@@ -322,7 +320,7 @@ class L3CDNCache:
 
     async def invalidate_cache(
         self,
-        urls: Union[str, List[str]],
+        urls: Union[str, list[str]],
         wait_for_completion: bool = False
     ) -> bool:
         """Invalidate cached content on CDN."""
@@ -357,10 +355,10 @@ class L3CDNCache:
 
     async def prefetch_content(
         self,
-        urls: List[str],
+        urls: list[str],
         content_type: ContentType = ContentType.API_RESPONSES,
         priority: str = "normal"
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """Prefetch content to CDN edge locations."""
         results = {}
 
@@ -397,7 +395,7 @@ class L3CDNCache:
         content_data: bytes,
         content_type: ContentType,
         ttl_seconds: int,
-        headers: Optional[Dict[str, str]]
+        headers: dict[str, str] | None
     ) -> bool:
         """Upload content to CDN."""
         if self.config.provider == CDNProvider.CLOUDFRONT:
@@ -416,7 +414,7 @@ class L3CDNCache:
         content_data: bytes,
         content_type: ContentType,
         ttl_seconds: int,
-        headers: Optional[Dict[str, str]]
+        headers: dict[str, str] | None
     ) -> bool:
         """Upload content to AWS CloudFront via S3."""
         try:
@@ -470,7 +468,7 @@ class L3CDNCache:
         content_data: bytes,
         content_type: ContentType,
         ttl_seconds: int,
-        headers: Optional[Dict[str, str]]
+        headers: dict[str, str] | None
     ) -> bool:
         """Upload content via HTTP (generic CDN)."""
         try:
@@ -498,7 +496,7 @@ class L3CDNCache:
 
     async def _perform_cdn_invalidation(
         self,
-        urls: List[str],
+        urls: list[str],
         wait_for_completion: bool
     ) -> bool:
         """Perform CDN invalidation based on provider."""
@@ -509,7 +507,7 @@ class L3CDNCache:
 
     async def _invalidate_cloudfront(
         self,
-        urls: List[str],
+        urls: list[str],
         wait_for_completion: bool
     ) -> bool:
         """Invalidate CloudFront cache."""
@@ -577,7 +575,7 @@ class L3CDNCache:
 
         logger.warning(f"CloudFront invalidation {invalidation_id} did not complete in time")
 
-    async def _invalidate_generic(self, urls: List[str], wait_for_completion: bool) -> bool:
+    async def _invalidate_generic(self, urls: list[str], wait_for_completion: bool) -> bool:
         """Generic CDN invalidation via HTTP."""
         # This would depend on the specific CDN API
         logger.info(f"Generic CDN invalidation for {len(urls)} URLs")
@@ -587,7 +585,7 @@ class L3CDNCache:
     # Content Management
     # ========================================================================
 
-    async def _fetch_origin_content(self, url: str) -> Optional[bytes]:
+    async def _fetch_origin_content(self, url: str) -> bytes | None:
         """Fetch content from origin server."""
         try:
             if not self._http_session:
@@ -618,7 +616,7 @@ class L3CDNCache:
     def _generate_cdn_url(
         self,
         original_url: str,
-        query_params: Optional[Dict[str, Any]] = None
+        query_params: dict[str, Any] | None = None
     ) -> str:
         """Generate CDN URL from original URL."""
         # Parse original URL
@@ -671,14 +669,14 @@ class L3CDNCache:
 
         self.stats.total_requests += 1
 
-    async def get_analytics(self) -> Dict[str, Any]:
+    async def get_analytics(self) -> dict[str, Any]:
         """Get CDN analytics and performance metrics."""
         if self.config.provider == CDNProvider.CLOUDFRONT:
             return await self._get_cloudfront_analytics()
         else:
             return await self._get_generic_analytics()
 
-    async def _get_cloudfront_analytics(self) -> Dict[str, Any]:
+    async def _get_cloudfront_analytics(self) -> dict[str, Any]:
         """Get CloudFront analytics."""
         try:
             if not self._cdn_client:
@@ -744,7 +742,7 @@ class L3CDNCache:
             logger.error(f"Error getting CloudFront analytics: {e}")
             return {}
 
-    async def _get_generic_analytics(self) -> Dict[str, Any]:
+    async def _get_generic_analytics(self) -> dict[str, Any]:
         """Get generic CDN analytics from local statistics."""
         # Calculate statistics from local data
         hit_rate = self.stats.calculate_hit_rate()
@@ -791,7 +789,7 @@ class L3CDNCache:
             }
         }
 
-    def get_cache_status(self) -> Dict[str, Any]:
+    def get_cache_status(self) -> dict[str, Any]:
         """Get current cache status."""
         now = datetime.utcnow()
         expired_count = sum(1 for entry in self.cached_urls.values() if entry.is_expired())

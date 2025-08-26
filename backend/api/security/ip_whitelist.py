@@ -4,19 +4,15 @@ Production-ready IP access control with CIDR support, geo-filtering,
 rate limiting, and threat intelligence integration.
 """
 
-import asyncio
 import ipaddress
-import json
 import logging
-import re
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Union, Any, Tuple
 from enum import Enum
-from pathlib import Path
+from typing import Any, Union
 
 import httpx
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
 
 from ...config.production import ProductionConfig
 from ...services.metrics_service import MetricsService
@@ -54,11 +50,11 @@ class IPRule:
     action: IPAccessAction
     description: str
     priority: int = 1000  # Lower number = higher priority
-    expires_at: Optional[float] = None
+    expires_at: float | None = None
     created_at: float = field(default_factory=time.time)
     hit_count: int = 0
-    last_hit: Optional[float] = None
-    tags: Set[str] = field(default_factory=set)
+    last_hit: float | None = None
+    tags: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -66,13 +62,13 @@ class GeoLocation:
     """Geographic location information."""
     country_code: str
     country_name: str
-    city: Optional[str] = None
-    region: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    timezone: Optional[str] = None
-    isp: Optional[str] = None
-    organization: Optional[str] = None
+    city: str | None = None
+    region: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    timezone: str | None = None
+    isp: str | None = None
+    organization: str | None = None
 
 
 @dataclass
@@ -80,10 +76,10 @@ class IPThreatInfo:
     """IP threat intelligence information."""
     is_malicious: bool
     threat_level: ThreatLevel
-    threat_types: Set[str]
-    last_seen: Optional[float] = None
+    threat_types: set[str]
+    last_seen: float | None = None
     reputation_score: int = 0  # 0-100, higher is more trustworthy
-    sources: Set[str] = field(default_factory=set)
+    sources: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -91,13 +87,13 @@ class IPAccessAttempt:
     """IP access attempt record."""
     ip_address: str
     timestamp: float
-    user_agent: Optional[str]
+    user_agent: str | None
     endpoint: str
     method: str
     status_code: int
     response_time: float
-    geo_location: Optional[GeoLocation] = None
-    threat_info: Optional[IPThreatInfo] = None
+    geo_location: GeoLocation | None = None
+    threat_info: IPThreatInfo | None = None
 
 
 class ProductionIPWhitelist:
@@ -108,26 +104,26 @@ class ProductionIPWhitelist:
 
     def __init__(
         self,
-        production_config: Optional[ProductionConfig] = None,
-        metrics_service: Optional[MetricsService] = None
+        production_config: ProductionConfig | None = None,
+        metrics_service: MetricsService | None = None
     ):
         """Initialize IP whitelist system."""
         self.production_config = production_config
         self.metrics_service = metrics_service
 
         # IP rules storage
-        self.ip_rules: List[IPRule] = []
-        self.geo_rules: Dict[str, IPAccessAction] = {}  # Country code -> action
+        self.ip_rules: list[IPRule] = []
+        self.geo_rules: dict[str, IPAccessAction] = {}  # Country code -> action
 
         # Caching and performance
-        self.ip_cache: Dict[str, Tuple[IPAccessAction, float]] = {}
-        self.geo_cache: Dict[str, GeoLocation] = {}
-        self.threat_cache: Dict[str, IPThreatInfo] = {}
+        self.ip_cache: dict[str, tuple[IPAccessAction, float]] = {}
+        self.geo_cache: dict[str, GeoLocation] = {}
+        self.threat_cache: dict[str, IPThreatInfo] = {}
 
         # Access tracking
-        self.access_attempts: List[IPAccessAttempt] = []
-        self.blocked_ips: Dict[str, int] = {}  # IP -> block count
-        self.rate_limit_tracker: Dict[str, List[float]] = {}  # IP -> timestamps
+        self.access_attempts: list[IPAccessAttempt] = []
+        self.blocked_ips: dict[str, int] = {}  # IP -> block count
+        self.rate_limit_tracker: dict[str, list[float]] = {}  # IP -> timestamps
 
         # Configuration
         self.cache_ttl = 3600  # 1 hour
@@ -257,8 +253,8 @@ class ProductionIPWhitelist:
         logger.info(f"Loaded {len(self.ip_rules)} IP rules from production config")
 
     def add_ip_rule(self, ip_range: str, action: IPAccessAction, description: str,
-                   priority: int = 1000, expires_in: Optional[int] = None,
-                   tags: Optional[Set[str]] = None) -> bool:
+                   priority: int = 1000, expires_in: int | None = None,
+                   tags: set[str] | None = None) -> bool:
         """
         Add new IP rule.
 
@@ -335,7 +331,7 @@ class ProductionIPWhitelist:
         if len(self.ip_cache) > 10000:  # If cache is large, clear it entirely
             self.ip_cache.clear()
 
-    async def check_ip_access(self, ip_address: str, request: Optional[Request] = None) -> Tuple[IPAccessAction, str]:
+    async def check_ip_access(self, ip_address: str, request: Request | None = None) -> tuple[IPAccessAction, str]:
         """
         Check IP access permissions.
 
@@ -399,7 +395,7 @@ class ProductionIPWhitelist:
             logger.error(f"Invalid IP address: {ip_address} - {e}")
             return IPAccessAction.BLOCK, f"Invalid IP address: {e}"
 
-    async def _check_geo_blocking(self, ip_address: str) -> Tuple[IPAccessAction, str]:
+    async def _check_geo_blocking(self, ip_address: str) -> tuple[IPAccessAction, str]:
         """Check geo-blocking rules."""
         try:
             # Check geo cache first
@@ -431,7 +427,7 @@ class ProductionIPWhitelist:
             logger.error(f"Geo-blocking check failed for {ip_address}: {e}")
             return IPAccessAction.ALLOW, "Geo check error"
 
-    async def _lookup_geo_location(self, ip_address: str) -> Optional[GeoLocation]:
+    async def _lookup_geo_location(self, ip_address: str) -> GeoLocation | None:
         """Lookup geographic location for IP address."""
         if not self.geo_lookup_enabled:
             return None
@@ -460,7 +456,7 @@ class ProductionIPWhitelist:
 
         return None
 
-    async def _check_threat_intelligence(self, ip_address: str) -> Tuple[IPAccessAction, str]:
+    async def _check_threat_intelligence(self, ip_address: str) -> tuple[IPAccessAction, str]:
         """Check threat intelligence for IP address."""
         try:
             # Check threat cache first
@@ -490,7 +486,7 @@ class ProductionIPWhitelist:
             logger.error(f"Threat intelligence check failed for {ip_address}: {e}")
             return IPAccessAction.ALLOW, "Threat check error"
 
-    async def _lookup_threat_intelligence(self, ip_address: str) -> Optional[IPThreatInfo]:
+    async def _lookup_threat_intelligence(self, ip_address: str) -> IPThreatInfo | None:
         """Lookup threat intelligence for IP address."""
         if not self.threat_intelligence_enabled:
             return None
@@ -523,7 +519,7 @@ class ProductionIPWhitelist:
             logger.error(f"Threat intelligence lookup failed for {ip_address}: {e}")
             return None
 
-    async def _log_access_attempt(self, ip_address: str, action: IPAccessAction, request: Optional[Request]):
+    async def _log_access_attempt(self, ip_address: str, action: IPAccessAction, request: Request | None):
         """Log IP access attempt."""
         try:
             attempt = IPAccessAttempt(
@@ -560,7 +556,7 @@ class ProductionIPWhitelist:
         except Exception as e:
             logger.error(f"Failed to log access attempt: {e}")
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get IP whitelist statistics."""
         current_time = time.time()
 
@@ -671,8 +667,8 @@ class IPWhitelistMiddleware:
 
 
 def create_production_ip_whitelist(
-    production_config: Optional[ProductionConfig] = None,
-    metrics_service: Optional[MetricsService] = None
+    production_config: ProductionConfig | None = None,
+    metrics_service: MetricsService | None = None
 ) -> ProductionIPWhitelist:
     """Create production IP whitelist instance."""
     return ProductionIPWhitelist(production_config, metrics_service)
@@ -680,8 +676,8 @@ def create_production_ip_whitelist(
 
 def setup_ip_whitelist_middleware(
     app,
-    production_config: Optional[ProductionConfig] = None,
-    metrics_service: Optional[MetricsService] = None
+    production_config: ProductionConfig | None = None,
+    metrics_service: MetricsService | None = None
 ) -> ProductionIPWhitelist:
     """Set up IP whitelist middleware for FastAPI application."""
     ip_whitelist = create_production_ip_whitelist(production_config, metrics_service)

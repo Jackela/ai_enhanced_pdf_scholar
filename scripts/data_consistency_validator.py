@@ -10,22 +10,19 @@ import hashlib
 import json
 import logging
 import os
-import sqlite3
-import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-
-import aiofiles
-import psutil
-import sqlalchemy
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
 
 # Add backend to path for imports
 import sys
+import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any
+
+import aiofiles
+from sqlalchemy import create_engine, text
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from backend.core.secrets import get_secrets_manager
@@ -62,7 +59,7 @@ class ValidationCheck:
     check_type: str  # 'database', 'file_system', 'application'
     timeout_seconds: int = 300
     critical: bool = True
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -71,11 +68,11 @@ class CheckResult:
     check_id: str
     result: ValidationResult
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
     duration_seconds: float = 0.0
     message: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
+    details: dict[str, Any] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -83,7 +80,7 @@ class ValidationReport:
     """Comprehensive validation report."""
     validation_id: str
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
     total_duration: float = 0.0
     consistency_level: ConsistencyLevel
 
@@ -96,13 +93,13 @@ class ValidationReport:
     error_checks: int = 0
 
     # Check results
-    check_results: List[CheckResult] = field(default_factory=list)
+    check_results: list[CheckResult] = field(default_factory=list)
 
     # Overall status
     overall_status: ValidationResult = ValidationResult.FAILED
-    critical_failures: List[str] = field(default_factory=list)
+    critical_failures: list[str] = field(default_factory=list)
 
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class DatabaseConsistencyValidator:
@@ -143,7 +140,7 @@ class DatabaseConsistencyValidator:
 
         return check_result
 
-    async def validate_schema_integrity(self, expected_tables: List[str]) -> CheckResult:
+    async def validate_schema_integrity(self, expected_tables: list[str]) -> CheckResult:
         """Validate database schema integrity."""
         check_result = CheckResult(
             check_id="db_schema_integrity",
@@ -266,7 +263,7 @@ class DatabaseConsistencyValidator:
 
         return check_result
 
-    async def validate_data_counts(self, expected_counts: Dict[str, int]) -> CheckResult:
+    async def validate_data_counts(self, expected_counts: dict[str, int]) -> CheckResult:
         """Validate expected data counts in tables."""
         check_result = CheckResult(
             check_id="db_data_counts",
@@ -319,7 +316,7 @@ class DatabaseConsistencyValidator:
 class FileSystemConsistencyValidator:
     """File system consistency validation."""
 
-    def __init__(self, base_paths: List[str]):
+    def __init__(self, base_paths: list[str]):
         """Initialize file system validator."""
         self.base_paths = [Path(p) for p in base_paths]
 
@@ -372,7 +369,7 @@ class FileSystemConsistencyValidator:
 
     async def validate_file_integrity(
         self,
-        checksum_file: Optional[str] = None,
+        checksum_file: str | None = None,
         sample_size: int = 100
     ) -> CheckResult:
         """Validate file integrity using checksums."""
@@ -389,7 +386,7 @@ class FileSystemConsistencyValidator:
             # Load expected checksums if available
             expected_checksums = {}
             if checksum_file and Path(checksum_file).exists():
-                async with aiofiles.open(checksum_file, 'r') as f:
+                async with aiofiles.open(checksum_file) as f:
                     content = await f.read()
                     for line in content.strip().split('\n'):
                         if line and ' ' in line:
@@ -451,7 +448,7 @@ class FileSystemConsistencyValidator:
 
         return check_result
 
-    async def validate_directory_structure(self, expected_structure: Dict[str, Any]) -> CheckResult:
+    async def validate_directory_structure(self, expected_structure: dict[str, Any]) -> CheckResult:
         """Validate expected directory structure exists."""
         check_result = CheckResult(
             check_id="fs_directory_structure",
@@ -463,7 +460,7 @@ class FileSystemConsistencyValidator:
             missing_directories = []
             found_directories = []
 
-            def check_structure(base_path: Path, structure: Dict[str, Any], current_path: str = ""):
+            def check_structure(base_path: Path, structure: dict[str, Any], current_path: str = ""):
                 for name, content in structure.items():
                     full_path = base_path / name if current_path == "" else base_path / current_path / name
 
@@ -516,7 +513,7 @@ class FileSystemConsistencyValidator:
 class ApplicationConsistencyValidator:
     """Application-level consistency validation."""
 
-    def __init__(self, application_config: Dict[str, Any]):
+    def __init__(self, application_config: dict[str, Any]):
         """Initialize application validator."""
         self.config = application_config
 
@@ -567,7 +564,7 @@ class ApplicationConsistencyValidator:
 
         return check_result
 
-    async def validate_service_health(self, health_endpoints: List[str]) -> CheckResult:
+    async def validate_service_health(self, health_endpoints: list[str]) -> CheckResult:
         """Validate service health endpoints."""
         check_result = CheckResult(
             check_id="app_service_health",
@@ -624,30 +621,30 @@ class ApplicationConsistencyValidator:
 class DataConsistencyValidator:
     """Main data consistency validation orchestrator."""
 
-    def __init__(self, metrics_service: Optional[MetricsService] = None):
+    def __init__(self, metrics_service: MetricsService | None = None):
         """Initialize data consistency validator."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
 
         # Validation checks registry
-        self.validation_checks: List[ValidationCheck] = []
+        self.validation_checks: list[ValidationCheck] = []
 
         # Initialize validators
-        self.db_validator: Optional[DatabaseConsistencyValidator] = None
-        self.fs_validator: Optional[FileSystemConsistencyValidator] = None
-        self.app_validator: Optional[ApplicationConsistencyValidator] = None
+        self.db_validator: DatabaseConsistencyValidator | None = None
+        self.fs_validator: FileSystemConsistencyValidator | None = None
+        self.app_validator: ApplicationConsistencyValidator | None = None
 
     def register_database_validation(self, connection_url: str):
         """Register database validation."""
         self.db_validator = DatabaseConsistencyValidator(connection_url)
         logger.info("Database consistency validator registered")
 
-    def register_filesystem_validation(self, base_paths: List[str]):
+    def register_filesystem_validation(self, base_paths: list[str]):
         """Register file system validation."""
         self.fs_validator = FileSystemConsistencyValidator(base_paths)
         logger.info(f"File system consistency validator registered for {len(base_paths)} paths")
 
-    def register_application_validation(self, config: Dict[str, Any]):
+    def register_application_validation(self, config: dict[str, Any]):
         """Register application validation."""
         self.app_validator = ApplicationConsistencyValidator(config)
         logger.info("Application consistency validator registered")

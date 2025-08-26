@@ -6,10 +6,10 @@ User and authentication-related database models and Pydantic schemas.
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text, JSON
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 # SQLAlchemy Base
@@ -87,7 +87,7 @@ class UserModel(Base):
     # Additional security metadata (JSON field for flexibility)
     security_metadata = Column(JSON, nullable=True)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert model to dictionary."""
         return {
             "id": self.id,
@@ -176,7 +176,7 @@ class PasswordValidation:
     SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;:,.<>?"
 
     @classmethod
-    def validate(cls, password: str) -> tuple[bool, List[str]]:
+    def validate(cls, password: str) -> tuple[bool, list[str]]:
         """
         Validate password against security requirements.
         Returns: (is_valid, list_of_errors)
@@ -214,7 +214,7 @@ class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
-    full_name: Optional[str] = Field(None, max_length=255)
+    full_name: str | None = Field(None, max_length=255)
 
     @field_validator('username')
     @classmethod
@@ -256,12 +256,12 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema for updating user profile."""
-    full_name: Optional[str] = Field(None, max_length=255)
-    email: Optional[EmailStr] = None
+    full_name: str | None = Field(None, max_length=255)
+    email: EmailStr | None = None
 
     @field_validator('email')
     @classmethod
-    def validate_email(cls, v: Optional[str]) -> Optional[str]:
+    def validate_email(cls, v: str | None) -> str | None:
         """Normalize email to lowercase."""
         return v.lower() if v else None
 
@@ -332,12 +332,12 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
-    full_name: Optional[str]
+    full_name: str | None
     role: str
     is_active: bool
     is_verified: bool
     created_at: datetime
-    last_login: Optional[datetime]
+    last_login: datetime | None
 
     class Config:
         from_attributes = True
@@ -346,8 +346,8 @@ class UserResponse(BaseModel):
 class UserProfileResponse(UserResponse):
     """Extended user profile response (for authenticated user)."""
     account_status: str
-    email_verified_at: Optional[datetime]
-    password_changed_at: Optional[datetime]
+    email_verified_at: datetime | None
+    password_changed_at: datetime | None
     updated_at: datetime
 
     class Config:
@@ -363,7 +363,7 @@ class LoginAttemptLog(BaseModel):
     """Schema for logging login attempts."""
     username: str
     ip_address: str
-    user_agent: Optional[str]
+    user_agent: str | None
     success: bool
-    failure_reason: Optional[str]
+    failure_reason: str | None
     timestamp: datetime = Field(default_factory=datetime.utcnow)

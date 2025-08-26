@@ -4,7 +4,7 @@ Provides environment-aware configuration for rate limiting
 """
 
 import os
-from typing import Optional
+
 from backend.api.middleware.rate_limiting import RateLimitConfig, RateLimitRule
 
 
@@ -22,7 +22,7 @@ def get_rate_limit_config() -> RateLimitConfig:
         return create_development_config(redis_url)
 
 
-def create_production_config(redis_url: Optional[str] = None) -> RateLimitConfig:
+def create_production_config(redis_url: str | None = None) -> RateLimitConfig:
     """Create production rate limiting configuration."""
 
     return RateLimitConfig(
@@ -65,7 +65,7 @@ def create_production_config(redis_url: Optional[str] = None) -> RateLimitConfig
     )
 
 
-def create_development_config(redis_url: Optional[str] = None) -> RateLimitConfig:
+def create_development_config(redis_url: str | None = None) -> RateLimitConfig:
     """Create development rate limiting configuration."""
 
     return RateLimitConfig(
@@ -108,7 +108,7 @@ def create_development_config(redis_url: Optional[str] = None) -> RateLimitConfi
     )
 
 
-def create_test_config(redis_url: Optional[str] = None) -> RateLimitConfig:
+def create_test_config(redis_url: str | None = None) -> RateLimitConfig:
     """Create test rate limiting configuration."""
 
     return RateLimitConfig(

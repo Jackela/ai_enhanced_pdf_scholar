@@ -5,17 +5,15 @@ Provides comprehensive caching telemetry, analytics, and optimization recommenda
 for all cache layers in the AI Enhanced PDF Scholar system.
 """
 
-import asyncio
 import json
 import logging
-import time
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
-from statistics import mean, median, stdev
+from statistics import mean, median
+from typing import Any
 
 import psutil
 
@@ -66,8 +64,8 @@ class CacheEvent:
     key_pattern: str
     size_bytes: int
     latency_ms: float
-    ttl_seconds: Optional[int] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    ttl_seconds: int | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -104,7 +102,7 @@ class CacheLayerMetrics:
     expired_entries: int = 0
 
     # Key pattern analysis
-    top_key_patterns: List[Dict[str, Any]] = field(default_factory=list)
+    top_key_patterns: list[dict[str, Any]] = field(default_factory=list)
 
     # Time-based metrics
     last_updated: datetime = field(default_factory=datetime.utcnow)
@@ -115,9 +113,9 @@ class CacheHealthStatus:
     """Overall cache health assessment."""
     overall_score: float  # 0-100
     status: str  # healthy, degraded, critical
-    issues: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    layer_scores: Dict[CacheLayer, float] = field(default_factory=dict)
+    issues: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
+    layer_scores: dict[CacheLayer, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -128,7 +126,7 @@ class CacheOptimizationRecommendation:
     description: str
     impact_estimate: str
     implementation_effort: str
-    expected_improvement: Dict[str, float]
+    expected_improvement: dict[str, float]
 
 
 # ============================================================================
@@ -153,19 +151,19 @@ class CacheTelemetryService:
 
         # Event storage
         self.events: deque[CacheEvent] = deque(maxlen=max_events)
-        self.layer_metrics: Dict[CacheLayer, CacheLayerMetrics] = {}
+        self.layer_metrics: dict[CacheLayer, CacheLayerMetrics] = {}
 
         # Real-time tracking
-        self.latency_windows: Dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self.throughput_windows: Dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=100))
-        self.size_windows: Dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.latency_windows: dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.throughput_windows: dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=100))
+        self.size_windows: dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=1000))
 
         # Pattern analysis
-        self.key_patterns: Dict[CacheLayer, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        self.hot_keys: Dict[CacheLayer, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        self.key_patterns: dict[CacheLayer, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        self.hot_keys: dict[CacheLayer, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
         # Performance baselines
-        self.baselines: Dict[CacheLayer, Dict[str, float]] = {}
+        self.baselines: dict[CacheLayer, dict[str, float]] = {}
 
         # Initialize metrics for all layers
         for layer in CacheLayer:
@@ -185,8 +183,8 @@ class CacheTelemetryService:
         key: str,
         latency_ms: float,
         size_bytes: int = 0,
-        ttl_seconds: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        ttl_seconds: int | None = None,
+        metadata: dict[str, Any] | None = None
     ) -> None:
         """Record a cache operation event."""
         event = CacheEvent(
@@ -248,7 +246,7 @@ class CacheTelemetryService:
         key: str,
         latency_ms: float,
         size_bytes: int,
-        ttl_seconds: Optional[int] = None
+        ttl_seconds: int | None = None
     ) -> None:
         """Record a cache set operation."""
         self.record_cache_event(
@@ -406,7 +404,7 @@ class CacheTelemetryService:
             last_updated=datetime.utcnow()
         )
 
-    def get_all_layer_metrics(self) -> Dict[CacheLayer, CacheLayerMetrics]:
+    def get_all_layer_metrics(self) -> dict[CacheLayer, CacheLayerMetrics]:
         """Get metrics for all cache layers."""
         metrics = {}
         for layer in CacheLayer:
@@ -448,7 +446,7 @@ class CacheTelemetryService:
             overall_score = sum(
                 score * weights.get(layer, 0.1)
                 for layer, score in layer_scores.items()
-            ) / sum(weights.get(layer, 0.1) for layer in layer_scores.keys())
+            ) / sum(weights.get(layer, 0.1) for layer in layer_scores)
         else:
             overall_score = 0
 
@@ -497,7 +495,7 @@ class CacheTelemetryService:
     def _analyze_layer_issues(
         self,
         metrics: CacheLayerMetrics
-    ) -> Tuple[List[str], List[str]]:
+    ) -> tuple[list[str], list[str]]:
         """Analyze issues and generate recommendations for a cache layer."""
         issues = []
         recommendations = []
@@ -530,7 +528,7 @@ class CacheTelemetryService:
     # Optimization Recommendations
     # ========================================================================
 
-    def generate_optimization_recommendations(self) -> List[CacheOptimizationRecommendation]:
+    def generate_optimization_recommendations(self) -> list[CacheOptimizationRecommendation]:
         """Generate cache optimization recommendations."""
         recommendations = []
         all_metrics = self.get_all_layer_metrics()
@@ -548,7 +546,7 @@ class CacheTelemetryService:
     def _generate_layer_recommendations(
         self,
         metrics: CacheLayerMetrics
-    ) -> List[CacheOptimizationRecommendation]:
+    ) -> list[CacheOptimizationRecommendation]:
         """Generate optimization recommendations for a specific cache layer."""
         recommendations = []
 
@@ -606,7 +604,7 @@ class CacheTelemetryService:
         self,
         layer: CacheLayer,
         limit: int = 50
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Identify keys that should be pre-warmed in cache."""
         # Analyze hot keys that are frequently missed
         pattern_analysis = defaultdict(lambda: {"misses": 0, "hits": 0, "keys": []})
@@ -653,7 +651,7 @@ class CacheTelemetryService:
     def analyze_performance_trends(
         self,
         hours_back: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze performance trends over time."""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
         relevant_events = [e for e in self.events if e.timestamp >= cutoff_time]
@@ -717,9 +715,9 @@ class CacheTelemetryService:
 
     def export_telemetry_report(
         self,
-        output_path: Optional[Path] = None,
+        output_path: Path | None = None,
         format: str = "json"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Export comprehensive telemetry report."""
         # Generate comprehensive report
         all_metrics = self.get_all_layer_metrics()
@@ -768,7 +766,7 @@ class CacheTelemetryService:
     # Real-time Dashboard Data
     # ========================================================================
 
-    def get_dashboard_data(self) -> Dict[str, Any]:
+    def get_dashboard_data(self) -> dict[str, Any]:
         """Get real-time data for monitoring dashboard."""
         current_metrics = self.get_all_layer_metrics()
         health_status = self.assess_cache_health()
@@ -812,7 +810,7 @@ class CacheTelemetryService:
             ]
         }
 
-    def _calculate_trend_direction(self, values: List[float]) -> str:
+    def _calculate_trend_direction(self, values: list[float]) -> str:
         """Calculate trend direction for a list of values."""
         if len(values) < 5:
             return "stable"

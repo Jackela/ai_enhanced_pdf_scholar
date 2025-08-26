@@ -3,14 +3,13 @@ Caching Configuration Integration
 Integrates advanced caching configurations with the unified application config system.
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Set
-from pathlib import Path
+from typing import Any
 
 from .environment import Environment
-from .validation import ConfigValidator, ConfigValidationError
+from .validation import ConfigValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 class RedisClusterConfig:
     """Redis cluster configuration."""
     enabled: bool = True
-    nodes: List[Dict[str, Any]] = field(default_factory=list)
+    nodes: list[dict[str, Any]] = field(default_factory=list)
     cluster_mode: str = "cluster"  # cluster, sentinel, standalone
     replication_factor: int = 2
     max_connections: int = 50
@@ -27,7 +26,7 @@ class RedisClusterConfig:
     retry_on_timeout: bool = True
     health_check_interval: int = 30
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate Redis cluster configuration."""
         issues = []
 
@@ -59,7 +58,7 @@ class L1CacheConfig:
     cleanup_interval_seconds: int = 60
     enable_metrics: bool = True
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate L1 cache configuration."""
         issues = []
 
@@ -89,7 +88,7 @@ class L2CacheConfig:
     write_behind_flush_interval: int = 30
     hot_data_ttl_multiplier: float = 2.0
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate L2 cache configuration."""
         issues = []
 
@@ -120,7 +119,7 @@ class L3CDNConfig:
     enable_compression: bool = True
     enable_ssl: bool = True
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate L3 CDN configuration."""
         issues = []
 
@@ -154,7 +153,7 @@ class CacheCoherencyConfig:
     enable_versioning: bool = True
     enable_monitoring: bool = True
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate cache coherency configuration."""
         issues = []
 
@@ -330,7 +329,7 @@ class CachingConfig:
         self.warming_batch_size = int(os.getenv("CACHE_WARMING_BATCH_SIZE", "50"))
         self.prefetch_popular_content = os.getenv("CACHE_PREFETCH_POPULAR", "true").lower() == "true"
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate entire caching configuration."""
         all_issues = []
 
@@ -362,7 +361,7 @@ class CachingConfig:
 
         return all_issues
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary for serialization."""
         return {
             "multi_layer_enabled": self.enable_multi_layer,
@@ -399,7 +398,7 @@ class CachingConfig:
         }
 
 
-def get_caching_config(environment: Optional[Environment] = None) -> CachingConfig:
+def get_caching_config(environment: Environment | None = None) -> CachingConfig:
     """
     Get caching configuration for the specified environment.
 

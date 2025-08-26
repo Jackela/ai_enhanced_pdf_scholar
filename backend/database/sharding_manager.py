@@ -5,29 +5,28 @@ and transparent query routing across multiple database shards.
 """
 
 import hashlib
-import json
 import logging
 import re
-import sqlite3
 import threading
 import time
+import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-import uuid
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
-    from src.database.connection import DatabaseConnection
-    from backend.database.read_write_splitter import ReadWriteSplitter, QueryType
+    from backend.database.read_write_splitter import QueryType, ReadWriteSplitter
     from backend.services.connection_pool_manager import AdvancedConnectionPoolManager
+    from src.database.connection import DatabaseConnection
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     sys.exit(1)
@@ -58,7 +57,7 @@ class ShardKey:
     data_type: str  # string, integer, uuid, date
     hash_function: str = "md5"  # md5, sha256, crc32
 
-    def extract_from_query(self, query: str, parameters: Optional[Tuple[Any, ...]] = None) -> Optional[Any]:
+    def extract_from_query(self, query: str, parameters: tuple[Any, ...] | None = None) -> Any | None:
         """Extract shard key value from query."""
         query_lower = query.lower()
 
@@ -126,11 +125,11 @@ class ShardInfo:
     last_health_check: float = field(default_factory=time.time)
 
     # Range information for range-based sharding
-    range_start: Optional[Any] = None
-    range_end: Optional[Any] = None
+    range_start: Any | None = None
+    range_end: Any | None = None
 
     # Hash ring information for consistent hashing
-    hash_tokens: List[int] = field(default_factory=list)
+    hash_tokens: list[int] = field(default_factory=list)
 
     # Geographic information
     region: str = "default"
@@ -143,8 +142,8 @@ class ShardInfo:
     connection_count: int = 0
 
     # Migration information
-    migration_source: Optional[str] = None
-    migration_target: Optional[str] = None
+    migration_source: str | None = None
+    migration_target: str | None = None
     migration_progress: float = 0.0
 
 
@@ -161,10 +160,10 @@ class ShardingConfiguration:
     hash_ring_virtual_nodes: int = 100
 
     # Range-based sharding configuration
-    range_boundaries: List[Any] = field(default_factory=list)
+    range_boundaries: list[Any] = field(default_factory=list)
 
     # Geographic sharding configuration
-    geo_regions: List[str] = field(default_factory=lambda: ["us-east", "us-west", "eu-west"])
+    geo_regions: list[str] = field(default_factory=lambda: ["us-east", "us-west", "eu-west"])
 
 
 class ShardingManager:
@@ -203,26 +202,26 @@ class ShardingManager:
         self.enable_auto_migration = enable_auto_migration
 
         # Shard management
-        self.shards: Dict[str, ShardInfo] = {}
-        self.shard_connections: Dict[str, DatabaseConnection] = {}
-        self.shard_pools: Dict[str, AdvancedConnectionPoolManager] = {}
+        self.shards: dict[str, ShardInfo] = {}
+        self.shard_connections: dict[str, DatabaseConnection] = {}
+        self.shard_pools: dict[str, AdvancedConnectionPoolManager] = {}
 
         # Routing structures
-        self._hash_ring: Dict[int, str] = {}
-        self._range_map: List[ShardRange] = []
-        self._directory_map: Dict[Any, str] = {}
+        self._hash_ring: dict[int, str] = {}
+        self._range_map: list[ShardRange] = []
+        self._directory_map: dict[Any, str] = {}
 
         # Thread safety
         self._shard_lock = threading.RLock()
         self._routing_lock = threading.RLock()
 
         # Background tasks
-        self._health_monitor_thread: Optional[threading.Thread] = None
-        self._rebalancer_thread: Optional[threading.Thread] = None
+        self._health_monitor_thread: threading.Thread | None = None
+        self._rebalancer_thread: threading.Thread | None = None
         self._shutdown_event = threading.Event()
 
         # Performance tracking
-        self._query_stats: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
+        self._query_stats: dict[str, dict[str, Any]] = defaultdict(lambda: {
             'total_queries': 0,
             'cross_shard_queries': 0,
             'avg_response_time': 0.0,
@@ -510,9 +509,9 @@ class ShardingManager:
     def route_query(
         self,
         query: str,
-        parameters: Optional[Tuple[Any, ...]] = None,
-        preferred_region: Optional[str] = None
-    ) -> List[str]:
+        parameters: tuple[Any, ...] | None = None,
+        preferred_region: str | None = None
+    ) -> list[str]:
         """
         Route a query to appropriate shards.
 
@@ -555,7 +554,7 @@ class ShardingManager:
             logger.error(f"Query routing failed: {e}")
             raise
 
-    def _find_shard_for_key(self, key_value: Any, preferred_region: Optional[str] = None) -> Optional[str]:
+    def _find_shard_for_key(self, key_value: Any, preferred_region: str | None = None) -> str | None:
         """Find the appropriate shard for a given key value."""
         with self._routing_lock:
             if self.config.strategy == ShardingStrategy.HASH_BASED:
@@ -571,7 +570,7 @@ class ShardingManager:
             else:
                 return None
 
-    def _find_shard_hash_based(self, key_value: Any) -> Optional[str]:
+    def _find_shard_hash_based(self, key_value: Any) -> str | None:
         """Find shard using hash-based strategy."""
         if not hasattr(self, '_hash_shard_count') or self._hash_shard_count == 0:
             return None
@@ -581,7 +580,7 @@ class ShardingManager:
 
         return self._hash_shard_list[shard_index]
 
-    def _find_shard_range_based(self, key_value: Any) -> Optional[str]:
+    def _find_shard_range_based(self, key_value: Any) -> str | None:
         """Find shard using range-based strategy."""
         for range_obj in self._range_map:
             if range_obj.contains(key_value):
@@ -589,7 +588,7 @@ class ShardingManager:
 
         return None
 
-    def _find_shard_consistent_hash(self, key_value: Any) -> Optional[str]:
+    def _find_shard_consistent_hash(self, key_value: Any) -> str | None:
         """Find shard using consistent hashing."""
         if not self._hash_ring:
             return None
@@ -606,11 +605,11 @@ class ShardingManager:
         # Wrap around to the beginning
         return self._hash_ring[sorted_hashes[0]] if sorted_hashes else None
 
-    def _find_shard_directory_based(self, key_value: Any) -> Optional[str]:
+    def _find_shard_directory_based(self, key_value: Any) -> str | None:
         """Find shard using directory-based strategy."""
         return self._directory_map.get(key_value)
 
-    def _find_shard_geographic(self, key_value: Any, preferred_region: Optional[str] = None) -> Optional[str]:
+    def _find_shard_geographic(self, key_value: Any, preferred_region: str | None = None) -> str | None:
         """Find shard using geographic strategy."""
         target_region = preferred_region or "default"
 
@@ -632,9 +631,9 @@ class ShardingManager:
     def execute_query(
         self,
         query: str,
-        parameters: Optional[Tuple[Any, ...]] = None,
-        preferred_region: Optional[str] = None
-    ) -> Dict[str, Any]:
+        parameters: tuple[Any, ...] | None = None,
+        preferred_region: str | None = None
+    ) -> dict[str, Any]:
         """
         Execute a query across appropriate shards.
 
@@ -977,7 +976,7 @@ class ShardingManager:
         except Exception as e:
             logger.debug(f"Failed to update shard statistics: {e}")
 
-    def get_shard_statistics(self) -> Dict[str, Any]:
+    def get_shard_statistics(self) -> dict[str, Any]:
         """Get comprehensive sharding statistics."""
         stats = {
             'total_shards': len(self.shards),
@@ -1119,7 +1118,7 @@ def main():
 
         if args.stats:
             stats = shard_manager.get_shard_statistics()
-            print(f"Sharding Statistics:")
+            print("Sharding Statistics:")
             print(f"Total Shards: {stats['total_shards']}")
             print(f"Active: {stats['active_shards']}, ReadOnly: {stats['readonly_shards']}, Failed: {stats['failed_shards']}")
             print(f"Strategy: {stats['sharding_strategy']}")

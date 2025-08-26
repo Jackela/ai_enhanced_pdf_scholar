@@ -14,7 +14,7 @@ import hashlib
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 from src.database.connection import DatabaseConnection
 
@@ -136,7 +136,7 @@ class RAGCacheService:
             logger.error(f"Failed to initialize cache table: {e}")
             raise RAGCacheServiceError(f"Cache initialization failed: {e}") from e
 
-    def get_cached_response(self, query: str, document_id: int) -> Optional[str]:
+    def get_cached_response(self, query: str, document_id: int) -> str | None:
         """
         Get cached response for a query.
         Args:

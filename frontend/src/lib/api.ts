@@ -12,6 +12,14 @@ import type {
   Configuration,
   SearchFilters,
   BaseResponse,
+  DocumentCollection,
+  CreateCollectionRequest,
+  UpdateCollectionRequest,
+  CollectionListResponse,
+  CrossDocumentQueryRequest,
+  MultiDocumentQueryResponse,
+  QueryHistoryResponse,
+  CollectionStatistics,
 } from '../types'
 
 const API_BASE_URL = '/api'
@@ -203,5 +211,73 @@ export const api = {
 
   async getDocumentContent(id: number): Promise<string> {
     return apiRequest<string>(`/documents/${id}/content`)
+  },
+
+  // Multi-Document Collection operations
+  async getCollections(page: number = 1, limit: number = 20): Promise<CollectionListResponse> {
+    return apiRequest<CollectionListResponse>(`/multi-document/collections?page=${page}&limit=${limit}`)
+  },
+
+  async getCollection(id: number): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/multi-document/collections/${id}`)
+  },
+
+  async createCollection(request: CreateCollectionRequest): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>('/multi-document/collections', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  },
+
+  async updateCollection(id: number, updates: UpdateCollectionRequest): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/multi-document/collections/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    })
+  },
+
+  async deleteCollection(id: number): Promise<BaseResponse> {
+    return apiRequest<BaseResponse>(`/multi-document/collections/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async addDocumentToCollection(collectionId: number, documentId: number): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/multi-document/collections/${collectionId}/documents`, {
+      method: 'POST',
+      body: JSON.stringify({ document_id: documentId }),
+    })
+  },
+
+  async removeDocumentFromCollection(collectionId: number, documentId: number): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/multi-document/collections/${collectionId}/documents/${documentId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async createCollectionIndex(collectionId: number): Promise<BaseResponse> {
+    return apiRequest<BaseResponse>(`/multi-document/collections/${collectionId}/index`, {
+      method: 'POST',
+    })
+  },
+
+  async getCollectionStatistics(collectionId: number): Promise<CollectionStatistics> {
+    return apiRequest<CollectionStatistics>(`/multi-document/collections/${collectionId}/statistics`)
+  },
+
+  async queryCollection(collectionId: number, request: CrossDocumentQueryRequest): Promise<MultiDocumentQueryResponse> {
+    return apiRequest<MultiDocumentQueryResponse>(`/multi-document/collections/${collectionId}/query`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  },
+
+  async getQueryHistory(collectionId: number, page: number = 1, limit: number = 20, userId?: string): Promise<QueryHistoryResponse> {
+    const params = new URLSearchParams()
+    params.append('page', page.toString())
+    params.append('limit', limit.toString())
+    if (userId) params.append('user_id', userId)
+    
+    return apiRequest<QueryHistoryResponse>(`/multi-document/collections/${collectionId}/queries?${params.toString()}`)
   },
 }

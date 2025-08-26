@@ -3,19 +3,14 @@ Comprehensive Input Validation Security Tests
 Tests for all API endpoint input validation and sanitization mechanisms.
 """
 
-import json
+
 import pytest
-import re
-from typing import Dict, List, Any, Optional
-from unittest.mock import Mock, patch, MagicMock
-from fastapi import status
 from fastapi.testclient import TestClient
-from pydantic import ValidationError
 
 from tests.security.enhanced_security_utils import (
-    PayloadGenerator, SecurityScanner, SecurityTestResult,
-    AttackVector, SecuritySeverity, SecurityMonitor,
-    SecurityTestFixtures
+    PayloadGenerator,
+    SecurityMonitor,
+    SecurityScanner,
 )
 
 
@@ -470,7 +465,6 @@ class TestBusinessLogicValidation:
     def test_race_condition_validation(self, client):
         """Test prevention of race condition exploits."""
         import threading
-        import time
 
         results = []
 

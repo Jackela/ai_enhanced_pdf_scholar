@@ -4,25 +4,17 @@ Comprehensive tools for security testing, payload generation, and vulnerability 
 """
 
 import asyncio
-import base64
 import hashlib
-import json
 import random
-import re
 import string
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, Callable
-from unittest.mock import MagicMock, patch
-import urllib.parse
+from typing import Any
 
-import pytest
-from fastapi import status
 from fastapi.testclient import TestClient
-from sqlalchemy import text
 from sqlalchemy.orm import Session
+
 
 # Security severity levels
 class SecuritySeverity(Enum):
@@ -65,12 +57,12 @@ class SecurityTestResult:
     severity: SecuritySeverity
     vulnerable: bool
     payload: str
-    response: Optional[Any] = None
+    response: Any | None = None
     details: str = ""
     mitigation: str = ""
     timestamp: float = field(default_factory=time.time)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for reporting."""
         return {
             "test_name": self.test_name,
@@ -276,7 +268,7 @@ class PayloadGenerator:
     ]
 
     @classmethod
-    def generate_sql_injection_payloads(cls, context: str = "") -> List[str]:
+    def generate_sql_injection_payloads(cls, context: str = "") -> list[str]:
         """Generate SQL injection payloads with optional context."""
         payloads = cls.SQL_INJECTION_PAYLOADS.copy()
         if context:
@@ -289,7 +281,7 @@ class PayloadGenerator:
         return payloads
 
     @classmethod
-    def generate_xss_payloads(cls, context: str = "") -> List[str]:
+    def generate_xss_payloads(cls, context: str = "") -> list[str]:
         """Generate XSS payloads with optional context."""
         payloads = cls.XSS_PAYLOADS.copy()
         if context:
@@ -301,7 +293,7 @@ class PayloadGenerator:
         return payloads
 
     @classmethod
-    def generate_fuzzing_inputs(cls, base_input: str = "", count: int = 100) -> List[str]:
+    def generate_fuzzing_inputs(cls, base_input: str = "", count: int = 100) -> list[str]:
         """Generate fuzzing inputs for boundary testing."""
         fuzz_inputs = []
 
@@ -350,7 +342,7 @@ class PayloadGenerator:
         return fuzz_inputs
 
     @classmethod
-    def generate_malicious_files(cls) -> List[Tuple[str, bytes, str]]:
+    def generate_malicious_files(cls) -> list[tuple[str, bytes, str]]:
         """Generate malicious file uploads for testing.
         Returns: List of (filename, content, content_type) tuples
         """
@@ -435,15 +427,15 @@ class SecurityScanner:
     def __init__(self, client: TestClient, base_url: str = ""):
         self.client = client
         self.base_url = base_url
-        self.results: List[SecurityTestResult] = []
+        self.results: list[SecurityTestResult] = []
         self.payload_generator = PayloadGenerator()
 
     async def scan_endpoint(self,
                            method: str,
                            endpoint: str,
-                           params: Optional[Dict] = None,
-                           data: Optional[Dict] = None,
-                           headers: Optional[Dict] = None) -> List[SecurityTestResult]:
+                           params: dict | None = None,
+                           data: dict | None = None,
+                           headers: dict | None = None) -> list[SecurityTestResult]:
         """Scan a single endpoint for vulnerabilities."""
         results = []
 
@@ -466,8 +458,8 @@ class SecurityScanner:
         return results
 
     async def _scan_sql_injection(self, method: str, endpoint: str,
-                                 params: Optional[Dict], data: Optional[Dict],
-                                 headers: Optional[Dict]) -> List[SecurityTestResult]:
+                                 params: dict | None, data: dict | None,
+                                 headers: dict | None) -> list[SecurityTestResult]:
         """Scan for SQL injection vulnerabilities."""
         results = []
         payloads = self.payload_generator.generate_sql_injection_payloads()
@@ -500,8 +492,8 @@ class SecurityScanner:
         return results
 
     async def _scan_xss(self, method: str, endpoint: str,
-                        params: Optional[Dict], data: Optional[Dict],
-                        headers: Optional[Dict]) -> List[SecurityTestResult]:
+                        params: dict | None, data: dict | None,
+                        headers: dict | None) -> list[SecurityTestResult]:
         """Scan for XSS vulnerabilities."""
         results = []
         payloads = self.payload_generator.generate_xss_payloads()
@@ -534,8 +526,8 @@ class SecurityScanner:
         return results
 
     async def _scan_path_traversal(self, method: str, endpoint: str,
-                                   params: Optional[Dict], data: Optional[Dict],
-                                   headers: Optional[Dict]) -> List[SecurityTestResult]:
+                                   params: dict | None, data: dict | None,
+                                   headers: dict | None) -> list[SecurityTestResult]:
         """Scan for path traversal vulnerabilities."""
         results = []
 
@@ -565,8 +557,8 @@ class SecurityScanner:
         return results
 
     async def _scan_command_injection(self, method: str, endpoint: str,
-                                     params: Optional[Dict], data: Optional[Dict],
-                                     headers: Optional[Dict]) -> List[SecurityTestResult]:
+                                     params: dict | None, data: dict | None,
+                                     headers: dict | None) -> list[SecurityTestResult]:
         """Scan for command injection vulnerabilities."""
         results = []
 
@@ -598,8 +590,8 @@ class SecurityScanner:
         return results
 
     async def _scan_auth_bypass(self, method: str, endpoint: str,
-                               params: Optional[Dict], data: Optional[Dict],
-                               headers: Optional[Dict]) -> List[SecurityTestResult]:
+                               params: dict | None, data: dict | None,
+                               headers: dict | None) -> list[SecurityTestResult]:
         """Scan for authentication bypass vulnerabilities."""
         results = []
 
@@ -614,9 +606,9 @@ class SecurityScanner:
         return results
 
     async def _test_payload(self, method: str, endpoint: str,
-                           params: Optional[Dict], data: Optional[Dict],
-                           headers: Optional[Dict], payload: str,
-                           attack_vector: AttackVector) -> Optional[SecurityTestResult]:
+                           params: dict | None, data: dict | None,
+                           headers: dict | None, payload: str,
+                           attack_vector: AttackVector) -> SecurityTestResult | None:
         """Test a single payload and analyze response."""
         try:
             # Make request based on method
@@ -754,9 +746,7 @@ class SecurityScanner:
 
         if attack_vector in critical_vectors:
             return SecuritySeverity.CRITICAL
-        elif attack_vector in high_vectors:
-            return SecuritySeverity.HIGH
-        elif response and response.status_code >= 500:
+        elif attack_vector in high_vectors or response and response.status_code >= 500:
             return SecuritySeverity.HIGH
         else:
             return SecuritySeverity.MEDIUM
@@ -775,7 +765,7 @@ class SecurityScanner:
         }
         return mitigations.get(attack_vector, "Implement proper input validation and security controls")
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """Generate security scan report."""
         if not self.results:
             return {"status": "no_vulnerabilities", "results": []}
@@ -802,7 +792,7 @@ class SecurityTestFixtures:
 
     @staticmethod
     def create_mock_user(user_id: int = 1, username: str = "testuser",
-                        role: str = "user") -> Dict[str, Any]:
+                        role: str = "user") -> dict[str, Any]:
         """Create a mock user for testing."""
         return {
             "id": user_id,
@@ -814,7 +804,7 @@ class SecurityTestFixtures:
         }
 
     @staticmethod
-    def create_mock_session(user_id: int = 1, session_id: str = None) -> Dict[str, Any]:
+    def create_mock_session(user_id: int = 1, session_id: str = None) -> dict[str, Any]:
         """Create a mock session for testing."""
         if not session_id:
             session_id = hashlib.sha256(f"session_{user_id}_{time.time()}".encode()).hexdigest()
@@ -887,10 +877,10 @@ class SecurityMonitor:
     """Monitor and track security events during testing."""
 
     def __init__(self):
-        self.events: List[Dict[str, Any]] = []
-        self.alerts: List[Dict[str, Any]] = []
+        self.events: list[dict[str, Any]] = []
+        self.alerts: list[dict[str, Any]] = []
 
-    def log_event(self, event_type: str, details: Dict[str, Any]):
+    def log_event(self, event_type: str, details: dict[str, Any]):
         """Log a security event."""
         event = {
             "timestamp": time.time(),
@@ -903,7 +893,7 @@ class SecurityMonitor:
         if self._should_alert(event_type, details):
             self.create_alert(event_type, details)
 
-    def create_alert(self, alert_type: str, details: Dict[str, Any]):
+    def create_alert(self, alert_type: str, details: dict[str, Any]):
         """Create a security alert."""
         alert = {
             "timestamp": time.time(),
@@ -913,7 +903,7 @@ class SecurityMonitor:
         }
         self.alerts.append(alert)
 
-    def _should_alert(self, event_type: str, details: Dict[str, Any]) -> bool:
+    def _should_alert(self, event_type: str, details: dict[str, Any]) -> bool:
         """Determine if an event should trigger an alert."""
         alert_triggers = [
             "sql_injection_attempt",
@@ -937,7 +927,7 @@ class SecurityMonitor:
         else:
             return "medium"
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary of security events and alerts."""
         return {
             "total_events": len(self.events),
@@ -955,10 +945,9 @@ class AsyncSecurityTester:
 
     @staticmethod
     async def concurrent_attack(client: TestClient, endpoint: str,
-                               payloads: List[str], concurrency: int = 10) -> List[Any]:
+                               payloads: list[str], concurrency: int = 10) -> list[Any]:
         """Execute concurrent attacks for race condition testing."""
         import aiohttp
-        import asyncio
 
         async def attack_with_payload(session: aiohttp.ClientSession, payload: str):
             try:
@@ -977,7 +966,7 @@ class AsyncSecurityTester:
 
     @staticmethod
     async def timing_attack(client: TestClient, endpoint: str,
-                           payloads: List[str]) -> Dict[str, float]:
+                           payloads: list[str]) -> dict[str, float]:
         """Perform timing attack analysis."""
         timings = {}
 

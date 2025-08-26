@@ -11,21 +11,17 @@ import logging
 import os
 import secrets
 import time
-from abc import ABC, abstractmethod
-from contextlib import contextmanager
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from threading import Lock, RLock
-from typing import Any, Dict, List, Optional, Tuple, Union, Callable
-from pydantic import BaseModel, Field, SecretStr
+from typing import Any
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 logger = logging.getLogger(__name__)
 
@@ -60,20 +56,20 @@ class SecretEncryptionContext:
     algorithm: EncryptionAlgorithm
     key_version: int
     salt: bytes = field(default_factory=lambda: secrets.token_bytes(32))
-    nonce: Optional[bytes] = None
+    nonce: bytes | None = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    checksum: Optional[str] = None
+    checksum: str | None = None
 
 
 @dataclass
 class RotationPolicy:
     """Defines how secrets should be rotated."""
     strategy: RotationStrategy
-    interval_days: Optional[int] = None
-    max_access_count: Optional[int] = None
+    interval_days: int | None = None
+    max_access_count: int | None = None
     grace_period_hours: int = 24
     auto_rollback: bool = True
-    notification_webhooks: List[str] = field(default_factory=list)
+    notification_webhooks: list[str] = field(default_factory=list)
 
 
 class SecretValidationError(Exception):
@@ -99,20 +95,20 @@ class ProductionSecretsManager:
 
     def __init__(
         self,
-        master_key_path: Optional[Path] = None,
-        backup_location: Optional[Path] = None,
+        master_key_path: Path | None = None,
+        backup_location: Path | None = None,
         encryption_algorithm: EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
         enable_hsm: bool = False
     ):
         """Initialize the production secrets manager."""
         self._lock = RLock()
-        self._rotation_locks: Dict[str, Lock] = {}
+        self._rotation_locks: dict[str, Lock] = {}
         self._encryption_algorithm = encryption_algorithm
         self._enable_hsm = enable_hsm
 
         # Key management
         self._master_key_path = master_key_path or Path.home() / ".secrets" / "master.key"
-        self._key_versions: Dict[int, bytes] = {}
+        self._key_versions: dict[int, bytes] = {}
         self._current_key_version = 1
 
         # Backup system
@@ -120,17 +116,17 @@ class ProductionSecretsManager:
         self._backup_location.mkdir(parents=True, exist_ok=True)
 
         # Encryption contexts cache
-        self._encryption_contexts: Dict[str, SecretEncryptionContext] = {}
+        self._encryption_contexts: dict[str, SecretEncryptionContext] = {}
 
         # Rotation policies
-        self._rotation_policies: Dict[str, RotationPolicy] = {}
+        self._rotation_policies: dict[str, RotationPolicy] = {}
 
         # Access tracking
-        self._access_counts: Dict[str, int] = {}
-        self._last_accessed: Dict[str, datetime] = {}
+        self._access_counts: dict[str, int] = {}
+        self._last_accessed: dict[str, datetime] = {}
 
         # Audit trail
-        self._audit_trail: List[Dict[str, Any]] = []
+        self._audit_trail: list[dict[str, Any]] = []
 
         # Initialize crypto components
         self._initialize_crypto()
@@ -176,9 +172,7 @@ class ProductionSecretsManager:
 
     def _generate_new_master_key(self):
         """Generate a new master key."""
-        if self._encryption_algorithm == EncryptionAlgorithm.AES_256_GCM:
-            key = secrets.token_bytes(32)  # 256-bit key
-        elif self._encryption_algorithm == EncryptionAlgorithm.CHACHA20_POLY1305:
+        if self._encryption_algorithm == EncryptionAlgorithm.AES_256_GCM or self._encryption_algorithm == EncryptionAlgorithm.CHACHA20_POLY1305:
             key = secrets.token_bytes(32)  # 256-bit key
         else:
             raise ValueError(f"Unsupported encryption algorithm: {self._encryption_algorithm}")
@@ -294,8 +288,8 @@ class ProductionSecretsManager:
         self,
         plaintext: str,
         secret_id: str,
-        additional_data: Optional[bytes] = None
-    ) -> Tuple[bytes, SecretEncryptionContext]:
+        additional_data: bytes | None = None
+    ) -> tuple[bytes, SecretEncryptionContext]:
         """
         Encrypt a secret value with advanced security features.
 
@@ -360,7 +354,7 @@ class ProductionSecretsManager:
         encrypted_data: bytes,
         secret_id: str,
         context: SecretEncryptionContext,
-        additional_data: Optional[bytes] = None
+        additional_data: bytes | None = None
     ) -> str:
         """
         Decrypt a secret value with validation.
@@ -423,7 +417,7 @@ class ProductionSecretsManager:
                 logger.error(f"Failed to decrypt secret {secret_id}: {e}")
                 raise
 
-    def rotate_key(self, secret_id: Optional[str] = None) -> int:
+    def rotate_key(self, secret_id: str | None = None) -> int:
         """
         Rotate encryption keys with zero-downtime support.
 
@@ -491,7 +485,7 @@ class ProductionSecretsManager:
                 logger.error(f"Secret rotation failed for {secret_id}: {e}")
                 raise SecretRotationError(f"Secret rotation failed: {e}")
 
-    def backup_secrets(self, backup_name: Optional[str] = None) -> Path:
+    def backup_secrets(self, backup_name: str | None = None) -> Path:
         """
         Create encrypted backup of all secrets and keys.
 
@@ -578,7 +572,7 @@ class ProductionSecretsManager:
                 logger.error(f"Backup creation failed: {e}")
                 raise SecretBackupError(f"Backup creation failed: {e}")
 
-    def restore_secrets(self, backup_path: Path, backup_key: Optional[bytes] = None) -> bool:
+    def restore_secrets(self, backup_path: Path, backup_key: bytes | None = None) -> bool:
         """
         Restore secrets from encrypted backup.
 
@@ -603,7 +597,7 @@ class ProductionSecretsManager:
                         backup_key = base64.b64decode(f.read())
 
                 # Load encrypted backup
-                with open(backup_path, 'r') as f:
+                with open(backup_path) as f:
                     backup_content = json.load(f)
 
                 # Decrypt backup data
@@ -677,7 +671,7 @@ class ProductionSecretsManager:
         plaintext: bytes,
         key: bytes,
         nonce: bytes,
-        additional_data: Optional[bytes] = None
+        additional_data: bytes | None = None
     ) -> bytes:
         """Encrypt using AES-256-GCM."""
         cipher = Cipher(algorithms.AES(key), modes.GCM(nonce), backend=default_backend())
@@ -696,7 +690,7 @@ class ProductionSecretsManager:
         encrypted_data: bytes,
         key: bytes,
         nonce: bytes,
-        additional_data: Optional[bytes] = None
+        additional_data: bytes | None = None
     ) -> bytes:
         """Decrypt using AES-256-GCM."""
         # Extract components (nonce is provided separately)
@@ -716,7 +710,7 @@ class ProductionSecretsManager:
         plaintext: bytes,
         key: bytes,
         nonce: bytes,
-        additional_data: Optional[bytes] = None
+        additional_data: bytes | None = None
     ) -> bytes:
         """Encrypt using ChaCha20-Poly1305."""
         from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
@@ -729,7 +723,7 @@ class ProductionSecretsManager:
         encrypted_data: bytes,
         key: bytes,
         nonce: bytes,
-        additional_data: Optional[bytes] = None
+        additional_data: bytes | None = None
     ) -> bytes:
         """Decrypt using ChaCha20-Poly1305."""
         from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
@@ -743,8 +737,8 @@ class ProductionSecretsManager:
         operation: str,
         secret_id: str,
         success: bool,
-        metadata: Optional[Dict[str, Any]] = None,
-        error: Optional[str] = None
+        metadata: dict[str, Any] | None = None,
+        error: str | None = None
     ):
         """Log operation for audit trail."""
         log_entry = {
@@ -764,11 +758,11 @@ class ProductionSecretsManager:
 
     def get_audit_trail(
         self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        operation: Optional[str] = None,
-        secret_id: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        operation: str | None = None,
+        secret_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """Get filtered audit trail."""
         entries = self._audit_trail
 
@@ -792,7 +786,7 @@ class ProductionSecretsManager:
 
         return entries
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Comprehensive health check of the secrets management system."""
         health_status = {
             'overall_status': 'healthy',
@@ -866,7 +860,7 @@ class ProductionSecretsManager:
         return health_status
 
 
-def validate_prod_secrets(secrets_dict: Dict[str, str], environment: str = "production") -> Dict[str, Any]:
+def validate_prod_secrets(secrets_dict: dict[str, str], environment: str = "production") -> dict[str, Any]:
     """
     Validate secrets for production readiness.
 
@@ -940,8 +934,8 @@ def validate_prod_secrets(secrets_dict: Dict[str, str], environment: str = "prod
 def validate_secret_strength(
     secret_name: str,
     secret_value: str,
-    requirements: Dict[str, int]
-) -> Dict[str, Any]:
+    requirements: dict[str, int]
+) -> dict[str, Any]:
     """
     Validate individual secret strength.
 
@@ -1039,7 +1033,7 @@ def calculate_entropy(text: str) -> float:
 def generate_secure_secret(
     secret_type: str,
     strength: SecretStrength = SecretStrength.HIGH,
-    custom_alphabet: Optional[str] = None
+    custom_alphabet: str | None = None
 ) -> str:
     """
     Generate a cryptographically secure secret.

@@ -4,14 +4,14 @@ Data Fixtures for E2E Testing
 Provides test data including PDFs, users, and documents for comprehensive testing.
 """
 
-import pytest
-from pathlib import Path
-from typing import List, Dict, Any, Generator
-import json
 import random
 import string
+from collections.abc import Generator
 from datetime import datetime, timedelta
-import base64
+from pathlib import Path
+from typing import Any
+
+import pytest
 
 
 class TestDataGenerator:
@@ -115,7 +115,7 @@ class TestDataGenerator:
 
 
 @pytest.fixture
-def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
+def test_pdf_files() -> Generator[dict[str, Path], None, None]:
     """
     Create various test PDF files for different scenarios.
     """
@@ -181,7 +181,7 @@ def test_pdf_files() -> Generator[Dict[str, Path], None, None]:
 
 
 @pytest.fixture
-def test_user_data() -> Dict[str, Any]:
+def test_user_data() -> dict[str, Any]:
     """
     Generate test user data.
     """
@@ -213,7 +213,7 @@ def test_user_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def test_documents_data() -> List[Dict[str, Any]]:
+def test_documents_data() -> list[dict[str, Any]]:
     """
     Generate test document metadata.
     """
@@ -247,7 +247,7 @@ def test_documents_data() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def mock_rag_responses() -> Dict[str, Dict[str, Any]]:
+def mock_rag_responses() -> dict[str, dict[str, Any]]:
     """
     Generate mock RAG query responses for testing.
     """
@@ -290,7 +290,7 @@ def mock_rag_responses() -> Dict[str, Dict[str, Any]]:
 
 
 @pytest.fixture
-def invalid_files() -> Generator[Dict[str, Path], None, None]:
+def invalid_files() -> Generator[dict[str, Path], None, None]:
     """
     Create invalid files for negative testing.
     """
@@ -334,7 +334,7 @@ def invalid_files() -> Generator[Dict[str, Path], None, None]:
 
 
 @pytest.fixture
-def performance_test_data() -> Dict[str, Any]:
+def performance_test_data() -> dict[str, Any]:
     """
     Generate data for performance testing.
     """
@@ -362,7 +362,7 @@ def performance_test_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def security_test_payloads() -> Dict[str, List[str]]:
+def security_test_payloads() -> dict[str, list[str]]:
     """
     Generate security testing payloads.
     """

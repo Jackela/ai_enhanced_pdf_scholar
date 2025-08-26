@@ -13,6 +13,7 @@ sys.path.insert(0, str(project_root))
 
 from backend.api.dependencies import get_db, get_library_controller
 
+
 def test_document_import():
     """测试文档导入过程"""
     try:
@@ -58,7 +59,7 @@ def test_document_import():
         return success
 
     except Exception as e:
-        print(f"=== 测试过程中发生异常 ===")
+        print("=== 测试过程中发生异常 ===")
         print(f"异常类型: {type(e).__name__}")
         print(f"异常信息: {str(e)}")
         print("详细堆栈:")

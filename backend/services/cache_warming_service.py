@@ -4,21 +4,20 @@ Intelligent cache warming based on usage patterns and predictions.
 """
 
 import asyncio
-import json
 import logging
 import time
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
-import numpy as np
+from .metrics_service import MetricsService
 
 # Import our services
 from .redis_cache_service import RedisCacheService
-from .smart_cache_manager import SmartCacheManager, AccessPattern
-from .metrics_service import MetricsService
+from .smart_cache_manager import AccessPattern, SmartCacheManager
 
 logger = logging.getLogger(__name__)
 
@@ -54,25 +53,25 @@ class WarmingTask:
     loader_func: Callable[[], Any]
 
     # Scheduling
-    scheduled_time: Optional[datetime] = None
-    ttl: Optional[int] = None
+    scheduled_time: datetime | None = None
+    ttl: int | None = None
 
     # Dependencies
-    dependencies: List[str] = field(default_factory=list)
-    dependent_keys: List[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    dependent_keys: list[str] = field(default_factory=list)
 
     # Metadata
     estimated_load_time_ms: float = 100.0
     estimated_size_bytes: int = 1024
     access_probability: float = 0.5
-    user_groups: List[str] = field(default_factory=list)
+    user_groups: list[str] = field(default_factory=list)
 
     # State tracking
     created_at: datetime = field(default_factory=datetime.utcnow)
     attempts: int = 0
-    last_attempt: Optional[datetime] = None
+    last_attempt: datetime | None = None
     completed: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
     def should_execute(self, current_time: datetime) -> bool:
         """Check if task should be executed now."""
@@ -127,11 +126,11 @@ class WarmingStatistics:
     total_bytes_warmed: int = 0
 
     # Strategy effectiveness
-    strategy_success_rates: Dict[str, float] = field(default_factory=dict)
-    strategy_performance: Dict[str, float] = field(default_factory=dict)
+    strategy_success_rates: dict[str, float] = field(default_factory=dict)
+    strategy_performance: dict[str, float] = field(default_factory=dict)
 
     # Time-based analysis
-    hourly_effectiveness: Dict[int, float] = field(default_factory=dict)
+    hourly_effectiveness: dict[int, float] = field(default_factory=dict)
 
     def update_completion(self, task: WarmingTask, success: bool, duration_ms: float):
         """Update statistics with task completion."""
@@ -177,8 +176,8 @@ class CacheWarmingService:
     def __init__(
         self,
         redis_cache: RedisCacheService,
-        smart_cache: Optional[SmartCacheManager] = None,
-        metrics_service: Optional[MetricsService] = None
+        smart_cache: SmartCacheManager | None = None,
+        metrics_service: MetricsService | None = None
     ):
         """Initialize cache warming service."""
         self.redis_cache = redis_cache
@@ -186,19 +185,19 @@ class CacheWarmingService:
         self.metrics_service = metrics_service
 
         # Task management
-        self.warming_tasks: Dict[str, WarmingTask] = {}
-        self.task_queue: List[WarmingTask] = []
+        self.warming_tasks: dict[str, WarmingTask] = {}
+        self.task_queue: list[WarmingTask] = []
         self.completed_tasks: deque = deque(maxlen=1000)
 
         # Statistics
         self.stats = WarmingStatistics()
 
         # Loader registry
-        self.data_loaders: Dict[str, Callable] = {}
+        self.data_loaders: dict[str, Callable] = {}
 
         # Background processing
         self.is_running = False
-        self.worker_tasks: List[asyncio.Task] = []
+        self.worker_tasks: list[asyncio.Task] = []
         self.max_workers = 3
 
         # Configuration
@@ -222,7 +221,7 @@ class CacheWarmingService:
         self.data_loaders[pattern] = loader_func
         logger.info(f"Registered data loader for pattern: {pattern}")
 
-    def get_loader(self, key: str) -> Optional[Callable]:
+    def get_loader(self, key: str) -> Callable | None:
         """Get appropriate loader for a key."""
         # Find matching pattern
         for pattern, loader in self.data_loaders.items():
@@ -257,11 +256,11 @@ class CacheWarmingService:
         key: str,
         priority: WarmingPriority = WarmingPriority.MEDIUM,
         strategy: WarmingStrategy = WarmingStrategy.PREDICTIVE,
-        loader_func: Optional[Callable] = None,
-        scheduled_time: Optional[datetime] = None,
-        ttl: Optional[int] = None,
-        dependencies: Optional[List[str]] = None,
-        user_groups: Optional[List[str]] = None,
+        loader_func: Callable | None = None,
+        scheduled_time: datetime | None = None,
+        ttl: int | None = None,
+        dependencies: list[str] | None = None,
+        user_groups: list[str] | None = None,
         estimated_load_time_ms: float = 100.0,
         estimated_size_bytes: int = 1024
     ) -> bool:
@@ -376,7 +375,7 @@ class CacheWarmingService:
 
         logger.info(f"Scheduled {len([p for p in predictions.values() if p >= self.config['warming_threshold_probability']])} predictive warming tasks")
 
-    async def _analyze_access_patterns(self) -> Dict[str, float]:
+    async def _analyze_access_patterns(self) -> dict[str, float]:
         """Analyze access patterns to predict future cache needs."""
         predictions = {}
 
@@ -479,7 +478,7 @@ class CacheWarmingService:
         for pattern, keys in pattern_groups.items():
             await self._schedule_pattern_group(pattern, keys)
 
-    async def _schedule_pattern_group(self, pattern: AccessPattern, keys: List[Tuple[str, Any]]):
+    async def _schedule_pattern_group(self, pattern: AccessPattern, keys: list[tuple[str, Any]]):
         """Schedule warming for a group of keys with the same pattern."""
         if pattern == AccessPattern.HOTSPOT:
             # Warm hotspot keys with high priority
@@ -517,7 +516,7 @@ class CacheWarmingService:
     # Reactive Warming
     # ========================================================================
 
-    async def handle_cache_miss(self, key: str, user_id: Optional[str] = None):
+    async def handle_cache_miss(self, key: str, user_id: str | None = None):
         """Handle cache miss with reactive warming."""
         # Add immediate warming task for missed key
         self.add_warming_task(
@@ -540,7 +539,7 @@ class CacheWarmingService:
 
         logger.info(f"Reactive warming triggered for {key} and {len(related_keys)} related keys")
 
-    async def _find_related_keys(self, key: str) -> List[str]:
+    async def _find_related_keys(self, key: str) -> list[str]:
         """Find keys related to the given key."""
         related_keys = []
 
@@ -623,7 +622,7 @@ class CacheWarmingService:
 
         logger.info(f"Cache warming worker {worker_id} stopped")
 
-    async def _get_next_task(self) -> Optional[WarmingTask]:
+    async def _get_next_task(self) -> WarmingTask | None:
         """Get the next task to execute."""
         if not self.task_queue:
             return None
@@ -768,7 +767,7 @@ class CacheWarmingService:
     # API and Monitoring
     # ========================================================================
 
-    def get_warming_status(self) -> Dict[str, Any]:
+    def get_warming_status(self) -> dict[str, Any]:
         """Get current warming status."""
         return {
             "is_running": self.is_running,
@@ -803,7 +802,7 @@ class CacheWarmingService:
             ]
         }
 
-    def get_warming_recommendations(self) -> List[Dict[str, Any]]:
+    def get_warming_recommendations(self) -> list[dict[str, Any]]:
         """Get recommendations for warming optimization."""
         recommendations = []
 

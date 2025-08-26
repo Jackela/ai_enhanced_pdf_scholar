@@ -20,11 +20,14 @@ Usage:
 
 # Import test classes for easier access
 from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+from .test_file_manager import TestRAGFileManager, TestRAGFileManagerErrorHandling
 from .test_index_builder import TestRAGIndexBuilder, TestRAGIndexBuilderErrorHandling
 from .test_query_engine import TestRAGQueryEngine, TestRAGQueryEngineErrorHandling
-from .test_recovery_service import TestRAGRecoveryService, TestRAGRecoveryServiceErrorHandling
-from .test_file_manager import TestRAGFileManager, TestRAGFileManagerErrorHandling
 from .test_rag_integration import TestRAGModuleIntegration, TestRAGModuleSOLIDCompliance
+from .test_recovery_service import (
+    TestRAGRecoveryService,
+    TestRAGRecoveryServiceErrorHandling,
+)
 
 __all__ = [
     # Core module tests

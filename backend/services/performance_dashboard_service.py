@@ -9,7 +9,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
@@ -39,7 +39,7 @@ class DashboardMetrics:
         self.cache_telemetry = cache_telemetry
         self.metrics = metrics_service
 
-    def get_overview_metrics(self) -> Dict[str, Any]:
+    def get_overview_metrics(self) -> dict[str, Any]:
         """Get high-level overview metrics."""
         # Get latest performance snapshot
         latest_snapshot = (
@@ -90,7 +90,7 @@ class DashboardMetrics:
             ]
         }
 
-    def get_detailed_performance_metrics(self) -> Dict[str, Any]:
+    def get_detailed_performance_metrics(self) -> dict[str, Any]:
         """Get detailed performance metrics for charts."""
         # Get last hour of performance snapshots
         cutoff_time = datetime.utcnow() - timedelta(hours=1)
@@ -129,11 +129,11 @@ class DashboardMetrics:
             }
         }
 
-    def get_cache_analytics(self) -> Dict[str, Any]:
+    def get_cache_analytics(self) -> dict[str, Any]:
         """Get detailed cache analytics."""
         return self.cache_telemetry.get_dashboard_data()
 
-    def get_trace_analytics(self) -> Dict[str, Any]:
+    def get_trace_analytics(self) -> dict[str, Any]:
         """Get trace analytics for APM dashboard."""
         # Get slow traces
         slow_traces = self.apm.get_slow_traces(threshold_ms=500, limit=10)
@@ -209,10 +209,10 @@ class ConnectionManager:
     """Manages WebSocket connections for real-time updates."""
 
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
-        self.connection_metadata: Dict[WebSocket, Dict[str, Any]] = {}
+        self.active_connections: list[WebSocket] = []
+        self.connection_metadata: dict[WebSocket, dict[str, Any]] = {}
 
-    async def connect(self, websocket: WebSocket, client_info: Dict[str, Any] = None):
+    async def connect(self, websocket: WebSocket, client_info: dict[str, Any] = None):
         """Accept a WebSocket connection."""
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -226,7 +226,7 @@ class ConnectionManager:
             self.connection_metadata.pop(websocket, None)
             logger.info(f"WebSocket connection closed. Total connections: {len(self.active_connections)}")
 
-    async def send_personal_message(self, message: Dict[str, Any], websocket: WebSocket):
+    async def send_personal_message(self, message: dict[str, Any], websocket: WebSocket):
         """Send a message to a specific WebSocket."""
         if websocket.client_state == WebSocketState.CONNECTED:
             try:
@@ -235,7 +235,7 @@ class ConnectionManager:
                 logger.error(f"Error sending WebSocket message: {e}")
                 self.disconnect(websocket)
 
-    async def broadcast(self, message: Dict[str, Any]):
+    async def broadcast(self, message: dict[str, Any]):
         """Broadcast a message to all connected WebSockets."""
         if not self.active_connections:
             return
@@ -256,7 +256,7 @@ class ConnectionManager:
         for connection in disconnected_connections:
             self.disconnect(connection)
 
-    async def send_to_subscribers(self, message: Dict[str, Any], subscription_type: str):
+    async def send_to_subscribers(self, message: dict[str, Any], subscription_type: str):
         """Send message to subscribers of a specific type."""
         for connection in self.active_connections:
             metadata = self.connection_metadata.get(connection, {})
@@ -289,7 +289,7 @@ class PerformanceDashboardService:
         self.connection_manager = ConnectionManager()
 
         # Background task for real-time updates
-        self._update_task: Optional[asyncio.Task] = None
+        self._update_task: asyncio.Task | None = None
         self._running = False
 
     async def start_real_time_updates(self):
@@ -396,7 +396,7 @@ class PerformanceDashboardService:
         finally:
             self.connection_manager.disconnect(websocket)
 
-    async def _handle_client_message(self, websocket: WebSocket, message: Dict[str, Any]):
+    async def _handle_client_message(self, websocket: WebSocket, message: dict[str, Any]):
         """Handle message from WebSocket client."""
         message_type = message.get("type")
 
@@ -450,7 +450,7 @@ class PerformanceDashboardService:
                 websocket
             )
 
-    def _get_trace_details(self, trace_id: str) -> Optional[Dict[str, Any]]:
+    def _get_trace_details(self, trace_id: str) -> dict[str, Any] | None:
         """Get detailed information for a specific trace."""
         for trace in self.apm.traces:
             if trace.trace_id == trace_id:
@@ -469,7 +469,7 @@ class PerformanceDashboardService:
 
         return None
 
-    def _build_span_tree(self, trace) -> Dict[str, Any]:
+    def _build_span_tree(self, trace) -> dict[str, Any]:
         """Build hierarchical span tree for visualization."""
         def build_node(span, children):
             return {
@@ -934,7 +934,7 @@ class PerformanceDashboardService:
         """Get the dashboard HTML page."""
         return HTMLResponse(content=self.generate_dashboard_html())
 
-    def get_api_metrics(self) -> Dict[str, Any]:
+    def get_api_metrics(self) -> dict[str, Any]:
         """Get metrics via HTTP API."""
         return {
             "overview": self.dashboard_metrics.get_overview_metrics(),
@@ -943,7 +943,7 @@ class PerformanceDashboardService:
             "traces": self.dashboard_metrics.get_trace_analytics()
         }
 
-    def get_export_data(self, format: str = "json") -> Dict[str, Any]:
+    def get_export_data(self, format: str = "json") -> dict[str, Any]:
         """Export dashboard data for external tools."""
         data = self.get_api_metrics()
 

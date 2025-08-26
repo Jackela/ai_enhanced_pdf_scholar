@@ -9,18 +9,19 @@ Provides core infrastructure for performance testing including:
 """
 
 import asyncio
-import time
 import statistics
-from typing import Dict, List, Any, Optional, Callable, TypeVar, Generic
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from contextlib import asynccontextmanager
-import aiohttp
-import psutil
+import time
 import tracemalloc
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-import numpy as np
+from collections.abc import Callable
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
+from typing import TypeVar
+
+import aiohttp
+import numpy as np
+import psutil
 
 T = TypeVar('T')
 
@@ -38,18 +39,18 @@ class LoadPattern(Enum):
 @dataclass
 class PerformanceMetrics:
     """Container for performance metrics"""
-    response_times: List[float] = field(default_factory=list)
+    response_times: list[float] = field(default_factory=list)
     error_count: int = 0
     success_count: int = 0
     throughput: float = 0.0
     concurrent_users: int = 0
 
     # Memory metrics
-    memory_usage_mb: List[float] = field(default_factory=list)
+    memory_usage_mb: list[float] = field(default_factory=list)
     peak_memory_mb: float = 0.0
 
     # CPU metrics
-    cpu_percent: List[float] = field(default_factory=list)
+    cpu_percent: list[float] = field(default_factory=list)
     peak_cpu: float = 0.0
 
     # Response time percentiles
@@ -58,8 +59,8 @@ class PerformanceMetrics:
     p99: float = 0.0
 
     # Timestamps
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
 
     def calculate_percentiles(self):
         """Calculate response time percentiles"""
@@ -155,7 +156,7 @@ class ConcurrentUserSimulator:
         self.metrics = PerformanceMetrics()
         self.active_users = 0
         self.stop_flag = False
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self):
         """Async context manager entry"""
@@ -272,7 +273,7 @@ class PerformanceTestBase:
 
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
-        self.results: Dict[str, PerformanceMetrics] = {}
+        self.results: dict[str, PerformanceMetrics] = {}
 
     async def run_scenario(
         self,
@@ -291,7 +292,7 @@ class PerformanceTestBase:
         func: Callable,
         iterations: int = 100,
         warmup: int = 10
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Run performance benchmark"""
         # Warmup
         for _ in range(warmup):
@@ -363,13 +364,13 @@ class PerformanceTestBase:
             report.append(f"Success Rate: {100 - metrics.error_rate:.2f}%")
             report.append(f"Throughput: {metrics.throughput:.2f} req/s")
             report.append(f"Concurrent Users: {metrics.concurrent_users}")
-            report.append(f"\nResponse Times:")
+            report.append("\nResponse Times:")
             report.append(f"  Average: {metrics.avg_response_time:.2f}ms")
             report.append(f"  Std Dev: {metrics.std_response_time:.2f}ms")
             report.append(f"  P50: {metrics.p50:.2f}ms")
             report.append(f"  P95: {metrics.p95:.2f}ms")
             report.append(f"  P99: {metrics.p99:.2f}ms")
-            report.append(f"\nResource Usage:")
+            report.append("\nResource Usage:")
             report.append(f"  Peak Memory: {metrics.peak_memory_mb:.2f}MB")
             report.append(f"  Peak CPU: {metrics.peak_cpu:.2f}%")
 

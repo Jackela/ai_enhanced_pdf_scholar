@@ -19,18 +19,13 @@ Features:
 import asyncio
 import json
 import logging
-import os
-import time
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
 import statistics
-import numpy as np
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from typing import Any
 
 import boto3
 from prometheus_api_client import PrometheusConnect
-import pandas as pd
 
 # Configure logging
 logging.basicConfig(
@@ -60,8 +55,8 @@ class CostOptimization:
     current_cost_per_hour: float
     optimized_cost_per_hour: float
     cost_savings_percent: float
-    recommendations: List[str]
-    instance_optimizations: List[InstanceMetrics]
+    recommendations: list[str]
+    instance_optimizations: list[InstanceMetrics]
     confidence: float
     implementation_priority: str  # low, medium, high, critical
 
@@ -99,7 +94,7 @@ class AWSCostAnalyzer:
         # Spot pricing discount (approximate)
         self.spot_discount = 0.7  # 70% discount on average
 
-    async def get_instance_metrics(self, cluster_name: str) -> List[InstanceMetrics]:
+    async def get_instance_metrics(self, cluster_name: str) -> list[InstanceMetrics]:
         """Get metrics for all instances in the cluster"""
         instances = []
 
@@ -125,7 +120,7 @@ class AWSCostAnalyzer:
             logger.error(f"Error getting instance metrics: {e}")
             return []
 
-    async def _collect_instance_metrics(self, instance_id: str, cluster_name: str) -> Optional[InstanceMetrics]:
+    async def _collect_instance_metrics(self, instance_id: str, cluster_name: str) -> InstanceMetrics | None:
         """Collect metrics for a specific instance"""
         try:
             # Get instance details
@@ -256,11 +251,9 @@ class AWSCostAnalyzer:
             logger.error(f"Error collecting metrics for instance {instance_id}: {e}")
             return None
 
-    def _get_instance_lifecycle(self, instance: Dict) -> str:
+    def _get_instance_lifecycle(self, instance: dict) -> str:
         """Determine instance lifecycle (spot, on-demand, reserved)"""
-        if instance.get('InstanceLifecycle') == 'spot':
-            return 'spot'
-        elif any(tag.get('Key') == 'aws:ec2spot:fleet-request-id' for tag in instance.get('Tags', [])):
+        if instance.get('InstanceLifecycle') == 'spot' or any(tag.get('Key') == 'aws:ec2spot:fleet-request-id' for tag in instance.get('Tags', [])):
             return 'spot'
         else:
             return 'on-demand'  # Simplified - could be reserved
@@ -343,7 +336,7 @@ class CostOptimizer:
             'r5',   # Memory-optimized for RAG workloads
         ]
 
-    async def analyze_current_costs(self, cluster_name: str) -> Tuple[float, List[InstanceMetrics]]:
+    async def analyze_current_costs(self, cluster_name: str) -> tuple[float, list[InstanceMetrics]]:
         """Analyze current infrastructure costs"""
         instance_metrics = await self.aws_analyzer.get_instance_metrics(cluster_name)
 
@@ -509,7 +502,7 @@ class CostOptimizer:
         base_cost = self.aws_analyzer.instance_pricing.get(instance_type, 0.1)
         return base_cost if lifecycle != 'spot' else base_cost * self.aws_analyzer.spot_discount
 
-    async def _analyze_workload_patterns(self, cluster_name: str) -> List[str]:
+    async def _analyze_workload_patterns(self, cluster_name: str) -> list[str]:
         """Analyze workload patterns for optimization opportunities"""
         recommendations = []
 
@@ -538,7 +531,7 @@ class CostOptimizer:
 
         return recommendations
 
-    async def _analyze_scaling_efficiency(self, cluster_name: str) -> List[str]:
+    async def _analyze_scaling_efficiency(self, cluster_name: str) -> list[str]:
         """Analyze auto-scaling efficiency"""
         recommendations = []
 
@@ -566,7 +559,7 @@ class CostOptimizer:
 
         return recommendations
 
-    async def _analyze_reserved_instance_opportunities(self, instance_metrics: List[InstanceMetrics]) -> List[str]:
+    async def _analyze_reserved_instance_opportunities(self, instance_metrics: list[InstanceMetrics]) -> list[str]:
         """Analyze opportunities for reserved instances"""
         recommendations = []
 
@@ -588,8 +581,8 @@ class CostOptimizer:
 
         return recommendations
 
-    def _calculate_optimization_confidence(self, instance_metrics: List[InstanceMetrics],
-                                         recommendations: List[str]) -> float:
+    def _calculate_optimization_confidence(self, instance_metrics: list[InstanceMetrics],
+                                         recommendations: list[str]) -> float:
         """Calculate confidence in optimization recommendations"""
 
         if not instance_metrics:
@@ -611,7 +604,7 @@ class CostOptimizer:
         return min(0.95, max(0.1, confidence))
 
     async def implement_optimizations(self, optimization: CostOptimization,
-                                    cluster_name: str, dry_run: bool = True) -> Dict[str, Any]:
+                                    cluster_name: str, dry_run: bool = True) -> dict[str, Any]:
         """Implement cost optimizations (with dry-run mode)"""
 
         results = {
@@ -647,7 +640,7 @@ class CostOptimizer:
         return results
 
     async def _implement_spot_conversion(self, instance_id: str, cluster_name: str,
-                                       dry_run: bool) -> Dict[str, Any]:
+                                       dry_run: bool) -> dict[str, Any]:
         """Convert instance to spot (by updating ASG configuration)"""
 
         if dry_run:
@@ -679,7 +672,7 @@ class CostOptimizer:
             }
 
     async def _implement_instance_resize(self, instance_id: str, new_type: str,
-                                       dry_run: bool) -> Dict[str, Any]:
+                                       dry_run: bool) -> dict[str, Any]:
         """Resize instance by updating launch template"""
 
         if dry_run:
@@ -742,10 +735,10 @@ async def main():
         logger.info("Analyzing current infrastructure costs...")
         current_cost, instance_metrics = await optimizer.analyze_current_costs(args.cluster_name)
 
-        print(f"\nCost Analysis Results:")
+        print("\nCost Analysis Results:")
         print(f"Current Cost: ${current_cost:.3f}/hour (${current_cost * 24 * 30:.2f}/month)")
         print(f"Instances Analyzed: {len(instance_metrics)}")
-        print(f"\nInstance Details:")
+        print("\nInstance Details:")
 
         for instance in instance_metrics:
             print(f"  {instance.instance_id} ({instance.instance_type}) - "
@@ -757,14 +750,14 @@ async def main():
         logger.info("Generating cost optimization recommendations...")
         optimization = await optimizer.generate_optimization_recommendations(args.cluster_name)
 
-        print(f"\nCost Optimization Report:")
+        print("\nCost Optimization Report:")
         print(f"Current Cost: ${optimization.current_cost_per_hour:.3f}/hour")
         print(f"Optimized Cost: ${optimization.optimized_cost_per_hour:.3f}/hour")
         print(f"Potential Savings: {optimization.cost_savings_percent:.1f}%")
         print(f"Priority: {optimization.implementation_priority}")
         print(f"Confidence: {optimization.confidence:.1%}")
 
-        print(f"\nRecommendations:")
+        print("\nRecommendations:")
         for i, rec in enumerate(optimization.recommendations, 1):
             print(f"  {i}. {rec}")
 
@@ -788,7 +781,7 @@ async def main():
             optimization, args.cluster_name, args.dry_run
         )
 
-        print(f"\nImplementation Results:")
+        print("\nImplementation Results:")
         print(f"Implemented: {len(results['implemented'])}")
         print(f"Failed: {len(results['failed'])}")
         print(f"Skipped: {len(results['skipped'])}")

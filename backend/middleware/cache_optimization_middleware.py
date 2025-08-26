@@ -3,23 +3,24 @@ Cache Optimization Middleware
 Request-level caching middleware with intelligent optimization.
 """
 
-import asyncio
 import hashlib
 import json
 import logging
 import time
-from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Set, Union
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+from ..services.cache_warming_service import CacheWarmingService
+from ..services.metrics_service import MetricsService
+
 # Import our services
 from ..services.redis_cache_service import RedisCacheService
 from ..services.smart_cache_manager import SmartCacheManager
-from ..services.cache_warming_service import CacheWarmingService
-from ..services.metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class CacheConfig:
         self.compression_threshold = 1024  # bytes
 
         # Route-specific settings
-        self.route_configs: Dict[str, Dict[str, Any]] = {
+        self.route_configs: dict[str, dict[str, Any]] = {
             "/api/documents": {"ttl": 7200, "enabled": True},
             "/api/search": {"ttl": 1800, "enabled": True},
             "/api/rag/query": {"ttl": 3600, "enabled": True},
@@ -189,10 +190,10 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         self,
         app,
         redis_cache: RedisCacheService,
-        smart_cache: Optional[SmartCacheManager] = None,
-        warming_service: Optional[CacheWarmingService] = None,
-        metrics_service: Optional[MetricsService] = None,
-        config: Optional[CacheConfig] = None
+        smart_cache: SmartCacheManager | None = None,
+        warming_service: CacheWarmingService | None = None,
+        metrics_service: MetricsService | None = None,
+        config: CacheConfig | None = None
     ):
         """Initialize cache optimization middleware."""
         super().__init__(app)
@@ -309,7 +310,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
     # Cache Operations
     # ========================================================================
 
-    async def _get_cached_response(self, request: Request, cache_key: str) -> Optional[Response]:
+    async def _get_cached_response(self, request: Request, cache_key: str) -> Response | None:
         """Get cached response if available."""
         try:
             # Get from cache
@@ -443,7 +444,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
         return ttl
 
-    def _extract_user_id(self, request: Request) -> Optional[str]:
+    def _extract_user_id(self, request: Request) -> str | None:
         """Extract user ID from request for analytics."""
         # Try to get from JWT token
         auth_header = request.headers.get("authorization")
@@ -491,7 +492,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         logger.info(f"User cache invalidation requested for user: {user_id}")
         return 0
 
-    async def preload_cache(self, paths: List[str], base_url: str = "http://localhost"):
+    async def preload_cache(self, paths: list[str], base_url: str = "http://localhost"):
         """Preload cache with common requests."""
         if not self.warming_service:
             logger.warning("No warming service available for cache preloading")
@@ -521,7 +522,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
     # Statistics and Monitoring
     # ========================================================================
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_requests = self.stats["total_requests"]
 
@@ -564,7 +565,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         }
         logger.info("Cache statistics reset")
 
-    def get_cache_health(self) -> Dict[str, Any]:
+    def get_cache_health(self) -> dict[str, Any]:
         """Get cache health information."""
         stats = self.get_cache_stats()
 
@@ -586,7 +587,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             "recommendations": self._get_health_recommendations(stats)
         }
 
-    def _get_health_recommendations(self, stats: Dict[str, Any]) -> List[str]:
+    def _get_health_recommendations(self, stats: dict[str, Any]) -> list[str]:
         """Get health recommendations based on statistics."""
         recommendations = []
 
@@ -614,10 +615,10 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
 def create_cache_middleware(
     redis_cache: RedisCacheService,
-    smart_cache: Optional[SmartCacheManager] = None,
-    warming_service: Optional[CacheWarmingService] = None,
-    metrics_service: Optional[MetricsService] = None,
-    config: Optional[CacheConfig] = None
+    smart_cache: SmartCacheManager | None = None,
+    warming_service: CacheWarmingService | None = None,
+    metrics_service: MetricsService | None = None,
+    config: CacheConfig | None = None
 ) -> CacheOptimizationMiddleware:
     """Factory function to create cache middleware."""
     return lambda app: CacheOptimizationMiddleware(
@@ -633,6 +634,7 @@ def create_cache_middleware(
 # Example usage in FastAPI app
 if __name__ == "__main__":
     from fastapi import FastAPI
+
     from ..services.redis_cache_service import RedisCacheService, RedisConfig
 
     # Create services

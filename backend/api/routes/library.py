@@ -4,11 +4,11 @@ RESTful API endpoints for document library management operations.
 """
 
 import logging
-from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 
 from backend.api.dependencies import get_library_controller
+from backend.api.error_handling import SystemException
 from backend.api.models import (
     BaseResponse,
     CleanupRequest,
@@ -19,7 +19,6 @@ from backend.api.models import (
     DuplicatesResponse,
     LibraryStatsResponse,
 )
-from backend.api.error_handling import SystemException, ErrorTemplates
 from src.controllers.library_controller import LibraryController
 
 logger = logging.getLogger(__name__)

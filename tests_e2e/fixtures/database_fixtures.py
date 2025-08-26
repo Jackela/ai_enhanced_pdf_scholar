@@ -4,14 +4,16 @@ Database Fixtures for E2E Testing
 Provides database setup, seeding, and cleanup utilities for testing.
 """
 
-import pytest
-import sqlite3
-from pathlib import Path
-from typing import Generator, Dict, Any, List
 import json
-from datetime import datetime, timedelta
 import random
 import shutil
+import sqlite3
+from collections.abc import Generator
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+import pytest
 
 
 class DatabaseManager:
@@ -41,7 +43,7 @@ class DatabaseManager:
             self.connect()
         return self.connection.execute(query, params or ())
 
-    def executemany(self, query: str, params: List[tuple]) -> sqlite3.Cursor:
+    def executemany(self, query: str, params: list[tuple]) -> sqlite3.Cursor:
         """Execute multiple queries."""
         if not self.connection:
             self.connect()
@@ -187,7 +189,7 @@ class DatabaseManager:
             self.execute(f"DELETE FROM {table}")
         self.commit()
 
-    def seed_users(self, count: int = 10) -> List[int]:
+    def seed_users(self, count: int = 10) -> list[int]:
         """Seed the database with test users."""
         user_ids = []
 
@@ -210,7 +212,7 @@ class DatabaseManager:
         self.commit()
         return user_ids
 
-    def seed_documents(self, user_ids: List[int], count: int = 50) -> List[int]:
+    def seed_documents(self, user_ids: list[int], count: int = 50) -> list[int]:
         """Seed the database with test documents."""
         document_ids = []
         statuses = ['pending', 'processing', 'completed', 'failed']
@@ -250,7 +252,7 @@ class DatabaseManager:
         self.commit()
         return document_ids
 
-    def seed_citations(self, document_ids: List[int]) -> List[int]:
+    def seed_citations(self, document_ids: list[int]) -> list[int]:
         """Seed the database with test citations."""
         citation_ids = []
 
@@ -283,7 +285,7 @@ class DatabaseManager:
         self.commit()
         return citation_ids
 
-    def seed_rag_queries(self, user_ids: List[int], document_ids: List[int]) -> List[int]:
+    def seed_rag_queries(self, user_ids: list[int], document_ids: list[int]) -> list[int]:
         """Seed the database with test RAG queries."""
         query_ids = []
         sample_queries = [
@@ -330,7 +332,7 @@ class DatabaseManager:
         self.commit()
         return query_ids
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get database statistics."""
         stats = {}
 

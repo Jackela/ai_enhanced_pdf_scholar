@@ -3,8 +3,9 @@ User Workflow Tests for AI Enhanced PDF Scholar
 测试完整的用户工作流程
 """
 
-import pytest
 import time
+
+import pytest
 from playwright.sync_api import Page, expect
 
 

@@ -6,7 +6,7 @@ Implements the Factory pattern to reduce coupling and improve testability.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from src.database.connection import DatabaseConnection
 from src.repositories.document_repository import DocumentRepository
@@ -28,7 +28,7 @@ class ServiceFactory(ABC):
         pass
 
     @abstractmethod
-    def get_service(self, service_type: type[T]) -> Optional[T]:
+    def get_service(self, service_type: type[T]) -> T | None:
         """Get an existing service instance if available."""
         pass
 
@@ -45,7 +45,7 @@ class DefaultServiceFactory(ServiceFactory):
     """
 
     def __init__(
-        self, db_connection: DatabaseConnection, config: Optional[dict[str, Any]] = None
+        self, db_connection: DatabaseConnection, config: dict[str, Any] | None = None
     ):
         """
         Initialize service factory with core dependencies.
@@ -128,7 +128,7 @@ class DefaultServiceFactory(ServiceFactory):
             logger.error(f"Failed to create service {service_type.__name__}: {e}")
             raise
 
-    def get_service(self, service_type: type[T]) -> Optional[T]:
+    def get_service(self, service_type: type[T]) -> T | None:
         """
         Get an existing service instance.
 
@@ -262,7 +262,7 @@ class TestServiceFactory(DefaultServiceFactory):
     """
 
     def __init__(
-        self, db_connection: DatabaseConnection, config: Optional[dict[str, Any]] = None
+        self, db_connection: DatabaseConnection, config: dict[str, Any] | None = None
     ):
         """Initialize test service factory."""
         super().__init__(db_connection, config)
@@ -320,7 +320,7 @@ class TestServiceFactory(DefaultServiceFactory):
 
 
 # Global service factory instance (initialized by application)
-_service_factory: Optional[ServiceFactory] = None
+_service_factory: ServiceFactory | None = None
 
 
 def get_service_factory() -> ServiceFactory:
@@ -343,7 +343,7 @@ def get_service_factory() -> ServiceFactory:
 
 def initialize_service_factory(
     db_connection: DatabaseConnection,
-    config: Optional[dict[str, Any]] = None,
+    config: dict[str, Any] | None = None,
     factory_class: type[ServiceFactory] = DefaultServiceFactory,
 ) -> ServiceFactory:
     """
@@ -378,7 +378,7 @@ def create_service(service_type: type[T], **kwargs: Any) -> T:
     return factory.create_service(service_type, **kwargs)
 
 
-def get_service(service_type: type[T]) -> Optional[T]:
+def get_service(service_type: type[T]) -> T | None:
     """
     Convenience function to get a service using the global factory.
 

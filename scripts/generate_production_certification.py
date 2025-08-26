@@ -4,13 +4,13 @@ Generates comprehensive production readiness certification documentation
 based on all Agent A4 test results and validation criteria.
 """
 
+import glob
 import json
 import logging
 import os
-from datetime import datetime
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-import glob
+from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class ProductionReadinessCertificationGenerator:
         self.certification_score = 0.0
         self.certification_level = "NOT_READY"
 
-    def _define_certification_criteria(self) -> List[CertificationCriterion]:
+    def _define_certification_criteria(self) -> list[CertificationCriterion]:
         """Define production readiness certification criteria."""
         return [
             CertificationCriterion(
@@ -104,24 +104,24 @@ class ProductionReadinessCertificationGenerator:
         # Load production readiness results
         prod_ready_file = os.path.join(results_dir, "production_readiness_results.json")
         if os.path.exists(prod_ready_file):
-            with open(prod_ready_file, 'r') as f:
+            with open(prod_ready_file) as f:
                 self.test_results["production_readiness"] = json.load(f)
 
         # Load security test results
         sql_injection_file = os.path.join(results_dir, "sql_injection_test_results.json")
         if os.path.exists(sql_injection_file):
-            with open(sql_injection_file, 'r') as f:
+            with open(sql_injection_file) as f:
                 self.test_results["sql_injection"] = json.load(f)
 
         xss_protection_file = os.path.join(results_dir, "xss_protection_test_results.json")
         if os.path.exists(xss_protection_file):
-            with open(xss_protection_file, 'r') as f:
+            with open(xss_protection_file) as f:
                 self.test_results["xss_protection"] = json.load(f)
 
         # Load performance test results
         performance_file = os.path.join(results_dir, "performance_regression_results.json")
         if os.path.exists(performance_file):
-            with open(performance_file, 'r') as f:
+            with open(performance_file) as f:
                 self.test_results["performance_regression"] = json.load(f)
 
         # Load load testing results
@@ -129,25 +129,25 @@ class ProductionReadinessCertificationGenerator:
         if load_test_files:
             # Use the largest user load test result
             largest_load_file = max(load_test_files, key=lambda f: os.path.getsize(f))
-            with open(largest_load_file, 'r') as f:
+            with open(largest_load_file) as f:
                 self.test_results["load_testing"] = json.load(f)
 
         # Load fault tolerance results
         fault_tolerance_file = os.path.join(results_dir, "fault_tolerance_results.json")
         if os.path.exists(fault_tolerance_file):
-            with open(fault_tolerance_file, 'r') as f:
+            with open(fault_tolerance_file) as f:
                 self.test_results["fault_tolerance"] = json.load(f)
 
         # Load system integration results
         integration_file = os.path.join(results_dir, "complete_system_integration_results.json")
         if os.path.exists(integration_file):
-            with open(integration_file, 'r') as f:
+            with open(integration_file) as f:
                 self.test_results["system_integration"] = json.load(f)
 
         logger.info(f"Loaded {len(self.test_results)} test result files")
         return len(self.test_results) > 0
 
-    def extract_scores_from_results(self) -> Dict[str, float]:
+    def extract_scores_from_results(self) -> dict[str, float]:
         """Extract scores from test results for each certification criterion."""
         scores = {}
 
@@ -222,7 +222,7 @@ class ProductionReadinessCertificationGenerator:
 
         return scores
 
-    def calculate_certification_score(self, scores: Dict[str, float]) -> float:
+    def calculate_certification_score(self, scores: dict[str, float]) -> float:
         """Calculate overall certification score based on weighted criteria."""
         total_weighted_score = 0.0
         total_weight = 0.0
@@ -243,7 +243,7 @@ class ProductionReadinessCertificationGenerator:
 
         return overall_score
 
-    def determine_certification_level(self, overall_score: float, scores: Dict[str, float]) -> str:
+    def determine_certification_level(self, overall_score: float, scores: dict[str, float]) -> str:
         """Determine certification level based on score and critical criteria."""
 
         # Check if all critical criteria pass
@@ -265,7 +265,7 @@ class ProductionReadinessCertificationGenerator:
         else:
             return "NOT_READY"
 
-    def generate_certification_report(self) -> Dict[str, Any]:
+    def generate_certification_report(self) -> dict[str, Any]:
         """Generate comprehensive certification report."""
         logger.info("Generating production readiness certification report")
 
@@ -345,7 +345,7 @@ class ProductionReadinessCertificationGenerator:
 
         return certification_report
 
-    def _analyze_security_results(self) -> Dict[str, Any]:
+    def _analyze_security_results(self) -> dict[str, Any]:
         """Analyze security test results."""
         security_analysis = {
             "overall_security_score": 0.0,
@@ -397,7 +397,7 @@ class ProductionReadinessCertificationGenerator:
 
         return security_analysis
 
-    def _analyze_performance_results(self) -> Dict[str, Any]:
+    def _analyze_performance_results(self) -> dict[str, Any]:
         """Analyze performance test results."""
         performance_analysis = {
             "overall_performance_score": 0.0,
@@ -440,7 +440,7 @@ class ProductionReadinessCertificationGenerator:
 
         return performance_analysis
 
-    def _generate_risk_assessment(self, scores: Dict[str, float], critical_issues: List[str]) -> Dict[str, Any]:
+    def _generate_risk_assessment(self, scores: dict[str, float], critical_issues: list[str]) -> dict[str, Any]:
         """Generate risk assessment for production deployment."""
 
         # Calculate risk levels
@@ -488,7 +488,7 @@ class ProductionReadinessCertificationGenerator:
             "deployment_recommended": overall_risk in ["LOW", "MEDIUM"] and len(high_risks) == 0
         }
 
-    def _summarize_test_results(self) -> Dict[str, Any]:
+    def _summarize_test_results(self) -> dict[str, Any]:
         """Summarize all test results."""
         summary = {
             "total_test_suites": len(self.test_results),
@@ -519,7 +519,7 @@ class ProductionReadinessCertificationGenerator:
 
         return summary
 
-    def _generate_deployment_checklist(self, certification_level: str) -> List[Dict[str, Any]]:
+    def _generate_deployment_checklist(self, certification_level: str) -> list[dict[str, Any]]:
         """Generate deployment checklist based on certification level."""
         checklist = [
             {
@@ -563,7 +563,7 @@ class ProductionReadinessCertificationGenerator:
 
         return checklist
 
-    def _generate_monitoring_requirements(self) -> Dict[str, Any]:
+    def _generate_monitoring_requirements(self) -> dict[str, Any]:
         """Generate monitoring requirements for production."""
         return {
             "metrics_to_monitor": [
@@ -588,7 +588,7 @@ class ProductionReadinessCertificationGenerator:
             ]
         }
 
-    def save_certification_report(self, report: Dict[str, Any], filename: str = None) -> str:
+    def save_certification_report(self, report: dict[str, Any], filename: str = None) -> str:
         """Save certification report to file."""
         if not filename:
             timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -605,7 +605,7 @@ class ProductionReadinessCertificationGenerator:
         logger.info(f"Certification report saved to: {filepath}")
         return filepath
 
-    def generate_html_report(self, report: Dict[str, Any]) -> str:
+    def generate_html_report(self, report: dict[str, Any]) -> str:
         """Generate HTML version of certification report."""
         html_template = """
 <!DOCTYPE html>
@@ -832,6 +832,6 @@ if __name__ == "__main__":
     report = generate_production_certification()
 
     if report:
-        print(f"\n✅ Production readiness certification generated successfully!")
+        print("\n✅ Production readiness certification generated successfully!")
     else:
-        print(f"\n❌ Failed to generate production readiness certification!")
+        print("\n❌ Failed to generate production readiness certification!")

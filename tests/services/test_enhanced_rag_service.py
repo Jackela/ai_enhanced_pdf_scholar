@@ -13,9 +13,9 @@ Tests all aspects of the enhanced RAG service including:
 import json
 import shutil
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

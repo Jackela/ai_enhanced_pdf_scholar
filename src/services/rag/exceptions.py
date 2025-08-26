@@ -5,7 +5,7 @@ Custom exception classes for RAG service operations with detailed error informat
 and recovery suggestions for robust error handling.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 
 class RAGBaseException(Exception):
@@ -14,9 +14,9 @@ class RAGBaseException(Exception):
     def __init__(
         self,
         message: str,
-        error_code: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
-        suggestions: Optional[list[str]] = None,
+        error_code: str | None = None,
+        details: dict[str, Any] | None = None,
+        suggestions: list[str] | None = None,
     ):
         self.message = message
         self.error_code = error_code or self.__class__.__name__
@@ -168,7 +168,7 @@ class QueryProcessingError(RAGQueryError):
     """Raised when query processing fails."""
 
     def __init__(
-        self, query: str, document_id: Optional[int] = None, message: str = "", **kwargs
+        self, query: str, document_id: int | None = None, message: str = "", **kwargs
     ):
         self.query = query
         self.document_id = document_id
@@ -398,7 +398,7 @@ def create_processing_error(
 
 
 def create_query_error(
-    query: str, document_id: Optional[int], original_exception: Exception
+    query: str, document_id: int | None, original_exception: Exception
 ) -> QueryProcessingError:
     """Create a QueryProcessingError from an original exception."""
     return QueryProcessingError(

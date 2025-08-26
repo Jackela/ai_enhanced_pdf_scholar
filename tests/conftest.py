@@ -9,28 +9,26 @@ This conftest.py provides optimized fixtures that improve test performance by:
 """
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Optional
 
 import pytest
 
 from src.database.connection import DatabaseConnection
+from tests.parallel_test_utils import (
+    ConcurrentTestHelper,
+    ParallelDatabaseManager,
+    ParallelTestOrchestrator,
+    categorize_test_for_parallel_execution,
+)
 from tests.test_utils import (
     AsyncTestHelper,
     MockFactory,
     PerformanceMonitor,
-    TestFixtureManager,
     db_manager,
     fixture_manager,
     performance_monitor,
 )
-from tests.parallel_test_utils import (
-    ParallelDatabaseManager,
-    ParallelTestOrchestrator,
-    ConcurrentTestHelper,
-    categorize_test_for_parallel_execution,
-)
-
 
 # =============================================================================
 # Session-Scoped Fixtures (Shared across entire test session)
@@ -295,6 +293,24 @@ def pytest_sessionstart(session):
 
 def pytest_sessionfinish(session):
     """Clean up session-wide resources and generate reports."""
+    # Cleanup WebSocket Manager
+    try:
+        import asyncio
+
+        from backend.api.main import websocket_manager
+
+        # Only cleanup if there's a running event loop or we can create one
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(websocket_manager.cleanup())
+        except RuntimeError:
+            # No running loop, create one for cleanup
+            asyncio.run(websocket_manager.cleanup())
+
+        print("   WebSocketManager cleanup completed")
+    except Exception as e:
+        print(f"   Warning: WebSocketManager cleanup error: {e}")
+
     # Cleanup database manager
     db_manager.cleanup_all()
 
@@ -306,7 +322,7 @@ def pytest_sessionfinish(session):
 
         # Generate parallel testing report
         if parallel_report and not parallel_report.get("error"):
-            print(f"\n🚀 Parallel Testing Report:")
+            print("\n🚀 Parallel Testing Report:")
             print(f"   Total tests: {parallel_report['total_tests_run']}")
             print(f"   Success rate: {parallel_report['success_rate']:.1%}")
             print(f"   Databases created: {parallel_report['total_databases_created']}")
@@ -329,7 +345,7 @@ def pytest_sessionfinish(session):
     # Generate performance report
     report = performance_monitor.get_report()
     if report["total_tests"] > 0:
-        print(f"\n📊 Performance Report:")
+        print("\n📊 Performance Report:")
         print(f"   Total tests: {report['total_tests']}")
         print(f"   Slow tests: {report['slow_tests']}")
         print(f"   Average duration: {report['average_duration']:.3f}s")

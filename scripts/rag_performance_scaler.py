@@ -18,17 +18,11 @@ Features:
 import asyncio
 import json
 import logging
-import time
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-import statistics
-import numpy as np
+from dataclasses import asdict, dataclass
+from datetime import datetime
 
+import numpy as np
 from prometheus_api_client import PrometheusConnect
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 
 # Kubernetes client
 try:
@@ -65,7 +59,7 @@ class RAGScalingDecision:
     current_replicas: int
     recommended_replicas: int
     workload_profile: RAGWorkloadProfile
-    scaling_factors: Dict[str, float]
+    scaling_factors: dict[str, float]
     confidence: float
     expected_query_time_improvement_ms: float
     expected_quality_impact: float  # -1 to 1, negative = quality decrease
@@ -129,7 +123,7 @@ class RAGWorkloadAnalyzer:
             'generation_tokens': {'low': 100, 'medium': 500, 'high': 1000},  # tokens generated
         }
 
-    async def collect_rag_metrics(self) -> Dict[str, float]:
+    async def collect_rag_metrics(self) -> dict[str, float]:
         """Collect RAG-specific metrics from Prometheus"""
         metrics = {}
 
@@ -152,7 +146,7 @@ class RAGWorkloadAnalyzer:
 
         return metrics
 
-    async def analyze_query_complexity(self, metrics: Dict[str, float]) -> float:
+    async def analyze_query_complexity(self, metrics: dict[str, float]) -> float:
         """Analyze query complexity score (0-1)"""
         complexity_score = 0.0
         factors = []
@@ -180,7 +174,7 @@ class RAGWorkloadAnalyzer:
         complexity_score = sum(factors)
         return min(1.0, complexity_score)
 
-    async def create_workload_profile(self, metrics: Dict[str, float]) -> RAGWorkloadProfile:
+    async def create_workload_profile(self, metrics: dict[str, float]) -> RAGWorkloadProfile:
         """Create RAG workload profile from metrics"""
 
         complexity_score = await self.analyze_query_complexity(metrics)
@@ -246,7 +240,7 @@ class RAGPerformanceScaler:
         self.scaling_history = []
 
     async def calculate_rag_scaling_factors(self, profile: RAGWorkloadProfile,
-                                         current_replicas: int) -> Dict[str, float]:
+                                         current_replicas: int) -> dict[str, float]:
         """Calculate scaling factors based on RAG workload characteristics"""
         factors = {}
 
@@ -307,7 +301,7 @@ class RAGPerformanceScaler:
         return factors
 
     async def calculate_optimal_replicas(self, profile: RAGWorkloadProfile,
-                                       current_replicas: int) -> Tuple[int, float]:
+                                       current_replicas: int) -> tuple[int, float]:
         """Calculate optimal replica count and confidence score"""
 
         # Get scaling factors
@@ -349,7 +343,7 @@ class RAGPerformanceScaler:
 
     async def estimate_performance_impact(self, profile: RAGWorkloadProfile,
                                         current_replicas: int,
-                                        new_replicas: int) -> Tuple[float, float]:
+                                        new_replicas: int) -> tuple[float, float]:
         """Estimate query time improvement and quality impact"""
 
         if new_replicas <= current_replicas:
@@ -427,13 +421,13 @@ class RAGPerformanceScaler:
                 if profile.p95_query_time_ms > self.scaling_thresholds['target_p95_response_time_ms']:
                     reasoning_parts.append(f"P95 query time {profile.p95_query_time_ms:.0f}ms exceeds target")
                 if profile.concurrent_queries / current_replicas > self.scaling_thresholds['max_concurrent_queries_per_replica']:
-                    reasoning_parts.append(f"High concurrent query load per replica")
+                    reasoning_parts.append("High concurrent query load per replica")
                 if profile.processing_queue_depth > self.scaling_thresholds['target_processing_queue_depth']:
                     reasoning_parts.append(f"Processing queue depth at {profile.processing_queue_depth}")
 
             elif optimal_replicas < current_replicas:
                 reasoning_parts.append(f"Scale down from {current_replicas} to {optimal_replicas} replicas")
-                reasoning_parts.append(f"Current utilization allows for cost optimization")
+                reasoning_parts.append("Current utilization allows for cost optimization")
                 if profile.cache_hit_rate > 0.8:
                     reasoning_parts.append(f"High cache hit rate ({profile.cache_hit_rate:.1%}) reduces load")
 
@@ -571,8 +565,8 @@ class RAGScalingOrchestrator:
                 decision = await self.run_scaling_cycle()
 
                 # Log detailed decision info
-                logger.info(f"RAG Scaling Analysis:")
-                logger.info(f"  Workload Profile:")
+                logger.info("RAG Scaling Analysis:")
+                logger.info("  Workload Profile:")
                 logger.info(f"    Query Complexity: {decision.workload_profile.query_complexity_score:.2f}")
                 logger.info(f"    P95 Query Time: {decision.workload_profile.p95_query_time_ms:.0f}ms")
                 logger.info(f"    Cache Hit Rate: {decision.workload_profile.cache_hit_rate:.1%}")
@@ -614,7 +608,7 @@ async def main():
         metrics = await orchestrator.scaler.workload_analyzer.collect_rag_metrics()
         profile = await orchestrator.scaler.workload_analyzer.create_workload_profile(metrics)
 
-        print(f"RAG Workload Profile:")
+        print("RAG Workload Profile:")
         print(f"  Query Complexity Score: {profile.query_complexity_score:.2f}")
         print(f"  Average Query Time: {profile.average_query_time_ms:.0f}ms")
         print(f"  P95 Query Time: {profile.p95_query_time_ms:.0f}ms")

@@ -12,14 +12,13 @@ import shutil
 import sqlite3
 import subprocess
 import time
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import psutil
 import redis
-from dataclasses import dataclass, asdict
-
 
 # Configure logging
 logging.basicConfig(
@@ -40,8 +39,8 @@ class MaintenanceTask:
     status: str  # success, failed, skipped, warning
     message: str
     execution_time: float
-    details: Dict[str, Any] = None
-    metrics: Dict[str, Any] = None
+    details: dict[str, Any] = None
+    metrics: dict[str, Any] = None
 
 
 @dataclass
@@ -50,11 +49,11 @@ class MaintenanceReport:
     start_time: datetime
     end_time: datetime
     total_duration: float
-    tasks_completed: List[MaintenanceTask]
-    system_metrics_before: Dict[str, Any]
-    system_metrics_after: Dict[str, Any]
-    recommendations: List[str]
-    next_scheduled: Optional[datetime] = None
+    tasks_completed: list[MaintenanceTask]
+    system_metrics_before: dict[str, Any]
+    system_metrics_after: dict[str, Any]
+    recommendations: list[str]
+    next_scheduled: datetime | None = None
 
 
 class MaintenanceConfig:
@@ -97,7 +96,7 @@ class SystemMaintenanceEngine:
 
     def __init__(self, config: MaintenanceConfig = None):
         self.config = config or MaintenanceConfig()
-        self.tasks_completed: List[MaintenanceTask] = []
+        self.tasks_completed: list[MaintenanceTask] = []
         self.start_time = datetime.now()
 
         # System metrics before maintenance
@@ -105,7 +104,7 @@ class SystemMaintenanceEngine:
 
         logger.info(f"System Maintenance Engine initialized. Dry run: {self.config.DRY_RUN}")
 
-    def run_maintenance(self, task_types: Optional[List[str]] = None) -> MaintenanceReport:
+    def run_maintenance(self, task_types: list[str] | None = None) -> MaintenanceReport:
         """Run comprehensive maintenance tasks."""
 
         logger.info("Starting automated system maintenance")
@@ -165,7 +164,7 @@ class SystemMaintenanceEngine:
         logger.info("System maintenance completed")
         return report
 
-    def _capture_system_metrics(self) -> Dict[str, Any]:
+    def _capture_system_metrics(self) -> dict[str, Any]:
         """Capture current system metrics."""
         try:
             memory = psutil.virtual_memory()
@@ -189,7 +188,7 @@ class SystemMaintenanceEngine:
     # Database Maintenance
     # ============================================================================
 
-    def _database_maintenance(self) -> List[MaintenanceTask]:
+    def _database_maintenance(self) -> list[MaintenanceTask]:
         """Perform database maintenance operations."""
         tasks = []
 
@@ -540,7 +539,7 @@ class SystemMaintenanceEngine:
     # Log Maintenance
     # ============================================================================
 
-    def _log_maintenance(self) -> List[MaintenanceTask]:
+    def _log_maintenance(self) -> list[MaintenanceTask]:
         """Perform log maintenance operations."""
         tasks = []
 
@@ -739,7 +738,7 @@ class SystemMaintenanceEngine:
     # Cache Maintenance
     # ============================================================================
 
-    def _cache_maintenance(self) -> List[MaintenanceTask]:
+    def _cache_maintenance(self) -> list[MaintenanceTask]:
         """Perform cache maintenance operations."""
         tasks = []
 
@@ -972,7 +971,7 @@ class SystemMaintenanceEngine:
     # Storage Maintenance
     # ============================================================================
 
-    def _storage_maintenance(self) -> List[MaintenanceTask]:
+    def _storage_maintenance(self) -> list[MaintenanceTask]:
         """Perform storage maintenance operations."""
         tasks = []
 
@@ -1021,7 +1020,7 @@ class SystemMaintenanceEngine:
                                 except Exception:
                                     continue
 
-                cleanup_actions.append(f"Cleaned temporary files")
+                cleanup_actions.append("Cleaned temporary files")
 
                 # Clean package caches (if available)
                 try:
@@ -1143,7 +1142,7 @@ class SystemMaintenanceEngine:
     # Performance Maintenance
     # ============================================================================
 
-    def _performance_maintenance(self) -> List[MaintenanceTask]:
+    def _performance_maintenance(self) -> list[MaintenanceTask]:
         """Perform performance maintenance operations."""
         tasks = []
 
@@ -1284,7 +1283,7 @@ class SystemMaintenanceEngine:
     # Security Maintenance
     # ============================================================================
 
-    def _security_maintenance(self) -> List[MaintenanceTask]:
+    def _security_maintenance(self) -> list[MaintenanceTask]:
         """Perform security maintenance operations."""
         tasks = []
 
@@ -1411,7 +1410,7 @@ class SystemMaintenanceEngine:
     # Health Verification
     # ============================================================================
 
-    def _health_verification(self) -> List[MaintenanceTask]:
+    def _health_verification(self) -> list[MaintenanceTask]:
         """Perform final health verification."""
         tasks = []
 
@@ -1557,7 +1556,7 @@ class SystemMaintenanceEngine:
     # Reporting and Recommendations
     # ============================================================================
 
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate maintenance recommendations based on task results."""
         recommendations = []
 

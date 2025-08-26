@@ -12,16 +12,14 @@ Tests all aspects of vector index persistence management including:
 import json
 import shutil
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.database.connection import DatabaseConnection
-from src.database.models import VectorIndexModel
 from src.services.vector_index_manager import (
-    IndexCorruptionError,
     VectorIndexManager,
     VectorIndexManagerError,
 )
@@ -186,7 +184,7 @@ class TestVectorIndexManager:
         # Verify metadata file was created
         metadata_file = index_path / "index_metadata.json"
         assert metadata_file.exists()
-        with open(metadata_file, "r") as f:
+        with open(metadata_file) as f:
             metadata = json.load(f)
         assert metadata["document_id"] == document_id
         assert metadata["index_hash"] == index_hash
@@ -197,7 +195,6 @@ class TestVectorIndexManager:
         document_id = self._create_test_document()
         index_hash = "same_hash"
         # Mock datetime to ensure same timestamp
-        from unittest.mock import MagicMock
         mock_dt = MagicMock()
         mock_dt.strftime.return_value = "20230101_120000"
         mock_dt.isoformat.return_value = "2023-01-01T12:00:00"
@@ -458,7 +455,7 @@ class TestVectorIndexManager:
         assert (backup_dir / "index_store.json").exists()
         assert (backup_dir / "backup_metadata.json").exists()
         # Verify backup metadata
-        with open(backup_dir / "backup_metadata.json", "r") as f:
+        with open(backup_dir / "backup_metadata.json") as f:
             backup_metadata = json.load(f)
         assert backup_metadata["original_index_id"] == vector_index.id
         assert backup_metadata["document_id"] == document_id

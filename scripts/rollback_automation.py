@@ -9,22 +9,19 @@ Agent B1: CI/CD Pipeline Optimization Specialist
 Generated: 2025-01-19
 """
 
+import argparse
 import asyncio
 import json
 import logging
 import os
-import sys
 import time
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-import argparse
-import subprocess
-import yaml
+from typing import Any
+
 import aiohttp
-from urllib.parse import urljoin
 
 # Configure logging
 logging.basicConfig(
@@ -67,7 +64,7 @@ class HealthCheckResult:
     status_code: int
     response_time_ms: float
     healthy: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
     timestamp: datetime = None
 
     def __post_init__(self):
@@ -82,8 +79,8 @@ class RollbackTarget:
     version: str
     commit_sha: str
     deployment_url: str
-    health_check_endpoints: List[str]
-    backup_urls: List[str] = None
+    health_check_endpoints: list[str]
+    backup_urls: list[str] = None
 
     def __post_init__(self):
         if self.backup_urls is None:
@@ -122,14 +119,14 @@ class RollbackResult:
     config: RollbackConfig
     status: RollbackStatus
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
 
     # Execution details
-    pre_rollback_health: List[HealthCheckResult] = None
-    post_rollback_health: List[HealthCheckResult] = None
-    logs: List[str] = None
-    metrics: Dict[str, Any] = None
-    error_message: Optional[str] = None
+    pre_rollback_health: list[HealthCheckResult] = None
+    post_rollback_health: list[HealthCheckResult] = None
+    logs: list[str] = None
+    metrics: dict[str, Any] = None
+    error_message: str | None = None
 
     def __post_init__(self):
         if self.pre_rollback_health is None:
@@ -142,13 +139,13 @@ class RollbackResult:
             self.metrics = {}
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Calculate rollback duration"""
         if self.end_time:
             return (self.end_time - self.start_time).total_seconds()
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
             'rollback_id': self.rollback_id,
@@ -197,7 +194,7 @@ class RollbackAutomation:
 
     def __init__(self, work_dir: Path = None):
         self.work_dir = work_dir or Path.cwd()
-        self.rollbacks: Dict[str, RollbackResult] = {}
+        self.rollbacks: dict[str, RollbackResult] = {}
         self.github_token = os.getenv('GITHUB_TOKEN')
         self.repository = os.getenv('GITHUB_REPOSITORY', 'ai-enhanced-pdf-scholar')
 
@@ -462,7 +459,7 @@ class RollbackAutomation:
 
         logger.info("✅ Post-rollback validation completed successfully")
 
-    async def _comprehensive_health_check(self, endpoints: List[str], timeout: int) -> List[HealthCheckResult]:
+    async def _comprehensive_health_check(self, endpoints: list[str], timeout: int) -> list[HealthCheckResult]:
         """Perform comprehensive health check on endpoints"""
         logger.info(f"🏥 Running comprehensive health check on {len(endpoints)} endpoints...")
 
@@ -495,7 +492,7 @@ class RollbackAutomation:
 
         return health_results
 
-    async def _quick_health_check(self, endpoints: List[str]) -> List[HealthCheckResult]:
+    async def _quick_health_check(self, endpoints: list[str]) -> list[HealthCheckResult]:
         """Quick health check with shorter timeout"""
         return await self._comprehensive_health_check(endpoints, 30)
 
@@ -531,8 +528,8 @@ class RollbackAutomation:
     def detect_rollback_conditions(
         self,
         environment: Environment,
-        current_metrics: Dict[str, float]
-    ) -> Optional[RollbackTrigger]:
+        current_metrics: dict[str, float]
+    ) -> RollbackTrigger | None:
         """Detect if rollback conditions are met"""
 
         # Error rate threshold
@@ -597,16 +594,16 @@ class RollbackAutomation:
                 logger.error(f"❌ Error in auto-rollback monitor: {e}")
                 await asyncio.sleep(check_interval)
 
-    def get_rollback(self, rollback_id: str) -> Optional[RollbackResult]:
+    def get_rollback(self, rollback_id: str) -> RollbackResult | None:
         """Get rollback result by ID"""
         return self.rollbacks.get(rollback_id)
 
     def list_rollbacks(
         self,
-        environment: Optional[Environment] = None,
-        trigger: Optional[RollbackTrigger] = None,
+        environment: Environment | None = None,
+        trigger: RollbackTrigger | None = None,
         limit: int = 10
-    ) -> List[RollbackResult]:
+    ) -> list[RollbackResult]:
         """List rollbacks with optional filtering"""
         rollbacks = list(self.rollbacks.values())
 
@@ -760,7 +757,7 @@ Examples:
 
             result = await rollback_system.execute_rollback(config)
 
-            print(f"🛡️ Rollback Result:")
+            print("🛡️ Rollback Result:")
             print(f"  ID: {result.rollback_id}")
             print(f"  Status: {result.status.value}")
             print(f"  Duration: {result.duration_seconds:.1f}s" if result.duration_seconds else "  Duration: N/A")

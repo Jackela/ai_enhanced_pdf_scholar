@@ -13,21 +13,20 @@ import time
 from collections import defaultdict, deque
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from scipy import stats
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.services.redis_cache_service import RedisCacheService
-from backend.services.smart_cache_manager import SmartCacheManager
 from backend.services.cache_warming_service import CacheWarmingService
+from backend.services.redis_cache_service import RedisCacheService
 from backend.services.redis_monitoring import RedisMonitoringService
+from backend.services.smart_cache_manager import SmartCacheManager
 
 logger = logging.getLogger(__name__)
 
@@ -61,15 +60,15 @@ class CacheAnalyticsMetrics:
     eviction_count: int = 0
 
     # Key Pattern Analysis
-    top_accessed_patterns: Dict[str, int] = field(default_factory=dict)
-    key_distribution: Dict[str, int] = field(default_factory=dict)
+    top_accessed_patterns: dict[str, int] = field(default_factory=dict)
+    key_distribution: dict[str, int] = field(default_factory=dict)
 
     # Time-based Analysis
-    hourly_hit_rates: Dict[int, float] = field(default_factory=dict)
-    daily_patterns: Dict[str, float] = field(default_factory=dict)
+    hourly_hit_rates: dict[int, float] = field(default_factory=dict)
+    daily_patterns: dict[str, float] = field(default_factory=dict)
 
     # Strategy Effectiveness
-    strategy_performance: Dict[str, float] = field(default_factory=dict)
+    strategy_performance: dict[str, float] = field(default_factory=dict)
     warming_effectiveness: float = 0.0
 
     # Cost Analysis
@@ -90,7 +89,7 @@ class CacheRecommendation:
     recommended_value: Any = None
     estimated_improvement: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -106,10 +105,10 @@ class CacheAnalyticsEngine:
 
     def __init__(
         self,
-        redis_cache: Optional[RedisCacheService] = None,
-        smart_cache: Optional[SmartCacheManager] = None,
-        warming_service: Optional[CacheWarmingService] = None,
-        monitoring_service: Optional[RedisMonitoringService] = None
+        redis_cache: RedisCacheService | None = None,
+        smart_cache: SmartCacheManager | None = None,
+        warming_service: CacheWarmingService | None = None,
+        monitoring_service: RedisMonitoringService | None = None
     ):
         """Initialize cache analytics engine."""
         self.redis_cache = redis_cache
@@ -119,7 +118,7 @@ class CacheAnalyticsEngine:
 
         # Historical data storage
         self.historical_metrics: deque = deque(maxlen=10000)
-        self.key_access_history: Dict[str, List[Tuple[datetime, bool]]] = defaultdict(list)
+        self.key_access_history: dict[str, list[tuple[datetime, bool]]] = defaultdict(list)
         self.response_times: deque = deque(maxlen=5000)
 
         # Analysis configuration
@@ -212,7 +211,7 @@ class CacheAnalyticsEngine:
             metrics.p99_response_time_ms = np.percentile(times, 99)
             metrics.avg_response_time_ms = np.mean(times)
 
-    def _analyze_key_patterns(self) -> Dict[str, int]:
+    def _analyze_key_patterns(self) -> dict[str, int]:
         """Analyze cache key patterns."""
         patterns = defaultdict(int)
 
@@ -232,7 +231,7 @@ class CacheAnalyticsEngine:
 
         return dict(patterns)
 
-    def _get_top_patterns(self) -> Dict[str, int]:
+    def _get_top_patterns(self) -> dict[str, int]:
         """Get top accessed key patterns."""
         pattern_access = defaultdict(int)
 
@@ -254,7 +253,7 @@ class CacheAnalyticsEngine:
         sorted_patterns = sorted(pattern_access.items(), key=lambda x: x[1], reverse=True)
         return dict(sorted_patterns[:10])
 
-    def _calculate_hourly_hit_rates(self) -> Dict[int, float]:
+    def _calculate_hourly_hit_rates(self) -> dict[int, float]:
         """Calculate hit rates by hour of day."""
         hourly_data = defaultdict(lambda: {"hits": 0, "total": 0})
 
@@ -276,7 +275,7 @@ class CacheAnalyticsEngine:
 
         return hit_rates
 
-    def _calculate_daily_patterns(self) -> Dict[str, float]:
+    def _calculate_daily_patterns(self) -> dict[str, float]:
         """Calculate daily access patterns."""
         daily_data = defaultdict(lambda: {"hits": 0, "total": 0})
 
@@ -325,7 +324,7 @@ class CacheAnalyticsEngine:
     # Analysis and Recommendations
     # ========================================================================
 
-    async def analyze_performance(self) -> List[CacheRecommendation]:
+    async def analyze_performance(self) -> list[CacheRecommendation]:
         """Analyze cache performance and generate recommendations."""
         recommendations = []
 
@@ -410,7 +409,7 @@ class CacheAnalyticsEngine:
 
     async def _analyze_key_patterns_for_recommendations(
         self,
-        recommendations: List[CacheRecommendation],
+        recommendations: list[CacheRecommendation],
         metrics: CacheAnalyticsMetrics
     ):
         """Analyze key patterns and add relevant recommendations."""
@@ -427,7 +426,7 @@ class CacheAnalyticsEngine:
                 category="strategy",
                 priority="medium",
                 title="High Key Pattern Concentration",
-                description=f"70%+ of keys follow a single pattern. Consider pattern-specific optimization.",
+                description="70%+ of keys follow a single pattern. Consider pattern-specific optimization.",
                 impact="medium",
                 effort="medium",
                 current_value=f"{concentration_ratio:.1%} concentration",
@@ -452,7 +451,7 @@ class CacheAnalyticsEngine:
 
     async def _analyze_temporal_patterns_for_recommendations(
         self,
-        recommendations: List[CacheRecommendation],
+        recommendations: list[CacheRecommendation],
         metrics: CacheAnalyticsMetrics
     ):
         """Analyze temporal access patterns for recommendations."""
@@ -482,7 +481,7 @@ class CacheAnalyticsEngine:
     # Reporting and Visualization
     # ========================================================================
 
-    async def generate_comprehensive_report(self, output_file: Optional[str] = None) -> Dict[str, Any]:
+    async def generate_comprehensive_report(self, output_file: str | None = None) -> dict[str, Any]:
         """Generate comprehensive cache analytics report."""
         # Collect current metrics
         current_metrics = await self.collect_current_metrics()
@@ -518,8 +517,8 @@ class CacheAnalyticsEngine:
     def _generate_executive_summary(
         self,
         metrics: CacheAnalyticsMetrics,
-        recommendations: List[CacheRecommendation]
-    ) -> Dict[str, Any]:
+        recommendations: list[CacheRecommendation]
+    ) -> dict[str, Any]:
         """Generate executive summary."""
         # Categorize recommendations by priority
         critical_recs = [r for r in recommendations if r.priority == "critical"]
@@ -551,7 +550,7 @@ class CacheAnalyticsEngine:
             ]
         }
 
-    async def _analyze_performance_trends(self) -> Dict[str, Any]:
+    async def _analyze_performance_trends(self) -> dict[str, Any]:
         """Analyze performance trends over time."""
         if len(self.historical_metrics) < 2:
             return {"message": "Insufficient historical data for trend analysis"}
@@ -583,7 +582,7 @@ class CacheAnalyticsEngine:
 
         return trends
 
-    async def _analyze_key_distribution(self) -> Dict[str, Any]:
+    async def _analyze_key_distribution(self) -> dict[str, Any]:
         """Analyze cache key distribution."""
         if not self.smart_cache:
             return {"message": "Smart cache not available for key analysis"}
@@ -633,7 +632,7 @@ class CacheAnalyticsEngine:
             ]
         }
 
-    async def _analyze_temporal_patterns(self) -> Dict[str, Any]:
+    async def _analyze_temporal_patterns(self) -> dict[str, Any]:
         """Analyze temporal access patterns."""
         if not self.key_access_history:
             return {"message": "No access history available"}
@@ -656,7 +655,7 @@ class CacheAnalyticsEngine:
             }
         }
 
-    async def _analyze_cost_impact(self, metrics: CacheAnalyticsMetrics) -> Dict[str, Any]:
+    async def _analyze_cost_impact(self, metrics: CacheAnalyticsMetrics) -> dict[str, Any]:
         """Analyze cost impact of caching."""
         # Calculate various cost metrics
         daily_cost_savings = metrics.estimated_cost_savings_usd
@@ -677,7 +676,7 @@ class CacheAnalyticsEngine:
             "estimated_infrastructure_cost": f"${estimated_cache_infrastructure_cost_monthly:.2f}/month"
         }
 
-    async def _review_configuration(self) -> Dict[str, Any]:
+    async def _review_configuration(self) -> dict[str, Any]:
         """Review current cache configuration."""
         config_review = {
             "redis_configuration": {},
@@ -718,7 +717,7 @@ class CacheAnalyticsEngine:
 
         return config_review
 
-    def _generate_next_steps(self, recommendations: List[CacheRecommendation]) -> List[str]:
+    def _generate_next_steps(self, recommendations: list[CacheRecommendation]) -> list[str]:
         """Generate actionable next steps."""
         next_steps = []
 
@@ -843,7 +842,10 @@ async def main():
         # Create Redis cache service (if available)
         redis_cache = None
         try:
-            from backend.services.redis_cache_service import RedisCacheService, RedisConfig
+            from backend.services.redis_cache_service import (
+                RedisCacheService,
+                RedisConfig,
+            )
 
             redis_config = RedisConfig()
             redis_config.host = args.redis_host
@@ -877,7 +879,7 @@ async def main():
                 print()
 
         if args.report:
-            print(f"Generating comprehensive report...")
+            print("Generating comprehensive report...")
             report = await analytics.generate_comprehensive_report(args.report)
             print(f"Report generated: {args.report}")
 
@@ -888,7 +890,7 @@ async def main():
             print(f"Monthly Savings: {summary['estimated_monthly_savings']}")
 
         if args.dashboard:
-            print(f"Creating performance dashboard...")
+            print("Creating performance dashboard...")
             dashboard_file = await analytics.create_performance_dashboard(args.dashboard)
             if dashboard_file:
                 print(f"Dashboard created: {dashboard_file}")

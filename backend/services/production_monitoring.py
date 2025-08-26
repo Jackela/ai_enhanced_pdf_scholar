@@ -7,18 +7,19 @@ production-ready metrics collection, alerting, and health monitoring.
 import asyncio
 import logging
 import time
-import psutil
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable, Union
 from enum import Enum
-from pathlib import Path
+from typing import Any
 
-from .metrics_service import MetricsService
-from .alert_service import AlertingService
+import psutil
+
 from ..config.production import ProductionConfig
-from ..config.secrets_integration import ProductionSecretsIntegration
 from ..config.redis_cluster import RedisClusterManager
+from ..config.secrets_integration import ProductionSecretsIntegration
 from ..database.production_config import ProductionDatabaseManager
+from .alert_service import AlertingService
+from .metrics_service import MetricsService
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +52,9 @@ class SystemMetrics:
     disk_available_gb: float
     network_bytes_sent: int
     network_bytes_received: int
-    load_average_1m: Optional[float] = None
-    load_average_5m: Optional[float] = None
-    load_average_15m: Optional[float] = None
+    load_average_1m: float | None = None
+    load_average_5m: float | None = None
+    load_average_15m: float | None = None
     timestamp: float = field(default_factory=time.time)
 
 
@@ -81,8 +82,8 @@ class HealthCheck:
     interval_seconds: int
     timeout_seconds: int
     critical: bool = False
-    dependencies: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    dependencies: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -93,8 +94,8 @@ class HealthCheckResult:
     message: str
     duration_seconds: float
     timestamp: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
 
 
 class ProductionMonitoringService:
@@ -105,12 +106,12 @@ class ProductionMonitoringService:
 
     def __init__(
         self,
-        production_config: Optional[ProductionConfig] = None,
-        metrics_service: Optional[MetricsService] = None,
-        alerting_service: Optional[AlertingService] = None,
-        secrets_integration: Optional[ProductionSecretsIntegration] = None,
-        database_manager: Optional[ProductionDatabaseManager] = None,
-        redis_manager: Optional[RedisClusterManager] = None
+        production_config: ProductionConfig | None = None,
+        metrics_service: MetricsService | None = None,
+        alerting_service: AlertingService | None = None,
+        secrets_integration: ProductionSecretsIntegration | None = None,
+        database_manager: ProductionDatabaseManager | None = None,
+        redis_manager: RedisClusterManager | None = None
     ):
         """Initialize production monitoring service."""
         self.production_config = production_config
@@ -124,26 +125,26 @@ class ProductionMonitoringService:
         self.monitoring_config = self._get_monitoring_config()
 
         # Health checks registry
-        self.health_checks: Dict[str, HealthCheck] = {}
-        self.health_results: Dict[str, HealthCheckResult] = {}
+        self.health_checks: dict[str, HealthCheck] = {}
+        self.health_results: dict[str, HealthCheckResult] = {}
 
         # Metrics collection
-        self.system_metrics_history: List[SystemMetrics] = []
-        self.app_metrics_history: List[ApplicationMetrics] = []
+        self.system_metrics_history: list[SystemMetrics] = []
+        self.app_metrics_history: list[ApplicationMetrics] = []
         self.max_history_size = 1440  # 24 hours of minute-by-minute data
 
         # Alert thresholds
         self.alert_thresholds = self._get_alert_thresholds()
 
         # Background tasks
-        self._monitoring_tasks: List[asyncio.Task] = []
+        self._monitoring_tasks: list[asyncio.Task] = []
 
         # Initialize default health checks
         self._register_default_health_checks()
 
         logger.info("Production monitoring service initialized")
 
-    def _get_monitoring_config(self) -> Dict[str, Any]:
+    def _get_monitoring_config(self) -> dict[str, Any]:
         """Get monitoring configuration from production config."""
         if self.production_config:
             return self.production_config.get_monitoring_config()
@@ -156,7 +157,7 @@ class ProductionMonitoringService:
             "tracing": {"enabled": True, "sample_rate": 0.1}
         }
 
-    def _get_alert_thresholds(self) -> Dict[str, Dict[str, float]]:
+    def _get_alert_thresholds(self) -> dict[str, dict[str, float]]:
         """Get alert thresholds from configuration."""
         if self.production_config:
             return self.production_config.monitoring.alert_thresholds
@@ -242,8 +243,8 @@ class ProductionMonitoringService:
         interval_seconds: int,
         timeout_seconds: int,
         critical: bool = False,
-        dependencies: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        dependencies: list[str] | None = None,
+        metadata: dict[str, Any] | None = None
     ):
         """Register a new health check."""
         health_check = HealthCheck(
@@ -824,7 +825,7 @@ class ProductionMonitoringService:
         name: str,
         severity: AlertSeverity,
         message: str,
-        metrics: Optional[Dict[str, Any]] = None
+        metrics: dict[str, Any] | None = None
     ):
         """Trigger an alert through the alerting service."""
         try:
@@ -888,7 +889,7 @@ class ProductionMonitoringService:
                 logger.error(f"Error cleaning up metrics: {e}")
                 await asyncio.sleep(3600)
 
-    def get_overall_health(self) -> Dict[str, Any]:
+    def get_overall_health(self) -> dict[str, Any]:
         """Get overall system health status."""
         overall_status = HealthStatus.HEALTHY
         critical_issues = []
@@ -923,7 +924,7 @@ class ProductionMonitoringService:
             "metrics_summary": self._get_metrics_summary()
         }
 
-    def _get_metrics_summary(self) -> Dict[str, Any]:
+    def _get_metrics_summary(self) -> dict[str, Any]:
         """Get summary of recent metrics."""
         summary = {}
 
@@ -949,12 +950,12 @@ class ProductionMonitoringService:
 
 
 def create_production_monitoring_service(
-    production_config: Optional[ProductionConfig] = None,
-    metrics_service: Optional[MetricsService] = None,
-    alerting_service: Optional[AlertingService] = None,
-    secrets_integration: Optional[ProductionSecretsIntegration] = None,
-    database_manager: Optional[ProductionDatabaseManager] = None,
-    redis_manager: Optional[RedisClusterManager] = None
+    production_config: ProductionConfig | None = None,
+    metrics_service: MetricsService | None = None,
+    alerting_service: AlertingService | None = None,
+    secrets_integration: ProductionSecretsIntegration | None = None,
+    database_manager: ProductionDatabaseManager | None = None,
+    redis_manager: RedisClusterManager | None = None
 ) -> ProductionMonitoringService:
     """Create production monitoring service with all integrations."""
     return ProductionMonitoringService(

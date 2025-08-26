@@ -10,25 +10,21 @@ Monitors system resources during load tests:
 """
 
 import asyncio
-import psutil
-import tracemalloc
 import gc
+import sqlite3
+import threading
 import time
-import pytest
-import aiohttp
-from typing import Dict, List, Any, Optional, Tuple
+import tracemalloc
+import weakref
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-import threading
-import weakref
-import sys
-import os
-from pathlib import Path
-import sqlite3
-import json
+from typing import Any
+
+import aiohttp
+import psutil
+import pytest
 
 from .base_performance import PerformanceTestBase
-from .metrics_collector import MetricsCollector
 
 
 @dataclass
@@ -50,7 +46,7 @@ class ResourceSnapshot:
 
     # Python-specific metrics
     gc_objects: int
-    gc_collections: Dict[int, int]
+    gc_collections: dict[int, int]
     tracemalloc_current_mb: float
     tracemalloc_peak_mb: float
 
@@ -61,8 +57,8 @@ class MemoryLeakDetector:
     baseline_memory_mb: float = 0.0
     growth_threshold_mb: float = 100.0
     growth_rate_threshold: float = 0.1  # 10% growth per minute
-    samples: List[float] = field(default_factory=list)
-    timestamps: List[datetime] = field(default_factory=list)
+    samples: list[float] = field(default_factory=list)
+    timestamps: list[datetime] = field(default_factory=list)
 
     def add_sample(self, memory_mb: float):
         """Add memory sample"""
@@ -74,7 +70,7 @@ class MemoryLeakDetector:
             self.samples.pop(0)
             self.timestamps.pop(0)
 
-    def detect_leak(self) -> Tuple[bool, str]:
+    def detect_leak(self) -> tuple[bool, str]:
         """Detect if there's a memory leak"""
         if len(self.samples) < 10:
             return False, "Not enough samples"
@@ -126,9 +122,9 @@ class ResourceMonitor:
     def __init__(self, interval_seconds: float = 1.0):
         self.interval = interval_seconds
         self.process = psutil.Process()
-        self.snapshots: List[ResourceSnapshot] = []
+        self.snapshots: list[ResourceSnapshot] = []
         self.monitoring = False
-        self.monitor_thread: Optional[threading.Thread] = None
+        self.monitor_thread: threading.Thread | None = None
         self.leak_detector = MemoryLeakDetector()
 
         # Initialize counters
@@ -244,7 +240,7 @@ class ResourceMonitor:
             tracemalloc_peak_mb=tracemalloc_peak_mb
         )
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary of resource usage"""
         if not self.snapshots:
             return {}
@@ -302,9 +298,9 @@ class DatabaseConnectionMonitor:
 
     def __init__(self, db_path: str = "scholar.db"):
         self.db_path = db_path
-        self.samples: List[Dict[str, Any]] = []
+        self.samples: list[dict[str, Any]] = []
 
-    def check_connections(self) -> Dict[str, Any]:
+    def check_connections(self) -> dict[str, Any]:
         """Check current database connections"""
         try:
             conn = sqlite3.connect(self.db_path)
@@ -347,7 +343,7 @@ class DatabaseConnectionMonitor:
 
         return self.get_pool_summary()
 
-    def get_pool_summary(self) -> Dict[str, Any]:
+    def get_pool_summary(self) -> dict[str, Any]:
         """Get summary of connection pool usage"""
         if not self.samples:
             return {}
@@ -465,11 +461,11 @@ class ResourceTestSuite(PerformanceTestBase):
 
         # Check for leak
         if summary["memory"]["leak_detected"]:
-            print(f"  WARNING: Potential memory leak detected!")
+            print("  WARNING: Potential memory leak detected!")
             print(f"  Reason: {summary['memory']['leak_reason']}")
             print(f"  Memory growth: {summary['memory']['growth_mb']:.2f}MB")
         else:
-            print(f"  No memory leak detected")
+            print("  No memory leak detected")
             print(f"  Memory growth: {summary['memory']['growth_mb']:.2f}MB")
 
         return summary
@@ -643,7 +639,7 @@ class ResourceTestSuite(PerformanceTestBase):
 
         return results
 
-    def _generate_resource_report(self, results: Dict[str, Any]):
+    def _generate_resource_report(self, results: dict[str, Any]):
         """Generate resource test report"""
         print("\n" + "=" * 80)
         print("RESOURCE TEST SUMMARY")
@@ -652,7 +648,7 @@ class ResourceTestSuite(PerformanceTestBase):
         # Memory results
         if "memory_load" in results:
             mem = results["memory_load"]["memory"]
-            print(f"\nMemory Usage:")
+            print("\nMemory Usage:")
             print(f"  Initial: {mem['initial_mb']:.2f}MB")
             print(f"  Final: {mem['final_mb']:.2f}MB")
             print(f"  Peak: {mem['peak_mb']:.2f}MB")
@@ -662,7 +658,7 @@ class ResourceTestSuite(PerformanceTestBase):
 
         # CPU results
         if "cpu_patterns" in results:
-            print(f"\nCPU Usage Patterns:")
+            print("\nCPU Usage Patterns:")
             for pattern, stats in results["cpu_patterns"].items():
                 print(f"  {pattern.capitalize()}:")
                 print(f"    Average: {stats['avg_cpu']:.1f}%")
@@ -671,14 +667,14 @@ class ResourceTestSuite(PerformanceTestBase):
         # Database results
         if "database" in results:
             db = results["database"]
-            print(f"\nDatabase:")
+            print("\nDatabase:")
             print(f"  Growth: {db.get('database_growth_mb', 0):.2f}MB")
             print(f"  Max Pages: {db.get('max_page_count', 0)}")
 
         # Resource cleanup
         if "resource_cleanup" in results:
             cleanup = results["resource_cleanup"]
-            print(f"\nResource Cleanup:")
+            print("\nResource Cleanup:")
             print(f"  Cleanup Rate: {cleanup['cleanup_rate']:.1f}%")
 
         print("\n" + "=" * 80)

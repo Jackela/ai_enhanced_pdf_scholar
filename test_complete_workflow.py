@@ -6,19 +6,19 @@ Tests the entire pipeline from document upload to RAG queries.
 """
 
 import asyncio
-import aiohttp
-import json
 import sys
-import time
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
+
+import aiohttp
+
 
 class WorkflowTester:
     """Test the complete AI Enhanced PDF Scholar workflow."""
 
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
 
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
@@ -62,7 +62,7 @@ class WorkflowTester:
             print(f"❌ Settings test error: {e}")
             return False
 
-    async def test_library_operations(self) -> Optional[int]:
+    async def test_library_operations(self) -> int | None:
         """Test document library operations."""
         try:
             # Test list documents
@@ -87,7 +87,7 @@ class WorkflowTester:
             print(f"❌ Library test error: {e}")
             return None
 
-    async def test_document_upload(self) -> Optional[int]:
+    async def test_document_upload(self) -> int | None:
         """Test document upload functionality."""
         try:
             # Check if we have a sample PDF to upload
@@ -143,7 +143,7 @@ class WorkflowTester:
                 if response.status == 200:
                     result = await response.json()
                     answer = result.get('answer', '')
-                    print(f"✅ RAG Query successful")
+                    print("✅ RAG Query successful")
                     print(f"   Query: {query_data['query']}")
                     print(f"   Answer: {answer[:200]}{'...' if len(answer) > 200 else ''}")
                     return True
@@ -173,7 +173,7 @@ class WorkflowTester:
             print(f"❌ Vector operations error: {e}")
             return False
 
-    async def run_complete_test(self) -> Dict[str, Any]:
+    async def run_complete_test(self) -> dict[str, Any]:
         """Run the complete workflow test."""
         print("🚀 Starting AI Enhanced PDF Scholar Complete Workflow Test")
         print("=" * 60)

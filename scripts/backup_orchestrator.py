@@ -11,25 +11,22 @@ import json
 import logging
 import os
 import shutil
-import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 import aiofiles
 import boto3
-import psutil
-from botocore.exceptions import ClientError
 
 # Add backend to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from backend.core.secrets import get_secrets_manager, SecretType
+from backend.core.secrets import get_secrets_manager
 from backend.services.health_check_service import HealthCheckService
 from backend.services.metrics_service import MetricsService
 
@@ -86,9 +83,9 @@ class BackupConfig:
 
     # Storage configuration
     primary_storage: StorageProvider = StorageProvider.LOCAL
-    secondary_storage: Optional[StorageProvider] = StorageProvider.AWS_S3
+    secondary_storage: StorageProvider | None = StorageProvider.AWS_S3
     backup_base_path: str = "/var/backups/ai_pdf_scholar"
-    s3_bucket: Optional[str] = None
+    s3_bucket: str | None = None
     s3_region: str = "us-east-1"
 
     # Compression and encryption
@@ -123,8 +120,8 @@ class BackupMetadata:
     status: BackupStatus
     compression_ratio: float = 0.0
     verification_status: bool = False
-    tags: Dict[str, str] = field(default_factory=dict)
-    error_message: Optional[str] = None
+    tags: dict[str, str] = field(default_factory=dict)
+    error_message: str | None = None
 
 
 class BackupSource:
@@ -134,10 +131,10 @@ class BackupSource:
         self.name = name
         self.tier = tier
         self.source_path = source_path
-        self.last_backup: Optional[datetime] = None
+        self.last_backup: datetime | None = None
         self.last_backup_size: int = 0
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> Tuple[bool, Optional[str]]:
+    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
         """Create a backup of this source. Returns (success, error_message)."""
         raise NotImplementedError
 
@@ -171,7 +168,7 @@ class PostgreSQLBackupSource(BackupSource):
         self.username = parsed.username
         self.password = parsed.password
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> Tuple[bool, Optional[str]]:
+    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
         """Create PostgreSQL backup using pg_dump."""
         try:
             # Prepare environment
@@ -259,7 +256,7 @@ class RedisBackupSource(BackupSource):
         self.password = parsed.password
         self.database = int(parsed.path.lstrip('/')) if parsed.path.lstrip('/') else 0
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> Tuple[bool, Optional[str]]:
+    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
         """Create Redis backup using BGSAVE or RDB copy."""
         try:
             import redis
@@ -337,11 +334,11 @@ class RedisBackupSource(BackupSource):
 class FileSystemBackupSource(BackupSource):
     """File system backup source."""
 
-    def __init__(self, name: str, tier: BackupTier, source_path: str, exclude_patterns: Optional[List[str]] = None):
+    def __init__(self, name: str, tier: BackupTier, source_path: str, exclude_patterns: list[str] | None = None):
         super().__init__(name, tier, source_path)
         self.exclude_patterns = exclude_patterns or []
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> Tuple[bool, Optional[str]]:
+    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
         """Create file system backup using tar with compression."""
         try:
             # Ensure source path exists
@@ -459,7 +456,7 @@ class S3StorageProvider:
             logger.error(f"S3 download failed: {e}")
             return False
 
-    async def list_backups(self, prefix_filter: str = "") -> List[str]:
+    async def list_backups(self, prefix_filter: str = "") -> list[str]:
         """List backups in S3."""
         try:
             full_prefix = f"{self.prefix}/{prefix_filter}".strip('/')
@@ -499,12 +496,12 @@ class S3StorageProvider:
 class BackupOrchestrator:
     """Main backup orchestration system."""
 
-    def __init__(self, config: Optional[BackupConfig] = None):
+    def __init__(self, config: BackupConfig | None = None):
         """Initialize backup orchestrator."""
         self.config = config or BackupConfig()
-        self.sources: List[BackupSource] = []
-        self.storage_providers: Dict[StorageProvider, Any] = {}
-        self.backup_metadata: Dict[str, BackupMetadata] = {}
+        self.sources: list[BackupSource] = []
+        self.storage_providers: dict[StorageProvider, Any] = {}
+        self.backup_metadata: dict[str, BackupMetadata] = {}
         self.running = False
         self.backup_semaphore = asyncio.Semaphore(self.config.max_concurrent_backups)
 
@@ -547,7 +544,7 @@ class BackupOrchestrator:
                 s3_provider = S3StorageProvider(
                     bucket=self.config.s3_bucket,
                     region=self.config.s3_region,
-                    prefix=f"ai_pdf_scholar_backups"
+                    prefix="ai_pdf_scholar_backups"
                 )
                 self.storage_providers[StorageProvider.AWS_S3] = s3_provider
                 logger.info("Initialized S3 storage provider")
@@ -601,7 +598,7 @@ class BackupOrchestrator:
         source: BackupSource,
         backup_type: BackupType = BackupType.FULL,
         retention_type: str = "daily"
-    ) -> Optional[BackupMetadata]:
+    ) -> BackupMetadata | None:
         """Create a backup for a specific source."""
         async with self.backup_semaphore:
             start_time = time.time()
@@ -857,7 +854,7 @@ class BackupOrchestrator:
         logger.info("Stopping backup orchestrator")
         self.running = False
 
-    def get_backup_status(self) -> Dict[str, Any]:
+    def get_backup_status(self) -> dict[str, Any]:
         """Get current backup status."""
         now = datetime.utcnow()
 

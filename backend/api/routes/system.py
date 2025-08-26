@@ -5,38 +5,31 @@ RESTful API endpoints for system status, configuration, and health checks.
 
 import logging
 import os
-import psutil
-import redis
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import psutil
+import redis
+from fastapi import APIRouter, Depends, HTTPException
 
 from backend.api.dependencies import get_api_config, get_db, get_enhanced_rag
+from backend.api.error_handling import SystemException
 from backend.api.models import (
     BaseResponse,
     ConfigurationResponse,
     SystemHealthResponse,
 )
-from backend.services.integrated_performance_monitor import IntegratedPerformanceMonitor
-from backend.services.real_time_metrics_collector import (
-    RealTimeMetricsCollector,
-    MetricType,
-    SystemMetrics,
-    DatabaseMetrics,
-    WebSocketMetrics,
-    APIMetrics,
-    MemoryLeakMetrics
-)
-from backend.api.error_handling import SystemException
 from backend.core.secrets_vault import ProductionSecretsManager
+from backend.services.real_time_metrics_collector import (
+    MetricType,
+    RealTimeMetricsCollector,
+)
 from backend.services.secrets_validation_service import (
-    SecretValidationService,
     ComplianceStandard,
-    ValidationSeverity
+    SecretValidationService,
+    ValidationSeverity,
 )
 from config import Config
 from src.database.connection import DatabaseConnection
@@ -48,7 +41,7 @@ router = APIRouter()
 startup_time = time.time()
 
 # Global metrics collector instance (will be initialized by main app)
-metrics_collector: Optional[RealTimeMetricsCollector] = None
+metrics_collector: RealTimeMetricsCollector | None = None
 
 
 @router.get("/health", response_model=SystemHealthResponse)
@@ -335,7 +328,7 @@ async def get_secrets_health():
 @router.post("/secrets/validate", response_model=BaseResponse)
 async def validate_environment_secrets(
     environment: str = "production",
-    compliance_standards: Optional[list] = None
+    compliance_standards: list | None = None
 ):
     """Validate all secrets in an environment for compliance."""
     try:
@@ -428,7 +421,7 @@ async def rotate_secret(secret_name: str):
 
 
 @router.post("/secrets/backup", response_model=BaseResponse)
-async def backup_secrets(backup_name: Optional[str] = None):
+async def backup_secrets(backup_name: str | None = None):
     """Create encrypted backup of all secrets."""
     try:
         secrets_manager = ProductionSecretsManager()
@@ -936,13 +929,12 @@ async def performance_health_check():
 @router.get("/secrets/audit", response_model=BaseResponse)
 async def get_secrets_audit_log(
     hours: int = 24,
-    operation: Optional[str] = None
+    operation: str | None = None
 ):
     """Get secrets management audit log."""
     try:
         secrets_manager = ProductionSecretsManager()
 
-        from datetime import timedelta
         start_time = time.time() - (hours * 3600)  # Convert hours to seconds
         start_datetime = datetime.fromtimestamp(start_time)
 

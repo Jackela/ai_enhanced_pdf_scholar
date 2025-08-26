@@ -5,21 +5,22 @@ read/write splitting, and monitoring integration.
 """
 
 import logging
-import os
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union, AsyncGenerator
+from typing import Any, Union
 from urllib.parse import urlparse
 
-import asyncpg
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import (
-    create_async_engine, AsyncEngine, AsyncSession, async_sessionmaker
-)
-from sqlalchemy.pool import QueuePool, NullPool
-from sqlalchemy.engine.events import PoolEvents
 from sqlalchemy.dialects.postgresql import asyncpg as asyncpg_dialect
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.pool import QueuePool
 
 from ..config.production import ProductionConfig
 from ..services.metrics_service import MetricsService
@@ -40,7 +41,7 @@ class DatabasePerformanceConfig:
     # Connection management
     connect_timeout: int = 10
     command_timeout: int = 30
-    server_settings: Dict[str, str] = field(default_factory=lambda: {
+    server_settings: dict[str, str] = field(default_factory=lambda: {
         'application_name': 'ai_pdf_scholar_prod',
         'timezone': 'UTC',
         'statement_timeout': '30s',
@@ -56,7 +57,7 @@ class DatabasePerformanceConfig:
 
     # Read/write splitting
     enable_read_write_split: bool = False
-    read_replica_urls: List[str] = field(default_factory=list)
+    read_replica_urls: list[str] = field(default_factory=list)
     read_weight: float = 0.7  # 70% reads go to replicas
 
     # Monitoring
@@ -75,7 +76,7 @@ class DatabaseConnectionStats:
     slow_queries: int = 0
     total_queries: int = 0
     avg_query_time: float = 0.0
-    connection_errors: List[str] = field(default_factory=list)
+    connection_errors: list[str] = field(default_factory=list)
 
 
 class ProductionDatabaseManager:
@@ -87,8 +88,8 @@ class ProductionDatabaseManager:
     def __init__(
         self,
         database_url: str,
-        performance_config: Optional[DatabasePerformanceConfig] = None,
-        metrics_service: Optional[MetricsService] = None
+        performance_config: DatabasePerformanceConfig | None = None,
+        metrics_service: MetricsService | None = None
     ):
         """Initialize production database manager."""
         self.database_url = database_url
@@ -96,16 +97,16 @@ class ProductionDatabaseManager:
         self.metrics_service = metrics_service
 
         # Connection management
-        self.master_engine: Optional[AsyncEngine] = None
-        self.read_engines: List[AsyncEngine] = []
-        self.session_factory: Optional[async_sessionmaker] = None
+        self.master_engine: AsyncEngine | None = None
+        self.read_engines: list[AsyncEngine] = []
+        self.session_factory: async_sessionmaker | None = None
 
         # Statistics and monitoring
         self.connection_stats = DatabaseConnectionStats()
-        self.query_times: List[float] = []
+        self.query_times: list[float] = []
 
         # Connection pools
-        self._connection_pools: Dict[str, Any] = {}
+        self._connection_pools: dict[str, Any] = {}
 
         logger.info("Production database manager initialized")
 
@@ -399,7 +400,7 @@ class ProductionDatabaseManager:
     async def execute_query(
         self,
         query: Union[str, sa.text],
-        parameters: Optional[Dict[str, Any]] = None,
+        parameters: dict[str, Any] | None = None,
         read_only: bool = False
     ) -> Any:
         """
@@ -462,7 +463,7 @@ class ProductionDatabaseManager:
     # Health Monitoring and Statistics
     # ========================================================================
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform comprehensive database health check."""
         health_status = {
             "status": "healthy",
@@ -548,7 +549,7 @@ class ProductionDatabaseManager:
 
         return health_status
 
-    def get_connection_statistics(self) -> Dict[str, Any]:
+    def get_connection_statistics(self) -> dict[str, Any]:
         """Get detailed connection statistics."""
         stats = {
             "total_connections": self.connection_stats.total_connections,
@@ -610,7 +611,7 @@ class ProductionDatabaseManager:
 
 def create_production_database_manager(
     production_config: ProductionConfig,
-    metrics_service: Optional[MetricsService] = None
+    metrics_service: MetricsService | None = None
 ) -> ProductionDatabaseManager:
     """
     Create production database manager with optimized configuration.
@@ -647,7 +648,7 @@ def create_production_database_manager(
 
 async def initialize_production_database(
     production_config: ProductionConfig,
-    metrics_service: Optional[MetricsService] = None
+    metrics_service: MetricsService | None = None
 ) -> ProductionDatabaseManager:
     """
     Initialize production database with full configuration.

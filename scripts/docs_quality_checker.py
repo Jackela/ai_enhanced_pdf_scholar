@@ -13,13 +13,11 @@ import argparse
 import json
 import re
 import statistics
+from collections import Counter
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-from dataclasses import dataclass, asdict
-from collections import defaultdict, Counter
-
-import yaml
+from typing import Any
 
 
 @dataclass
@@ -29,8 +27,8 @@ class QualityMetric:
     score: float  # 0.0 to 1.0
     max_score: float = 1.0
     weight: float = 1.0
-    details: Dict[str, Any] = None
-    issues: List[str] = None
+    details: dict[str, Any] = None
+    issues: list[str] = None
 
     def __post_init__(self):
         if self.details is None:
@@ -61,7 +59,7 @@ class DocumentAnalysis:
     code_example_count: int
     diagram_count: int
     last_modified: str
-    issues: List[str]
+    issues: list[str]
 
     @property
     def overall_score(self) -> float:
@@ -79,13 +77,13 @@ class DocumentAnalysis:
 class QualityReport:
     """Complete quality assessment report."""
     overall_score: float
-    metrics: Dict[str, QualityMetric]
-    documents: List[DocumentAnalysis]
-    summary: Dict[str, Any]
-    recommendations: List[str]
+    metrics: dict[str, QualityMetric]
+    documents: list[DocumentAnalysis]
+    summary: dict[str, Any]
+    recommendations: list[str]
     generated_at: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'overall_score': self.overall_score,
             'metrics': {k: asdict(v) for k, v in self.metrics.items()},
@@ -119,7 +117,7 @@ class DocumentationQualityChecker:
         self.avg_sentence_length_target = 20
         self.avg_word_length_target = 5
 
-        print(f"📊 Documentation Quality Checker initialized")
+        print("📊 Documentation Quality Checker initialized")
         print(f"   Project: {self.project_root}")
         print(f"   Docs Dir: {self.docs_dir}")
 
@@ -189,7 +187,7 @@ class DocumentationQualityChecker:
 
     def analyze_document(self, file_path: Path) -> DocumentAnalysis:
         """Analyze quality metrics for a single document."""
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             content = f.read()
 
         # Extract metadata
@@ -597,7 +595,7 @@ class DocumentationQualityChecker:
 
         return "Untitled Document"
 
-    def calculate_overall_metrics(self, documents: List[DocumentAnalysis]) -> Dict[str, QualityMetric]:
+    def calculate_overall_metrics(self, documents: list[DocumentAnalysis]) -> dict[str, QualityMetric]:
         """Calculate overall quality metrics across all documents."""
         if not documents:
             return {}
@@ -709,7 +707,7 @@ class DocumentationQualityChecker:
         # Weighted combination
         return (words_score * 0.5 + examples_score * 0.3 + diagrams_score * 0.2)
 
-    def score_distribution(self, scores: List[float]) -> Dict[str, int]:
+    def score_distribution(self, scores: list[float]) -> dict[str, int]:
         """Calculate distribution of scores across quality grades."""
         distribution = {'excellent': 0, 'good': 0, 'fair': 0, 'poor': 0}
 
@@ -726,8 +724,8 @@ class DocumentationQualityChecker:
         return distribution
 
     def generate_recommendations(
-        self, documents: List[DocumentAnalysis], metrics: Dict[str, QualityMetric]
-    ) -> List[str]:
+        self, documents: list[DocumentAnalysis], metrics: dict[str, QualityMetric]
+    ) -> list[str]:
         """Generate actionable recommendations for improving documentation quality."""
         recommendations = []
 
@@ -797,8 +795,8 @@ class DocumentationQualityChecker:
         return recommendations[:10]  # Limit to top 10 recommendations
 
     def create_summary(
-        self, documents: List[DocumentAnalysis], metrics: Dict[str, QualityMetric]
-    ) -> Dict[str, Any]:
+        self, documents: list[DocumentAnalysis], metrics: dict[str, QualityMetric]
+    ) -> dict[str, Any]:
         """Create executive summary of quality assessment."""
         total_words = sum(doc.word_count for doc in documents)
         total_issues = sum(len(doc.issues) for doc in documents)
@@ -828,7 +826,7 @@ class DocumentationQualityChecker:
         else:
             return 'Poor'
 
-    def export_report(self, report: QualityReport, format_type: str = 'json', output_path: Optional[Path] = None) -> None:
+    def export_report(self, report: QualityReport, format_type: str = 'json', output_path: Path | None = None) -> None:
         """Export quality report in specified format."""
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -979,7 +977,7 @@ class DocumentationQualityChecker:
 </html>
 """
 
-    def _generate_metric_cards_html(self, metrics: Dict[str, QualityMetric]) -> str:
+    def _generate_metric_cards_html(self, metrics: dict[str, QualityMetric]) -> str:
         """Generate HTML for metric cards."""
         cards = []
         for name, metric in metrics.items():
@@ -995,7 +993,7 @@ class DocumentationQualityChecker:
             """)
         return ''.join(cards)
 
-    def _generate_document_rows_html(self, documents: List[DocumentAnalysis]) -> str:
+    def _generate_document_rows_html(self, documents: list[DocumentAnalysis]) -> str:
         """Generate HTML table rows for documents."""
         rows = []
         for doc in sorted(documents, key=lambda d: d.overall_score, reverse=True):
@@ -1084,7 +1082,7 @@ def main():
         checker.export_report(report, args.format, output_path)
 
         # Print summary to console
-        print(f"\n📊 Quality Assessment Summary:")
+        print("\n📊 Quality Assessment Summary:")
         print(f"   Overall Score: {report.overall_score:.1%} ({checker.get_quality_grade(report.overall_score)})")
         print(f"   Documents: {len(report.documents)}")
         print(f"   Total Issues: {report.summary['total_issues']}")

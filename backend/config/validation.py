@@ -4,10 +4,9 @@ Configuration Validation
 Provides validation utilities for configuration settings across all modules.
 """
 
-import os
-import re
 import logging
-from typing import List, Optional, Dict, Any, Union
+import os
+from typing import Any, Union
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ConfigValidationError(Exception):
     """Exception raised when configuration validation fails."""
 
-    def __init__(self, message: str, field: Optional[str] = None, issues: Optional[List[str]] = None):
+    def __init__(self, message: str, field: str | None = None, issues: list[str] | None = None):
         super().__init__(message)
         self.field = field
         self.issues = issues or []
@@ -26,7 +25,7 @@ class ConfigValidator:
     """Configuration validation utilities."""
 
     @staticmethod
-    def validate_url(url: str, schemes: Optional[List[str]] = None) -> bool:
+    def validate_url(url: str, schemes: list[str] | None = None) -> bool:
         """
         Validate URL format and scheme.
 
@@ -234,7 +233,7 @@ class SecurityValidator:
     """Security-focused configuration validation."""
 
     @staticmethod
-    def validate_production_security(config: Dict[str, Any], environment: str) -> List[str]:
+    def validate_production_security(config: dict[str, Any], environment: str) -> list[str]:
         """
         Validate production security settings.
 
@@ -288,7 +287,7 @@ class SecurityValidator:
         return issues
 
     @staticmethod
-    def validate_secret_management(config: Dict[str, Any]) -> List[str]:
+    def validate_secret_management(config: dict[str, Any]) -> list[str]:
         """
         Validate secret management practices.
 
@@ -306,7 +305,7 @@ class SecurityValidator:
             "private_key", "credential", "auth"
         ]
 
-        def check_dict_for_secrets(d: Dict[str, Any], path: str = "") -> None:
+        def check_dict_for_secrets(d: dict[str, Any], path: str = "") -> None:
             for key, value in d.items():
                 current_path = f"{path}.{key}" if path else key
 

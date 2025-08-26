@@ -4,17 +4,15 @@ Real-time monitoring, alerting, and performance tracking for Redis cluster.
 """
 
 import asyncio
-import json
 import logging
-import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Union
 
-import redis
-from redis import Redis, RedisError
+from redis import Redis
 from redis.cluster import RedisCluster
 
 # Import our services
@@ -59,7 +57,7 @@ class AlertRule:
     enabled: bool = True
 
     # Internal state
-    last_triggered: Optional[datetime] = None
+    last_triggered: datetime | None = None
     triggered_count: int = 0
 
     def check_threshold(self, value: float) -> bool:
@@ -162,7 +160,7 @@ class RedisMetricsSnapshot:
     total_net_output_bytes: int = 0
 
     # Error metrics
-    errorstats: Dict[str, int] = field(default_factory=dict)
+    errorstats: dict[str, int] = field(default_factory=dict)
 
     def calculate_derived_metrics(self):
         """Calculate derived metrics from raw data."""
@@ -179,7 +177,7 @@ class RedisMetricsSnapshot:
         self.uptime_in_days = self.uptime_in_seconds // 86400
 
     @classmethod
-    def from_redis_info(cls, info_dict: Dict[str, Any], node_id: str = "default") -> 'RedisMetricsSnapshot':
+    def from_redis_info(cls, info_dict: dict[str, Any], node_id: str = "default") -> 'RedisMetricsSnapshot':
         """Create metrics snapshot from Redis INFO output."""
         snapshot = cls(node_id=node_id)
 
@@ -274,9 +272,9 @@ class RedisMonitoringService:
 
     def __init__(
         self,
-        cluster_manager: Optional[RedisClusterManager] = None,
-        metrics_service: Optional[MetricsService] = None,
-        alert_handlers: Optional[List[Callable[[str, AlertSeverity, str], None]]] = None
+        cluster_manager: RedisClusterManager | None = None,
+        metrics_service: MetricsService | None = None,
+        alert_handlers: list[Callable[[str, AlertSeverity, str], None]] | None = None
     ):
         """Initialize Redis monitoring service."""
         self.cluster_manager = cluster_manager
@@ -285,19 +283,19 @@ class RedisMonitoringService:
 
         # Monitoring state
         self.is_monitoring = False
-        self.monitoring_task: Optional[asyncio.Task] = None
+        self.monitoring_task: asyncio.Task | None = None
         self.monitoring_interval = 30.0  # seconds
 
         # Metrics storage (ring buffers for efficiency)
-        self.metrics_history: Dict[str, deque] = {}
+        self.metrics_history: dict[str, deque] = {}
         self.max_history_size = 1000  # Keep last 1000 data points
 
         # Alert rules
-        self.alert_rules: List[AlertRule] = []
+        self.alert_rules: list[AlertRule] = []
         self._load_default_alert_rules()
 
         # Performance baselines
-        self.baselines: Dict[str, Dict[str, float]] = {}
+        self.baselines: dict[str, dict[str, float]] = {}
         self.baseline_window_hours = 24
 
         logger.info("Redis Monitoring Service initialized")
@@ -663,7 +661,7 @@ class RedisMonitoringService:
         # This could export to time-series databases, monitoring systems, etc.
         pass
 
-    def get_current_metrics(self, node_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_current_metrics(self, node_id: str | None = None) -> dict[str, Any]:
         """Get current metrics for a node or all nodes."""
         if node_id:
             history = self.metrics_history.get(node_id)
@@ -692,7 +690,7 @@ class RedisMonitoringService:
         self,
         node_id: str,
         hours: int = 1
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get metrics history for a node."""
         history = self.metrics_history.get(node_id)
         if not history:
@@ -709,7 +707,7 @@ class RedisMonitoringService:
             if snapshot.timestamp > cutoff_time
         ]
 
-    def get_performance_summary(self) -> Dict[str, Any]:
+    def get_performance_summary(self) -> dict[str, Any]:
         """Get performance summary across all nodes."""
         summary = {
             "total_nodes": len(self.metrics_history),
@@ -760,7 +758,7 @@ class RedisMonitoringService:
 
         return summary
 
-    def get_alert_status(self) -> Dict[str, Any]:
+    def get_alert_status(self) -> dict[str, Any]:
         """Get current alert status."""
         return {
             "total_rules": len(self.alert_rules),

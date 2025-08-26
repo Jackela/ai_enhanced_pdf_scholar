@@ -3,18 +3,18 @@ Simplified Citation Integration Tests
 Core integration testing focused on essential workflows.
 """
 
-import pytest
-import tempfile
 import os
-from typing import Any
+import tempfile
 
-from src.database.connection import DatabaseConnection
+import pytest
+
 from src.database import DatabaseMigrator
-from src.database.models import DocumentModel, CitationModel
-from src.repositories.citation_repository import CitationRepository
+from src.database.connection import DatabaseConnection
+from src.database.models import CitationModel
 from src.repositories.citation_relation_repository import CitationRelationRepository
-from src.services.citation_service import CitationService
+from src.repositories.citation_repository import CitationRepository
 from src.services.citation_parsing_service import CitationParsingService
+from src.services.citation_service import CitationService
 
 
 class TestSimpleCitationIntegration:

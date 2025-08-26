@@ -2,18 +2,18 @@
 """
 Performance test script for CI/CD pipeline
 """
+import os
 import sys
 import tempfile
-import os
 import time
 
 # Add src to path
 sys.path.insert(0, '.')
 
 from src.database.connection import DatabaseConnection
+from src.database.models import DocumentModel
 from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
 from src.repositories.document_repository import DocumentRepository
-from src.database.models import DocumentModel
 
 
 def run_performance_test():

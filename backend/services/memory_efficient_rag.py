@@ -4,16 +4,17 @@ Optimized RAG processing with streaming, chunking, and memory management.
 """
 
 import asyncio
-import logging
 import gc
-import psutil
-from typing import AsyncGenerator, Dict, Any, Optional, List, Callable
-from datetime import datetime
+import logging
 import weakref
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator
+from datetime import datetime
+from typing import Any
 
-from backend.services.async_task_manager import MemoryMonitor, TaskCategory, TaskPriority
-from backend.api.websocket_manager import WebSocketManager, RAGProgressType
+from backend.api.websocket_manager import RAGProgressType, WebSocketManager
+from backend.services.async_task_manager import (
+    MemoryMonitor,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +250,7 @@ class MemoryOptimizedRAGProcessor:
         progress_type: RAGProgressType,
         percentage: float,
         message: str,
-        stage_data: Optional[Dict[str, Any]] = None
+        stage_data: dict[str, Any] | None = None
     ):
         """Send progress update with memory stats."""
 
@@ -269,7 +270,7 @@ class MemoryOptimizedRAGProcessor:
         """Get number of active processors."""
         return len(self._active_processors)
 
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get comprehensive memory statistics."""
         system_stats = self.memory_monitor.get_memory_stats()
 

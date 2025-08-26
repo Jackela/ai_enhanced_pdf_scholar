@@ -3,14 +3,16 @@ Cache Service Integration
 Integration service that connects the multi-layer cache system with the application.
 """
 
-import asyncio
 import logging
 from contextlib import asynccontextmanager
-from typing import Optional, Dict, Any
+from typing import Any
 
 # Import configuration and services
 from ..config.application_config import ApplicationConfig, get_application_config
-from .integrated_cache_manager import IntegratedCacheManager, create_integrated_cache_manager
+from .integrated_cache_manager import (
+    IntegratedCacheManager,
+    create_integrated_cache_manager,
+)
 from .metrics_service import ApplicationMetrics
 
 logger = logging.getLogger(__name__)
@@ -27,13 +29,13 @@ class CacheServiceIntegration:
 
     def __init__(
         self,
-        app_config: Optional[ApplicationConfig] = None,
-        metrics: Optional[ApplicationMetrics] = None
+        app_config: ApplicationConfig | None = None,
+        metrics: ApplicationMetrics | None = None
     ):
         """Initialize cache service integration."""
         self.app_config = app_config or get_application_config()
         self.metrics = metrics
-        self.cache_manager: Optional[IntegratedCacheManager] = None
+        self.cache_manager: IntegratedCacheManager | None = None
         self._initialized = False
 
         logger.info("Cache Service Integration initialized")
@@ -91,7 +93,7 @@ class CacheServiceIntegration:
         logger.info(f"  Coherency Protocol: {config_dict.get('coherency', {}).get('protocol', 'none')}")
         logger.info(f"  Performance Monitoring: {config_dict.get('performance_monitoring', False)}")
 
-    async def get_cache_manager(self) -> Optional[IntegratedCacheManager]:
+    async def get_cache_manager(self) -> IntegratedCacheManager | None:
         """Get the integrated cache manager, initializing if needed."""
         if not self._initialized:
             initialized = await self.initialize()
@@ -122,7 +124,7 @@ class CacheServiceIntegration:
         result = await cache_manager.get(key, default)
         return result.value if result.success else default
 
-    async def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> bool:
         """Set value in cache."""
         cache_manager = await self.get_cache_manager()
         if not cache_manager:
@@ -140,7 +142,7 @@ class CacheServiceIntegration:
         result = await cache_manager.delete(key)
         return result.success
 
-    async def mget(self, keys: list) -> Dict[str, Any]:
+    async def mget(self, keys: list) -> dict[str, Any]:
         """Get multiple keys from cache."""
         cache_manager = await self.get_cache_manager()
         if not cache_manager:
@@ -149,7 +151,7 @@ class CacheServiceIntegration:
         results = await cache_manager.mget(keys)
         return {k: r.value for k, r in results.items() if r.success}
 
-    async def mset(self, data: Dict[str, Any], ttl_seconds: Optional[int] = None) -> bool:
+    async def mset(self, data: dict[str, Any], ttl_seconds: int | None = None) -> bool:
         """Set multiple keys in cache."""
         cache_manager = await self.get_cache_manager()
         if not cache_manager:
@@ -166,7 +168,7 @@ class CacheServiceIntegration:
 
         return await cache_manager.invalidate_pattern(pattern)
 
-    async def warm_cache(self, keys_and_values: Dict[str, Any]) -> int:
+    async def warm_cache(self, keys_and_values: dict[str, Any]) -> int:
         """Warm cache with provided data."""
         cache_manager = await self.get_cache_manager()
         if not cache_manager:
@@ -178,14 +180,14 @@ class CacheServiceIntegration:
     # Monitoring and Health
     # ========================================================================
 
-    def get_statistics(self) -> Optional[Dict[str, Any]]:
+    def get_statistics(self) -> dict[str, Any] | None:
         """Get cache statistics."""
         if not self.cache_manager:
             return None
 
         return self.cache_manager.get_statistics().to_dict()
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         """Get cache health status."""
         if not self.cache_manager:
             return {
@@ -214,14 +216,14 @@ class CacheServiceIntegration:
 # ============================================================================
 
 # Global cache service instance
-_cache_service: Optional[CacheServiceIntegration] = None
+_cache_service: CacheServiceIntegration | None = None
 
 
 async def get_cache_service(
-    app_config: Optional[ApplicationConfig] = None,
-    metrics: Optional[ApplicationMetrics] = None,
+    app_config: ApplicationConfig | None = None,
+    metrics: ApplicationMetrics | None = None,
     force_recreate: bool = False
-) -> Optional[CacheServiceIntegration]:
+) -> CacheServiceIntegration | None:
     """
     Get the global cache service instance.
 
@@ -271,8 +273,8 @@ async def shutdown_cache_service():
 
 @asynccontextmanager
 async def cache_service_context(
-    app_config: Optional[ApplicationConfig] = None,
-    metrics: Optional[ApplicationMetrics] = None
+    app_config: ApplicationConfig | None = None,
+    metrics: ApplicationMetrics | None = None
 ):
     """
     Async context manager for cache service.
@@ -319,7 +321,7 @@ def create_cache_dependency():
             await cache.set("data_key", data, ttl_seconds=3600)
             return data
     """
-    async def get_cache_dependency() -> Optional[CacheServiceIntegration]:
+    async def get_cache_dependency() -> CacheServiceIntegration | None:
         return await get_cache_service()
 
     return get_cache_dependency
@@ -407,8 +409,8 @@ def cache_response(
 # ============================================================================
 
 async def initialize_application_cache(
-    app_config: Optional[ApplicationConfig] = None,
-    metrics: Optional[ApplicationMetrics] = None
+    app_config: ApplicationConfig | None = None,
+    metrics: ApplicationMetrics | None = None
 ) -> bool:
     """
     Initialize application-wide cache system.
@@ -444,7 +446,7 @@ async def shutdown_application_cache():
         logger.error(f"Error during cache system shutdown: {e}")
 
 
-async def get_application_cache_status() -> Dict[str, Any]:
+async def get_application_cache_status() -> dict[str, Any]:
     """Get comprehensive application cache status."""
     cache_service = await get_cache_service()
 

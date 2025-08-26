@@ -4,14 +4,14 @@ Enhanced CORS configuration for production deployment with strict validation,
 origin verification, and security hardening.
 """
 
+import ipaddress
 import logging
 import re
-import ipaddress
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Any, Union
-from urllib.parse import urlparse
 import time
+from dataclasses import dataclass, field
 from functools import lru_cache
+from typing import Any
+from urllib.parse import urlparse
 
 from ..config.production import ProductionConfig
 
@@ -37,14 +37,14 @@ class CORSSecurityPolicy:
     block_localhost_in_production: bool = True
 
     # Domain validation
-    allowed_domain_patterns: List[str] = field(default_factory=list)
-    blocked_domain_patterns: List[str] = field(default_factory=list)
+    allowed_domain_patterns: list[str] = field(default_factory=list)
+    blocked_domain_patterns: list[str] = field(default_factory=list)
     require_valid_tld: bool = True
     max_subdomain_depth: int = 3
 
     # Security headers
     enforce_strict_headers: bool = True
-    allowed_custom_headers: Set[str] = field(default_factory=set)
+    allowed_custom_headers: set[str] = field(default_factory=set)
 
     # Rate limiting
     enable_preflight_caching: bool = True
@@ -61,13 +61,13 @@ class ProductionCORSValidator:
     and threat detection for production environments.
     """
 
-    def __init__(self, security_policy: Optional[CORSSecurityPolicy] = None):
+    def __init__(self, security_policy: CORSSecurityPolicy | None = None):
         """Initialize CORS validator."""
         self.security_policy = security_policy or CORSSecurityPolicy()
-        self.validation_rules: List[OriginValidationRule] = []
-        self.blocked_origins: Set[str] = set()
-        self.validation_cache: Dict[str, bool] = {}
-        self.blocked_attempts: Dict[str, List[float]] = {}
+        self.validation_rules: list[OriginValidationRule] = []
+        self.blocked_origins: set[str] = set()
+        self.validation_cache: dict[str, bool] = {}
+        self.blocked_attempts: dict[str, list[float]] = {}
 
         self._initialize_default_rules()
         logger.info("Production CORS validator initialized")
@@ -224,7 +224,7 @@ class ProductionCORSValidator:
             # Not an IP address, continue with domain validation
             return True, "Not an IP address"
 
-    def _check_domain_patterns(self, domain: str, patterns: List[str], allow: bool) -> bool:
+    def _check_domain_patterns(self, domain: str, patterns: list[str], allow: bool) -> bool:
         """Check domain against patterns."""
         for pattern in patterns:
             if re.match(pattern, domain, re.IGNORECASE):
@@ -260,7 +260,7 @@ class ProductionCORSValidator:
             self.security_policy.alert_on_blocked_attempts):
             logger.error(f"High frequency blocked attempts from origin: {origin}")
 
-    def get_blocked_statistics(self) -> Dict[str, Any]:
+    def get_blocked_statistics(self) -> dict[str, Any]:
         """Get statistics about blocked origins."""
         return {
             "total_blocked_origins": len(self.blocked_origins),
@@ -277,12 +277,12 @@ class ProductionCORSConfig:
     Production CORS configuration with advanced security features.
     """
 
-    def __init__(self, production_config: Optional[ProductionConfig] = None):
+    def __init__(self, production_config: ProductionConfig | None = None):
         """Initialize production CORS configuration."""
         self.production_config = production_config
         self.validator = ProductionCORSValidator()
-        self._validated_origins: List[str] = []
-        self._cors_config: Dict[str, Any] = {}
+        self._validated_origins: list[str] = []
+        self._cors_config: dict[str, Any] = {}
 
         # Initialize configuration
         self._initialize_configuration()
@@ -316,7 +316,7 @@ class ProductionCORSConfig:
         self._validated_origins = validated_origins
         self._cors_config = self._build_cors_config()
 
-    def _build_cors_config(self) -> Dict[str, Any]:
+    def _build_cors_config(self) -> dict[str, Any]:
         """Build CORS configuration dictionary."""
         return {
             "allow_origins": self._validated_origins,
@@ -347,7 +347,7 @@ class ProductionCORSConfig:
             "max_age": 3600  # 1 hour
         }
 
-    def validate_request_origin(self, origin: Optional[str]) -> bool:
+    def validate_request_origin(self, origin: str | None) -> bool:
         """
         Validate origin from incoming request.
 
@@ -373,7 +373,7 @@ class ProductionCORSConfig:
         logger.warning(f"CORS request from non-allowed origin: {origin}")
         return False
 
-    def get_cors_config(self) -> Dict[str, Any]:
+    def get_cors_config(self) -> dict[str, Any]:
         """Get CORS configuration for FastAPI middleware."""
         return self._cors_config.copy()
 
@@ -417,7 +417,7 @@ class ProductionCORSConfig:
 
         return False
 
-    def get_security_report(self) -> Dict[str, Any]:
+    def get_security_report(self) -> dict[str, Any]:
         """Get security report for CORS configuration."""
         return {
             "environment": "production",
@@ -446,7 +446,7 @@ class ProductionCORSConfig:
 
 def create_production_cors_middleware(
     app,
-    production_config: Optional[ProductionConfig] = None
+    production_config: ProductionConfig | None = None
 ):
     """
     Create and configure CORS middleware for production.
@@ -508,6 +508,6 @@ class CORSSecurityMiddleware:
         return response
 
 
-def get_production_cors_config(production_config: Optional[ProductionConfig] = None) -> ProductionCORSConfig:
+def get_production_cors_config(production_config: ProductionConfig | None = None) -> ProductionCORSConfig:
     """Get production CORS configuration instance."""
     return ProductionCORSConfig(production_config)

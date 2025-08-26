@@ -9,24 +9,27 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
 import pytest
-import httpx
 from fastapi.testclient import TestClient
-
-# Import all test suites
-from tests.production.test_production_readiness import test_complete_production_readiness
-from tests.load.test_production_load import test_complete_load_testing_suite
-from tests.resilience.test_fault_tolerance import test_complete_fault_tolerance_suite
-from tests.security.test_sql_injection_comprehensive import test_complete_sql_injection_protection
-from tests.security.test_xss_comprehensive import test_complete_xss_protection
-from tests.performance.test_regression import test_complete_performance_regression
 
 # Import application components
 from backend.api.main import app
+from tests.load.test_production_load import test_complete_load_testing_suite
+from tests.performance.test_regression import test_complete_performance_regression
+
+# Import all test suites
+from tests.production.test_production_readiness import (
+    test_complete_production_readiness,
+)
+from tests.resilience.test_fault_tolerance import test_complete_fault_tolerance_suite
+from tests.security.test_sql_injection_comprehensive import (
+    test_complete_sql_injection_protection,
+)
+from tests.security.test_xss_comprehensive import test_complete_xss_protection
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +41,9 @@ class SystemIntegrationResult:
     passed: bool
     score: float
     duration_seconds: float
-    critical_issues: List[str]
-    details: Dict[str, Any]
-    error_message: Optional[str] = None
+    critical_issues: list[str]
+    details: dict[str, Any]
+    error_message: str | None = None
 
 
 class CompleteSystemIntegrationTestSuite:
@@ -107,7 +110,7 @@ class CompleteSystemIntegrationTestSuite:
             }
         ]
 
-    async def run_system_health_check(self) -> Dict[str, Any]:
+    async def run_system_health_check(self) -> dict[str, Any]:
         """Run comprehensive system health check before integration tests."""
         logger.info("Running comprehensive system health check")
 
@@ -194,7 +197,7 @@ class CompleteSystemIntegrationTestSuite:
 
     async def run_test_suite_with_timeout(
         self,
-        suite_config: Dict[str, Any]
+        suite_config: dict[str, Any]
     ) -> SystemIntegrationResult:
         """Run a test suite with timeout and error handling."""
 
@@ -304,7 +307,7 @@ class CompleteSystemIntegrationTestSuite:
                 error_message=str(e)
             )
 
-    async def run_end_to_end_workflow_test(self) -> Dict[str, Any]:
+    async def run_end_to_end_workflow_test(self) -> dict[str, Any]:
         """Test complete end-to-end user workflow."""
         logger.info("Running end-to-end workflow test")
 
@@ -423,7 +426,7 @@ class CompleteSystemIntegrationTestSuite:
                 "steps": workflow_steps
             }
 
-    async def run_complete_system_integration(self) -> Dict[str, Any]:
+    async def run_complete_system_integration(self) -> dict[str, Any]:
         """Run complete system integration testing."""
         logger.info("Starting complete system integration testing")
         self.start_time = time.time()

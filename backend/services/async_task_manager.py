@@ -5,14 +5,15 @@ Background task management for concurrent RAG query processing with memory optim
 
 import asyncio
 import logging
-import psutil
 import time
-from typing import Dict, Any, Optional, List, Callable, Set
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from concurrent.futures import ThreadPoolExecutor
-import weakref
+from typing import Any
+
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ class MemoryStats:
 class TaskMetrics:
     """Task execution metrics."""
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
     memory_peak_mb: float = 0.0
     cpu_time_seconds: float = 0.0
     error_count: int = 0
@@ -72,16 +73,16 @@ class AsyncTask:
     args: tuple = field(default_factory=tuple)
     kwargs: dict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     result: Any = None
-    error: Optional[Exception] = None
+    error: Exception | None = None
     metrics: TaskMetrics = field(default_factory=lambda: TaskMetrics(datetime.now()))
-    memory_limit_mb: Optional[float] = None
-    timeout_seconds: Optional[float] = None
+    memory_limit_mb: float | None = None
+    timeout_seconds: float | None = None
 
     # Async task tracking
-    asyncio_task: Optional[asyncio.Task] = None
+    asyncio_task: asyncio.Task | None = None
     cancellation_event: asyncio.Event = field(default_factory=asyncio.Event)
 
     @property
@@ -150,7 +151,7 @@ class AsyncTaskManager:
         self,
         max_concurrent_tasks: int = 5,
         max_queue_size: int = 100,
-        memory_limit_mb: Optional[float] = None,
+        memory_limit_mb: float | None = None,
         enable_memory_monitoring: bool = True
     ):
         self.max_concurrent_tasks = max_concurrent_tasks
@@ -158,9 +159,9 @@ class AsyncTaskManager:
         self.memory_limit_mb = memory_limit_mb
 
         # Task tracking
-        self.active_tasks: Dict[str, AsyncTask] = {}
+        self.active_tasks: dict[str, AsyncTask] = {}
         self.task_queue: asyncio.PriorityQueue = asyncio.PriorityQueue(maxsize=max_queue_size)
-        self.completed_tasks: Dict[str, AsyncTask] = {}
+        self.completed_tasks: dict[str, AsyncTask] = {}
         self.task_counter = 0
 
         # Memory management
@@ -168,8 +169,8 @@ class AsyncTaskManager:
         self.thread_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="async_task_")
 
         # Background processing
-        self._processor_task: Optional[asyncio.Task] = None
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._processor_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task | None = None
         self._running = False
 
         # Statistics
@@ -213,8 +214,8 @@ class AsyncTaskManager:
         handler: Callable,
         category: TaskCategory = TaskCategory.RAG_QUERY,
         priority: TaskPriority = TaskPriority.NORMAL,
-        memory_limit_mb: Optional[float] = None,
-        timeout_seconds: Optional[float] = None,
+        memory_limit_mb: float | None = None,
+        timeout_seconds: float | None = None,
         *args,
         **kwargs
     ) -> str:
@@ -263,7 +264,7 @@ class AsyncTaskManager:
         # For now, we only cancel active tasks
         return False
 
-    async def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    async def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """Get status of a task."""
         # Check active tasks
         if task_id in self.active_tasks:
@@ -295,7 +296,7 @@ class AsyncTaskManager:
 
         return None
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get task manager statistics."""
         memory_stats = self.memory_monitor.get_memory_stats() if self.memory_monitor else None
 
@@ -452,7 +453,7 @@ class AsyncTaskManager:
 
 
 # Global task manager instance
-_task_manager: Optional[AsyncTaskManager] = None
+_task_manager: AsyncTaskManager | None = None
 
 
 def get_task_manager() -> AsyncTaskManager:

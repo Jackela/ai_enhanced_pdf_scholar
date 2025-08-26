@@ -6,18 +6,15 @@ adaptive routing, and performance optimization.
 """
 
 import hashlib
-import json
 import logging
 import random
-import statistics
 import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-import uuid
+from typing import Any
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -25,12 +22,13 @@ logger = logging.getLogger(__name__)
 
 # Add parent directory to path for imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from src.database.connection import DatabaseConnection
-    from backend.database.read_write_splitter import ReadWriteSplitter, QueryType
+    from backend.database.read_write_splitter import QueryType, ReadWriteSplitter
     from backend.services.connection_pool_manager import AdvancedConnectionPoolManager
+    from src.database.connection import DatabaseConnection
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     sys.exit(1)
@@ -87,9 +85,7 @@ class ServerMetrics:
 
     def get_health_score(self) -> float:
         """Calculate server health score (0-100)."""
-        if self.state == ServerState.FAILED:
-            return 0.0
-        elif self.state == ServerState.MAINTENANCE:
+        if self.state == ServerState.FAILED or self.state == ServerState.MAINTENANCE:
             return 0.0
         elif self.state == ServerState.DEGRADED:
             base_score = 50.0
@@ -115,7 +111,7 @@ class DatabaseServer:
     region: str = "default"
     availability_zone: str = "default"
     metrics: ServerMetrics = field(default_factory=lambda: None)
-    connection_pool: Optional[AdvancedConnectionPoolManager] = None
+    connection_pool: AdvancedConnectionPoolManager | None = None
 
     def __post_init__(self):
         if self.metrics is None:
@@ -127,10 +123,10 @@ class LoadBalancingRequest:
     """Represents a load balancing request."""
     request_id: str
     query_type: QueryType
-    client_id: Optional[str] = None
-    session_id: Optional[str] = None
-    preferred_region: Optional[str] = None
-    preferred_server: Optional[str] = None
+    client_id: str | None = None
+    session_id: str | None = None
+    preferred_region: str | None = None
+    preferred_server: str | None = None
     consistency_level: str = "eventual"  # strong, eventual, weak
     priority: int = 5  # 1-10, higher = more important
     timeout_ms: int = 30000
@@ -141,9 +137,9 @@ class RoutingDecision:
     """Result of load balancing decision."""
     selected_server: DatabaseServer
     routing_reason: str
-    backup_servers: List[DatabaseServer]
+    backup_servers: list[DatabaseServer]
     estimated_response_time_ms: float
-    routing_metadata: Dict[str, Any] = field(default_factory=dict)
+    routing_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class DatabaseLoadBalancer:
@@ -162,7 +158,7 @@ class DatabaseLoadBalancer:
 
     def __init__(
         self,
-        servers: List[DatabaseServer],
+        servers: list[DatabaseServer],
         strategy: LoadBalancingStrategy = LoadBalancingStrategy.ADAPTIVE,
         health_check_interval_s: int = 30,
         enable_circuit_breaker: bool = True,
@@ -186,24 +182,24 @@ class DatabaseLoadBalancer:
 
         # Routing state
         self._round_robin_index = 0
-        self._consistent_hash_ring: Dict[int, str] = {}
-        self._session_affinity: Dict[str, str] = {}  # session_id -> server_id
-        self._client_affinity: Dict[str, str] = {}   # client_id -> server_id
+        self._consistent_hash_ring: dict[int, str] = {}
+        self._session_affinity: dict[str, str] = {}  # session_id -> server_id
+        self._client_affinity: dict[str, str] = {}   # client_id -> server_id
 
         # Circuit breaker state
-        self._circuit_breaker_state: Dict[str, Dict[str, Any]] = {}
+        self._circuit_breaker_state: dict[str, dict[str, Any]] = {}
 
         # Performance tracking
-        self._response_times: Dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
-        self._error_rates: Dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        self._response_times: dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        self._error_rates: dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
 
         # Thread safety
         self._routing_lock = threading.RLock()
         self._metrics_lock = threading.Lock()
 
         # Background monitoring
-        self._health_monitor_thread: Optional[threading.Thread] = None
-        self._metrics_collector_thread: Optional[threading.Thread] = None
+        self._health_monitor_thread: threading.Thread | None = None
+        self._metrics_collector_thread: threading.Thread | None = None
         self._shutdown_event = threading.Event()
 
         # Initialize components
@@ -412,10 +408,7 @@ class DatabaseLoadBalancer:
 
         # Calculate new weights based on performance metrics
         for server in self.servers.values():
-            if server.metrics.state == ServerState.FAILED:
-                server.weight = 0
-                continue
-            elif server.metrics.state == ServerState.MAINTENANCE:
+            if server.metrics.state == ServerState.FAILED or server.metrics.state == ServerState.MAINTENANCE:
                 server.weight = 0
                 continue
 
@@ -525,7 +518,7 @@ class DatabaseLoadBalancer:
                 }
             )
 
-    def _get_available_servers(self, request: LoadBalancingRequest) -> List[DatabaseServer]:
+    def _get_available_servers(self, request: LoadBalancingRequest) -> list[DatabaseServer]:
         """Get list of available servers for a request."""
         available_servers = []
 
@@ -554,16 +547,16 @@ class DatabaseLoadBalancer:
 
         return available_servers
 
-    def _select_round_robin(self, servers: List[DatabaseServer]) -> DatabaseServer:
+    def _select_round_robin(self, servers: list[DatabaseServer]) -> DatabaseServer:
         """Select server using round-robin algorithm."""
         self._round_robin_index = (self._round_robin_index + 1) % len(servers)
         return servers[self._round_robin_index]
 
-    def _select_least_connections(self, servers: List[DatabaseServer]) -> DatabaseServer:
+    def _select_least_connections(self, servers: list[DatabaseServer]) -> DatabaseServer:
         """Select server with least connections."""
         return min(servers, key=lambda s: s.metrics.connection_count)
 
-    def _select_weighted_round_robin(self, servers: List[DatabaseServer]) -> DatabaseServer:
+    def _select_weighted_round_robin(self, servers: list[DatabaseServer]) -> DatabaseServer:
         """Select server using weighted round-robin."""
         # Calculate total weight
         total_weight = sum(s.weight for s in servers)
@@ -583,11 +576,11 @@ class DatabaseLoadBalancer:
         # Fallback
         return servers[-1]
 
-    def _select_least_response_time(self, servers: List[DatabaseServer]) -> DatabaseServer:
+    def _select_least_response_time(self, servers: list[DatabaseServer]) -> DatabaseServer:
         """Select server with best response time."""
         return min(servers, key=lambda s: s.metrics.avg_response_time_ms or float('inf'))
 
-    def _select_consistent_hashing(self, servers: List[DatabaseServer], request: LoadBalancingRequest) -> DatabaseServer:
+    def _select_consistent_hashing(self, servers: list[DatabaseServer], request: LoadBalancingRequest) -> DatabaseServer:
         """Select server using consistent hashing."""
         # Use session_id or client_id for consistency
         hash_key = request.session_id or request.client_id or request.request_id
@@ -614,7 +607,7 @@ class DatabaseLoadBalancer:
         # Fallback
         return servers[0]
 
-    def _select_adaptive(self, servers: List[DatabaseServer], request: LoadBalancingRequest) -> DatabaseServer:
+    def _select_adaptive(self, servers: list[DatabaseServer], request: LoadBalancingRequest) -> DatabaseServer:
         """Select server using adaptive algorithm combining multiple factors."""
         def calculate_score(server: DatabaseServer) -> float:
             """Calculate adaptive score for server (higher is better)."""
@@ -655,7 +648,7 @@ class DatabaseLoadBalancer:
         # Select server with highest adaptive score
         return max(servers, key=calculate_score)
 
-    def _check_affinity(self, request: LoadBalancingRequest, available_servers: List[DatabaseServer]) -> Optional[DatabaseServer]:
+    def _check_affinity(self, request: LoadBalancingRequest, available_servers: list[DatabaseServer]) -> DatabaseServer | None:
         """Check for session or client affinity."""
         # Check session affinity
         if request.session_id and request.session_id in self._session_affinity:
@@ -712,7 +705,7 @@ class DatabaseLoadBalancer:
             self._response_times[server_id].append(response_time_ms)
             self._error_rates[server_id].append(0 if success else 1)
 
-    def get_load_balancer_statistics(self) -> Dict[str, Any]:
+    def get_load_balancer_statistics(self) -> dict[str, Any]:
         """Get comprehensive load balancer statistics."""
         stats = {
             'strategy': self.strategy.value,
@@ -1013,14 +1006,14 @@ def main():
 
         if args.stats:
             stats = load_balancer.get_load_balancer_statistics()
-            print(f"Load Balancer Statistics:")
+            print("Load Balancer Statistics:")
             print(f"Strategy: {stats['strategy']}")
             print(f"Total Servers: {stats['total_servers']}")
             print(f"Healthy: {stats['healthy_servers']}, "
                  f"Degraded: {stats['degraded_servers']}, "
                  f"Failed: {stats['failed_servers']}")
 
-            print(f"\nServer Details:")
+            print("\nServer Details:")
             for server_id, server_stats in stats['servers'].items():
                 print(f"  {server_id} ({server_stats['role']}):")
                 print(f"    State: {server_stats['state']}")

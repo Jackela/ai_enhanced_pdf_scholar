@@ -9,14 +9,15 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional, Set, List
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
+from typing import Any
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
 from backend.api.websocket_manager import WebSocketManager
 from backend.services.real_time_metrics_collector import (
+    MetricType,
     RealTimeMetricsCollector,
-    MetricType
 )
 
 logger = logging.getLogger(__name__)
@@ -25,18 +26,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Global instances (will be injected by main app)
-metrics_collector: Optional[RealTimeMetricsCollector] = None
-websocket_manager: Optional[WebSocketManager] = None
+metrics_collector: RealTimeMetricsCollector | None = None
+websocket_manager: WebSocketManager | None = None
 
 # Active subscriptions tracking
-active_subscriptions: Dict[str, Set[MetricType]] = {}
+active_subscriptions: dict[str, set[MetricType]] = {}
 
 
 class MetricsSubscriptionRequest(BaseModel):
     """Request model for metrics subscription."""
     action: str = Field(..., regex="^(subscribe|unsubscribe)$")
-    metric_types: List[str] = Field(default_factory=list)
-    update_interval: Optional[float] = Field(1.0, ge=0.1, le=60.0)  # seconds
+    metric_types: list[str] = Field(default_factory=list)
+    update_interval: float | None = Field(1.0, ge=0.1, le=60.0)  # seconds
 
 
 class MetricsWebSocketHandler:
@@ -45,9 +46,9 @@ class MetricsWebSocketHandler:
     def __init__(self, client_id: str, websocket: WebSocket):
         self.client_id = client_id
         self.websocket = websocket
-        self.subscriptions: Set[MetricType] = set()
+        self.subscriptions: set[MetricType] = set()
         self.update_interval = 1.0  # seconds
-        self.streaming_task: Optional[asyncio.Task] = None
+        self.streaming_task: asyncio.Task | None = None
         self.last_update = datetime.now()
 
     async def handle_connection(self):
@@ -89,7 +90,7 @@ class MetricsWebSocketHandler:
         finally:
             await self.cleanup()
 
-    async def handle_client_message(self, message: Dict[str, Any]):
+    async def handle_client_message(self, message: dict[str, Any]):
         """Handle incoming client messages."""
         try:
             message_type = message.get("type")
@@ -109,7 +110,7 @@ class MetricsWebSocketHandler:
             logger.error(f"Error handling client message: {e}")
             await self.send_error(f"Error processing message: {e}")
 
-    async def handle_subscription(self, message: Dict[str, Any]):
+    async def handle_subscription(self, message: dict[str, Any]):
         """Handle subscription requests."""
         try:
             metric_types = message.get("metric_types", [])
@@ -152,7 +153,7 @@ class MetricsWebSocketHandler:
             logger.error(f"Error handling subscription: {e}")
             await self.send_error(f"Subscription error: {e}")
 
-    async def handle_unsubscription(self, message: Dict[str, Any]):
+    async def handle_unsubscription(self, message: dict[str, Any]):
         """Handle unsubscription requests."""
         try:
             metric_types = message.get("metric_types", [])
@@ -254,7 +255,7 @@ class MetricsWebSocketHandler:
         except Exception as e:
             logger.error(f"Error in metrics streaming for client {self.client_id}: {e}")
 
-    async def _on_metrics_update(self, metrics_update: Dict[MetricType, Dict[str, Any]]):
+    async def _on_metrics_update(self, metrics_update: dict[MetricType, dict[str, Any]]):
         """Handle metrics update from collector."""
         try:
             # Only process if we have active subscriptions
@@ -278,7 +279,7 @@ class MetricsWebSocketHandler:
         except Exception as e:
             logger.error(f"Error handling metrics update: {e}")
 
-    async def send_message(self, message: Dict[str, Any]):
+    async def send_message(self, message: dict[str, Any]):
         """Send message to WebSocket client."""
         try:
             await self.websocket.send_text(json.dumps(message))

@@ -5,14 +5,14 @@ Provides a centralized, type-safe configuration system that replaces
 scattered configuration files with a single source of truth.
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Set
 from pathlib import Path
+from typing import Any, Optional
 
 from .environment import Environment, get_current_environment
-from .validation import ConfigValidator, SecurityValidator, ConfigValidationError
+from .validation import ConfigValidationError, ConfigValidator, SecurityValidator
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +20,19 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CORSConfig:
     """CORS configuration settings."""
-    allow_origins: List[str] = field(default_factory=list)
+    allow_origins: list[str] = field(default_factory=list)
     allow_credentials: bool = True
-    allow_methods: List[str] = field(default_factory=lambda: [
+    allow_methods: list[str] = field(default_factory=lambda: [
         "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"
     ])
-    allow_headers: List[str] = field(default_factory=lambda: [
+    allow_headers: list[str] = field(default_factory=lambda: [
         "Accept", "Accept-Language", "Content-Language",
         "Content-Type", "Authorization", "X-Requested-With", "X-CSRF-Token"
     ])
-    expose_headers: List[str] = field(default_factory=lambda: ["X-Total-Count", "X-Request-ID"])
+    expose_headers: list[str] = field(default_factory=lambda: ["X-Total-Count", "X-Request-ID"])
     max_age: int = 3600
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate CORS configuration for current environment."""
         issues = []
 
@@ -65,16 +65,16 @@ class RateLimitConfig:
     """Rate limiting configuration settings."""
     enabled: bool = True
     default_limit: RateLimitRule = field(default_factory=lambda: RateLimitRule(60, 60))
-    endpoint_limits: Dict[str, RateLimitRule] = field(default_factory=dict)
+    endpoint_limits: dict[str, RateLimitRule] = field(default_factory=dict)
     global_ip_limit: RateLimitRule = field(default_factory=lambda: RateLimitRule(500, 3600))
-    redis_url: Optional[str] = None
+    redis_url: str | None = None
     redis_key_prefix: str = "rl:"
-    bypass_ips: Set[str] = field(default_factory=set)
-    bypass_user_agents: Set[str] = field(default_factory=lambda: {"monitor", "health-check"})
+    bypass_ips: set[str] = field(default_factory=set)
+    bypass_user_agents: set[str] = field(default_factory=lambda: {"monitor", "health-check"})
     include_headers: bool = True
     block_duration: int = 300
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate rate limiting configuration."""
         issues = []
 
@@ -100,7 +100,7 @@ class DatabaseConfig:
     pool_recycle: int = 3600
     echo: bool = False
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate database configuration."""
         issues = []
 
@@ -117,14 +117,14 @@ class DatabaseConfig:
 class SecurityConfig:
     """Security configuration settings."""
     enable_https: bool = True
-    secret_key: Optional[str] = None
+    secret_key: str | None = None
     jwt_algorithm: str = "RS256"
     jwt_access_token_expire_minutes: int = 15
     jwt_refresh_token_expire_days: int = 7
     password_hash_rounds: int = 12
     enable_csrf_protection: bool = True
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate security configuration."""
         issues = []
 
@@ -144,10 +144,10 @@ class SecurityConfig:
 @dataclass
 class APIKeysConfig:
     """API keys configuration."""
-    google_api_key: Optional[str] = None
-    openai_api_key: Optional[str] = None
+    google_api_key: str | None = None
+    openai_api_key: str | None = None
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate API keys."""
         issues = []
 
@@ -165,10 +165,10 @@ class FileStorageConfig:
     """File storage configuration."""
     base_path: str = "./documents"
     max_file_size_mb: int = 100
-    allowed_extensions: Set[str] = field(default_factory=lambda: {".pdf", ".txt", ".docx"})
+    allowed_extensions: set[str] = field(default_factory=lambda: {".pdf", ".txt", ".docx"})
     vector_storage_dir: str = "./vector_indexes"
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate file storage configuration."""
         issues = []
 
@@ -190,11 +190,11 @@ class LoggingConfig:
     """Logging configuration settings."""
     level: str = "INFO"
     format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    file_path: Optional[str] = None
+    file_path: str | None = None
     max_file_size_mb: int = 10
     backup_count: int = 5
 
-    def validate(self, environment: Environment) -> List[str]:
+    def validate(self, environment: Environment) -> list[str]:
         """Validate logging configuration."""
         issues = []
 
@@ -438,7 +438,7 @@ class ApplicationConfig:
                 issues=critical_issues
             )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary for serialization."""
         return {
             "environment": self.environment.value,
@@ -473,7 +473,7 @@ class ApplicationConfig:
 
 
 # Global configuration instance
-_config: Optional[ApplicationConfig] = None
+_config: ApplicationConfig | None = None
 
 
 def get_application_config(reload: bool = False) -> ApplicationConfig:
@@ -496,7 +496,7 @@ def get_application_config(reload: bool = False) -> ApplicationConfig:
     return _config
 
 
-def configure_logging(config: Optional[ApplicationConfig] = None) -> None:
+def configure_logging(config: ApplicationConfig | None = None) -> None:
     """
     Configure logging based on application configuration.
 

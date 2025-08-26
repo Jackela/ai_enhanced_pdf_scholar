@@ -5,16 +5,19 @@ RESTful API endpoints for RAG (Retrieval-Augmented Generation) operations.
 
 import logging
 import time
-from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from backend.api.dependencies import (
     get_library_controller,
     require_rag_service,
     validate_document_access,
 )
-from backend.services.cache_service_integration import get_cache_service, CacheServiceIntegration
+from backend.api.error_handling import (
+    ErrorTemplates,
+    ResourceNotFoundException,
+    SystemException,
+)
 from backend.api.models import (
     BaseResponse,
     CacheClearResponse,
@@ -25,12 +28,9 @@ from backend.api.models import (
     RAGQueryRequest,
     RAGQueryResponse,
 )
-from backend.api.error_handling import (
-    ResourceNotFoundException,
-    BusinessLogicException,
-    SystemException,
-    ErrorTemplates,
-    ErrorDetail
+from backend.services.cache_service_integration import (
+    CacheServiceIntegration,
+    get_cache_service,
 )
 from src.controllers.library_controller import LibraryController
 from src.services.enhanced_rag_service import EnhancedRAGService
@@ -44,7 +44,7 @@ async def query_document(
     query_request: RAGQueryRequest,
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
-    cache_service: Optional[CacheServiceIntegration] = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
 ):
     """Query a document using RAG with intelligent caching."""
     try:

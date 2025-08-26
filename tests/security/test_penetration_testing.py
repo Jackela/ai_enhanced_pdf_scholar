@@ -4,24 +4,17 @@ Specialized penetration testing tools and techniques for web applications.
 """
 
 import asyncio
-import base64
-import hashlib
 import json
 import logging
-import random
 import re
-import string
-import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode
-import subprocess
+from datetime import datetime
+from typing import Any
+from urllib.parse import urljoin, urlparse
 
 import aiohttp
-import requests
-from bs4 import BeautifulSoup
 import dns.resolver
 import nmap
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +77,7 @@ class NetworkRecon:
         self.config = config
         self.findings = []
 
-    async def run_network_scan(self) -> Dict[str, Any]:
+    async def run_network_scan(self) -> dict[str, Any]:
         """Run comprehensive network reconnaissance."""
         results = {
             'dns_enumeration': await self.dns_enumeration(),
@@ -94,7 +87,7 @@ class NetworkRecon:
         }
         return results
 
-    async def dns_enumeration(self) -> Dict[str, Any]:
+    async def dns_enumeration(self) -> dict[str, Any]:
         """Perform DNS enumeration."""
         results = {'subdomains': [], 'dns_records': {}, 'zone_transfer': False}
 
@@ -154,7 +147,7 @@ class NetworkRecon:
 
         return results
 
-    async def port_scanning(self) -> Dict[str, Any]:
+    async def port_scanning(self) -> dict[str, Any]:
         """Perform port scanning."""
         results = {'open_ports': [], 'filtered_ports': [], 'closed_ports': []}
 
@@ -204,7 +197,7 @@ class NetworkRecon:
 
         return results
 
-    async def _basic_port_scan(self) -> Dict[str, Any]:
+    async def _basic_port_scan(self) -> dict[str, Any]:
         """Basic port scanning using socket connections."""
         results = {'open_ports': [], 'filtered_ports': [], 'closed_ports': []}
 
@@ -238,7 +231,7 @@ class NetworkRecon:
 
         return results
 
-    def _is_vulnerable_service(self, port_info: Dict[str, Any]) -> bool:
+    def _is_vulnerable_service(self, port_info: dict[str, Any]) -> bool:
         """Check if service is potentially vulnerable."""
         vulnerable_patterns = [
             ('ftp', ['vsftpd 2.3.4', 'proftpd 1.3.3']),
@@ -270,7 +263,7 @@ class NetworkRecon:
         }
         return services.get(port, 'unknown')
 
-    async def service_detection(self) -> Dict[str, Any]:
+    async def service_detection(self) -> dict[str, Any]:
         """Detect services running on open ports."""
         results = {'detected_services': []}
 
@@ -291,7 +284,7 @@ class NetworkRecon:
 
         return results
 
-    async def _check_http_service(self) -> Optional[Dict[str, Any]]:
+    async def _check_http_service(self) -> dict[str, Any] | None:
         """Check HTTP service details."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -309,7 +302,7 @@ class NetworkRecon:
         except Exception:
             return None
 
-    async def _check_https_service(self) -> Optional[Dict[str, Any]]:
+    async def _check_https_service(self) -> dict[str, Any] | None:
         """Check HTTPS service details."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -328,7 +321,7 @@ class NetworkRecon:
         except Exception:
             return None
 
-    async def _check_ssh_service(self) -> Optional[Dict[str, Any]]:
+    async def _check_ssh_service(self) -> dict[str, Any] | None:
         """Check SSH service details."""
         try:
             reader, writer = await asyncio.wait_for(
@@ -349,7 +342,7 @@ class NetworkRecon:
         except Exception:
             return None
 
-    async def ssl_analysis(self) -> Dict[str, Any]:
+    async def ssl_analysis(self) -> dict[str, Any]:
         """Analyze SSL/TLS configuration."""
         results = {'ssl_enabled': False, 'vulnerabilities': []}
 
@@ -416,7 +409,7 @@ class WebAppTesting:
         self.cookies = {}
         self.findings = []
 
-    async def run_webapp_tests(self) -> Dict[str, Any]:
+    async def run_webapp_tests(self) -> dict[str, Any]:
         """Run comprehensive web application tests."""
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=self.config.request_timeout)
@@ -436,7 +429,7 @@ class WebAppTesting:
 
             return results
 
-    async def web_reconnaissance(self) -> Dict[str, Any]:
+    async def web_reconnaissance(self) -> dict[str, Any]:
         """Perform web application reconnaissance."""
         results = {'technology_stack': {}, 'interesting_files': [], 'error_pages': []}
 
@@ -528,7 +521,7 @@ class WebAppTesting:
 
         return results
 
-    async def directory_bruteforce(self) -> Dict[str, Any]:
+    async def directory_bruteforce(self) -> dict[str, Any]:
         """Perform directory and file bruteforcing."""
         results = {'discovered_paths': [], 'interesting_responses': []}
 
@@ -584,7 +577,7 @@ class WebAppTesting:
 
         return results
 
-    async def form_analysis(self) -> Dict[str, Any]:
+    async def form_analysis(self) -> dict[str, Any]:
         """Analyze forms for potential vulnerabilities."""
         results = {'forms_found': [], 'potential_issues': []}
 
@@ -642,7 +635,7 @@ class WebAppTesting:
 
         return results
 
-    async def authentication_testing(self) -> Dict[str, Any]:
+    async def authentication_testing(self) -> dict[str, Any]:
         """Test authentication mechanisms."""
         results = {'brute_force_results': [], 'bypass_attempts': []}
 
@@ -705,7 +698,7 @@ class WebAppTesting:
 
         return results
 
-    async def session_testing(self) -> Dict[str, Any]:
+    async def session_testing(self) -> dict[str, Any]:
         """Test session management vulnerabilities."""
         results = {'session_issues': []}
 
@@ -760,7 +753,7 @@ class WebAppTesting:
 
         return results
 
-    async def file_inclusion_testing(self) -> Dict[str, Any]:
+    async def file_inclusion_testing(self) -> dict[str, Any]:
         """Test for Local File Inclusion (LFI) and Remote File Inclusion (RFI)."""
         results = {'lfi_tests': [], 'rfi_tests': []}
 
@@ -843,7 +836,7 @@ class WebAppTesting:
 
         return results
 
-    async def xxe_testing(self) -> Dict[str, Any]:
+    async def xxe_testing(self) -> dict[str, Any]:
         """Test for XML External Entity (XXE) vulnerabilities."""
         results = {'xxe_tests': []}
 
@@ -907,7 +900,7 @@ class WebAppTesting:
 
         return results
 
-    async def ssrf_testing(self) -> Dict[str, Any]:
+    async def ssrf_testing(self) -> dict[str, Any]:
         """Test for Server-Side Request Forgery (SSRF) vulnerabilities."""
         results = {'ssrf_tests': []}
 
@@ -995,7 +988,7 @@ class PenetrationTestRunner:
         self.config = config
         self.all_findings = []
 
-    async def run_full_pentest(self) -> Dict[str, Any]:
+    async def run_full_pentest(self) -> dict[str, Any]:
         """Run complete penetration test suite."""
         logger.info(f"Starting penetration test against {self.config.target_url}")
 
@@ -1038,7 +1031,7 @@ class PenetrationTestRunner:
         logger.info("Penetration test completed")
         return results
 
-    def _generate_findings_summary(self, start_time: datetime, end_time: datetime) -> Dict[str, Any]:
+    def _generate_findings_summary(self, start_time: datetime, end_time: datetime) -> dict[str, Any]:
         """Generate findings summary and report."""
         duration = (end_time - start_time).total_seconds()
 
@@ -1067,7 +1060,7 @@ class PenetrationTestRunner:
             'recommendations': self._generate_recommendations()
         }
 
-    def _generate_recommendations(self) -> List[Dict[str, Any]]:
+    def _generate_recommendations(self) -> list[dict[str, Any]]:
         """Generate remediation recommendations."""
         recommendations = []
 

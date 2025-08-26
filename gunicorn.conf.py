@@ -4,10 +4,10 @@ Optimized for high-performance production deployment with comprehensive monitori
 graceful shutdowns, and resource management.
 """
 
-import os
 import logging
 import multiprocessing
-from typing import Any, Dict
+import os
+from typing import Any
 
 # ============================================================================
 # Basic Configuration
@@ -255,8 +255,9 @@ def setup_worker_resources():
 def warmup_application():
     """Warm up the application after startup."""
     try:
-        import requests
         import time
+
+        import requests
 
         # Wait a moment for server to be ready
         time.sleep(2)
@@ -343,7 +344,7 @@ load_environment_config()
 # Health Check Configuration
 # ============================================================================
 
-def get_health_check_config() -> Dict[str, Any]:
+def get_health_check_config() -> dict[str, Any]:
     """Get health check configuration for load balancer."""
     return {
         "health_check_path": "/health",
@@ -397,7 +398,7 @@ class PerformanceMonitor:
         if status_code >= 400:
             self.error_count += 1
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get performance statistics."""
         uptime = 0
         if self.start_time:

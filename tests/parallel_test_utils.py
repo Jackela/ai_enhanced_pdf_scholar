@@ -6,20 +6,15 @@ performance optimization, and intelligent test distribution.
 """
 
 import asyncio
-import hashlib
 import os
 import tempfile
 import threading
 import time
 import uuid
-from contextlib import contextmanager
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Set, Tuple
-from unittest.mock import Mock
-
-import pytest
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Optional
 
 from src.database.connection import DatabaseConnection
 from src.database.migrations.manager import MigrationManager
@@ -33,11 +28,11 @@ class ParallelTestMetrics:
     test_name: str
     worker_id: str
     start_time: float
-    end_time: Optional[float] = None
+    end_time: float | None = None
     database_operations: int = 0
-    memory_usage_mb: Optional[float] = None
+    memory_usage_mb: float | None = None
     success: bool = False
-    error_message: Optional[str] = None
+    error_message: str | None = None
     isolation_level: str = "function"  # function, class, module, session
 
     @property
@@ -47,7 +42,7 @@ class ParallelTestMetrics:
             return 0.0
         return (self.end_time - self.start_time) * 1000
 
-    def mark_completed(self, success: bool = True, error: Optional[str] = None):
+    def mark_completed(self, success: bool = True, error: str | None = None):
         """Mark test as completed with results."""
         self.end_time = time.time()
         self.success = success
@@ -91,12 +86,12 @@ class ParallelDatabaseManager:
         if ParallelDatabaseManager._instance is not None:
             raise RuntimeError("Use get_instance() to get ParallelDatabaseManager")
 
-        self.worker_databases: Dict[str, DatabaseConnection] = {}
-        self.test_databases: Dict[str, DatabaseConnection] = {}
-        self.isolation_strategies: Dict[str, IsolationStrategy] = {}
-        self.metrics: Dict[str, ParallelTestMetrics] = {}
-        self.temp_files: List[Path] = []
-        self.active_connections: Set[str] = set()
+        self.worker_databases: dict[str, DatabaseConnection] = {}
+        self.test_databases: dict[str, DatabaseConnection] = {}
+        self.isolation_strategies: dict[str, IsolationStrategy] = {}
+        self.metrics: dict[str, ParallelTestMetrics] = {}
+        self.temp_files: list[Path] = []
+        self.active_connections: set[str] = set()
 
         # Performance tracking
         self.total_tests_run = 0
@@ -182,7 +177,7 @@ class ParallelDatabaseManager:
         test_name: str,
         isolation_strategy: str = "per_worker",
         force_new: bool = False
-    ) -> Tuple[DatabaseConnection, ParallelTestMetrics]:
+    ) -> tuple[DatabaseConnection, ParallelTestMetrics]:
         """
         Get database connection for a test with specified isolation strategy.
 
@@ -325,7 +320,7 @@ class ParallelDatabaseManager:
         cleanup_time = (time.time() - start_time) * 1000
         strategy.cleanup_time_ms = max(strategy.cleanup_time_ms, cleanup_time)
 
-    def return_database(self, test_name: str, success: bool = True, error: Optional[str] = None):
+    def return_database(self, test_name: str, success: bool = True, error: str | None = None):
         """Return database after test completion."""
         with self._lock:
             if test_name in self.metrics:
@@ -336,7 +331,7 @@ class ParallelDatabaseManager:
                 if metrics.duration_ms > 1000:  # Log slow tests
                     print(f"Slow parallel test: {test_name} took {metrics.duration_ms:.2f}ms")
 
-    def get_optimal_isolation_strategy(self, test_characteristics: Dict[str, Any]) -> str:
+    def get_optimal_isolation_strategy(self, test_characteristics: dict[str, Any]) -> str:
         """
         Determine optimal isolation strategy based on test characteristics.
 
@@ -362,7 +357,7 @@ class ParallelDatabaseManager:
         else:
             return "optimized_parallel"
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Get comprehensive performance report."""
         with self._lock:
             completed_tests = [m for m in self.metrics.values() if m.end_time is not None]
@@ -443,18 +438,18 @@ class ParallelTestOrchestrator:
     and resource management.
     """
 
-    def __init__(self, max_workers: Optional[int] = None):
+    def __init__(self, max_workers: int | None = None):
         self.max_workers = max_workers or min(os.cpu_count() or 4, 8)
         self.db_manager = ParallelDatabaseManager.get_instance()
-        self.test_queue: List[Tuple[str, Dict[str, Any]]] = []
-        self.results: Dict[str, Any] = {}
-        self.active_workers: Set[str] = set()
+        self.test_queue: list[tuple[str, dict[str, Any]]] = []
+        self.results: dict[str, Any] = {}
+        self.active_workers: set[str] = set()
 
-    def add_test(self, test_name: str, test_characteristics: Dict[str, Any]):
+    def add_test(self, test_name: str, test_characteristics: dict[str, Any]):
         """Add a test to the execution queue."""
         self.test_queue.append((test_name, test_characteristics))
 
-    def execute_parallel_tests(self) -> Dict[str, Any]:
+    def execute_parallel_tests(self) -> dict[str, Any]:
         """Execute all queued tests in parallel."""
         if not self.test_queue:
             return {"error": "No tests to execute"}
@@ -495,7 +490,7 @@ class ParallelTestOrchestrator:
             "performance_report": self.db_manager.get_performance_report()
         }
 
-    def _execute_single_test(self, test_name: str, characteristics: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_single_test(self, test_name: str, characteristics: dict[str, Any]) -> dict[str, Any]:
         """Execute a single test with optimal isolation strategy."""
         worker_id = self.db_manager.get_worker_id()
         self.active_workers.add(worker_id)
@@ -540,7 +535,7 @@ class ParallelTestOrchestrator:
         finally:
             self.active_workers.discard(worker_id)
 
-    def _simulate_test_execution(self, db: DatabaseConnection, characteristics: Dict[str, Any]) -> bool:
+    def _simulate_test_execution(self, db: DatabaseConnection, characteristics: dict[str, Any]) -> bool:
         """Simulate test execution for demonstration."""
         # Simulate database operations
         operations = characteristics.get("database_operations", 1)
@@ -566,16 +561,16 @@ class ConcurrentTestHelper:
 
     def __init__(self, max_concurrency: int = 10):
         self.max_concurrency = max_concurrency
-        self.results: List[Any] = []
-        self.errors: List[Exception] = []
+        self.results: list[Any] = []
+        self.errors: list[Exception] = []
         self.lock = threading.Lock()
 
     def run_concurrent_operations(
         self,
-        operations: List[Any],
+        operations: list[Any],
         operation_func: callable,
         timeout: float = 30.0
-    ) -> Tuple[List[Any], List[Exception]]:
+    ) -> tuple[list[Any], list[Exception]]:
         """
         Run operations concurrently with controlled concurrency and timeout.
 
@@ -609,10 +604,10 @@ class ConcurrentTestHelper:
 
     async def run_async_concurrent_operations(
         self,
-        operations: List[Any],
+        operations: list[Any],
         async_operation_func: callable,
         max_concurrent: int = 10
-    ) -> Tuple[List[Any], List[Exception]]:
+    ) -> tuple[list[Any], list[Exception]]:
         """Run async operations with controlled concurrency."""
         semaphore = asyncio.Semaphore(max_concurrent)
         results = []
@@ -638,7 +633,7 @@ class ConcurrentTestHelper:
 
 
 # Utility functions for test categorization and optimization
-def categorize_test_for_parallel_execution(test_func) -> Dict[str, Any]:
+def categorize_test_for_parallel_execution(test_func) -> dict[str, Any]:
     """
     Analyze test function to determine optimal parallel execution strategy.
 
@@ -669,7 +664,7 @@ def categorize_test_for_parallel_execution(test_func) -> Dict[str, Any]:
     return characteristics
 
 
-def optimize_test_execution_order(test_list: List[Tuple[str, Dict[str, Any]]]) -> List[Tuple[str, Dict[str, Any]]]:
+def optimize_test_execution_order(test_list: list[tuple[str, dict[str, Any]]]) -> list[tuple[str, dict[str, Any]]]:
     """
     Optimize test execution order for better parallel performance.
 

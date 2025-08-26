@@ -1,0 +1,16 @@
+
+- id: "default_qa"
+  name: "Default Question Answering"
+  description: "A standard prompt for answering questions based on provided context."
+  version: "1.0.0"
+  placeholders:
+    - "context_str"
+    - "query_str"
+  template: |
+    Context information is below.
+    ---------------------
+    {context_str}
+    ---------------------
+    Given the context information and not prior knowledge, answer the query.
+    Query: {query_str}
+    Answer: 

@@ -7,22 +7,16 @@ Production-ready encryption setup for the application.
 import argparse
 import json
 import logging
-import os
 import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from backend.services.encryption_service import (
-    EncryptionService,
-    TLSConfiguration,
-    SecureChannel
-)
+from backend.services.encryption_service import EncryptionService, TLSConfiguration
 from backend.services.secrets_manager import SecretsManagerService
 from src.database.connection import DatabaseConnection
 
@@ -42,10 +36,10 @@ class EncryptionSetup:
         self.config_file = self.project_root / ".encryption_config.json"
         self.status = self._load_status()
 
-    def _load_status(self) -> Dict:
+    def _load_status(self) -> dict:
         """Load current encryption status."""
         if self.config_file.exists():
-            with open(self.config_file, 'r') as f:
+            with open(self.config_file) as f:
                 return json.load(f)
         return {
             "database_encrypted": False,
@@ -236,7 +230,7 @@ server {{
         if env_file.exists():
             with open(env_file, 'a') as f:
                 f.write("\n# TLS Configuration\n")
-                f.write(f"SSL_ENABLED=true\n")
+                f.write("SSL_ENABLED=true\n")
                 f.write(f"SSL_CERT_PATH={cert_path}\n")
                 f.write(f"SSL_KEY_PATH={key_path}\n")
 
@@ -245,9 +239,9 @@ server {{
         with open(tls_config_file, 'w') as f:
             json.dump(tls_config, f, indent=2)
 
-        logger.info(f"Updated application TLS configuration")
+        logger.info("Updated application TLS configuration")
 
-    def setup_field_encryption(self, tables: List[str]) -> bool:
+    def setup_field_encryption(self, tables: list[str]) -> bool:
         """
         Setup field-level encryption for sensitive data.
 
@@ -370,7 +364,7 @@ server {{
 
         try:
             # Create systemd timer for key rotation (Linux)
-            systemd_timer = f"""
+            systemd_timer = """
 [Unit]
 Description=AI PDF Scholar Key Rotation Timer
 Requires=ai-pdf-scholar-key-rotation.service

@@ -4,15 +4,15 @@ Performance and Load Testing E2E Tests
 Tests for system performance, concurrent users, and load handling.
 """
 
-import pytest
-from playwright.sync_api import Page, Browser, sync_playwright, expect
-import time
 import asyncio
-import aiohttp
-from typing import List, Dict, Any
 import concurrent.futures
+import time
 from statistics import mean, median, stdev
+
+import aiohttp
+import pytest
 from fixtures import *
+from playwright.sync_api import Browser, Page
 
 
 class TestPerformanceAndLoad:
@@ -417,7 +417,7 @@ class TestPerformanceAndLoad:
                     request_counts['failed'] += 1
 
                 return req_time
-            except Exception as e:
+            except Exception:
                 request_counts['failed'] += 1
                 return None
 
@@ -456,7 +456,7 @@ class TestPerformanceAndLoad:
         print(f"Requests/Second: {requests_per_second:.1f}")
 
         if response_times:
-            print(f"\nResponse Times:")
+            print("\nResponse Times:")
             print(f"  Average: {avg_response*1000:.2f}ms")
             print(f"  Median: {med_response*1000:.2f}ms")
             print(f"  Min: {min_response*1000:.2f}ms")
@@ -540,7 +540,7 @@ class TestPerformanceAndLoad:
         memory_growth = final_memory['usedJSHeapSize'] - initial_memory['usedJSHeapSize']
         memory_growth_mb = memory_growth / (1024 * 1024)
 
-        print(f"\n📊 Memory Usage Report:")
+        print("\n📊 Memory Usage Report:")
         print(f"  Initial: {initial_memory['usedJSHeapSize'] / (1024*1024):.2f} MB")
         print(f"  Final: {final_memory['usedJSHeapSize'] / (1024*1024):.2f} MB")
         print(f"  Growth: {memory_growth_mb:.2f} MB")

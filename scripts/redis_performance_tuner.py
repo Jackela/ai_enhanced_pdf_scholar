@@ -12,17 +12,16 @@ import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
-import redis
-from redis import Redis, RedisError
+from redis import Redis
 from redis.cluster import RedisCluster
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.services.redis_cluster_manager import RedisClusterManager, ClusterConfig, NodeRole
 from backend.services.metrics_service import MetricsService
+from backend.services.redis_cluster_manager import RedisClusterManager
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +92,8 @@ class WorkloadPattern:
     read_write_ratio: float  # reads/writes
     key_access_pattern: str  # uniform, hotspot, sequential
     memory_usage_trend: str  # stable, growing, declining
-    peak_hours: List[int] = field(default_factory=list)
-    recommended_optimizations: List[str] = field(default_factory=list)
+    peak_hours: list[int] = field(default_factory=list)
+    recommended_optimizations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -124,17 +123,17 @@ class RedisPerformanceTuner:
 
     def __init__(
         self,
-        cluster_manager: Optional[RedisClusterManager] = None,
-        metrics_service: Optional[MetricsService] = None
+        cluster_manager: RedisClusterManager | None = None,
+        metrics_service: MetricsService | None = None
     ):
         """Initialize performance tuner."""
         self.cluster_manager = cluster_manager
         self.metrics_service = metrics_service
 
         # Analysis data
-        self.historical_metrics: List[PerformanceMetrics] = []
-        self.current_workload: Optional[WorkloadPattern] = None
-        self.recommendations: List[OptimizationRecommendation] = []
+        self.historical_metrics: list[PerformanceMetrics] = []
+        self.current_workload: WorkloadPattern | None = None
+        self.recommendations: list[OptimizationRecommendation] = []
 
         # Tuning thresholds
         self.thresholds = {
@@ -286,7 +285,7 @@ class RedisPerformanceTuner:
     # Performance Analysis
     # ========================================================================
 
-    def analyze_performance(self, metrics: PerformanceMetrics) -> List[OptimizationRecommendation]:
+    def analyze_performance(self, metrics: PerformanceMetrics) -> list[OptimizationRecommendation]:
         """Analyze performance metrics and generate recommendations."""
         recommendations = []
 
@@ -395,9 +394,9 @@ class RedisPerformanceTuner:
     async def apply_recommendations(
         self,
         client: Union[Redis, RedisCluster],
-        recommendations: List[OptimizationRecommendation],
+        recommendations: list[OptimizationRecommendation],
         dry_run: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Apply optimization recommendations to Redis."""
         results = {
             "applied": [],
@@ -448,11 +447,11 @@ class RedisPerformanceTuner:
 
         return results
 
-    async def get_current_config(self, client: Union[Redis, RedisCluster]) -> Dict[str, str]:
+    async def get_current_config(self, client: Union[Redis, RedisCluster]) -> dict[str, str]:
         """Get current Redis configuration."""
         try:
             config = await asyncio.to_thread(client.config_get, "*")
-            return dict(zip(config[::2], config[1::2]))
+            return dict(zip(config[::2], config[1::2], strict=False))
         except Exception as e:
             logger.error(f"Failed to get Redis config: {e}")
             return {}
@@ -553,7 +552,7 @@ class RedisPerformanceTuner:
     # Reporting
     # ========================================================================
 
-    def generate_performance_report(self) -> Dict[str, Any]:
+    def generate_performance_report(self) -> dict[str, Any]:
         """Generate comprehensive performance report."""
         if not self.historical_metrics:
             return {"error": "No metrics available"}

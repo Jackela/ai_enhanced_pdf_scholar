@@ -8,10 +8,8 @@ import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Union
-from unittest.mock import MagicMock, Mock, patch
-
-import pytest
+from typing import Any
+from unittest.mock import MagicMock, Mock
 
 from src.database.connection import DatabaseConnection
 from src.database.migrations.manager import MigrationManager
@@ -87,7 +85,7 @@ class MockFactory:
         return b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n%%EOF"
 
     @staticmethod
-    def create_mock_document_data() -> Dict[str, Any]:
+    def create_mock_document_data() -> dict[str, Any]:
         """Create mock document data for testing."""
         return {
             "id": 1,
@@ -154,7 +152,7 @@ class PerformanceMonitor:
         finally:
             self.stop(test_name)
 
-    def get_report(self) -> Dict[str, Any]:
+    def get_report(self) -> dict[str, Any]:
         """Get performance report."""
         if not self.measurements:
             return {"total_tests": 0, "slow_tests": 0}
@@ -180,7 +178,7 @@ class TestFixtureManager:
         self._fixture_cache[name] = fixture_data
         return fixture_data
 
-    def get_cached_fixture(self, name: str) -> Optional[Any]:
+    def get_cached_fixture(self, name: str) -> Any | None:
         """Get a cached fixture."""
         return self._fixture_cache.get(name)
 
@@ -203,7 +201,7 @@ class AsyncTestHelper:
     """Helper for async test operations."""
 
     @staticmethod
-    async def run_concurrent_operations(operations: List, max_concurrency: int = 5):
+    async def run_concurrent_operations(operations: list, max_concurrency: int = 5):
         """Run multiple async operations with controlled concurrency."""
         import asyncio
         semaphore = asyncio.Semaphore(max_concurrency)

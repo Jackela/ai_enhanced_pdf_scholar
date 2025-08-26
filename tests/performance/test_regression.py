@@ -8,20 +8,19 @@ import asyncio
 import json
 import logging
 import os
-import time
 import statistics
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field
-import psutil
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
+import psutil
 import pytest
-import httpx
 from fastapi.testclient import TestClient
 
 # Import application components
 from backend.api.main import app
-from tests.performance.base_performance import PerformanceTestBase, PerformanceMetrics
+from tests.performance.base_performance import PerformanceMetrics, PerformanceTestBase
 
 logger = logging.getLogger(__name__)
 
@@ -44,14 +43,14 @@ class RegressionTestResult:
     """Result of a performance regression test."""
     benchmark_name: str
     current_performance: PerformanceMetrics
-    baseline_performance: Dict[str, float]
+    baseline_performance: dict[str, float]
     response_time_change_percent: float
     throughput_change_percent: float
     memory_change_percent: float
     performance_degraded: bool
     critical_regression: bool
     passed: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class PerformanceRegressionTestSuite(PerformanceTestBase):
@@ -72,7 +71,7 @@ class PerformanceRegressionTestSuite(PerformanceTestBase):
         # Load baseline performance data
         self.baseline_data = self._load_baseline_performance()
 
-    def _define_performance_benchmarks(self) -> List[PerformanceBenchmark]:
+    def _define_performance_benchmarks(self) -> list[PerformanceBenchmark]:
         """Define performance benchmarks for regression testing."""
         return [
             PerformanceBenchmark(
@@ -141,12 +140,12 @@ class PerformanceRegressionTestSuite(PerformanceTestBase):
             )
         ]
 
-    def _load_baseline_performance(self) -> Dict[str, Dict[str, float]]:
+    def _load_baseline_performance(self) -> dict[str, dict[str, float]]:
         """Load baseline performance data from previous test runs."""
         baseline_file = "performance_results/performance_baselines.json"
 
         if os.path.exists(baseline_file):
-            with open(baseline_file, 'r') as f:
+            with open(baseline_file) as f:
                 return json.load(f)
 
         # If no baseline exists, use the benchmark definitions as baseline
@@ -670,7 +669,7 @@ class PerformanceRegressionTestSuite(PerformanceTestBase):
                 error_message=str(e)
             )
 
-    async def run_all_regression_tests(self) -> Dict[str, Any]:
+    async def run_all_regression_tests(self) -> dict[str, Any]:
         """Run all performance regression tests."""
         logger.info("Starting comprehensive performance regression testing")
 
@@ -725,7 +724,7 @@ class PerformanceRegressionTestSuite(PerformanceTestBase):
 
         return test_summary
 
-    def update_performance_baselines(self, results: Dict[str, Any]):
+    def update_performance_baselines(self, results: dict[str, Any]):
         """Update performance baselines with current test results."""
         logger.info("Updating performance baselines")
 
@@ -836,7 +835,7 @@ async def test_complete_performance_regression():
     if summary["performance_score"] >= 90.0:
         test_suite.update_performance_baselines(results)
 
-    logger.info(f"Complete performance regression testing PASSED")
+    logger.info("Complete performance regression testing PASSED")
     logger.info(f"Performance score: {summary['performance_score']:.1f}%")
     logger.info(f"Tests passed: {summary['passed_tests']}/{summary['total_tests']}")
     logger.info(f"Performance degraded: {summary['degraded_tests']}")

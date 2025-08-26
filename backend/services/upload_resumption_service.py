@@ -7,19 +7,17 @@ import asyncio
 import json
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Set
 from uuid import UUID
 
 import aiofiles
 
 from backend.api.streaming_models import (
+    UploadResumeRequest,
     UploadSession,
     UploadStatus,
-    UploadResumeRequest,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +47,10 @@ class UploadResumptionService:
         self.cleanup_interval_minutes = cleanup_interval_minutes
 
         # In-memory cache of resumable sessions
-        self.resumable_sessions: Dict[UUID, Dict] = {}
+        self.resumable_sessions: dict[UUID, dict] = {}
 
         # Cleanup task
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
         self._start_cleanup_task()
 
     def _start_cleanup_task(self):
@@ -113,7 +111,7 @@ class UploadResumptionService:
         except Exception as e:
             logger.error(f"Failed to save session state {session.session_id}: {e}")
 
-    async def load_session_state(self, session_id: UUID) -> Optional[Dict]:
+    async def load_session_state(self, session_id: UUID) -> dict | None:
         """
         Load saved session state for resumption.
 
@@ -133,7 +131,7 @@ class UploadResumptionService:
             if not state_file.exists():
                 return None
 
-            async with aiofiles.open(state_file, 'r') as f:
+            async with aiofiles.open(state_file) as f:
                 content = await f.read()
                 state = json.loads(content)
 
@@ -201,7 +199,7 @@ class UploadResumptionService:
     async def resume_upload_session(
         self,
         resume_request: UploadResumeRequest
-    ) -> Optional[UploadSession]:
+    ) -> UploadSession | None:
         """
         Resume an interrupted upload session.
 
@@ -267,7 +265,7 @@ class UploadResumptionService:
             logger.error(f"Failed to resume upload session {resume_request.session_id}: {e}")
             return None
 
-    async def _validate_and_fix_temp_file(self, state: Dict):
+    async def _validate_and_fix_temp_file(self, state: dict):
         """
         Validate temporary file and fix if needed.
 
@@ -311,7 +309,7 @@ class UploadResumptionService:
             logger.error(f"Failed to validate temp file for session {state['session_id']}: {e}")
             raise
 
-    async def get_resumable_sessions(self, client_id: Optional[str] = None) -> List[Dict]:
+    async def get_resumable_sessions(self, client_id: str | None = None) -> list[dict]:
         """
         Get list of resumable sessions, optionally filtered by client.
 
@@ -386,7 +384,7 @@ class UploadResumptionService:
             # Check all state files
             for state_file in self.state_dir.glob("*.json"):
                 try:
-                    async with aiofiles.open(state_file, 'r') as f:
+                    async with aiofiles.open(state_file) as f:
                         content = await f.read()
                         state = json.loads(content)
 

@@ -6,23 +6,22 @@ Agent A1 (secrets), Agent A2 (monitoring), and Agent A3 (configuration).
 
 import asyncio
 import logging
-import os
 import signal
 import time
 from contextlib import asynccontextmanager
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from typing import Any
 
-from .production import ProductionConfig
-from .secrets_integration import ProductionSecretsIntegration
-from .redis_cluster import RedisClusterManager
-from ..database.production_config import ProductionDatabaseManager
-from ..services.production_monitoring import ProductionMonitoringService
-from ..services.metrics_service import MetricsService
-from ..services.alert_service import AlertingService
-from ..api.security.production_headers import ProductionSecurityHeaders
 from ..api.security.ip_whitelist import ProductionIPWhitelist
+from ..api.security.production_headers import ProductionSecurityHeaders
 from ..api.security.request_signing import ProductionRequestSigning
+from ..database.production_config import ProductionDatabaseManager
+from ..services.alert_service import AlertingService
+from ..services.metrics_service import MetricsService
+from ..services.production_monitoring import ProductionMonitoringService
+from .production import ProductionConfig
+from .redis_cluster import RedisClusterManager
+from .secrets_integration import ProductionSecretsIntegration
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +50,16 @@ class ProductionEnvironmentManager:
 
     def __init__(self):
         """Initialize production environment manager."""
-        self.services: Optional[ProductionServices] = None
+        self.services: ProductionServices | None = None
         self.initialization_complete = False
         self.shutdown_initiated = False
 
         # Startup monitoring
         self.startup_start_time = time.time()
-        self.initialization_steps: List[Dict[str, Any]] = []
+        self.initialization_steps: list[dict[str, Any]] = []
 
         # Graceful shutdown handling
-        self._shutdown_handlers: List[asyncio.Task] = []
+        self._shutdown_handlers: list[asyncio.Task] = []
 
         logger.info("Production environment manager initialized")
 
@@ -149,7 +148,7 @@ class ProductionEnvironmentManager:
             total_time = time.time() - startup_time
             self.initialization_complete = True
 
-            logger.info(f"=== Production Environment Initialized Successfully ===")
+            logger.info("=== Production Environment Initialized Successfully ===")
             logger.info(f"Total initialization time: {total_time:.2f} seconds")
             logger.info(f"Initialization steps completed: {len(self.initialization_steps)}")
 
@@ -274,8 +273,8 @@ class ProductionEnvironmentManager:
 
     async def _initialize_metrics_and_alerting(self):
         """Initialize metrics and alerting services (Agent A2 integration)."""
-        from ..services.metrics_service import MetricsService
         from ..services.alert_service import AlertingService
+        from ..services.metrics_service import MetricsService
 
         # Initialize metrics service
         metrics_service = MetricsService(
@@ -299,8 +298,8 @@ class ProductionEnvironmentManager:
 
     async def _initialize_security_components(self):
         """Initialize security components."""
-        from ..api.security.production_headers import create_production_security_headers
         from ..api.security.ip_whitelist import create_production_ip_whitelist
+        from ..api.security.production_headers import create_production_security_headers
         from ..api.security.request_signing import create_production_request_signing
 
         # Initialize security headers
@@ -328,7 +327,9 @@ class ProductionEnvironmentManager:
 
     async def _initialize_monitoring_service(self):
         """Initialize comprehensive monitoring service."""
-        from ..services.production_monitoring import create_production_monitoring_service
+        from ..services.production_monitoring import (
+            create_production_monitoring_service,
+        )
 
         monitoring_service = create_production_monitoring_service(
             production_config=self.services.production_config,
@@ -439,7 +440,7 @@ class ProductionEnvironmentManager:
             if services:
                 await self.shutdown_production_environment()
 
-    def get_initialization_report(self) -> Dict[str, Any]:
+    def get_initialization_report(self) -> dict[str, Any]:
         """Get detailed initialization report."""
         total_time = time.time() - self.startup_start_time if hasattr(self, 'startup_start_time') else 0
 
@@ -460,7 +461,7 @@ class ProductionEnvironmentManager:
 
 
 # Global production environment manager instance
-_production_manager: Optional[ProductionEnvironmentManager] = None
+_production_manager: ProductionEnvironmentManager | None = None
 
 
 def get_production_manager() -> ProductionEnvironmentManager:

@@ -3,25 +3,15 @@ Comprehensive Security Testing Suite
 Production-ready penetration testing and security validation.
 """
 
-import asyncio
-import base64
-import hashlib
 import json
 import logging
 import random
-import re
-import ssl
-import string
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
-from urllib.parse import urlparse, urljoin
+from typing import Any
 
-import aiohttp
 import jwt
-import pytest
 import requests
-from cryptography.fernet import Fernet
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -111,7 +101,7 @@ class SecurityTestResult:
         passed: bool,
         details: str,
         remediation: str = "",
-        evidence: Dict[str, Any] = None
+        evidence: dict[str, Any] = None
     ):
         self.test_name = test_name
         self.vulnerability_type = vulnerability_type
@@ -130,7 +120,7 @@ class SecurityTester:
         """Initialize security tester."""
         self.config = config
         self.session = requests.Session()
-        self.results: List[SecurityTestResult] = []
+        self.results: list[SecurityTestResult] = []
 
         # Configure session with retries
         retry_strategy = Retry(
@@ -172,7 +162,7 @@ class SecurityTester:
     # Authentication & Authorization Tests
     # ========================================================================
 
-    def test_authentication_security(self) -> List[SecurityTestResult]:
+    def test_authentication_security(self) -> list[SecurityTestResult]:
         """Test authentication security."""
         results = []
 
@@ -443,7 +433,7 @@ class SecurityTester:
     # Injection Attack Tests
     # ========================================================================
 
-    def test_injection_vulnerabilities(self) -> List[SecurityTestResult]:
+    def test_injection_vulnerabilities(self) -> list[SecurityTestResult]:
         """Test for various injection vulnerabilities."""
         results = []
 
@@ -464,7 +454,7 @@ class SecurityTester:
 
         return results
 
-    def _test_sql_injection(self) -> List[SecurityTestResult]:
+    def _test_sql_injection(self) -> list[SecurityTestResult]:
         """Test for SQL injection vulnerabilities."""
         results = []
 
@@ -538,7 +528,7 @@ class SecurityTester:
 
         return results
 
-    def _test_xss(self) -> List[SecurityTestResult]:
+    def _test_xss(self) -> list[SecurityTestResult]:
         """Test for Cross-Site Scripting vulnerabilities."""
         results = []
 
@@ -737,7 +727,7 @@ class SecurityTester:
     # Security Headers Tests
     # ========================================================================
 
-    def test_security_headers(self) -> List[SecurityTestResult]:
+    def test_security_headers(self) -> list[SecurityTestResult]:
         """Test for proper security headers."""
         results = []
 
@@ -818,7 +808,7 @@ class SecurityTester:
     # TLS/SSL Security Tests
     # ========================================================================
 
-    def test_tls_security(self) -> List[SecurityTestResult]:
+    def test_tls_security(self) -> list[SecurityTestResult]:
         """Test TLS/SSL security configuration."""
         results = []
 
@@ -834,8 +824,8 @@ class SecurityTester:
             return results
 
         try:
-            import ssl
             import socket
+            import ssl
             from urllib.parse import urlparse
 
             parsed_url = urlparse(self.config.base_url)
@@ -918,7 +908,7 @@ class SecurityTester:
     # Business Logic Tests
     # ========================================================================
 
-    def test_business_logic_flaws(self) -> List[SecurityTestResult]:
+    def test_business_logic_flaws(self) -> list[SecurityTestResult]:
         """Test for business logic vulnerabilities."""
         results = []
 
@@ -1169,7 +1159,7 @@ class SecurityTester:
     # Test Execution and Reporting
     # ========================================================================
 
-    def run_all_tests(self) -> Dict[str, Any]:
+    def run_all_tests(self) -> dict[str, Any]:
         """Run all security tests and return comprehensive report."""
         logger.info("Starting comprehensive security test suite")
         start_time = time.time()

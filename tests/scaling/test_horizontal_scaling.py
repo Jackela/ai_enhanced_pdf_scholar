@@ -16,14 +16,13 @@ Features:
 import asyncio
 import json
 import logging
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
 import statistics
-import pytest
-import aiohttp
-import numpy as np
+import time
+from datetime import datetime
+from typing import Any
 
+import aiohttp
+import pytest
 from kubernetes import client, config
 from prometheus_api_client import PrometheusConnect
 
@@ -76,7 +75,7 @@ class HPATestFramework:
             logger.error(f"Error getting current replicas: {e}")
             return 0
 
-    async def get_hpa_status(self) -> Dict[str, Any]:
+    async def get_hpa_status(self) -> dict[str, Any]:
         """Get HPA status and metrics"""
         try:
             hpa = self.k8s_autoscaling.read_namespaced_horizontal_pod_autoscaler(
@@ -177,7 +176,7 @@ class HPATestFramework:
             await asyncio.gather(*tasks, return_exceptions=True)
             await asyncio.sleep(2)  # More controlled memory load
 
-    async def measure_response_times(self, duration: int = 60, sample_rate: int = 5) -> List[float]:
+    async def measure_response_times(self, duration: int = 60, sample_rate: int = 5) -> list[float]:
         """Measure response times during scaling events"""
         logger.info(f"Measuring response times for {duration} seconds")
 
@@ -202,7 +201,7 @@ class HPATestFramework:
 
         return response_times
 
-    async def get_resource_metrics(self) -> Dict[str, float]:
+    async def get_resource_metrics(self) -> dict[str, float]:
         """Get current resource utilization metrics"""
         metrics = {}
 
@@ -473,7 +472,7 @@ class TestHorizontalPodAutoscaler:
                 p95_response_time = statistics.quantiles(response_times, n=20)[18]
                 p99_response_time = statistics.quantiles(response_times, n=100)[98]
 
-                logger.info(f"Response time stats:")
+                logger.info("Response time stats:")
                 logger.info(f"  Average: {avg_response_time:.2f}ms")
                 logger.info(f"  P50: {p50_response_time:.2f}ms")
                 logger.info(f"  P95: {p95_response_time:.2f}ms")

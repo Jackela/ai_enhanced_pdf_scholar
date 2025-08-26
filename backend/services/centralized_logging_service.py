@@ -13,15 +13,13 @@ import time
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import uuid4
 
-import requests
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from loguru import logger as loguru_logger
 from pythonjsonlogger import jsonlogger
-
 
 # ============================================================================
 # Logging Configuration
@@ -263,7 +261,7 @@ class ElasticsearchHandler(logging.Handler):
                 if len(self.buffer) >= self.config.bulk_size:
                     self._flush_buffer()
 
-        except Exception as e:
+        except Exception:
             self.handleError(record)
 
     def _flush_buffer(self):
@@ -342,7 +340,7 @@ class LogstashHandler(logging.handlers.SocketHandler):
                 # Send via UDP
                 self.socket.sendto(data, (self.config.host, self.config.port))
 
-        except Exception as e:
+        except Exception:
             self.handleError(record)
 
 
@@ -516,7 +514,7 @@ class CentralizedLoggingService:
         self,
         name: str,
         source: LogSource = LogSource.SYSTEM,
-        correlation_id: Optional[str] = None
+        correlation_id: str | None = None
     ) -> logging.Logger:
         """Get a configured logger instance."""
         logger = logging.getLogger(name)
@@ -537,11 +535,11 @@ class CentralizedLoggingService:
         level: LogLevel,
         message: str,
         source: LogSource = LogSource.SYSTEM,
-        user_id: Optional[int] = None,
-        trace_id: Optional[str] = None,
-        span_id: Optional[str] = None,
-        correlation_id: Optional[str] = None,
-        extra_fields: Optional[Dict[str, Any]] = None,
+        user_id: int | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+        correlation_id: str | None = None,
+        extra_fields: dict[str, Any] | None = None,
         audit_event: bool = False,
         security_event: bool = False
     ):
@@ -578,11 +576,11 @@ class CentralizedLoggingService:
         endpoint: str,
         status_code: int,
         duration: float,
-        user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        request_size: Optional[int] = None,
-        response_size: Optional[int] = None
+        user_id: int | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        request_size: int | None = None,
+        response_size: int | None = None
     ):
         """Log API request with standard fields."""
         extra_fields = {
@@ -612,9 +610,9 @@ class CentralizedLoggingService:
         event_type: str,
         description: str,
         severity: str = "medium",
-        user_id: Optional[int] = None,
-        ip_address: Optional[str] = None,
-        additional_data: Optional[Dict[str, Any]] = None
+        user_id: int | None = None,
+        ip_address: str | None = None,
+        additional_data: dict[str, Any] | None = None
     ):
         """Log security event."""
         extra_fields = {
@@ -646,9 +644,9 @@ class CentralizedLoggingService:
         operation: str,
         table: str,
         duration: float,
-        rows_affected: Optional[int] = None,
-        user_id: Optional[int] = None,
-        query: Optional[str] = None
+        rows_affected: int | None = None,
+        user_id: int | None = None,
+        query: str | None = None
     ):
         """Log database query."""
         extra_fields = {
@@ -676,10 +674,10 @@ class CentralizedLoggingService:
         operation: str,
         duration: float,
         success: bool,
-        user_id: Optional[int] = None,
-        file_size: Optional[int] = None,
-        pages: Optional[int] = None,
-        error: Optional[str] = None
+        user_id: int | None = None,
+        file_size: int | None = None,
+        pages: int | None = None,
+        error: str | None = None
     ):
         """Log document processing operation."""
         extra_fields = {
@@ -707,13 +705,13 @@ class CentralizedLoggingService:
     def log_rag_query(
         self,
         query_hash: str,
-        document_id: Optional[int],
+        document_id: int | None,
         duration: float,
         success: bool,
-        retrieval_count: Optional[int] = None,
-        relevance_scores: Optional[List[float]] = None,
-        model_used: Optional[str] = None,
-        user_id: Optional[int] = None
+        retrieval_count: int | None = None,
+        relevance_scores: list[float] | None = None,
+        model_used: str | None = None,
+        user_id: int | None = None
     ):
         """Log RAG query operation."""
         extra_fields = {
@@ -746,13 +744,13 @@ class CentralizedLoggingService:
     def search_logs(
         self,
         query: str,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        log_level: Optional[LogLevel] = None,
-        source: Optional[LogSource] = None,
-        user_id: Optional[int] = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        log_level: LogLevel | None = None,
+        source: LogSource | None = None,
+        user_id: int | None = None,
         limit: int = 100
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search logs in Elasticsearch."""
         if not self.enable_elasticsearch or not hasattr(self, 'elasticsearch_handler'):
             return []
@@ -806,7 +804,7 @@ class CentralizedLoggingService:
         self,
         start_time: datetime,
         end_time: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get log statistics for a time period."""
         if not self.enable_elasticsearch or not hasattr(self, 'elasticsearch_handler'):
             return {}
@@ -929,7 +927,7 @@ class CentralizedLoggingService:
 class LoggingContext:
     """Context manager for adding correlation ID to logs."""
 
-    def __init__(self, correlation_id: Optional[str] = None, **kwargs):
+    def __init__(self, correlation_id: str | None = None, **kwargs):
         """Initialize logging context."""
         self.correlation_id = correlation_id or str(uuid4())
         self.context_data = kwargs

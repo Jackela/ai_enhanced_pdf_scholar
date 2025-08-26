@@ -9,12 +9,11 @@ This script provides:
 - Performance monitoring
 """
 
-import sys
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 
 
 class TestRunner:
@@ -49,7 +48,7 @@ class TestRunner:
         (self.project_root / "test_temp").mkdir(exist_ok=True)
         (self.project_root / "vector_indexes").mkdir(exist_ok=True)
 
-    def run_unit_tests(self, test_selection: Optional[str] = None) -> bool:
+    def run_unit_tests(self, test_selection: str | None = None) -> bool:
         """Run unit tests with proper isolation."""
         print("🧪 Running unit tests...")
 

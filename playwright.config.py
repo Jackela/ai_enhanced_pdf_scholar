@@ -2,8 +2,6 @@
 Playwright Configuration for AI Enhanced PDF Scholar Web UI Tests
 """
 
-from playwright.sync_api import Browser, BrowserContext, Page, Playwright
-import pytest
 
 # Playwright pytest configuration
 def pytest_configure(config):

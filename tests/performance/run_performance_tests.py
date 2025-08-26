@@ -5,22 +5,19 @@ Main Performance Test Runner
 Orchestrates the execution of all performance tests and generates comprehensive reports.
 """
 
-import asyncio
-import sys
 import argparse
+import asyncio
 import json
-from pathlib import Path
+import sys
 from datetime import datetime
-import subprocess
-import os
+from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from tests.performance.test_concurrent_users import ConcurrentUserTest
 from tests.performance.test_api_benchmarks import APIBenchmarkTest
+from tests.performance.test_concurrent_users import ConcurrentUserTest
 from tests.performance.test_resource_monitoring import ResourceTestSuite
-from tests.performance.metrics_collector import MetricsCollector, PerformanceThresholds, PerformanceReport
 
 
 class PerformanceTestRunner:
@@ -269,7 +266,7 @@ class PerformanceTestRunner:
 
             if "memory" in resource:
                 mem = resource["memory"].get("memory", {})
-                lines.append(f"  Memory:")
+                lines.append("  Memory:")
                 lines.append(f"    Peak: {mem.get('peak_mb', 0):.2f}MB")
                 lines.append(f"    Growth: {mem.get('growth_mb', 0):.2f}MB")
                 if mem.get("leak_detected"):
@@ -278,7 +275,7 @@ class PerformanceTestRunner:
             if "cpu_patterns" in resource:
                 cpu = resource["cpu_patterns"]
                 if "heavy" in cpu:
-                    lines.append(f"  CPU (Heavy Load):")
+                    lines.append("  CPU (Heavy Load):")
                     lines.append(f"    Average: {cpu['heavy']['avg_cpu']:.1f}%")
                     lines.append(f"    Peak: {cpu['heavy']['peak_cpu']:.1f}%")
 
@@ -370,7 +367,7 @@ class PerformanceTestRunner:
             <div class="container">
         """)
 
-        html.append(f"<h1>Performance Test Report</h1>")
+        html.append("<h1>Performance Test Report</h1>")
         html.append(f'<div class="timestamp">Generated: {datetime.now():%Y-%m-%d %H:%M:%S}</div>')
         html.append(f'<div class="timestamp">Duration: {self.end_time - self.start_time if self.end_time else "N/A"}</div>')
 

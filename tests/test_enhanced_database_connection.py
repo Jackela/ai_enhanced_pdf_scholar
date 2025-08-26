@@ -9,13 +9,10 @@ Tests cover:
 """
 
 import os
-import sqlite3
 import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -24,7 +21,6 @@ from src.database.connection import (
     ConnectionPoolExhaustedError,
     DatabaseConnection,
     DatabaseConnectionError,
-    TransactionError,
 )
 
 

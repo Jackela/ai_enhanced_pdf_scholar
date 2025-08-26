@@ -14,22 +14,19 @@ This suite benchmarks:
 The benchmarks use statistical methods with multiple runs to ensure reliable measurements.
 """
 
-import asyncio
+import concurrent.futures
 import gc
 import json
 import logging
-import os
-import psutil
 import statistics
 import tempfile
 import time
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Callable
-import threading
-import concurrent.futures
-from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from typing import Any
+
+import psutil
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -41,13 +38,15 @@ try:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from src.database.connection import DatabaseConnection
-    from src.database.modular_migrator import ModularDatabaseMigrator as DatabaseMigrator
-    from src.database.models import DocumentModel, CitationModel, VectorIndexModel
+    from src.database.models import CitationModel, DocumentModel, VectorIndexModel
+    from src.database.modular_migrator import (
+        ModularDatabaseMigrator as DatabaseMigrator,
+    )
     from src.repositories.document_repository import DocumentRepository
     from src.repositories.vector_repository import VectorIndexRepository
+    from src.services.content_hash_service import ContentHashService
     from src.services.document_library_service import DocumentLibraryService
     from src.services.enhanced_rag_service import EnhancedRAGService
-    from src.services.content_hash_service import ContentHashService
 
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
@@ -63,7 +62,7 @@ class PerformanceMetric:
     memory_mb: float
     cpu_percent: float
     timestamp: datetime
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 @dataclass
@@ -78,7 +77,7 @@ class BenchmarkResult:
     avg_memory_mb: float
     avg_cpu_percent: float
     throughput_ops_per_sec: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class PerformanceMonitor:
@@ -89,7 +88,7 @@ class PerformanceMonitor:
         self.baseline_memory = self.process.memory_info().rss / 1024 / 1024
         self.baseline_cpu = self.process.cpu_percent()
 
-    def get_current_stats(self) -> Tuple[float, float]:
+    def get_current_stats(self) -> tuple[float, float]:
         """Get current memory (MB) and CPU usage (%)."""
         memory_mb = self.process.memory_info().rss / 1024 / 1024
         cpu_percent = self.process.cpu_percent()
@@ -122,7 +121,7 @@ class BenchmarkTimer:
             return (self.end_time - self.start_time) * 1000
         return 0.0
 
-    def get_resource_usage(self) -> Tuple[float, float]:
+    def get_resource_usage(self) -> tuple[float, float]:
         """Get resource usage during the operation."""
         end_memory, end_cpu = self.monitor.get_current_stats()
         avg_memory = (self.start_memory + end_memory) / 2
@@ -137,14 +136,14 @@ class PDFBenchmark:
         self.test_data_dir = test_data_dir
         self.monitor = PerformanceMonitor()
 
-    def create_test_pdfs(self) -> List[Path]:
+    def create_test_pdfs(self) -> list[Path]:
         """Create test PDFs of various sizes."""
         test_files = []
 
         # Create simple test PDFs using reportlab if available
         try:
-            from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
 
             # Small PDF (10KB target)
             small_pdf = self.test_data_dir / "small_test.pdf"
@@ -206,7 +205,7 @@ class PDFBenchmark:
 
         return test_files
 
-    def benchmark_pdf_processing(self, pdf_files: List[Path], runs: int = 10) -> List[BenchmarkResult]:
+    def benchmark_pdf_processing(self, pdf_files: list[Path], runs: int = 10) -> list[BenchmarkResult]:
         """Benchmark PDF processing operations."""
         logger.info(f"Benchmarking PDF processing with {runs} runs per file size")
         results = []
@@ -271,7 +270,7 @@ class PDFBenchmark:
 class DatabaseBenchmark:
     """Benchmarks database operations."""
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path or tempfile.mktemp(suffix='.db')
         self.cleanup_db = db_path is None
         self.monitor = PerformanceMonitor()
@@ -288,7 +287,7 @@ class DatabaseBenchmark:
         if self.migrator.needs_migration():
             self.migrator.migrate()
 
-    def create_test_documents(self, count: int = 100) -> List[DocumentModel]:
+    def create_test_documents(self, count: int = 100) -> list[DocumentModel]:
         """Create test documents for benchmarking."""
         documents = []
 
@@ -310,7 +309,7 @@ class DatabaseBenchmark:
         logger.info(f"Created {len(documents)} test documents in {timer.duration_ms:.2f}ms")
         return documents
 
-    def benchmark_crud_operations(self, runs: int = 50) -> List[BenchmarkResult]:
+    def benchmark_crud_operations(self, runs: int = 50) -> list[BenchmarkResult]:
         """Benchmark CRUD (Create, Read, Update, Delete) operations."""
         logger.info(f"Benchmarking CRUD operations with {runs} runs")
         results = []
@@ -422,7 +421,7 @@ class DatabaseBenchmark:
 
         return results
 
-    def benchmark_query_operations(self, document_count: int = 100, runs: int = 30) -> List[BenchmarkResult]:
+    def benchmark_query_operations(self, document_count: int = 100, runs: int = 30) -> list[BenchmarkResult]:
         """Benchmark various database query operations."""
         logger.info(f"Benchmarking query operations with {document_count} documents, {runs} runs")
 
@@ -501,7 +500,7 @@ class APIMockBenchmark:
     def __init__(self):
         self.monitor = PerformanceMonitor()
 
-    def simulate_api_endpoint(self, endpoint_name: str, processing_time_ms: float = 10) -> Dict[str, Any]:
+    def simulate_api_endpoint(self, endpoint_name: str, processing_time_ms: float = 10) -> dict[str, Any]:
         """Simulate API endpoint processing."""
         # Simulate some processing work
         time.sleep(processing_time_ms / 1000)
@@ -513,7 +512,7 @@ class APIMockBenchmark:
             "processing_time_ms": processing_time_ms
         }
 
-    def benchmark_api_endpoints(self, runs: int = 50) -> List[BenchmarkResult]:
+    def benchmark_api_endpoints(self, runs: int = 50) -> list[BenchmarkResult]:
         """Benchmark simulated API endpoint response times."""
         logger.info(f"Benchmarking API endpoints with {runs} runs")
 
@@ -568,12 +567,12 @@ class APIMockBenchmark:
 class ConcurrencyBenchmark:
     """Benchmarks concurrent operations performance."""
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path or tempfile.mktemp(suffix='_concurrent.db')
         self.cleanup_db = db_path is None
         self.monitor = PerformanceMonitor()
 
-    def benchmark_concurrent_operations(self, thread_counts: List[int] = [1, 2, 4, 8], operations_per_thread: int = 10) -> List[BenchmarkResult]:
+    def benchmark_concurrent_operations(self, thread_counts: list[int] = [1, 2, 4, 8], operations_per_thread: int = 10) -> list[BenchmarkResult]:
         """Benchmark operations under different concurrency levels."""
         logger.info(f"Benchmarking concurrency with thread counts: {thread_counts}")
 
@@ -588,7 +587,7 @@ class ConcurrencyBenchmark:
 
             doc_repo = DocumentRepository(db)
 
-            def worker_task(worker_id: int, operations: int) -> List[float]:
+            def worker_task(worker_id: int, operations: int) -> list[float]:
                 """Worker thread task."""
                 times = []
                 for i in range(operations):
@@ -665,7 +664,7 @@ class ConcurrencyBenchmark:
 class ComprehensiveBenchmarkSuite:
     """Main benchmark suite coordinator."""
 
-    def __init__(self, output_dir: Optional[Path] = None):
+    def __init__(self, output_dir: Path | None = None):
         self.output_dir = output_dir or Path("benchmark_results")
         self.output_dir.mkdir(exist_ok=True)
 
@@ -677,7 +676,7 @@ class ComprehensiveBenchmarkSuite:
         self.end_time = None
         self.results = {}
 
-    def run_full_benchmark_suite(self) -> Dict[str, Any]:
+    def run_full_benchmark_suite(self) -> dict[str, Any]:
         """Run the complete benchmark suite."""
         logger.info("="*80)
         logger.info("STARTING COMPREHENSIVE PERFORMANCE BENCHMARK SUITE")
@@ -744,7 +743,7 @@ class ComprehensiveBenchmarkSuite:
 
         return self.results
 
-    def _generate_summary(self, all_results: List[BenchmarkResult]) -> Dict[str, Any]:
+    def _generate_summary(self, all_results: list[BenchmarkResult]) -> dict[str, Any]:
         """Generate summary statistics from all results."""
         if not all_results:
             return {"error": "No benchmark results available"}
@@ -810,7 +809,7 @@ class ComprehensiveBenchmarkSuite:
             "slowest_operation": max(all_results, key=lambda r: r.avg_duration_ms).operation if all_results else None
         }
 
-    def _get_system_info(self) -> Dict[str, Any]:
+    def _get_system_info(self) -> dict[str, Any]:
         """Get system information for benchmark context."""
         return {
             "cpu_count": psutil.cpu_count(),
@@ -860,7 +859,7 @@ class ComprehensiveBenchmarkSuite:
         if "summary" in self.results:
             summary = self.results["summary"]
 
-            print(f"\n📊 OVERALL PERFORMANCE METRICS:")
+            print("\n📊 OVERALL PERFORMANCE METRICS:")
             print(f"   Average Duration: {summary.get('overall_avg_duration_ms', 0):.2f}ms")
             print(f"   95th Percentile: {summary.get('overall_p95_duration_ms', 0):.2f}ms")
             print(f"   Memory Usage: {summary.get('overall_avg_memory_mb', 0):.1f}MB")
@@ -869,7 +868,7 @@ class ComprehensiveBenchmarkSuite:
             # Performance distribution
             perf_dist = summary.get('performance_distribution', {})
             total_ops = sum(perf_dist.values())
-            print(f"\n🎯 PERFORMANCE DISTRIBUTION:")
+            print("\n🎯 PERFORMANCE DISTRIBUTION:")
             for tier, count in perf_dist.items():
                 percentage = (count / total_ops * 100) if total_ops > 0 else 0
                 print(f"   {tier.capitalize()}: {count} operations ({percentage:.1f}%)")
@@ -878,7 +877,7 @@ class ComprehensiveBenchmarkSuite:
             print(f"🐌 SLOWEST: {summary.get('slowest_operation', 'N/A')}")
 
         # Category breakdown
-        print(f"\n📋 CATEGORY BREAKDOWN:")
+        print("\n📋 CATEGORY BREAKDOWN:")
         for category in ["pdf_processing", "database_crud", "database_queries", "api_endpoints", "concurrency"]:
             if category in self.results and self.results[category]:
                 results = self.results[category]
@@ -892,7 +891,7 @@ class ComprehensiveBenchmarkSuite:
         # System context
         if "metadata" in self.results and "system_info" in self.results["metadata"]:
             sys_info = self.results["metadata"]["system_info"]
-            print(f"\n🖥️  SYSTEM CONTEXT:")
+            print("\n🖥️  SYSTEM CONTEXT:")
             print(f"   CPU Cores: {sys_info.get('cpu_count', 'Unknown')}")
             print(f"   Memory: {sys_info.get('memory_total_mb', 0):.0f}MB")
             print(f"   Platform: {sys_info.get('platform', 'Unknown')}")

@@ -4,19 +4,21 @@ Shared fixtures and configuration for all security tests.
 """
 
 import os
-import pytest
-import asyncio
 from pathlib import Path
-from typing import Generator, Any
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
 # Import security testing utilities
 from tests.security.enhanced_security_utils import (
-    SecurityMonitor, SecurityScanner, PayloadGenerator,
-    SecurityTestFixtures, AsyncSecurityTester
+    AsyncSecurityTester,
+    PayloadGenerator,
+    SecurityMonitor,
+    SecurityScanner,
+    SecurityTestFixtures,
 )
 
 
@@ -290,7 +292,7 @@ def security_baseline():
 
     if baseline_file.exists():
         import json
-        with open(baseline_file, 'r') as f:
+        with open(baseline_file) as f:
             return json.load(f)
 
     # Return default baseline
@@ -313,8 +315,8 @@ def security_baseline():
 @pytest.fixture(scope="session")
 def security_report(request):
     """Generate security test report at end of session."""
-    from datetime import datetime
     import json
+    from datetime import datetime
 
     report = {
         "timestamp": datetime.now().isoformat(),

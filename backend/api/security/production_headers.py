@@ -4,17 +4,14 @@ Comprehensive security header implementation with advanced CSP configuration,
 threat detection, and monitoring integration.
 """
 
-import hashlib
 import logging
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Any, Union
-from urllib.parse import urlparse
 from enum import Enum
+from typing import Any
 
 from fastapi import Request, Response
-from fastapi.security import HTTPBearer
 
 from ...config.production import ProductionConfig
 from ...services.metrics_service import MetricsService
@@ -76,10 +73,10 @@ class CSPViolation:
     status_code: int
     violated_directive: str
     timestamp: float = field(default_factory=time.time)
-    user_agent: Optional[str] = None
-    source_file: Optional[str] = None
-    line_number: Optional[int] = None
-    column_number: Optional[int] = None
+    user_agent: str | None = None
+    source_file: str | None = None
+    line_number: int | None = None
+    column_number: int | None = None
 
 
 @dataclass
@@ -88,8 +85,8 @@ class SecurityHeaderConfig:
     # Content Security Policy
     csp_enabled: bool = True
     csp_report_only: bool = False
-    csp_report_uri: Optional[str] = None
-    csp_directives: Dict[CSPDirective, List[str]] = field(default_factory=dict)
+    csp_report_uri: str | None = None
+    csp_directives: dict[CSPDirective, list[str]] = field(default_factory=dict)
 
     # Security headers
     hsts_enabled: bool = True
@@ -108,7 +105,7 @@ class SecurityHeaderConfig:
     cross_origin_resource_policy: str = "same-site"
 
     # Permissions Policy
-    permissions_policy: Dict[str, List[str]] = field(default_factory=lambda: {
+    permissions_policy: dict[str, list[str]] = field(default_factory=lambda: {
         "camera": [],
         "microphone": [],
         "geolocation": [],
@@ -122,10 +119,10 @@ class SecurityHeaderConfig:
     expect_ct_enabled: bool = True
     expect_ct_max_age: int = 86400  # 1 day
     expect_ct_enforce: bool = False
-    expect_ct_report_uri: Optional[str] = None
+    expect_ct_report_uri: str | None = None
 
     # Custom headers
-    custom_headers: Dict[str, str] = field(default_factory=dict)
+    custom_headers: dict[str, str] = field(default_factory=dict)
 
 
 class ProductionSecurityHeaders:
@@ -136,9 +133,9 @@ class ProductionSecurityHeaders:
 
     def __init__(
         self,
-        config: Optional[SecurityHeaderConfig] = None,
-        production_config: Optional[ProductionConfig] = None,
-        metrics_service: Optional[MetricsService] = None
+        config: SecurityHeaderConfig | None = None,
+        production_config: ProductionConfig | None = None,
+        metrics_service: MetricsService | None = None
     ):
         """Initialize security headers manager."""
         self.config = config or SecurityHeaderConfig()
@@ -146,11 +143,11 @@ class ProductionSecurityHeaders:
         self.metrics_service = metrics_service
 
         # Violation tracking
-        self.violations: List[CSPViolation] = []
-        self.violation_stats: Dict[str, int] = {}
+        self.violations: list[CSPViolation] = []
+        self.violation_stats: dict[str, int] = {}
 
         # Nonce management
-        self.nonces: Set[str] = set()
+        self.nonces: set[str] = set()
         self.nonce_lifetime = 300  # 5 minutes
 
         # Initialize default CSP if not configured
@@ -197,7 +194,7 @@ class ProductionSecurityHeaders:
             recent_nonces = list(self.nonces)[-500:]
             self.nonces = set(recent_nonces)
 
-    def build_csp_header(self, nonce: Optional[str] = None) -> str:
+    def build_csp_header(self, nonce: str | None = None) -> str:
         """
         Build Content Security Policy header value.
 
@@ -263,7 +260,7 @@ class ProductionSecurityHeaders:
 
         return ", ".join(ct_parts)
 
-    def apply_security_headers(self, request: Request, response: Response, nonce: Optional[str] = None) -> Response:
+    def apply_security_headers(self, request: Request, response: Response, nonce: str | None = None) -> Response:
         """
         Apply security headers to response.
 
@@ -322,7 +319,7 @@ class ProductionSecurityHeaders:
 
         return response
 
-    def handle_csp_violation(self, violation_data: Dict[str, Any]) -> None:
+    def handle_csp_violation(self, violation_data: dict[str, Any]) -> None:
         """
         Handle CSP violation report.
 
@@ -369,7 +366,7 @@ class ProductionSecurityHeaders:
         except Exception as e:
             logger.error(f"Failed to handle CSP violation: {e}")
 
-    def analyze_violations(self) -> Dict[str, Any]:
+    def analyze_violations(self) -> dict[str, Any]:
         """Analyze CSP violations for patterns and threats."""
         analysis = {
             "total_violations": len(self.violations),
@@ -414,7 +411,7 @@ class ProductionSecurityHeaders:
 
         return analysis
 
-    def get_security_report(self) -> Dict[str, Any]:
+    def get_security_report(self) -> dict[str, Any]:
         """Get comprehensive security headers report."""
         return {
             "configuration": {
@@ -471,8 +468,8 @@ class SecurityHeadersMiddleware:
 
 
 def create_production_security_headers(
-    production_config: Optional[ProductionConfig] = None,
-    metrics_service: Optional[MetricsService] = None
+    production_config: ProductionConfig | None = None,
+    metrics_service: MetricsService | None = None
 ) -> ProductionSecurityHeaders:
     """
     Create production security headers with configuration from production config.
@@ -505,8 +502,8 @@ def create_production_security_headers(
 
 def setup_security_headers_middleware(
     app,
-    production_config: Optional[ProductionConfig] = None,
-    metrics_service: Optional[MetricsService] = None
+    production_config: ProductionConfig | None = None,
+    metrics_service: MetricsService | None = None
 ) -> ProductionSecurityHeaders:
     """
     Set up security headers middleware for FastAPI application.

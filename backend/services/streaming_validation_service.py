@@ -3,17 +3,13 @@ Streaming Validation Service
 Advanced file validation service for streaming uploads with detailed PDF analysis.
 """
 
-import asyncio
 import logging
 import re
-import struct
 from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional, Set, Tuple
 
 import aiofiles
 
 from backend.api.streaming_models import StreamingValidationResult
-
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +80,7 @@ class StreamingValidationService:
         self,
         file_path: str,
         chunk_size: int = 8192,
-        max_scan_size: Optional[int] = None
+        max_scan_size: int | None = None
     ) -> StreamingValidationResult:
         """
         Validate uploaded file with streaming approach for memory efficiency.
@@ -168,7 +164,7 @@ class StreamingValidationService:
 
         return result
 
-    def _validate_pdf_signature(self, header_bytes: bytes) -> Dict:
+    def _validate_pdf_signature(self, header_bytes: bytes) -> dict:
         """
         Validate PDF file signature and extract version information.
 
@@ -231,7 +227,7 @@ class StreamingValidationService:
         file_handle,
         scan_size: int,
         chunk_size: int
-    ) -> Dict:
+    ) -> dict:
         """
         Analyze PDF content structure with streaming approach.
 
@@ -338,9 +334,9 @@ class StreamingValidationService:
     def _analyze_pdf_chunk(
         self,
         chunk: bytes,
-        objects_found: Set[int],
-        pages_found: Set[int],
-        security_threats: Dict[str, List[int]]
+        objects_found: set[int],
+        pages_found: set[int],
+        security_threats: dict[str, list[int]]
     ):
         """
         Analyze a chunk of PDF content for structure and security threats.
@@ -400,7 +396,7 @@ class StreamingValidationService:
 
         return False
 
-    async def _estimate_page_count(self, file_handle) -> Optional[int]:
+    async def _estimate_page_count(self, file_handle) -> int | None:
         """
         Estimate PDF page count by analyzing file structure.
 
@@ -445,7 +441,7 @@ class StreamingValidationService:
         chunk_data: bytes,
         chunk_id: int,
         is_first_chunk: bool = False
-    ) -> Tuple[bool, List[str], List[str]]:
+    ) -> tuple[bool, list[str], list[str]]:
         """
         Validate individual chunk during upload for early detection of issues.
 
@@ -490,7 +486,7 @@ class StreamingValidationService:
 
         return is_valid, errors, warnings
 
-    def get_validation_stats(self) -> Dict:
+    def get_validation_stats(self) -> dict:
         """Get current validation statistics."""
         return self.validation_stats.copy()
 

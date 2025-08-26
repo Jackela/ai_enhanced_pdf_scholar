@@ -5,9 +5,10 @@ Tests CORS security integration with actual API endpoints.
 Verifies that CORS policies are properly enforced on real application endpoints.
 """
 
-import pytest
 import os
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 # Import the actual main app

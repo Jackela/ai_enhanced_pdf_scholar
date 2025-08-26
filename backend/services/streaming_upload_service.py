@@ -11,15 +11,13 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import AsyncGenerator, Dict, Optional, Set, Tuple, Union
+from typing import Union
 from uuid import UUID
 
 import aiofiles
 import psutil
 
 from backend.api.streaming_models import (
-    ChunkStatus,
-    StreamingChunk,
     StreamingUploadRequest,
     StreamingValidationResult,
     UploadMemoryStats,
@@ -27,7 +25,6 @@ from backend.api.streaming_models import (
     UploadSession,
     UploadStatus,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -63,19 +60,19 @@ class StreamingUploadService:
         self.cleanup_interval_seconds = cleanup_interval_seconds
 
         # Active sessions tracking
-        self.active_sessions: Dict[UUID, UploadSession] = {}
-        self.session_locks: Dict[UUID, asyncio.Lock] = {}
-        self.active_uploads: Set[UUID] = set()
+        self.active_sessions: dict[UUID, UploadSession] = {}
+        self.session_locks: dict[UUID, asyncio.Lock] = {}
+        self.active_uploads: set[UUID] = set()
 
         # Memory monitoring
         self.process = psutil.Process()
         self.peak_memory_mb: float = 0.0
 
         # Chunk processing statistics
-        self.chunk_stats: Dict[UUID, Dict[str, Union[int, float]]] = {}
+        self.chunk_stats: dict[UUID, dict[str, Union[int, float]]] = {}
 
         # Background cleanup task
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
         self._start_cleanup_task()
 
     def _start_cleanup_task(self):
@@ -257,9 +254,9 @@ class StreamingUploadService:
         chunk_data: bytes,
         chunk_offset: int,
         is_final: bool = False,
-        expected_checksum: Optional[str] = None,
+        expected_checksum: str | None = None,
         websocket_manager=None,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Process an uploaded chunk with validation and progress tracking.
 
@@ -512,7 +509,7 @@ class StreamingUploadService:
         except Exception as e:
             logger.error(f"Failed to send progress update for session {session.session_id}: {e}")
 
-    def _calculate_eta(self, session: UploadSession, upload_speed: float) -> Optional[int]:
+    def _calculate_eta(self, session: UploadSession, upload_speed: float) -> int | None:
         """Calculate estimated time remaining."""
         if upload_speed <= 0:
             return None
@@ -565,7 +562,7 @@ class StreamingUploadService:
         logger.info(f"Upload session {session_id} cancelled: {reason}")
         return True
 
-    async def get_session(self, session_id: UUID) -> Optional[UploadSession]:
+    async def get_session(self, session_id: UUID) -> UploadSession | None:
         """Get upload session by ID."""
         return self.active_sessions.get(session_id)
 

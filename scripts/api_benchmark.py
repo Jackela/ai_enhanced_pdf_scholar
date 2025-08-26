@@ -7,20 +7,19 @@ Tests actual API endpoint performance with realistic scenarios.
 import json
 import logging
 import statistics
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
-import sys
-import tempfile
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 try:
-    import httpx
     import asyncio
+
+    import httpx
 except ImportError:
     logger.error("Missing dependencies. Install with: pip install httpx")
     sys.exit(1)
@@ -47,7 +46,7 @@ class APIBenchmark:
             await self.client.aclose()
 
     async def benchmark_endpoint(self, method: str, endpoint: str, runs: int = 50,
-                                payload: Optional[Dict] = None) -> Dict:
+                                payload: dict | None = None) -> dict:
         """Benchmark a single API endpoint"""
         logger.info(f"Benchmarking {method} {endpoint} with {runs} runs")
 
@@ -117,7 +116,7 @@ class APIBenchmark:
             "errors": errors[:10]  # Keep first 10 errors for analysis
         }
 
-    async def benchmark_system_endpoints(self) -> Dict:
+    async def benchmark_system_endpoints(self) -> dict:
         """Benchmark system health endpoints"""
         logger.info("Benchmarking system endpoints...")
 
@@ -142,7 +141,7 @@ class APIBenchmark:
 
         return results
 
-    async def benchmark_document_endpoints(self) -> Dict:
+    async def benchmark_document_endpoints(self) -> dict:
         """Benchmark document management endpoints"""
         logger.info("Benchmarking document endpoints...")
 
@@ -170,7 +169,7 @@ class APIBenchmark:
 
         return results
 
-    async def benchmark_rag_endpoints(self) -> Dict:
+    async def benchmark_rag_endpoints(self) -> dict:
         """Benchmark RAG query endpoints"""
         logger.info("Benchmarking RAG endpoints...")
 
@@ -198,7 +197,7 @@ class APIBenchmark:
 
         return results
 
-    async def benchmark_settings_endpoints(self) -> Dict:
+    async def benchmark_settings_endpoints(self) -> dict:
         """Benchmark settings endpoints"""
         logger.info("Benchmarking settings endpoints...")
 
@@ -220,7 +219,7 @@ class APIBenchmark:
 
         return results
 
-    async def run_all_benchmarks(self) -> Dict:
+    async def run_all_benchmarks(self) -> dict:
         """Run all API benchmarks"""
         logger.info("Starting comprehensive API benchmark suite...")
         start_time = time.time()
@@ -329,7 +328,7 @@ class APIBenchmark:
                 print(f"   ✅ Successful Endpoints: {successful_endpoints}/{total_endpoints}")
 
         # Overall performance assessment
-        print(f"\n🎯 OVERALL ASSESSMENT:")
+        print("\n🎯 OVERALL ASSESSMENT:")
 
         all_times = []
         all_success_rates = []

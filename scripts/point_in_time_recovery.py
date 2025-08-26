@@ -9,22 +9,19 @@ import asyncio
 import json
 import logging
 import os
-import shutil
-import subprocess
+
+# Add backend to path for imports
+import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 import aiofiles
-import psutil
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
 
-# Add backend to path for imports
-import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from backend.core.secrets import get_secrets_manager
@@ -57,11 +54,11 @@ class RecoveryPoint:
     """Point-in-time recovery target."""
     point_id: str
     timestamp: datetime
-    lsn: Optional[str] = None  # Log Sequence Number for PostgreSQL
-    transaction_id: Optional[str] = None
-    backup_file: Optional[str] = None
-    log_files: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    lsn: str | None = None  # Log Sequence Number for PostgreSQL
+    transaction_id: str | None = None
+    backup_file: str | None = None
+    log_files: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -75,8 +72,8 @@ class RecoveryOperation:
     status: RecoveryStatus
 
     start_time: datetime
-    end_time: Optional[datetime] = None
-    estimated_duration: Optional[timedelta] = None
+    end_time: datetime | None = None
+    estimated_duration: timedelta | None = None
 
     # Progress tracking
     current_step: str = ""
@@ -85,13 +82,13 @@ class RecoveryOperation:
     # Results
     restored_data_size: int = 0
     transactions_replayed: int = 0
-    validation_results: Dict[str, Any] = field(default_factory=dict)
+    validation_results: dict[str, Any] = field(default_factory=dict)
 
     # Error tracking
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class TransactionLogManager:
@@ -104,9 +101,9 @@ class TransactionLogManager:
 
     async def get_available_recovery_points(
         self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
-    ) -> List[RecoveryPoint]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None
+    ) -> list[RecoveryPoint]:
         """Get available recovery points within time range."""
         recovery_points = []
 
@@ -149,7 +146,7 @@ class TransactionLogManager:
 
         return recovery_points
 
-    async def _parse_log_metadata(self, log_file: Path) -> Dict[str, Any]:
+    async def _parse_log_metadata(self, log_file: Path) -> dict[str, Any]:
         """Parse metadata from log file header."""
         metadata = {}
 
@@ -157,7 +154,7 @@ class TransactionLogManager:
             # Look for metadata file
             metadata_file = log_file.with_suffix('.meta')
             if metadata_file.exists():
-                async with aiofiles.open(metadata_file, 'r') as f:
+                async with aiofiles.open(metadata_file) as f:
                     content = await f.read()
                     metadata = json.loads(content)
             else:
@@ -185,8 +182,8 @@ class TransactionLogManager:
     async def _extract_recovery_points_from_log(
         self,
         log_file: Path,
-        metadata: Dict[str, Any]
-    ) -> List[RecoveryPoint]:
+        metadata: dict[str, Any]
+    ) -> list[RecoveryPoint]:
         """Extract recovery points from transaction log."""
         recovery_points = []
 
@@ -224,7 +221,7 @@ class TransactionLogManager:
 
         return recovery_points
 
-    async def validate_log_integrity(self, log_files: List[str]) -> Dict[str, Any]:
+    async def validate_log_integrity(self, log_files: list[str]) -> dict[str, Any]:
         """Validate integrity of transaction log files."""
         validation_results = {
             'valid_logs': [],
@@ -463,7 +460,7 @@ recovery_target_action = 'promote'
             logger.error(f"Error validating PITR recovery: {e}")
             return False
 
-    def _parse_connection_url(self) -> Dict[str, Any]:
+    def _parse_connection_url(self) -> dict[str, Any]:
         """Parse PostgreSQL connection URL."""
         from urllib.parse import urlparse
 
@@ -480,17 +477,17 @@ recovery_target_action = 'promote'
 class PointInTimeRecoveryService:
     """Main PITR service orchestrator."""
 
-    def __init__(self, metrics_service: Optional[MetricsService] = None):
+    def __init__(self, metrics_service: MetricsService | None = None):
         """Initialize PITR service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
 
         # Recovery operations tracking
-        self.active_operations: Dict[str, RecoveryOperation] = {}
+        self.active_operations: dict[str, RecoveryOperation] = {}
 
         # Initialize managers
-        self.log_manager: Optional[TransactionLogManager] = None
-        self.postgresql_manager: Optional[PostgreSQLPITRManager] = None
+        self.log_manager: TransactionLogManager | None = None
+        self.postgresql_manager: PostgreSQLPITRManager | None = None
 
         # Configuration
         self.backup_base_path = Path("/var/backups/pitr")
@@ -504,10 +501,10 @@ class PointInTimeRecoveryService:
 
     async def list_recovery_points(
         self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
         limit: int = 100
-    ) -> List[RecoveryPoint]:
+    ) -> list[RecoveryPoint]:
         """List available recovery points."""
         if not self.log_manager:
             raise ValueError("PITR not initialized - call initialize_postgresql_pitr first")
@@ -684,7 +681,7 @@ class PointInTimeRecoveryService:
             operation.errors.append(f"Transaction replay error: {str(e)}")
             return False
 
-    async def _find_base_backup(self, recovery_point: RecoveryPoint) -> Optional[str]:
+    async def _find_base_backup(self, recovery_point: RecoveryPoint) -> str | None:
         """Find suitable base backup for recovery point."""
         try:
             backup_files = list(self.backup_base_path.glob("base_backup_*.tar.gz"))
@@ -715,7 +712,7 @@ class PointInTimeRecoveryService:
             logger.error(f"Error finding base backup: {e}")
             return None
 
-    async def _validate_recovery(self, operation: RecoveryOperation) -> Dict[str, Any]:
+    async def _validate_recovery(self, operation: RecoveryOperation) -> dict[str, Any]:
         """Validate recovery operation results."""
         validation_results = {
             'overall_status': 'success',
@@ -780,15 +777,15 @@ class PointInTimeRecoveryService:
         except Exception as e:
             logger.error(f"Error updating recovery metrics: {e}")
 
-    def get_operation_status(self, operation_id: str) -> Optional[RecoveryOperation]:
+    def get_operation_status(self, operation_id: str) -> RecoveryOperation | None:
         """Get status of recovery operation."""
         return self.active_operations.get(operation_id)
 
-    def list_active_operations(self) -> List[RecoveryOperation]:
+    def list_active_operations(self) -> list[RecoveryOperation]:
         """List all active recovery operations."""
         return list(self.active_operations.values())
 
-    def get_service_status(self) -> Dict[str, Any]:
+    def get_service_status(self) -> dict[str, Any]:
         """Get PITR service status."""
         active_ops = len([op for op in self.active_operations.values()
                          if op.status in [RecoveryStatus.PREPARING, RecoveryStatus.RESTORING]])

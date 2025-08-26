@@ -14,20 +14,20 @@ Agent C3: Performance Baseline Testing Expert
 Mission: Validate system performance under concurrent load
 """
 
-import asyncio
+import argparse
 import json
-import requests
+import statistics
 import subprocess
-import time
 import threading
-import psutil
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-import statistics
-import argparse
+from typing import Any
+
+import psutil
+import requests
 
 
 @dataclass
@@ -37,7 +37,7 @@ class LoadTestResult:
     status_code: int
     response_time_ms: float
     content_length: int
-    error: Optional[str] = None
+    error: str | None = None
     timestamp: datetime = None
 
     def __post_init__(self):
@@ -65,8 +65,8 @@ class LightweightLoadTester:
         self.base_url = base_url
         self.project_root = Path(__file__).parent.parent
         self.api_process = None
-        self.results: List[LoadTestResult] = []
-        self.resource_snapshots: List[SystemResourceSnapshot] = []
+        self.results: list[LoadTestResult] = []
+        self.resource_snapshots: list[SystemResourceSnapshot] = []
 
         # Test scenarios
         self.scenarios = {
@@ -83,7 +83,7 @@ class LightweightLoadTester:
             '/api/settings'
         ]
 
-    def run_load_test(self, scenario: str = 'basic') -> Dict[str, Any]:
+    def run_load_test(self, scenario: str = 'basic') -> dict[str, Any]:
         """Run load test for specified scenario."""
         if scenario not in self.scenarios:
             raise ValueError(f"Unknown scenario: {scenario}. Available: {list(self.scenarios.keys())}")
@@ -195,7 +195,7 @@ class LightweightLoadTester:
         monitor_thread.start()
         print(f"   📊 Resource monitoring started ({duration}s)")
 
-    def _execute_load_test(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_load_test(self, config: dict[str, Any]) -> dict[str, Any]:
         """Execute the load test with specified configuration."""
         users = config['users']
         duration = config['duration']
@@ -236,7 +236,7 @@ class LightweightLoadTester:
             'results': results
         }
 
-    def _simulate_user_behavior(self, user_id: int, duration: int, requests_per_user: int) -> List[LoadTestResult]:
+    def _simulate_user_behavior(self, user_id: int, duration: int, requests_per_user: int) -> list[LoadTestResult]:
         """Simulate realistic user behavior with requests to various endpoints."""
         user_results = []
         start_time = time.time()
@@ -296,7 +296,7 @@ class LightweightLoadTester:
                 error=str(e)
             )
 
-    def _generate_load_test_report(self, scenario: str, test_results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_load_test_report(self, scenario: str, test_results: dict[str, Any]) -> dict[str, Any]:
         """Generate comprehensive load test report."""
         results = test_results['results']
         successful_results = [r for r in results if r.status_code == 200]
@@ -348,7 +348,7 @@ class LightweightLoadTester:
 
         return report
 
-    def _analyze_memory_pattern(self) -> Dict[str, Any]:
+    def _analyze_memory_pattern(self) -> dict[str, Any]:
         """Analyze memory usage patterns for leak detection."""
         if not self.resource_snapshots:
             return {'error': 'No memory data collected'}
@@ -363,7 +363,7 @@ class LightweightLoadTester:
 
             sum_x = sum(x_values)
             sum_y = sum(memory_values)
-            sum_xy = sum(x * y for x, y in zip(x_values, memory_values))
+            sum_xy = sum(x * y for x, y in zip(x_values, memory_values, strict=False))
             sum_xx = sum(x * x for x in x_values)
 
             # Slope calculation (memory growth rate)
@@ -385,7 +385,7 @@ class LightweightLoadTester:
             'samples_count': len(memory_values)
         }
 
-    def _analyze_system_resources(self) -> Dict[str, Any]:
+    def _analyze_system_resources(self) -> dict[str, Any]:
         """Analyze system resource utilization."""
         if not self.resource_snapshots:
             return {'error': 'No resource data collected'}
@@ -405,7 +405,7 @@ class LightweightLoadTester:
             'monitoring_duration_s': len(self.resource_snapshots)
         }
 
-    def _analyze_errors(self, results: List[LoadTestResult]) -> Dict[str, Any]:
+    def _analyze_errors(self, results: list[LoadTestResult]) -> dict[str, Any]:
         """Analyze error patterns and types."""
         errors = [r for r in results if r.status_code != 200 or r.error]
 
@@ -426,7 +426,7 @@ class LightweightLoadTester:
             'server_errors': sum(1 for r in results if r.status_code >= 500)
         }
 
-    def _evaluate_pass_criteria(self, response_stats: Dict[str, Any], memory_analysis: Dict[str, Any], error_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _evaluate_pass_criteria(self, response_stats: dict[str, Any], memory_analysis: dict[str, Any], error_analysis: dict[str, Any]) -> dict[str, Any]:
         """Evaluate whether the load test meets pass criteria."""
         criteria = {
             'response_time_acceptable': True,
@@ -456,7 +456,7 @@ class LightweightLoadTester:
 
         return criteria
 
-    def _percentile(self, data: List[float], percentile: float) -> float:
+    def _percentile(self, data: list[float], percentile: float) -> float:
         """Calculate percentile value."""
         if not data:
             return 0.0
@@ -465,9 +465,9 @@ class LightweightLoadTester:
         index = min(index, len(sorted_data) - 1)
         return sorted_data[index]
 
-    def _print_load_test_report(self, report: Dict[str, Any]) -> None:
+    def _print_load_test_report(self, report: dict[str, Any]) -> None:
         """Print formatted load test report."""
-        print(f"📊 Test Results:")
+        print("📊 Test Results:")
 
         summary = report['test_summary']
         print(f"  - Total Requests: {summary['total_requests']}")
@@ -487,7 +487,7 @@ class LightweightLoadTester:
             growth_rate = memory.get('memory_growth_rate_mb_per_hour', 0)
             stable = memory.get('memory_stable', False)
 
-            print(f"📊 System Resources:")
+            print("📊 System Resources:")
             print(f"  - Memory Usage: Start {memory.get('initial_memory_mb', 0):.0f}MB → "
                   f"Peak {memory.get('peak_memory_mb', 0):.0f}MB → End {memory.get('final_memory_mb', 0):.0f}MB")
             print(f"  - Memory Growth: {growth:+.1f}MB ({growth_rate:+.1f}MB/hour)")
@@ -495,7 +495,7 @@ class LightweightLoadTester:
 
         errors = report.get('error_analysis', {})
         if errors:
-            print(f"📊 Error Analysis:")
+            print("📊 Error Analysis:")
             print(f"  - Timeout errors: {errors.get('timeout_errors', 0)}")
             print(f"  - Connection errors: {errors.get('connection_errors', 0)}")
             print(f"  - Server errors: {errors.get('server_errors', 0)}")
@@ -506,7 +506,7 @@ class LightweightLoadTester:
 
         print(f"✅ Load test completed {'successfully' if overall_pass else 'with issues'}")
 
-    def _save_load_test_results(self, scenario: str, report: Dict[str, Any]) -> None:
+    def _save_load_test_results(self, scenario: str, report: dict[str, Any]) -> None:
         """Save load test results to file."""
         results_dir = self.project_root / "performance_results"
         results_dir.mkdir(exist_ok=True)

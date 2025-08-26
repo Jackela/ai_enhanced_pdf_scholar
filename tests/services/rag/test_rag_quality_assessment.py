@@ -5,21 +5,15 @@ Comprehensive tests for evaluating RAG query accuracy, response quality,
 and citation reliability to ensure high-quality AI-powered responses.
 """
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from typing import List, Dict, Any, Tuple
-import json
-import re
-from pathlib import Path
 
 from src.services.rag.quality_assessment import (
-    RAGQualityAssessment,
-    ResponseQualityMetrics,
     CitationAccuracyValidator,
-    SemanticRelevanceScorer
+    RAGQualityAssessment,
+    SemanticRelevanceScorer,
 )
-from src.services.rag.exceptions import RAGQualityError
-from src.database.models import DocumentModel
 
 
 class TestRAGQualityAssessment:

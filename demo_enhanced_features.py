@@ -94,7 +94,7 @@ def create_demo_documents(service):
         "hash_data_science"
     ]
 
-    for i, (demo_file, title, content_hash) in enumerate(zip(demo_files, titles, content_hashes)):
+    for i, (demo_file, title, content_hash) in enumerate(zip(demo_files, titles, content_hashes, strict=False)):
         # Manually create document records since we don't have real PDFs
         from src.database.models import DocumentModel
 
@@ -165,7 +165,7 @@ def demo_duplicate_detection(service):
 
         # Demonstrate duplicate resolution for content duplicates
         if "Exact content match" in criteria and len(docs) > 1:
-            logger.info(f"  Resolving duplicates (keeping first document)...")
+            logger.info("  Resolving duplicates (keeping first document)...")
             resolution_result = service.resolve_duplicate_documents(
                 docs, docs[0].id, remove_files=False
             )

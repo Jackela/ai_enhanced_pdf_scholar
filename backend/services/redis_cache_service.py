@@ -3,19 +3,17 @@ Redis Cache Service with Intelligent Caching Strategy
 Production-ready distributed caching implementation.
 """
 
+import builtins
 import hashlib
-import json
 import logging
 import pickle
-import time
-from datetime import datetime, timedelta
+from collections.abc import Callable
+from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set, Union
+from typing import Any, Union
 
-import redis
 from redis import ConnectionPool, Redis
-from redis.client import Pipeline
 from redis.exceptions import RedisError
 from redis.sentinel import Sentinel
 
@@ -87,7 +85,7 @@ class RedisCacheService:
     Comprehensive Redis cache service with intelligent caching strategies.
     """
 
-    def __init__(self, config: Optional[RedisConfig] = None):
+    def __init__(self, config: RedisConfig | None = None):
         """Initialize Redis cache service."""
         self.config = config or RedisConfig()
         self._redis_client = None
@@ -201,7 +199,7 @@ class RedisCacheService:
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         serialize: bool = True,
         nx: bool = False,
         xx: bool = False
@@ -309,7 +307,7 @@ class RedisCacheService:
     # Batch Operations
     # ========================================================================
 
-    def mget(self, keys: List[str]) -> Dict[str, Any]:
+    def mget(self, keys: list[str]) -> dict[str, Any]:
         """Get multiple values from cache."""
         if not self._redis_client:
             return {}
@@ -318,7 +316,7 @@ class RedisCacheService:
             values = self._redis_client.mget(keys)
             result = {}
 
-            for key, value in zip(keys, values):
+            for key, value in zip(keys, values, strict=False):
                 if value is not None:
                     result[key] = self._deserialize(value)
                     self._cache_stats["hits"] += 1
@@ -332,7 +330,7 @@ class RedisCacheService:
             self._cache_stats["errors"] += 1
             return {}
 
-    def mset(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+    def mset(self, mapping: dict[str, Any], ttl: int | None = None) -> bool:
         """Set multiple values in cache."""
         if not self._redis_client:
             return False
@@ -366,7 +364,7 @@ class RedisCacheService:
     # Pattern-based Operations
     # ========================================================================
 
-    def get_by_pattern(self, pattern: str) -> Dict[str, Any]:
+    def get_by_pattern(self, pattern: str) -> dict[str, Any]:
         """Get all keys matching a pattern."""
         if not self._redis_client:
             return {}
@@ -406,7 +404,7 @@ class RedisCacheService:
     # Advanced Cache Features
     # ========================================================================
 
-    def increment(self, key: str, amount: int = 1) -> Optional[int]:
+    def increment(self, key: str, amount: int = 1) -> int | None:
         """Increment a counter."""
         if not self._redis_client:
             return None
@@ -429,7 +427,7 @@ class RedisCacheService:
             logger.error(f"Redis sadd error for key {key}: {e}")
             return 0
 
-    def get_set_members(self, key: str) -> Set[Any]:
+    def get_set_members(self, key: str) -> builtins.set[Any]:
         """Get all members of a set."""
         if not self._redis_client:
             return set()
@@ -441,7 +439,7 @@ class RedisCacheService:
             logger.error(f"Redis smembers error for key {key}: {e}")
             return set()
 
-    def add_to_sorted_set(self, key: str, mapping: Dict[Any, float]) -> int:
+    def add_to_sorted_set(self, key: str, mapping: dict[Any, float]) -> int:
         """Add values to a sorted set with scores."""
         if not self._redis_client:
             return 0
@@ -461,7 +459,7 @@ class RedisCacheService:
         end: int = -1,
         withscores: bool = False,
         reverse: bool = False
-    ) -> Union[List[Any], List[tuple]]:
+    ) -> Union[list[Any], list[tuple]]:
         """Get range from sorted set."""
         if not self._redis_client:
             return []
@@ -487,11 +485,11 @@ class RedisCacheService:
 
     def cached(
         self,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         key_prefix: str = "",
-        key_func: Optional[Callable] = None,
-        tags: Optional[List[str]] = None,
-        condition: Optional[Callable] = None
+        key_func: Callable | None = None,
+        tags: list[str] | None = None,
+        condition: Callable | None = None
     ):
         """
         Decorator for caching function results.
@@ -557,7 +555,7 @@ class RedisCacheService:
         self,
         key: str,
         loader: Callable,
-        ttl: Optional[int] = None
+        ttl: int | None = None
     ) -> Any:
         """
         Cache-aside pattern implementation.
@@ -588,16 +586,16 @@ class RedisCacheService:
     # Cache Warming and Preloading
     # ========================================================================
 
-    def warm_cache(self, data: Dict[str, Any], ttl: Optional[int] = None):
+    def warm_cache(self, data: dict[str, Any], ttl: int | None = None):
         """Warm cache with pre-computed data."""
         return self.mset(data, ttl=ttl)
 
     def preload_pattern(
         self,
         pattern_template: str,
-        ids: List[Any],
+        ids: list[Any],
         loader: Callable,
-        ttl: Optional[int] = None
+        ttl: int | None = None
     ):
         """
         Preload cache for a pattern of keys.
@@ -622,7 +620,7 @@ class RedisCacheService:
     # Cache Statistics and Monitoring
     # ========================================================================
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         stats = self._cache_stats.copy()
 
@@ -766,8 +764,8 @@ class IntelligentCacheStrategy:
                 f"search:*{entity_id}*"
             ],
             "permission": [
-                f"permissions:*",
-                f"rbac:*"
+                "permissions:*",
+                "rbac:*"
             ]
         }
 
@@ -782,7 +780,7 @@ class IntelligentCacheStrategy:
         document_id: int,
         query: str,
         result: Any,
-        ttl: Optional[int] = None
+        ttl: int | None = None
     ) -> str:
         """
         Cache document query result with intelligent key generation.

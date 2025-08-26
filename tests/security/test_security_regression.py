@@ -5,17 +5,17 @@ Ensures security fixes don't regress and maintains security baseline.
 
 import json
 import time
-import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 import pytest
-from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 
 from tests.security.enhanced_security_utils import (
-    PayloadGenerator, SecurityScanner, SecurityTestResult,
-    AttackVector, SecuritySeverity, SecurityMonitor
+    PayloadGenerator,
+    SecurityMonitor,
+    SecurityScanner,
 )
 
 
@@ -25,22 +25,22 @@ class SecurityBaseline:
     BASELINE_FILE = Path("tests/security/security_baseline.json")
 
     @classmethod
-    def load(cls) -> Dict[str, Any]:
+    def load(cls) -> dict[str, Any]:
         """Load security baseline from file."""
         if cls.BASELINE_FILE.exists():
-            with open(cls.BASELINE_FILE, 'r') as f:
+            with open(cls.BASELINE_FILE) as f:
                 return json.load(f)
         return cls.get_default_baseline()
 
     @classmethod
-    def save(cls, baseline: Dict[str, Any]):
+    def save(cls, baseline: dict[str, Any]):
         """Save security baseline to file."""
         cls.BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(cls.BASELINE_FILE, 'w') as f:
             json.dump(baseline, f, indent=2)
 
     @classmethod
-    def get_default_baseline(cls) -> Dict[str, Any]:
+    def get_default_baseline(cls) -> dict[str, Any]:
         """Get default security baseline."""
         return {
             "version": "1.0.0",

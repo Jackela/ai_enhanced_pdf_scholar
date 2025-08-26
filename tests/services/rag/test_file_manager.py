@@ -5,19 +5,17 @@ Tests for the specialized service responsible for managing RAG-related file oper
 cleanup, storage optimization, and file system interactions.
 """
 
-import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from pathlib import Path
-import tempfile
-import shutil
-import json
-import time
 import os
-from typing import List, Dict, Any
+import shutil
+import tempfile
+import time
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
-from src.services.rag.file_manager import RAGFileManager
+import pytest
+
 from src.services.rag.exceptions import RAGFileError, RAGStorageError
-from src.utils.file_utils import FileUtils
+from src.services.rag.file_manager import RAGFileManager
 
 
 class TestRAGFileManager:
@@ -248,7 +246,7 @@ class TestRAGFileManager:
             target_dir / "metadata.json"
         ]
 
-        file_moves = list(zip(source_files, target_files))
+        file_moves = list(zip(source_files, target_files, strict=False))
 
         # When
         move_result = await file_manager.move_files(file_moves)
@@ -496,7 +494,6 @@ class TestRAGFileManager:
 
     def test_concurrent_file_operations_safety(self, file_manager):
         """Test thread-safety of concurrent file operations."""
-        import threading
         import concurrent.futures
 
         # Given - multiple files to process concurrently

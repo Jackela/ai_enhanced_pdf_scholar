@@ -4,7 +4,6 @@ Creates tables for users and refresh tokens.
 """
 
 import logging
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 

@@ -5,24 +5,22 @@ Comprehensive performance analysis for AI Enhanced PDF Scholar
 Includes memory monitoring, concurrent load testing, and reliability assessment
 """
 
-import asyncio
 import concurrent.futures
 import json
 import logging
 import os
-import psutil
 import sqlite3
 import statistics
 import sys
-import threading
+import tempfile
 import time
-from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from concurrent.futures import ThreadPoolExecutor
-import tempfile
+from typing import Any
+
+import psutil
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -105,7 +103,7 @@ class ReliabilityTest:
     avg_recovery_time_ms: float
     max_recovery_time_ms: float
     reliability_score: float  # 0-1 scale
-    error_messages: List[str]
+    error_messages: list[str]
 
 
 class SystemPerformanceMonitor:
@@ -145,7 +143,7 @@ class SystemPerformanceMonitor:
             timestamp=time.time()
         )
 
-    def monitor_system_resources(self, duration_seconds: int = 60, interval_seconds: int = 1) -> Dict[str, Any]:
+    def monitor_system_resources(self, duration_seconds: int = 60, interval_seconds: int = 1) -> dict[str, Any]:
         """Monitor system resources over time"""
         logger.info(f"Monitoring system resources for {duration_seconds} seconds...")
 
@@ -400,7 +398,7 @@ class SystemPerformanceMonitor:
 
         return load_test
 
-    def test_system_reliability(self) -> List[ReliabilityTest]:
+    def test_system_reliability(self) -> list[ReliabilityTest]:
         """Test system reliability under various stress conditions"""
         logger.info("Testing system reliability...")
 
@@ -497,7 +495,7 @@ class SystemPerformanceMonitor:
 
         return reliability_tests
 
-    def run_comprehensive_assessment(self) -> Dict[str, Any]:
+    def run_comprehensive_assessment(self) -> dict[str, Any]:
         """Run comprehensive performance and reliability assessment"""
         logger.info("Starting comprehensive system performance assessment...")
 
@@ -571,9 +569,9 @@ class SystemPerformanceMonitor:
                 "assessment_duration_seconds": time.time() - assessment_start
             }
 
-    def generate_performance_summary(self, resource_metrics: Dict, db_metrics: DatabaseMetrics,
-                                    memory_tests: List[MemoryLeakTest], load_tests: List[ConcurrentLoadTest],
-                                    reliability_tests: List[ReliabilityTest]) -> Dict[str, Any]:
+    def generate_performance_summary(self, resource_metrics: dict, db_metrics: DatabaseMetrics,
+                                    memory_tests: list[MemoryLeakTest], load_tests: list[ConcurrentLoadTest],
+                                    reliability_tests: list[ReliabilityTest]) -> dict[str, Any]:
         """Generate performance summary and assessment"""
 
         # System performance score (0-100)
@@ -654,7 +652,7 @@ class SystemPerformanceMonitor:
             }
         }
 
-    def estimate_max_concurrent_users(self, load_tests: List[ConcurrentLoadTest]) -> int:
+    def estimate_max_concurrent_users(self, load_tests: list[ConcurrentLoadTest]) -> int:
         """Estimate maximum concurrent users based on load test results"""
         # Find the highest successful user count with acceptable performance
         successful_tests = [test for test in load_tests if test.error_rate_percent < 5 and test.avg_response_time_ms < 100]
@@ -665,7 +663,7 @@ class SystemPerformanceMonitor:
             # Conservative estimate if all tests had issues
             return min(test.concurrent_users for test in load_tests) // 2
 
-    def generate_recommendations(self, production_issues: List[str], overall_score: float) -> List[str]:
+    def generate_recommendations(self, production_issues: list[str], overall_score: float) -> list[str]:
         """Generate performance optimization recommendations"""
         recommendations = []
 
@@ -747,13 +745,13 @@ def main():
 
             # Component scores
             component_scores = summary.get("component_scores", {})
-            print(f"\n📈 Component Scores:")
+            print("\n📈 Component Scores:")
             for component, score in component_scores.items():
                 print(f"   • {component.replace('_', ' ').title()}: {score}/100")
 
             # Key metrics
             key_metrics = summary.get("key_metrics", {})
-            print(f"\n🔑 Key Metrics:")
+            print("\n🔑 Key Metrics:")
             print(f"   • Average Query Time: {key_metrics.get('avg_query_time_ms', 0):.2f}ms")
             print(f"   • Peak Memory Usage: {key_metrics.get('peak_memory_mb', 0):.0f}MB")
             print(f"   • Max Concurrent Users: {key_metrics.get('max_concurrent_users_supported', 0)}")
