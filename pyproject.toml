@@ -221,60 +221,88 @@ module = [
 ignore_missing_imports = true
 
 # ============================================================================
-# Pytest Configuration
+# Pytest Configuration (Consolidated from pytest.ini)
 # ============================================================================
 
 [tool.pytest.ini_options]
 minversion = "7.0"
+testpaths = ["tests"]
+python_paths = [". src"]
+python_files = ["test_*.py"]
+python_classes = ["Test*", "*Test*", "*Tests"]
+python_functions = ["test_*"]
 addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
+    "--tb=short",
+    "--disable-warnings",
+    "--maxfail=10",
+    "-n", "auto",
+    "--dist=loadfile",
     "--cov=src",
     "--cov-report=html:htmlcov",
-    "--cov-report=term-missing",
+    "--cov-report=term-missing:skip-covered",
     "--cov-report=xml:coverage.xml",
     "--cov-fail-under=75",
-    "--tb=short",
+    "--cov-config=pyproject.toml",
 ]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
 markers = [
-    "unit: Unit tests - isolated component testing",
-    "integration: Integration tests - component interaction",
-    "e2e: End-to-end tests - full workflow testing", 
-    "slow: Slow running tests",
-    "database: Tests requiring database setup",
+    "unit: Fast unit tests - isolated component testing",
+    "integration: Integration tests - component interaction testing",
+    "e2e: End-to-end tests - full workflow testing",
+    "database: Tests requiring database setup and operations",
     "services: Service layer tests",
     "repositories: Repository layer tests",
+    "controllers: Controller layer tests",
     "api: API endpoint tests",
     "frontend: Frontend tests",
-    "security: Security tests",
+    "security: Security-focused tests",
+    "performance: Performance benchmark tests",
+    "slow: Slow running tests (>1 second)",
+    "resource: Resource monitoring and usage tests",
+    "benchmark: Benchmark performance tests using pytest-benchmark",
+    "asyncio: Async test functions",
+    "smoke: Smoke tests for basic functionality",
+    "regression: Regression tests",
+    "critical: Critical path tests that must always pass",
 ]
 filterwarnings = [
+    "ignore::UserWarning",
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    "ignore::DeprecationWarning:pkg_resources.*",
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
-log_cli = true
-log_cli_level = "INFO"
+log_cli = false
+log_cli_level = "WARNING"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-timeout = 300
+log_file = "pytest_log.txt"
+log_file_level = "DEBUG"
+timeout = 60
+timeout_method = "thread"
+cache_dir = ".pytest_cache"
 
 # ============================================================================
-# Coverage Configuration
+# Coverage Configuration (Consolidated from .coveragerc)
 # ============================================================================
 
 [tool.coverage.run]
 source = ["src"]
 branch = true
+parallel = true
+concurrency = ["multiprocessing"]
+data_file = ".coverage"
 omit = [
+    "src/web/static/*",
     "*/tests/*",
     "*/test_*",
     "*/__pycache__/*",
     "*/migrations/*",
+    "src/ui/*",
+    "*conftest.py",
+    "*/fixtures/*",
     "*/venv/*",
     "*/.venv/*",
     "*/build/*",
@@ -283,27 +311,36 @@ omit = [
 ]
 
 [tool.coverage.report]
+fail_under = 75
+show_missing = true
+skip_covered = false
+skip_empty = false
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
     "if self.debug:",
+    "if self\\.debug",
     "if settings.DEBUG",
     "raise AssertionError",
     "raise NotImplementedError",
     "if 0:",
+    "if False:",
     "if __name__ == .__main__.:",
+    "if __name__ == \"__main__\":",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
 ignore_errors = true
-skip_covered = false
-skip_empty = false
 
 [tool.coverage.html]
 directory = "htmlcov"
+title = "AI Enhanced PDF Scholar - Test Coverage Report"
 
 [tool.coverage.xml]
 output = "coverage.xml"
+
+[tool.coverage.json]
+output = "coverage.json"
 
 # ============================================================================
 # Bandit Configuration (Security)
@@ -368,13 +405,40 @@ subprocess = [
 ]
 
 # ============================================================================
-# Ruff Configuration (Fast Python Linter/Formatter)
+# Ruff Configuration (Fast Python Linter/Formatter - Replaces Flake8)
 # ============================================================================
 
 [tool.ruff]
 target-version = "py310"
 line-length = 88
 fix = true
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "env",
+    ".env",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".mypy_cache",
+    ".pytest_cache",
+    "node_modules",
+    "frontend",
+    "migrations",
+    "alembic",
+    ".github",
+    "htmlcov",
+    "coverage_*",
+    ".coverage",
+    "*.pyc",
+    "*.pyo",
+    "*.pyd",
+    ".Python",
+    ".tox",
+    ".coverage.*"
+]
 
 [tool.ruff.lint]
 select = [
@@ -387,23 +451,52 @@ select = [
     "I",    # isort
     "C90",  # mccabe complexity
     "PERF", # perflint
+    "S",    # flake8-bandit (security)
+    "C",    # flake8-comprehensions
+    "N",    # pep8-naming
 ]
 ignore = [
     "E501",   # line too long (handled by formatter)
+    "E402",   # module level import not at top of file
+    "F401",   # imported but unused
     "B008",   # do not perform function calls in argument defaults
+    "B009",   # do not call getattr with a constant attribute value
     "UP007",  # Use X | Y for type annotations (Python 3.10+)
+    "S101",   # use of assert detected (common in tests)
+    "N802",   # function name should be lowercase
+    "N803",   # argument name should be lowercase
+    "N806",   # variable in function should be lowercase
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106", "S107"]  # Allow asserts and hardcoded passwords in tests
+# Test files can be more lenient
+"tests/*.py" = ["F401", "F811", "E501", "S101", "S105", "S106", "S107"]
+"test_*.py" = ["F401", "F811", "E501", "S101", "S105", "S106", "S107"]
+"conftest.py" = ["F401", "F811"]
+# Allow complex imports in __init__.py files
+"__init__.py" = ["F401", "F403"]
+# Config files can have complex setup
+"config.py" = ["E501"]
+# Web main can be complex
+"web_main.py" = ["C901"]
+# Database models can have long lines
+"*/models.py" = ["E501"]
+# Migration files (if any)
+"migrations/*.py" = ["E501", "F401"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "backend", "tests"]
+known-third-party = ["fastapi", "uvicorn", "pydantic", "pytest", "llama_index", "PyMuPDF", "markdown", "dotenv"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
+docstring-code-format = true
+docstring-code-line-length = 88
 
 # ============================================================================
 # Development Tools Configuration

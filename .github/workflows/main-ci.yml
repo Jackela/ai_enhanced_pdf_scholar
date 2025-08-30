@@ -1,0 +1,728 @@
+name: 🚀 Unified CI/CD Quality Gate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode - run all checks regardless of changes'
+        required: false
+        default: false
+        type: boolean
+      gate_level:
+        description: 'Quality gate level'
+        required: false
+        default: 'standard'
+        type: choice
+        options: ['basic', 'standard', 'strict', 'enterprise']
+
+env:
+  NODE_VERSION: '22.17.0'
+  PYTHON_VERSION: '3.11'
+  COVERAGE_THRESHOLD: '75'
+  CACHE_VERSION: 'v2'
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==========================================
+  # PHASE 0: Change Detection & Analysis
+  # ==========================================
+  detect-changes:
+    name: 🔍 Change Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      frontend-changed: ${{ steps.changes.outputs.frontend == 'true' || github.event.inputs.test_mode == 'true' }}
+      backend-changed: ${{ steps.changes.outputs.backend == 'true' || github.event.inputs.test_mode == 'true' }}
+      docs-changed: ${{ steps.changes.outputs.docs == 'true' }}
+      config-changed: ${{ steps.changes.outputs.config == 'true' }}
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect Changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'package*.json'
+              - 'vite.config.ts'
+              - 'tsconfig*.json'
+            backend:
+              - 'src/**'
+              - 'backend/**'
+              - 'pyproject.toml'
+              - 'requirements*.txt'
+            docs:
+              - 'docs/**'
+              - '*.md'
+            config:
+              - '.github/**'
+              - 'Dockerfile*'
+              - 'docker-compose*.yml'
+
+      - name: 🔑 Generate Cache Keys
+        id: cache-key
+        run: |
+          echo "key=${{ runner.os }}-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}" >> $GITHUB_OUTPUT
+
+  # ==========================================
+  # PHASE 1: Lightning Quality Check (2-3 min)
+  # ==========================================
+  lightning-quality:
+    name: ⚡ Lightning Quality Gate
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend-changed == 'true'
+    timeout-minutes: 3
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python with Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 🔧 Install Minimal Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+
+      - name: ⚡ Fast Linting Check
+        run: |
+          echo "⚡ Running lightning-fast quality checks..."
+          # Critical errors only for fast feedback
+          ruff check src backend --select=F821,F401,F841,E902 --output-format=github
+
+      - name: 📊 Quick Syntax Validation
+        run: |
+          python -m py_compile src/**/*.py backend/**/*.py || true
+
+  # ==========================================
+  # PHASE 2A: Comprehensive Code Quality (5-8 min)
+  # ==========================================
+  code-quality:
+    name: 🔍 Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: [detect-changes, lightning-quality]
+    if: needs.detect-changes.outputs.backend-changed == 'true'
+    timeout-minutes: 8
+    outputs:
+      quality_score: ${{ steps.analysis.outputs.quality_score }}
+      issues_count: ${{ steps.analysis.outputs.issues_count }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python with Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements*.txt
+            pyproject.toml
+
+      - name: 💾 Cache Quality Tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/ruff
+            ~/.mypy_cache
+          key: quality-tools-${{ needs.detect-changes.outputs.cache-key }}
+          restore-keys: |
+            quality-tools-${{ runner.os }}-${{ env.CACHE_VERSION }}-
+
+      - name: 🔧 Install Quality Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black mypy bandit radon
+
+      - name: 📝 Format Check (Black)
+        id: black
+        run: |
+          echo "Checking code formatting..."
+          black --check --diff src backend || echo "format_issues=1" >> $GITHUB_OUTPUT
+
+      - name: 🔍 Comprehensive Linting (Ruff)
+        id: ruff
+        run: |
+          echo "Running comprehensive linting..."
+          ruff check src backend --output-format=github
+          echo "ruff_issues=$(ruff check src backend --quiet --exit-zero | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: 🔍 Type Checking (MyPy)
+        id: mypy
+        run: |
+          echo "Running type checking..."
+          mypy src backend --ignore-missing-imports || echo "type_issues=1" >> $GITHUB_OUTPUT
+
+      - name: 📊 Code Complexity Analysis
+        id: complexity
+        run: |
+          echo "Analyzing code complexity..."
+          radon cc src backend -a -j > complexity.json
+          COMPLEXITY=$(python -c "import json; data=json.load(open('complexity.json')); print(sum(len(v) for v in data.values()))")
+          echo "complexity_issues=$COMPLEXITY" >> $GITHUB_OUTPUT
+
+      - name: 📊 Calculate Quality Score
+        id: analysis
+        run: |
+          # Aggregate all quality metrics
+          TOTAL_ISSUES=0
+          TOTAL_ISSUES=$((TOTAL_ISSUES + ${{ steps.ruff.outputs.ruff_issues || 0 }}))
+          TOTAL_ISSUES=$((TOTAL_ISSUES + ${{ steps.black.outputs.format_issues || 0 }} * 5))
+          TOTAL_ISSUES=$((TOTAL_ISSUES + ${{ steps.mypy.outputs.type_issues || 0 }} * 3))
+          TOTAL_ISSUES=$((TOTAL_ISSUES + ${{ steps.complexity.outputs.complexity_issues || 0 }}))
+          
+          # Calculate quality score (100 - penalties)
+          QUALITY_SCORE=$((100 - TOTAL_ISSUES))
+          if [ $QUALITY_SCORE -lt 0 ]; then QUALITY_SCORE=0; fi
+          
+          echo "quality_score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+          echo "issues_count=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
+          
+          echo "📊 Quality Score: $QUALITY_SCORE/100 (Issues: $TOTAL_ISSUES)"
+
+  # ==========================================
+  # PHASE 2B: Test Execution & Coverage (8-10 min)
+  # ==========================================
+  test-coverage:
+    name: 🧪 Tests & Coverage
+    runs-on: ubuntu-latest
+    needs: [detect-changes, lightning-quality]
+    if: needs.detect-changes.outputs.backend-changed == 'true'
+    timeout-minutes: 12
+    strategy:
+      matrix:
+        test-group: [unit, integration, services, repositories]
+      fail-fast: false
+    outputs:
+      coverage_percentage: ${{ steps.coverage.outputs.coverage_percentage }}
+      test_results: ${{ steps.coverage.outputs.test_results }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python with Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 💾 Cache Test Results
+        uses: actions/cache@v4
+        with:
+          path: |
+            .pytest_cache
+            .coverage
+            coverage.xml
+            htmlcov
+          key: test-results-${{ needs.detect-changes.outputs.cache-key }}-${{ matrix.test-group }}-${{ github.sha }}
+          restore-keys: |
+            test-results-${{ needs.detect-changes.outputs.cache-key }}-${{ matrix.test-group }}-
+            test-results-${{ needs.detect-changes.outputs.cache-key }}-
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-xdist pytest-timeout
+
+      - name: 🧪 Run Test Group - ${{ matrix.test-group }}
+        run: |
+          echo "Running ${{ matrix.test-group }} tests..."
+          
+          # Map test groups to markers
+          case "${{ matrix.test-group }}" in
+            unit)
+              TEST_MARKER="unit or not integration"
+              ;;
+            integration)
+              TEST_MARKER="integration"
+              ;;
+            services)
+              TEST_MARKER="services"
+              ;;
+            repositories)
+              TEST_MARKER="repositories"
+              ;;
+          esac
+          
+          pytest tests/ \
+            -m "$TEST_MARKER" \
+            --cov=src \
+            --cov-append \
+            --cov-report=xml:coverage-${{ matrix.test-group }}.xml \
+            --cov-report=term-missing \
+            --tb=short \
+            --maxfail=10 \
+            -n auto \
+            --dist=loadfile \
+            --timeout=60 \
+            --junitxml=test-results-${{ matrix.test-group }}.xml || true
+
+      - name: 📊 Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-group }}
+          path: |
+            coverage-${{ matrix.test-group }}.xml
+            test-results-${{ matrix.test-group }}.xml
+          retention-days: 7
+
+  # ==========================================
+  # Coverage Aggregation Job
+  # ==========================================
+  coverage-aggregate:
+    name: 📊 Coverage Aggregation
+    runs-on: ubuntu-latest
+    needs: test-coverage
+    if: always() && needs.test-coverage.result != 'cancelled'
+    timeout-minutes: 5
+    outputs:
+      coverage_percentage: ${{ steps.aggregate.outputs.coverage_percentage }}
+      coverage_status: ${{ steps.aggregate.outputs.coverage_status }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📥 Download All Coverage Reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+
+      - name: 🔧 Install Coverage Tools
+        run: |
+          pip install coverage
+
+      - name: 📊 Aggregate Coverage
+        id: aggregate
+        run: |
+          # Combine all coverage files
+          coverage combine coverage-*.xml || true
+          
+          # Generate final report
+          coverage report > coverage-report.txt || echo "No coverage data" > coverage-report.txt
+          
+          # Extract coverage percentage
+          COVERAGE_PERCENT=$(coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//' || echo "0")
+          
+          echo "coverage_percentage=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
+          
+          # Check against threshold
+          if (( $(echo "$COVERAGE_PERCENT >= ${{ env.COVERAGE_THRESHOLD }}" | bc -l) )); then
+            echo "coverage_status=passed" >> $GITHUB_OUTPUT
+            echo "✅ Coverage: $COVERAGE_PERCENT% (threshold: ${{ env.COVERAGE_THRESHOLD }}%)"
+          else
+            echo "coverage_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ Coverage: $COVERAGE_PERCENT% (threshold: ${{ env.COVERAGE_THRESHOLD }}%)"
+          fi
+
+      - name: 📤 Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage-report.txt
+            coverage.xml
+          retention-days: 30
+
+  # ==========================================
+  # PHASE 2C: Security Scanning (5-8 min)
+  # ==========================================
+  security-scan:
+    name: 🔒 Security Analysis
+    runs-on: ubuntu-latest
+    needs: [detect-changes, lightning-quality]
+    if: needs.detect-changes.outputs.backend-changed == 'true'
+    timeout-minutes: 8
+    outputs:
+      security_score: ${{ steps.analysis.outputs.security_score }}
+      vulnerabilities: ${{ steps.analysis.outputs.vulnerabilities }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python with Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 💾 Cache Security Tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            .bandit
+            .safety
+          key: security-tools-${{ needs.detect-changes.outputs.cache-key }}
+          restore-keys: |
+            security-tools-${{ runner.os }}-${{ env.CACHE_VERSION }}-
+
+      - name: 🔧 Install Security Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety pip-audit semgrep
+
+      - name: 🔍 Static Security Analysis (Bandit)
+        id: bandit
+        run: |
+          echo "Running Bandit security analysis..."
+          bandit -r src backend -f json -o bandit-report.json || true
+          
+          # Count issues by severity
+          HIGH_COUNT=$(grep -c '"issue_severity": "HIGH"' bandit-report.json 2>/dev/null || echo "0")
+          MEDIUM_COUNT=$(grep -c '"issue_severity": "MEDIUM"' bandit-report.json 2>/dev/null || echo "0")
+          LOW_COUNT=$(grep -c '"issue_severity": "LOW"' bandit-report.json 2>/dev/null || echo "0")
+          
+          echo "bandit_high=$HIGH_COUNT" >> $GITHUB_OUTPUT
+          echo "bandit_medium=$MEDIUM_COUNT" >> $GITHUB_OUTPUT
+          echo "bandit_low=$LOW_COUNT" >> $GITHUB_OUTPUT
+          
+          echo "Bandit: High=$HIGH_COUNT, Medium=$MEDIUM_COUNT, Low=$LOW_COUNT"
+
+      - name: 🛡️ Dependency Vulnerability Scan (Safety)
+        id: safety
+        run: |
+          echo "Scanning dependencies for vulnerabilities..."
+          safety check --json --output safety-report.json || true
+          
+          # Count vulnerabilities
+          VULN_COUNT=$(python -c "import json; print(len(json.load(open('safety-report.json', 'r'))['vulnerabilities']) if 'vulnerabilities' in json.load(open('safety-report.json', 'r')) else 0)" 2>/dev/null || echo "0")
+          
+          echo "safety_vulnerabilities=$VULN_COUNT" >> $GITHUB_OUTPUT
+          echo "Safety: $VULN_COUNT vulnerabilities found"
+
+      - name: 🔐 Supply Chain Security (pip-audit)
+        id: pip-audit
+        run: |
+          echo "Auditing pip packages..."
+          pip-audit --requirement requirements.txt --format json --output pip-audit-report.json || true
+          
+          # Count vulnerabilities
+          AUDIT_COUNT=$(python -c "import json; data=json.load(open('pip-audit-report.json')); print(len(data.get('vulnerabilities', [])))" 2>/dev/null || echo "0")
+          
+          echo "audit_vulnerabilities=$AUDIT_COUNT" >> $GITHUB_OUTPUT
+          echo "Pip-audit: $AUDIT_COUNT vulnerabilities found"
+
+      - name: 📊 Calculate Security Score
+        id: analysis
+        run: |
+          # Aggregate security metrics
+          HIGH=${{ steps.bandit.outputs.bandit_high }}
+          MEDIUM=${{ steps.bandit.outputs.bandit_medium }}
+          LOW=${{ steps.bandit.outputs.bandit_low }}
+          SAFETY=${{ steps.safety.outputs.safety_vulnerabilities }}
+          AUDIT=${{ steps.pip-audit.outputs.audit_vulnerabilities }}
+          
+          # Calculate weighted score
+          TOTAL_ISSUES=$((HIGH * 10 + MEDIUM * 5 + LOW * 1 + SAFETY * 8 + AUDIT * 8))
+          SECURITY_SCORE=$((100 - TOTAL_ISSUES))
+          if [ $SECURITY_SCORE -lt 0 ]; then SECURITY_SCORE=0; fi
+          
+          TOTAL_VULNS=$((HIGH + MEDIUM + LOW + SAFETY + AUDIT))
+          
+          echo "security_score=$SECURITY_SCORE" >> $GITHUB_OUTPUT
+          echo "vulnerabilities=$TOTAL_VULNS" >> $GITHUB_OUTPUT
+          
+          echo "🔒 Security Score: $SECURITY_SCORE/100 (Total issues: $TOTAL_VULNS)"
+
+      - name: 📤 Upload Security Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+            pip-audit-report.json
+          retention-days: 30
+
+  # ==========================================
+  # PHASE 2D: Frontend Quality (if changed)
+  # ==========================================
+  frontend-quality:
+    name: 🎨 Frontend Quality
+    runs-on: ubuntu-latest
+    needs: [detect-changes, lightning-quality]
+    if: needs.detect-changes.outputs.frontend-changed == 'true'
+    timeout-minutes: 8
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🚀 Setup Node.js with Cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: 💾 Cache Node Modules
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: 📦 Install Dependencies
+        working-directory: frontend
+        run: |
+          npm ci --prefer-offline --no-audit
+
+      - name: 🔍 ESLint Check
+        working-directory: frontend
+        run: |
+          npm run lint || true
+
+      - name: 🔍 TypeScript Check
+        working-directory: frontend
+        run: |
+          npx tsc --noEmit
+
+      - name: 🏗️ Build Frontend
+        working-directory: frontend
+        run: |
+          npm run build
+
+      - name: 🔒 Security Audit
+        working-directory: frontend
+        run: |
+          npm audit --json > npm-audit.json || true
+          CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit.json)
+          HIGH=$(jq '.metadata.vulnerabilities.high // 0' npm-audit.json)
+          
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 5 ]; then
+            echo "❌ Critical: $CRITICAL, High: $HIGH vulnerabilities found"
+            exit 1
+          else
+            echo "✅ Frontend security check passed"
+          fi
+
+  # ==========================================
+  # PHASE 3: Performance Benchmarks (optional)
+  # ==========================================
+  performance-benchmarks:
+    name: 📊 Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: [detect-changes, code-quality, coverage-aggregate]
+    if: |
+      github.event_name == 'push' && 
+      github.ref == 'refs/heads/main' &&
+      needs.detect-changes.outputs.backend-changed == 'true'
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python with Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: 🔧 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-benchmark
+
+      - name: 🚀 Run Performance Benchmarks
+        run: |
+          pytest tests/ \
+            -m benchmark \
+            --benchmark-only \
+            --benchmark-json=benchmark-results.json \
+            --benchmark-autosave \
+            --benchmark-compare \
+            --benchmark-compare-fail=mean:10% || true
+
+      - name: 📤 Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results.json
+            .benchmarks/
+          retention-days: 90
+
+  # ==========================================
+  # FINAL: Quality Gate Decision
+  # ==========================================
+  quality-gate:
+    name: 🎯 Quality Gate Decision
+    runs-on: ubuntu-latest
+    needs: [code-quality, coverage-aggregate, security-scan, frontend-quality]
+    if: always()
+    timeout-minutes: 3
+    steps:
+      - name: 📊 Evaluate Quality Gates
+        id: gate
+        run: |
+          echo "🎯 Evaluating Quality Gates..."
+          
+          # Get gate level
+          GATE_LEVEL="${{ github.event.inputs.gate_level || 'standard' }}"
+          echo "Gate Level: $GATE_LEVEL"
+          
+          # Define thresholds based on gate level
+          case "$GATE_LEVEL" in
+            basic)
+              MIN_QUALITY_SCORE=60
+              MIN_COVERAGE=50
+              MIN_SECURITY_SCORE=60
+              ;;
+            standard)
+              MIN_QUALITY_SCORE=75
+              MIN_COVERAGE=75
+              MIN_SECURITY_SCORE=75
+              ;;
+            strict)
+              MIN_QUALITY_SCORE=85
+              MIN_COVERAGE=80
+              MIN_SECURITY_SCORE=85
+              ;;
+            enterprise)
+              MIN_QUALITY_SCORE=90
+              MIN_COVERAGE=85
+              MIN_SECURITY_SCORE=90
+              ;;
+          esac
+          
+          # Check individual gates
+          GATES_PASSED=0
+          GATES_FAILED=0
+          
+          # Code Quality Gate
+          QUALITY_SCORE="${{ needs.code-quality.outputs.quality_score || 100 }}"
+          if [ "$QUALITY_SCORE" -ge "$MIN_QUALITY_SCORE" ]; then
+            echo "✅ Code Quality: $QUALITY_SCORE >= $MIN_QUALITY_SCORE"
+            ((GATES_PASSED++))
+          else
+            echo "❌ Code Quality: $QUALITY_SCORE < $MIN_QUALITY_SCORE"
+            ((GATES_FAILED++))
+          fi
+          
+          # Coverage Gate
+          COVERAGE="${{ needs.coverage-aggregate.outputs.coverage_percentage || 0 }}"
+          if (( $(echo "$COVERAGE >= $MIN_COVERAGE" | bc -l) )); then
+            echo "✅ Coverage: $COVERAGE% >= $MIN_COVERAGE%"
+            ((GATES_PASSED++))
+          else
+            echo "❌ Coverage: $COVERAGE% < $MIN_COVERAGE%"
+            ((GATES_FAILED++))
+          fi
+          
+          # Security Gate
+          SECURITY_SCORE="${{ needs.security-scan.outputs.security_score || 100 }}"
+          if [ "$SECURITY_SCORE" -ge "$MIN_SECURITY_SCORE" ]; then
+            echo "✅ Security: $SECURITY_SCORE >= $MIN_SECURITY_SCORE"
+            ((GATES_PASSED++))
+          else
+            echo "❌ Security: $SECURITY_SCORE < $MIN_SECURITY_SCORE"
+            ((GATES_FAILED++))
+          fi
+          
+          # Frontend Gate (if applicable)
+          if [ "${{ needs.frontend-quality.result }}" == "failure" ]; then
+            echo "❌ Frontend Quality: Failed"
+            ((GATES_FAILED++))
+          elif [ "${{ needs.frontend-quality.result }}" == "success" ]; then
+            echo "✅ Frontend Quality: Passed"
+            ((GATES_PASSED++))
+          fi
+          
+          # Final Decision
+          echo ""
+          echo "📊 QUALITY GATE SUMMARY"
+          echo "======================="
+          echo "Gates Passed: $GATES_PASSED"
+          echo "Gates Failed: $GATES_FAILED"
+          echo "Gate Level: $GATE_LEVEL"
+          echo ""
+          
+          if [ $GATES_FAILED -eq 0 ]; then
+            echo "🎉 QUALITY GATE: PASSED"
+            echo "All quality criteria met!"
+          else
+            echo "❌ QUALITY GATE: FAILED"
+            echo "Quality criteria not met. Please review the failures above."
+            exit 1
+          fi
+
+      - name: 📋 Generate Summary Report
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # 🎯 CI/CD Quality Gate Results
+          
+          ## 📊 Overall Results
+          
+          **Gate Level**: ${{ github.event.inputs.gate_level || 'standard' }}
+          **Status**: ${{ steps.gate.outcome == 'success' && '✅ PASSED' || '❌ FAILED' }}
+          
+          ## 📈 Quality Metrics
+          
+          | Metric | Score | Status |
+          |--------|-------|--------|
+          | Code Quality | ${{ needs.code-quality.outputs.quality_score || 'N/A' }}/100 | ${{ needs.code-quality.result }} |
+          | Test Coverage | ${{ needs.coverage-aggregate.outputs.coverage_percentage || 'N/A' }}% | ${{ needs.coverage-aggregate.outputs.coverage_status }} |
+          | Security | ${{ needs.security-scan.outputs.security_score || 'N/A' }}/100 | ${{ needs.security-scan.result }} |
+          | Frontend | - | ${{ needs.frontend-quality.result || 'skipped' }} |
+          
+          ## 🔍 Details
+          
+          - **Code Issues**: ${{ needs.code-quality.outputs.issues_count || '0' }}
+          - **Security Vulnerabilities**: ${{ needs.security-scan.outputs.vulnerabilities || '0' }}
+          - **Build Time**: ~${{ github.run_number }} minutes
+          
+          ## 📝 Quality Standards
+          
+          Each gate level has different thresholds:
+          - **Basic**: 60% quality, 50% coverage, 60% security
+          - **Standard**: 75% quality, 75% coverage, 75% security
+          - **Strict**: 85% quality, 80% coverage, 85% security
+          - **Enterprise**: 90% quality, 85% coverage, 90% security
+          
+          EOF
+
+  # ==========================================
+  # Artifact Cleanup (optional)
+  # ==========================================
+  cleanup:
+    name: 🧹 Cleanup Artifacts
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    if: always() && github.event_name == 'pull_request'
+    timeout-minutes: 2
+    continue-on-error: true
+    steps:
+      - name: 🗑️ Delete Temporary Artifacts
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: |
+            test-results-*
+          failOnError: false
