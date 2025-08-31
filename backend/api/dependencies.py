@@ -6,6 +6,7 @@ Dependency injection for FastAPI endpoints.
 import logging
 from functools import lru_cache
 from pathlib import Path
+from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 
@@ -211,11 +212,7 @@ def get_websocket_manager() -> WebSocketManager:
 
 def get_multi_document_rag_service(
     db: DatabaseConnection = Depends(get_db),
-<<<<<<< HEAD
-    enhanced_rag: EnhancedRAGService | None = Depends(get_enhanced_rag),
-=======
     enhanced_rag: Optional[EnhancedRAGService] = Depends(get_enhanced_rag),
->>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
 ) -> MultiDocumentRAGService:
     """Get multi-document RAG service dependency."""
     global _multi_document_rag_service
@@ -224,29 +221,16 @@ def get_multi_document_rag_service(
             # Import repositories here to avoid circular imports
             from src.repositories.document_repository import DocumentRepository
             from src.repositories.multi_document_repositories import (
-<<<<<<< HEAD
                 CrossDocumentQueryRepository,
                 MultiDocumentCollectionRepository,
                 MultiDocumentIndexRepository,
             )
-
-=======
-                MultiDocumentCollectionRepository,
-                MultiDocumentIndexRepository,
-                CrossDocumentQueryRepository,
-            )
-            
->>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
             # Create repository instances
             doc_repo = DocumentRepository(db)
             collection_repo = MultiDocumentCollectionRepository(db)
             index_repo = MultiDocumentIndexRepository(db)
             query_repo = CrossDocumentQueryRepository(db)
-<<<<<<< HEAD
 
-=======
-            
->>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
             # Create service instance
             index_storage_path = Path.home() / ".ai_pdf_scholar" / "multi_doc_indexes"
             _multi_document_rag_service = MultiDocumentRAGService(

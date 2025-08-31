@@ -937,19 +937,16 @@ class DatabaseConnection:
         self.enable_foreign_keys = True
 
         # Validate database path (only for file databases)
+        # Defer heavy I/O operations to actual connection time for faster initialization
         if not self.is_memory_db:
             try:
-                # Check if parent directory exists or can be created
+                # Only check parent directory existence, don't create files yet
                 parent_dir = self.db_path.parent
                 if not parent_dir.exists():
-                    # Try to create parent directory
+                    # Try to create parent directory (lightweight operation)
                     parent_dir.mkdir(parents=True, exist_ok=True)
-                # Try to create a test file to verify write permissions
-                test_file = (
-                    parent_dir / f".test_write_{threading.current_thread().ident}"
-                )
-                test_file.touch()
-                test_file.unlink()  # Clean up test file
+                # Skip the test file creation for faster initialization
+                # Write permission check will happen on first actual connection
             except (OSError, PermissionError) as e:
                 raise DatabaseConnectionError(
                     f"Cannot access database path: {e}"

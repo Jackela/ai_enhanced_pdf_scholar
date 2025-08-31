@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +24,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
     from backend.services.redis_cache_service import RedisCacheService
-    from src.database.connection import DatabaseConnection
 except ImportError as e:
     logger.warning(f"Optional import failed: {e}")
     RedisCacheService = None
+
+try:
+    from src.database.connection import DatabaseConnection
+except ImportError as e:
+    logger.warning(f"DatabaseConnection import failed: {e}")
+    # Create a placeholder type for DatabaseConnection if import fails
+    DatabaseConnection = Any
 
 
 class CacheEvictionPolicy(Enum):

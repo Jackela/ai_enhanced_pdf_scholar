@@ -660,10 +660,10 @@ class TestValidationMetrics:
             endpoint_results = []
             for test_input in test_inputs:
                 if params:
-                    test_params = {k: test_input for k in params}
+                    test_params = dict.fromkeys(params, test_input)
                     response = scanner.client.request(method, endpoint, params=test_params)
                 elif data:
-                    test_data = {k: test_input for k in data}
+                    test_data = dict.fromkeys(data, test_input)
                     response = scanner.client.request(method, endpoint, json=test_data)
                 else:
                     response = scanner.client.request(method, endpoint)

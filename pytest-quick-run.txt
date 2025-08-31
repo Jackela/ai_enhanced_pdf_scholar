@@ -1,0 +1,20 @@
+
+🚀 Starting optimized test session
+bringing up nodes...
+   Warning: WebSocketManager cleanup error: invalid decimal literal (dependencies.py, line 236)
+✅ Test session cleanup completed
+
+=========================== short test summary info ===========================
+ERROR tests/api/test_basic_endpoints.py
+ERROR tests/integration/test_api_endpoints.py
+ERROR tests/integration/test_complete_system_integration.py
+ERROR tests/integration/test_rate_limiting_integration.py
+ERROR tests/middleware/test_security_headers.py
+ERROR tests/performance/test_regression.py
+ERROR tests/production/test_production_readiness.py
+ERROR tests/scaling/test_horizontal_scaling.py
+ERROR tests/security/test_api_security_integration.py
+ERROR tests/security/test_cors_api_integration.py
+!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 10 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!! xdist.dsession.Interrupted: stopping after 10 failures !!!!!!!!!!!!
+10 errors in 9.02s

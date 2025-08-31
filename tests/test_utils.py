@@ -3,6 +3,7 @@ Optimized Test Utilities for AI Enhanced PDF Scholar
 Provides shared utilities, fixtures, and helpers to reduce test complexity.
 """
 
+import os
 import tempfile
 import threading
 import time
@@ -17,7 +18,7 @@ from src.database.migrations.runner import MigrationRunner
 
 
 class DatabaseTestManager:
-    """Optimized database test management with connection pooling."""
+    """Optimized database test management with lazy connection creation."""
 
     _instance = None
     _lock = threading.Lock()
@@ -34,22 +35,49 @@ class DatabaseTestManager:
             self._initialized = True
             self._connections = {}
             self._temp_files = []
+            self._migration_cache = {}  # Cache migration results
 
     def get_test_db(self, test_name: str = "default") -> DatabaseConnection:
-        """Get or create a test database connection for the given test."""
+        """Get or create a test database connection for the given test.
+        
+        Uses lazy initialization to avoid blocking at import time.
+        """
         if test_name not in self._connections:
-            temp_file = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
-            temp_file.close()
-            self._temp_files.append(temp_file.name)
+            # Create connection with timeout protection
+            import signal
 
-            db = DatabaseConnection(temp_file.name)
-            migration_manager = MigrationManager(db)
-            migration_runner = MigrationRunner(migration_manager)
-            result = migration_runner.migrate_to_latest()
-            if not result.get("success", False):
-                raise Exception(f"Migration failed: {result.get('error', 'Unknown error')}")
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Database connection timed out")
 
-            self._connections[test_name] = db
+            # Set a 5-second timeout for connection creation
+            if hasattr(signal, 'SIGALRM'):  # Unix/Linux
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(5)
+
+            try:
+                temp_file = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+                temp_file.close()
+                self._temp_files.append(temp_file.name)
+
+                # Use in-memory database for faster tests
+                if os.environ.get('TEST_USE_MEMORY_DB', 'false').lower() == 'true':
+                    db = DatabaseConnection(":memory:")
+                else:
+                    db = DatabaseConnection(temp_file.name)
+
+                # Only run migrations if not already cached
+                if test_name not in self._migration_cache:
+                    migration_manager = MigrationManager(db)
+                    migration_runner = MigrationRunner(migration_manager)
+                    result = migration_runner.migrate_to_latest()
+                    if not result.get("success", False):
+                        raise Exception(f"Migration failed: {result.get('error', 'Unknown error')}")
+                    self._migration_cache[test_name] = True
+
+                self._connections[test_name] = db
+            finally:
+                if hasattr(signal, 'SIGALRM'):
+                    signal.alarm(0)  # Cancel the alarm
 
         return self._connections[test_name]
 
@@ -221,8 +249,50 @@ class AsyncTestHelper:
         return mock
 
 
-# Global instances for test optimization
-db_manager = DatabaseTestManager()
-mock_factory = MockFactory()
-performance_monitor = PerformanceMonitor()
-fixture_manager = TestFixtureManager()
+# Lazy initialization for global instances to avoid import-time blocking
+class LazyDatabaseTestManager:
+    """Lazy wrapper for DatabaseTestManager to avoid import-time initialization."""
+
+    def __init__(self):
+        self._instance = None
+
+    def __getattr__(self, name):
+        if self._instance is None:
+            self._instance = DatabaseTestManager()
+        return getattr(self._instance, name)
+
+    def __call__(self):
+        if self._instance is None:
+            self._instance = DatabaseTestManager()
+        return self._instance
+
+
+class LazyPerformanceMonitor:
+    """Lazy wrapper for PerformanceMonitor."""
+
+    def __init__(self):
+        self._instance = None
+
+    def __getattr__(self, name):
+        if self._instance is None:
+            self._instance = PerformanceMonitor()
+        return getattr(self._instance, name)
+
+
+class LazyTestFixtureManager:
+    """Lazy wrapper for TestFixtureManager."""
+
+    def __init__(self):
+        self._instance = None
+
+    def __getattr__(self, name):
+        if self._instance is None:
+            self._instance = TestFixtureManager()
+        return getattr(self._instance, name)
+
+
+# Global instances with lazy initialization
+db_manager = LazyDatabaseTestManager()
+mock_factory = MockFactory()  # This is lightweight, can stay
+performance_monitor = LazyPerformanceMonitor()
+fixture_manager = LazyTestFixtureManager()

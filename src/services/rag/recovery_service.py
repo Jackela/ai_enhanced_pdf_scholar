@@ -13,9 +13,10 @@ from various failure scenarios in the RAG system.
 
 import json
 import logging
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from src.database.models import VectorIndexModel
 from src.repositories.vector_repository import VectorIndexRepository
@@ -296,7 +297,7 @@ class RAGRecoveryService:
         self,
         vector_index: VectorIndexModel,
         force_rebuild: bool = False,
-        rebuild_callback: callable | None = None,
+        rebuild_callback: Callable | None = None,
     ) -> dict[str, Any]:
         """
         Recover a corrupted vector index with comprehensive repair strategies.

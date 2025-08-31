@@ -1,0 +1,3971 @@
+
+🚀 Starting optimized test session
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.5.0 -- C:\ProgramData\miniconda3\python.exe
+cachedir: .pytest_cache
+benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+metadata: {'Python': '3.13.5', 'Platform': 'Windows-11-10.0.26120-SP0', 'Packages': {'pytest': '8.4.1', 'pluggy': '1.5.0'}, 'Plugins': {'anyio': '4.9.0', 'asyncio': '1.1.0', 'base-url': '2.1.0', 'benchmark': '5.1.0', 'cov': '6.2.1', 'html': '4.1.1', 'httpx': '0.35.0', 'metadata': '3.1.1', 'mock': '3.14.1', 'playwright': '0.7.0', 'timeout': '2.4.0', 'xdist': '3.8.0'}, 'JAVA_HOME': 'C:\\Program Files\\Java\\jdk-21', 'Base URL': ''}
+rootdir: D:\Code\ai_enhanced_pdf_scholar
+configfile: pyproject.toml
+plugins: anyio-4.9.0, asyncio-1.1.0, base-url-2.1.0, benchmark-5.1.0, cov-6.2.1, html-4.1.1, httpx-0.35.0, metadata-3.1.1, mock-3.14.1, playwright-0.7.0, timeout-2.4.0, xdist-3.8.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+timeout: 60.0s
+timeout method: thread
+timeout func_only: False
+created: 8/8 workers
+   Warning: WebSocketManager cleanup error: invalid decimal literal (dependencies.py, line 218)
+✅ Test session cleanup completed
+
+=================================== ERRORS ====================================
+_____________ ERROR collecting tests/api/test_basic_endpoints.py ______________
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\api\test_basic_endpoints.py:25: in <module>
+    from backend.api.main import app
+backend\api\main.py:29: in <module>
+    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+__________ ERROR collecting tests/integration/test_api_endpoints.py ___________
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\integration\test_api_endpoints.py:30: in <module>
+    from backend.api.dependencies import (
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+___ ERROR collecting tests/integration/test_complete_system_integration.py ____
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\integration\test_complete_system_integration.py:20: in <module>
+    from backend.api.main import app
+backend\api\main.py:29: in <module>
+    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+____ ERROR collecting tests/integration/test_rate_limiting_integration.py _____
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\integration\test_rate_limiting_integration.py:19: in <module>
+    from backend.api.main import app
+backend\api\main.py:29: in <module>
+    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+____ ERROR collecting tests/integration/test_b6_performance_integration.py ____
+tests\integration\test_b6_performance_integration.py:32: in <module>
+    from backend.services.db_performance_monitor import DatabasePerformanceMonitor
+backend\services\db_performance_monitor.py:28: in <module>
+    from backend.services.query_cache_manager import IntelligentQueryCacheManager
+backend\services\query_cache_manager.py:81: in <module>
+    class IntelligentQueryCacheManager:
+backend\services\query_cache_manager.py:99: in IntelligentQueryCacheManager
+    db_connection: DatabaseConnection,
+                   ^^^^^^^^^^^^^^^^^^
+E   NameError: name 'DatabaseConnection' is not defined
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+_____________ ERROR collecting tests/load/test_production_load.py _____________
+'load_test' not found in `markers` configuration option
+_________ ERROR collecting tests/middleware/test_security_headers.py __________
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\middleware\test_security_headers.py:14: in <module>
+    from backend.api.middleware.security_headers import (
+backend\api\middleware\__init__.py:7: in <module>
+    from .security_headers import (
+backend\api\middleware\security_headers.py:21: in <module>
+    from backend.api.auth.dependencies import get_admin_user
+backend\api\auth\dependencies.py:15: in <module>
+    from backend.api.dependencies import get_db
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+____________ ERROR collecting tests/performance/test_regression.py ____________
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\performance\test_regression.py:22: in <module>
+    from backend.api.main import app
+backend\api\main.py:29: in <module>
+    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+_______ ERROR collecting tests/production/test_production_readiness.py ________
+ImportError while importing test module 'D:\Code\ai_enhanced_pdf_scholar\tests\production\test_production_readiness.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\production\test_production_readiness.py:19: in <module>
+    from backend.config.redis_cluster import RedisClusterManager
+backend\config\redis_cluster.py:17: in <module>
+    import redis.asyncio as aioredis
+E   ModuleNotFoundError: No module named 'redis.asyncio'; 'redis' is not a package
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+__________ ERROR collecting tests/scaling/test_horizontal_scaling.py __________
+ImportError while importing test module 'D:\Code\ai_enhanced_pdf_scholar\tests\scaling\test_horizontal_scaling.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\scaling\test_horizontal_scaling.py:26: in <module>
+    from kubernetes import client, config
+E   ModuleNotFoundError: No module named 'kubernetes'
+__________ ERROR collecting tests/resilience/test_fault_tolerance.py __________
+'resilience' not found in `markers` configuration option
+______ ERROR collecting tests/security/test_api_security_integration.py _______
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\security\test_api_security_integration.py:14: in <module>
+    from backend.api.routes.documents import router
+backend\api\routes\documents.py:25: in <module>
+    from backend.api.dependencies import (
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+________ ERROR collecting tests/security/test_cors_api_integration.py _________
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\security\test_cors_api_integration.py:15: in <module>
+    from backend.api.main import app
+backend\api\main.py:29: in <module>
+    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+_________ ERROR collecting tests/security/test_penetration_testing.py _________
+ImportError while importing test module 'D:\Code\ai_enhanced_pdf_scholar\tests\security\test_penetration_testing.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\security\test_penetration_testing.py:16: in <module>
+    import nmap
+E   ModuleNotFoundError: No module named 'nmap'
+_____ ERROR collecting tests/security/test_sql_injection_comprehensive.py _____
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\security\test_sql_injection_comprehensive.py:21: in <module>
+    from backend.api.main import app
+backend\api\main.py:29: in <module>
+    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+__________ ERROR collecting tests/security/test_xss_comprehensive.py __________
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\security\test_xss_comprehensive.py:21: in <module>
+    from backend.api.main import app
+backend\api\main.py:29: in <module>
+    from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
+E     File "D:\Code\ai_enhanced_pdf_scholar\backend\api\dependencies.py", line 218
+E       >>>>>>> 804ea834e460d3c7f6d6b25705cbc392b994dd6e
+E                 ^
+E   SyntaxError: invalid decimal literal
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___________ ERROR collecting tests/services/rag/test_coordinator.py ___________
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_file_manager.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_index_builder.py __________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+____ ERROR collecting tests/services/rag/test_large_document_processing.py ____
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+__________ ERROR collecting tests/services/rag/test_query_engine.py ___________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_________ ERROR collecting tests/services/rag/test_rag_integration.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_performance_stress.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+_____ ERROR collecting tests/services/rag/test_rag_quality_assessment.py ______
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+________ ERROR collecting tests/services/rag/test_recovery_service.py _________
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+___ ERROR collecting tests/services/rag/test_vector_similarity_retrieval.py ___
+C:\ProgramData\miniconda3\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1310: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+<frozen importlib._bootstrap_external>:1026: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+tests\services\rag\__init__.py:22: in <module>
+    from .test_coordinator import TestRAGCoordinator, TestRAGCoordinatorEdgeCases
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\k7407\AppData\Roaming\Python\Python313\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\services\rag\test_coordinator.py:14: in <module>
+    from src.services.rag.coordinator import RAGCoordinator
+src\services\rag\__init__.py:22: in <module>
+    from .coordinator import RAGCoordinator
+src\services\rag\coordinator.py:27: in <module>
+    from .recovery_service import RAGRecoveryError, RAGRecoveryService
+src\services\rag\recovery_service.py:47: in <module>
+    class RAGRecoveryService:
+src\services\rag\recovery_service.py:299: in RAGRecoveryService
+    rebuild_callback: callable | None = None,
+                      ^^^^^^^^^^^^^^^
+E   TypeError: unsupported operand type(s) for |: 'builtin_function_or_method' and 'NoneType'
+---- generated xml file: D:\Code\ai_enhanced_pdf_scholar\pytest-report.xml ----
+=========================== short test summary info ===========================
+ERROR tests/api/test_basic_endpoints.py
+ERROR tests/integration/test_api_endpoints.py
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/integration/test_complete_system_integration.py
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/integration/test_rate_limiting_integration.py
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/integration/test_b6_performance_integration.py - NameError: name ...
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/load/test_production_load.py - Failed: 'load_test' not found in `...
+ERROR tests/middleware/test_security_headers.py
+ERROR tests/performance/test_regression.py
+ERROR tests/production/test_production_readiness.py
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/scaling/test_horizontal_scaling.py
+ERROR tests/resilience/test_fault_tolerance.py - Failed: 'resilience' not fou...
+ERROR tests/security/test_api_security_integration.py
+ERROR tests/security/test_cors_api_integration.py
+ERROR tests/security/test_penetration_testing.py
+ERROR tests/security/test_sql_injection_comprehensive.py
+ERROR tests/security/test_xss_comprehensive.py
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_coordinator.py - TypeError: unsupported operand...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_file_manager.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_index_builder.py - TypeError: unsupported opera...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_large_document_processing.py - TypeError: unsup...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_query_engine.py - TypeError: unsupported operan...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_integration.py - TypeError: unsupported ope...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_performance_stress.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_rag_quality_assessment.py - TypeError: unsuppor...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_recovery_service.py - TypeError: unsupported op...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+ERROR tests/services/rag/test_vector_similarity_retrieval.py - TypeError: uns...
+!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 117 failures !!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!! xdist.dsession.Interrupted: stopping after 50 failures !!!!!!!!!!!!
+============================ 117 errors in 24.11s =============================

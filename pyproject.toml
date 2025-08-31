@@ -227,7 +227,6 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
-python_paths = [". src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*", "*Test*", "*Tests"]
 python_functions = ["test_*"]
@@ -266,6 +265,8 @@ markers = [
     "smoke: Smoke tests for basic functionality",
     "regression: Regression tests",
     "critical: Critical path tests that must always pass",
+    "load_test: Load testing for production scenarios",
+    "resilience: Resilience and fault tolerance tests",
 ]
 filterwarnings = [
     "ignore::UserWarning",

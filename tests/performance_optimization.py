@@ -295,7 +295,7 @@ class IntelligentTestCache:
                     pass
 
             # Reset stats
-            self.stats = {k: 0 for k in self.stats}
+            self.stats = dict.fromkeys(self.stats, 0)
 
     def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
