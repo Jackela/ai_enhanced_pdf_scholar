@@ -320,8 +320,6 @@ class CacheWarmingService:
     def remove_warming_task(self, key: str) -> bool:
         """Remove a warming task."""
         if key in self.warming_tasks:
-            task = self.warming_tasks[key]
-
             # Remove from active queue
             self.task_queue = [t for t in self.task_queue if t.key != key]
 
@@ -343,7 +341,7 @@ class CacheWarmingService:
             logger.info("Smart cache not available for predictive warming")
             return
 
-        prediction_time = datetime.utcnow() + timedelta(
+        _ = datetime.utcnow() + timedelta(
             hours=self.config["prediction_window_hours"]
         )
 

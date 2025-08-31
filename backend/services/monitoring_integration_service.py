@@ -126,7 +126,6 @@ class MonitoringIntegrationService:
 
                 # Detect potential issues
                 pending_tasks = rag_metrics.get('pending_tasks', 0)
-                processing_tasks = rag_metrics.get('processing_tasks', 0)
                 failed_tasks = rag_metrics.get('failed_tasks', 0)
 
                 # Alert on high queue buildup
@@ -170,7 +169,7 @@ class MonitoringIntegrationService:
         """Integrate with performance monitor for enhanced metrics."""
         try:
             # Get comprehensive performance data
-            performance_data = self.integrated_monitor.get_real_time_metrics()
+            _ = self.integrated_monitor.get_real_time_metrics()
 
             # Integrate cache telemetry
             if hasattr(self.integrated_monitor, 'cache_telemetry'):

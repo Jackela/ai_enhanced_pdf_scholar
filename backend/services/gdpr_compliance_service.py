@@ -6,6 +6,7 @@ Comprehensive GDPR and privacy compliance implementation.
 import hashlib
 import json
 import logging
+import secrets
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
@@ -728,7 +729,7 @@ class GDPRComplianceService:
         breach.reported_at = datetime.utcnow()
 
         # Generate breach report
-        report = self._generate_breach_report(breach)
+        _ = self._generate_breach_report(breach)
 
         # Send to authority (implement actual notification mechanism)
         # self._send_to_authority(authority_name, report)

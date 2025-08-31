@@ -576,7 +576,10 @@ class MultiDocumentUATSuite:
 
             # Test empty query
             total_test_cases += 1
-            # Reuse the enhanced RAG service
+            # Create enhanced RAG service for this test
+            from src.services.enhanced_rag_service import EnhancedRAGService
+            enhanced_rag = EnhancedRAGService(self.db)
+
             multi_doc_service = MultiDocumentRAGService(
                 collection_repository=self.collection_repo,
                 index_repository=self.index_repo,

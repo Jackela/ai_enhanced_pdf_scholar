@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import uvicorn
@@ -113,7 +114,7 @@ async def get_metrics():
         return Response(content=metrics_data, media_type=content_type)
     except Exception as e:
         logger.error(f"Failed to generate metrics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate metrics")
+        raise HTTPException(status_code=500, detail="Failed to generate metrics") from e
 
 @app.get("/health")
 async def health_check():
@@ -137,7 +138,7 @@ async def get_dashboard_metrics():
         return dashboard_data
     except Exception as e:
         logger.error(f"Failed to get dashboard metrics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get dashboard metrics")
+        raise HTTPException(status_code=500, detail="Failed to get dashboard metrics") from e
 
 # Serve static files for frontend
 frontend_dist = project_root / "frontend" / "dist"

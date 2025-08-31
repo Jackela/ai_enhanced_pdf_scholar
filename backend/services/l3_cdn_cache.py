@@ -791,7 +791,6 @@ class L3CDNCache:
 
     def get_cache_status(self) -> dict[str, Any]:
         """Get current cache status."""
-        now = datetime.utcnow()
         expired_count = sum(1 for entry in self.cached_urls.values() if entry.is_expired())
 
         return {
@@ -814,7 +813,6 @@ class L3CDNCache:
 
     async def cleanup_expired_entries(self):
         """Clean up expired cache entries."""
-        now = datetime.utcnow()
         expired_urls = [
             url for url, entry in self.cached_urls.items()
             if entry.is_expired()

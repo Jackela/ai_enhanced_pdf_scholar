@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel, VectorIndexModel
+from src.prompt_management.manager import PromptManager
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.vector_repository import VectorIndexRepository
 from src.services.content_hash_service import ContentHashError, ContentHashService

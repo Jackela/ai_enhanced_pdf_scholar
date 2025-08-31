@@ -413,7 +413,6 @@ class SecretsMonitoringService:
         try:
             # Simple anomaly detection based on access patterns
             access_times = []
-            access_ips = []
             access_secrets = []
 
             for entry in audit_entries:

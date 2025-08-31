@@ -404,6 +404,7 @@ async def get_current_user_profile(
 @router.put("/me", response_model=UserResponse)
 async def update_user_profile(
     update_data: UserUpdate,
+    request: Request,
     user: UserModel = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> UserResponse:
@@ -624,4 +625,4 @@ async def auth_health_check() -> BaseResponse:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Authentication service is unhealthy"
-        )
+        ) from e

@@ -8,6 +8,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -285,10 +286,22 @@ class DatabaseTracker:
         self.snapshot_table = "_incremental_backup_snapshots"
         self.changes_table = "_incremental_backup_changes"
 
+    def _validate_table_name(self, table_name: str) -> bool:
+        """Validate table name to prevent SQL injection.
+        
+        Returns True if the table name is safe to use.
+        Table names should only contain alphanumeric characters and underscores.
+        """
+        # Allow only alphanumeric characters, underscores, and dots (for schema.table)
+        pattern = r'^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$'
+        return bool(re.match(pattern, table_name))
+
     async def setup_tracking(self):
         """Set up database tracking infrastructure."""
         with self.engine.connect() as conn:
             # Create snapshot tracking table
+            # SAFETY: Table names are hardcoded constants, not user input
+            # DDL statements cannot be parameterized in standard SQL
             conn.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS {self.snapshot_table} (
                     id SERIAL PRIMARY KEY,
@@ -302,6 +315,8 @@ class DatabaseTracker:
             """))
 
             # Create changes tracking table
+            # SAFETY: Table names are hardcoded constants, not user input
+            # DDL statements cannot be parameterized in standard SQL
             conn.execute(text(f"""
                 CREATE TABLE IF NOT EXISTS {self.changes_table} (
                     id SERIAL PRIMARY KEY,
@@ -326,13 +341,24 @@ class DatabaseTracker:
 
         with self.engine.connect() as conn:
             for table in tables_to_track:
+                # Validate table name before using in query
+                if not self._validate_table_name(table):
+                    logger.error(f"Invalid table name detected: {table}")
+                    continue
+
                 try:
                     # Count records
+                    # SAFETY: Table names come from self.tables (configured by admin) or _get_all_tables()
+                    # which filters to only public schema tables. This is not user input.
+                    # Additionally validated with _validate_table_name() above.
+                    # COUNT queries cannot be parameterized for table names in standard SQL
                     result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
                     count = result.scalar()
                     total_records += count
 
                     # Calculate table checksum (simplified)
+                    # SAFETY: Table names come from controlled sources and validated as noted above
+                    # Aggregate queries cannot parameterize table names in standard SQL
                     result = conn.execute(text(f"""
                         SELECT MD5(ARRAY_AGG(ROW(t.*)::text ORDER BY (SELECT 1))::text)
                         FROM {table} t
@@ -340,7 +366,8 @@ class DatabaseTracker:
                     checksum = result.scalar() or ""
                     table_checksums[table] = checksum
 
-                    # Store snapshot
+                    # Store snapshot - using parameterized query for data values
+                    # SAFETY: Table name is a hardcoded constant, only data values are parameterized
                     conn.execute(text(f"""
                         INSERT INTO {self.snapshot_table}
                         (snapshot_id, table_name, record_count, checksum, metadata)
@@ -379,6 +406,7 @@ class DatabaseTracker:
 
         with self.engine.connect() as conn:
             # Get previous snapshot data
+            # SAFETY: Table name is a hardcoded constant, not user input
             result = conn.execute(text(f"""
                 SELECT table_name, checksum FROM {self.snapshot_table}
                 WHERE snapshot_id = :snapshot_id
@@ -388,8 +416,17 @@ class DatabaseTracker:
 
             # Check current state against previous
             for table, prev_checksum in previous_checksums.items():
+                # Validate table name before using in query
+                if not self._validate_table_name(table):
+                    logger.error(f"Invalid table name detected in snapshot: {table}")
+                    continue
+
                 try:
                     # Calculate current checksum
+                    # SAFETY: Table names come from database query results which were previously validated
+                    # and stored during snapshot creation. Not direct user input.
+                    # Additionally validated with _validate_table_name() above.
+                    # Aggregate queries cannot parameterize table names in standard SQL
                     result = conn.execute(text(f"""
                         SELECT MD5(ARRAY_AGG(ROW(t.*)::text ORDER BY (SELECT 1))::text)
                         FROM {table} t
@@ -398,6 +435,8 @@ class DatabaseTracker:
 
                     if current_checksum != prev_checksum:
                         # Table has changed
+                        # SAFETY: Table names come from validated database results and validated above
+                        # COUNT queries cannot parameterize table names in standard SQL
                         result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
                         count = result.scalar()
 
@@ -563,7 +602,6 @@ class IncrementalBackupService:
 
         # Analyze change patterns
         change_size = sum(change.size for change in changes)
-        total_files = len([c for c in changes if c.change_type != ChangeType.DELETED])
 
         # Get last full backup info
         last_full = None

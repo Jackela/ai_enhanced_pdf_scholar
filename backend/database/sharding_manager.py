@@ -89,9 +89,7 @@ class ShardKey:
         # Convert to string for hashing
         str_value = str(value)
 
-        if self.hash_function == "md5":
-            return int(hashlib.md5(str_value.encode()).hexdigest(), 16)
-        elif self.hash_function == "sha256":
+        if self.hash_function == "md5" or self.hash_function == "sha256":
             return int(hashlib.sha256(str_value.encode()).hexdigest(), 16)
         elif self.hash_function == "crc32":
             import zlib
@@ -490,7 +488,7 @@ class ShardingManager:
                 connection = self.shard_connections.get(shard_id)
                 if connection:
                     start_time = time.time()
-                    result = connection.fetch_one("SELECT 1 as health_check")
+                    _ = connection.fetch_one("SELECT 1 as health_check")
                     response_time = (time.time() - start_time) * 1000
 
                     shard_info.avg_response_time_ms = response_time
@@ -938,7 +936,6 @@ class ShardingManager:
             # Check for size imbalances
             avg_size = sum(shard_sizes.values()) / len(shard_sizes)
             max_size = max(shard_sizes.values())
-            min_size = min(shard_sizes.values())
 
             # If the largest shard is more than 3x the average, consider rebalancing
             if max_size > avg_size * 3 and max_size > 10000:  # Only for significant sizes

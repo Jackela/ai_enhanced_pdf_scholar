@@ -462,7 +462,7 @@ class ProductionSecretsManager:
             except Exception as e:
                 self._audit_log("rotate_master_key", "master", success=False, error=str(e))
                 logger.error(f"Master key rotation failed: {e}")
-                raise SecretRotationError(f"Master key rotation failed: {e}")
+                raise SecretRotationError(f"Master key rotation failed: {e}") from e
 
     def _rotate_secret_key(self, secret_id: str) -> int:
         """Rotate a specific secret's encryption."""
@@ -483,7 +483,7 @@ class ProductionSecretsManager:
             except Exception as e:
                 self._audit_log("rotate_secret", secret_id, success=False, error=str(e))
                 logger.error(f"Secret rotation failed for {secret_id}: {e}")
-                raise SecretRotationError(f"Secret rotation failed: {e}")
+                raise SecretRotationError(f"Secret rotation failed: {e}") from e
 
     def backup_secrets(self, backup_name: str | None = None) -> Path:
         """
@@ -570,7 +570,7 @@ class ProductionSecretsManager:
             except Exception as e:
                 self._audit_log("backup", "all_secrets", success=False, error=str(e))
                 logger.error(f"Backup creation failed: {e}")
-                raise SecretBackupError(f"Backup creation failed: {e}")
+                raise SecretBackupError(f"Backup creation failed: {e}") from e
 
     def restore_secrets(self, backup_path: Path, backup_key: bytes | None = None) -> bool:
         """

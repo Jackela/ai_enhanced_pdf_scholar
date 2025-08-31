@@ -149,7 +149,7 @@ class QueryPerformanceAnalyzer:
         import hashlib
         # Normalize query by removing extra whitespace and converting to lowercase
         normalized = ' '.join(query_text.lower().split())
-        return hashlib.md5(normalized.encode()).hexdigest()[:12]
+        return hashlib.sha256(normalized.encode()).hexdigest()[:12]
 
     def record_query_execution(
         self,

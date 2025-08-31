@@ -119,8 +119,7 @@ async def get_cache_health(
         logger.error(f"Error getting cache health: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache health: {str(e)}"
-        )
+            detail=f"Failed to get cache health: {str(e)}") from e
 
 
 @router.get("/statistics", response_model=CacheStatisticsResponse)
@@ -157,8 +156,7 @@ async def get_cache_statistics(
         logger.error(f"Error getting cache statistics: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache statistics: {str(e)}"
-        )
+            detail=f"Failed to get cache statistics: {str(e)}") from e
 
 
 @router.get("/configuration")
@@ -189,8 +187,7 @@ async def get_cache_configuration(
         logger.error(f"Error getting cache configuration: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache configuration: {str(e)}"
-        )
+            detail=f"Failed to get cache configuration: {str(e)}") from e
 
 
 # ============================================================================
@@ -233,8 +230,7 @@ async def invalidate_cache_pattern(
         logger.error(f"Error invalidating cache pattern {request.pattern}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to invalidate cache: {str(e)}"
-        )
+            detail=f"Failed to invalidate cache: {str(e)}") from e
 
 
 @router.post("/warm", response_model=CacheOperationResponse)
@@ -273,8 +269,7 @@ async def warm_cache(
         logger.error(f"Error warming cache: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to warm cache: {str(e)}"
-        )
+            detail=f"Failed to warm cache: {str(e)}") from e
 
 
 @router.delete("/clear", response_model=CacheOperationResponse)
@@ -313,8 +308,7 @@ async def clear_all_caches(
         logger.error(f"Error clearing all caches: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear caches: {str(e)}"
-        )
+            detail=f"Failed to clear caches: {str(e)}") from e
 
 
 # ============================================================================
@@ -359,8 +353,7 @@ async def get_cache_value(
         logger.error(f"Error getting cache value for key {key}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache value: {str(e)}"
-        )
+            detail=f"Failed to get cache value: {str(e)}") from e
 
 
 @router.post("/set", response_model=CacheOperationResponse)
@@ -407,8 +400,7 @@ async def set_cache_value(
         logger.error(f"Error setting cache value for key {request.key}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to set cache value: {str(e)}"
-        )
+            detail=f"Failed to set cache value: {str(e)}") from e
 
 
 @router.delete("/delete/{key}", response_model=CacheOperationResponse)
@@ -442,8 +434,7 @@ async def delete_cache_value(
         logger.error(f"Error deleting cache value for key {key}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete cache value: {str(e)}"
-        )
+            detail=f"Failed to delete cache value: {str(e)}") from e
 
 
 @router.post("/mset", response_model=CacheOperationResponse)
@@ -486,8 +477,7 @@ async def set_multiple_cache_values(
         logger.error(f"Error in batch cache set: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to set multiple cache values: {str(e)}"
-        )
+            detail=f"Failed to set multiple cache values: {str(e)}") from e
 
 
 @router.post("/mget")
@@ -531,5 +521,4 @@ async def get_multiple_cache_values(
         logger.error(f"Error in batch cache get: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get multiple cache values: {str(e)}"
-        )
+            detail=f"Failed to get multiple cache values: {str(e)}") from e

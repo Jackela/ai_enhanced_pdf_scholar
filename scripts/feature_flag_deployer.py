@@ -549,7 +549,7 @@ class FeatureFlagDeployer:
         """Generate unique deployment ID"""
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
         hash_input = f"{flag_key}-{environment.value}-{timestamp}"
-        hash_suffix = hashlib.md5(hash_input.encode()).hexdigest()[:8]
+        hash_suffix = hashlib.sha256(hash_input.encode()).hexdigest()[:8]
         return f"deploy-{flag_key}-{environment.value}-{timestamp}-{hash_suffix}"
 
     async def gradual_rollout(

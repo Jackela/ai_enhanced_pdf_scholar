@@ -13,7 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from backend.services.apm_service import APMService
-from backend.services.cache_optimization_service import CacheOptimizationService
+from backend.services.cache_optimization_service import (
+    CacheOptimizationService,
+    WarmingPriority,
+)
 from backend.services.cache_telemetry_service import CacheLayer, CacheTelemetryService
 from backend.services.metrics_service import MetricsService
 from backend.services.performance_alerting_service import PerformanceAlertingService
@@ -589,7 +592,7 @@ class IntegratedPerformanceMonitor:
             summaries = []
 
             # APM trend summary
-            if "trends" in amp_trends:
+            if "trends" in apm_trends:
                 trends = apm_trends["trends"]
                 if trends.get("response_time") == "increasing":
                     summaries.append("Response times are increasing")

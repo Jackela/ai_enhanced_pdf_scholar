@@ -161,7 +161,7 @@ async def get_documents(
         raise SystemException(
             message="Failed to retrieve documents",
             error_type="database"
-        )
+        ) from e
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)
@@ -176,7 +176,7 @@ async def get_document(
         return DocumentResponse(**doc_dict)
     except HTTPException as e:
         if e.status_code == 404:
-            raise ErrorTemplates.document_not_found(document_id)
+            raise ErrorTemplates.document_not_found(document_id) from e
         raise
 
 
@@ -194,7 +194,7 @@ async def upload_document(
     try:
         # Enhanced security validation for file upload
         try:
-            secure_upload = SecureFileUpload(
+            _ = SecureFileUpload(
                 filename=file.filename or "unknown.pdf",
                 content_type=file.content_type or "application/pdf",
                 file_size=0  # Will be calculated during streaming
@@ -262,7 +262,7 @@ async def upload_document(
         except DuplicateDocumentError:
             # Clean up temp file on duplicate error
             Path(temp_path).unlink(missing_ok=True)
-            raise ErrorTemplates.duplicate_document(filename or "uploaded file")
+            raise ErrorTemplates.duplicate_document(filename or "uploaded file") from None
         except Exception:
             # Clean up temp file on any error
             Path(temp_path).unlink(missing_ok=True)
@@ -273,8 +273,7 @@ async def upload_document(
         logger.error(f"Document upload failed: {e}")
         raise SystemException(
             message="Document upload failed due to an unexpected error",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/streaming/initiate", response_model=StreamingUploadResponse)
@@ -328,8 +327,7 @@ async def initiate_streaming_upload(
         logger.error(f"Failed to initiate streaming upload: {e}")
         raise SystemException(
             message="Failed to initiate streaming upload",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/streaming/chunk/{session_id}", response_model=ChunkUploadResponse)
@@ -530,7 +528,7 @@ async def complete_streaming_upload(
             # Clean up on duplicate error
             await streaming_service.cancel_upload(session_id, "Duplicate document")
             await resumption_service.delete_resumable_session(session_id)
-            raise ErrorTemplates.duplicate_document(session.filename)
+            raise ErrorTemplates.duplicate_document(session.filename) from None
 
     except HTTPException:
         raise
@@ -547,8 +545,7 @@ async def complete_streaming_upload(
 
         raise SystemException(
             message="Failed to complete document import",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/streaming/cancel/{session_id}", response_model=BaseResponse)
@@ -591,8 +588,7 @@ async def cancel_streaming_upload(
         logger.error(f"Failed to cancel streaming upload {session_id}: {e}")
         raise SystemException(
             message="Failed to cancel upload",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/streaming/resume", response_model=StreamingUploadResponse)
@@ -644,8 +640,7 @@ async def resume_streaming_upload(
         logger.error(f"Failed to resume streaming upload: {e}")
         raise SystemException(
             message="Failed to resume upload",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/streaming/resumable", response_model=list[dict])
@@ -661,8 +656,7 @@ async def get_resumable_uploads(
         logger.error(f"Failed to get resumable uploads: {e}")
         raise SystemException(
             message="Failed to retrieve resumable uploads",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/streaming/memory-stats", response_model=UploadMemoryStats)
@@ -676,8 +670,7 @@ async def get_upload_memory_stats(
         logger.error(f"Failed to get memory stats: {e}")
         raise SystemException(
             message="Failed to retrieve memory statistics",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.put("/{document_id}", response_model=DocumentResponse)
@@ -705,8 +698,7 @@ async def update_document(
         logger.error(f"Failed to update document {document_id}: {e}")
         raise SystemException(
             message="Document update failed",
-            error_type="database"
-        )
+            error_type="database") from e
 
 
 @router.delete("/{document_id}", response_model=BaseResponse)
@@ -728,8 +720,7 @@ async def delete_document(
         logger.error(f"Failed to delete document {document_id}: {e}")
         raise SystemException(
             message="Document deletion failed due to an unexpected error",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/{document_id}/download")
@@ -750,8 +741,7 @@ async def download_document(
         logger.error(f"Failed to serve document file: {e}")
         raise SystemException(
             message="Failed to serve document file",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/{document_id}/integrity", response_model=IntegrityCheckResponse)
@@ -778,5 +768,4 @@ async def check_document_integrity(
         logger.error(f"Failed to check integrity for document {document_id}: {e}")
         raise SystemException(
             message="Document integrity check failed",
-            error_type="general"
-        )
+            error_type="general") from e

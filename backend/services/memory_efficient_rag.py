@@ -106,7 +106,7 @@ class MemoryOptimizedRAGProcessor:
                 if not document:
                     raise ValueError(f"Document {document_id} not found")
             except Exception as e:
-                raise ValueError(f"Failed to access document {document_id}: {e}")
+                raise ValueError(f"Failed to access document {document_id}: {e}") from e
 
             await processor.check_memory_pressure()
 

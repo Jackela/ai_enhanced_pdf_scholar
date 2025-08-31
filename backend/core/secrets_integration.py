@@ -5,6 +5,7 @@ Provides integration points for existing services to use the new secrets managem
 
 import logging
 from pathlib import Path
+from typing import Any, Dict
 
 from backend.api.auth.jwt_handler import JWTConfig as OldJWTConfig
 from backend.core.enhanced_config import get_config
@@ -288,7 +289,6 @@ def update_dependencies_to_use_secrets():
     config = get_config()
 
     # Override the get_enhanced_rag function to use secrets
-    original_get_enhanced_rag = dependencies.get_enhanced_rag
 
     def get_enhanced_rag_with_secrets(db=None):
         """Enhanced RAG service using secrets management."""
@@ -386,7 +386,7 @@ def initialize_secrets_integration(
         return False
 
 
-def check_and_rotate_secrets() -> Dict[str, bool]:
+def check_and_rotate_secrets() -> dict[str, bool]:
     """
     Check for secrets that need rotation and rotate them.
 
@@ -417,7 +417,7 @@ def check_and_rotate_secrets() -> Dict[str, bool]:
     return results
 
 
-def get_secret_health_status() -> Dict[str, Any]:
+def get_secret_health_status() -> dict[str, Any]:
     """
     Get comprehensive health status of secrets management.
 

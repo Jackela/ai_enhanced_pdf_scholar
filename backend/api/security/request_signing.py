@@ -703,7 +703,7 @@ def setup_request_signing_middleware(
             )
             return {"success": result}
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     @app.put("/admin/signing/keys/{key_id}/rotate")
     async def rotate_signing_key(key_id: str, new_secret: str):

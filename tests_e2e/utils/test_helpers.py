@@ -189,8 +189,8 @@ class VisualRegression:
 
         except ImportError:
             # PIL not available, use simple hash comparison
-            hash1 = hashlib.md5(current.read_bytes()).hexdigest()
-            hash2 = hashlib.md5(baseline.read_bytes()).hexdigest()
+            hash1 = hashlib.sha256(current.read_bytes()).hexdigest()
+            hash2 = hashlib.sha256(baseline.read_bytes()).hexdigest()
             return hash1 == hash2
 
     def assert_visual_match(self, page: Page, name: str, update_baseline: bool = False):

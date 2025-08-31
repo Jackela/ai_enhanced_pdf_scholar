@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from backend.api.auth.jwt_handler import jwt_handler
 from backend.api.auth.models import (
     AccountStatus,
+    LoginAttemptLog,
     RefreshTokenModel,
     UserModel,
     UserRole,

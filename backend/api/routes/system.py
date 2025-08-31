@@ -102,8 +102,7 @@ async def get_system_health(
         logger.error(f"Health check failed: {e}")
         raise SystemException(
             message="System health check failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/config", response_model=ConfigurationResponse)
@@ -135,8 +134,7 @@ async def get_configuration(config: dict = Depends(get_api_config)):
         logger.error(f"Failed to get configuration: {e}")
         raise SystemException(
             message="Configuration retrieval failed",
-            error_type="configuration"
-        )
+            error_type="configuration") from e
 
 
 @router.get("/info", response_model=BaseResponse)
@@ -155,8 +153,7 @@ async def get_system_info():
         logger.error(f"Failed to get system info: {e}")
         raise SystemException(
             message="System information retrieval failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/version")
@@ -198,8 +195,7 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
         logger.error(f"System initialization failed: {e}")
         raise SystemException(
             message="System initialization failed",
-            error_type="configuration"
-        )
+            error_type="configuration") from e
 
 
 @router.get("/storage", response_model=BaseResponse)
@@ -243,8 +239,7 @@ async def get_storage_info():
         logger.error(f"Failed to get storage info: {e}")
         raise SystemException(
             message="Storage information retrieval failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/maintenance", response_model=BaseResponse)
@@ -278,8 +273,7 @@ async def run_maintenance():
         logger.error(f"Maintenance failed: {e}")
         raise SystemException(
             message="System maintenance failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/health/secrets", response_model=BaseResponse)
@@ -321,8 +315,7 @@ async def get_secrets_health():
         logger.error(f"Secrets health check failed: {e}")
         raise SystemException(
             message="Secrets health check failed",
-            error_type="secrets_management"
-        )
+            error_type="secrets_management") from e
 
 
 @router.post("/secrets/validate", response_model=BaseResponse)
@@ -385,8 +378,7 @@ async def validate_environment_secrets(
         logger.error(f"Secrets validation failed: {e}")
         raise SystemException(
             message="Secrets validation failed",
-            error_type="secrets_validation"
-        )
+            error_type="secrets_validation") from e
 
 
 @router.post("/secrets/rotate/{secret_name}", response_model=BaseResponse)
@@ -416,8 +408,7 @@ async def rotate_secret(secret_name: str):
         logger.error(f"Secret rotation failed for {secret_name}: {e}")
         raise SystemException(
             message=f"Secret rotation failed for {secret_name}",
-            error_type="secret_rotation"
-        )
+            error_type="secret_rotation") from e
 
 
 @router.post("/secrets/backup", response_model=BaseResponse)
@@ -442,8 +433,7 @@ async def backup_secrets(backup_name: str | None = None):
         logger.error(f"Secrets backup failed: {e}")
         raise SystemException(
             message="Secrets backup failed",
-            error_type="secrets_backup"
-        )
+            error_type="secrets_backup") from e
 
 
 @router.get("/health/detailed", response_model=BaseResponse)
@@ -625,8 +615,7 @@ async def detailed_health_check(
         logger.error(f"Detailed health check failed: {e}")
         raise SystemException(
             message="Detailed health check failed",
-            error_type="health_check"
-        )
+            error_type="health_check") from e
 
 
 @router.get("/health/dependencies", response_model=BaseResponse)
@@ -757,8 +746,7 @@ async def dependency_health_check():
         logger.error(f"Dependency health check failed: {e}")
         raise SystemException(
             message="Dependency health check failed",
-            error_type="dependency_health"
-        )
+            error_type="dependency_health") from e
 
 
 @router.get("/health/performance", response_model=BaseResponse)
@@ -772,7 +760,6 @@ async def performance_health_check():
         disk = psutil.disk_usage('/')
 
         # CPU metrics with more detail
-        cpu_times = psutil.cpu_times()
         cpu_count = psutil.cpu_count()
         cpu_freq = psutil.cpu_freq()
 
@@ -849,7 +836,7 @@ async def performance_health_check():
 
             # Simple query performance test
             start_time = time.time()
-            result = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
+            _ = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
             query_time = (time.time() - start_time) * 1000
 
             db_performance.update({
@@ -922,8 +909,7 @@ async def performance_health_check():
         logger.error(f"Performance health check failed: {e}")
         raise SystemException(
             message="Performance health check failed",
-            error_type="performance_health"
-        )
+            error_type="performance_health") from e
 
 
 @router.get("/secrets/audit", response_model=BaseResponse)
@@ -967,8 +953,7 @@ async def get_secrets_audit_log(
         logger.error(f"Failed to get secrets audit log: {e}")
         raise SystemException(
             message="Failed to retrieve secrets audit log",
-            error_type="secrets_audit"
-        )
+            error_type="secrets_audit") from e
 
 
 # ============================================================================
@@ -1002,8 +987,7 @@ async def get_current_metrics():
         logger.error(f"Failed to get current metrics: {e}")
         raise SystemException(
             message="Failed to retrieve current metrics",
-            error_type="metrics_collection"
-        )
+            error_type="metrics_collection") from e
 
 
 @router.get("/metrics/history/{metric_type}", response_model=BaseResponse)
@@ -1026,7 +1010,7 @@ async def get_metrics_history(
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid metric type. Valid types: {[t.value for t in MetricType]}"
-            )
+            ) from None
 
         history = metrics_collector.get_metrics_history(metric_enum, hours_back)
 
@@ -1045,8 +1029,7 @@ async def get_metrics_history(
         logger.error(f"Failed to get metrics history for {metric_type}: {e}")
         raise SystemException(
             message=f"Failed to retrieve metrics history for {metric_type}",
-            error_type="metrics_history"
-        )
+            error_type="metrics_history") from e
 
 
 @router.get("/metrics/system/detailed", response_model=BaseResponse)
@@ -1102,8 +1085,7 @@ async def get_detailed_system_metrics():
         logger.error(f"Failed to get detailed system metrics: {e}")
         raise SystemException(
             message="Failed to retrieve detailed system metrics",
-            error_type="system_metrics"
-        )
+            error_type="system_metrics") from e
 
 
 @router.get("/metrics/database/status", response_model=BaseResponse)
@@ -1117,7 +1099,7 @@ async def get_database_metrics():
                 db = next(get_db())
 
                 start_time = time.time()
-                result = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
+                _ = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
                 query_time = (time.time() - start_time) * 1000
 
                 return BaseResponse(
@@ -1159,8 +1141,7 @@ async def get_database_metrics():
         logger.error(f"Failed to get database metrics: {e}")
         raise SystemException(
             message="Failed to retrieve database metrics",
-            error_type="database_metrics"
-        )
+            error_type="database_metrics") from e
 
 
 @router.get("/metrics/websocket/status", response_model=BaseResponse)
@@ -1206,8 +1187,7 @@ async def get_websocket_metrics():
         logger.error(f"Failed to get WebSocket metrics: {e}")
         raise SystemException(
             message="Failed to retrieve WebSocket metrics",
-            error_type="websocket_metrics"
-        )
+            error_type="websocket_metrics") from e
 
 
 @router.get("/metrics/memory/leak-detection", response_model=BaseResponse)
@@ -1267,8 +1247,7 @@ async def get_memory_leak_metrics():
         logger.error(f"Failed to get memory leak metrics: {e}")
         raise SystemException(
             message="Failed to retrieve memory leak metrics",
-            error_type="memory_metrics"
-        )
+            error_type="memory_metrics") from e
 
 
 def initialize_metrics_collector(collector_instance: RealTimeMetricsCollector):

@@ -100,10 +100,10 @@ async def create_collection(
         )
         return convert_collection_to_response(collection)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to create collection: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/collections", response_model=CollectionListResponse)
@@ -133,7 +133,7 @@ async def list_collections(
         )
     except Exception as e:
         logger.error(f"Failed to list collections: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/collections/{collection_id}", response_model=CollectionResponse)
@@ -146,10 +146,10 @@ async def get_collection(
         collection = service.get_collection(collection_id)
         return convert_collection_to_response(collection)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to get collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.put("/collections/{collection_id}", response_model=CollectionResponse)
@@ -171,10 +171,10 @@ async def update_collection(
         # For now, just return the collection
         return convert_collection_to_response(collection)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to update collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/collections/{collection_id}")
@@ -190,7 +190,7 @@ async def delete_collection(
         return {"message": "Collection deleted successfully"}
     except Exception as e:
         logger.error(f"Failed to delete collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/collections/{collection_id}/documents", response_model=CollectionResponse)
@@ -206,10 +206,10 @@ async def add_document_to_collection(
         )
         return convert_collection_to_response(collection)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to add document to collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.delete("/collections/{collection_id}/documents/{document_id}")
@@ -223,10 +223,10 @@ async def remove_document_from_collection(
         collection = service.remove_document_from_collection(collection_id, document_id)
         return convert_collection_to_response(collection)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to remove document from collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Collection Index Endpoints
@@ -250,10 +250,10 @@ async def create_collection_index(
             status_code=202
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to create index for collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/collections/{collection_id}/statistics", response_model=CollectionStatisticsResponse)
@@ -266,10 +266,10 @@ async def get_collection_statistics(
         stats = service.get_collection_statistics(collection_id)
         return CollectionStatisticsResponse(**stats)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to get collection statistics {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 # Cross-Document Query Endpoints
@@ -331,10 +331,10 @@ async def query_collection(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Failed to query collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.get("/collections/{collection_id}/queries", response_model=QueryHistoryResponse)
@@ -357,4 +357,4 @@ async def get_query_history(
         )
     except Exception as e:
         logger.error(f"Failed to get query history for collection {collection_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e

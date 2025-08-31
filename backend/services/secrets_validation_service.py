@@ -797,12 +797,9 @@ class SecretValidationService:
 
         # Check common config file patterns (simplified)
         if rule.custom_params.get('check_config_files', True):
-            config_paths = [
-                '.env', 'config.json', 'settings.py', 'application.yml',
-                'docker-compose.yml', 'kubernetes/*.yaml'
-            ]
             # In production, this would actually scan files
             # For now, it's a placeholder
+            pass
 
         passed = len(exposure_risks) == 0
 

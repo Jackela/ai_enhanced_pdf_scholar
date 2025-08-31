@@ -19,6 +19,7 @@ from src.services.rag.coordinator import RAGCoordinator
 from src.services.rag.exceptions import RAGIndexError, RAGProcessingError
 from src.services.rag.file_manager import RAGFileManager
 from src.services.rag.index_builder import RAGIndexBuilder
+from src.services.rag.interfaces import IRAGIndexBuilder
 from src.services.rag.query_engine import RAGQueryEngine
 from src.services.rag.recovery_service import RAGRecoveryService
 

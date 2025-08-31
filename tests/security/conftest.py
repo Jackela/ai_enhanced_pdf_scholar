@@ -3,7 +3,9 @@ Security Testing Configuration and Fixtures
 Shared fixtures and configuration for all security tests.
 """
 
+import json
 import os
+import time
 from pathlib import Path
 from unittest.mock import MagicMock
 

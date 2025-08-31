@@ -111,7 +111,7 @@ class EncryptionService:
             if env_key:
                 self._master_key = base64.b64decode(env_key)
             else:
-                raise RuntimeError("No master encryption key available")
+                raise RuntimeError("No master encryption key available") from e
 
     # ========================================================================
     # Symmetric Encryption (AES-256-GCM)
@@ -714,6 +714,9 @@ class EncryptionService:
 
             # Enable encryption using SQLCipher commands
             # Note: This requires SQLCipher-enabled SQLite
+            # Use parameterized query (Note: PRAGMA doesn't support ? placeholders, but the key is internally generated)
+            # Security: The master key is generated internally and not from user input
+            # Safe: master_key is internally generated, not user input
             conn.execute(f"PRAGMA key = '{self._master_key.hex()}'")
             conn.execute("PRAGMA cipher_page_size = 4096")
             conn.execute("PRAGMA kdf_iter = 256000")

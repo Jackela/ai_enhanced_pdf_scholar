@@ -112,7 +112,7 @@ async def get_performance_overview(
         }
     except Exception as e:
         logger.error(f"Error getting performance overview: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/health")
@@ -128,7 +128,7 @@ async def get_system_health(
         }
     except Exception as e:
         logger.error(f"Error getting system health: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/report/comprehensive")
@@ -144,7 +144,7 @@ async def get_comprehensive_report(
         }
     except Exception as e:
         logger.error(f"Error getting comprehensive report: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/trends")
@@ -161,7 +161,7 @@ async def get_performance_trends(
         }
     except Exception as e:
         logger.error(f"Error getting performance trends: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -192,7 +192,7 @@ async def get_cache_analytics(
         raise
     except Exception as e:
         logger.error(f"Error getting cache analytics: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/cache/recommendations")
@@ -209,7 +209,7 @@ async def get_cache_recommendations(
         }
     except Exception as e:
         logger.error(f"Error getting cache recommendations: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/cache/patterns")
@@ -227,7 +227,7 @@ async def get_cache_patterns(
         }
     except Exception as e:
         logger.error(f"Error getting cache patterns: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/cache/warming/candidates")
@@ -245,7 +245,7 @@ async def get_warming_candidates(
         }
     except Exception as e:
         logger.error(f"Error getting warming candidates: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/cache/warming/jobs")
@@ -271,7 +271,7 @@ async def create_warming_job(
         }
     except Exception as e:
         logger.error(f"Error creating warming job: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/cache/warming/jobs/{job_id}")
@@ -293,7 +293,7 @@ async def get_warming_job_status(
         raise
     except Exception as e:
         logger.error(f"Error getting warming job status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -313,7 +313,7 @@ async def get_apm_summary(
         }
     except Exception as e:
         logger.error(f"Error getting APM summary: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/apm/traces/slow")
@@ -347,7 +347,7 @@ async def get_slow_traces(
         }
     except Exception as e:
         logger.error(f"Error getting slow traces: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/apm/traces/errors")
@@ -380,7 +380,7 @@ async def get_error_traces(
         }
     except Exception as e:
         logger.error(f"Error getting error traces: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/apm/traces/{trace_id}")
@@ -402,7 +402,7 @@ async def get_trace_details(
         raise
     except Exception as e:
         logger.error(f"Error getting trace details: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -422,7 +422,7 @@ async def get_active_alerts(
         }
     except Exception as e:
         logger.error(f"Error getting active alerts: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/alerts/history")
@@ -440,7 +440,7 @@ async def get_alert_history(
         }
     except Exception as e:
         logger.error(f"Error getting alert history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/alerts/statistics")
@@ -456,7 +456,7 @@ async def get_alert_statistics(
         }
     except Exception as e:
         logger.error(f"Error getting alert statistics: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/alerts/rules")
@@ -501,7 +501,7 @@ async def create_alert_rule(
         raise
     except Exception as e:
         logger.error(f"Error creating alert rule: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.put("/alerts/{alert_id}/acknowledge")
@@ -526,7 +526,7 @@ async def acknowledge_alert(
         raise
     except Exception as e:
         logger.error(f"Error acknowledging alert: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.put("/alerts/{alert_id}/resolve")
@@ -551,7 +551,7 @@ async def resolve_alert(
         raise
     except Exception as e:
         logger.error(f"Error resolving alert: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -571,7 +571,7 @@ async def trigger_comprehensive_analysis(
         }
     except Exception as e:
         logger.error(f"Error triggering comprehensive analysis: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/optimize/emergency")
@@ -587,7 +587,7 @@ async def trigger_emergency_optimization(
         }
     except Exception as e:
         logger.error(f"Error triggering emergency optimization: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/cache/optimize/trigger")
@@ -603,7 +603,7 @@ async def trigger_cache_optimization(
         }
     except Exception as e:
         logger.error(f"Error triggering cache optimization: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -619,7 +619,7 @@ async def get_performance_dashboard(
         return monitor.dashboard_service.get_dashboard_page()
     except Exception as e:
         logger.error(f"Error getting dashboard page: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.websocket("/ws/dashboard")
@@ -649,7 +649,7 @@ async def get_dashboard_data(
         }
     except Exception as e:
         logger.error(f"Error getting dashboard data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -675,7 +675,7 @@ async def export_telemetry_data(
         }
     except Exception as e:
         logger.error(f"Error exporting telemetry data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/export/dashboard")
@@ -692,7 +692,7 @@ async def export_dashboard_data(
         }
     except Exception as e:
         logger.error(f"Error exporting dashboard data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================
@@ -714,7 +714,7 @@ async def start_performance_monitoring(
         }
     except Exception as e:
         logger.error(f"Error starting performance monitoring: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/services/stop")
@@ -732,7 +732,7 @@ async def stop_performance_monitoring(
         }
     except Exception as e:
         logger.error(f"Error stopping performance monitoring: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ============================================================================

@@ -226,8 +226,7 @@ async def get_settings(
         logger.error(f"Failed to get settings: {e}")
         raise SystemException(
             message="Failed to retrieve system settings",
-            error_type="database"
-        )
+            error_type="database") from e
 
 
 @router.post("/settings")
@@ -252,8 +251,7 @@ async def update_settings(
         logger.error(f"Failed to update settings: {e}")
         raise SystemException(
             message="Failed to update system settings",
-            error_type="database"
-        )
+            error_type="database") from e
 
 
 @router.post("/test-api-key", response_model=ApiKeyTestResponse)
@@ -346,5 +344,4 @@ async def get_system_status(
         logger.error(f"Failed to get system status: {e}")
         raise SystemException(
             message="Failed to retrieve system status",
-            error_type="general"
-        )
+            error_type="general") from e

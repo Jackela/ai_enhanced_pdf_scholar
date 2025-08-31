@@ -50,8 +50,7 @@ async def get_library_statistics(
         logger.error(f"Failed to get library statistics: {e}")
         raise SystemException(
             message="Failed to retrieve library statistics",
-            error_type="database"
-        )
+            error_type="database") from e
 
 
 @router.get("/duplicates", response_model=DuplicatesResponse)
@@ -81,8 +80,7 @@ async def find_duplicate_documents(
         logger.error(f"Failed to find duplicates: {e}")
         raise SystemException(
             message="Duplicate detection failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/cleanup", response_model=CleanupResponse)
@@ -111,8 +109,7 @@ async def cleanup_library(
         logger.error(f"Library cleanup failed: {e}")
         raise SystemException(
             message="Library cleanup operation failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/health", response_model=BaseResponse)
@@ -140,8 +137,7 @@ async def check_library_health(
         logger.error(f"Health check failed: {e}")
         raise SystemException(
             message="Library health check failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/optimize", response_model=BaseResponse)
@@ -185,8 +181,7 @@ async def optimize_library(
         logger.error(f"Library optimization failed: {e}")
         raise SystemException(
             message="Library optimization operation failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/search", response_model=DocumentListResponse)
@@ -211,8 +206,7 @@ async def search_documents(
         logger.error(f"Search failed: {e}")
         raise SystemException(
             message="Document search failed",
-            error_type="database"
-        )
+            error_type="database") from e
 
 
 @router.get("/recent", response_model=DocumentListResponse)
@@ -236,5 +230,4 @@ async def get_recent_documents(
         logger.error(f"Failed to get recent documents: {e}")
         raise SystemException(
             message="Failed to retrieve recent documents",
-            error_type="database"
-        )
+            error_type="database") from e

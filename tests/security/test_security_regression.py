@@ -3,6 +3,7 @@ Security Regression Testing Suite
 Ensures security fixes don't regress and maintains security baseline.
 """
 
+import asyncio
 import json
 import time
 from datetime import datetime

@@ -496,9 +496,6 @@ class ProductionIPWhitelist:
             # like VirusTotal, AbuseIPDB, etc.
 
             # Simplified threat detection based on patterns
-            threat_types = set()
-            threat_level = ThreatLevel.LOW
-
             # Check if IP is in known bad ranges (simplified)
             ip_obj = ipaddress.ip_address(ip_address)
 
@@ -700,7 +697,7 @@ def setup_ip_whitelist_middleware(
             result = ip_whitelist.add_ip_rule(ip_range, action_enum, description, priority)
             return {"success": result}
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     @app.delete("/admin/ip-whitelist/remove")
     async def remove_ip_rule(ip_range: str):

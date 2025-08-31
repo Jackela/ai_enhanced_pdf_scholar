@@ -693,8 +693,6 @@ class DatabasePerformanceMonitor:
     def _check_alert_conditions(self) -> None:
         """Check alert conditions and trigger alerts."""
         try:
-            current_time = datetime.now()
-
             with self._metrics_lock:
                 for metric_name, threshold in self.alert_thresholds.items():
                     if metric_name in self._current_metrics:

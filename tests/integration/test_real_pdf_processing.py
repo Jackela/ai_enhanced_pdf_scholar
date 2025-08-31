@@ -6,10 +6,12 @@ actual RAG functionality. Tests use real PDFs, real text extraction, and
 real vector operations (in test mode for performance).
 """
 
+import json
 import tempfile
 import time
 from pathlib import Path
 
+import fitz  # PyMuPDF
 import pytest
 
 from src.database.connection import DatabaseConnection

@@ -17,6 +17,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
 
 from backend.api.auth.jwt_auth import User
+from backend.api.dependencies import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -507,7 +508,7 @@ class RBACService:
     def _has_direct_permission(self, user: User, resource: str, action: str) -> bool:
         """Check if user has direct permission grant."""
         # This would need to be implemented with proper SQLAlchemy query
-        permission_name = f"{resource}:{action}"
+        _ = f"{resource}:{action}"
         # Query user_permissions table for non-expired direct grants
         return False
 

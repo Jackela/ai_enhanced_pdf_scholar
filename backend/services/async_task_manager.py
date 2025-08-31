@@ -247,8 +247,8 @@ class AsyncTaskManager:
             await self.task_queue.put((priority_value, task))
             logger.debug(f"Submitted task {task_id} with priority {priority.name}")
             return task_id
-        except asyncio.QueueFull:
-            raise RuntimeError(f"Task queue is full ({self.max_queue_size} tasks)")
+        except asyncio.QueueFull as e:
+            raise RuntimeError(f"Task queue is full ({self.max_queue_size} tasks)") from e
 
     async def cancel_task(self, task_id: str) -> bool:
         """Cancel a running or queued task."""

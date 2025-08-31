@@ -152,6 +152,7 @@ class PostgreSQLWALBackup:
                     slot_name = f"{self.config.database_name}_backup_slot"
 
                     try:
+                        # Safe: slot_name is built from database_name configuration, not user input
                         conn.execute(text(f"SELECT pg_create_physical_replication_slot('{slot_name}')"))
                         logger.info(f"Created replication slot: {slot_name}")
                     except Exception as e:

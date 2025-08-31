@@ -481,7 +481,7 @@ def main():
 
         # Migrate secrets
         logger.info("Starting migration...")
-        results = migration.migrate_secrets(existing_secrets, args.rotation_days)
+        _ = migration.migrate_secrets(existing_secrets, args.rotation_days)
 
         # Clean up if requested
         if args.cleanup and not migration.dry_run:

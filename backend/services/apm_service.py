@@ -438,11 +438,9 @@ class APMService:
         memory = psutil.virtual_memory()
 
         # Calculate disk I/O (simplified)
-        disk_io = psutil.disk_io_counters()
         disk_io_mb_per_s = 0  # Would need baseline for accurate calculation
 
         # Calculate network I/O (simplified)
-        network_io = psutil.net_io_counters()
         network_io_mb_per_s = 0  # Would need baseline for accurate calculation
 
         # Request metrics from recent traces

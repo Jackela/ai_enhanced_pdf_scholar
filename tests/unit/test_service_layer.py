@@ -24,7 +24,7 @@ except ImportError:
         def calculate_file_hash(self, file_path):
             # Mock hash calculation
             import hashlib
-            return hashlib.md5(str(file_path).encode()).hexdigest()[:16]
+            return hashlib.sha256(str(file_path).encode()).hexdigest()[:16]
 
         def calculate_content_hash(self, content):
             # Mock content hash

@@ -98,14 +98,14 @@ class CacheKeyGenerator:
         if request.query_params:
             query_items = sorted(request.query_params.items())
             query_string = "&".join(f"{k}={v}" for k, v in query_items)
-            components.append(f"q:{hashlib.md5(query_string.encode()).hexdigest()[:8]}")
+            components.append(f"q:{hashlib.sha256(query_string.encode()).hexdigest()[:8]}")
 
         # Add request body hash for POST/PUT requests
         if request.method in {"POST", "PUT", "PATCH"}:
             # Read body (will be consumed, so we need to replace it)
             body = await request.body()
             if body:
-                body_hash = hashlib.md5(body).hexdigest()[:8]
+                body_hash = hashlib.sha256(body).hexdigest()[:8]
                 components.append(f"b:{body_hash}")
 
                 # Replace request stream for downstream processing
@@ -118,7 +118,7 @@ class CacheKeyGenerator:
         for header_name in self.config.vary_headers:
             header_value = request.headers.get(header_name)
             if header_value:
-                header_hash = hashlib.md5(header_value.encode()).hexdigest()[:4]
+                header_hash = hashlib.sha256(header_value.encode()).hexdigest()[:4]
                 components.append(f"h:{header_name}:{header_hash}")
 
         # Join and hash for final key
@@ -453,7 +453,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 # Simple extraction - in production would properly decode JWT
                 token = auth_header[7:]
                 # Would decode JWT and extract user_id
-                return f"token_{hashlib.md5(token.encode()).hexdigest()[:8]}"
+                return f"token_{hashlib.sha256(token.encode()).hexdigest()[:8]}"
             except:
                 pass
 
@@ -464,7 +464,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
         # Fallback to IP-based identifier
         client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
-        return f"ip_{hashlib.md5(client_ip.encode()).hexdigest()[:8]}"
+        return f"ip_{hashlib.sha256(client_ip.encode()).hexdigest()[:8]}"
 
     # ========================================================================
     # Cache Management

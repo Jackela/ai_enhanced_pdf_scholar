@@ -76,7 +76,7 @@ class AccessRecord:
         ]
 
         # Add hash-based features for key
-        key_hash = int(hashlib.md5(self.key.encode()).hexdigest()[:8], 16)
+        key_hash = int(hashlib.sha256(self.key.encode()).hexdigest()[:8], 16)
         features.append((key_hash % 1000) / 1000.0)  # Key hash feature
 
         return features

@@ -48,7 +48,7 @@ def get_db() -> DatabaseConnection:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Database connection failed",
-            )
+            ) from e
     return _db_connection
 
 
@@ -122,7 +122,7 @@ def get_library_controller(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Library controller initialization failed",
-            )
+            ) from e
     return _library_controller
 
 
@@ -169,11 +169,11 @@ def validate_document_access(
             raise ResourceNotFoundException(
                 resource_type="document",
                 resource_id=str(document_id)
-            )
+            ) from e
         raise SystemException(
             message="Failed to validate document access",
             error_type="database"
-        )
+        ) from e
 
 
 # Configuration helpers
@@ -206,7 +206,7 @@ def get_websocket_manager() -> WebSocketManager:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="WebSocket manager initialization failed",
-            )
+            ) from e
     return _websocket_manager
 
 
@@ -247,5 +247,5 @@ def get_multi_document_rag_service(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Multi-document RAG service initialization failed",
-            )
+            ) from e
     return _multi_document_rag_service

@@ -73,8 +73,7 @@ def secure_endpoint(
                                 raise HTTPException(
                                     status_code=status.HTTP_401_UNAUTHORIZED,
                                     detail="Invalid authentication credentials",
-                                    headers={"WWW-Authenticate": "Bearer"}
-                                )
+                                    headers={"WWW-Authenticate": "Bearer"}) from None
                         else:
                             raise HTTPException(
                                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -101,8 +100,7 @@ def secure_endpoint(
                     except:
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Database session not available"
-                        )
+                            detail="Database session not available") from None
 
                 rbac = RBACService(db)
 

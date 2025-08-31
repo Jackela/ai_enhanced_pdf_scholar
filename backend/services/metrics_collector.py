@@ -192,7 +192,6 @@ class EnhancedMetricsCollector:
                 keyspace_hits = info.get('keyspace_hits', 0)
                 keyspace_misses = info.get('keyspace_misses', 0)
                 if keyspace_hits + keyspace_misses > 0:
-                    hit_rate = keyspace_hits / (keyspace_hits + keyspace_misses)
                     self.metrics.cache_hits_total.labels(
                         cache_type="redis",
                         key_pattern="global"
@@ -250,7 +249,6 @@ class EnhancedMetricsCollector:
             if result:
                 total, completed, failed = result
                 if total > 0:
-                    success_rate = completed / total if total > 0 else 1.0
                     error_rate = failed / total if total > 0 else 0.0
                     self.metrics.error_rate.labels(component="document_processing").set(error_rate * 100)
 
@@ -550,7 +548,6 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
 
             try:
                 result = await func(*args, **kwargs)
-                duration = time.time() - start_time
 
                 # Record success
                 collector.metrics_service.record_user_activity("system", f"{operation_type}_success")
@@ -558,8 +555,6 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
                 return result
 
             except Exception as e:
-                duration = time.time() - start_time
-
                 # Record failure
                 collector.metrics_service.record_user_activity("system", f"{operation_type}_failure")
                 collector.record_security_incident(
@@ -577,7 +572,6 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
 
             try:
                 result = func(*args, **kwargs)
-                duration = time.time() - start_time
 
                 # Record success
                 collector.metrics_service.record_user_activity("system", f"{operation_type}_success")
@@ -585,8 +579,6 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
                 return result
 
             except Exception as e:
-                duration = time.time() - start_time
-
                 # Record failure
                 collector.metrics_service.record_user_activity("system", f"{operation_type}_failure")
                 collector.record_security_incident(

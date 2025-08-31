@@ -9,6 +9,7 @@ in the AI Enhanced PDF Scholar application.
 import gc
 import sys
 import time
+import traceback
 import tracemalloc
 from pathlib import Path
 

@@ -188,7 +188,6 @@ class CircuitBreaker(Generic[T]):
         # Execute the protected function
         start_time = time.time()
         result = None
-        error = None
 
         try:
             result = func(*args, **kwargs)
@@ -245,7 +244,6 @@ class CircuitBreaker(Generic[T]):
         # Execute the protected function with timeout
         start_time = time.time()
         result = None
-        error = None
 
         try:
             result = await asyncio.wait_for(
@@ -618,7 +616,6 @@ class HTTPCircuitBreaker(CircuitBreaker):
 
     def _classify_failure(self, exception: Exception) -> FailureType:
         """Classify HTTP-specific failures."""
-        exception_name = type(exception).__name__.lower()
 
         # Check for specific HTTP status codes if available
         if hasattr(exception, 'status_code'):
@@ -733,7 +730,7 @@ if __name__ == "__main__":
             print("Testing sync circuit breaker:")
             for i in range(5):
                 try:
-                    result = call_external_api()
+                    _ = call_external_api()
                     print(f"Call {i+1}: Success")
                 except Exception as e:
                     print(f"Call {i+1}: Failed - {e}")
@@ -742,7 +739,7 @@ if __name__ == "__main__":
             print("\nTesting async circuit breaker:")
             for i in range(5):
                 try:
-                    result = await call_async_api()
+                    _ = await call_async_api()
                     print(f"Async call {i+1}: Success")
                 except Exception as e:
                     print(f"Async call {i+1}: Failed - {e}")

@@ -212,7 +212,7 @@ class ReadWriteSplitter:
                 # Simple health check query
                 start_time = time.time()
                 result = connection.fetch_one("SELECT 1 as health_check")
-                response_time = (time.time() - start_time) * 1000
+                _ = (time.time() - start_time) * 1000
 
                 # Update health status
                 endpoint.is_healthy = result is not None

@@ -191,7 +191,7 @@ async def create_role(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        )
+        ) from e
 
 
 @router.delete("/roles/{role_name}", status_code=status.HTTP_204_NO_CONTENT)
@@ -284,7 +284,7 @@ async def assign_role_to_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        )
+        ) from e
 
 
 @router.post("/revoke-role", status_code=status.HTTP_200_OK)
@@ -336,7 +336,7 @@ async def revoke_role_from_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        )
+        ) from e
 
 
 # ============================================================================
@@ -426,7 +426,7 @@ async def grant_direct_permission(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        )
+        ) from e
 
 
 # ============================================================================

@@ -323,11 +323,11 @@ class ImageOptimizer:
         return output_dir / input_path.parent.relative_to(input_path.parent.parent) / filename
 
     async def _calculate_file_hash(self, file_path: Path) -> str:
-        """Calculate MD5 hash of file."""
+        """Calculate SHA256 hash of file."""
         try:
             async with aiofiles.open(file_path, 'rb') as f:
                 content = await f.read()
-                return hashlib.md5(content).hexdigest()
+                return hashlib.sha256(content).hexdigest()
         except Exception:
             return ""
 
@@ -707,7 +707,7 @@ class StaticAssetOptimizer:
             try:
                 async with aiofiles.open(optimized_path, 'rb') as f:
                     content = await f.read()
-                    version_hash = hashlib.md5(content).hexdigest()[:8]
+                    version_hash = hashlib.sha256(content).hexdigest()[:8]
             except Exception:
                 version_hash = str(int(time.time()))
 

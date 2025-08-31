@@ -4,6 +4,7 @@ Advanced database configuration with connection pooling, performance tuning,
 read/write splitting, and monitoring integration.
 """
 
+import asyncio
 import logging
 import time
 from collections.abc import AsyncGenerator

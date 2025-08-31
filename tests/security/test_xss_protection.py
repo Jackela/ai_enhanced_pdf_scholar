@@ -3,6 +3,7 @@ Comprehensive XSS Protection Tests
 Tests for DOMPurify integration and content sanitization across all components.
 """
 
+import asyncio
 import json
 
 import pytest

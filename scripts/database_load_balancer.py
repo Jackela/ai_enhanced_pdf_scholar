@@ -244,7 +244,7 @@ class DatabaseLoadBalancer:
             if server.metrics.state != ServerState.FAILED:
                 for i in range(virtual_nodes_per_server * server.weight // 100):
                     virtual_node_key = f"{server.server_id}:{i}"
-                    hash_value = int(hashlib.md5(virtual_node_key.encode()).hexdigest(), 16)
+                    hash_value = int(hashlib.sha256(virtual_node_key.encode()).hexdigest(), 16)
                     self._consistent_hash_ring[hash_value] = server.server_id
 
         logger.info(f"Initialized consistent hashing with {len(self._consistent_hash_ring)} virtual nodes")
@@ -584,7 +584,7 @@ class DatabaseLoadBalancer:
         """Select server using consistent hashing."""
         # Use session_id or client_id for consistency
         hash_key = request.session_id or request.client_id or request.request_id
-        hash_value = int(hashlib.md5(hash_key.encode()).hexdigest(), 16)
+        hash_value = int(hashlib.sha256(hash_key.encode()).hexdigest(), 16)
 
         # Find the nearest server in the hash ring
         available_server_ids = {s.server_id for s in servers}
@@ -890,7 +890,7 @@ class DatabaseLoadBalancer:
 
         for i in range(virtual_nodes_per_server * server.weight // 100):
             virtual_node_key = f"{server.server_id}:{i}"
-            hash_value = int(hashlib.md5(virtual_node_key.encode()).hexdigest(), 16)
+            hash_value = int(hashlib.sha256(virtual_node_key.encode()).hexdigest(), 16)
             self._consistent_hash_ring[hash_value] = server.server_id
 
     def _remove_server_from_hash_ring(self, server_id: str) -> None:

@@ -561,7 +561,7 @@ class AdvancedConnectionPoolManager:
                 logger.debug(f"Acquired connection {managed_conn.metrics.connection_id} (wait: {wait_time:.2f}ms)")
                 return managed_conn
 
-            except queue.Empty:
+            except queue.Empty as e:
                 # No idle connections available
                 with self._pool_lock:
                     current_size = len(self._all_connections)
@@ -576,7 +576,7 @@ class AdvancedConnectionPoolManager:
                             self._stats.total_connections += 1
 
                             # Acquire immediately
-                            db_connection = managed_conn.acquire(thread_id)
+                            _ = managed_conn.acquire(thread_id)
                             self._active_connections[managed_conn.metrics.connection_id] = managed_conn
 
                             with self._stats_lock:
@@ -586,14 +586,14 @@ class AdvancedConnectionPoolManager:
                             logger.debug(f"Created and acquired new connection {managed_conn.metrics.connection_id}")
                             return managed_conn
 
-                        except Exception as e:
-                            logger.error(f"Failed to create new connection: {e}")
+                        except Exception as create_err:
+                            logger.error(f"Failed to create new connection: {create_err}")
 
                 # Pool is exhausted
                 with self._stats_lock:
                     self._stats.failed_requests += 1
 
-                raise TimeoutError(f"No database connections available within {timeout_ms}ms timeout")
+                raise TimeoutError(f"No database connections available within {timeout_ms}ms timeout") from e
 
         except Exception as e:
             with self._stats_lock:
@@ -820,7 +820,7 @@ def main():
 
                     # Simulate query
                     cursor = managed_conn.connection.execute("SELECT 1")
-                    result = cursor.fetchone()
+                    _ = cursor.fetchone()
 
                     execution_time = (time.time() - start_time) * 1000
                     pool_manager.release_connection(managed_conn, execution_time, True)

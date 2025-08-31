@@ -171,7 +171,7 @@ class StreamingPDFProcessor:
                     f"PDF processing failed: {str(e)}"
                 )
 
-            raise RuntimeError(f"PDF processing failed: {str(e)}")
+            raise RuntimeError(f"PDF processing failed: {str(e)}") from e
 
     async def _process_pdf_chunks(
         self,

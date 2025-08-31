@@ -3,6 +3,8 @@ Intelligent Query Cache Manager for AI Enhanced PDF Scholar
 Advanced query result caching with intelligent cache warming, invalidation, and optimization.
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import logging

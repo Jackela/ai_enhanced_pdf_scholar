@@ -534,12 +534,6 @@ class AlertService:
                 return False
 
             # Create Teams payload
-            color_map = {
-                AlertSeverity.CRITICAL: "attention",
-                AlertSeverity.WARNING: "warning",
-                AlertSeverity.INFO: "good"
-            }
-
             payload = {
                 "@type": "MessageCard",
                 "@context": "https://schema.org/extensions",

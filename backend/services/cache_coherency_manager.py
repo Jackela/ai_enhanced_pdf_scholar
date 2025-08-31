@@ -289,7 +289,7 @@ class CacheLevelWrapper:
         """Calculate checksum for data integrity."""
         try:
             data_str = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else str(value)
-            return hashlib.md5(data_str.encode()).hexdigest()
+            return hashlib.sha256(data_str.encode()).hexdigest()
         except Exception:
             return ""
 
@@ -350,7 +350,6 @@ class CacheCoherencyManager:
 
     async def get(self, key: str, default: Any = None) -> Any:
         """Get value with coherency management."""
-        start_time = time.time()
 
         try:
             # Try cache levels in order (L1 -> L2 -> L3)
@@ -395,7 +394,6 @@ class CacheCoherencyManager:
         tags: list[str] | None = None
     ) -> bool:
         """Set value with coherency management."""
-        start_time = time.time()
 
         try:
             # Create new version
@@ -431,7 +429,6 @@ class CacheCoherencyManager:
         """Delete key with coherency management."""
         try:
             success_count = 0
-            total_levels = len(self.cache_levels)
 
             # Delete from all cache levels
             for level_name, level in self.cache_levels.items():
@@ -749,7 +746,6 @@ class CacheCoherencyManager:
     async def _resolve_last_write_wins(self, key: str) -> bool:
         """Resolve conflicts using last-write-wins strategy."""
         latest_version = None
-        source_level = None
         latest_value = None
 
         # Find the latest version across all levels
@@ -758,7 +754,6 @@ class CacheCoherencyManager:
                 value, version = await level.get(key)
                 if version and (latest_version is None or version.is_newer_than(latest_version)):
                     latest_version = version
-                    source_level = level_name
                     latest_value = value
             except Exception as e:
                 logger.error(f"Error getting version from {level_name}: {e}")
@@ -1010,7 +1005,7 @@ class CacheCoherencyManager:
         """Calculate checksum for data integrity."""
         try:
             data_str = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else str(value)
-            return hashlib.md5(data_str.encode()).hexdigest()
+            return hashlib.sha256(data_str.encode()).hexdigest()
         except Exception:
             return ""
 

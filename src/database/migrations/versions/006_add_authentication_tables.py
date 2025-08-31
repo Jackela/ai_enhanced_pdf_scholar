@@ -236,9 +236,22 @@ class AddAuthenticationTablesMigration(BaseMigration):
         try:
             # Import bcrypt for password hashing
             import bcrypt
+            import os
+            import secrets
+            import string
 
-            # Generate secure password hash (password: admin123!)
-            default_password = "admin123!"
+            # Get default admin password from environment variable or generate a secure one
+            default_password = os.getenv("DEFAULT_ADMIN_PASSWORD")
+            if not default_password:
+                # Generate a secure random password if not provided
+                alphabet = string.ascii_letters + string.digits + string.punctuation
+                default_password = ''.join(secrets.choice(alphabet) for _ in range(16))
+                print(
+                    f"WARNING: No DEFAULT_ADMIN_PASSWORD environment variable set. "
+                    f"Generated temporary password: {default_password}"
+                )
+                print("IMPORTANT: Please change this password immediately after first login!")
+            
             password_hash = bcrypt.hashpw(
                 default_password.encode("utf-8"), bcrypt.gensalt(rounds=12)
             ).decode("utf-8")

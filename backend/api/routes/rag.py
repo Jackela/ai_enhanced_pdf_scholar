@@ -109,8 +109,7 @@ async def query_document(
         logger.error(f"RAG query failed: {e}")
         raise SystemException(
             message="RAG query processing failed",
-            error_type="external_service"
-        )
+            error_type="external_service") from e
 
 
 @router.post("/index/build", response_model=IndexBuildResponse)
@@ -153,8 +152,7 @@ async def build_index(
         logger.error(f"Index build failed: {e}")
         raise SystemException(
             message="Vector index building failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/index/{document_id}/status", response_model=IndexStatusResponse)
@@ -182,8 +180,7 @@ async def get_index_status(
         logger.error(f"Failed to get index status: {e}")
         raise SystemException(
             message="Failed to retrieve index status",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.delete("/index/{document_id}", response_model=BaseResponse)
@@ -212,8 +209,7 @@ async def delete_index(
         logger.error(f"Failed to delete index: {e}")
         raise SystemException(
             message="Vector index deletion failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/index/{document_id}/rebuild", response_model=IndexBuildResponse)
@@ -256,8 +252,7 @@ async def get_cache_stats(
         logger.error(f"Failed to get cache stats: {e}")
         raise SystemException(
             message="Failed to retrieve cache statistics",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.delete("/cache", response_model=CacheClearResponse)
@@ -280,8 +275,7 @@ async def clear_cache(controller: LibraryController = Depends(get_library_contro
         logger.error(f"Failed to clear cache: {e}")
         raise SystemException(
             message="Cache clear operation failed",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.delete("/cache/{document_id}", response_model=BaseResponse)
@@ -300,5 +294,4 @@ async def clear_document_cache(
         logger.error(f"Failed to clear document cache: {e}")
         raise SystemException(
             message="Document cache clear operation failed",
-            error_type="general"
-        )
+            error_type="general") from e

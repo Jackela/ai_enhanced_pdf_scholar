@@ -9,10 +9,13 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from .environment import Environment, get_current_environment
 from .validation import ConfigValidationError, ConfigValidator, SecurityValidator
+
+if TYPE_CHECKING:
+    from .caching_config import CachingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +180,6 @@ class FileStorageConfig:
 
         # Validate paths are reasonable
         base_path = Path(self.base_path)
-        vector_path = Path(self.vector_storage_dir)
 
         if base_path.is_absolute() and environment.is_development():
             issues.append("Consider using relative paths in development")

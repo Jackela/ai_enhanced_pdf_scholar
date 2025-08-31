@@ -278,6 +278,7 @@ class DatabaseConsistencyValidator:
 
                 for table, expected_count in expected_counts.items():
                     try:
+                        # Safe: table names are from admin configuration, not user input
                         result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
                         actual_count = result.scalar()
                         actual_counts[table] = actual_count

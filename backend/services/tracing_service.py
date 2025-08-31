@@ -418,7 +418,7 @@ class TracingService:
         if span:
             # Hash query for privacy
             import hashlib
-            query_hash = hashlib.md5(query.encode()).hexdigest()[:8]
+            query_hash = hashlib.sha256(query.encode()).hexdigest()[:8]
             span.set_attribute("rag.query_hash", query_hash)
             span.set_attribute("rag.query_length", len(query))
 
@@ -449,7 +449,7 @@ class TracingService:
         if span:
             # Hash key for privacy
             import hashlib
-            key_hash = hashlib.md5(key.encode()).hexdigest()[:8]
+            key_hash = hashlib.sha256(key.encode()).hexdigest()[:8]
             span.set_attribute("cache.key_hash", key_hash)
             span.set_attribute("cache.operation", operation)
 

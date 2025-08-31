@@ -376,7 +376,7 @@ class HealthCheckService:
             # Test connection and query
             with engine.connect() as conn:
                 # Simple connectivity test
-                result = conn.execute(text("SELECT 1")).fetchone()
+                _ = conn.execute(text("SELECT 1")).fetchone()
 
                 # Check database version
                 version_result = conn.execute(text("SELECT version()")).fetchone()

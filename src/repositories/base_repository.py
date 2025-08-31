@@ -5,6 +5,7 @@ Follows the Repository pattern to encapsulate data access logic.
 """
 
 import logging
+import re
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
@@ -70,6 +71,17 @@ class BaseRepository(ABC, Generic[T]):
         """
         pass
 
+    def _is_valid_table_name(self, table_name: str) -> bool:
+        """
+        Validate table name to prevent SQL injection.
+        Only allows alphanumeric characters and underscores.
+        Args:
+            table_name: Table name to validate
+        Returns:
+            True if valid, False otherwise
+        """
+        return bool(re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table_name))
+
     def find_by_id(self, id: int) -> T | None:
         """
         Find entity by ID.
@@ -79,7 +91,12 @@ class BaseRepository(ABC, Generic[T]):
             Model object or None if not found
         """
         try:
-            query = f"SELECT * FROM {self.get_table_name()} WHERE id = ?"
+            # Use parameterized query with table name validation
+            table_name = self.get_table_name()
+            # Validate table name to prevent SQL injection
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
+            query = f"SELECT * FROM {table_name} WHERE id = ?"
             row = self.db.fetch_one(query, (id,))
             if row:
                 return self.to_model(dict(row))
@@ -98,10 +115,17 @@ class BaseRepository(ABC, Generic[T]):
             List of model objects
         """
         try:
-            query = f"SELECT * FROM {self.get_table_name()} ORDER BY id"
+            table_name = self.get_table_name()
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
+
             if limit is not None:
-                query += f" LIMIT {limit} OFFSET {offset}"
-            rows = self.db.fetch_all(query)
+                # Use parameterized query for pagination
+                query = f"SELECT * FROM {table_name} ORDER BY id LIMIT ? OFFSET ?"
+                rows = self.db.fetch_all(query, (limit, offset))
+            else:
+                query = f"SELECT * FROM {table_name} ORDER BY id"
+                rows = self.db.fetch_all(query)
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:
             logger.error(f"Failed to find all {self.get_table_name()}: {e}")
@@ -114,7 +138,10 @@ class BaseRepository(ABC, Generic[T]):
             Total count
         """
         try:
-            query = f"SELECT COUNT(*) as count FROM {self.get_table_name()}"
+            table_name = self.get_table_name()
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
+            query = f"SELECT COUNT(*) as count FROM {table_name}"
             result = self.db.fetch_one(query)
             return result["count"] if result else 0
         except Exception as e:
@@ -138,8 +165,11 @@ class BaseRepository(ABC, Generic[T]):
             placeholders = ", ".join(["?" for _ in columns])
             values = [db_dict[col] for col in columns]
             cols = ", ".join(columns)
+            table_name = self.get_table_name()
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
             query = (
-                f"INSERT INTO {self.get_table_name()} ({cols}) VALUES ({placeholders})"
+                f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
             )
             self.db.execute(query, tuple(values))
             # Get the inserted ID and return updated model
@@ -172,7 +202,10 @@ class BaseRepository(ABC, Generic[T]):
             set_clause = ", ".join([f"{col} = ?" for col in columns])
             values = [db_dict[col] for col in columns]
             values.append(entity_id)  # Add ID for WHERE clause
-            query = f"UPDATE {self.get_table_name()} SET {set_clause} WHERE id = ?"
+            table_name = self.get_table_name()
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
+            query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
             result = self.db.execute(query, tuple(values))
             if result.rowcount == 0:
                 raise ValueError(
@@ -197,7 +230,10 @@ class BaseRepository(ABC, Generic[T]):
             True if deleted, False if not found
         """
         try:
-            query = f"DELETE FROM {self.get_table_name()} WHERE id = ?"
+            table_name = self.get_table_name()
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
+            query = f"DELETE FROM {table_name} WHERE id = ?"
             result = self.db.execute(query, (id,))
             return result.rowcount > 0
         except Exception as e:
@@ -213,7 +249,10 @@ class BaseRepository(ABC, Generic[T]):
             True if exists, False otherwise
         """
         try:
-            query = f"SELECT 1 FROM {self.get_table_name()} WHERE id = ? LIMIT 1"
+            table_name = self.get_table_name()
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
+            query = f"SELECT 1 FROM {table_name} WHERE id = ? LIMIT 1"
             result = self.db.fetch_one(query, (id,))
             return result is not None
         except Exception as e:
@@ -232,7 +271,13 @@ class BaseRepository(ABC, Generic[T]):
             List of matching model objects
         """
         try:
-            query = f"SELECT * FROM {self.get_table_name()} WHERE {field} = ?"
+            table_name = self.get_table_name()
+            if not self._is_valid_table_name(table_name):
+                raise ValueError(f"Invalid table name: {table_name}")
+            # Validate field name to prevent SQL injection
+            if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', field):
+                raise ValueError(f"Invalid field name: {field}")
+            query = f"SELECT * FROM {table_name} WHERE {field} = ?"
             rows = self.db.fetch_all(query, (value,))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:

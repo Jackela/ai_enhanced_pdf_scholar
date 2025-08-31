@@ -555,7 +555,7 @@ class L2RedisCache:
 
         # Use consistent hashing to determine target node
         if self.config.distribution_strategy == DistributionStrategy.HASH_RING:
-            hash_value = int(hashlib.md5(key.encode()).hexdigest(), 16)
+            hash_value = int(hashlib.sha256(key.encode()).hexdigest(), 16)
 
             # Get cluster info
             cluster_info = await self.cluster_manager.get_cluster_info()

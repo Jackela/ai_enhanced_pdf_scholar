@@ -11,7 +11,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from statistics import mean
+from statistics import mean, stdev
 from typing import Any
 
 from backend.services.cache_telemetry_service import CacheLayer, CacheTelemetryService
@@ -263,7 +263,6 @@ class CacheOptimizationService:
                 continue
 
             hit_rate = (stats['hits'] / total_accesses) * 100 if total_accesses > 0 else 0
-            avg_latency = stats['total_latency'] / total_accesses if total_accesses > 0 else 0
 
             # Calculate access frequency (accesses per hour)
             time_span = max(1, (max(stats['access_times']) - min(stats['access_times'])).total_seconds() / 3600)

@@ -522,7 +522,6 @@ class RedisCacheService:
                 # Add tags to key
                 if tags:
                     for tag in tags:
-                        tag_key = f"tag:{tag}:{cache_key}"
                         self.add_to_set(f"tag:{tag}", cache_key)
 
                 # Try to get from cache
@@ -730,7 +729,6 @@ class IntelligentCacheStrategy:
         pattern = self.access_patterns.get(key, {})
 
         access_count = pattern.get("count", 0)
-        last_access = pattern.get("last_access")
 
         # Adjust TTL based on access frequency
         if access_count > 100:
@@ -795,7 +793,7 @@ class IntelligentCacheStrategy:
             Cache key
         """
         # Generate cache key with query hash
-        query_hash = hashlib.md5(query.encode()).hexdigest()[:8]
+        query_hash = hashlib.sha256(query.encode()).hexdigest()[:8]
         cache_key = f"rag:document:{document_id}:query:{query_hash}"
 
         # Use adaptive TTL

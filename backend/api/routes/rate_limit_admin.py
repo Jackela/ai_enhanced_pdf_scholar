@@ -236,7 +236,7 @@ else:
                 "window_minutes": window_minutes
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}") from e
 
     @router.delete("/rate-limit/cleanup")
     async def cleanup_old_events(

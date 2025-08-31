@@ -235,9 +235,9 @@ class PostgreSQLEngineFactory:
             """Set PostgreSQL session parameters on connect."""
             with dbapi_conn.cursor() as cursor:
                 # Set performance parameters
-                cursor.execute(f"SET statement_timeout = {config.statement_timeout}")
-                cursor.execute(f"SET lock_timeout = {config.lock_timeout}")
-                cursor.execute(f"SET idle_in_transaction_session_timeout = {config.idle_in_transaction_timeout}")
+                cursor.execute("SET statement_timeout = %s", (config.statement_timeout,))
+                cursor.execute("SET lock_timeout = %s", (config.lock_timeout,))
+                cursor.execute("SET idle_in_transaction_session_timeout = %s", (config.idle_in_transaction_timeout,))
 
                 # Set work_mem for better query performance
                 cursor.execute("SET work_mem = '256MB'")
@@ -549,6 +549,7 @@ class PostgreSQLOptimizer:
             ).fetchall()
 
             for table in tables:
+                # Safe: table names come from system catalog, not user input
                 conn.execute(text(f"ANALYZE {table[0]}"))
                 logger.info(f"Analyzed table: {table[0]}")
 
@@ -612,6 +613,7 @@ class PostgreSQLOptimizer:
             ).fetchall()
 
             for table in tables:
+                # Safe: table names come from system catalog, not user input
                 conn.execute(text(f"VACUUM ANALYZE {table[0]}"))
                 logger.info(f"Vacuumed and analyzed table: {table[0]}")
 

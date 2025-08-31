@@ -15,7 +15,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 import aiohttp
 
@@ -149,7 +149,7 @@ class PerformanceAlertingService:
         self.notification_configs: list[NotificationConfig] = []
 
         # Evaluation state
-        self.metric_history: dict[str, list[Tuple[datetime, float]]] = {}
+        self.metric_history: dict[str, list[tuple[datetime, float]]] = {}
         self.last_evaluation: datetime | None = None
         self.evaluation_lock = asyncio.Lock()
 

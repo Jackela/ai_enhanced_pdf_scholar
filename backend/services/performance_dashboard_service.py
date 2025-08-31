@@ -8,6 +8,7 @@ and interactive performance monitoring for the AI Enhanced PDF Scholar system.
 import asyncio
 import json
 import logging
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any
 

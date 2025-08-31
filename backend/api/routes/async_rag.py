@@ -214,8 +214,7 @@ async def async_query_document(
         logger.error(f"Failed to start async RAG query: {e}")
         raise SystemException(
             message="Failed to start async RAG query",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.get("/query/async/{task_id}", response_model=dict[str, Any])
@@ -242,8 +241,7 @@ async def get_async_query_status(
         logger.error(f"Failed to get RAG task status: {e}")
         raise SystemException(
             message="Failed to retrieve RAG task status",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.delete("/query/async/{task_id}", response_model=RAGTaskResponse)
@@ -274,8 +272,7 @@ async def cancel_async_query(
         logger.error(f"Failed to cancel RAG task: {e}")
         raise SystemException(
             message="Failed to cancel RAG task",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.websocket("/stream")
@@ -356,8 +353,7 @@ async def get_streaming_stats(
         logger.error(f"Failed to get streaming stats: {e}")
         raise SystemException(
             message="Failed to retrieve streaming statistics",
-            error_type="general"
-        )
+            error_type="general") from e
 
 
 @router.post("/query/hybrid", response_model=RAGQueryResponse)
@@ -439,5 +435,4 @@ async def hybrid_query_document(
         logger.error(f"Hybrid RAG query failed: {e}")
         raise SystemException(
             message="RAG query processing failed",
-            error_type="external_service"
-        )
+            error_type="external_service") from e

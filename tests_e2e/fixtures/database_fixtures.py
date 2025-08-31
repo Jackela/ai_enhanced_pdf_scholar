@@ -175,6 +175,7 @@ class DatabaseManager:
         ]
 
         for table in tables:
+            # Safe: table names are hardcoded test fixture names, not user input
             self.execute(f"DROP TABLE IF EXISTS {table}")
         self.commit()
 
@@ -186,6 +187,7 @@ class DatabaseManager:
         ]
 
         for table in tables:
+            # Safe: table names are hardcoded test fixture names, not user input
             self.execute(f"DELETE FROM {table}")
         self.commit()
 
@@ -339,6 +341,7 @@ class DatabaseManager:
         tables = ['users', 'documents', 'citations', 'rag_queries', 'sessions', 'audit_logs']
 
         for table in tables:
+            # Safe: table names are hardcoded test fixture names, not user input
             cursor = self.execute(f"SELECT COUNT(*) as count FROM {table}")
             stats[f"{table}_count"] = cursor.fetchone()['count']
 

@@ -1281,7 +1281,7 @@ class CacheManager:
     def cache_key(self, prefix: str, *args, **kwargs) -> str:
         """Generate consistent cache key."""
         key_data = f"{prefix}:{args}:{sorted(kwargs.items())}"
-        return hashlib.md5(key_data.encode()).hexdigest()
+        return hashlib.sha256(key_data.encode()).hexdigest()
 
     def get(self, key: str) -> Optional[Any]:
         """Get from multi-layer cache."""

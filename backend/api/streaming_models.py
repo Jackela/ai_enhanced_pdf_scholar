@@ -4,6 +4,7 @@ Pydantic models for streaming file upload operations and progress tracking.
 """
 
 import hashlib
+import re
 from datetime import datetime
 from enum import Enum
 from typing import Union

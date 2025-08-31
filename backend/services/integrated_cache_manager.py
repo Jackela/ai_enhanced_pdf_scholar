@@ -784,7 +784,7 @@ class IntegratedCacheManager:
 
         if self.cluster_manager:
             try:
-                cluster_health = asyncio.create_task(self.cluster_manager.get_cluster_health())
+                _ = asyncio.create_task(self.cluster_manager.get_cluster_health())
                 health["cluster_health"] = "checking"  # Async check
             except Exception as e:
                 health["cluster_health"] = f"error: {e}"

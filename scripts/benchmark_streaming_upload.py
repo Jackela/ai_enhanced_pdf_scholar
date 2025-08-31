@@ -108,7 +108,7 @@ async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMo
 
         # Calculate hash (simulating integrity check)
         import hashlib
-        file_hash = hashlib.md5(file_data).hexdigest()
+        file_hash = hashlib.sha256(file_data).hexdigest()
 
         memory_monitor.sample("Processing complete")
 
