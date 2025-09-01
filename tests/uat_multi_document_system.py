@@ -271,14 +271,14 @@ class MultiDocumentUATSuite:
             for collection_data in test_collections:
                 # Create collection
                 collection = MultiDocumentCollectionModel(**collection_data)
-                created_collection = await self.collection_repo.create(collection)
+                created_collection = self.collection_repo.create(collection)
 
                 # Verify collection properties
                 assert created_collection.id is not None, "Collection ID not assigned"
                 assert created_collection.document_count == len(collection_data["document_ids"]), "Document count mismatch"
 
                 # Verify document IDs are stored correctly
-                retrieved_collection = await self.collection_repo.get_by_id(created_collection.id)
+                retrieved_collection = self.collection_repo.get_by_id(created_collection.id)
                 assert set(retrieved_collection.document_ids) == set(collection_data["document_ids"]), "Document IDs mismatch"
 
                 self.test_collections.append({
@@ -288,7 +288,7 @@ class MultiDocumentUATSuite:
                 })
 
             # Test collection listing
-            all_collections = await self.collection_repo.get_all()
+            all_collections = self.collection_repo.get_all()
             assert len(all_collections) >= len(test_collections), "Collections not properly stored"
 
             duration = time.time() - start_time
@@ -341,13 +341,13 @@ class MultiDocumentUATSuite:
                 collection_id = test_collection["id"]
 
                 # Test index creation
-                index_result = await multi_doc_service.create_collection_index(collection_id)
+                index_result = multi_doc_service.create_collection_index(collection_id)
 
                 # Verify index was created
                 assert index_result is not None, "Index creation failed"
 
                 # Check index record in database
-                index_record = await self.index_repo.get_by_collection_id(collection_id)
+                index_record = self.index_repo.get_by_collection_id(collection_id)
                 assert index_record is not None, "Index record not found in database"
                 assert index_record.status == "completed", f"Index status: {index_record.status}"
 
@@ -427,7 +427,7 @@ class MultiDocumentUATSuite:
                 query_start = time.time()
 
                 # Execute cross-document query
-                query_result = await multi_doc_service.query_collection(
+                query_result = multi_doc_service.query_collection(
                     collection_id=collection_id,
                     query=test_query["query"],
                     max_results=10,
@@ -486,7 +486,7 @@ class MultiDocumentUATSuite:
             collection_id = self.test_collections[0]["id"]
 
             # Get query history
-            query_history = await self.query_repo.get_by_collection_id(collection_id)
+            query_history = self.query_repo.get_by_collection_id(collection_id)
 
             # Should have queries from previous test
             assert len(query_history) > 0, "No query history found"
@@ -529,7 +529,7 @@ class MultiDocumentUATSuite:
             original_name = collection["model"].name
             new_name = f"{original_name} - Updated"
 
-            updated_collection = await self.collection_repo.update(
+            updated_collection = self.collection_repo.update(
                 collection["id"],
                 {"name": new_name, "description": "Updated description for UAT testing"}
             )
@@ -542,13 +542,13 @@ class MultiDocumentUATSuite:
 
                 # Add document to collection
                 updated_doc_ids = collection["model"].document_ids + [new_doc_id]
-                await self.collection_repo.update(
+                self.collection_repo.update(
                     collection["id"],
                     {"document_ids": updated_doc_ids}
                 )
 
                 # Verify update
-                retrieved_collection = await self.collection_repo.get_by_id(collection["id"])
+                retrieved_collection = self.collection_repo.get_by_id(collection["id"])
                 assert new_doc_id in retrieved_collection.document_ids, "Document addition failed"
 
             self.results.add_test_case(
@@ -579,7 +579,7 @@ class MultiDocumentUATSuite:
             # Test invalid collection ID
             total_test_cases += 1
             try:
-                invalid_result = await self.collection_repo.get_by_id(99999)
+                invalid_result = self.collection_repo.get_by_id(99999)
                 assert invalid_result is None, "Should return None for invalid ID"
                 test_cases_passed += 1
             except Exception:
@@ -600,7 +600,7 @@ class MultiDocumentUATSuite:
             )
 
             try:
-                empty_query_result = await multi_doc_service.query_collection(
+                empty_query_result = multi_doc_service.query_collection(
                     collection_id=self.test_collections[0]["id"],
                     query="",
                     max_results=10,
@@ -615,7 +615,7 @@ class MultiDocumentUATSuite:
             total_test_cases += 1
             try:
                 long_query = "What are neural networks? " * 100  # Very long query
-                long_query_result = await multi_doc_service.query_collection(
+                long_query_result = multi_doc_service.query_collection(
                     collection_id=self.test_collections[0]["id"],
                     query=long_query,
                     max_results=5,
@@ -650,7 +650,7 @@ class MultiDocumentUATSuite:
         try:
             # Delete test collections
             for collection in self.test_collections:
-                await self.collection_repo.delete(collection["id"])
+                self.collection_repo.delete(collection["id"])
 
             # Delete test documents
             for document in self.test_documents:
@@ -680,11 +680,11 @@ class MultiDocumentUATSuite:
 
             # Core functionality tests
             await self.test_document_management()
-            await self.test_collection_creation()
+            await self.test_collection_creation()  # Fixed: added await
             await self.test_multi_document_indexing()
             await self.test_cross_document_queries()
             await self.test_query_history_and_analytics()
-            await self.test_collection_management_operations()
+            await self.test_collection_management_operations()  # Fixed: added await
             await self.test_error_handling_and_edge_cases()
 
             # Cleanup

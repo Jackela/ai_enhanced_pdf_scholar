@@ -162,28 +162,57 @@ class UATOrchestrator:
             )
 
             # Check if process actually started
-            await asyncio.sleep(2)  # Give it time to start
+            await asyncio.sleep(3)  # Give it time to start (increased from 2)
             if self.api_server_process.poll() is not None:
                 # Process died immediately
                 stdout, stderr = self.api_server_process.communicate()
                 logger.error(f"Server process died immediately. Exit code: {self.api_server_process.returncode}")
                 if stdout:
-                    logger.error(f"Stdout: {stdout}")
+                    logger.error(f"Stdout: {stdout[:1000]}")  # Limit output length
                 if stderr:
-                    logger.error(f"Stderr: {stderr}")
+                    logger.error(f"Stderr: {stderr[:1000]}")  # Limit output length
                 return False
 
             # Wait for server to start
-            for i in range(30):  # Wait up to 30 seconds
+            logger.info("Waiting for API server to become ready...")
+            for i in range(40):  # Increased from 30 to 40 seconds
+                # Check if process is still alive
+                if self.api_server_process.poll() is not None:
+                    stdout, stderr = self.api_server_process.communicate()
+                    logger.error(f"Server process died during startup. Exit code: {self.api_server_process.returncode}")
+                    if stdout:
+                        logger.error(f"Stdout: {stdout[:1000]}")
+                    if stderr:
+                        logger.error(f"Stderr: {stderr[:1000]}")
+                    return False
+
                 try:
                     async with aiohttp.ClientSession() as session:
-                        # Try 127.0.0.1 first as it's more reliable on Windows
-                        async with session.get('http://127.0.0.1:8000/api/system/health', timeout=aiohttp.ClientTimeout(total=2)) as response:
-                            if response.status == 200:
-                                logger.info("API server started successfully on 127.0.0.1:8000")
-                                return True
-                except:
-                    pass
+                        # Try multiple URLs to maximize compatibility
+                        urls_to_try = [
+                            'http://127.0.0.1:8000/api/system/health',
+                            'http://localhost:8000/api/system/health',
+                            'http://0.0.0.0:8000/api/system/health'
+                        ]
+
+                        for url in urls_to_try:
+                            try:
+                                async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as response:
+                                    if response.status == 200:
+                                        logger.info(f"✅ API server started successfully at {url}")
+                                        return True
+                                    elif response.status == 500:
+                                        logger.warning(f"Server responded with 500 at {url}, may have startup issues")
+                            except aiohttp.ClientConnectorError:
+                                continue  # Connection refused, server not ready yet
+                            except Exception as e:
+                                logger.debug(f"Error checking {url}: {e}")
+                                continue
+                except Exception as e:
+                    logger.debug(f"Error during health check attempt {i+1}: {e}")
+
+                if i % 5 == 0 and i > 0:
+                    logger.info(f"Still waiting for API server... ({i} seconds elapsed)")
 
                 await asyncio.sleep(1)
 
@@ -199,12 +228,21 @@ class UATOrchestrator:
         if self.api_server_process:
             logger.info("Stopping API server...")
             try:
-                # Try graceful shutdown first
-                self.api_server_process.terminate()
-                self.api_server_process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                # Force kill if needed
-                self.api_server_process.kill()
+                # Check if process is still running
+                if self.api_server_process.poll() is None:
+                    # Try graceful shutdown first
+                    self.api_server_process.terminate()
+                    try:
+                        self.api_server_process.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        # Force kill if needed
+                        logger.warning("API server did not terminate gracefully, forcing kill...")
+                        self.api_server_process.kill()
+                        self.api_server_process.wait(timeout=5)
+                else:
+                    logger.info("API server already stopped")
+            except Exception as e:
+                logger.error(f"Error stopping API server: {e}")
 
             self.api_server_process = None
 
