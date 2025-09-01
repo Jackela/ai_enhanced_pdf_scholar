@@ -589,7 +589,11 @@ class MultiDocumentUATSuite:
             total_test_cases += 1
             # Create enhanced RAG service for this test
             from src.services.enhanced_rag_service import EnhancedRAGService
-            enhanced_rag = EnhancedRAGService(self.db)
+            enhanced_rag = EnhancedRAGService(
+                api_key=os.getenv("GEMINI_API_KEY", "test_api_key"),
+                db_connection=self.db,
+                test_mode=True
+            )
 
             multi_doc_service = MultiDocumentRAGService(
                 collection_repository=self.collection_repo,

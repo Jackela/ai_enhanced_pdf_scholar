@@ -1,0 +1,76 @@
+{
+  "summary": {
+    "total_tests": 5,
+    "passed": 3,
+    "failed": 2,
+    "success_rate": 60.0,
+    "total_duration": 3.73865
+  },
+  "test_cases": [
+    {
+      "name": "Environment Setup",
+      "status": "PASS",
+      "details": {
+        "tables_created": true,
+        "sample_docs_ready": true
+      },
+      "duration": null,
+      "timestamp": "2025-09-01T22:58:07.993475"
+    },
+    {
+      "name": "Document Management",
+      "status": "PASS",
+      "details": {
+        "documents_created": 4,
+        "retrieval_successful": true,
+        "data_integrity": true
+      },
+      "duration": 0.00022673606872558594,
+      "timestamp": "2025-09-01T22:58:07.993752"
+    },
+    {
+      "name": "Collection Creation",
+      "status": "PASS",
+      "details": {
+        "collections_created": 2,
+        "document_associations": "verified",
+        "retrieval_successful": true
+      },
+      "duration": 0.0004706382751464844,
+      "timestamp": "2025-09-01T22:58:07.994278"
+    },
+    {
+      "name": "Multi-Document Indexing",
+      "status": "FAIL",
+      "details": {
+        "error": "no such table: multi_document_indexes"
+      },
+      "duration": null,
+      "timestamp": "2025-09-01T22:58:11.477863"
+    },
+    {
+      "name": "Critical System Failure",
+      "status": "FAIL",
+      "details": {
+        "error": "no such table: multi_document_indexes"
+      },
+      "duration": null,
+      "timestamp": "2025-09-01T22:58:11.477915"
+    }
+  ],
+  "performance_metrics": {
+    "document_upload": {
+      "avg": 0.00022673606872558594,
+      "min": 0.00022673606872558594,
+      "max": 0.00022673606872558594,
+      "count": 1
+    },
+    "collection_creation": {
+      "avg": 0.0004706382751464844,
+      "min": 0.0004706382751464844,
+      "max": 0.0004706382751464844,
+      "count": 1
+    }
+  },
+  "timestamp": "2025-09-01T22:58:11.477945"
+}

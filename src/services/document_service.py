@@ -18,6 +18,11 @@ class DocumentService:
         self.library_service = DocumentLibraryService(db_connection)
 
     async def upload_document(self, file_path: str, title: str | None = None) -> DocumentModel:
+        # EMERGENCY REPAIR: Handle different input types
+        if isinstance(file_path, dict):
+            file_path = Path(file_path.get("path", ""))
+        elif not isinstance(file_path, Path):
+            file_path = Path(file_path)
         """Upload a document to the library."""
         try:
             # Import document using the library service
@@ -37,6 +42,11 @@ class DocumentService:
             )
             mock_document.id = 1  # Mock ID for testing
             return mock_document
+
+    # Alias for compatibility
+    async def create_document(self, file_path: str, title: str | None = None) -> DocumentModel:
+        """Create a document (alias for upload_document for UAT compatibility)."""
+        return await self.upload_document(file_path, title)
 
     async def get_document(self, document_id: int) -> DocumentModel | None:
         """Get a document by ID."""

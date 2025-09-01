@@ -4,6 +4,7 @@ Dependency injection for FastAPI endpoints.
 """
 
 import logging
+import threading
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -35,20 +36,30 @@ def get_database_path() -> str:
     return str(db_dir / "documents.db")
 
 
+_db_lock = threading.Lock()
+
 def get_db() -> DatabaseConnection:
-    """Get database connection dependency."""
+    """Get database connection dependency using proper singleton pattern."""
     global _db_connection
     if _db_connection is None:
-        try:
-            db_path = get_database_path()
-            _db_connection = DatabaseConnection(db_path)
-            logger.info(f"Database connection established: {db_path}")
-        except Exception as e:
-            logger.error(f"Failed to establish database connection: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Database connection failed",
-            ) from e
+        with _db_lock:
+            # Double-check pattern for thread safety
+            if _db_connection is None:
+                try:
+                    db_path = get_database_path()
+                    # Try to get existing instance first
+                    try:
+                        _db_connection = DatabaseConnection.get_instance(db_path)
+                    except ValueError:
+                        # Create new instance if none exists
+                        _db_connection = DatabaseConnection(db_path)
+                    logger.info(f"Database connection established: {db_path}")
+                except Exception as e:
+                    logger.error(f"Failed to establish database connection: {e}")
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="Database connection failed",
+                    ) from e
     return _db_connection
 
 

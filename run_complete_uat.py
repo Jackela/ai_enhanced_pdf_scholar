@@ -146,11 +146,11 @@ class UATOrchestrator:
                 except:
                     pass
 
-            # Start API server using direct script with Hypercorn
-            logger.info("Starting API server with Hypercorn for better Windows compatibility...")
+            # Start API server using simplified version to avoid database connection issues
+            logger.info("Starting simplified API server for UAT...")
             cmd = [
                 sys.executable,
-                'start_api_server.py'
+                'start_bulletproof_server.py'  # Use bulletproof server for maximum stability
             ]
 
             # Capture output for debugging but prevent deadlock

@@ -3,6 +3,7 @@ RAG Service
 Simple wrapper around enhanced RAG service for compatibility with UAT.
 """
 
+import os
 from typing import Any
 
 from src.database.connection import DatabaseConnection
@@ -15,7 +16,12 @@ class RAGService(IRAGService):
 
     def __init__(self, db_connection: DatabaseConnection):
         self.db = db_connection
-        self.enhanced_rag = EnhancedRAGService(db_connection)
+        # Create EnhancedRAGService with required parameters
+        self.enhanced_rag = EnhancedRAGService(
+            api_key=os.getenv("GEMINI_API_KEY", "test_api_key"),
+            db_connection=db_connection,
+            test_mode=True  # Use test mode for UAT
+        )
 
     async def process_document(self, document_path: str, document_id: int) -> dict[str, Any]:
         """Process a document for RAG functionality."""

@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "total_tests": 3,
+    "passed": 1,
+    "failed": 2,
+    "success_rate": 33.33333333333333,
+    "total_duration": 0.004541,
+    "pdfs_processed": 4
+  },
+  "test_cases": [
+    {
+      "name": "Sample PDF Setup",
+      "status": "PASS",
+      "details": {
+        "pdfs_created": 4,
+        "total_size_mb": 0.004343986511230469,
+        "types": [
+          "technical_guide",
+          "educational",
+          "research_overview",
+          "application_guide"
+        ]
+      },
+      "duration": null,
+      "timestamp": "2025-09-01T22:59:16.817165"
+    },
+    {
+      "name": "PDF Document Processing",
+      "status": "FAIL",
+      "details": {
+        "error": "'DocumentService' object has no attribute 'create_document'"
+      },
+      "duration": null,
+      "timestamp": "2025-09-01T22:59:16.817228"
+    },
+    {
+      "name": "Critical PDF Processing Failure",
+      "status": "FAIL",
+      "details": {
+        "error": "'DocumentService' object has no attribute 'create_document'"
+      },
+      "duration": null,
+      "timestamp": "2025-09-01T22:59:16.817275"
+    }
+  ],
+  "quality_metrics": {
+    "text_extraction_quality": {
+      "samples": 0,
+      "data": []
+    },
+    "search_relevance_scores": {
+      "samples": 0,
+      "data": []
+    },
+    "cross_document_accuracy": {
+      "samples": 0,
+      "data": []
+    },
+    "processing_times": {
+      "samples": 0,
+      "data": []
+    }
+  },
+  "pdf_documents": [
+    {
+      "title": "Machine Learning Fundamentals",
+      "size_mb": 0.0008869171142578125,
+      "pages": 2,
+      "text_quality": "unknown"
+    },
+    {
+      "title": "Deep Learning Comprehensive Guide",
+      "size_mb": 0.0010738372802734375,
+      "pages": 3,
+      "text_quality": "unknown"
+    },
+    {
+      "title": "Natural Language Processing Advances",
+      "size_mb": 0.001125335693359375,
+      "pages": 3,
+      "text_quality": "unknown"
+    },
+    {
+      "title": "Computer Vision in Modern Applications",
+      "size_mb": 0.0012578964233398438,
+      "pages": 3,
+      "text_quality": "unknown"
+    }
+  ],
+  "timestamp": "2025-09-01T22:59:16.817297"
+}

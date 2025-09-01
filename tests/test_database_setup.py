@@ -17,12 +17,17 @@ def create_test_database() -> DatabaseConnection:
 
     test_db_path = temp_dir / "test_database.sqlite"
 
-    # Create database connection
-    db = DatabaseConnection(str(test_db_path))
+    # Try to get existing instance or create new one
+    try:
+        db = DatabaseConnection.get_instance(str(test_db_path))
+    except ValueError:
+        # If no instance exists, create new one
+        db = DatabaseConnection(str(test_db_path))
 
     return db
 
 
 def create_memory_database() -> DatabaseConnection:
     """Create an in-memory database for testing."""
+    # Memory databases can have multiple instances
     return DatabaseConnection(":memory:")
