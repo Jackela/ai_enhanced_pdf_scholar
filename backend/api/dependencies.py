@@ -52,7 +52,8 @@ def get_db() -> DatabaseConnection:
                         _db_connection = DatabaseConnection.get_instance(db_path)
                     except ValueError:
                         # Create new instance if none exists
-                        _db_connection = DatabaseConnection(db_path)
+                        # Disable monitoring for API performance - was blocking server startup
+                        _db_connection = DatabaseConnection(db_path, enable_monitoring=False)
                     logger.info(f"Database connection established: {db_path}")
                 except Exception as e:
                     logger.error(f"Failed to establish database connection: {e}")

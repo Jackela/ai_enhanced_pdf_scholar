@@ -57,61 +57,105 @@ cors_config = get_cors_config()
 security_headers_config = SecurityHeadersConfig()
 rate_limit_config = get_env_override_config(get_rate_limit_config())
 
-# Define lifespan context manager for proper ASGI lifespan handling
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Lifespan context manager for startup and shutdown events."""
-    # Startup
+
+async def _deferred_initialization(db_path: Path):
+    """
+    Handle non-essential initializations after server startup.
+    This runs in the background to avoid blocking the server from accepting connections.
+    """
     try:
-        logger.info("Starting AI Enhanced PDF Scholar API...")
+        await asyncio.sleep(0.1)  # Small delay to ensure server is fully started
+
+        logger.info("Starting deferred initialization tasks...")
 
         # Log CORS security configuration
-        cors_config.log_security_info()
+        try:
+            cors_config.log_security_info()
+        except Exception as e:
+            logger.warning(f"Failed to log CORS config: {e}")
 
         # Log security headers configuration
-        logger.info("Security headers initialized:")
-        logger.info(f"  - Environment: {security_headers_config.environment.value}")
-        logger.info(f"  - CSP: {'Enabled' if security_headers_config.csp_enabled else 'Disabled'}")
-        logger.info(f"  - CSP Mode: {'Report-Only' if security_headers_config.csp_report_only else 'Enforcing'}")
-        logger.info(f"  - HSTS: {'Enabled' if security_headers_config.strict_transport_security_enabled else 'Disabled'}")
-        logger.info(f"  - Nonce-based CSP: {'Enabled' if security_headers_config.nonce_enabled else 'Disabled'}")
+        try:
+            logger.info("Security headers configuration:")
+            logger.info(f"  - Environment: {security_headers_config.environment.value}")
+            logger.info(f"  - CSP: {'Enabled' if security_headers_config.csp_enabled else 'Disabled'}")
+            logger.info(f"  - CSP Mode: {'Report-Only' if security_headers_config.csp_report_only else 'Enforcing'}")
+            logger.info(f"  - HSTS: {'Enabled' if security_headers_config.strict_transport_security_enabled else 'Disabled'}")
+            logger.info(f"  - Nonce-based CSP: {'Enabled' if security_headers_config.nonce_enabled else 'Disabled'}")
+        except Exception as e:
+            logger.warning(f"Failed to log security headers config: {e}")
 
         # Log rate limiting configuration
-        logger.info("Rate limiting initialized:")
-        logger.info(f"  - Default limit: {rate_limit_config.default_limit.requests} requests/{rate_limit_config.default_limit.window}s")
-        logger.info(f"  - Global IP limit: {rate_limit_config.global_ip_limit.requests} requests/{rate_limit_config.global_ip_limit.window}s")
-        logger.info(f"  - Storage backend: {'Redis' if rate_limit_config.redis_url else 'In-Memory'}")
-        logger.info(f"  - Environment: {os.getenv('ENVIRONMENT', 'development')}")
-
-        # Initialize database
-        db_dir = Path.home() / ".ai_pdf_scholar"
-        db_dir.mkdir(exist_ok=True)
-        db_path = db_dir / "documents.db"
-
-        # Run migrations if needed
-        db = DatabaseConnection(str(db_path))
         try:
-            migrator = DatabaseMigrator(db)
-            if migrator.needs_migration():
-                logger.info("Running database migrations...")
-                migrator.migrate()
-        finally:
-            # Clean up the database connection
-            db.close_all_connections()
+            logger.info("Rate limiting configuration:")
+            logger.info(f"  - Default limit: {rate_limit_config.default_limit.requests} requests/{rate_limit_config.default_limit.window}s")
+            logger.info(f"  - Global IP limit: {rate_limit_config.global_ip_limit.requests} requests/{rate_limit_config.global_ip_limit.window}s")
+            logger.info(f"  - Storage backend: {'Redis' if rate_limit_config.redis_url else 'In-Memory'}")
+            logger.info(f"  - Environment: {os.getenv('ENVIRONMENT', 'development')}")
+        except Exception as e:
+            logger.warning(f"Failed to log rate limit config: {e}")
 
-        # Initialize cache system
+        # Run database migrations if needed (non-blocking)
+        try:
+            # Also disable monitoring here to avoid background blocking
+            db = DatabaseConnection(str(db_path), enable_monitoring=False)
+            try:
+                migrator = DatabaseMigrator(db)
+                if migrator.needs_migration():
+                    logger.info("Running database migrations in background...")
+                    migrator.migrate()
+                    logger.info("Database migrations completed")
+            finally:
+                db.close_all_connections()
+        except Exception as e:
+            logger.error(f"Background database migration failed: {e}")
+
+        # Initialize cache system (lazy loading)
         try:
             from backend.services.cache_service_integration import (
                 initialize_application_cache,
             )
-            logger.info("Cache system will initialize on first request")
-        except Exception as cache_error:
-            logger.warning(f"Cache system import failed: {cache_error}")
+            logger.info("Cache system ready for initialization on first request")
+        except Exception as e:
+            logger.warning(f"Cache system preparation failed: {e}")
 
-        logger.info("API startup completed successfully")
-        logger.info("Unified error handling system active")
+        logger.info("Deferred initialization completed")
+
     except Exception as e:
-        logger.error(f"Startup failed: {e}")
+        logger.error(f"Deferred initialization error (non-critical): {e}")
+        # Don't raise - this shouldn't crash the server
+
+
+# Define lifespan context manager for proper ASGI lifespan handling
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events.
+    
+    REFACTORED: Minimized startup time by deferring non-essential initializations.
+    Only critical database setup happens during startup. All logging and cache
+    initialization are deferred to background tasks after server starts.
+    """
+    # Startup - MINIMAL for fastest possible startup
+    try:
+        logger.info("Starting API server (fast startup mode)...")
+
+        # CRITICAL: Database must be initialized for routes to work
+        db_dir = Path.home() / ".ai_pdf_scholar"
+        db_dir.mkdir(exist_ok=True)
+        db_path = db_dir / "documents.db"
+
+        # Quick database connection test with monitoring DISABLED for fast startup
+        # The heavy monitoring features (leak detection, memory monitoring) were blocking startup
+        db = DatabaseConnection(str(db_path), enable_monitoring=False)
+        db.close_all_connections()
+
+        logger.info("API ready to accept connections")
+
+        # Schedule non-essential initializations for after startup
+        asyncio.create_task(_deferred_initialization(db_path))
+
+    except Exception as e:
+        logger.error(f"Critical startup failed: {e}")
         raise
 
     yield  # Application runs here

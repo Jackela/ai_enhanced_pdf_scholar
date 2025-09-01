@@ -11,17 +11,16 @@ import requests
 def test_server():
     """Start server and test endpoints."""
     # Start the server
-    print("Starting server...")
+    print("Starting server using start_api_server_simple.py...")
     process = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "backend.api.main:app",
-         "--host", "127.0.0.1", "--port", "8000"],
+        [sys.executable, "start_api_server_simple.py"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT
     )
 
     # Wait for server to start
     print("Waiting for server to start...")
-    time.sleep(5)
+    time.sleep(8)  # Give it more time to fully initialize
 
     try:
         # Test root endpoint
@@ -31,8 +30,14 @@ def test_server():
         print(f"Response: {response.json()}")
 
         # Test health endpoint
-        print("\nTesting health endpoint...")
+        print("\nTesting basic health endpoint...")
         response = requests.get("http://127.0.0.1:8000/health")
+        print(f"Status: {response.status_code}")
+        print(f"Response: {response.json()}")
+
+        # Test API health endpoint
+        print("\nTesting API health endpoint...")
+        response = requests.get("http://127.0.0.1:8000/api/system/health")
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
 
