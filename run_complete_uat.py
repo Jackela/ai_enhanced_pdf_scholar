@@ -111,6 +111,30 @@ class UATOrchestrator:
         logger.info("Starting API server for UAT...")
 
         try:
+            # Kill any stale processes on port 8000 first
+            if sys.platform == "win32":
+                # Windows: Find and kill processes using port 8000
+                import subprocess
+                try:
+                    result = subprocess.run(
+                        'netstat -ano | findstr :8000',
+                        shell=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    if result.stdout:
+                        pids = set()
+                        for line in result.stdout.splitlines():
+                            parts = line.split()
+                            if len(parts) > 4 and parts[-1].isdigit():
+                                pids.add(parts[-1])
+                        if pids:
+                            logger.info(f"Killing stale processes on port 8000: {pids}")
+                            for pid in pids:
+                                subprocess.run(f'taskkill /F /PID {pid}', shell=True, capture_output=True)
+                except:
+                    pass  # Ignore errors, proceed anyway
+
             # Check if server is already running
             import aiohttp
             async with aiohttp.ClientSession() as session:
@@ -126,16 +150,17 @@ class UATOrchestrator:
             cmd = [
                 sys.executable, '-m', 'uvicorn',
                 'backend.api.main:app',
-                '--host', '0.0.0.0',
+                '--host', '127.0.0.1',  # Use localhost for better Windows compatibility
                 '--port', '8000',
-                '--reload'
+                '--log-level', 'warning'  # Reduce output, no --reload in tests
             ]
 
+            # Don't capture output to prevent pipe deadlock on Windows
             self.api_server_process = subprocess.Popen(
                 cmd,
                 cwd=project_root,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stdout=subprocess.DEVNULL,  # Discard output to prevent deadlock
+                stderr=subprocess.DEVNULL   # Discard output to prevent deadlock
             )
 
             # Wait for server to start

@@ -216,12 +216,12 @@ class MultiDocumentUATSuite:
 
         try:
             # Test document retrieval
-            docs = await self.doc_repo.get_all()
+            docs = self.doc_repo.get_all()
             assert len(docs) >= len(self.test_documents), "Documents not properly created"
 
             # Test document by ID
             first_doc = self.test_documents[0]
-            retrieved_doc = await self.doc_repo.get_by_id(first_doc["id"])
+            retrieved_doc = self.doc_repo.get_by_id(first_doc["id"])
             assert retrieved_doc is not None, "Document retrieval by ID failed"
             assert retrieved_doc.title == first_doc["model"].title, "Document data mismatch"
 
@@ -654,7 +654,7 @@ class MultiDocumentUATSuite:
 
             # Delete test documents
             for document in self.test_documents:
-                await self.doc_repo.delete(document["id"])
+                self.doc_repo.delete(document["id"])
 
             self.results.add_test_case(
                 "Environment Cleanup",

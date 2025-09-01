@@ -420,6 +420,32 @@ class SessionQueryResponse(BaseResponse):
     total_queries: int = 0
 
 
+class SortOrder(str, Enum):
+    """Sort order enumeration."""
+    ASC = "asc"
+    DESC = "desc"
+
+
+class DocumentSortField(str, Enum):
+    """Document sorting field enumeration."""
+    TITLE = "title"
+    CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
+    FILE_SIZE = "file_size"
+    PAGE_COUNT = "page_count"
+
+
+class DocumentCreate(BaseModel):
+    """Document creation request model."""
+    title: str = Field(..., min_length=1, max_length=500)
+    file_path: str
+    file_hash: str
+    file_size: int = Field(gt=0)
+    page_count: int = Field(gt=0)
+    metadata: dict[str, Any] | None = None
+    tags: list[str] = Field(default_factory=list)
+
+
 class LibraryInitRequest(BaseModel):
     """Library initialization request."""
     reset_database: bool = False
