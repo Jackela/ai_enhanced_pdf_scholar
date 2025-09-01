@@ -268,11 +268,13 @@ async def startup_event() -> None:
         db_dir.mkdir(exist_ok=True)
         db_path = db_dir / "documents.db"
         # Run migrations if needed
-        db = DatabaseConnection(str(db_path))
-        migrator = DatabaseMigrator(db)
-        if migrator.needs_migration():
-            logger.info("Running database migrations...")
-            migrator.migrate()
+        # Use context manager to ensure connection is properly closed
+        with DatabaseConnection(str(db_path)) as db:
+            migrator = DatabaseMigrator(db)
+            if migrator.needs_migration():
+                logger.info("Running database migrations...")
+                migrator.migrate()
+        # Connection automatically closed after migration
         # Initialize cache system
         try:
             from backend.services.cache_service_integration import (

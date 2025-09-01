@@ -139,37 +139,48 @@ class UATOrchestrator:
             import aiohttp
             async with aiohttp.ClientSession() as session:
                 try:
-                    async with session.get('http://localhost:8000/api/system/health', timeout=aiohttp.ClientTimeout(total=5)) as response:
+                    async with session.get('http://127.0.0.1:8000/api/system/health', timeout=aiohttp.ClientTimeout(total=5)) as response:
                         if response.status == 200:
                             logger.info("API server already running")
                             return True
                 except:
                     pass
 
-            # Start API server
+            # Start API server using direct script to avoid Windows module execution issues
             cmd = [
-                sys.executable, '-m', 'uvicorn',
-                'backend.api.main:app',
-                '--host', '127.0.0.1',  # Use localhost for better Windows compatibility
-                '--port', '8000',
-                '--log-level', 'warning'  # Reduce output, no --reload in tests
+                sys.executable,
+                'start_api_server.py'
             ]
 
-            # Don't capture output to prevent pipe deadlock on Windows
+            # Capture output for debugging but prevent deadlock
             self.api_server_process = subprocess.Popen(
                 cmd,
                 cwd=project_root,
-                stdout=subprocess.DEVNULL,  # Discard output to prevent deadlock
-                stderr=subprocess.DEVNULL   # Discard output to prevent deadlock
+                stdout=subprocess.PIPE,  # Capture for debugging
+                stderr=subprocess.PIPE,  # Capture for debugging
+                text=True
             )
+
+            # Check if process actually started
+            await asyncio.sleep(2)  # Give it time to start
+            if self.api_server_process.poll() is not None:
+                # Process died immediately
+                stdout, stderr = self.api_server_process.communicate()
+                logger.error(f"Server process died immediately. Exit code: {self.api_server_process.returncode}")
+                if stdout:
+                    logger.error(f"Stdout: {stdout}")
+                if stderr:
+                    logger.error(f"Stderr: {stderr}")
+                return False
 
             # Wait for server to start
             for i in range(30):  # Wait up to 30 seconds
                 try:
                     async with aiohttp.ClientSession() as session:
-                        async with session.get('http://localhost:8000/api/system/health', timeout=aiohttp.ClientTimeout(total=2)) as response:
+                        # Try 127.0.0.1 first as it's more reliable on Windows
+                        async with session.get('http://127.0.0.1:8000/api/system/health', timeout=aiohttp.ClientTimeout(total=2)) as response:
                             if response.status == 200:
-                                logger.info("API server started successfully")
+                                logger.info("API server started successfully on 127.0.0.1:8000")
                                 return True
                 except:
                     pass
