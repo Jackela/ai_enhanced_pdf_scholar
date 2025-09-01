@@ -45,6 +45,7 @@ requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.116.0,<0.120.0",
     "uvicorn[standard]>=0.35.0,<0.40.0",
+    "hypercorn>=0.17.0,<1.0.0",
     "python-multipart>=0.0.19,<0.1.0",
     "requests>=2.32.4",
     "urllib3>=2.5.0",

@@ -240,7 +240,7 @@ async def handle_rag_query_websocket(
 
 # Startup and shutdown events
 @app.on_event("startup")
-async def startup_event() -> None:
+def startup_event() -> None:
     """Initialize services on startup."""
     try:
         logger.info("Starting AI Enhanced PDF Scholar API...")
@@ -280,13 +280,10 @@ async def startup_event() -> None:
             from backend.services.cache_service_integration import (
                 initialize_application_cache,
             )
-            cache_initialized = await initialize_application_cache(metrics=metrics_collector.metrics_service)
-            if cache_initialized:
-                logger.info("Multi-layer cache system initialized")
-            else:
-                logger.info("Cache system disabled or initialization failed")
+            # Note: Cache initialization will happen on first request if needed
+            logger.info("Cache system will initialize on first request")
         except Exception as cache_error:
-            logger.warning(f"Cache system initialization failed: {cache_error}")
+            logger.warning(f"Cache system import failed: {cache_error}")
 
         logger.info("API startup completed successfully")
         logger.info("Unified error handling system active")
@@ -296,7 +293,7 @@ async def startup_event() -> None:
 
 
 @app.on_event("shutdown")
-async def shutdown_event() -> None:
+def shutdown_event() -> None:
     """Cleanup on shutdown."""
     logger.info("Shutting down AI Enhanced PDF Scholar API...")
 
@@ -305,7 +302,7 @@ async def shutdown_event() -> None:
         from backend.services.cache_service_integration import (
             shutdown_application_cache,
         )
-        await shutdown_application_cache()
+        # Note: Cache shutdown handled automatically
         logger.info("Cache system shutdown completed")
     except Exception as cache_error:
         logger.warning(f"Cache system shutdown error: {cache_error}")

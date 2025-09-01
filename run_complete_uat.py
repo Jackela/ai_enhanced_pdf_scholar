@@ -66,7 +66,7 @@ class UATOrchestrator:
 
         # Check required modules
         required_modules = [
-            'fastapi', 'uvicorn', 'pydantic', 'sqlalchemy',
+            'fastapi', 'hypercorn', 'pydantic', 'sqlalchemy',
             'aiohttp', 'pytest', 'asyncio'
         ]
 
@@ -146,7 +146,8 @@ class UATOrchestrator:
                 except:
                     pass
 
-            # Start API server using direct script to avoid Windows module execution issues
+            # Start API server using direct script with Hypercorn
+            logger.info("Starting API server with Hypercorn for better Windows compatibility...")
             cmd = [
                 sys.executable,
                 'start_api_server.py'
@@ -162,16 +163,31 @@ class UATOrchestrator:
             )
 
             # Check if process actually started
-            await asyncio.sleep(3)  # Give it time to start (increased from 2)
+            await asyncio.sleep(5)  # Give it more time to start with Hypercorn
             if self.api_server_process.poll() is not None:
                 # Process died immediately
                 stdout, stderr = self.api_server_process.communicate()
                 logger.error(f"Server process died immediately. Exit code: {self.api_server_process.returncode}")
                 if stdout:
-                    logger.error(f"Stdout: {stdout[:1000]}")  # Limit output length
+                    logger.error(f"Stdout: {stdout[:2000]}")  # Show more output
                 if stderr:
-                    logger.error(f"Stderr: {stderr[:1000]}")  # Limit output length
+                    logger.error(f"Stderr: {stderr[:2000]}")  # Show more error output
                 return False
+            else:
+                # Process is running, but let's check its output
+                import time
+                time.sleep(2)
+                # Try to read some output without blocking
+                try:
+                    import select
+                    if sys.platform != "win32":
+                        # Unix-like systems
+                        readable, _, _ = select.select([self.api_server_process.stdout], [], [], 0)
+                        if readable:
+                            output = self.api_server_process.stdout.read(1000)
+                            logger.info(f"Server output: {output}")
+                except:
+                    pass  # Not critical if we can't read output
 
             # Wait for server to start
             logger.info("Waiting for API server to become ready...")

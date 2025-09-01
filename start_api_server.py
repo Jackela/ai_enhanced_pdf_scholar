@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """
-Direct API server starter for Windows compatibility.
-This bypasses the module execution issues with python -m uvicorn.
+Direct API server starter using Hypercorn for Windows compatibility.
+Hypercorn provides better Windows support than uvicorn.
 """
 
+import asyncio
 import logging
 import os
 import sys
@@ -21,31 +22,42 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 try:
-    import uvicorn
+    from hypercorn.asyncio import serve
+    from hypercorn.config import Config
 
     from backend.api.main import app
 except ImportError as e:
     logger.error(f"Failed to import required modules: {e}")
     sys.exit(1)
 
-if __name__ == "__main__":
+async def main():
+    """Run the API server with Hypercorn."""
     try:
-        # Start the server directly
-        logger.info("Starting API server on http://0.0.0.0:8000")
-        print("Starting API server on http://0.0.0.0:8000", flush=True)
+        # Configure Hypercorn
+        config = Config()
+        config.bind = ["0.0.0.0:8000"]
+        config.loglevel = "INFO"
+        config.accesslog = "-"  # Log to stdout
+        config.errorlog = "-"   # Log errors to stderr
 
-        # Use simple uvicorn.run for better Windows compatibility
-        uvicorn.run(
-            app,
-            host="0.0.0.0",
-            port=8000,
-            log_level="info",
-            access_log=True,
-            reload=False  # Never use reload in production/tests
-        )
+        # Start the server
+        logger.info("Starting API server with Hypercorn on http://0.0.0.0:8000")
+        print("Starting API server with Hypercorn on http://0.0.0.0:8000", flush=True)
+
+        await serve(app, config)
 
     except Exception as e:
         logger.error(f"Failed to start API server: {e}")
         import traceback
         traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Server shutdown requested")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Server crashed: {e}")
         sys.exit(1)
