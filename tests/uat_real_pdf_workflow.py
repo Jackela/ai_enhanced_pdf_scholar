@@ -17,6 +17,7 @@ Usage:
 import asyncio
 import json
 import logging
+import os
 import sys
 import time
 from datetime import datetime
@@ -146,7 +147,11 @@ class RealPDFWorkflowUATSuite:
 
         # Create enhanced RAG service for multi-document service
         from src.services.enhanced_rag_service import EnhancedRAGService
-        enhanced_rag = EnhancedRAGService(self.db)
+        enhanced_rag = EnhancedRAGService(
+            api_key=os.getenv("GEMINI_API_KEY", "test_api_key"),
+            db_connection=self.db,
+            test_mode=True
+        )
 
         self.multi_doc_service = MultiDocumentRAGService(
             collection_repository=self.collection_repo,

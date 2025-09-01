@@ -13,13 +13,27 @@ from ...config.application_config import get_application_config
 from ...services.cache_service_integration import (
     CacheServiceIntegration,
     get_application_cache_status,
-    get_cache_service,
 )
 from ..auth.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/cache", tags=["cache_admin"])
+
+
+# ============================================================================
+# Dependencies
+# ============================================================================
+
+async def get_cache_service_dependency() -> CacheServiceIntegration | None:
+    """
+    FastAPI dependency to get the cache service.
+    This is a simplified wrapper that doesn't expose internal types.
+    """
+    from ...services.cache_service_integration import get_cache_service
+
+    # Call with no parameters to get the cached instance
+    return await get_cache_service()
 
 
 # ============================================================================
@@ -81,7 +95,7 @@ class CacheStatisticsResponse(BaseModel):
 
 @router.get("/health", response_model=CacheHealthResponse)
 async def get_cache_health(
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service)
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency)
 ):
     """
     Get comprehensive cache system health status.
@@ -124,7 +138,7 @@ async def get_cache_health(
 
 @router.get("/statistics", response_model=CacheStatisticsResponse)
 async def get_cache_statistics(
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication for detailed stats
 ):
     """
@@ -197,7 +211,7 @@ async def get_cache_configuration(
 @router.post("/invalidate", response_model=CacheOperationResponse)
 async def invalidate_cache_pattern(
     request: CacheInvalidationRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication for cache management
 ):
     """
@@ -236,7 +250,7 @@ async def invalidate_cache_pattern(
 @router.post("/warm", response_model=CacheOperationResponse)
 async def warm_cache(
     request: CacheWarmingRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication for cache management
 ):
     """
@@ -274,7 +288,7 @@ async def warm_cache(
 
 @router.delete("/clear", response_model=CacheOperationResponse)
 async def clear_all_caches(
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication for dangerous operations
 ):
     """
@@ -318,7 +332,7 @@ async def clear_all_caches(
 @router.get("/get/{key}")
 async def get_cache_value(
     key: str,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication
 ):
     """
@@ -359,7 +373,7 @@ async def get_cache_value(
 @router.post("/set", response_model=CacheOperationResponse)
 async def set_cache_value(
     request: CacheOperationRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication
 ):
     """
@@ -406,7 +420,7 @@ async def set_cache_value(
 @router.delete("/delete/{key}", response_model=CacheOperationResponse)
 async def delete_cache_value(
     key: str,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication
 ):
     """
@@ -440,7 +454,7 @@ async def delete_cache_value(
 @router.post("/mset", response_model=CacheOperationResponse)
 async def set_multiple_cache_values(
     request: BatchCacheRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication
 ):
     """
@@ -483,7 +497,7 @@ async def set_multiple_cache_values(
 @router.post("/mget")
 async def get_multiple_cache_values(
     keys: list[str],
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
     current_user=Depends(get_current_user)  # Require authentication
 ):
     """

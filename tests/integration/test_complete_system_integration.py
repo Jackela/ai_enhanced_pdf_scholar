@@ -210,9 +210,9 @@ class CompleteSystemIntegrationTestSuite:
 
             try:
                 result = await asyncio.wait_for(test_task, timeout=suite_config["timeout_seconds"])
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as e:
                 test_task.cancel()
-                raise Exception(f"Test suite timed out after {suite_config['timeout_seconds']} seconds" from e)
+                raise Exception(f"Test suite timed out after {suite_config['timeout_seconds']} seconds") from e
 
             # Extract score and details from result
             if isinstance(result, dict):

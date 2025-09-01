@@ -1,0 +1,33 @@
+# ============================================================================
+# Scaling & Monitoring Requirements - Optional
+# Advanced monitoring and scaling capabilities
+# ============================================================================
+
+# Prometheus Integration
+prometheus-api-client>=0.5.3
+prometheus-client>=0.20.0
+
+# Machine Learning for Scaling Predictions
+scikit-learn>=1.3.0
+joblib>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Time Series Analysis
+statsmodels>=0.14.0
+prophet>=1.1.0  # Optional: Facebook Prophet for forecasting
+
+# Kubernetes Integration (for auto-scaling)
+kubernetes>=28.1.0
+
+# Monitoring & Observability
+structlog>=24.1.0
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-instrumentation-fastapi>=0.40b0
+
+# Cost Optimization Tools
+cloud-cost-optimization>=0.1.0  # Optional
+
+# Note: Install with: pip install -r requirements-scaling.txt
+# These are optional dependencies for advanced scaling features

@@ -15,15 +15,14 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from backend.api.models import SecurityValidationError
+
 from ..error_handling import (
     APIException,
     ErrorDetail,
     SecurityException,
     ValidationException,
     create_error_response,
-)
-from ..models import (
-    SecurityValidationError,
 )
 
 logger = logging.getLogger(__name__)

@@ -14,8 +14,16 @@ from typing import Any, Union
 from urllib.parse import urlencode, urlparse
 
 import aiohttp
-import boto3
-from botocore.exceptions import ClientError, NoCredentialsError
+
+try:
+    import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError
+    BOTO3_AVAILABLE = True
+except ImportError:
+    boto3 = None
+    ClientError = Exception
+    NoCredentialsError = Exception
+    BOTO3_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +213,10 @@ class L3CDNCache:
 
     def _initialize_cloudfront_client(self):
         """Initialize AWS CloudFront client."""
+        if not BOTO3_AVAILABLE:
+            logger.warning("boto3 not available - CloudFront features disabled")
+            return
+
         try:
             session = boto3.Session(
                 aws_access_key_id=self.config.aws_access_key_id,
@@ -428,6 +440,10 @@ class L3CDNCache:
             path = urlparse(cdn_url).path.lstrip('/')
 
             # Upload to S3 (CloudFront origin)
+            if not BOTO3_AVAILABLE:
+                logger.warning("boto3 not available - S3 upload skipped")
+                return False
+
             s3_client = boto3.client(
                 's3',
                 aws_access_key_id=self.config.aws_access_key_id,
@@ -683,6 +699,10 @@ class L3CDNCache:
                 return {}
 
             # Get CloudWatch metrics for the distribution
+            if not BOTO3_AVAILABLE:
+                logger.warning("boto3 not available - CloudWatch metrics skipped")
+                return {}
+
             cloudwatch = boto3.client(
                 'cloudwatch',
                 aws_access_key_id=self.config.aws_access_key_id,

@@ -17,6 +17,7 @@ Usage:
 import asyncio
 import json
 import logging
+import os
 import sys
 import time
 from datetime import datetime
@@ -132,11 +133,13 @@ class MultiDocumentUATSuite:
         logger.info("Setting up UAT test environment...")
 
         try:
-            # Ensure database tables exist
-            await self.doc_repo.create_tables()
-            await self.collection_repo.create_tables()
-            await self.index_repo.create_tables()
-            await self.query_repo.create_tables()
+            # Ensure database tables exist using migration system
+            from src.database import DatabaseMigrator
+            migrator = DatabaseMigrator(self.db)
+            migrator.create_tables_if_not_exist()
+
+            # Repositories are synchronous, not async
+            # Tables are already created by migrator above
 
             # Create sample PDF documents for testing
             await self.create_sample_documents()
@@ -195,7 +198,7 @@ class MultiDocumentUATSuite:
 
             # Create document model
             document = DocumentModel(**doc_data)
-            created_doc = await self.doc_repo.create(document)
+            created_doc = self.doc_repo.create(document)  # Repository methods are synchronous
 
             self.test_documents.append({
                 "id": created_doc.id,
@@ -319,7 +322,11 @@ class MultiDocumentUATSuite:
         try:
             # Create enhanced RAG service for multi-document service
             from src.services.enhanced_rag_service import EnhancedRAGService
-            enhanced_rag = EnhancedRAGService(self.db)
+            enhanced_rag = EnhancedRAGService(
+                api_key=os.getenv("GEMINI_API_KEY", "test_api_key"),
+                db_connection=self.db,
+                test_mode=True
+            )
 
             # Create multi-document service
             multi_doc_service = MultiDocumentRAGService(
@@ -379,7 +386,11 @@ class MultiDocumentUATSuite:
         try:
             # Create enhanced RAG service for multi-document service
             from src.services.enhanced_rag_service import EnhancedRAGService
-            enhanced_rag = EnhancedRAGService(self.db)
+            enhanced_rag = EnhancedRAGService(
+                api_key=os.getenv("GEMINI_API_KEY", "test_api_key"),
+                db_connection=self.db,
+                test_mode=True
+            )
 
             # Create multi-document service
             multi_doc_service = MultiDocumentRAGService(

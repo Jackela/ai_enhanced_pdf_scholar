@@ -28,10 +28,7 @@ from backend.api.models import (
     RAGQueryRequest,
     RAGQueryResponse,
 )
-from backend.services.cache_service_integration import (
-    CacheServiceIntegration,
-    get_cache_service,
-)
+from backend.services.cache_service_integration import CacheServiceIntegration
 from src.controllers.library_controller import LibraryController
 from src.services.enhanced_rag_service import EnhancedRAGService
 
@@ -39,12 +36,18 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+async def get_cache_service_dependency() -> CacheServiceIntegration | None:
+    """FastAPI dependency to get the cache service."""
+    from backend.services.cache_service_integration import get_cache_service
+    return await get_cache_service()
+
+
 @router.post("/query", response_model=RAGQueryResponse)
 async def query_document(
     query_request: RAGQueryRequest,
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service),
+    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
 ):
     """Query a document using RAG with intelligent caching."""
     try:

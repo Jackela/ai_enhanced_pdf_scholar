@@ -33,3 +33,7 @@ playwright>=1.40.0
 # Performance Monitoring
 memory-profiler>=0.61.0
 py-spy>=0.3.14
+
+# Additional Test Dependencies
+kubernetes>=28.1.0              # Kubernetes client for scaling tests
+python-nmap>=0.7.1              # Network scanner for penetration testing
