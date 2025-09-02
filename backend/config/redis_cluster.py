@@ -474,7 +474,7 @@ class RedisClusterManager:
     # ========================================================================
 
     @asynccontextmanager
-    async def pipeline(self) -> AsyncIterator[aioredis.Pipeline]:
+    async def pipeline(self) -> AsyncIterator[Any]:  # Fixed: aioredis pipeline type
         """Context manager for Redis pipeline operations."""
         if not self.caching_config.enable_pipelining:
             yield None

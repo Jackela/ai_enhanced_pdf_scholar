@@ -34,3 +34,8 @@ class IRAGService(ABC):
     async def delete_document_index(self, document_id: int) -> bool:
         """Delete document index."""
         pass
+
+    @abstractmethod
+    async def build_index(self, document_id: int) -> dict[str, Any]:
+        """Build vector index for a document."""
+        pass

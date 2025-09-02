@@ -23,8 +23,30 @@ from typing import Any
 
 import aiohttp
 import pytest
-from kubernetes import client, config
-from prometheus_api_client import PrometheusConnect
+
+# Optional imports for production scaling tests
+try:
+    from kubernetes import client, config
+    KUBERNETES_AVAILABLE = True
+except ImportError:
+    KUBERNETES_AVAILABLE = False
+
+try:
+    from prometheus_api_client import PrometheusConnect
+    PROMETHEUS_AVAILABLE = True
+except ImportError:
+    PROMETHEUS_AVAILABLE = False
+    # Mock PrometheusConnect for testing
+    class PrometheusConnect:
+        def __init__(self, url: str, disable_ssl: bool = False):
+            self.url = url
+            self.disable_ssl = disable_ssl
+
+        def custom_query(self, query: str):
+            return []
+
+        def get_current_metric_value(self, metric_name: str, label_config=None):
+            return []
 
 # Configure logging
 logging.basicConfig(
@@ -40,15 +62,23 @@ class HPATestFramework:
         self.namespace = namespace
         self.prometheus = PrometheusConnect(url=prometheus_url, disable_ssl=True)
 
-        # Load Kubernetes config
-        try:
-            config.load_incluster_config()
-        except:
-            config.load_kube_config()
+        # Load Kubernetes config (if available)
+        if KUBERNETES_AVAILABLE:
+            try:
+                config.load_incluster_config()
+            except:
+                try:
+                    config.load_kube_config()
+                except:
+                    pass
 
-        self.k8s_apps = client.AppsV1Api()
-        self.k8s_autoscaling = client.AutoscalingV1Api()
-        self.k8s_core = client.CoreV1Api()
+            self.k8s_apps = client.AppsV1Api()
+            self.k8s_autoscaling = client.AutoscalingV1Api()
+            self.k8s_core = client.CoreV1Api()
+        else:
+            self.k8s_apps = None
+            self.k8s_autoscaling = None
+            self.k8s_core = None
 
         # Test configuration
         self.deployment_name = "ai-pdf-scholar-backend"

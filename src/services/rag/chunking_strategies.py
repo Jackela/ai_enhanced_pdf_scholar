@@ -171,6 +171,106 @@ class HybridChunker(ChunkingStrategy):
         }]
 
 
+class AdaptiveChunking(ChunkingStrategy):
+    """Adaptive chunking strategy that dynamically adjusts chunk size based on content complexity"""
+
+    def __init__(self, config: Optional[ChunkConfig] = None):
+        super().__init__(config)
+        self.base_chunk_size = config.chunk_size if config else 1000
+        self.max_chunk_size = config.max_chunk_size if config else 2000
+        self.min_chunk_size = config.min_chunk_size if config else 100
+
+    def chunk(self, text: str) -> list[dict[str, Any]]:
+        """Adaptively chunk text based on content complexity"""
+        chunks = []
+        position = 0
+
+        # Split text into paragraphs for analysis
+        paragraphs = text.split('\n\n')
+        current_chunk = ""
+        current_size = 0
+
+        for para_idx, paragraph in enumerate(paragraphs):
+            para_complexity = self._calculate_complexity(paragraph)
+            adaptive_size = self._get_adaptive_chunk_size(para_complexity)
+
+            # Check if adding this paragraph would exceed the adaptive size
+            if current_size + len(paragraph) > adaptive_size and current_chunk:
+                # Finalize current chunk
+                chunks.append({
+                    "text": current_chunk.strip(),
+                    "start_position": position - len(current_chunk),
+                    "end_position": position,
+                    "chunk_size": len(current_chunk),
+                    "complexity_score": self._calculate_complexity(current_chunk),
+                    "adaptive_size": adaptive_size,
+                    "metadata": {"type": "adaptive", "size": len(current_chunk)}
+                })
+
+                # Start new chunk
+                current_chunk = paragraph + "\n\n"
+                current_size = len(paragraph) + 2
+                position += len(paragraph) + 2
+            else:
+                # Add to current chunk
+                current_chunk += paragraph + "\n\n"
+                current_size += len(paragraph) + 2
+                position += len(paragraph) + 2
+
+        # Add final chunk if exists
+        if current_chunk.strip():
+            chunks.append({
+                "text": current_chunk.strip(),
+                "start_position": position - len(current_chunk),
+                "end_position": position,
+                "chunk_size": len(current_chunk),
+                "complexity_score": self._calculate_complexity(current_chunk),
+                "adaptive_size": self.base_chunk_size,
+                "metadata": {"type": "adaptive", "size": len(current_chunk)}
+            })
+
+        return chunks
+
+    def _calculate_complexity(self, text: str) -> float:
+        """Calculate text complexity score (0-1)"""
+        if not text:
+            return 0.0
+
+        # Factors for complexity
+        sentence_count = len(re.split(r'[.!?]+', text))
+        word_count = len(text.split())
+        avg_word_length = sum(len(word) for word in text.split()) / word_count if word_count > 0 else 0
+
+        # Technical terms (simple heuristic)
+        technical_terms = len(re.findall(r'\b[A-Z]{2,}\b', text))  # Acronyms
+        numbers = len(re.findall(r'\d+', text))
+
+        # Normalize factors
+        sentence_density = sentence_count / word_count if word_count > 0 else 0
+        technical_density = (technical_terms + numbers) / word_count if word_count > 0 else 0
+
+        # Combine factors (0-1 scale)
+        complexity = min(1.0, (
+            sentence_density * 0.3 +
+            min(avg_word_length / 10, 1.0) * 0.3 +
+            technical_density * 0.4
+        ))
+
+        return complexity
+
+    def _get_adaptive_chunk_size(self, complexity: float) -> int:
+        """Get adaptive chunk size based on complexity"""
+        # Higher complexity = smaller chunks for better granularity
+        # Lower complexity = larger chunks for efficiency
+
+        if complexity > 0.7:  # High complexity
+            return max(self.min_chunk_size, int(self.base_chunk_size * 0.6))
+        elif complexity > 0.4:  # Medium complexity
+            return int(self.base_chunk_size * 0.8)
+        else:  # Low complexity
+            return min(self.max_chunk_size, int(self.base_chunk_size * 1.2))
+
+
 # Export main classes
 __all__ = [
     'ChunkConfig',
@@ -178,5 +278,6 @@ __all__ = [
     'SentenceChunker',
     'ParagraphChunker',
     'SemanticChunker',
-    'HybridChunker'
+    'HybridChunker',
+    'AdaptiveChunking'
 ]

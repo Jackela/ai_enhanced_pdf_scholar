@@ -23,7 +23,7 @@ class ModularDatabaseMigrator:
     using the new modular migration system underneath.
     """
 
-    CURRENT_VERSION = 7  # Matches the original system
+    CURRENT_VERSION = 8  # Updated to include multi-document tables
 
     def __init__(self, db_connection: DatabaseConnection) -> None:
         """
