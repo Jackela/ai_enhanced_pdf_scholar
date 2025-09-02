@@ -70,18 +70,24 @@ class DocumentLibraryService:
             self.documents_dir: Path = Path.home() / ".ai_pdf_scholar" / "documents"
         self.documents_dir.mkdir(parents=True, exist_ok=True)
 
-    def _create_managed_file_path(self, file_hash: str, original_filename: str) -> Path:
+    def _create_managed_file_path(self, file_hash: str, original_filename: str, force_unique: bool = False) -> Path:
         """
         Create a managed file path for permanent storage.
         Args:
             file_hash: File hash for unique identification
             original_filename: Original filename for extension
+            force_unique: Force unique path even with same hash
         Returns:
             Path for managed file storage
         """
         # Use first 8 characters of hash for filename, preserve extension
         extension = Path(original_filename).suffix
-        managed_filename = f"{file_hash[:8]}{extension}"
+        if force_unique:
+            import time
+            timestamp = str(int(time.time() * 1000))[-6:]  # Last 6 digits of timestamp
+            managed_filename = f"{file_hash[:8]}_{timestamp}{extension}"
+        else:
+            managed_filename = f"{file_hash[:8]}{extension}"
         return self.documents_dir / managed_filename
 
     def _copy_to_managed_storage(self, source_path: str, managed_path: Path) -> None:
@@ -204,7 +210,7 @@ class DocumentLibraryService:
             file_path_obj = self._validate_import_file(file_path)
             file_hash, content_hash = self._calculate_file_hashes(file_path)
             managed_file_path = self._create_managed_file_path(
-                file_hash, file_path_obj.name
+                file_hash, file_path_obj.name, force_unique=not check_duplicates
             )
 
             # Handle duplicates
@@ -333,6 +339,12 @@ class DocumentLibraryService:
         """
         try:
             with self.db.transaction():
+                # Get document info before deletion for file cleanup
+                document = self.document_repo.find_by_id(document_id)
+                if not document:
+                    logger.warning(f"Document {document_id} not found for deletion")
+                    return False
+
                 # Remove vector index if requested
                 if remove_vector_index:
                     vector_index = self.vector_repo.find_by_document_id(document_id)
@@ -351,9 +363,23 @@ class DocumentLibraryService:
                             logger.warning(f"Could not remove vector index files: {e}")
                         # Remove from database
                         self.vector_repo.delete_by_document_id(document_id)
-                # Remove document
+
+                # Remove document from database
                 deleted = self.document_repo.delete(document_id)
                 if deleted:
+                    # Remove document file from managed storage
+                    if document.file_path:
+                        try:
+                            file_path = Path(document.file_path)
+                            if file_path.exists():
+                                file_path.unlink()
+                                logger.debug(f"Removed document file: {file_path}")
+                            else:
+                                logger.debug(f"Document file not found: {file_path}")
+                        except Exception as e:
+                            logger.warning(f"Could not remove document file {document.file_path}: {e}")
+                            # Don't fail the deletion if file removal fails
+
                     logger.info(f"Document {document_id} deleted successfully")
                 return deleted
         except Exception as e:
@@ -509,12 +535,61 @@ class DocumentLibraryService:
         """
         try:
             stats = {}
-            # Document statistics
+            # Document statistics - flatten to top level for backward compatibility
             doc_stats = self.document_repo.get_statistics()
-            stats["documents"] = doc_stats
+            stats.update(doc_stats)
+
+            # Convert bytes to MB for user-friendly display
+            # Use higher precision for small files to avoid 0.0 display issues
+            if "total_size_bytes" in stats and stats["total_size_bytes"]:
+                total_bytes = stats["total_size_bytes"]
+                # Use 4 decimal places to handle small files better, then round to 2 for display
+                total_mb = total_bytes / (1024 * 1024)
+                stats["total_size_mb"] = round(total_mb, 4) if total_mb < 0.01 else round(total_mb, 2)
+            else:
+                stats["total_size_mb"] = 0.0
+
+            if "average_size_bytes" in stats and stats["average_size_bytes"]:
+                avg_bytes = stats["average_size_bytes"]
+                # Use 4 decimal places to handle small files better, then round to 2 for display
+                avg_mb = avg_bytes / (1024 * 1024)
+                stats["average_size_mb"] = round(avg_mb, 4) if avg_mb < 0.01 else round(avg_mb, 2)
+            else:
+                stats["average_size_mb"] = 0.0
+
+            # Calculate unique content and duplicate statistics
+            try:
+                # Count unique content hashes
+                unique_content_query = """
+                SELECT COUNT(DISTINCT content_hash) as unique_count
+                FROM documents 
+                WHERE content_hash IS NOT NULL AND content_hash != ''
+                """
+                unique_result = self.document_repo.db.fetch_one(unique_content_query)
+                stats["unique_content_count"] = unique_result["unique_count"] if unique_result else 0
+
+                # Count duplicate groups (groups with more than 1 document sharing same content_hash)
+                duplicate_groups_query = """
+                SELECT COUNT(*) as group_count
+                FROM (
+                    SELECT content_hash
+                    FROM documents
+                    WHERE content_hash IS NOT NULL AND content_hash != ''
+                    GROUP BY content_hash
+                    HAVING COUNT(*) > 1
+                ) duplicate_groups
+                """
+                duplicate_result = self.document_repo.db.fetch_one(duplicate_groups_query)
+                stats["duplicate_groups"] = duplicate_result["group_count"] if duplicate_result else 0
+            except Exception as e:
+                logger.warning(f"Failed to calculate content statistics: {e}")
+                stats["unique_content_count"] = 0
+                stats["duplicate_groups"] = 0
+
             # Vector index statistics
             vector_stats = self.vector_repo.get_index_statistics()
             stats["vector_indexes"] = vector_stats
+
             # Library health
             stats["health"] = {
                 "orphaned_indexes": vector_stats.get("orphaned_count", 0),

@@ -189,9 +189,9 @@ class TestEnhancedRAGService:
         finally:
             shutil.rmtree(custom_dir)
 
-    @patch("src.services.enhanced_rag_service.Settings")
-    @patch("src.services.enhanced_rag_service.Gemini")
-    @patch("src.services.enhanced_rag_service.GeminiEmbedding")
+    @patch("llama_index.core.Settings")
+    @patch("llama_index.llms.google_genai.GoogleGenAI")
+    @patch("llama_index.embeddings.google_genai.GoogleGenAIEmbedding")
     def test_initialize_llama_index_success(
         self, mock_embedding, mock_gemini, mock_settings
     ):
@@ -204,31 +204,25 @@ class TestEnhancedRAGService:
         mock_gemini.assert_called_once()
         mock_embedding.assert_called_once()
 
-    def test_initialize_llama_index_import_error(self):
+    @patch("llama_index.llms.google_genai.GoogleGenAI", side_effect=ImportError("No module"))
+    def test_initialize_llama_index_import_error(self, mock_genai):
         """Test LlamaIndex initialization with import error."""
-        with patch(
-            "src.services.enhanced_rag_service.Settings",
-            side_effect=ImportError("No module"),
+        with pytest.raises(
+            RAGServiceError, match="LlamaIndex dependencies not available"
         ):
-            with pytest.raises(
-                RAGServiceError, match="LlamaIndex dependencies not available"
-            ):
-                EnhancedRAGService(
-                    api_key="test_key", db_connection=self.db, test_mode=False
-                )
+            EnhancedRAGService(
+                api_key="test_key", db_connection=self.db, test_mode=False
+            )
 
-    def test_initialize_llama_index_configuration_error(self):
+    @patch("llama_index.llms.google_genai.GoogleGenAI", side_effect=Exception("Config error"))
+    def test_initialize_llama_index_configuration_error(self, mock_genai):
         """Test LlamaIndex initialization with configuration error."""
-        with patch(
-            "src.services.enhanced_rag_service.Settings",
-            side_effect=Exception("Config error"),
+        with pytest.raises(
+            RAGServiceError, match="LlamaIndex initialization failed"
         ):
-            with pytest.raises(
-                RAGServiceError, match="LlamaIndex initialization failed"
-            ):
-                EnhancedRAGService(
-                    api_key="test_key", db_connection=self.db, test_mode=False
-                )
+            EnhancedRAGService(
+                api_key="test_key", db_connection=self.db, test_mode=False
+            )
 
     # ===== PDF Index Building Tests =====
     def test_build_index_from_pdf_test_mode(self):

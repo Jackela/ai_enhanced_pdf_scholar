@@ -96,11 +96,13 @@ class TestVectorIndexRepository:
 
     def _create_test_document(self, **kwargs) -> int:
         """Create a test document and return its ID."""
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID for uniqueness
         defaults = {
-            "title": "Test Document",
-            "file_path": "/test/path/document.pdf",
-            "file_hash": "abc123def456",
-            "content_hash": "content123hash456",
+            "title": f"Test Document {unique_id}",
+            "file_path": f"/test/path/document_{unique_id}.pdf",
+            "file_hash": f"abc123def456_{unique_id}",
+            "content_hash": f"content123hash456_{unique_id}",
             "file_size": 1024,
             "page_count": 5,
         }
@@ -117,7 +119,10 @@ class TestVectorIndexRepository:
                 defaults["page_count"],
             ),
         )
-        return self.db.get_last_insert_id()
+        document_id = self.db.get_last_insert_id()
+        if document_id is None or document_id <= 0:
+            raise RuntimeError(f"Failed to create test document: insert returned {document_id}")
+        return document_id
 
     def _create_test_vector_index(
         self, document_id: int = None, **kwargs

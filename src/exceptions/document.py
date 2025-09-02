@@ -72,12 +72,17 @@ class DocumentImportError(DocumentError):
             reason: Specific reason for import failure
             **kwargs: Additional arguments for base class
         """
+        # Set instance attributes before calling super().__init__
+        # because parent init calls _get_default_user_message()
+        self.reason = reason
+
         context = kwargs.pop("context", {})
         if reason:
             context["reason"] = reason
 
-        super().__init__(message, file_path=file_path, context=context, **kwargs)
-        self.reason = reason
+        # Pass context through kwargs to avoid keyword argument conflicts
+        kwargs["context"] = context
+        super().__init__(message, file_path=file_path, **kwargs)
 
     def _get_default_user_message(self) -> str:
         if self.reason:
@@ -106,18 +111,21 @@ class DuplicateDocumentError(DocumentImportError):
             existing_document_id: ID of existing document
             **kwargs: Additional arguments for base class
         """
+        # Set instance attributes before calling super().__init__
+        self.existing_document_id = existing_document_id
+
         context = kwargs.pop("context", {})
         if existing_document_id:
             context["existing_document_id"] = existing_document_id
 
+        # Pass context through kwargs to avoid keyword argument conflicts
+        kwargs["context"] = context
         super().__init__(
             message,
             file_path=file_path,
             reason="Document already exists",
-            context=context,
             **kwargs,
         )
-        self.existing_document_id = existing_document_id
 
     def _get_default_user_message(self) -> str:
         return "This document already exists in your library."
@@ -142,12 +150,16 @@ class DocumentValidationError(DocumentError):
             validation_issue: Specific validation issue
             **kwargs: Additional arguments for base class
         """
+        # Set instance attributes before calling super().__init__
+        self.validation_issue = validation_issue
+
         context = kwargs.pop("context", {})
         if validation_issue:
             context["validation_issue"] = validation_issue
 
-        super().__init__(message, file_path=file_path, context=context, **kwargs)
-        self.validation_issue = validation_issue
+        # Pass context through kwargs to avoid keyword argument conflicts
+        kwargs["context"] = context
+        super().__init__(message, file_path=file_path, **kwargs)
 
     def _get_default_user_message(self) -> str:
         if self.validation_issue:
@@ -174,12 +186,16 @@ class DocumentProcessingError(DocumentError):
             processing_stage: Stage where processing failed
             **kwargs: Additional arguments for base class
         """
+        # Set instance attributes before calling super().__init__
+        self.processing_stage = processing_stage
+
         context = kwargs.pop("context", {})
         if processing_stage:
             context["processing_stage"] = processing_stage
 
-        super().__init__(message, document_id=document_id, context=context, **kwargs)
-        self.processing_stage = processing_stage
+        # Pass context through kwargs to avoid keyword argument conflicts
+        kwargs["context"] = context
+        super().__init__(message, document_id=document_id, **kwargs)
 
     def _get_default_user_message(self) -> str:
         if self.processing_stage:

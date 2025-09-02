@@ -31,9 +31,9 @@ from backend.api.models.multi_document_models import (
     DocumentCreate,
     DocumentDeleteResponse,
     DocumentImportResponse,
-    DocumentListResponse,
+    # DocumentListResponse, -- REMOVED: import from main models.py instead
     DocumentMetadata,
-    DocumentQueryParams,
+    # DocumentQueryParams, -- REMOVED: import from main models.py instead
     DocumentReference,
     DocumentResponse,
     DocumentSortField,
@@ -76,6 +76,8 @@ if os.path.exists(models_path):
     spec.loader.exec_module(models_main)
     SystemHealthResponse = models_main.SystemHealthResponse
     SearchFilter = models_main.SearchFilter
+    DocumentQueryParams = models_main.DocumentQueryParams  # Import from main models.py with security validation
+    DocumentListResponse = models_main.DocumentListResponse  # Import from main models.py with correct structure
     sanitize_html_content = models_main.sanitize_html_content
     validate_filename = models_main.validate_filename
     validate_file_content_type = models_main.validate_file_content_type
@@ -84,7 +86,18 @@ else:
     # Create a basic SearchFilter fallback
     from pydantic import BaseModel, Field
 
+    from backend.api.models.multi_document_models import (
+        DocumentListResponse as MultiDocumentListResponse,
+    )
+    from backend.api.models.multi_document_models import (
+        DocumentQueryParams as MultiDocumentQueryParams,
+    )
     from backend.api.models.multi_document_models import SystemHealthResponse
+
+    # Use the multi_document version as fallback (less secure but functional)
+    DocumentQueryParams = MultiDocumentQueryParams
+    DocumentListResponse = MultiDocumentListResponse
+
     class SearchFilter(BaseModel):
         query: str | None = Field(None, description="Search query")
         show_missing_files: bool = Field(False, description="Include missing files")

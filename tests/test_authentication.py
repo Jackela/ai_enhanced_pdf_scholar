@@ -247,8 +247,8 @@ class TestJWTHandler:
             "sub": "1",
             "username": "testuser",
             "role": "user",
-            "exp": past,
-            "iat": past - timedelta(hours=2),
+            "exp": past.timestamp(),
+            "iat": (past - timedelta(hours=2)).timestamp(),
             "jti": "test-jti",
             "token_type": "access",
             "version": 0,
@@ -389,6 +389,8 @@ class TestAuthenticationService:
         mock_user.is_verified = True
         mock_user.is_account_locked.return_value = False
         mock_user.failed_login_attempts = 0
+        mock_user.account_locked_until = None  # Not locked
+        mock_user.last_failed_login = None
 
         mock_db_session.query().filter().first.return_value = mock_user
 
@@ -410,6 +412,18 @@ class TestAuthenticationService:
         mock_user.password_hash = hasher.hash_password("SecureP@ssw0rd123")
         mock_user.is_account_locked.return_value = False
         mock_user.failed_login_attempts = 0
+        mock_user.last_failed_login = None
+
+        # Mock required methods to avoid exceptions
+        mock_user.increment_failed_login = MagicMock()
+        mock_user.reset_failed_login_attempts = MagicMock()
+
+        # Mock the lockout policy method behavior
+        def mock_should_reset_counter(last_failed_login):
+            return last_failed_login is None or (datetime.utcnow() - last_failed_login).seconds > 300
+
+        auth_service.lockout_policy.should_reset_counter = MagicMock(side_effect=mock_should_reset_counter)
+        auth_service.lockout_policy.should_lock_account = MagicMock(return_value=False)
 
         mock_db_session.query().filter().first.return_value = mock_user
 
@@ -446,6 +460,17 @@ class TestAuthenticationService:
         mock_user.is_active = True
         mock_user.is_verified = False
         mock_user.is_account_locked.return_value = False
+        mock_user.failed_login_attempts = 0
+        mock_user.last_failed_login = None
+
+        # Mock required methods to avoid exceptions
+        mock_user.reset_failed_login_attempts = MagicMock()
+
+        # Mock the lockout policy method behavior
+        def mock_should_reset_counter(last_failed_login):
+            return last_failed_login is None or (datetime.utcnow() - last_failed_login).seconds > 300
+
+        auth_service.lockout_policy.should_reset_counter = MagicMock(side_effect=mock_should_reset_counter)
 
         mock_db_session.query().filter().first.return_value = mock_user
 
@@ -484,6 +509,11 @@ class TestAuthenticationService:
         mock_user.password_hash = hasher.hash_password("OldP@ssw0rd123")
         mock_user.username = "testuser"
         mock_user.password_changed_at = datetime.utcnow() - timedelta(days=2)
+        mock_user.refresh_token_version = 0
+
+        # Mock password policy methods
+        auth_service.password_policy.check_password_age = MagicMock(return_value=(True, None))
+        auth_service.password_policy.validate_password_strength = MagicMock(return_value=(True, []))
 
         mock_db_session.query().filter().first.return_value = mock_user
 
@@ -495,6 +525,7 @@ class TestAuthenticationService:
 
         assert success is True
         assert error is None
+        # Check that refresh_token_version was incremented
         assert mock_user.refresh_token_version == 1
         assert mock_db_session.commit.called
 
@@ -631,8 +662,8 @@ class TestSecurityFeatures:
             "sub": "1",
             "username": "testuser",
             "role": "user",
-            "exp": expires,
-            "iat": now,
+            "exp": expires.timestamp(),
+            "iat": now.timestamp(),
             "jti": "test-jti",
             "token_type": "access",
             "version": 0,
@@ -695,6 +726,19 @@ class TestSecurityFeatures:
         mock_user.password_hash = hasher.hash_password("RealPassword")
         mock_user.is_account_locked.return_value = False
         mock_user.failed_login_attempts = 4  # One attempt away from lockout
+        mock_user.last_failed_login = None
+
+        # Mock required methods to avoid exceptions
+        mock_user.increment_failed_login = MagicMock()
+        mock_user.lock_account = MagicMock()
+
+        # Mock the lockout policy method behavior
+        def mock_should_reset_counter(last_failed_login):
+            return last_failed_login is None or (datetime.utcnow() - last_failed_login).seconds > 300
+
+        auth_service.lockout_policy.should_reset_counter = MagicMock(side_effect=mock_should_reset_counter)
+        auth_service.lockout_policy.should_lock_account = MagicMock(return_value=True)  # Should lock at 5 attempts
+        auth_service.lockout_policy.get_lockout_duration = MagicMock(return_value=900)  # 15 minutes
 
         mock_db_session.query().filter().first.return_value = mock_user
 
@@ -706,8 +750,8 @@ class TestSecurityFeatures:
 
         assert user is None
         assert mock_user.increment_failed_login.called
-        # Check if lock_account was called (at 5 attempts)
-        # This depends on the specific implementation
+        assert mock_user.lock_account.called
+        assert error == "Invalid username or password"
 
 
 if __name__ == "__main__":

@@ -169,11 +169,15 @@ class BaseRepository(ABC, Generic[T]):
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
             query = (
-                f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
+                f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders}) RETURNING id"
             )
-            self.db.execute(query, tuple(values))
-            # Get the inserted ID and return updated model
-            new_id = self.db.get_last_insert_id()
+            # Execute INSERT with RETURNING clause to get ID directly
+            cursor = self.db.execute(query, tuple(values))
+            result = cursor.fetchone()
+            if result is None:
+                raise RuntimeError(f"Failed to insert into {table_name}")
+            new_id = result[0]
+            # Retrieve the created model
             created_model = self.find_by_id(new_id)
             if created_model is None:
                 raise RuntimeError(

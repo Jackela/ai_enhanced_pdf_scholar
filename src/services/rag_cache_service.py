@@ -147,6 +147,8 @@ class RAGCacheService:
         """
         try:
             self.metrics["total_queries"] += 1
+            # Clean expired entries before searching
+            self._clean_expired_entries()
             # Generate query hash
             query_hash = self._generate_query_hash(query, document_id)
             # Try exact match first
@@ -194,10 +196,21 @@ class RAGCacheService:
             if self._get_exact_match(query_hash):
                 logger.debug("Query already cached, skipping")
                 return True
-            # Ensure cache size limit
-            self._enforce_cache_size()
-            # Clean expired entries
+            # Clean expired entries first
             self._clean_expired_entries()
+            # Check if we need to make room for new entry
+            current_count = self.db.fetch_one(
+                "SELECT COUNT(*) as count FROM rag_query_cache"
+            )["count"]
+            if current_count >= self.max_entries:
+                # Remove one entry to make room for the new one
+                lru_entry = self.db.fetch_one(
+                    "SELECT id FROM rag_query_cache ORDER BY accessed_at ASC LIMIT 1"
+                )
+                if lru_entry:
+                    self.db.execute(
+                        "DELETE FROM rag_query_cache WHERE id = ?", (lru_entry["id"],)
+                    )
             # Insert new cache entry
             now = datetime.now().isoformat()
             self.db.execute(
@@ -238,7 +251,7 @@ class RAGCacheService:
             result = self.db.execute(
                 "DELETE FROM rag_query_cache WHERE document_id = ?", (document_id,)
             )
-            removed_count = result.rowcount if hasattr(result, "rowcount") else 0
+            removed_count = result.rowcount if hasattr(result, "rowcount") and result.rowcount is not None else 0
             logger.info(
                 f"Invalidated {removed_count} cache entries for document {document_id}"
             )
@@ -317,8 +330,8 @@ class RAGCacheService:
                 "total_storage_kb": (
                     round(
                         (
-                            cache_stats["total_query_length"]
-                            + cache_stats["total_response_length"]
+                            (cache_stats["total_query_length"] or 0)
+                            + (cache_stats["total_response_length"] or 0)
                         )
                         / 1024,
                         2,
@@ -443,10 +456,12 @@ class RAGCacheService:
             )["count"]
             if current_count <= self.max_entries:
                 return 0
-            # Calculate how many to remove
-            to_remove = (
-                current_count - self.max_entries + 100
-            )  # Remove extra for buffer
+            # Calculate how many to remove (smart buffer logic)
+            buffer_size = min(100, max(10, self.max_entries // 10))  # Adaptive buffer
+            to_remove = current_count - self.max_entries + buffer_size
+            # For small caches, don't over-remove
+            if self.max_entries < 10:
+                to_remove = current_count - self.max_entries + 1
             # Get least recently used entries
             lru_entries = self.db.fetch_all(
                 "SELECT id FROM rag_query_cache ORDER BY accessed_at ASC LIMIT ?",
@@ -475,7 +490,7 @@ class RAGCacheService:
             result = self.db.execute(
                 "DELETE FROM rag_query_cache WHERE created_at < ?", (cutoff_str,)
             )
-            removed_count = result.rowcount if hasattr(result, "rowcount") else 0
+            removed_count = result.rowcount if hasattr(result, "rowcount") and result.rowcount is not None else 0
             if removed_count > 0:
                 logger.debug(f"Removed {removed_count} expired cache entries")
             return removed_count

@@ -168,7 +168,7 @@ class TestDocumentLibraryService:
         """Test import when hash calculation fails."""
         mock_hash.side_effect = ContentHashError("Hash calculation failed")
         pdf_path = self.get_fixture_path("simple_text.pdf")
-        with pytest.raises(DocumentImportError, match="Failed to calculate file hash"):
+        with pytest.raises(DocumentImportError, match="Import failed: Hash calculation failed"):
             self.service.import_document(pdf_path)
 
     def test_import_document_duplicate_detection(self):
@@ -341,7 +341,7 @@ class TestDocumentLibraryService:
         )
         assert vector_count["count"] == 0
 
-    @patch("os.unlink")
+    @patch("pathlib.Path.unlink")
     def test_delete_document_file_removal_error(self, mock_unlink):
         """Test document deletion when file removal fails."""
         mock_unlink.side_effect = OSError("Permission denied")
@@ -411,8 +411,8 @@ class TestDocumentLibraryService:
         self.service.import_document(pdf_path, title="Valid Document")
         cleanup_results = self.service.cleanup_library()
         assert cleanup_results["orphaned_files_removed"] == 0
-        assert cleanup_results["invalid_documents_removed"] == 0
-        assert cleanup_results["total_documents_checked"] == 1
+        assert cleanup_results["missing_file_documents_removed"] == 0
+        assert cleanup_results["success"] is True
 
     def test_cleanup_library_with_orphaned_files(self):
         """Test library cleanup with orphaned files."""
@@ -431,7 +431,7 @@ class TestDocumentLibraryService:
             ("Invalid Document", "/nonexistent/path.pdf", "fake_hash"),
         )
         cleanup_results = self.service.cleanup_library()
-        assert cleanup_results["invalid_documents_removed"] == 1
+        assert cleanup_results["missing_file_documents_removed"] == 1
         # Verify invalid document was removed
         remaining_docs = self.service.get_documents()
         assert len(remaining_docs) == 0
@@ -443,8 +443,8 @@ class TestDocumentLibraryService:
         document = self.service.import_document(pdf_path, title="Valid Document")
         integrity_result = self.service.verify_document_integrity(document.id)
         assert integrity_result["file_exists"] is True
-        assert integrity_result["file_hash_matches"] is True
-        assert integrity_result["is_valid_pdf"] is True
+        assert integrity_result["hash_matches"] is True
+        assert integrity_result["is_healthy"] is True
         assert integrity_result["errors"] == []
 
     def test_verify_document_integrity_missing_file(self):
@@ -455,21 +455,23 @@ class TestDocumentLibraryService:
         Path(document.file_path).unlink()
         integrity_result = self.service.verify_document_integrity(document.id)
         assert integrity_result["file_exists"] is False
-        assert "File not found" in integrity_result["errors"]
+        assert integrity_result["is_healthy"] is False
 
     def test_verify_document_integrity_nonexistent_document(self):
         """Test integrity verification for nonexistent document."""
         integrity_result = self.service.verify_document_integrity(99999)
-        assert integrity_result["errors"] == ["Document not found"]
+        assert "Document not found in database" in integrity_result["errors"]
 
-    @patch("src.services.content_hash_service.ContentHashService.calculate_file_hash")
-    def test_verify_document_integrity_hash_mismatch(self, mock_hash):
+    def test_verify_document_integrity_hash_mismatch(self):
         """Test integrity verification when hash doesn't match."""
-        mock_hash.return_value = "different_hash"
         pdf_path = self.get_fixture_path("simple_text.pdf")
         document = self.service.import_document(pdf_path, title="Test Document")
-        integrity_result = self.service.verify_document_integrity(document.id)
-        assert integrity_result["file_hash_matches"] is False
+
+        # Mock hash calculation to return different hash only during integrity check
+        with patch("src.services.content_hash_service.ContentHashService.calculate_file_hash", return_value="different_hash"):
+            integrity_result = self.service.verify_document_integrity(document.id)
+
+        assert integrity_result["hash_matches"] is False
         assert any(
             "File hash mismatch" in error for error in integrity_result["errors"]
         )

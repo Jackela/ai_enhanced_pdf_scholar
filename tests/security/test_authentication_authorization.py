@@ -566,11 +566,13 @@ class TestAuthorizationSecurity:
         allowed_paths = ["/api/documents/", "/api/users/profile/"]
 
         def check_path_authorization(requested_path: str) -> bool:
-            # Normalize path to prevent traversal
+            # Normalize path to prevent traversal - use forward slashes for consistency
             import os
-            normalized_path = os.path.normpath(requested_path)
+            import posixpath
+            # Use posixpath to ensure consistent behavior across platforms
+            normalized_path = posixpath.normpath(requested_path.replace("\\", "/"))
 
-            # Check for traversal attempts
+            # Check for traversal attempts after normalization
             if ".." in normalized_path:
                 return False
 
