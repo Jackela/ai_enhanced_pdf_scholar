@@ -269,6 +269,7 @@ markers = [
     "critical: Critical path tests that must always pass",
     "load_test: Load testing for production scenarios",
     "resilience: Resilience and fault tolerance tests",
+    "production: Production readiness tests",
 ]
 filterwarnings = [
     "ignore::UserWarning",

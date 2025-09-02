@@ -13,16 +13,37 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Union
 
-import redis
-import redis.asyncio as aioredis
-from redis.cluster import RedisCluster
-from redis.exceptions import (
-    ConnectionError,
-    TimeoutError,
-)
-from redis.sentinel import Sentinel
+try:
+    import redis
+    import redis.asyncio as aioredis
+    from redis.cluster import RedisCluster
+    from redis.exceptions import (
+        ConnectionError as RedisConnectionError,
+    )
+    from redis.exceptions import (
+        TimeoutError as RedisTimeoutError,
+    )
+    from redis.sentinel import Sentinel
+    REDIS_AVAILABLE = True
+except ImportError:
+    # Redis is optional - gracefully handle when not installed
+    redis = None
+    aioredis = None
+    RedisCluster = None
+    RedisConnectionError = Exception
+    RedisTimeoutError = Exception
+    Sentinel = None
+    REDIS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+
+def check_redis_availability():
+    """Check if Redis is available and log status."""
+    if not REDIS_AVAILABLE:
+        logger.warning("Redis package not installed. Redis cluster features will be disabled.")
+        return False
+    return True
 
 
 class RedisBackendType(str, Enum):

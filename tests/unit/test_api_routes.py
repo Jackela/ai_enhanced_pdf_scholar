@@ -12,9 +12,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 # Mock the dependencies before importing routes
-with patch('backend.api.routes.documents.get_document_service'):
-    with patch('backend.api.routes.library.get_library_service'):
-        with patch('backend.api.routes.rag.get_rag_service'):
+with patch('backend.api.routes.documents.get_library_controller'):
+    with patch('backend.api.routes.library.get_library_controller'):
+        with patch('backend.api.routes.rag.require_rag_service'):
             from backend.api.routes import documents, library, rag
 
 
@@ -57,7 +57,7 @@ class TestDocumentRoutes:
         def get_mock_service():
             return mock_document_service
 
-        with patch('backend.api.routes.documents.get_document_service', get_mock_service):
+        with patch('backend.api.routes.documents.get_library_controller', get_mock_service):
             app.include_router(documents.router, prefix="/api/documents")
 
         return app
@@ -310,7 +310,7 @@ class TestRAGRoutes:
         def get_mock_service():
             return mock_rag_service
 
-        with patch('backend.api.routes.rag.get_rag_service', get_mock_service):
+        with patch('backend.api.routes.rag.require_rag_service', get_mock_service):
             app.include_router(rag.router, prefix="/api/rag")
 
         return app
