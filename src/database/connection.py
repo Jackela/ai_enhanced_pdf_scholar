@@ -1064,9 +1064,10 @@ class DatabaseConnection:
             # Connection became invalid, get a new one
             self._pool.return_connection(conn_info)
             self._local.connection_info = None
-            return (
-                self._get_current_connection()
-            )  # Recursive call to get new connection
+            # Get new connection from pool instead of recursive call
+            self._local.connection_info = self._pool.get_connection()
+            self._local.thread_id = threading.get_ident()
+            conn_info = self._local.connection_info
 
         if conn_info:
             conn_info.mark_activity()
