@@ -271,6 +271,129 @@ class AdaptiveChunking(ChunkingStrategy):
             return min(self.max_chunk_size, int(self.base_chunk_size * 1.2))
 
 
+class CitationAwareChunking(ChunkingStrategy):
+    """Citation-aware chunking that preserves citation contexts and reference integrity"""
+
+    def __init__(self, config: Optional[ChunkConfig] = None):
+        super().__init__(config)
+        # Citation patterns for detection
+        self.citation_patterns = [
+            r'\[[0-9,\-\s]+\]',  # [1], [1-3], [1, 2, 3]
+            r'\([A-Za-z]+(?:\s+et\s+al\.)?,?\s+\d{4}\)',  # (Smith, 2020), (Smith et al., 2020)
+            r'(?:Fig|Figure|Table|Eq|Equation)\.?\s*\d+',  # Figure 1, Table 2, etc.
+        ]
+
+    def chunk(self, text: str) -> list[dict[str, Any]]:
+        """Chunk text while preserving citation contexts"""
+        chunks = []
+        position = 0
+
+        # First pass: identify citation boundaries and important references
+        citation_positions = self._find_citation_positions(text)
+        section_boundaries = self._find_section_boundaries(text)
+
+        # Combine boundaries and sort
+        all_boundaries = sorted(citation_positions + section_boundaries)
+
+        # Create chunks that respect citation contexts
+        current_chunk = ""
+        current_start = 0
+
+        for boundary in all_boundaries:
+            # Check if adding up to this boundary would exceed chunk size
+            potential_chunk = text[current_start:boundary]
+
+            if len(current_chunk) + len(potential_chunk) > self.config.chunk_size and current_chunk:
+                # Finalize current chunk
+                chunks.append(self._create_citation_chunk(current_chunk, current_start, position))
+
+                # Start new chunk
+                current_chunk = potential_chunk
+                current_start = boundary
+                position = boundary
+            else:
+                # Add to current chunk
+                current_chunk += potential_chunk
+                position = boundary
+
+        # Add remaining text
+        if position < len(text):
+            remaining_text = text[position:]
+            if len(current_chunk) + len(remaining_text) > self.config.chunk_size and current_chunk:
+                # Finalize current chunk and start new one
+                chunks.append(self._create_citation_chunk(current_chunk, current_start, position))
+                chunks.append(self._create_citation_chunk(remaining_text, position, len(text)))
+            else:
+                # Add to current chunk
+                current_chunk += remaining_text
+                chunks.append(self._create_citation_chunk(current_chunk, current_start, len(text)))
+        elif current_chunk:
+            chunks.append(self._create_citation_chunk(current_chunk, current_start, position))
+
+        return chunks
+
+    def _find_citation_positions(self, text: str) -> list[int]:
+        """Find positions where citations occur for boundary detection"""
+        positions = []
+
+        for pattern in self.citation_patterns:
+            for match in re.finditer(pattern, text):
+                # Add position after citation for potential break point
+                positions.append(match.end())
+
+        return positions
+
+    def _find_section_boundaries(self, text: str) -> list[int]:
+        """Find section boundaries (headers, paragraph breaks)"""
+        positions = []
+
+        # Find paragraph boundaries
+        for match in re.finditer(r'\n\n+', text):
+            positions.append(match.end())
+
+        # Find potential headers (lines with few words, capitalized)
+        for match in re.finditer(r'\n([A-Z][A-Za-z\s]{5,50})\n', text):
+            positions.append(match.start())
+
+        return positions
+
+    def _create_citation_chunk(self, text: str, start_pos: int, end_pos: int) -> dict[str, Any]:
+        """Create a chunk with citation metadata"""
+        citations = self._extract_citations(text)
+
+        return {
+            "text": text.strip(),
+            "start_position": start_pos,
+            "end_position": end_pos,
+            "chunk_size": len(text),
+            "citations": citations,
+            "citation_count": len(citations),
+            "has_figures": bool(re.search(r'(?:Fig|Figure|Table)\.?\s*\d+', text)),
+            "has_equations": bool(re.search(r'(?:Eq|Equation)\.?\s*\d+', text)),
+            "metadata": {
+                "type": "citation_aware",
+                "size": len(text),
+                "citation_density": len(citations) / len(text.split()) if text.split() else 0
+            }
+        }
+
+    def _extract_citations(self, text: str) -> list[dict[str, str]]:
+        """Extract citations from text with their types and positions"""
+        citations = []
+
+        for pattern_idx, pattern in enumerate(self.citation_patterns):
+            for match in re.finditer(pattern, text):
+                citation_type = ["numeric", "author_year", "figure_table"][pattern_idx]
+                citations.append({
+                    "text": match.group(),
+                    "type": citation_type,
+                    "start": match.start(),
+                    "end": match.end()
+                })
+
+        return sorted(citations, key=lambda x: x["start"])
+
+
 # Export main classes
 __all__ = [
     'ChunkConfig',
@@ -279,5 +402,6 @@ __all__ = [
     'ParagraphChunker',
     'SemanticChunker',
     'HybridChunker',
-    'AdaptiveChunking'
+    'AdaptiveChunking',
+    'CitationAwareChunking'
 ]

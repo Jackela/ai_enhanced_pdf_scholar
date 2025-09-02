@@ -231,3 +231,10 @@ async def get_recent_documents(
         raise SystemException(
             message="Failed to retrieve recent documents",
             error_type="database") from e
+
+
+def get_library_service():
+    """Get library service for compatibility with tests."""
+    # This is a compatibility function for unit tests
+    # In actual implementation, services are injected via dependencies
+    return None

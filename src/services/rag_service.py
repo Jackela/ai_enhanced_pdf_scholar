@@ -113,3 +113,8 @@ class RAGService(IRAGService):
                 "chunks_created": 0,
                 "processing_time": 0
             }
+
+    async def query(self, document_id: int, query: str, **kwargs) -> dict[str, Any]:
+        """Query method for PDF workflow compatibility."""
+        # Delegate to query_document method
+        return await self.query_document(document_id, query, **kwargs)

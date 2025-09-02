@@ -801,6 +801,14 @@ def get_alert_service() -> AlertService:
     return _alert_service_instance
 
 
+# ============================================================================
+# Alias for compatibility
+# ============================================================================
+
+# Alias for compatibility with production tests
+AlertingService = AlertService
+
+
 if __name__ == "__main__":
     # Example usage
     import asyncio
