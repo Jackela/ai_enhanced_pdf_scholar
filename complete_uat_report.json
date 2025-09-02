@@ -1,29 +1,21 @@
 {
   "overall_status": "CRITICAL_ISSUES",
   "overall_success_rate": 50.0,
-  "total_duration": 174.496273,
+  "total_duration": 181.331439,
   "test_summaries": {
     "backend": {
       "total_tests": 5,
       "passed": 3,
       "failed": 2,
       "success_rate": 60.0,
-      "total_duration": 2.59699
+      "total_duration": 3.496417
     },
     "api": {
       "total_tests": 1,
       "passed": 0,
       "failed": 1,
       "success_rate": 0.0,
-      "total_duration": 30.304716
-    },
-    "pdf_workflow": {
-      "total_tests": 4,
-      "passed": 2,
-      "failed": 2,
-      "success_rate": 50.0,
-      "total_duration": 1.28558,
-      "pdfs_processed": 4
+      "total_duration": 30.511656
     },
     "unit_tests": {
       "total_tests": 0,
@@ -34,9 +26,9 @@
     }
   },
   "totals": {
-    "total_tests": 10,
-    "total_passed": 5,
-    "total_failed": 5
+    "total_tests": 6,
+    "total_passed": 3,
+    "total_failed": 3
   },
   "detailed_results": {
     "tests": {
@@ -46,7 +38,7 @@
           "passed": 3,
           "failed": 2,
           "success_rate": 60.0,
-          "total_duration": 2.59699
+          "total_duration": 3.496417
         },
         "test_cases": [
           {
@@ -57,7 +49,7 @@
               "sample_docs_ready": true
             },
             "duration": null,
-            "timestamp": "2025-09-02T13:36:56.394747"
+            "timestamp": "2025-09-02T19:58:17.976483"
           },
           {
             "name": "Document Management",
@@ -67,8 +59,8 @@
               "retrieval_successful": true,
               "data_integrity": true
             },
-            "duration": 0.00022721290588378906,
-            "timestamp": "2025-09-02T13:36:56.395026"
+            "duration": 0.0003657341003417969,
+            "timestamp": "2025-09-02T19:58:17.976901"
           },
           {
             "name": "Collection Creation",
@@ -78,43 +70,43 @@
               "document_associations": "verified",
               "retrieval_successful": true
             },
-            "duration": 0.0004749298095703125,
-            "timestamp": "2025-09-02T13:36:56.395563"
+            "duration": 0.0004787445068359375,
+            "timestamp": "2025-09-02T19:58:17.977433"
           },
           {
             "name": "Multi-Document Indexing",
             "status": "FAIL",
             "details": {
-              "error": "no such table: multi_document_indexes"
+              "error": "maximum recursion depth exceeded"
             },
             "duration": null,
-            "timestamp": "2025-09-02T13:36:58.730406"
+            "timestamp": "2025-09-02T19:58:21.190360"
           },
           {
             "name": "Critical System Failure",
             "status": "FAIL",
             "details": {
-              "error": "no such table: multi_document_indexes"
+              "error": "maximum recursion depth exceeded"
             },
             "duration": null,
-            "timestamp": "2025-09-02T13:36:58.730458"
+            "timestamp": "2025-09-02T19:58:21.190445"
           }
         ],
         "performance_metrics": {
           "document_upload": {
-            "avg": 0.00022721290588378906,
-            "min": 0.00022721290588378906,
-            "max": 0.00022721290588378906,
+            "avg": 0.0003657341003417969,
+            "min": 0.0003657341003417969,
+            "max": 0.0003657341003417969,
             "count": 1
           },
           "collection_creation": {
-            "avg": 0.0004749298095703125,
-            "min": 0.0004749298095703125,
-            "max": 0.0004749298095703125,
+            "avg": 0.0004787445068359375,
+            "min": 0.0004787445068359375,
+            "max": 0.0004787445068359375,
             "count": 1
           }
         },
-        "timestamp": "2025-09-02T13:36:58.730482"
+        "timestamp": "2025-09-02T19:58:21.191067"
       },
       "api": {
         "summary": {
@@ -122,7 +114,7 @@
           "passed": 0,
           "failed": 1,
           "success_rate": 0.0,
-          "total_duration": 30.304716
+          "total_duration": 30.511656
         },
         "test_cases": [
           {
@@ -132,117 +124,11 @@
               "error": "API server not accessible or unhealthy"
             },
             "duration": null,
-            "timestamp": "2025-09-02T13:37:29.036185"
+            "timestamp": "2025-09-02T19:58:51.718017"
           }
         ],
         "performance_metrics": {},
-        "timestamp": "2025-09-02T13:37:29.036212"
-      },
-      "pdf_workflow": {
-        "summary": {
-          "total_tests": 4,
-          "passed": 2,
-          "failed": 2,
-          "success_rate": 50.0,
-          "total_duration": 1.28558,
-          "pdfs_processed": 4
-        },
-        "test_cases": [
-          {
-            "name": "Sample PDF Setup",
-            "status": "PASS",
-            "details": {
-              "pdfs_created": 4,
-              "total_size_mb": 0.004343986511230469,
-              "types": [
-                "research_overview",
-                "technical_guide",
-                "application_guide",
-                "educational"
-              ]
-            },
-            "duration": null,
-            "timestamp": "2025-09-02T13:37:29.914458"
-          },
-          {
-            "name": "PDF Document Processing",
-            "status": "PASS",
-            "details": {
-              "documents_processed": 4,
-              "avg_quality_score": 0.7,
-              "processing_successful": true
-            },
-            "duration": 0.0011527538299560547,
-            "timestamp": "2025-09-02T13:37:29.915671"
-          },
-          {
-            "name": "Individual Document Indexing",
-            "status": "FAIL",
-            "details": {
-              "error": "'dict' object has no attribute 'response'"
-            },
-            "duration": null,
-            "timestamp": "2025-09-02T13:37:30.326279"
-          },
-          {
-            "name": "Critical PDF Processing Failure",
-            "status": "FAIL",
-            "details": {
-              "error": "'dict' object has no attribute 'response'"
-            },
-            "duration": null,
-            "timestamp": "2025-09-02T13:37:30.326334"
-          }
-        ],
-        "quality_metrics": {
-          "text_extraction_quality": {
-            "avg": 0.7,
-            "min": 0.7,
-            "max": 0.7,
-            "count": 4
-          },
-          "search_relevance_scores": {
-            "samples": 0,
-            "data": []
-          },
-          "cross_document_accuracy": {
-            "samples": 0,
-            "data": []
-          },
-          "processing_times": {
-            "avg": 0.000217437744140625,
-            "min": 0.00018930435180664062,
-            "max": 0.0002682209014892578,
-            "count": 4
-          }
-        },
-        "pdf_documents": [
-          {
-            "title": "Machine Learning Fundamentals",
-            "size_mb": 0.0008869171142578125,
-            "pages": 2,
-            "text_quality": "unknown"
-          },
-          {
-            "title": "Deep Learning Comprehensive Guide",
-            "size_mb": 0.0010738372802734375,
-            "pages": 3,
-            "text_quality": "unknown"
-          },
-          {
-            "title": "Natural Language Processing Advances",
-            "size_mb": 0.001125335693359375,
-            "pages": 3,
-            "text_quality": "unknown"
-          },
-          {
-            "title": "Computer Vision in Modern Applications",
-            "size_mb": 0.0012578964233398438,
-            "pages": 3,
-            "text_quality": "unknown"
-          }
-        ],
-        "timestamp": "2025-09-02T13:37:30.326364"
+        "timestamp": "2025-09-02T19:58:51.718040"
       }
     },
     "summary": {},
@@ -257,11 +143,11 @@
         "success_rate": 100
       },
       "return_code": 2,
-      "output": "\n\ud83d\ude80 Starting optimized test session\n============================= test session starts =============================\nplatform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.5.0 -- C:\\ProgramData\\miniconda3\\python.exe\ncachedir: .pytest_cache\nbenchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)\nmetadata: {'Python': '3.13.5', 'Platform': 'Windows-11-10.0.26120-SP0', 'Packages': {'pytest': '8.4.1', 'pluggy': '1.5.0'}, 'Plugins': {'anyio': '4.9.0', 'asyncio': '1.1.0', 'base-url': '2.1.0', 'benchmark': '5.1.0', 'cov': '6.2.1', 'html': '4.1.1', 'httpx': '0.35.0', 'metadata': '3.1.1', 'mock': '3.14.1', 'playwright': '0.7.0', 'timeout': '2.4.0', 'xdist': '3.8.0'}, 'JAVA_HOME': 'C:\\\\Program Files\\\\Java\\\\jdk-21', 'Base URL': ''}\nrootdir: D:\\Code\\ai_enhanced_pdf_scholar\nconfigfile: pyproject.toml\nplugins: anyio-4.9.0, asyncio-1.1.0, base-url-2.1.0, benchmark-5.1.0, cov-6.2.1, html-4.1.1, httpx-0.35.0, metadata-3.1.1, mock-3.14.1, playwright-0.7.0, timeout-2.4.0, xdist-3.8.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ntimeout: 60.0s\ntimeout method: thread\ntimeout func_only: False\ncreated: 8/8 workers\n\u2705 Test session cleanup completed\n\n=================================== ERRORS ====================================\n___ ERROR collecting tests/integration/test_complete_system_integration.py ____\nImportError while importing test module 'D:\\Code\\ai_enhanced_pdf_scholar\\tests\\integration\\test_complete_system_integration.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\integration\\test_complete_system_integration.py:25: in <module>\n    from tests.production.test_production_readiness import (\ntests\\production\\test_production_readiness.py:39: in <module>\n    from backend.services.production_monitoring import (\nbackend\\services\\production_monitoring.py:18: in <module>\n    from ..config.redis_cluster import RedisClusterManager\nbackend\\config\\redis_cluster.py:17: in <module>\n    import redis.asyncio as aioredis\nE   ModuleNotFoundError: No module named 'redis.asyncio'; 'redis' is not a package\n_______ ERROR collecting tests/production/test_production_readiness.py ________\nImportError while importing test module 'D:\\Code\\ai_enhanced_pdf_scholar\\tests\\production\\test_production_readiness.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\production\\test_production_readiness.py:39: in <module>\n    from backend.services.production_monitoring import (\nbackend\\services\\production_monitoring.py:18: in <module>\n    from ..config.redis_cluster import RedisClusterManager\nbackend\\config\\redis_cluster.py:17: in <module>\n    import redis.asyncio as aioredis\nE   ModuleNotFoundError: No module named 'redis.asyncio'; 'redis' is not a package\n____ ERROR collecting tests/services/rag/test_large_document_processing.py ____\nImportError while importing test module 'D:\\Code\\ai_enhanced_pdf_scholar\\tests\\services\\rag\\test_large_document_processing.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\services\\rag\\test_large_document_processing.py:19: in <module>\n    from src.services.rag.chunking_strategies import (\nE   ImportError: cannot import name 'SemanticChunking' from 'src.services.rag.chunking_strategies' (D:\\Code\\ai_enhanced_pdf_scholar\\src\\services\\rag\\chunking_strategies.py)\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n=========================== short test summary info ===========================\nERROR tests/integration/test_complete_system_integration.py\nERROR tests/production/test_production_readiness.py\nERROR tests/services/rag/test_large_document_processing.py\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\n!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 11 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!! xdist.dsession.Interrupted: stopping after 10 failures !!!!!!!!!!!!\n============================= 11 errors in 17.51s =============================\n",
+      "output": "\n\ud83d\ude80 Starting optimized test session\n============================= test session starts =============================\nplatform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.5.0 -- C:\\ProgramData\\miniconda3\\python.exe\ncachedir: .pytest_cache\nbenchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)\nmetadata: {'Python': '3.13.5', 'Platform': 'Windows-11-10.0.26120-SP0', 'Packages': {'pytest': '8.4.1', 'pluggy': '1.5.0'}, 'Plugins': {'anyio': '4.9.0', 'asyncio': '1.1.0', 'base-url': '2.1.0', 'benchmark': '5.1.0', 'cov': '6.2.1', 'html': '4.1.1', 'httpx': '0.35.0', 'metadata': '3.1.1', 'mock': '3.14.1', 'playwright': '0.7.0', 'timeout': '2.4.0', 'xdist': '3.8.0'}, 'JAVA_HOME': 'C:\\\\Program Files\\\\Java\\\\jdk-21', 'Base URL': ''}\nrootdir: D:\\Code\\ai_enhanced_pdf_scholar\nconfigfile: pyproject.toml\nplugins: anyio-4.9.0, asyncio-1.1.0, base-url-2.1.0, benchmark-5.1.0, cov-6.2.1, html-4.1.1, httpx-0.35.0, metadata-3.1.1, mock-3.14.1, playwright-0.7.0, timeout-2.4.0, xdist-3.8.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ntimeout: 60.0s\ntimeout method: thread\ntimeout func_only: False\ncreated: 8/8 workers\n\u2705 Test session cleanup completed\n\n=================================== ERRORS ====================================\n___ ERROR collecting tests/integration/test_complete_system_integration.py ____\nImportError while importing test module 'D:\\Code\\ai_enhanced_pdf_scholar\\tests\\integration\\test_complete_system_integration.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\integration\\test_complete_system_integration.py:25: in <module>\n    from tests.production.test_production_readiness import (\ntests\\production\\test_production_readiness.py:39: in <module>\n    from backend.services.production_monitoring import (\nbackend\\services\\production_monitoring.py:18: in <module>\n    from ..config.redis_cluster import RedisClusterManager\nbackend\\config\\redis_cluster.py:17: in <module>\n    import redis.asyncio as aioredis\nE   ModuleNotFoundError: No module named 'redis.asyncio'; 'redis' is not a package\n_______ ERROR collecting tests/production/test_production_readiness.py ________\nImportError while importing test module 'D:\\Code\\ai_enhanced_pdf_scholar\\tests\\production\\test_production_readiness.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\production\\test_production_readiness.py:39: in <module>\n    from backend.services.production_monitoring import (\nbackend\\services\\production_monitoring.py:18: in <module>\n    from ..config.redis_cluster import RedisClusterManager\nbackend\\config\\redis_cluster.py:17: in <module>\n    import redis.asyncio as aioredis\nE   ModuleNotFoundError: No module named 'redis.asyncio'; 'redis' is not a package\n____ ERROR collecting tests/services/rag/test_large_document_processing.py ____\nImportError while importing test module 'D:\\Code\\ai_enhanced_pdf_scholar\\tests\\services\\rag\\test_large_document_processing.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\nC:\\ProgramData\\miniconda3\\Lib\\importlib\\__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests\\services\\rag\\test_large_document_processing.py:19: in <module>\n    from src.services.rag.chunking_strategies import (\nE   ImportError: cannot import name 'SemanticChunking' from 'src.services.rag.chunking_strategies' (D:\\Code\\ai_enhanced_pdf_scholar\\src\\services\\rag\\chunking_strategies.py)\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n_______________ ERROR collecting tests/unit/test_api_routes.py ________________\ntests\\unit\\test_api_routes.py:17: in <module>\n    with patch('backend.api.routes.rag.get_rag_service'):\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1497: in __enter__\n    original, local = self.get_original()\n                      ^^^^^^^^^^^^^^^^^^^\nC:\\ProgramData\\miniconda3\\Lib\\unittest\\mock.py:1467: in get_original\n    raise AttributeError(\nE   AttributeError: <module 'backend.api.routes.rag' from 'D:\\\\Code\\\\ai_enhanced_pdf_scholar\\\\backend\\\\api\\\\routes\\\\rag.py'> does not have the attribute 'get_rag_service'\n=========================== short test summary info ===========================\nERROR tests/integration/test_complete_system_integration.py\nERROR tests/production/test_production_readiness.py\nERROR tests/services/rag/test_large_document_processing.py\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\nERROR tests/unit/test_api_routes.py - AttributeError: <module 'backend.api.ro...\n!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 11 failures !!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!! xdist.dsession.Interrupted: stopping after 10 failures !!!!!!!!!!!!\n============================= 11 errors in 22.71s =============================\n",
       "errors": ""
     }
   },
-  "timestamp": "2025-09-02T13:37:30.326388",
+  "timestamp": "2025-09-02T19:58:52.110509",
   "system_info": {
     "python_version": "3.13.5",
     "platform": "win32",
