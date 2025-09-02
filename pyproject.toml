@@ -62,6 +62,7 @@ dependencies = [
     "typing-extensions>=4.14.0",
     "python-dotenv>=1.0.0",
     "markdown>=3.6.0",
+    "psycopg2-binary>=2.9.0",
 ]
 
 [project.optional-dependencies]

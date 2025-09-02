@@ -168,6 +168,49 @@ services:
       - pdf-scholar-network
     restart: unless-stopped
 
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai-pdf-scholar-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DATABASE:-ai_pdf_scholar}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-551086}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - pdf-scholar-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DATABASE:-ai_pdf_scholar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ai-pdf-scholar-redis
+    command: redis-server --requirepass "${REDIS_PASSWORD:-}" --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - pdf-scholar-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # Monitoring (Optional)
   monitoring:
     image: prom/prometheus:latest
@@ -204,6 +247,12 @@ volumes:
   test_data:
     driver: local
     name: ai-pdf-scholar-test-data
+  postgres_data:
+    driver: local
+    name: ai-pdf-scholar-postgres-data
+  redis_data:
+    driver: local
+    name: ai-pdf-scholar-redis-data
   monitoring_data:
     driver: local
     name: ai-pdf-scholar-monitoring-data
