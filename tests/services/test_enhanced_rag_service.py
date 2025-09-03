@@ -470,7 +470,7 @@ class TestEnhancedRAGService:
     @patch(
         "src.services.enhanced_rag_service.EnhancedRAGService._initialize_llama_index"
     )
-    def test_query_production_mode(self):
+    def test_query_production_mode(self, mock_init_llama):
         """Test query execution in production mode."""
         service = EnhancedRAGService(
             api_key="test_key", db_connection=self.db, test_mode=False

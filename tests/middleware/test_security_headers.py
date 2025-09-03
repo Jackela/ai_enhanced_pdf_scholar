@@ -495,7 +495,7 @@ class TestCSPReportEndpoints:
         response = await handle_csp_report(request)
 
         assert response.status_code == 204
-        assert response.body is None
+        assert response.body == b''
 
     @pytest.mark.asyncio
     async def test_handle_invalid_csp_report(self):
@@ -532,7 +532,7 @@ class TestCSPReportEndpoints:
         response = await handle_ct_report(request)
 
         assert response.status_code == 204
-        assert response.body is None
+        assert response.body == b''
 
 
 class TestSecurityTxt:

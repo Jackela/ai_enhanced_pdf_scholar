@@ -442,7 +442,7 @@ class TestRecoveryOrchestrator:
         def failing_operation():
             raise ValueError("Operation failed")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(RetryExhaustedException):
             orchestrator.with_recovery(
                 failing_operation,
                 cleanup_handlers=[cleanup_handler]

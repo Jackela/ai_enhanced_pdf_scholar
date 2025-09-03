@@ -454,6 +454,11 @@ class EnhancedRAGService:
         logger.info(f"Building index for document {document.id}: {document.title}")
 
         # Pre-flight health checks
+        if not document.file_path or not Path(document.file_path).exists():
+            raise RAGIndexError(
+                f"Document file not found: {document.file_path}"
+            )
+
         if not self._perform_preflight_checks(document):
             raise InsufficientResourcesError(
                 "System resources insufficient for index building"
@@ -701,6 +706,9 @@ class EnhancedRAGService:
             # Final verification
             if not self._verify_index_integrity(saved_index):
                 raise RAGIndexError("Final index integrity verification failed")
+
+            # Load the newly built index into memory for immediate use
+            self.load_index_for_document(document.id)
 
             logger.info(
                 f"Vector index for document {document.id} built successfully: "

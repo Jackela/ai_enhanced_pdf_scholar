@@ -316,9 +316,16 @@ class ConnectionPool:
             "aggressive_cleanups": 0,
         }
 
-        # Memory leak detection system
-        self._leak_detector = ConnectionLeakDetection()
-        self._memory_monitor = MemoryMonitor()
+        # Initialize monitoring systems conditionally based on environment
+        self.enable_monitoring = enable_monitoring
+        if enable_monitoring:
+            # Memory leak detection system
+            self._leak_detector = ConnectionLeakDetection()
+            self._memory_monitor = MemoryMonitor()
+        else:
+            # Disable monitoring in test environments to prevent connection issues
+            self._leak_detector = None
+            self._memory_monitor = None
 
         # Enhanced cleanup and monitoring
         self._cleanup_timer: threading.Thread | None = None
@@ -327,7 +334,6 @@ class ConnectionPool:
         self._shutdown_event = threading.Event()
 
         # Start monitoring services if enabled
-        self.enable_monitoring = enable_monitoring
         if enable_monitoring:
             self._start_cleanup_timer()
             self._start_leak_detector()
@@ -347,8 +353,9 @@ class ConnectionPool:
         if not self.is_memory_db and self.db_path:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Register leak detection callback
-        self._leak_detector.register_leak_callback(self._handle_connection_leak)
+        # Register leak detection callback (only if monitoring enabled)
+        if self._leak_detector:
+            self._leak_detector.register_leak_callback(self._handle_connection_leak)
 
         logger.info(
             f"Enhanced connection pool initialized: {self.db_path_str} "
@@ -415,9 +422,10 @@ class ConnectionPool:
                                     conn_info
                                 )
                             self._stats["reused"] += 1
-                            self._leak_detector.log_connection_lifecycle(
-                                "reused", conn_info
-                            )
+                            if self._leak_detector:
+                                self._leak_detector.log_connection_lifecycle(
+                                    "reused", conn_info
+                                )
                             return conn_info
                         else:
                             # Connection expired, close it
@@ -443,7 +451,7 @@ class ConnectionPool:
                 self._connection_count += 1
                 if conn_info.connection_id:
                     self._active_connections[conn_info.connection_id] = conn_info
-                self._leak_detector.log_connection_lifecycle("created", conn_info)
+                self._log_to_leak_detector("created", conn_info)
                 return conn_info
 
             # Pool exhausted - try aggressive cleanup first
@@ -475,20 +483,14 @@ class ConnectionPool:
                 if self._is_connection_valid(conn_info):
                     try:
                         self._pool.put_nowait(conn_info)
-                        self._leak_detector.log_connection_lifecycle(
-                            "returned", conn_info
-                        )
+                        self._log_to_leak_detector("returned", conn_info)
                     except Exception:
                         # Pool is full, close the connection
                         self._close_connection(conn_info)
-                        self._leak_detector.log_connection_lifecycle(
-                            "closed_full_pool", conn_info
-                        )
+                        self._log_to_leak_detector("closed_full_pool", conn_info)
                 else:
                     self._close_connection(conn_info)
-                    self._leak_detector.log_connection_lifecycle(
-                        "closed_invalid", conn_info
-                    )
+                    self._log_to_leak_detector("closed_invalid", conn_info)
 
     def _cleanup_connection_state(self, conn_info: ConnectionInfo) -> None:
         """Thoroughly clean connection state to prevent leaks."""
@@ -538,30 +540,28 @@ class ConnectionPool:
             # 3. Potentially leaked with severe conditions
             # 4. Memory usage too high
             if age > self.CONNECTION_EXPIRY_SECONDS:
-                self._leak_detector.log_connection_lifecycle("expired_age", conn_info)
+                self._log_to_leak_detector("expired_age", conn_info)
                 return False
 
             # Only expire idle connections if they're in use (not pooled connections)
-            if conn_info.in_use and idle_time > self._leak_detector.max_idle_time:
-                self._leak_detector.log_connection_lifecycle("expired_idle", conn_info)
+            if self._leak_detector and conn_info.in_use and idle_time > self._leak_detector.max_idle_time:
+                self._log_to_leak_detector("expired_idle", conn_info)
                 return False
 
             if conn_info.is_potentially_leaked():
                 # Only alert if connection is actually in use for too long
                 # For pooled connections (not in_use), this is not a leak
                 if conn_info.in_use:
-                    self._leak_detector.alert_potential_leak(
-                        conn_info, "validation_check"
-                    )
+                    self._log_to_leak_detector("", conn_info, "validation_check")
                     # Return false only for severe leaks (very long idle time)
                     if idle_time > 1800:  # 30 minutes
                         return False
                 # Return valid for moderately idle connections
                 return True
 
-            # Check memory usage
-            if conn_info.memory_usage > self._leak_detector.memory_threshold:
-                self._leak_detector.alert_potential_leak(conn_info, "high_memory_usage")
+            # Check memory usage (only if monitoring enabled)
+            if self._leak_detector and conn_info.memory_usage > self._leak_detector.memory_threshold:
+                self._log_to_leak_detector("", conn_info, "high_memory_usage")
                 return False
 
             return True
@@ -574,7 +574,7 @@ class ConnectionPool:
         """Close a database connection with proper cleanup."""
         try:
             # Log the closure
-            self._leak_detector.log_connection_lifecycle("closing", conn_info)
+            self._log_to_leak_detector("closing", conn_info)
 
             # Force cleanup any remaining state
             self._cleanup_connection_state(conn_info)
@@ -583,7 +583,7 @@ class ConnectionPool:
             conn_info.connection.close()
             self._connection_count -= 1
 
-            self._leak_detector.log_connection_lifecycle("closed", conn_info)
+            self._log_to_leak_detector("closed", conn_info)
             logger.debug(f"Connection {conn_info.connection_id} closed successfully")
 
         except Exception as e:
@@ -664,6 +664,16 @@ class ConnectionPool:
                 f"Error during force close of connection {conn_info.connection_id}: {e}"
             )
 
+    def _log_to_leak_detector(self, action: str, conn_info, reason: str = None) -> None:
+        """Helper to safely call leak detector methods only when enabled."""
+        if self._leak_detector:
+            if reason:
+                if hasattr(self._leak_detector, 'alert_potential_leak'):
+                    self._leak_detector.alert_potential_leak(conn_info, reason)
+            else:
+                if hasattr(self._leak_detector, 'log_connection_lifecycle'):
+                    self._leak_detector.log_connection_lifecycle(action, conn_info)
+
     def _handle_connection_leak(self, connection_id: str, reason: str) -> None:
         """Handle connection leak detection alert."""
         # Prevent recursive handling by checking if we're already handling this connection
@@ -676,6 +686,12 @@ class ConnectionPool:
         with self._lock:
             if connection_id in self._active_connections:
                 conn_info = self._active_connections[connection_id]
+
+                # CRITICAL FIX: Don't force-close connections with active transactions
+                if conn_info.transaction_level > 0:
+                    logger.info(f"Connection {connection_id} has active transaction (level {conn_info.transaction_level}), deferring force close")
+                    return
+
                 # Mark that we're handling this to prevent recursion
                 if hasattr(conn_info, '_being_handled'):
                     return  # Already being handled
@@ -697,19 +713,33 @@ class ConnectionPool:
                 **self._stats,
             }
 
-            # Leak detection stats
-            leak_stats = {
-                "recent_leak_alerts": len(self._leak_detector.leak_alerts),
-                "connection_history_size": len(self._leak_detector.connection_history),
-                "potentially_leaked_count": sum(
-                    1
-                    for conn in self._active_connections.values()
-                    if conn.is_potentially_leaked()
-                ),
-            }
+            # Leak detection stats (only if monitoring enabled)
+            if self._leak_detector:
+                leak_stats = {
+                    "recent_leak_alerts": len(self._leak_detector.leak_alerts),
+                    "connection_history_size": len(self._leak_detector.connection_history),
+                    "potentially_leaked_count": sum(
+                        1
+                        for conn in self._active_connections.values()
+                        if conn.is_potentially_leaked()
+                    ),
+                }
+            else:
+                leak_stats = {
+                    "recent_leak_alerts": 0,
+                    "connection_history_size": 0,
+                    "potentially_leaked_count": 0,
+                }
 
-            # Memory stats
-            memory_stats = self._memory_monitor.get_memory_stats()
+            # Memory stats (only if monitoring enabled)
+            if self._memory_monitor:
+                memory_stats = self._memory_monitor.get_memory_stats()
+            else:
+                memory_stats = {
+                    "current_memory_mb": 0,
+                    "peak_memory_mb": 0,
+                    "memory_efficient": True
+                }
 
             # Active connection details (for debugging)
             active_details = []
@@ -782,9 +812,7 @@ class ConnectionPool:
                             if conn_info.in_use and conn_info.is_potentially_leaked():
                                 # Avoid alerting if we're already handling this connection
                                 if not hasattr(conn_info, '_being_handled'):
-                                    self._leak_detector.alert_potential_leak(
-                                        conn_info, "periodic_check"
-                                    )
+                                    self._log_to_leak_detector("", conn_info, "periodic_check")
 
                     time.sleep(self.LEAK_DETECTION_INTERVAL)
                 except Exception as e:

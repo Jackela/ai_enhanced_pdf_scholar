@@ -17,7 +17,10 @@ sys.modules['backend.services.cache_service_integration'] = MagicMock()
 
 # Mock any cache service dependencies
 cache_service_mock = MagicMock()
-cache_service_mock.get_cache_service = MagicMock(return_value=MagicMock())
+# Make get_cache_service properly async
+async def mock_get_cache_service(*args, **kwargs):
+    return MagicMock()
+cache_service_mock.get_cache_service = mock_get_cache_service
 cache_service_mock.CacheServiceIntegration = MagicMock()
 sys.modules['backend.services.cache_service_integration'] = cache_service_mock
 

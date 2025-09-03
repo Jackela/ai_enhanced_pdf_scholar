@@ -307,7 +307,7 @@ class ProductionSecretsManager:
                 context = SecretEncryptionContext(
                     algorithm=self._encryption_algorithm,
                     key_version=self._current_key_version,
-                    nonce=secrets.token_bytes(12) if self._encryption_algorithm == EncryptionAlgorithm.AES_256_GCM else None
+                    nonce=secrets.token_bytes(12)  # Both algorithms need 12-byte nonce
                 )
 
                 # Get current key
@@ -329,7 +329,7 @@ class ProductionSecretsManager:
                     encrypted_data = self._encrypt_chacha20_poly1305(
                         plaintext_bytes,
                         encryption_key,
-                        context.nonce or secrets.token_bytes(12),
+                        context.nonce,
                         additional_data
                     )
                 else:
@@ -440,12 +440,17 @@ class ProductionSecretsManager:
 
                 # Generate new key version
                 new_version = max(self._key_versions.keys()) + 1
-                self._generate_new_master_key()
-
-                # Update current version but keep old keys for decryption
                 old_version = self._current_key_version
+
+                # Generate new key directly for new version
+                if self._encryption_algorithm == EncryptionAlgorithm.AES_256_GCM or self._encryption_algorithm == EncryptionAlgorithm.CHACHA20_POLY1305:
+                    new_key = secrets.token_bytes(32)  # 256-bit key
+                else:
+                    raise ValueError(f"Unsupported encryption algorithm: {self._encryption_algorithm}")
+
+                # Store new key and update current version
+                self._key_versions[new_version] = new_key
                 self._current_key_version = new_version
-                self._key_versions[new_version] = self._key_versions[self._current_key_version]
 
                 # Save updated master key
                 self._save_master_key()

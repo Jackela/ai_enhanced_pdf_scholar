@@ -708,7 +708,7 @@ class CSPViolationReport:
 csp_violation_handler = CSPViolationReport()
 
 
-async def handle_csp_report(request: Request) -> JSONResponse:
+async def handle_csp_report(request: Request) -> Response:
     """Handle CSP violation reports."""
     try:
         # Parse the CSP report
@@ -721,9 +721,8 @@ async def handle_csp_report(request: Request) -> JSONResponse:
         # Add to violation handler
         csp_violation_handler.add_report(csp_report)
 
-        return JSONResponse(
-            status_code=status.HTTP_204_NO_CONTENT,
-            content=None
+        return Response(
+            status_code=status.HTTP_204_NO_CONTENT
         )
     except Exception as e:
         logger.error(f"Failed to process CSP report: {e}")
@@ -733,7 +732,7 @@ async def handle_csp_report(request: Request) -> JSONResponse:
         )
 
 
-async def handle_ct_report(request: Request) -> JSONResponse:
+async def handle_ct_report(request: Request) -> Response:
     """Handle Certificate Transparency reports."""
     try:
         # Parse the CT report
@@ -743,9 +742,8 @@ async def handle_ct_report(request: Request) -> JSONResponse:
         # Log the CT violation
         security_logger.warning(f"CT Violation: {report_data}")
 
-        return JSONResponse(
-            status_code=status.HTTP_204_NO_CONTENT,
-            content=None
+        return Response(
+            status_code=status.HTTP_204_NO_CONTENT
         )
     except Exception as e:
         logger.error(f"Failed to process CT report: {e}")
