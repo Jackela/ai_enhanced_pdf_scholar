@@ -276,7 +276,10 @@ class TestSecretsValidation:
     @pytest.fixture
     def secrets_manager(self):
         """Mock secrets manager for validation testing."""
-        return MagicMock(spec=ProductionSecretsManager)
+        manager = MagicMock(spec=ProductionSecretsManager)
+        # Mock the encryption algorithm to be compliant
+        manager._encryption_algorithm = EncryptionAlgorithm.AES_256_GCM
+        return manager
 
     @pytest.fixture
     def validation_service(self, secrets_manager):

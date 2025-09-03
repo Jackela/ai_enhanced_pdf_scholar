@@ -8,6 +8,7 @@ import base64
 import hashlib
 import json
 import logging
+import math
 import os
 import secrets
 import time
@@ -1030,7 +1031,7 @@ def calculate_entropy(text: str) -> float:
     for count in char_counts.values():
         probability = count / text_len
         if probability > 0:
-            entropy -= probability * (probability.bit_length() - 1)
+            entropy -= probability * math.log2(probability)
 
     return entropy * text_len
 

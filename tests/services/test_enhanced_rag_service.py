@@ -555,9 +555,7 @@ class TestEnhancedRAGService:
 
     def test_get_cache_info_exception(self):
         """Test cache info retrieval with exception."""
-        with patch.object(
-            self.service.cache_dir, "exists", side_effect=Exception("FS error")
-        ):
+        with patch('pathlib.Path.exists', side_effect=Exception("FS error")):
             info = self.service.get_cache_info()
             assert "error" in info
 

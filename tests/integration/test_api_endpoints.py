@@ -669,14 +669,17 @@ class TestErrorHandling:
         """Test non-existent endpoints return 404."""
         non_existent_endpoints = [
             "/api/nonexistent",
-            "/api/documents/nonexistent",
-            "/api/rag/nonexistent",
+            "/api/rag/nonexistent", 
             "/api/library/nonexistent"
         ]
 
         for endpoint in non_existent_endpoints:
             response = client.get(endpoint)
             assert response.status_code == 404
+        
+        # Test document endpoint with non-existent ID (should return 404, not 400)
+        response = client.get("/api/documents/99999")
+        assert response.status_code == 404
 
     def test_method_not_allowed(self, client: TestClient):
         """Test incorrect HTTP methods return 405."""
