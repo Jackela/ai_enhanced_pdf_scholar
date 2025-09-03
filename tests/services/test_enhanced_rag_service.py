@@ -243,9 +243,7 @@ class TestEnhancedRAGService:
         finally:
             shutil.rmtree(custom_cache)
 
-    @patch("src.services.enhanced_rag_service.VectorStoreIndex")
-    @patch("src.services.enhanced_rag_service.PDFReader")
-    def test_build_index_from_pdf_production_mode(self, mock_reader, mock_index):
+    def test_build_index_from_pdf_production_mode(self):
         """Test PDF index building in production mode (mocked)."""
         # Create service in production mode
         with patch(
@@ -254,18 +252,29 @@ class TestEnhancedRAGService:
             service = EnhancedRAGService(
                 api_key="test_key", db_connection=self.db, test_mode=False
             )
-        # Mock successful PDF processing
-        mock_reader.return_value.load_data.return_value = [
-            MagicMock()
-        ]  # Mock documents
-        mock_index_instance = MagicMock()
-        mock_index.from_documents.return_value = mock_index_instance
-        result = service.build_index_from_pdf(str(self.test_pdf_path))
-        assert result is True
-        mock_reader.assert_called_once()
-        mock_index.from_documents.assert_called_once()
 
-    @patch("src.services.enhanced_rag_service.PDFReader")
+        # Mock all the imports inside the method
+        with patch("llama_index.readers.file.PDFReader") as mock_reader_class, \
+             patch("llama_index.core.VectorStoreIndex") as mock_index_class, \
+             patch("llama_index.core.StorageContext") as mock_storage_class:
+
+            # Setup mocks
+            mock_reader_instance = mock_reader_class.return_value
+            mock_reader_instance.load_data.return_value = [MagicMock()]  # Mock documents
+
+            mock_index_instance = MagicMock()
+            mock_index_class.from_documents.return_value = mock_index_instance
+
+            mock_storage_instance = MagicMock()
+            mock_storage_class.from_defaults.return_value = mock_storage_instance
+
+            # Run the test
+            result = service.build_index_from_pdf(str(self.test_pdf_path))
+            assert result is True
+            mock_reader_class.assert_called_once()
+            mock_index_class.from_documents.assert_called_once()
+
+    @patch("llama_index.readers.file.PDFReader")
     def test_build_index_from_pdf_no_content(self, mock_reader):
         """Test PDF index building when no content is extracted."""
         with patch(
@@ -279,7 +288,7 @@ class TestEnhancedRAGService:
         result = service.build_index_from_pdf(str(self.test_pdf_path))
         assert result is False
 
-    @patch("src.services.enhanced_rag_service.PDFReader")
+    @patch("llama_index.readers.file.PDFReader")
     def test_build_index_from_pdf_exception(self, mock_reader):
         """Test PDF index building with exception."""
         with patch(
@@ -408,8 +417,8 @@ class TestEnhancedRAGService:
         with pytest.raises(RAGIndexError, match="Vector index files missing"):
             self.service.load_index_for_document(created_doc.id)
 
-    @patch("src.services.enhanced_rag_service.load_index_from_storage")
-    @patch("src.services.enhanced_rag_service.StorageContext")
+    @patch("llama_index.core.load_index_from_storage")
+    @patch("llama_index.core.StorageContext")
     def test_load_index_for_document_production_mode(self, mock_context, mock_load):
         """Test index loading in production mode."""
         # Create service in production mode

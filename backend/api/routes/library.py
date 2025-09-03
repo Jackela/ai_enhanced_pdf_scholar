@@ -37,12 +37,21 @@ async def get_library_statistics(
                 message=f"Failed to get library statistics: {stats['error']}",
                 error_type="general"
             )
+
+        # Transform data to match LibraryStatsResponse model from multi_document_models
+        # which expects: total_documents, total_size, average_size, file_types, recent_documents
+        total_documents = stats.get("total_count", 0)
+        total_size = int(stats.get("total_size_bytes", 0))
+        average_size = float(stats.get("average_size_bytes", 0.0))
+        file_types = stats.get("file_extensions", {})
+        recent_documents = 0  # Could be calculated if needed
+
         return LibraryStatsResponse(
-            documents=stats.get("documents", {}),
-            vector_indexes=stats.get("vector_indexes", {}),
-            cache=stats.get("cache"),
-            storage=stats.get("storage"),
-            health=stats.get("health", {}),
+            total_documents=total_documents,
+            total_size=total_size,
+            average_size=average_size,
+            file_types=file_types,
+            recent_documents=recent_documents,
         )
     except HTTPException:
         raise

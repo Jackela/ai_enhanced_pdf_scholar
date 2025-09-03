@@ -168,15 +168,25 @@ class BaseRepository(ABC, Generic[T]):
             table_name = self.get_table_name()
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
-            query = (
-                f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders}) RETURNING id"
-            )
-            # Execute INSERT with RETURNING clause to get ID directly
-            cursor = self.db.execute(query, tuple(values))
-            result = cursor.fetchone()
-            if result is None:
-                raise RuntimeError(f"Failed to insert into {table_name}")
-            new_id = result[0]
+
+            # Try using INSERT ... RETURNING first (SQLite 3.35+)
+            try:
+                query = (
+                    f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders}) RETURNING id"
+                )
+                cursor = self.db.execute(query, tuple(values))
+                result = cursor.fetchone()
+                if result is None:
+                    raise RuntimeError(f"No result from INSERT RETURNING for {table_name}")
+                new_id = result[0]
+            except Exception:
+                # Fallback to traditional INSERT + last_insert_rowid()
+                query = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
+                self.db.execute(query, tuple(values))
+                new_id = self.db.get_last_insert_id()
+                if new_id is None or new_id <= 0:
+                    raise RuntimeError(f"Failed to get insert ID for {table_name}")
+
             # Retrieve the created model
             created_model = self.find_by_id(new_id)
             if created_model is None:

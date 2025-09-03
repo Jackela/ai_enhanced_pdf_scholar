@@ -38,7 +38,7 @@ class AddMultiDocumentTablesMigration(BaseMigration):
 
     @property
     def dependencies(self) -> list[int]:
-        return [1]  # Requires basic documents table
+        return []  # No dependencies - tables are self-contained
 
     @property
     def rollback_supported(self) -> bool:
