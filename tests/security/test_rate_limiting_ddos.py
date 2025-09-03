@@ -20,7 +20,7 @@ class TestRateLimiting:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from backend.main import app
+        from backend.api.main import app
         return TestClient(app)
 
     @pytest.fixture
@@ -233,7 +233,7 @@ class TestDDoSProtection:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from backend.main import app
+        from backend.api.main import app
         return TestClient(app)
 
     @pytest.fixture
@@ -395,7 +395,7 @@ class TestBruteForceProtection:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from backend.main import app
+        from backend.api.main import app
         return TestClient(app)
 
     def test_login_brute_force_protection(self, client):
@@ -497,7 +497,7 @@ class TestResourceExhaustionPrevention:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from backend.main import app
+        from backend.api.main import app
         return TestClient(app)
 
     def test_cpu_exhaustion_prevention(self, client):
@@ -577,7 +577,7 @@ class TestRateLimitingBypass:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from backend.main import app
+        from backend.api.main import app
         return TestClient(app)
 
     def test_header_spoofing_bypass(self, client):
@@ -653,7 +653,7 @@ class TestRateLimitingMetrics:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from backend.main import app
+        from backend.api.main import app
         return TestClient(app)
 
     @pytest.fixture

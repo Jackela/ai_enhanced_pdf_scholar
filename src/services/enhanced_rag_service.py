@@ -1377,15 +1377,15 @@ class EnhancedRAGService:
             "MockIndex",
             (),
             {
-                "as_query_engine": lambda **kwargs: type(
+                "as_query_engine": lambda self, **kwargs: type(
                     "MockQueryEngine",
                     (),
                     {
-                        "query": lambda prompt: type(
+                        "query": lambda self, prompt: type(
                             "MockResponse",
                             (),
                             {
-                                "__str__": lambda: f"Mock response for document "
+                                "__str__": lambda self: f"Mock response for document "
                                 f"{document_id}: {prompt}"
                             },
                         )()

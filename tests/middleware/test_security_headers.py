@@ -590,7 +590,7 @@ class TestSetupSecurityHeaders:
             response = client.get("/api/admin/security/csp-violations")
             # Admin endpoints require authentication, so 401 is expected in tests
             assert response.status_code in [200, 401]
-            
+
             if response.status_code == 200:
                 data = response.json()
                 assert "total_reports" in data

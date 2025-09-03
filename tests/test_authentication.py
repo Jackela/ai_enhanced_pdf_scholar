@@ -654,9 +654,9 @@ class TestSecurityFeatures:
         """Test token expiration is enforced."""
         handler = jwt_handler
 
-        # Create token with very short expiry
+        # Create token with very short expiry (3 seconds to avoid timing issues)
         now = datetime.now(timezone.utc)
-        expires = now + timedelta(seconds=1)
+        expires = now + timedelta(seconds=3)
 
         payload = {
             "sub": "1",
@@ -679,10 +679,14 @@ class TestSecurityFeatures:
 
         # Token should be valid immediately
         result = handler.decode_token(token, token_type="access")
+        if result is None:
+            # Debug: try without token_type check to see what's wrong
+            result_debug = handler.decode_token(token, token_type=None)
+            print(f"Debug: decode without token_type returned: {result_debug}")
         assert result is not None
 
         # Wait for expiration
-        time.sleep(2)
+        time.sleep(4)
 
         # Token should now be invalid
         result = handler.decode_token(token, token_type="access")

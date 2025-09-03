@@ -435,12 +435,22 @@ class ErrorLogger:
             })
 
         if request:
-            log_data.update({
-                "method": request.method,
-                "url": str(request.url),
-                "client_ip": request.client.host if request.client else None,
-                "user_agent": request.headers.get("user-agent")
-            })
+            # Handle WebSocket objects which don't have a method attribute
+            if hasattr(request, 'method'):
+                log_data.update({
+                    "method": request.method,
+                    "url": str(request.url),
+                    "client_ip": request.client.host if request.client else None,
+                    "user_agent": request.headers.get("user-agent")
+                })
+            else:
+                # WebSocket objects
+                log_data.update({
+                    "method": "WEBSOCKET",
+                    "url": str(request.url),
+                    "client_ip": request.client.host if request.client else None,
+                    "user_agent": request.headers.get("user-agent") if hasattr(request, 'headers') else None
+                })
 
         if extra_context:
             log_data["extra_context"] = extra_context
