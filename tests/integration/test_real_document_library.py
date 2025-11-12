@@ -89,9 +89,15 @@ class TestRealDocumentLibrary:
         # Create temporary documents directory
         self.temp_docs_dir = tempfile.mkdtemp()
 
-        # Create service instance
+        # Create service instance with DI pattern
+        from src.repositories.document_repository import DocumentRepository
+        from src.services.content_hash_service import ContentHashService
+
+        doc_repo = DocumentRepository(self.db)
+        hash_service = ContentHashService()
         self.service = DocumentLibraryService(
-            db_connection=self.db,
+            document_repository=doc_repo,
+            hash_service=hash_service,
             documents_dir=self.temp_docs_dir
         )
 

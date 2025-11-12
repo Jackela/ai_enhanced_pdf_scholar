@@ -7,6 +7,8 @@ from pathlib import Path
 
 from src.database.connection import DatabaseConnection
 from src.database.models import DocumentModel
+from src.repositories.document_repository import DocumentRepository
+from src.services.content_hash_service import ContentHashService
 from src.services.document_library_service import DocumentLibraryService
 
 
@@ -15,7 +17,13 @@ class DocumentService:
 
     def __init__(self, db_connection: DatabaseConnection):
         self.db = db_connection
-        self.library_service = DocumentLibraryService(db_connection)
+        # Create dependencies for DocumentLibraryService (DI pattern)
+        doc_repo = DocumentRepository(db_connection)
+        hash_service = ContentHashService()
+        self.library_service = DocumentLibraryService(
+            document_repository=doc_repo,
+            hash_service=hash_service
+        )
 
     async def upload_document(self, file_path: str, title: str | None = None) -> DocumentModel:
         # EMERGENCY REPAIR: Handle different input types

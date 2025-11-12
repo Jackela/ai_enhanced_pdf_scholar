@@ -57,9 +57,15 @@ class TestMockReplacementDemo:
         self.db = DatabaseConnection(self.temp_db_file.name)
         self._initialize_database()
 
-        # Create real service instances
+        # Create real service instances with DI pattern
+        from src.repositories.document_repository import DocumentRepository
+        from src.services.content_hash_service import ContentHashService
+
+        doc_repo = DocumentRepository(self.db)
+        hash_service = ContentHashService()
         self.doc_service = DocumentLibraryService(
-            db_connection=self.db,
+            document_repository=doc_repo,
+            hash_service=hash_service,
             documents_dir=self.temp_docs_dir
         )
 

@@ -133,9 +133,15 @@ class TestRealPDFProcessing:
         self.temp_docs_dir = tempfile.mkdtemp()
         self.temp_vector_dir = tempfile.mkdtemp()
 
-        # Create service instances (in test mode for performance)
+        # Create service instances (in test mode for performance) with DI pattern
+        from src.repositories.document_repository import DocumentRepository
+        from src.services.content_hash_service import ContentHashService
+
+        doc_repo = DocumentRepository(self.db)
+        hash_service = ContentHashService()
         self.doc_service = DocumentLibraryService(
-            db_connection=self.db,
+            document_repository=doc_repo,
+            hash_service=hash_service,
             documents_dir=self.temp_docs_dir
         )
 

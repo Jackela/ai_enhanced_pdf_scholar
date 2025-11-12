@@ -95,9 +95,16 @@ class TestDocumentLibraryService:
         """Set up for each test method."""
         # Create temporary documents directory
         self.temp_docs_dir = tempfile.mkdtemp()
-        # Create service instance
+        # Create service instance with DI pattern
+        from src.repositories.document_repository import DocumentRepository
+        from src.services.content_hash_service import ContentHashService
+
+        doc_repo = DocumentRepository(self.db)
+        hash_service = ContentHashService()
         self.service = DocumentLibraryService(
-            db_connection=self.db, documents_dir=self.temp_docs_dir
+            document_repository=doc_repo,
+            hash_service=hash_service,
+            documents_dir=self.temp_docs_dir
         )
         # Clear database for fresh test
         self.db.execute("DELETE FROM vector_indexes")
@@ -116,16 +123,33 @@ class TestDocumentLibraryService:
     # ===== Initialization Tests =====
     def test_initialization_default_directory(self):
         """Test service initialization with default documents directory."""
-        service = DocumentLibraryService(self.db)
+        from src.repositories.document_repository import DocumentRepository
+        from src.services.content_hash_service import ContentHashService
+
+        doc_repo = DocumentRepository(self.db)
+        hash_service = ContentHashService()
+        service = DocumentLibraryService(
+            document_repository=doc_repo,
+            hash_service=hash_service
+        )
         expected_dir = Path.home() / ".ai_pdf_scholar" / "documents"
         assert service.documents_dir == expected_dir
         assert service.documents_dir.exists()
 
     def test_initialization_custom_directory(self):
         """Test service initialization with custom documents directory."""
+        from src.repositories.document_repository import DocumentRepository
+        from src.services.content_hash_service import ContentHashService
+
         custom_dir = tempfile.mkdtemp()
         try:
-            service = DocumentLibraryService(self.db, custom_dir)
+            doc_repo = DocumentRepository(self.db)
+            hash_service = ContentHashService()
+            service = DocumentLibraryService(
+                document_repository=doc_repo,
+                hash_service=hash_service,
+                documents_dir=custom_dir
+            )
             assert service.documents_dir == Path(custom_dir)
             assert service.documents_dir.exists()
         finally:

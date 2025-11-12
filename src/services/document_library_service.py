@@ -20,6 +20,8 @@ from src.exceptions import (
     DocumentValidationError,
     DuplicateDocumentError,
 )
+from src.interfaces.repository_interfaces import IDocumentRepository
+from src.interfaces.service_interfaces import IContentHashService
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.vector_repository import VectorIndexRepository
 from src.services.content_hash_service import ContentHashService
@@ -51,18 +53,28 @@ class DocumentLibraryService:
     """
 
     def __init__(
-        self, db_connection: DatabaseConnection, documents_dir: str | None = None
+        self,
+        document_repository: IDocumentRepository,
+        hash_service: IContentHashService,
+        documents_dir: str | None = None,
     ) -> None:
         """
-        Initialize document library service.
+        Initialize document library service with dependency injection.
+
         Args:
-            db_connection: Database connection instance
+            document_repository: Document repository implementation
+            hash_service: Content hash service implementation
             documents_dir: Directory for permanent document storage
                 (defaults to ~/.ai_pdf_scholar/documents)
         """
-        self.db: DatabaseConnection = db_connection
-        self.document_repo: DocumentRepository = DocumentRepository(db_connection)
-        self.vector_repo: VectorIndexRepository = VectorIndexRepository(db_connection)
+        self.document_repo: IDocumentRepository = document_repository
+        self.hash_service: IContentHashService = hash_service
+
+        # Get database connection from repository for vector repo (legacy compatibility)
+        # TODO: Refactor to inject VectorIndexRepository in v2.2
+        self.db: DatabaseConnection = document_repository.db
+        self.vector_repo: VectorIndexRepository = VectorIndexRepository(self.db)
+
         # Set up managed documents directory
         if documents_dir:
             self.documents_dir: Path = Path(documents_dir)
@@ -117,7 +129,7 @@ class DocumentLibraryService:
                 file_path=file_path,
                 reason="File does not exist",
             )
-        if not ContentHashService.validate_pdf_file(file_path):
+        if not self.hash_service.validate_pdf_file(file_path):
             raise DocumentValidationError(
                 f"Invalid PDF file: {file_path}",
                 file_path=file_path,
@@ -128,7 +140,7 @@ class DocumentLibraryService:
     def _calculate_file_hashes(self, file_path: str) -> tuple[str, str]:
         """Calculate file and content hashes."""
         try:
-            file_hash, content_hash = ContentHashService.calculate_combined_hashes(
+            file_hash, content_hash = self.hash_service.calculate_combined_hashes(
                 file_path
             )
             logger.debug(
@@ -168,7 +180,7 @@ class DocumentLibraryService:
     ) -> None:
         """Enrich document with additional metadata."""
         try:
-            file_info = ContentHashService.get_file_info(file_path)
+            file_info = self.hash_service.get_file_info(file_path)
             document.page_count = file_info.get("page_count", 0)
             if document.metadata is not None:
                 document.metadata.update(
@@ -562,7 +574,7 @@ class DocumentLibraryService:
                 # Count unique content hashes
                 unique_content_query = """
                 SELECT COUNT(DISTINCT content_hash) as unique_count
-                FROM documents 
+                FROM documents
                 WHERE content_hash IS NOT NULL AND content_hash != ''
                 """
                 unique_result = self.document_repo.db.fetch_one(unique_content_query)
@@ -847,7 +859,7 @@ class DocumentLibraryService:
                     result["file_accessible"] = file_path.is_file()
                     # Verify file hash
                     try:
-                        current_hash = ContentHashService.calculate_file_hash(
+                        current_hash = self.hash_service.calculate_file_hash(
                             document.file_path
                         )
                         result["hash_matches"] = current_hash == document.file_hash
