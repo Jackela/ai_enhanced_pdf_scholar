@@ -39,7 +39,7 @@ The product targets researchers and knowledge workers managing large PDF corpora
 
 ## Important Constraints
 - Documentation parity: any API, architecture, or workflow change must update the corresponding Markdown references and OpenSpec specs.
-- No silent dependency failures—optional components (Redis, scikit-learn, file_type column) need graceful fallbacks with actionable logs.
+- No silent dependency failures—optional components (Redis, scikit-learn) need graceful fallbacks with actionable logs, and required schema migrations (like the `documents.file_type` column) must be applied before runtime.
 - Security defaults: CORS whitelist, security headers, rate limiting, and request validation stay enabled even in dev; changes require explicit review.
 - Tests must be deterministic (SQLite in-memory by default) and avoid calling external AI/LLM services during CI; use stubs/mocks.
 - AI usage must route through approved providers (Gemini) with keys loaded from `.env`; never hardcode secrets.

@@ -44,6 +44,7 @@ class DocumentModel:
     file_path: str | None
     file_hash: str
     file_size: int
+    file_type: str | None = None
     content_hash: str | None = None
     page_count: int | None = None
     # Timestamps
@@ -71,6 +72,11 @@ class DocumentModel:
         # Initialize metadata if not provided
         if self.metadata is None:
             self.metadata = {}
+        # Normalize file type; fallback to path extension if missing
+        normalized_type = self._normalize_file_type(self.file_type)
+        if not normalized_type and self.file_path:
+            normalized_type = self._normalize_file_type(Path(self.file_path).suffix)
+        self.file_type = normalized_type or ".pdf"
         # Validate required fields
         # Note: We allow empty title as get_display_name() provides fallback logic
         if not self.file_hash.strip():
@@ -104,8 +110,10 @@ class DocumentModel:
             file_path=str(path.absolute()),
             file_hash=file_hash,
             file_size=stat.st_size,
+            file_type=cls._normalize_file_type(path.suffix),
             metadata={
                 "file_extension": path.suffix.lower(),
+                "file_type": cls._normalize_file_type(path.suffix),
                 "original_filename": path.name,
                 "file_modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
             },
@@ -139,6 +147,7 @@ class DocumentModel:
             file_hash=row["file_hash"],
             content_hash=safe_get(row, "content_hash"),
             file_size=row["file_size"],
+            file_type=safe_get(row, "file_type"),
             page_count=safe_get(row, "page_count"),
             created_at=created_at,
             updated_at=updated_at,
@@ -161,6 +170,7 @@ class DocumentModel:
             "file_hash": self.file_hash,
             "content_hash": self.content_hash,
             "file_size": self.file_size,
+            "file_type": self.file_type,
             "page_count": self.page_count,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
@@ -184,6 +194,7 @@ class DocumentModel:
             "file_hash": self.file_hash,
             "content_hash": self.content_hash,
             "file_size": self.file_size,
+            "file_type": self.file_type,
             "page_count": self.page_count,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
@@ -224,6 +235,25 @@ class DocumentModel:
         A document is considered processed if it has content_hash and page_count.
         """
         return bool(self.content_hash and self.page_count is not None)
+
+    @staticmethod
+    def _normalize_file_type(value: str | None) -> str | None:
+        """Normalize file type/extension to lowercase dotted form."""
+        if not value:
+            return None
+
+        normalized = value.strip().lower()
+        if not normalized:
+            return None
+
+        if "/" in normalized and not normalized.startswith("."):
+            if normalized == "application/pdf":
+                return ".pdf"
+
+        if not normalized.startswith("."):
+            normalized = f".{normalized}"
+
+        return normalized
 
 
 @dataclass

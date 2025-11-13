@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 # Current schema version - increment when adding new migrations
-CURRENT_VERSION = 7
+CURRENT_VERSION = 9
 
 # Migration registry - automatically populated by migration discovery
 MIGRATION_REGISTRY: dict[int, type[BaseMigration]] = {}

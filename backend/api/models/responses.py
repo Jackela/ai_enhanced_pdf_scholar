@@ -174,6 +174,9 @@ class DocumentData(BaseModel):
     file_path: str | None = Field(None, description="File system path (optional)")
     file_hash: str = Field(..., description="File content hash")
     file_size: int | None = Field(None, description="File size in bytes")
+    file_type: str | None = Field(
+        None, description="Normalized file type/extension (e.g., .pdf)"
+    )
     page_count: int | None = Field(None, description="Number of pages in the document")
     content_hash: str | None = Field(None, description="Document content hash")
     created_at: datetime = Field(..., description="Creation timestamp")
@@ -190,6 +193,7 @@ class DocumentData(BaseModel):
                 "file_path": "/path/to/document.pdf",
                 "file_hash": "abc123...",
                 "file_size": 1048576,
+                "file_type": ".pdf",
                 "page_count": 24,
                 "content_hash": "def456...",
                 "created_at": "2025-01-11T10:00:00Z",

@@ -82,6 +82,7 @@ def model_to_response_data(
         file_path=document.file_path,
         file_hash=document.file_hash,
         file_size=document.file_size,
+        file_type=document.file_type,
         page_count=document.page_count,
         content_hash=document.content_hash,
         created_at=document.created_at,

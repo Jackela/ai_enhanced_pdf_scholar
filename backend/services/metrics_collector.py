@@ -56,9 +56,6 @@ class EnhancedMetricsCollector:
         self.system_metrics_interval = 30  # seconds
         self.business_metrics_interval = 60  # seconds
 
-        # Schema introspection cache
-        self._missing_document_columns_logged: set[str] = set()
-
         # Start background collection
         self._start_background_collection()
 
@@ -255,17 +252,15 @@ class EnhancedMetricsCollector:
                 if file_size:
                     self.metrics.document_size_bytes.observe(file_size)
 
-            # Document types distribution (optional - column may not exist in older schemas)
-            if self._documents_table_has_column(cursor, "file_type"):
-                cursor.execute(
-                    "SELECT file_type, COUNT(*) FROM documents GROUP BY file_type"
-                )
-                type_counts = cursor.fetchall()
+            # Document types distribution
+            cursor.execute(
+                "SELECT COALESCE(file_type, 'unknown') AS file_type, COUNT(*) FROM documents GROUP BY file_type"
+            )
+            type_counts = cursor.fetchall()
 
-                for file_type, count in type_counts:
-                    if file_type:
-                        # Update gauge for current distribution (placeholder for future metrics)
-                        pass
+            for file_type, count in type_counts:
+                normalized = file_type or "unknown"
+                self.metrics.document_type_total.labels(file_type=normalized).set(count)
 
             # Processing status
             cursor.execute(
@@ -560,34 +555,6 @@ class EnhancedMetricsCollector:
             return 0.0
         except:
             return 0.0
-
-    def _documents_table_has_column(
-        self, cursor: sqlite3.Cursor, column_name: str
-    ) -> bool:
-        """Check if the documents table exposes a specific column."""
-        try:
-            cursor.execute("PRAGMA table_info(documents)")
-            columns = {row[1] for row in cursor.fetchall()}
-        except sqlite3.OperationalError as exc:
-            logger.error(f"Failed to inspect documents table schema: {exc}")
-            return False
-
-        has_column = column_name in columns
-        if not has_column and column_name not in self._missing_document_columns_logged:
-            logger.warning(
-                "Documents table missing '%s' column; skipping related metrics. "
-                "Run the latest database migrations if this column should exist.",
-                column_name,
-            )
-            self._missing_document_columns_logged.add(column_name)
-        elif has_column and column_name in self._missing_document_columns_logged:
-            logger.info(
-                "Detected '%s' column on documents table; enabling corresponding metrics.",
-                column_name,
-            )
-            self._missing_document_columns_logged.discard(column_name)
-
-        return has_column
 
     # ========================================================================
     # Metrics Export

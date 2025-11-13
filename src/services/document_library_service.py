@@ -82,7 +82,9 @@ class DocumentLibraryService:
             self.documents_dir: Path = Path.home() / ".ai_pdf_scholar" / "documents"
         self.documents_dir.mkdir(parents=True, exist_ok=True)
 
-    def _create_managed_file_path(self, file_hash: str, original_filename: str, force_unique: bool = False) -> Path:
+    def _create_managed_file_path(
+        self, file_hash: str, original_filename: str, force_unique: bool = False
+    ) -> Path:
         """
         Create a managed file path for permanent storage.
         Args:
@@ -96,6 +98,7 @@ class DocumentLibraryService:
         extension = Path(original_filename).suffix
         if force_unique:
             import time
+
             timestamp = str(int(time.time() * 1000))[-6:]  # Last 6 digits of timestamp
             managed_filename = f"{file_hash[:8]}_{timestamp}{extension}"
         else:
@@ -183,6 +186,11 @@ class DocumentLibraryService:
             file_info = self.hash_service.get_file_info(file_path)
             document.page_count = file_info.get("page_count", 0)
             if document.metadata is not None:
+                normalized_type = DocumentModel._normalize_file_type(
+                    Path(file_path).suffix or file_info.get("mime_type")
+                )
+                if normalized_type:
+                    document.file_type = normalized_type
                 document.metadata.update(
                     {
                         "content_hash": content_hash,
@@ -190,6 +198,7 @@ class DocumentLibraryService:
                         "original_path": str(Path(file_path).absolute()),
                         "managed_path": str(managed_file_path),
                         "file_valid": file_info.get("is_valid_pdf", False),
+                        "file_type": document.file_type,
                     }
                 )
         except Exception as e:
@@ -389,7 +398,9 @@ class DocumentLibraryService:
                             else:
                                 logger.debug(f"Document file not found: {file_path}")
                         except Exception as e:
-                            logger.warning(f"Could not remove document file {document.file_path}: {e}")
+                            logger.warning(
+                                f"Could not remove document file {document.file_path}: {e}"
+                            )
                             # Don't fail the deletion if file removal fails
 
                     logger.info(f"Document {document_id} deleted successfully")
@@ -557,7 +568,9 @@ class DocumentLibraryService:
                 total_bytes = stats["total_size_bytes"]
                 # Use 4 decimal places to handle small files better, then round to 2 for display
                 total_mb = total_bytes / (1024 * 1024)
-                stats["total_size_mb"] = round(total_mb, 4) if total_mb < 0.01 else round(total_mb, 2)
+                stats["total_size_mb"] = (
+                    round(total_mb, 4) if total_mb < 0.01 else round(total_mb, 2)
+                )
             else:
                 stats["total_size_mb"] = 0.0
 
@@ -565,7 +578,9 @@ class DocumentLibraryService:
                 avg_bytes = stats["average_size_bytes"]
                 # Use 4 decimal places to handle small files better, then round to 2 for display
                 avg_mb = avg_bytes / (1024 * 1024)
-                stats["average_size_mb"] = round(avg_mb, 4) if avg_mb < 0.01 else round(avg_mb, 2)
+                stats["average_size_mb"] = (
+                    round(avg_mb, 4) if avg_mb < 0.01 else round(avg_mb, 2)
+                )
             else:
                 stats["average_size_mb"] = 0.0
 
@@ -578,7 +593,9 @@ class DocumentLibraryService:
                 WHERE content_hash IS NOT NULL AND content_hash != ''
                 """
                 unique_result = self.document_repo.db.fetch_one(unique_content_query)
-                stats["unique_content_count"] = unique_result["unique_count"] if unique_result else 0
+                stats["unique_content_count"] = (
+                    unique_result["unique_count"] if unique_result else 0
+                )
 
                 # Count duplicate groups (groups with more than 1 document sharing same content_hash)
                 duplicate_groups_query = """
@@ -591,8 +608,12 @@ class DocumentLibraryService:
                     HAVING COUNT(*) > 1
                 ) duplicate_groups
                 """
-                duplicate_result = self.document_repo.db.fetch_one(duplicate_groups_query)
-                stats["duplicate_groups"] = duplicate_result["group_count"] if duplicate_result else 0
+                duplicate_result = self.document_repo.db.fetch_one(
+                    duplicate_groups_query
+                )
+                stats["duplicate_groups"] = (
+                    duplicate_result["group_count"] if duplicate_result else 0
+                )
             except Exception as e:
                 logger.warning(f"Failed to calculate content statistics: {e}")
                 stats["unique_content_count"] = 0

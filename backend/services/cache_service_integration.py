@@ -14,6 +14,7 @@ from .integrated_cache_manager import (
     create_integrated_cache_manager,
 )
 from .metrics_service import ApplicationMetrics
+from .smart_cache_manager import SKLEARN_AVAILABLE
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class CacheServiceIntegration:
     def __init__(
         self,
         app_config: ApplicationConfig | None = None,
-        metrics: ApplicationMetrics | None = None
+        metrics: ApplicationMetrics | None = None,
     ):
         """Initialize cache service integration."""
         self.app_config = app_config or get_application_config()
@@ -50,13 +51,17 @@ class CacheServiceIntegration:
 
             # Check if caching is configured
             if not self.app_config.caching:
-                logger.warning("Caching configuration not available, cache system disabled")
+                logger.warning(
+                    "Caching configuration not available, cache system disabled"
+                )
+                return False
+
+            if not self._verify_ml_dependency_status():
                 return False
 
             # Create integrated cache manager
             self.cache_manager = await create_integrated_cache_manager(
-                config=self.app_config.caching,
-                metrics=self.metrics
+                config=self.app_config.caching, metrics=self.metrics
             )
 
             if not self.cache_manager:
@@ -83,15 +88,33 @@ class CacheServiceIntegration:
         config_dict = self.app_config.caching.to_dict()
 
         logger.info("Cache Configuration Summary:")
-        logger.info(f"  Multi-layer caching: {config_dict.get('multi_layer_enabled', False)}")
-        logger.info(f"  L1 Memory Cache: {config_dict.get('l1_cache', {}).get('enabled', False)} "
-                   f"({config_dict.get('l1_cache', {}).get('max_size_mb', 0)}MB)")
-        logger.info(f"  L2 Redis Cache: {config_dict.get('l2_cache', {}).get('enabled', False)} "
-                   f"(compression: {config_dict.get('l2_cache', {}).get('compression_enabled', False)})")
-        logger.info(f"  L3 CDN Cache: {config_dict.get('l3_cdn', {}).get('enabled', False)} "
-                   f"({config_dict.get('l3_cdn', {}).get('provider', 'none')})")
-        logger.info(f"  Coherency Protocol: {config_dict.get('coherency', {}).get('protocol', 'none')}")
-        logger.info(f"  Performance Monitoring: {config_dict.get('performance_monitoring', False)}")
+        logger.info(
+            f"  Multi-layer caching: {config_dict.get('multi_layer_enabled', False)}"
+        )
+        logger.info(
+            f"  L1 Memory Cache: {config_dict.get('l1_cache', {}).get('enabled', False)} "
+            f"({config_dict.get('l1_cache', {}).get('max_size_mb', 0)}MB)"
+        )
+        logger.info(
+            f"  L2 Redis Cache: {config_dict.get('l2_cache', {}).get('enabled', False)} "
+            f"(compression: {config_dict.get('l2_cache', {}).get('compression_enabled', False)})"
+        )
+        logger.info(
+            f"  L3 CDN Cache: {config_dict.get('l3_cdn', {}).get('enabled', False)} "
+            f"({config_dict.get('l3_cdn', {}).get('provider', 'none')})"
+        )
+        logger.info(
+            f"  Coherency Protocol: {config_dict.get('coherency', {}).get('protocol', 'none')}"
+        )
+        logger.info(
+            f"  Performance Monitoring: {config_dict.get('performance_monitoring', False)}"
+        )
+        ml_cfg = config_dict.get("ml_cache", {})
+        logger.info(
+            "  Smart cache ML: %s (deps required: %s)",
+            ml_cfg.get("enabled", False),
+            ml_cfg.get("deps_required", False),
+        )
 
     async def get_cache_manager(self) -> IntegratedCacheManager | None:
         """Get the integrated cache manager, initializing if needed."""
@@ -110,6 +133,35 @@ class CacheServiceIntegration:
 
         self._initialized = False
         logger.info("Cache service integration shutdown complete")
+
+    def _verify_ml_dependency_status(self) -> bool:
+        """Ensure ML cache configuration matches installed dependencies."""
+        caching = self.app_config.caching
+        if not caching:
+            return True
+
+        if not caching.enable_ml_cache:
+            logger.info("Smart cache ML optimizations disabled via configuration")
+            return True
+
+        if SKLEARN_AVAILABLE:
+            return True
+
+        message = (
+            "Smart cache ML optimizations are enabled but scikit-learn is not installed. "
+            "Install the ML cache profile (`pip install -r requirements-scaling.txt` "
+            'or `pip install ".[cache-ml]"`) or disable CACHE_ML_OPTIMIZATIONS_ENABLED.'
+        )
+
+        if caching.require_ml_dependencies:
+            logger.error(
+                message
+                + " Set CACHE_ML_DEPS_REQUIRED=false if the strict requirement is not desired."
+            )
+            return False
+
+        logger.warning(message)
+        return True
 
     # ========================================================================
     # Cache Operations Interface
@@ -192,7 +244,7 @@ class CacheServiceIntegration:
         if not self.cache_manager:
             return {
                 "overall_status": "not_initialized",
-                "cache_manager_available": False
+                "cache_manager_available": False,
             }
 
         return self.cache_manager.get_health_status()
@@ -222,7 +274,7 @@ _cache_service: CacheServiceIntegration | None = None
 async def get_cache_service(
     app_config: ApplicationConfig | None = None,
     metrics: ApplicationMetrics | None = None,
-    force_recreate: bool = False
+    force_recreate: bool = False,
 ) -> CacheServiceIntegration | None:
     """
     Get the global cache service instance.
@@ -274,7 +326,7 @@ async def shutdown_cache_service():
 @asynccontextmanager
 async def cache_service_context(
     app_config: ApplicationConfig | None = None,
-    metrics: ApplicationMetrics | None = None
+    metrics: ApplicationMetrics | None = None,
 ):
     """
     Async context manager for cache service.
@@ -305,6 +357,7 @@ async def cache_service_context(
 # FastAPI Integration Helpers
 # ============================================================================
 
+
 def create_cache_dependency():
     """
     Create FastAPI dependency for cache service.
@@ -321,6 +374,7 @@ def create_cache_dependency():
             await cache.set("data_key", data, ttl_seconds=3600)
             return data
     """
+
     async def get_cache_dependency() -> CacheServiceIntegration | None:
         return await get_cache_service()
 
@@ -332,7 +386,7 @@ def cache_response(
     ttl_seconds: int = 3600,
     use_l1: bool = True,
     use_l2: bool = True,
-    use_l3: bool = False
+    use_l3: bool = False,
 ):
     """
     Decorator for caching API responses.
@@ -349,6 +403,7 @@ def cache_response(
         async def get_user_profile(user_id: str, cache: CacheServiceIntegration = Depends(cache_dependency)):
             # Function implementation
     """
+
     def decorator(func):
         async def wrapper(*args, **kwargs):
             # Extract cache service from kwargs
@@ -373,14 +428,13 @@ def cache_response(
             cache_manager = await cache_service.get_cache_manager()
             if cache_manager:
                 result = await cache_manager.get(
-                    cache_key,
-                    use_l1=use_l1,
-                    use_l2=use_l2,
-                    use_l3=use_l3
+                    cache_key, use_l1=use_l1, use_l2=use_l2, use_l3=use_l3
                 )
 
                 if result.success:
-                    logger.debug(f"Cache hit for key: {cache_key} from {result.cache_level}")
+                    logger.debug(
+                        f"Cache hit for key: {cache_key} from {result.cache_level}"
+                    )
                     return result.value
 
             # Cache miss, execute function
@@ -394,13 +448,14 @@ def cache_response(
                     ttl_seconds=ttl_seconds,
                     write_to_l1=use_l1,
                     write_to_l2=use_l2,
-                    write_to_l3=use_l3
+                    write_to_l3=use_l3,
                 )
                 logger.debug(f"Cached response for key: {cache_key}")
 
             return response
 
         return wrapper
+
     return decorator
 
 
@@ -408,9 +463,10 @@ def cache_response(
 # Utility Functions for Cache Management
 # ============================================================================
 
+
 async def initialize_application_cache(
     app_config: ApplicationConfig | None = None,
-    metrics: ApplicationMetrics | None = None
+    metrics: ApplicationMetrics | None = None,
 ) -> bool:
     """
     Initialize application-wide cache system.
@@ -453,7 +509,7 @@ async def get_application_cache_status() -> dict[str, Any]:
     if not cache_service:
         return {
             "cache_system_available": False,
-            "reason": "Cache service not initialized or disabled"
+            "reason": "Cache service not initialized or disabled",
         }
 
     health_status = cache_service.get_health_status()
@@ -463,5 +519,7 @@ async def get_application_cache_status() -> dict[str, Any]:
         "cache_system_available": True,
         "health": health_status,
         "statistics": statistics,
-        "configuration": cache_service.app_config.caching.to_dict() if cache_service.app_config.caching else {}
+        "configuration": cache_service.app_config.caching.to_dict()
+        if cache_service.app_config.caching
+        else {},
     }

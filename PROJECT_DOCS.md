@@ -583,6 +583,10 @@ class RAGCacheService:
 - **读取性能**: 10,877 命中/秒
 - **命中率**: 100% (最优条件)
 - **缓存优化**: 显著的缓存查询性能提升
+- **ML 缓存配置**:
+  - 通过安装 `requirements-scaling.txt` 或 `pip install ".[cache-ml]"` 启用智能缓存预测
+  - `CACHE_ML_OPTIMIZATIONS_ENABLED` 控制是否加载 ML 预测器
+  - `CACHE_ML_DEPS_REQUIRED`（生产推荐）可以在缺少依赖时直接阻止启动，防止“半启用”状态
 
 ### 🔄 **并发与线程安全**
 
@@ -1248,6 +1252,7 @@ erDiagram
         string file_hash UK "文件内容哈希"
         string content_hash "文本内容哈希（用于重复检测）"
         int file_size
+        string file_type "标准化文件类型/扩展名（如 .pdf）"
         int page_count
         datetime created_at
         datetime updated_at

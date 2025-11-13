@@ -17,6 +17,12 @@ To install:
 pip install -r requirements-scaling.txt
 ```
 
+### Smart Cache ML Profile
+- Install via `pip install -r requirements-scaling.txt` **or** `pip install ".[cache-ml]"`.
+- Set `CACHE_ML_OPTIMIZATIONS_ENABLED=true` (default) to allow ML predictors to run.
+- In production, set `CACHE_ML_DEPS_REQUIRED=true` to fail fast if the dependencies are missing; otherwise, the system logs a warning and falls back to heuristic caching.
+- Set `CACHE_ML_OPTIMIZATIONS_ENABLED=false` to skip loading the ML predictor entirely (no warnings, no dependency checks).
+
 ### Development (requirements-dev.txt)
 Development tools including linters, formatters, and testing frameworks.
 

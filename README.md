@@ -103,6 +103,24 @@ cd frontend && npm install && cd ..
 export GOOGLE_API_KEY="your_gemini_api_key_here"
 ```
 
+### Optional: Enable Smart Cache ML profile
+Smart-cache ML optimizations stay in graceful-degradation mode unless the ML profile is installed. Choose one of the following:
+
+```bash
+# Option A: install the scaling requirements bundle
+pip install -r requirements-scaling.txt
+
+# Option B: install the poetry/setuptools extra
+pip install ".[cache-ml]"
+
+# Enable ML caching (default is true, set false to skip)
+export CACHE_ML_OPTIMIZATIONS_ENABLED=true
+# Fail-fast if dependencies are required in prod
+export CACHE_ML_DEPS_REQUIRED=true
+```
+
+For Docker images, pass `--build-arg ENABLE_CACHE_ML=true` to bake the ML profile into the container.
+
 ### 2. Launch The App
 ```bash
 # Run backend (Terminal 1)

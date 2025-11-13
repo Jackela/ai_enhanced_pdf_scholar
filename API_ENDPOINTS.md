@@ -36,6 +36,9 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 }
 ```
 
+**字段说明**:
+- `file_type`: 规范化的文件类型/扩展名（例如 `.pdf`），可用于前端过滤和指标统计。
+
 ### 错误响应格式
 
 ```json
@@ -171,6 +174,7 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
       "title": "研究论文.pdf",
       "file_path": "/path/to/file.pdf",
       "file_size": 1024000,
+      "file_type": ".pdf",
       "page_count": 20,
       "created_at": "2023-01-01T00:00:00",
       "updated_at": "2023-01-01T00:00:00",
@@ -216,6 +220,7 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
     "title": "AI辅助项目完成模式",
     "file_path": "C:\\Users\\user\\.ai_pdf_scholar\\documents\\fe4086dc.pdf",
     "file_size": 151676,
+    "file_type": ".pdf",
     "page_count": 3,
     "file_hash": "fe4086dc365fc6a2",
     "created_at": "2025-07-14T06:14:12.019558",
