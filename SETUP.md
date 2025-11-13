@@ -197,10 +197,12 @@ pytest tests/unit -v
 
 # Run JavaScript tests
 cd frontend && npm run test
-
 # Run full test suite
 npm run test:all
 ```
+
+### 8. Keep CI Parity with GitHub Actions
+Follow the workflow in `docs/CI_PARITY.md` to ensure local checks match the remote pipeline. Run `make lint-staged` while iterating so Ruff inspects only your changed Python files, then run `make ci-local` before every push to execute the same Ruff, MyPy, pytest, and frontend Vitest stack that GitHub Actions uses.
 
 ## 🔧 IDE Configuration
 

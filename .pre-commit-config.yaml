@@ -5,24 +5,19 @@
 
 repos:
   # ============================================================================
-  # Essential File Checks
+  # Essential File Checks + lightweight security
   # ============================================================================
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-      # Basic file format checks
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=2000]  # 2MB limit (increased for PDFs/docs)
-
-      # Python syntax validation
       - id: check-ast
       - id: debug-statements
-
-      # Exclude problematic files from YAML/JSON checks
       - id: check-yaml
         args: [--allow-multiple-documents]
         exclude: |
@@ -33,7 +28,6 @@ repos:
             \.github/workflows/disabled/.*\.yml|
             frontend/\.github/workflows/.*\.yml
           )$
-
       - id: check-json
         exclude: |
           (?x)^(
@@ -42,31 +36,6 @@ repos:
             bandit-report\.json|
             frontend/tsconfig\.json
           )$
-
-  # ============================================================================
-  # Python Code Quality (Essential Only)
-  # ============================================================================
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
-    hooks:
-      - id: black
-        args: [--line-length=88]
-        files: ^(src/|backend/|tests/|scripts/).*\.py$
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: [--profile=black, --line-length=88]
-        files: ^(src/|backend/|tests/|scripts/).*\.py$
-
-  # ============================================================================
-  # Relaxed Security Checks
-  # ============================================================================
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      # Only check for actual private keys, not documentation examples
       - id: detect-private-key
         exclude: |
           (?x)^(
@@ -75,6 +44,29 @@ repos:
             docs/.*\.md|
             .*README.*\.md
           )$
+
+  # ============================================================================
+  # Ruff formatting + linting (mirrors CI and `make lint-staged`)
+  # ============================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff-format
+        files: ^(src/|backend/|tests/|scripts/).*\.py$
+      - id: ruff
+        files: ^(src/|backend/|tests/|scripts/).*\.py$
+
+  # ============================================================================
+  # MyPy (touched files)
+  # ============================================================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        args: [--config-file=mypy.ini]
+        stages: [manual]  # run via `pre-commit run mypy --all-files` when needed
+        additional_dependencies:
+          - types-requests
 
 # ============================================================================
 # Configuration
@@ -100,10 +92,10 @@ ci:
 # Usage Notes
 # ============================================================================
 # This simplified configuration focuses on:
-# 1. Essential file format issues
-# 2. Python syntax and basic formatting
-# 3. Basic security (real private keys only)
-# 4. Large file prevention
+# 1. Essential file format issues + merge hygiene
+# 2. Ruff formatting + linting on only the touched Python files
+# 3. MyPy on touched files (much faster than repo-wide runs)
+# 4. Lightweight security (real private keys only) + large file prevention
 #
 # Removed from original config:
 # - Complex YAML/JSON validation for config files

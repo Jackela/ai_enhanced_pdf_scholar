@@ -164,6 +164,9 @@ npm run test -- src/tests/LibraryViewPagination.test.tsx
 ```
 Legacy security/e2e suites were removed along with the v1 routes; GitHub Actions runs the commands above.
 
+### 4. CI Parity Workflow
+Use `docs/CI_PARITY.md` as the source of truth for mirroring GitHub Actions locally. During development run `make lint-staged` to check only the files you touched, and run `make ci-local` before pushing so Ruff, MyPy, backend pytest, and frontend Vitest all match the CI pipeline.
+
 ---
 
 *This project was created to showcase product management and software engineering skills.*

@@ -56,6 +56,8 @@ class EnhancedMetricsCollector:
         self.system_metrics_interval = 30  # seconds
         self.business_metrics_interval = 60  # seconds
 
+        self._logged_missing_file_type_column = False
+
         # Start background collection
         self._start_background_collection()
 
@@ -252,15 +254,30 @@ class EnhancedMetricsCollector:
                 if file_size:
                     self.metrics.document_size_bytes.observe(file_size)
 
-            # Document types distribution
-            cursor.execute(
-                "SELECT COALESCE(file_type, 'unknown') AS file_type, COUNT(*) FROM documents GROUP BY file_type"
+            # Document types distribution (skip if file_type column is missing)
+            file_type_supported = self._table_has_column(
+                cursor, "documents", "file_type"
             )
-            type_counts = cursor.fetchall()
+            if file_type_supported:
+                cursor.execute(
+                    """
+                    SELECT COALESCE(file_type, 'unknown') AS file_type, COUNT(*)
+                    FROM documents
+                    GROUP BY file_type
+                """
+                )
+                type_counts = cursor.fetchall()
 
-            for file_type, count in type_counts:
-                normalized = file_type or "unknown"
-                self.metrics.document_type_total.labels(file_type=normalized).set(count)
+                for file_type, count in type_counts:
+                    normalized = file_type or "unknown"
+                    self.metrics.document_type_total.labels(file_type=normalized).set(
+                        count
+                    )
+            elif not self._logged_missing_file_type_column:
+                logger.info(
+                    "Skipping document-type metrics; 'file_type' column not found in documents table."
+                )
+                self._logged_missing_file_type_column = True
 
             # Processing status
             cursor.execute(
@@ -319,6 +336,15 @@ class EnhancedMetricsCollector:
 
         except Exception as e:
             logger.error(f"Failed to collect user activity metrics: {e}")
+
+    @staticmethod
+    def _table_has_column(cursor: sqlite3.Cursor, table: str, column: str) -> bool:
+        """Return True if the given table contains the specified column."""
+        try:
+            cursor.execute(f"PRAGMA table_info({table})")
+        except sqlite3.OperationalError:
+            return False
+        return any(row[1] == column for row in cursor.fetchall())
 
     def _collect_performance_metrics(self):
         """Collect application performance metrics."""
@@ -542,7 +568,9 @@ class EnhancedMetricsCollector:
 
         return health_status
 
-    def _get_metric_value(self, metric_name: str, label_value: str = None) -> float:
+    def _get_metric_value(
+        self, metric_name: str, label_value: str | None = None
+    ) -> float:
         """Get current value of a metric."""
         try:
             if hasattr(self.metrics, metric_name):
@@ -553,7 +581,7 @@ class EnhancedMetricsCollector:
                     else:
                         return metric._value._value
             return 0.0
-        except:
+        except Exception:
             return 0.0
 
     # ========================================================================
@@ -599,7 +627,6 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
             collector = get_metrics_collector()
-            start_time = time.time()
 
             try:
                 result = await func(*args, **kwargs)
@@ -627,7 +654,6 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
             collector = get_metrics_collector()
-            start_time = time.time()
 
             try:
                 result = func(*args, **kwargs)

@@ -138,6 +138,16 @@ async def _deferred_initialization(db_path: Path):
             )
 
             logger.info("Cache system ready for initialization on first request")
+        except ModuleNotFoundError as e:
+            if e.name == "sklearn":
+                logger.warning(
+                    "Cache system preparation skipped: scikit-learn is not installed. "
+                    "Install optional ML cache dependencies "
+                    '(`pip install -r requirements-scaling.txt` or `pip install ".[cache-ml]"`) '
+                    "or set CACHE_ML_OPTIMIZATIONS_ENABLED=false."
+                )
+            else:
+                logger.warning(f"Cache system preparation failed: {e}")
         except Exception as e:
             logger.warning(f"Cache system preparation failed: {e}")
 
@@ -382,7 +392,7 @@ if __name__ == "__main__":
     # Fix 2: Exclude .trunk directory to prevent watchfiles filesystem loop error
     uvicorn.run(
         "backend.api.main:app",
-        host="0.0.0.0",
+        host="0.0.0.0",  # noqa: S104 - dev server intentionally binds all interfaces
         port=8000,
         reload=True,
         reload_excludes=[".trunk/**", "node_modules/**", ".git/**"],
