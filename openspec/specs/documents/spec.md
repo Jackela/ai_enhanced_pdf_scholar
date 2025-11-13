@@ -1,8 +1,7 @@
 # documents Specification
 
 ## Purpose
-Manage document metadata, storage, and user-facing interactions (upload, search, preview, download) while enforcing security, caching, and observability guarantees.
-
+TBD - created by archiving change add-documents-file-type-column. Update Purpose after archive.
 ## Requirements
 ### Requirement: Documents MUST persist canonical file type metadata
 All document records SHALL store a normalized `file_type` column (e.g., `.pdf`) that is populated on ingest and exposed via the API.
