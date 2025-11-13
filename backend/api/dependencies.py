@@ -13,6 +13,7 @@ from fastapi import Depends, HTTPException, status
 
 from backend.api.error_handling import ResourceNotFoundException, SystemException
 from backend.api.websocket_manager import WebSocketManager
+from backend.config.application_config import get_application_config
 from config import Config
 from src.controllers.library_controller import LibraryController
 from src.database.connection import DatabaseConnection
@@ -28,6 +29,10 @@ from src.repositories.document_repository import DocumentRepository
 from src.repositories.vector_repository import VectorIndexRepository
 from src.services.content_hash_service import ContentHashService
 from src.services.document_library_service import DocumentLibraryService
+from src.services.document_preview_service import (
+    DocumentPreviewService,
+    PreviewSettings,
+)
 from src.services.enhanced_rag_service import EnhancedRAGService
 from src.services.multi_document_rag_service import MultiDocumentRAGService
 
@@ -39,6 +44,7 @@ _library_controller: LibraryController | None = None
 _multi_document_rag_service: MultiDocumentRAGService | None = None
 _document_repository: IDocumentRepository | None = None
 _document_library_service: IDocumentLibraryService | None = None
+_document_preview_service: DocumentPreviewService | None = None
 _vector_index_repository: VectorIndexRepository | None = None
 _rag_cache_manager: IRAGCacheManager | None = None
 _rag_health_checker: IRAGHealthChecker | None = None
@@ -241,6 +247,32 @@ def get_document_repository(
                 _document_repository = DocumentRepository(db)
                 logger.info("Document repository initialized")
     return _document_repository
+
+
+def get_document_preview_service(
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
+) -> DocumentPreviewService:
+    """Get the preview service singleton."""
+    global _document_preview_service
+    if _document_preview_service is None:
+        config = get_application_config()
+        preview_config = getattr(config, "preview", None)
+        if not preview_config:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Document previews are not configured",
+            )
+        settings = PreviewSettings(
+            enabled=preview_config.enabled,
+            cache_dir=Path(preview_config.cache_dir),
+            max_width=preview_config.max_width,
+            min_width=preview_config.min_width,
+            thumbnail_width=preview_config.thumbnail_width,
+            max_page_number=preview_config.max_page_number,
+            cache_ttl_seconds=preview_config.cache_ttl_seconds,
+        )
+        _document_preview_service = DocumentPreviewService(doc_repo, settings)
+    return _document_preview_service
 
 
 def get_document_library_service(

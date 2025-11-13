@@ -588,6 +588,19 @@ class RAGCacheService:
   - `CACHE_ML_OPTIMIZATIONS_ENABLED` 控制是否加载 ML 预测器
   - `CACHE_ML_DEPS_REQUIRED`（生产推荐）可以在缺少依赖时直接阻止启动，防止“半启用”状态
 
+### **文档预览服务**
+
+- 服务：`DocumentPreviewService`（PyMuPDF + Pillow 渲染）
+- 功能：`/api/documents/{id}/preview` 与 `/api/documents/{id}/thumbnail`
+- 管理：`PREVIEWS_ENABLED`, `PREVIEW_CACHE_DIR`, `PREVIEW_MAX_WIDTH`, `PREVIEW_CACHE_TTL_SECONDS`
+- 缓存：磁盘缓存 + 可选 Redis（未来扩展），命中时返回 `X-Preview-Cache: hit`
+- 安全：仅读取托管 PDF，尊重现有权限校验，非 PDF 返回 `415`
+- 监控：`preview_requests_total`, `preview_generation_seconds`
+- **ML 缓存配置**:
+  - 通过安装 `requirements-scaling.txt` 或 `pip install ".[cache-ml]"` 启用智能缓存预测
+  - `CACHE_ML_OPTIMIZATIONS_ENABLED` 控制是否加载 ML 预测器
+  - `CACHE_ML_DEPS_REQUIRED`（生产推荐）可以在缺少依赖时直接阻止启动，防止“半启用”状态
+
 ### 🔄 **并发与线程安全**
 
 #### **线程安全设计**

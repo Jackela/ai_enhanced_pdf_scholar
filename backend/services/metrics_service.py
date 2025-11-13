@@ -150,6 +150,21 @@ class ApplicationMetrics:
             registry=self.registry,
         )
 
+        self.preview_requests_total = Counter(
+            "preview_requests_total",
+            "Document preview/thumbnail requests",
+            ["type", "result"],
+            registry=self.registry,
+        )
+
+        self.preview_generation_seconds = Histogram(
+            "preview_generation_seconds",
+            "Document preview generation duration in seconds",
+            ["type"],
+            buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0),
+            registry=self.registry,
+        )
+
         # RAG (Retrieval-Augmented Generation) Metrics
         self.rag_queries_total = Counter(
             "rag_queries_total",

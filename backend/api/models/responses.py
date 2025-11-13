@@ -182,6 +182,14 @@ class DocumentData(BaseModel):
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime | None = Field(None, description="Last update timestamp")
     is_file_available: bool = Field(..., description="Whether file exists on disk")
+    preview_url: str | None = Field(
+        None,
+        description="Endpoint for requesting a rendered page preview",
+    )
+    thumbnail_url: str | None = Field(
+        None,
+        description="Endpoint for requesting the cached thumbnail",
+    )
     links: Links = Field(..., description="HATEOAS links", alias="_links")
 
     class Config:
@@ -199,6 +207,8 @@ class DocumentData(BaseModel):
                 "created_at": "2025-01-11T10:00:00Z",
                 "updated_at": "2025-01-11T10:30:00Z",
                 "is_file_available": True,
+                "preview_url": "/api/documents/1/preview",
+                "thumbnail_url": "/api/documents/1/thumbnail",
                 "_links": {
                     "self": "/api/documents/1",
                     "related": {

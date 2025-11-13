@@ -15,14 +15,25 @@ References:
 """
 
 import logging
+import time
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse
 
 from backend.api.dependencies import (
     get_document_library_service,
+    get_document_preview_service,
     get_document_repository,
     get_documents_dir,
 )
@@ -34,14 +45,88 @@ from backend.api.models.responses import (
     PaginationMeta,
 )
 from backend.api.utils.path_safety import build_safe_temp_path, is_within_allowed_roots
+from backend.config.application_config import get_application_config
+from backend.services.metrics_collector import get_metrics_collector
 from src.database.models import DocumentModel
 from src.interfaces.repository_interfaces import IDocumentRepository
 from src.interfaces.service_interfaces import IDocumentLibraryService
+from src.services.document_preview_service import (
+    DocumentPreviewService,
+    PreviewContent,
+    PreviewDisabledError,
+    PreviewError,
+    PreviewNotFoundError,
+    PreviewUnsupportedError,
+)
 
 logger = logging.getLogger(__name__)
 
 # Note: No prefix here because it's set in main.py when including the router
 router = APIRouter(tags=["documents"])
+_preview_metrics = None
+
+
+def _record_preview_metric(operation: str, result: str, duration: float | None) -> None:
+    """Record preview metrics when the collector is available."""
+    global _preview_metrics
+    try:
+        if _preview_metrics is None:
+            _preview_metrics = get_metrics_collector().metrics
+        if hasattr(_preview_metrics, "preview_requests_total"):
+            _preview_metrics.preview_requests_total.labels(
+                type=operation, result=result
+            ).inc()
+        if duration is not None and hasattr(
+            _preview_metrics, "preview_generation_seconds"
+        ):
+            _preview_metrics.preview_generation_seconds.labels(type=operation).observe(
+                duration
+            )
+    except Exception:
+        logger.debug("Preview metrics collector unavailable", exc_info=True)
+
+
+def _build_preview_headers(
+    document_id: int, preview: "PreviewContent", ttl_seconds: int
+) -> dict[str, str]:
+    return {
+        "Cache-Control": f"private, max-age={ttl_seconds}",
+        "X-Document-Id": str(document_id),
+        "X-Preview-Page": str(preview.page),
+        "X-Preview-Cache": "hit" if preview.from_cache else "miss",
+    }
+
+
+def _handle_preview_exception(operation: str, exc: Exception) -> None:
+    if isinstance(exc, PreviewDisabledError):
+        _record_preview_metric(operation, "disabled", None)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, PreviewUnsupportedError):
+        _record_preview_metric(operation, "unsupported", None)
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, PreviewNotFoundError):
+        _record_preview_metric(operation, "not_found", None)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, PreviewError):
+        _record_preview_metric(operation, "error", None)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    _record_preview_metric(operation, "error", None)
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to generate preview",
+    ) from exc
 
 
 # ============================================================================
@@ -73,8 +158,20 @@ def model_to_response_data(
             "queries": f"{base_url}/documents/{document.id}/queries",
             "indexes": f"{base_url}/documents/{document.id}/indexes",
             "citations": f"{base_url}/documents/{document.id}/citations",
+            "preview": f"{base_url}/documents/{document.id}/preview",
+            "thumbnail": f"{base_url}/documents/{document.id}/thumbnail",
         },
     )
+
+    preview_url = None
+    thumbnail_url = None
+    try:
+        preview_config = get_application_config().preview
+        if preview_config and preview_config.enabled:
+            preview_url = f"{base_url}/documents/{document.id}/preview"
+            thumbnail_url = f"{base_url}/documents/{document.id}/thumbnail"
+    except Exception:
+        logger.debug("Preview configuration unavailable", exc_info=True)
 
     return DocumentData(
         id=document.id,
@@ -88,6 +185,8 @@ def model_to_response_data(
         created_at=document.created_at,
         updated_at=document.updated_at,
         is_file_available=file_exists,
+        preview_url=preview_url,
+        thumbnail_url=thumbnail_url,
         _links=links,
     )
 
@@ -255,6 +354,79 @@ async def get_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve document",
         )
+
+
+@router.get(
+    "/{document_id}/preview",
+    summary="Get document page preview",
+    responses={
+        200: {
+            "content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}
+        },
+        400: {"description": "Invalid parameters"},
+        404: {"description": "Document/page not found"},
+        415: {"description": "Unsupported media type"},
+        503: {"description": "Previews disabled"},
+    },
+)
+async def get_document_preview(
+    document_id: int,
+    page: int = Query(1, ge=1, le=1000, description="One-based page number"),
+    width: int
+    | None = Query(
+        None,
+        ge=64,
+        le=2000,
+        description="Target width in pixels (auto-clamped to configured limits)",
+    ),
+    preview_service: DocumentPreviewService = Depends(get_document_preview_service),
+) -> Response:
+    """Return a rendered PNG preview for the requested page."""
+    start = time.perf_counter()
+    try:
+        preview = preview_service.get_page_preview(document_id, page, width)
+        duration = time.perf_counter() - start
+        _record_preview_metric("preview", "success", duration)
+        headers = _build_preview_headers(
+            document_id, preview, preview_service.settings.cache_ttl_seconds
+        )
+        return Response(
+            content=preview.content, media_type=preview.content_type, headers=headers
+        )
+    except Exception as exc:  # noqa: BLE001
+        _handle_preview_exception("preview", exc)
+
+
+@router.get(
+    "/{document_id}/thumbnail",
+    summary="Get document thumbnail",
+    responses={
+        200: {
+            "content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}
+        },
+        404: {"description": "Document not found"},
+        415: {"description": "Unsupported media type"},
+        503: {"description": "Previews disabled"},
+    },
+)
+async def get_document_thumbnail(
+    document_id: int,
+    preview_service: DocumentPreviewService = Depends(get_document_preview_service),
+) -> Response:
+    """Return the cached thumbnail (first page) for a document."""
+    start = time.perf_counter()
+    try:
+        preview = preview_service.get_thumbnail(document_id)
+        duration = time.perf_counter() - start
+        _record_preview_metric("thumbnail", "success", duration)
+        headers = _build_preview_headers(
+            document_id, preview, preview_service.settings.cache_ttl_seconds
+        )
+        return Response(
+            content=preview.content, media_type=preview.content_type, headers=headers
+        )
+    except Exception as exc:  # noqa: BLE001
+        _handle_preview_exception("thumbnail", exc)
 
 
 # ============================================================================

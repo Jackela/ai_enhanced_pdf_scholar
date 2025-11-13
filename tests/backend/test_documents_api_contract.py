@@ -1,7 +1,9 @@
 import pytest
+from fastapi import HTTPException
 
 from backend.api.routes import documents
 from src.database.models import DocumentModel
+from src.services.document_preview_service import PreviewContent, PreviewDisabledError
 
 
 class _StubDocRepo:
@@ -35,6 +37,7 @@ def _sample_documents():
             file_path=f"/tmp/doc_{idx}.pdf",
             file_hash=f"hash{idx}",
             file_size=100 + idx,
+            file_type=".pdf",
         )
         for idx in range(1, 5)
     ]
@@ -70,3 +73,53 @@ async def test_get_document_envelope_handles_missing_file_path():
     assert response.success is True
     assert response.data.id == 1
     assert response.data.file_path is None
+
+
+class _StubPreviewService:
+    def __init__(self, content: bytes = b"preview-bytes"):
+        self.settings = type("Cfg", (), {"cache_ttl_seconds": 60})
+        self._content = content
+
+    def get_page_preview(self, document_id: int, page: int, width: int | None):
+        width = width or 256
+        return PreviewContent(self._content, "image/png", width, 128, page, False)
+
+    def get_thumbnail(self, document_id: int):
+        return PreviewContent(self._content, "image/png", 256, 128, 1, True)
+
+
+class _DisabledPreviewService(_StubPreviewService):
+    def get_page_preview(self, document_id: int, page: int, width: int | None):
+        raise PreviewDisabledError("disabled")
+
+    def get_thumbnail(self, document_id: int):
+        raise PreviewDisabledError("disabled")
+
+
+@pytest.mark.asyncio
+async def test_preview_endpoint_returns_image_response():
+    service = _StubPreviewService()
+
+    response = await documents.get_document_preview(
+        document_id=1,
+        page=1,
+        width=320,
+        preview_service=service,
+    )
+
+    assert response.media_type == "image/png"
+    assert response.body == b"preview-bytes"
+    assert response.headers["X-Document-Id"] == "1"
+
+
+@pytest.mark.asyncio
+async def test_preview_endpoint_handles_disabled_service():
+    service = _DisabledPreviewService()
+
+    with pytest.raises(HTTPException) as exc:
+        await documents.get_document_thumbnail(
+            document_id=1,
+            preview_service=service,
+        )
+
+    assert exc.value.status_code == 503

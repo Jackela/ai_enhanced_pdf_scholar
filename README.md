@@ -121,6 +121,20 @@ export CACHE_ML_DEPS_REQUIRED=true
 
 For Docker images, pass `--build-arg ENABLE_CACHE_ML=true` to bake the ML profile into the container.
 
+### Optional: Tune preview/thumbnail settings
+Document previews are enabled by default. Configure them via environment variables:
+
+```bash
+export PREVIEWS_ENABLED=true
+export PREVIEW_CACHE_DIR="$HOME/.ai_pdf_scholar/previews"
+export PREVIEW_MAX_WIDTH=1024
+export PREVIEW_MIN_WIDTH=200
+export PREVIEW_THUMBNAIL_WIDTH=256
+export PREVIEW_CACHE_TTL_SECONDS=3600
+```
+
+Set `PREVIEWS_ENABLED=false` if you want to disable the preview endpoints entirely.
+
 ### 2. Launch The App
 ```bash
 # Run backend (Terminal 1)
