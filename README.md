@@ -137,6 +137,8 @@ Set `PREVIEWS_ENABLED=false` if you want to disable the preview endpoints entire
 
 Need to validate a deployment? Follow the [Document Preview Validation Playbook](docs/operations/preview_validation_playbook.md) for a step-by-step smoke test covering curl commands, metrics, and troubleshooting tips.
 
+Need to reclaim disk space? Use the [Preview Cache Maintenance Guide](docs/operations/preview_cache_maintenance.md) and `scripts/preview_cache_maintenance.py` to purge expired entries or enforce size limits.
+
 ### 2. Launch The App
 ```bash
 # Run backend (Terminal 1)
