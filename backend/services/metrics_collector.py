@@ -13,9 +13,9 @@ from functools import wraps
 from typing import Any
 
 import psutil
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from backend.services.metrics_service import MetricsService
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +28,17 @@ class EnhancedMetricsCollector:
 
     def __init__(self, db_path: str = None, redis_url: str = None):
         """Initialize enhanced metrics collector."""
-        self.db_path = db_path or os.getenv('DATABASE_URL', 'data/library.db')
-        self.redis_url = redis_url or os.getenv('REDIS_URL')
+        self.db_path = db_path or os.getenv("DATABASE_URL", "data/library.db")
+        self.redis_url = redis_url or os.getenv("REDIS_URL")
 
         # Initialize base metrics service
         self.metrics_service = MetricsService(
             app_name="ai_pdf_scholar",
             version="2.0.0",
-            enable_push_gateway=bool(os.getenv('PROMETHEUS_PUSH_GATEWAY')),
-            push_gateway_url=os.getenv('PROMETHEUS_PUSH_GATEWAY', 'http://localhost:9091')
+            enable_push_gateway=bool(os.getenv("PROMETHEUS_PUSH_GATEWAY")),
+            push_gateway_url=os.getenv(
+                "PROMETHEUS_PUSH_GATEWAY", "http://localhost:9091"
+            ),
         )
 
         # Get metrics reference for convenience
@@ -44,15 +46,18 @@ class EnhancedMetricsCollector:
 
         # Performance baseline tracking
         self.performance_baselines = {
-            'rag_query_p95': 2.0,  # 95th percentile in seconds
-            'document_upload_p95': 5.0,
-            'cache_hit_rate_min': 0.8,
-            'error_rate_max': 0.05
+            "rag_query_p95": 2.0,  # 95th percentile in seconds
+            "document_upload_p95": 5.0,
+            "cache_hit_rate_min": 0.8,
+            "error_rate_max": 0.05,
         }
 
         # Collection intervals
         self.system_metrics_interval = 30  # seconds
         self.business_metrics_interval = 60  # seconds
+
+        # Schema introspection cache
+        self._missing_document_columns_logged: set[str] = set()
 
         # Start background collection
         self._start_background_collection()
@@ -61,6 +66,7 @@ class EnhancedMetricsCollector:
 
     def _start_background_collection(self):
         """Start background threads for metrics collection."""
+
         # System metrics collection
         def collect_system_metrics():
             while True:
@@ -86,6 +92,7 @@ class EnhancedMetricsCollector:
 
         # Start background threads
         import threading
+
         threading.Thread(target=collect_system_metrics, daemon=True).start()
         threading.Thread(target=collect_business_metrics, daemon=True).start()
 
@@ -101,29 +108,41 @@ class EnhancedMetricsCollector:
 
             # Memory metrics
             memory_info = process.memory_info()
-            self.metrics.memory_usage_bytes.labels(type="process_rss").set(memory_info.rss)
-            self.metrics.memory_usage_bytes.labels(type="process_vms").set(memory_info.vms)
+            self.metrics.memory_usage_bytes.labels(type="process_rss").set(
+                memory_info.rss
+            )
+            self.metrics.memory_usage_bytes.labels(type="process_vms").set(
+                memory_info.vms
+            )
 
             # System memory
             sys_memory = psutil.virtual_memory()
-            self.metrics.memory_usage_bytes.labels(type="system_total").set(sys_memory.total)
-            self.metrics.memory_usage_bytes.labels(type="system_available").set(sys_memory.available)
-            self.metrics.memory_usage_bytes.labels(type="system_used").set(sys_memory.used)
+            self.metrics.memory_usage_bytes.labels(type="system_total").set(
+                sys_memory.total
+            )
+            self.metrics.memory_usage_bytes.labels(type="system_available").set(
+                sys_memory.available
+            )
+            self.metrics.memory_usage_bytes.labels(type="system_used").set(
+                sys_memory.used
+            )
 
             # CPU metrics
             cpu_percent = psutil.cpu_percent(interval=1)
             self.metrics.cpu_usage_percent.set(cpu_percent)
 
             # Disk metrics
-            if os.path.exists('/'):
-                disk_usage = psutil.disk_usage('/')
+            if os.path.exists("/"):
+                disk_usage = psutil.disk_usage("/")
                 self.metrics.disk_usage_bytes.labels(path="/").set(disk_usage.used)
                 self.metrics.disk_usage_bytes.labels(path="/").set(disk_usage.free)
 
             # File descriptors
             try:
                 fd_count = process.num_fds()
-                self.metrics.memory_usage_bytes.labels(type="file_descriptors").set(fd_count)
+                self.metrics.memory_usage_bytes.labels(type="file_descriptors").set(
+                    fd_count
+                )
             except (AttributeError, psutil.AccessDenied):
                 pass  # Not available on all systems
 
@@ -152,19 +171,22 @@ class EnhancedMetricsCollector:
             try:
                 cursor.execute("SELECT COUNT(*) FROM vector_embeddings")
                 vector_count = cursor.fetchone()[0]
-                self.metrics.vector_index_size.labels(index_type="main").set(vector_count)
+                self.metrics.vector_index_size.labels(index_type="main").set(
+                    vector_count
+                )
             except sqlite3.OperationalError:
                 pass  # Table might not exist
 
             # Recent activity metrics
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT COUNT(*) FROM documents
                 WHERE created_at > datetime('now', '-1 hour')
-            """)
+            """
+            )
             recent_uploads = cursor.fetchone()[0]
             self.metrics.user_activity.labels(
-                user_id="system",
-                activity_type="recent_uploads"
+                user_id="system", activity_type="recent_uploads"
             ).inc(recent_uploads)
 
             conn.close()
@@ -177,28 +199,33 @@ class EnhancedMetricsCollector:
         try:
             if self.redis_url:
                 import redis
+
                 r = redis.from_url(self.redis_url)
 
                 # Redis info
                 info = r.info()
-                self.metrics.memory_usage_bytes.labels(type="redis").set(info.get('used_memory', 0))
-                self.metrics.cache_size_bytes.labels(cache_type="redis").set(info.get('used_memory', 0))
+                self.metrics.memory_usage_bytes.labels(type="redis").set(
+                    info.get("used_memory", 0)
+                )
+                self.metrics.cache_size_bytes.labels(cache_type="redis").set(
+                    info.get("used_memory", 0)
+                )
 
                 # Connection count
-                connected_clients = info.get('connected_clients', 0)
-                self.metrics.db_connections_active.labels(db_type="redis").set(connected_clients)
+                connected_clients = info.get("connected_clients", 0)
+                self.metrics.db_connections_active.labels(db_type="redis").set(
+                    connected_clients
+                )
 
                 # Hit/miss ratio (if available)
-                keyspace_hits = info.get('keyspace_hits', 0)
-                keyspace_misses = info.get('keyspace_misses', 0)
+                keyspace_hits = info.get("keyspace_hits", 0)
+                keyspace_misses = info.get("keyspace_misses", 0)
                 if keyspace_hits + keyspace_misses > 0:
                     self.metrics.cache_hits_total.labels(
-                        cache_type="redis",
-                        key_pattern="global"
+                        cache_type="redis", key_pattern="global"
                     )._value._value = keyspace_hits
                     self.metrics.cache_misses_total.labels(
-                        cache_type="redis",
-                        key_pattern="global"
+                        cache_type="redis", key_pattern="global"
                     )._value._value = keyspace_misses
 
         except Exception as e:
@@ -218,7 +245,9 @@ class EnhancedMetricsCollector:
             cursor = conn.cursor()
 
             # Document size distribution
-            cursor.execute("SELECT file_size FROM documents WHERE file_size IS NOT NULL")
+            cursor.execute(
+                "SELECT file_size FROM documents WHERE file_size IS NOT NULL"
+            )
             file_sizes = cursor.fetchall()
 
             for size_row in file_sizes:
@@ -226,31 +255,38 @@ class EnhancedMetricsCollector:
                 if file_size:
                     self.metrics.document_size_bytes.observe(file_size)
 
-            # Document types distribution
-            cursor.execute("SELECT file_type, COUNT(*) FROM documents GROUP BY file_type")
-            type_counts = cursor.fetchall()
+            # Document types distribution (optional - column may not exist in older schemas)
+            if self._documents_table_has_column(cursor, "file_type"):
+                cursor.execute(
+                    "SELECT file_type, COUNT(*) FROM documents GROUP BY file_type"
+                )
+                type_counts = cursor.fetchall()
 
-            for file_type, count in type_counts:
-                if file_type:
-                    # Update gauge for current distribution
-                    pass  # Could add document type distribution metrics
+                for file_type, count in type_counts:
+                    if file_type:
+                        # Update gauge for current distribution (placeholder for future metrics)
+                        pass
 
             # Processing status
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     COUNT(*) as total,
                     SUM(CASE WHEN processing_status = 'completed' THEN 1 ELSE 0 END) as completed,
                     SUM(CASE WHEN processing_status = 'failed' THEN 1 ELSE 0 END) as failed
                 FROM documents
                 WHERE created_at > datetime('now', '-24 hours')
-            """)
+            """
+            )
 
             result = cursor.fetchone()
             if result:
                 total, completed, failed = result
                 if total > 0:
                     error_rate = failed / total if total > 0 else 0.0
-                    self.metrics.error_rate.labels(component="document_processing").set(error_rate * 100)
+                    self.metrics.error_rate.labels(component="document_processing").set(
+                        error_rate * 100
+                    )
 
             conn.close()
 
@@ -271,14 +307,15 @@ class EnhancedMetricsCollector:
 
             # Recent queries (if query log exists)
             try:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT COUNT(*) FROM rag_queries
                     WHERE created_at > datetime('now', '-1 hour')
-                """)
+                """
+                )
                 recent_queries = cursor.fetchone()[0]
                 self.metrics.user_activity.labels(
-                    user_id="system",
-                    activity_type="recent_queries"
+                    user_id="system", activity_type="recent_queries"
                 ).inc(recent_queries)
             except sqlite3.OperationalError:
                 pass  # Table might not exist
@@ -346,8 +383,7 @@ class EnhancedMetricsCollector:
         """Record start of document processing operation."""
         self.metrics.document_processing_duration.labels(operation=operation).observe(0)
         self.metrics.user_activity.labels(
-            user_id="system",
-            activity_type=f"processing_{operation}"
+            user_id="system", activity_type=f"processing_{operation}"
         ).inc()
 
     def record_document_processing_complete(
@@ -356,15 +392,16 @@ class EnhancedMetricsCollector:
         operation: str,
         duration: float,
         success: bool,
-        error_type: str = None
+        error_type: str = None,
     ):
         """Record completion of document processing operation."""
-        self.metrics.document_processing_duration.labels(operation=operation).observe(duration)
+        self.metrics.document_processing_duration.labels(operation=operation).observe(
+            duration
+        )
 
         if not success and error_type:
             self.metrics.document_processing_errors.labels(
-                operation=operation,
-                error_type=error_type
+                operation=operation, error_type=error_type
             ).inc()
 
     def record_rag_query_detailed(
@@ -376,11 +413,13 @@ class EnhancedMetricsCollector:
         duration: float,
         success: bool,
         relevance_score: float = None,
-        response_length: int = None
+        response_length: int = None,
     ):
         """Record detailed RAG query metrics."""
         # Use base service method
-        self.metrics_service.record_rag_query(query_type, duration, success, relevance_score)
+        self.metrics_service.record_rag_query(
+            query_type, duration, success, relevance_score
+        )
 
         # Add detailed metrics
         if response_length:
@@ -390,23 +429,26 @@ class EnhancedMetricsCollector:
         # Track query complexity
         self.metrics.user_activity.labels(
             user_id="system",
-            activity_type="rag_query_complex" if document_count > 1 else "rag_query_simple"
+            activity_type="rag_query_complex"
+            if document_count > 1
+            else "rag_query_simple",
         ).inc()
 
-    def record_security_incident(self, incident_type: str, severity: str, details: dict[str, Any]):
+    def record_security_incident(
+        self, incident_type: str, severity: str, details: dict[str, Any]
+    ):
         """Record security incident with detailed context."""
         self.metrics_service.record_security_event(incident_type, severity)
 
         # Add specific security metrics based on incident type
         if incident_type == "failed_login":
-            ip_address = details.get('ip_address', 'unknown')
+            ip_address = details.get("ip_address", "unknown")
             self.metrics.failed_login_attempts.labels(ip_address=ip_address).inc()
         elif incident_type == "rate_limit_exceeded":
-            endpoint = details.get('endpoint', 'unknown')
-            user_id = details.get('user_id', 'anonymous')
+            endpoint = details.get("endpoint", "unknown")
+            user_id = details.get("user_id", "anonymous")
             self.metrics.rate_limit_exceeded.labels(
-                endpoint=endpoint,
-                user_id=user_id
+                endpoint=endpoint, user_id=user_id
             ).inc()
 
     # ========================================================================
@@ -419,7 +461,7 @@ class EnhancedMetricsCollector:
             "healthy": True,
             "checks": {},
             "metrics_summary": {},
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         # System health
@@ -430,7 +472,9 @@ class EnhancedMetricsCollector:
             health_status["checks"]["system"] = {
                 "memory_percent": memory.percent,
                 "cpu_percent": cpu_percent,
-                "status": "healthy" if memory.percent < 85 and cpu_percent < 85 else "degraded"
+                "status": "healthy"
+                if memory.percent < 85 and cpu_percent < 85
+                else "degraded",
             }
 
             if memory.percent > 90 or cpu_percent > 90:
@@ -451,12 +495,18 @@ class EnhancedMetricsCollector:
                 health_status["checks"]["database"] = {"status": "healthy"}
                 self.metrics_service.update_dependency_health("database", True)
             else:
-                health_status["checks"]["database"] = {"status": "unhealthy", "error": "Database file not found"}
+                health_status["checks"]["database"] = {
+                    "status": "unhealthy",
+                    "error": "Database file not found",
+                }
                 health_status["healthy"] = False
                 self.metrics_service.update_dependency_health("database", False)
 
         except Exception as e:
-            health_status["checks"]["database"] = {"status": "unhealthy", "error": str(e)}
+            health_status["checks"]["database"] = {
+                "status": "unhealthy",
+                "error": str(e),
+            }
             health_status["healthy"] = False
             self.metrics_service.update_dependency_health("database", False)
 
@@ -464,6 +514,7 @@ class EnhancedMetricsCollector:
         if self.redis_url:
             try:
                 import redis
+
                 r = redis.from_url(self.redis_url, socket_timeout=5)
                 r.ping()
 
@@ -471,7 +522,10 @@ class EnhancedMetricsCollector:
                 self.metrics_service.update_dependency_health("redis", True)
 
             except Exception as e:
-                health_status["checks"]["redis"] = {"status": "unhealthy", "error": str(e)}
+                health_status["checks"]["redis"] = {
+                    "status": "unhealthy",
+                    "error": str(e),
+                }
                 health_status["healthy"] = False
                 self.metrics_service.update_dependency_health("redis", False)
 
@@ -484,8 +538,11 @@ class EnhancedMetricsCollector:
         # Add metrics summary
         health_status["metrics_summary"] = {
             "total_documents": self._get_metric_value("documents_total"),
-            "memory_usage_mb": self._get_metric_value("memory_usage_bytes", "process_rss") / (1024 * 1024),
-            "cpu_usage_percent": self._get_metric_value("cpu_usage_percent")
+            "memory_usage_mb": self._get_metric_value(
+                "memory_usage_bytes", "process_rss"
+            )
+            / (1024 * 1024),
+            "cpu_usage_percent": self._get_metric_value("cpu_usage_percent"),
         }
 
         return health_status
@@ -495,14 +552,42 @@ class EnhancedMetricsCollector:
         try:
             if hasattr(self.metrics, metric_name):
                 metric = getattr(self.metrics, metric_name)
-                if hasattr(metric, '_value'):
-                    if label_value and hasattr(metric, 'labels'):
+                if hasattr(metric, "_value"):
+                    if label_value and hasattr(metric, "labels"):
                         return metric.labels(type=label_value)._value._value
                     else:
                         return metric._value._value
             return 0.0
         except:
             return 0.0
+
+    def _documents_table_has_column(
+        self, cursor: sqlite3.Cursor, column_name: str
+    ) -> bool:
+        """Check if the documents table exposes a specific column."""
+        try:
+            cursor.execute("PRAGMA table_info(documents)")
+            columns = {row[1] for row in cursor.fetchall()}
+        except sqlite3.OperationalError as exc:
+            logger.error(f"Failed to inspect documents table schema: {exc}")
+            return False
+
+        has_column = column_name in columns
+        if not has_column and column_name not in self._missing_document_columns_logged:
+            logger.warning(
+                "Documents table missing '%s' column; skipping related metrics. "
+                "Run the latest database migrations if this column should exist.",
+                column_name,
+            )
+            self._missing_document_columns_logged.add(column_name)
+        elif has_column and column_name in self._missing_document_columns_logged:
+            logger.info(
+                "Detected '%s' column on documents table; enabling corresponding metrics.",
+                column_name,
+            )
+            self._missing_document_columns_logged.discard(column_name)
+
+        return has_column
 
     # ========================================================================
     # Metrics Export
@@ -524,6 +609,7 @@ class EnhancedMetricsCollector:
 # Global metrics collector instance
 _metrics_collector_instance: EnhancedMetricsCollector | None = None
 
+
 def get_metrics_collector() -> EnhancedMetricsCollector:
     """Get or create the global metrics collector instance."""
     global _metrics_collector_instance
@@ -538,8 +624,10 @@ def get_metrics_collector() -> EnhancedMetricsCollector:
 # Decorators for Automatic Metrics Collection
 # ============================================================================
 
+
 def track_operation_metrics(operation_name: str, operation_type: str = "general"):
     """Decorator to automatically track operation metrics."""
+
     def decorator(func):
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -550,17 +638,21 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
                 result = await func(*args, **kwargs)
 
                 # Record success
-                collector.metrics_service.record_user_activity("system", f"{operation_type}_success")
+                collector.metrics_service.record_user_activity(
+                    "system", f"{operation_type}_success"
+                )
 
                 return result
 
             except Exception as e:
                 # Record failure
-                collector.metrics_service.record_user_activity("system", f"{operation_type}_failure")
+                collector.metrics_service.record_user_activity(
+                    "system", f"{operation_type}_failure"
+                )
                 collector.record_security_incident(
                     "operation_failure",
                     "error",
-                    {"operation": operation_name, "error": str(e)}
+                    {"operation": operation_name, "error": str(e)},
                 )
 
                 raise
@@ -574,17 +666,21 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
                 result = func(*args, **kwargs)
 
                 # Record success
-                collector.metrics_service.record_user_activity("system", f"{operation_type}_success")
+                collector.metrics_service.record_user_activity(
+                    "system", f"{operation_type}_success"
+                )
 
                 return result
 
             except Exception as e:
                 # Record failure
-                collector.metrics_service.record_user_activity("system", f"{operation_type}_failure")
+                collector.metrics_service.record_user_activity(
+                    "system", f"{operation_type}_failure"
+                )
                 collector.record_security_incident(
                     "operation_failure",
                     "error",
-                    {"operation": operation_name, "error": str(e)}
+                    {"operation": operation_name, "error": str(e)},
                 )
 
                 raise
