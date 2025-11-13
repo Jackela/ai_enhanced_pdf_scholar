@@ -11,6 +11,8 @@ export interface Document {
   file_hash: string
   file_size: number | null
   page_count: number | null
+  preview_url?: string | null
+  thumbnail_url?: string | null
   created_at: string
   updated_at: string
   last_accessed: string | null

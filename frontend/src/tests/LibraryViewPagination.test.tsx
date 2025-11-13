@@ -26,6 +26,8 @@ const sampleResponse: DocumentListResponse = {
       file_hash: 'hash-1',
       file_size: 1048576,
       page_count: 12,
+      preview_url: '/api/documents/1/preview',
+      thumbnail_url: '/api/documents/1/thumbnail',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       last_accessed: null,

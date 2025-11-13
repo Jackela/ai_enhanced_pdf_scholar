@@ -148,4 +148,32 @@ export const api = {
       body: JSON.stringify(payload),
     })
   },
+
+  async fetchDocumentPreview(
+    documentId: number,
+    params?: { page?: number; width?: number }
+  ): Promise<Blob> {
+    const search = new URLSearchParams()
+    if (params?.page) search.set('page', params.page.toString())
+    if (params?.width) search.set('width', params.width.toString())
+    const queryString = search.toString()
+    const endpoint = queryString
+      ? `/documents/${documentId}/preview?${queryString}`
+      : `/documents/${documentId}/preview`
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        Accept: 'image/png',
+      },
+    })
+    if (!response.ok) {
+      throw new ApiError(
+        `Failed to load preview: ${response.statusText}`,
+        response.status,
+        response.statusText,
+        await response.text()
+      )
+    }
+    return response.blob()
+  },
 }

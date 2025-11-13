@@ -9,6 +9,7 @@ import {
   Download,
   Trash2,
 } from 'lucide-react'
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { formatFileSize, formatDate } from '../lib/utils.ts'
@@ -21,6 +22,7 @@ import {
 } from './ui/DropdownMenu'
 import { useToast } from '../hooks/useToast'
 import type { Document } from '../types'
+import { DocumentPreviewModal } from './DocumentPreviewModal'
 
 interface DocumentCardProps {
   document: Document
@@ -30,6 +32,8 @@ interface DocumentCardProps {
 export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) {
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [thumbnailHidden, setThumbnailHidden] = useState(false)
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.deleteDocument(id),
@@ -75,15 +79,32 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
     }
   }
 
+  const formattedFileSize =
+    typeof document.file_size === 'number'
+      ? formatFileSize(document.file_size)
+      : 'Unknown size'
+
+  const showPreviewButton = Boolean(document.preview_url)
+  const showThumbnail = Boolean(document.thumbnail_url) && !thumbnailHidden
+
   if (variant === 'list') {
     return (
       <div className='flex items-center p-4 border rounded-lg hover:bg-accent transition-colors'>
         <div className='flex items-center gap-3 flex-1 min-w-0'>
-          <div
-            className={`p-2 rounded-lg ${document.is_file_available ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-600'}`}
-          >
-            <FileText className='h-5 w-5' />
-          </div>
+          {showThumbnail ? (
+            <img
+              src={document.thumbnail_url ?? ''}
+              alt={`Thumbnail for ${document.title}`}
+              className='h-12 w-12 rounded object-cover shadow'
+              onError={() => setThumbnailHidden(true)}
+            />
+          ) : (
+            <div
+              className={`p-2 rounded-lg ${document.is_file_available ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-600'}`}
+            >
+              <FileText className='h-5 w-5' />
+            </div>
+          )}
 
           <div className='flex-1 min-w-0'>
             <Link
@@ -107,6 +128,11 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
         </div>
 
         <div className='flex items-center gap-2'>
+          {showPreviewButton && (
+            <Button variant='ghost' size='sm' onClick={() => setPreviewOpen(true)}>
+              Preview
+            </Button>
+          )}
           <Button variant='ghost' size='sm' asChild>
             <Link to={`/document/${document.id}`}>
               <Eye className='h-4 w-4' />
@@ -144,6 +170,21 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
   return (
     <div className='card hover:shadow-md transition-shadow'>
       <div className='card-content p-4'>
+        {showThumbnail && (
+          <button
+            type='button'
+            onClick={() => setPreviewOpen(true)}
+            className='mb-3 block w-full overflow-hidden rounded-lg bg-muted/40'
+            aria-label={`Open preview for ${document.title}`}
+          >
+            <img
+              src={document.thumbnail_url ?? ''}
+              alt={`Thumbnail for ${document.title}`}
+              className='h-48 w-full object-cover'
+              onError={() => setThumbnailHidden(true)}
+            />
+          </button>
+        )}
         <div className='flex items-start justify-between mb-3'>
           <div
             className={`p-2 rounded-lg ${document.is_file_available ? 'bg-primary/10 text-primary' : 'bg-red-100 text-red-600'}`}
@@ -198,6 +239,12 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
         </div>
 
         <div className='flex gap-2'>
+          {showPreviewButton && (
+            <Button variant='secondary' size='sm' className='flex-1' onClick={() => setPreviewOpen(true)}>
+              <Eye className='h-4 w-4 mr-2' />
+              Preview
+            </Button>
+          )}
           <Button variant='outline' size='sm' className='flex-1' asChild>
             <Link to={`/document/${document.id}`}>
               <Eye className='h-4 w-4 mr-2' />
@@ -219,10 +266,14 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
           </div>
         )}
       </div>
+
+      {showPreviewButton && (
+        <DocumentPreviewModal
+          document={document}
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+        />
+      )}
     </div>
   )
 }
-  const formattedFileSize =
-    typeof document.file_size === 'number'
-      ? formatFileSize(document.file_size)
-      : 'Unknown size'

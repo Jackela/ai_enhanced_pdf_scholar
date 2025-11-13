@@ -135,6 +135,8 @@ export PREVIEW_CACHE_TTL_SECONDS=3600
 
 Set `PREVIEWS_ENABLED=false` if you want to disable the preview endpoints entirely.
 
+Need to validate a deployment? Follow the [Document Preview Validation Playbook](docs/operations/preview_validation_playbook.md) for a step-by-step smoke test covering curl commands, metrics, and troubleshooting tips.
+
 ### 2. Launch The App
 ```bash
 # Run backend (Terminal 1)
