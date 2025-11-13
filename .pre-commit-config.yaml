@@ -33,7 +33,7 @@ repos:
             \.github/workflows/disabled/.*\.yml|
             frontend/\.github/workflows/.*\.yml
           )$
-      
+
       - id: check-json
         exclude: |
           (?x)^(
@@ -44,7 +44,7 @@ repos:
           )$
 
   # ============================================================================
-  # Python Code Quality (Essential Only)  
+  # Python Code Quality (Essential Only)
   # ============================================================================
   - repo: https://github.com/psf/black
     rev: 23.12.1
@@ -53,7 +53,7 @@ repos:
         args: [--line-length=88]
         files: ^(src/|backend/|tests/|scripts/).*\.py$
 
-  - repo: https://github.com/pycqa/isort  
+  - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
@@ -85,7 +85,7 @@ default_stages: [pre-commit, pre-push]
 
 # Language versions
 default_language_version:
-  python: python3.11
+  python: python3
 
 # Minimum version
 minimum_pre_commit_version: 3.6.0
@@ -101,7 +101,7 @@ ci:
 # ============================================================================
 # This simplified configuration focuses on:
 # 1. Essential file format issues
-# 2. Python syntax and basic formatting  
+# 2. Python syntax and basic formatting
 # 3. Basic security (real private keys only)
 # 4. Large file prevention
 #

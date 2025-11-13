@@ -387,3 +387,11 @@ class Config:
         @returns {boolean} True if API key is available
         """
         return Config.get_gemini_api_key() is not None
+
+    @staticmethod
+    def is_rag_services_enabled() -> bool:
+        """
+        Feature flag used by the API routes to gate unfinished RAG endpoints.
+        """
+        value = os.getenv("ENABLE_RAG_SERVICES", "").strip().lower()
+        return value in {"1", "true", "yes", "on"}

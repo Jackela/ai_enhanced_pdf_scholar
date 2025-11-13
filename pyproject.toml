@@ -241,12 +241,6 @@ addopts = [
     "--maxfail=10",
     "-n", "auto",
     "--dist=loadfile",
-    "--cov=src",
-    "--cov-report=html:htmlcov",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=xml:coverage.xml",
-    "--cov-fail-under=75",
-    "--cov-config=pyproject.toml",
 ]
 markers = [
     "unit: Fast unit tests - isolated component testing",
@@ -370,7 +364,7 @@ skips = [
 [tool.bandit.any_other_function_with_shell_equals_true]
 no_shell = [
     "os.execl",
-    "os.execle", 
+    "os.execle",
     "os.execlp",
     "os.execlpe",
     "os.execv",

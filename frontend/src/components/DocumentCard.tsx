@@ -10,7 +10,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../lib/api.ts'
+import { api } from '../lib/api'
 import { formatFileSize, formatDate } from '../lib/utils.ts'
 import { Button } from './ui/Button'
 import {
@@ -95,7 +95,7 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
             <div className='flex items-center gap-4 text-sm text-muted-foreground mt-1'>
               <span className='flex items-center gap-1'>
                 <HardDrive className='h-3 w-3' />
-                {formatFileSize(document.file_size)}
+                {formattedFileSize}
               </span>
               <span className='flex items-center gap-1'>
                 <Calendar className='h-3 w-3' />
@@ -181,7 +181,7 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
           <div className='space-y-1 text-sm text-muted-foreground'>
             <div className='flex items-center gap-1'>
               <HardDrive className='h-3 w-3' />
-              <span>{formatFileSize(document.file_size)}</span>
+              <span>{formattedFileSize}</span>
               {document.page_count && (
                 <>
                   <span className='mx-1'>•</span>
@@ -222,3 +222,7 @@ export function DocumentCard({ document, variant = 'grid' }: DocumentCardProps) 
     </div>
   )
 }
+  const formattedFileSize =
+    typeof document.file_size === 'number'
+      ? formatFileSize(document.file_size)
+      : 'Unknown size'

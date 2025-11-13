@@ -130,8 +130,35 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             logger.error(f"Failed to find document by content hash {content_hash}: {e}")
             raise
 
+    def _search_documents_with_total(
+        self, search_query: str, limit: int, offset: int
+    ) -> tuple[list[DocumentModel], int]:
+        """
+        Internal helper to execute the paginated LIKE query alongside the total count.
+        """
+        try:
+            search_pattern = f"%{search_query}%"
+            rows_query = """
+            SELECT * FROM documents
+            WHERE title LIKE ?
+            ORDER BY title
+            LIMIT ? OFFSET ?
+            """
+            count_query = """
+            SELECT COUNT(*) as total
+            FROM documents
+            WHERE title LIKE ?
+            """
+            rows = self.db.fetch_all(rows_query, (search_pattern, limit, offset))
+            total_row = self.db.fetch_one(count_query, (search_pattern,))
+            total = int(total_row["total"]) if total_row and total_row["total"] else 0
+            return [self.to_model(dict(row)) for row in rows], total
+        except Exception as e:
+            logger.error(f"Failed to search documents for query '{search_query}': {e}")
+            raise
+
     def search_by_title(
-        self, search_query: str, limit: int = 50
+        self, search_query: str, limit: int = 50, offset: int = 0
     ) -> list[DocumentModel]:
         """
         Search documents by title.
@@ -141,25 +168,14 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         Returns:
             List of matching documents
         """
-        try:
-            query = """
-            SELECT * FROM documents
-            WHERE title LIKE ?
-            ORDER BY title
-            LIMIT ?
-            """
-            search_pattern = f"%{search_query}%"
-            rows = self.db.fetch_all(query, (search_pattern, limit))
-            return [self.to_model(dict(row)) for row in rows]
-        except Exception as e:
-            logger.error(f"Failed to search documents by title '{search_query}': {e}")
-            raise
+        documents, _ = self._search_documents_with_total(search_query, limit, offset)
+        return documents
 
     def search(
         self, query: str, limit: int = 50, offset: int = 0
-    ) -> list[DocumentModel]:
-        """Interface method - search documents by query."""
-        return self.search_by_title(query, limit)
+    ) -> tuple[list[DocumentModel], int]:
+        """Interface method - search documents by query with pagination metadata."""
+        return self._search_documents_with_total(query, limit, offset)
 
     def get_all(
         self,

@@ -1,12 +1,12 @@
 import { useState, Suspense, lazy } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Filter, Grid, List, Upload } from 'lucide-react'
-import { api } from '../../lib/api.ts'
+import { api } from '../../lib/api'
 import { DocumentCard } from '../DocumentCard'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { LoadingFallback } from '../ui/LoadingFallback'
-import type { SearchFilters, Document } from '../../types'
+import type { SearchFilters, Document, DocumentListResponse } from '../../types'
 
 // Lazy load heavy DocumentUpload component
 const DocumentUpload = lazy(() => import('../DocumentUpload'))
@@ -22,14 +22,17 @@ function LibraryView() {
   const [showUpload, setShowUpload] = useState(false)
 
   const {
-    data: documents,
+    data: documentResponse,
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<DocumentListResponse>({
     queryKey: ['documents', searchFilters],
     queryFn: () => api.getDocuments(searchFilters),
   })
+
+  const documents = documentResponse?.data ?? []
+  const pagination = documentResponse?.meta
 
   const handleSearch = (query: string) => {
     setSearchFilters(prev => ({
@@ -71,7 +74,7 @@ function LibraryView() {
           <div>
             <h1 className='text-2xl font-semibold'>Document Library</h1>
             <p className='text-muted-foreground'>
-              {documents ? `${documents.total} documents` : 'Loading...'}
+              {pagination ? `${pagination.total} documents` : 'Loading...'}
             </p>
           </div>
 
@@ -140,7 +143,7 @@ function LibraryView() {
           <div className='flex items-center justify-center h-full'>
             <div className='animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full' />
           </div>
-        ) : documents?.documents.length === 0 ? (
+        ) : documents.length === 0 ? (
           <div className='flex flex-col items-center justify-center h-full text-center'>
             <Upload className='h-12 w-12 text-muted-foreground mb-4' />
             <h3 className='text-lg font-semibold mb-2'>No documents found</h3>
@@ -158,39 +161,39 @@ function LibraryView() {
           <div className='p-6'>
             {viewMode === 'grid' ? (
               <div className='document-grid'>
-                {documents?.documents.map((document: Document) => (
+                {documents.map((document: Document) => (
                   <DocumentCard key={document.id} document={document} />
                 ))}
               </div>
             ) : (
               <div className='space-y-2'>
-                {documents?.documents.map((document: Document) => (
+                {documents.map((document: Document) => (
                   <DocumentCard key={document.id} document={document} variant='list' />
                 ))}
               </div>
             )}
 
             {/* Pagination */}
-            {documents && documents.total > documents.per_page && (
+            {pagination && pagination.total > pagination.per_page && (
               <div className='flex items-center justify-center mt-8 gap-2'>
                 <Button
                   variant='outline'
                   size='sm'
-                  disabled={documents.page <= 1}
-                  onClick={() => handlePageChange(documents.page - 1)}
+                  disabled={!pagination.has_prev}
+                  onClick={() => pagination.has_prev && handlePageChange(pagination.page - 1)}
                 >
                   Previous
                 </Button>
 
                 <span className='text-sm text-muted-foreground'>
-                  Page {documents.page} of {Math.ceil(documents.total / documents.per_page)}
+                  Page {pagination.page} of {pagination.total_pages}
                 </span>
 
                 <Button
                   variant='outline'
                   size='sm'
-                  disabled={documents.page >= Math.ceil(documents.total / documents.per_page)}
-                  onClick={() => handlePageChange(documents.page + 1)}
+                  disabled={!pagination.has_next}
+                  onClick={() => pagination.has_next && handlePageChange(pagination.page + 1)}
                 >
                   Next
                 </Button>
@@ -219,5 +222,5 @@ function LibraryView() {
 // Default export for lazy loading
 export default LibraryView
 
-// Named export for backward compatibility  
+// Named export for backward compatibility
 export { LibraryView }

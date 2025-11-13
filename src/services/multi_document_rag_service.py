@@ -3,6 +3,8 @@ Multi-Document RAG Service
 Service for managing document collections and performing cross-document queries.
 """
 
+from __future__ import annotations
+
 import hashlib
 import logging
 import shutil
@@ -11,8 +13,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from llama_index.core import StorageContext, VectorStoreIndex, load_index_from_storage
-from llama_index.core.schema import Document as LlamaDocument
+try:
+    from llama_index.core import (
+        StorageContext,
+        VectorStoreIndex,
+        load_index_from_storage,
+    )
+    from llama_index.core.schema import Document as LlamaDocument
+except ImportError:  # pragma: no cover - optional dependency
+    StorageContext = None  # type: ignore
+    VectorStoreIndex = None  # type: ignore
+    load_index_from_storage = None  # type: ignore
+    LlamaDocument = None  # type: ignore
 
 from src.database.models import DocumentModel
 from src.database.multi_document_models import (
@@ -32,10 +44,16 @@ from src.services.enhanced_rag_service import EnhancedRAGService
 
 logger = logging.getLogger(__name__)
 
+if StorageContext is None or VectorStoreIndex is None:  # pragma: no cover
+    logger.warning(
+        "llama_index is not installed - multi-document RAG features are disabled."
+    )
+
 
 @dataclass
 class MultiDocumentQueryResponse:
     """Response object for multi-document queries."""
+
     answer: str
     confidence: float
     sources: list[DocumentSource]
@@ -54,15 +72,17 @@ class CollectionIndexManager:
     def create_index(self, documents: list[DocumentModel], collection_id: int) -> str:
         """
         Create a vector index for a collection of documents.
-        
+
         Args:
             documents: List of documents to index
             collection_id: ID of the collection
-            
+
         Returns:
             Path to the created index
         """
-        logger.info(f"Creating index for collection {collection_id} with {len(documents)} documents")
+        logger.info(
+            f"Creating index for collection {collection_id} with {len(documents)} documents"
+        )
 
         # Convert documents to LlamaIndex documents
         llama_docs = []
@@ -75,8 +95,8 @@ class CollectionIndexManager:
                     "document_id": doc.id,
                     "title": doc.title,
                     "file_path": doc.file_path,
-                    "file_size": doc.file_size
-                }
+                    "file_size": doc.file_size,
+                },
             )
             llama_docs.append(llama_doc)
 
@@ -105,7 +125,7 @@ class CollectionIndexManager:
         required_files = [
             "default__vector_store.json",
             "graph_store.json",
-            "index_store.json"
+            "index_store.json",
         ]
         return all((index_path / file_name).exists() for file_name in required_files)
 
@@ -139,17 +159,17 @@ class CrossDocumentAnalyzer:
         query: str,
         documents: list[DocumentModel],
         index_path: str,
-        max_results: int = 10
+        max_results: int = 10,
     ) -> MultiDocumentQueryResponse:
         """
         Analyze a query across multiple documents.
-        
+
         Args:
             query: The user's query
             documents: List of documents in the collection
             index_path: Path to the collection's vector index
             max_results: Maximum number of results to return
-            
+
         Returns:
             MultiDocumentQueryResponse with analysis results
         """
@@ -162,8 +182,7 @@ class CrossDocumentAnalyzer:
 
             # Create query engine
             query_engine = index.as_query_engine(
-                similarity_top_k=max_results,
-                response_mode="tree_summarize"
+                similarity_top_k=max_results, response_mode="tree_summarize"
             )
 
             # Perform query
@@ -185,29 +204,33 @@ class CrossDocumentAnalyzer:
                 confidence=confidence,
                 sources=sources,
                 cross_references=cross_references,
-                processing_time_ms=processing_time
+                processing_time_ms=processing_time,
             )
 
         except Exception as e:
             logger.error(f"Error in cross-document analysis: {e}")
             raise
 
-    def _extract_sources(self, response, documents: list[DocumentModel]) -> list[DocumentSource]:
+    def _extract_sources(
+        self, response, documents: list[DocumentModel]
+    ) -> list[DocumentSource]:
         """Extract document sources from query response."""
         sources = []
         doc_lookup = {doc.id: doc for doc in documents}
 
-        if hasattr(response, 'source_nodes') and response.source_nodes:
+        if hasattr(response, "source_nodes") and response.source_nodes:
             for node in response.source_nodes:
                 metadata = node.node.metadata
-                doc_id = metadata.get('document_id')
+                doc_id = metadata.get("document_id")
                 if doc_id and doc_id in doc_lookup:
                     source = DocumentSource(
                         document_id=doc_id,
-                        relevance_score=getattr(node, 'score', 0.5),
-                        excerpt=node.node.text[:200] + "..." if len(node.node.text) > 200 else node.node.text,
-                        page_number=metadata.get('page_number'),
-                        chunk_id=metadata.get('chunk_id')
+                        relevance_score=getattr(node, "score", 0.5),
+                        excerpt=node.node.text[:200] + "..."
+                        if len(node.node.text) > 200
+                        else node.node.text,
+                        page_number=metadata.get("page_number"),
+                        chunk_id=metadata.get("chunk_id"),
                     )
                     sources.append(source)
 
@@ -230,16 +253,14 @@ class CrossDocumentAnalyzer:
         return round(confidence, 3)
 
     def _extract_cross_references(
-        self,
-        sources: list[DocumentSource],
-        query: str
+        self, sources: list[DocumentSource], query: str
     ) -> list[CrossReference]:
         """Extract cross-references between documents based on content similarity."""
         cross_refs = []
 
         # Simple cross-reference detection based on keyword overlap
         for i, source1 in enumerate(sources):
-            for j, source2 in enumerate(sources[i+1:], i+1):
+            for j, source2 in enumerate(sources[i + 1 :], i + 1):
                 if source1.document_id != source2.document_id:
                     # Calculate content similarity (simplified)
                     similarity = self._calculate_content_similarity(
@@ -256,7 +277,7 @@ class CrossDocumentAnalyzer:
                             target_doc_id=source2.document_id,
                             relation_type=relation_type,
                             confidence=similarity,
-                            description=f"Related content about: {query[:50]}..."
+                            description=f"Related content about: {query[:50]}...",
                         )
                         cross_refs.append(cross_ref)
 
@@ -279,14 +300,20 @@ class CrossDocumentAnalyzer:
     def _determine_relation_type(self, text1: str, text2: str, query: str) -> str:
         """Determine the type of relationship between two text excerpts."""
         # Simple heuristic-based relation detection
-        if any(word in text1.lower() and word in text2.lower()
-               for word in ["support", "agree", "confirm"]):
+        if any(
+            word in text1.lower() and word in text2.lower()
+            for word in ["support", "agree", "confirm"]
+        ):
             return "supports"
-        elif any(word in text1.lower() or word in text2.lower()
-                 for word in ["however", "but", "contrast", "differ"]):
+        elif any(
+            word in text1.lower() or word in text2.lower()
+            for word in ["however", "but", "contrast", "differ"]
+        ):
             return "contradicts"
-        elif any(word in text1.lower() or word in text2.lower()
-                 for word in ["extend", "build", "further", "additional"]):
+        elif any(
+            word in text1.lower() or word in text2.lower()
+            for word in ["extend", "build", "further", "additional"]
+        ):
             return "extends"
         else:
             return "relates_to"
@@ -302,7 +329,7 @@ class MultiDocumentRAGService:
         query_repository: ICrossDocumentQueryRepository,
         document_repository: IDocumentRepository,
         enhanced_rag_service: EnhancedRAGService,
-        index_storage_path: str = "./data/multi_doc_indexes"
+        index_storage_path: str = "./data/multi_doc_indexes",
     ):
         self.collection_repo = collection_repository
         self.index_repo = index_repository
@@ -314,22 +341,19 @@ class MultiDocumentRAGService:
         self.analyzer = CrossDocumentAnalyzer(enhanced_rag_service)
 
     def create_collection(
-        self,
-        name: str,
-        document_ids: list[int],
-        description: str | None = None
+        self, name: str, document_ids: list[int], description: str | None = None
     ) -> MultiDocumentCollectionModel:
         """
         Create a new document collection.
-        
+
         Args:
             name: Name of the collection
             document_ids: List of document IDs to include
             description: Optional description
-            
+
         Returns:
             Created collection model
-            
+
         Raises:
             ValueError: If documents don't exist
         """
@@ -343,9 +367,7 @@ class MultiDocumentRAGService:
 
         # Create collection
         collection = MultiDocumentCollectionModel(
-            name=name,
-            description=description,
-            document_ids=document_ids
+            name=name, description=description, document_ids=document_ids
         )
 
         return self.collection_repo.create(collection)
@@ -362,9 +384,7 @@ class MultiDocumentRAGService:
         return self.collection_repo.get_all()
 
     def add_document_to_collection(
-        self,
-        collection_id: int,
-        document_id: int
+        self, collection_id: int, document_id: int
     ) -> MultiDocumentCollectionModel:
         """Add a document to an existing collection."""
         collection = self.get_collection(collection_id)
@@ -382,9 +402,7 @@ class MultiDocumentRAGService:
         return collection
 
     def remove_document_from_collection(
-        self,
-        collection_id: int,
-        document_id: int
+        self, collection_id: int, document_id: int
     ) -> MultiDocumentCollectionModel:
         """Remove a document from a collection."""
         collection = self.get_collection(collection_id)
@@ -412,7 +430,7 @@ class MultiDocumentRAGService:
             collection_id=collection_id,
             index_path=index_path,
             index_hash=index_hash,
-            chunk_count=len(documents)  # Simplified
+            chunk_count=len(documents),  # Simplified
         )
 
         return self.index_repo.create(index_model)
@@ -422,17 +440,17 @@ class MultiDocumentRAGService:
         collection_id: int,
         query: str,
         user_id: str | None = None,
-        max_results: int = 10
+        max_results: int = 10,
     ) -> MultiDocumentQueryResponse:
         """
         Perform a cross-document query on a collection.
-        
+
         Args:
             collection_id: ID of the collection to query
             query: The user's query
             user_id: Optional user ID for tracking
             max_results: Maximum number of results
-            
+
         Returns:
             Query response with cross-document analysis
         """
@@ -441,9 +459,7 @@ class MultiDocumentRAGService:
 
         # Create query record
         query_model = CrossDocumentQueryModel(
-            collection_id=collection_id,
-            query_text=query,
-            user_id=user_id
+            collection_id=collection_id, query_text=query, user_id=user_id
         )
         query_model = self.query_repo.create(query_model)
 
@@ -464,7 +480,7 @@ class MultiDocumentRAGService:
                 query=query,
                 documents=documents,
                 index_path=index_model.index_path,
-                max_results=max_results
+                max_results=max_results,
             )
 
             # Update query record with results
@@ -474,7 +490,7 @@ class MultiDocumentRAGService:
                 sources=response.sources,
                 cross_references=response.cross_references,
                 processing_time_ms=response.processing_time_ms,
-                tokens_used=response.tokens_used
+                tokens_used=response.tokens_used,
             )
             self.query_repo.update(query_model)
 
@@ -511,7 +527,9 @@ class MultiDocumentRAGService:
             "document_count": len(documents),
             "total_file_size": total_size,
             "avg_file_size": avg_size,
-            "created_at": collection.created_at.isoformat() if collection.created_at else None
+            "created_at": collection.created_at.isoformat()
+            if collection.created_at
+            else None,
         }
 
     async def _ensure_collection_index(self, collection_id: int) -> None:

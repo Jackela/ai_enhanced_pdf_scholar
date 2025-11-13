@@ -83,7 +83,7 @@ For those interested, AI Enhanced PDF Scholar is built with a modern, robust tec
 
 ## 🛠️ Developer Quick Start
 
-While this platform is designed for end-users, it's also a full-featured open-source project. Developers can get started by following these steps.
+The codebase now ships with a single `/api` surface (no legacy `/api/v1` vs `/api/v2` split) and a slimmed-down test harness focused on those endpoints. Developers can get started with the minimal workflow below.
 
 ### Prerequisites
 - Python 3.11+, Node.js 18+, Git
@@ -91,9 +91,11 @@ While this platform is designed for end-users, it's also a full-featured open-so
 
 ### 1. Installation & Setup
 ```bash
-# Clone, install dependencies
+# Clone, install deps
 git clone https://github.com/Jackela/ai_enhanced_pdf_scholar.git
 cd ai_enhanced_pdf_scholar
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 cd frontend && npm install && cd ..
 
@@ -104,12 +106,27 @@ export GOOGLE_API_KEY="your_gemini_api_key_here"
 ### 2. Launch The App
 ```bash
 # Run backend (Terminal 1)
+source .venv/bin/activate
 uvicorn web_main:app --reload --port 8000
 
 # Run frontend (Terminal 2)
-cd frontend && npm run dev
+cd frontend
+npm run dev
 ```
 > Access the app at `http://localhost:5173` and the API docs at `http://localhost:8000/docs`.
+
+### 3. Test Harness
+Only the current `/api` contract suites remain:
+```bash
+# Backend contract tests
+source .venv/bin/activate
+PYTEST_ADDOPTS="--no-cov" pytest
+
+# Frontend unit tests
+cd frontend
+npm run test -- src/tests/LibraryViewPagination.test.tsx
+```
+Legacy security/e2e suites were removed along with the v1 routes; GitHub Actions runs the commands above.
 
 ---
 
