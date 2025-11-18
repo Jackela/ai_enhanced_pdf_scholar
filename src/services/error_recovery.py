@@ -19,9 +19,11 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pathlib import Path
+from random import SystemRandom
 from typing import Any, Union
 
 logger = logging.getLogger(__name__)
+_JITTER_RNG = SystemRandom()
 
 
 class RecoveryError(Exception):
@@ -156,9 +158,7 @@ class RetryMechanism:
                 # Apply jitter if enabled
                 actual_delay = delay
                 if self.config.jitter:
-                    import random
-
-                    actual_delay = delay * (0.5 + random.random() * 0.5)
+                    actual_delay = delay * (0.5 + _JITTER_RNG.random() * 0.5)
 
                 time.sleep(actual_delay)
 

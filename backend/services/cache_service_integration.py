@@ -407,11 +407,14 @@ def cache_response(
     def decorator(func):
         async def wrapper(*args, **kwargs):
             # Extract cache service from kwargs
-            cache_service = None
-            for key, value in kwargs.items():
-                if isinstance(value, CacheServiceIntegration):
-                    cache_service = value
-                    break
+            cache_service = next(
+                (
+                    value
+                    for value in kwargs.values()
+                    if isinstance(value, CacheServiceIntegration)
+                ),
+                None,
+            )
 
             if not cache_service:
                 # No cache service available, execute function normally
@@ -519,7 +522,9 @@ async def get_application_cache_status() -> dict[str, Any]:
         "cache_system_available": True,
         "health": health_status,
         "statistics": statistics,
-        "configuration": cache_service.app_config.caching.to_dict()
-        if cache_service.app_config.caching
-        else {},
+        "configuration": (
+            cache_service.app_config.caching.to_dict()
+            if cache_service.app_config.caching
+            else {}
+        ),
     }

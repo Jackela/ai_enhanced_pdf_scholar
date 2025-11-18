@@ -17,7 +17,6 @@ References:
 import logging
 import time
 from pathlib import Path
-from typing import Optional
 
 from fastapi import (
     APIRouter,
@@ -48,6 +47,11 @@ from backend.api.utils.path_safety import build_safe_temp_path, is_within_allowe
 from backend.config.application_config import get_application_config
 from backend.services.metrics_collector import get_metrics_collector
 from src.database.models import DocumentModel
+from src.exceptions import (
+    DocumentImportError,
+    DocumentValidationError,
+    DuplicateDocumentError,
+)
 from src.interfaces.repository_interfaces import IDocumentRepository
 from src.interfaces.service_interfaces import IDocumentLibraryService
 from src.services.document_preview_service import (
@@ -209,8 +213,7 @@ def model_to_response_data(
 )
 async def list_documents(
     # Query parameters
-    query: str
-    | None = Query(
+    query: str | None = Query(
         None,
         min_length=1,
         max_length=500,
@@ -285,13 +288,13 @@ async def list_documents(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to list documents: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve documents",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -353,7 +356,7 @@ async def get_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve document",
-        )
+        ) from e
 
 
 @router.get(
@@ -372,8 +375,7 @@ async def get_document(
 async def get_document_preview(
     document_id: int,
     page: int = Query(1, ge=1, le=1000, description="One-based page number"),
-    width: int
-    | None = Query(
+    width: int | None = Query(
         None,
         ge=64,
         le=2000,
@@ -453,8 +455,9 @@ async def upload_document(
     # File upload (multipart/form-data)
     file: UploadFile = File(..., description="PDF file to upload"),
     # Optional metadata
-    title: str
-    | None = Query(None, description="Document title (defaults to filename)"),
+    title: str | None = Query(
+        None, description="Document title (defaults to filename)"
+    ),
     check_duplicates: bool = Query(True, description="Check for duplicates"),
     overwrite_duplicates: bool = Query(
         False, description="Overwrite if duplicate found"
@@ -487,6 +490,11 @@ async def upload_document(
         HTTPException: Various status codes for different errors
     """
     try:
+        if file is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file is required",
+            )
         # Validate file type
         if not file.content_type == "application/pdf":
             raise HTTPException(
@@ -535,24 +543,36 @@ async def upload_document(
 
     except HTTPException:
         raise
+    except DuplicateDocumentError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=e.user_message
+        ) from e
+    except DocumentValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=e.user_message
+        ) from e
+    except DocumentImportError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=e.user_message
+        ) from e
     except ValueError as e:
         # Duplicate document or validation error
         if "duplicate" in str(e).lower():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=str(e),
-            )
+            ) from e
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(e),
-            )
+            ) from e
     except Exception as e:
         logger.error(f"Failed to upload document: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload document",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -650,7 +670,7 @@ async def download_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to download document",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -707,4 +727,4 @@ async def delete_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete document",
-        )
+        ) from e

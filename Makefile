@@ -9,6 +9,7 @@ PIP := $(PYTHON) -m pip
 PYTEST := $(PYTHON) -m pytest
 RUFF := $(PYTHON) -m ruff
 MYPY := $(PYTHON) -m mypy
+CI_LINT_BASE ?= origin/main
 
 # Directories
 SRC_DIR := src
@@ -85,6 +86,30 @@ lint-staged: ## Run Ruff only on files changed vs. origin/main
 	@echo "$(BLUE)Running lint on changed files...$(NC)"
 	$(PYTHON) scripts/lint_staged.py
 	@echo "$(GREEN)✓ Staged linting completed$(NC)"
+
+lint-ci: ## Match the CI workflow (Black + Ruff + MyPy on changed files)
+	@echo "$(BLUE)CI lint: resolving changed Python files vs. $(CI_LINT_BASE)...$(NC)"
+	@CHANGED_FILES="$$( $(PYTHON) scripts/lint_staged.py --base $(CI_LINT_BASE) --list-files )"; \
+	if [ -z "$$CHANGED_FILES" ]; then \
+		echo "No Python files changed. Formatting and lint skipped."; \
+	else \
+		echo "Checking formatting with Black..."; \
+		$(PYTHON) -m black --check --diff $$CHANGED_FILES || exit 1; \
+		echo "Running Ruff on changed files..."; \
+		$(PYTHON) scripts/lint_staged.py --base $(CI_LINT_BASE) -- --output-format=full || exit 1; \
+	fi
+	@echo "Running targeted MyPy..."
+	@COUNT_FILE=$$(mktemp); \
+	if $(PYTHON) scripts/mypy_changed.py --base $(CI_LINT_BASE) --count-file $$COUNT_FILE \
+		--allow-prefix backend/api/main.py \
+		--allow-prefix backend/api/middleware/error_handling.py \
+		--allow-prefix backend/api/dependencies.py; then \
+		echo "MyPy completed cleanly."; \
+	else \
+		ERRS=$$(cat $$COUNT_FILE 2>/dev/null || echo "unknown"); \
+		echo "MyPy reported $$ERRS issues."; \
+		exit 1; \
+	fi
 
 # ============================================================================
 # Testing Targets
@@ -191,7 +216,7 @@ pre-commit-install: ## Install git hooks defined in .pre-commit-config.yaml
 
 ci-local: ## Run the full CI gate locally (lint + backend + frontend tests)
 	@echo "$(BLUE)Running full CI parity suite...$(NC)"
-	$(MAKE) lint-full
+	$(MAKE) lint-ci
 	$(PYTEST) -q
 	cd frontend && npm run test -- --run
 	@echo "$(GREEN)✓ CI parity suite completed$(NC)"

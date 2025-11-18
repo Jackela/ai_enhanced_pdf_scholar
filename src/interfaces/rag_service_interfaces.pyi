@@ -1,0 +1,23 @@
+from typing import Any, Protocol
+
+
+class IRAGCacheManager(Protocol):
+    def get_cached_query(self, *, query: str, document_id: int) -> str | None: ...
+
+    def cache_query_result(
+        self, query: str, document_id: int, result: str, ttl_seconds: int
+    ) -> None: ...
+
+    def invalidate_document_cache(self, document_id: int) -> int: ...
+
+    def get_cache_stats(self) -> dict[str, Any]: ...
+
+
+class IRAGHealthChecker(Protocol):
+    def perform_health_check(self) -> dict[str, Any]: ...
+
+
+class IRAGResourceManager(Protocol):
+    def cleanup_orphaned_indexes(self) -> int: ...
+
+    def get_storage_stats(self) -> dict[str, Any]: ...

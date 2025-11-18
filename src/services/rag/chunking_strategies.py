@@ -6,14 +6,16 @@ This module provides various chunking strategies for document processing
 in the RAG pipeline.
 """
 
+import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
 class ChunkConfig:
     """Configuration for chunking strategies"""
+
     chunk_size: int = 1000
     chunk_overlap: int = 200
     separator: str = "\n\n"
@@ -24,7 +26,7 @@ class ChunkConfig:
 class ChunkingStrategy:
     """Base class for document chunking strategies"""
 
-    def __init__(self, config: Optional[ChunkConfig] = None):
+    def __init__(self, config: ChunkConfig | None = None):
         self.config = config or ChunkConfig()
 
     def chunk(self, text: str) -> list[dict[str, Any]]:
@@ -37,7 +39,7 @@ class SentenceChunker(ChunkingStrategy):
 
     def chunk(self, text: str) -> list[dict[str, Any]]:
         """Split text into sentence-based chunks"""
-        sentences = re.split(r'(?<=[.!?])\s+', text)
+        sentences = re.split(r"(?<=[.!?])\s+", text)
         chunks = []
         current_chunk = ""
 
@@ -46,17 +48,24 @@ class SentenceChunker(ChunkingStrategy):
                 current_chunk += sentence + " "
             else:
                 if current_chunk:
-                    chunks.append({
-                        "text": current_chunk.strip(),
-                        "metadata": {"type": "sentence", "size": len(current_chunk)}
-                    })
+                    chunks.append(
+                        {
+                            "text": current_chunk.strip(),
+                            "metadata": {
+                                "type": "sentence",
+                                "size": len(current_chunk),
+                            },
+                        }
+                    )
                 current_chunk = sentence + " "
 
         if current_chunk:
-            chunks.append({
-                "text": current_chunk.strip(),
-                "metadata": {"type": "sentence", "size": len(current_chunk)}
-            })
+            chunks.append(
+                {
+                    "text": current_chunk.strip(),
+                    "metadata": {"type": "sentence", "size": len(current_chunk)},
+                }
+            )
 
         return chunks
 
@@ -75,10 +84,12 @@ class ParagraphChunker(ChunkingStrategy):
                 sub_chunks = self._split_large_paragraph(para)
                 chunks.extend(sub_chunks)
             elif para.strip():
-                chunks.append({
-                    "text": para.strip(),
-                    "metadata": {"type": "paragraph", "size": len(para)}
-                })
+                chunks.append(
+                    {
+                        "text": para.strip(),
+                        "metadata": {"type": "paragraph", "size": len(para)},
+                    }
+                )
 
         return chunks
 
@@ -97,19 +108,26 @@ class ParagraphChunker(ChunkingStrategy):
             else:
                 if current_chunk:
                     chunk_text = " ".join(current_chunk)
-                    chunks.append({
-                        "text": chunk_text,
-                        "metadata": {"type": "paragraph_split", "size": len(chunk_text)}
-                    })
+                    chunks.append(
+                        {
+                            "text": chunk_text,
+                            "metadata": {
+                                "type": "paragraph_split",
+                                "size": len(chunk_text),
+                            },
+                        }
+                    )
                 current_chunk = [word]
                 current_size = word_size
 
         if current_chunk:
             chunk_text = " ".join(current_chunk)
-            chunks.append({
-                "text": chunk_text,
-                "metadata": {"type": "paragraph_split", "size": len(chunk_text)}
-            })
+            chunks.append(
+                {
+                    "text": chunk_text,
+                    "metadata": {"type": "paragraph_split", "size": len(chunk_text)},
+                }
+            )
 
         return chunks
 
@@ -117,14 +135,14 @@ class ParagraphChunker(ChunkingStrategy):
 class SemanticChunker(ChunkingStrategy):
     """Chunks documents based on semantic similarity"""
 
-    def __init__(self, config: Optional[ChunkConfig] = None):
+    def __init__(self, config: ChunkConfig | None = None):
         super().__init__(config)
         # In production, this would use embeddings for semantic similarity
 
     def chunk(self, text: str) -> list[dict[str, Any]]:
         """Split text into semantically coherent chunks"""
         # Simplified implementation - in production would use embeddings
-        sections = re.split(r'\n(?=[A-Z])', text)
+        sections = re.split(r"\n(?=[A-Z])", text)
         chunks = []
 
         for section in sections:
@@ -134,10 +152,12 @@ class SemanticChunker(ChunkingStrategy):
                 sub_chunks = para_chunker.chunk(section)
                 chunks.extend(sub_chunks)
             elif section.strip():
-                chunks.append({
-                    "text": section.strip(),
-                    "metadata": {"type": "semantic", "size": len(section)}
-                })
+                chunks.append(
+                    {
+                        "text": section.strip(),
+                        "metadata": {"type": "semantic", "size": len(section)},
+                    }
+                )
 
         return chunks
 
@@ -145,12 +165,12 @@ class SemanticChunker(ChunkingStrategy):
 class HybridChunker(ChunkingStrategy):
     """Combines multiple chunking strategies"""
 
-    def __init__(self, config: Optional[ChunkConfig] = None):
+    def __init__(self, config: ChunkConfig | None = None):
         super().__init__(config)
         self.strategies = [
             SemanticChunker(config),
             ParagraphChunker(config),
-            SentenceChunker(config)
+            SentenceChunker(config),
         ]
 
     def chunk(self, text: str) -> list[dict[str, Any]]:
@@ -161,20 +181,30 @@ class HybridChunker(ChunkingStrategy):
                 chunks = strategy.chunk(text)
                 if chunks:
                     return chunks
-            except Exception:
+            except Exception as exc:
+                logger.warning(
+                    "Chunker %s failed, falling back to next strategy: %s",
+                    strategy.__class__.__name__,
+                    exc,
+                )
                 continue
 
         # Fallback to simple splitting
-        return [{
-            "text": text[:self.config.chunk_size],
-            "metadata": {"type": "fallback", "size": len(text[:self.config.chunk_size])}
-        }]
+        return [
+            {
+                "text": text[: self.config.chunk_size],
+                "metadata": {
+                    "type": "fallback",
+                    "size": len(text[: self.config.chunk_size]),
+                },
+            }
+        ]
 
 
 class AdaptiveChunking(ChunkingStrategy):
     """Adaptive chunking strategy that dynamically adjusts chunk size based on content complexity"""
 
-    def __init__(self, config: Optional[ChunkConfig] = None):
+    def __init__(self, config: ChunkConfig | None = None):
         super().__init__(config)
         self.base_chunk_size = config.chunk_size if config else 1000
         self.max_chunk_size = config.max_chunk_size if config else 2000
@@ -186,7 +216,7 @@ class AdaptiveChunking(ChunkingStrategy):
         position = 0
 
         # Split text into paragraphs for analysis
-        paragraphs = text.split('\n\n')
+        paragraphs = text.split("\n\n")
         current_chunk = ""
         current_size = 0
 
@@ -197,15 +227,17 @@ class AdaptiveChunking(ChunkingStrategy):
             # Check if adding this paragraph would exceed the adaptive size
             if current_size + len(paragraph) > adaptive_size and current_chunk:
                 # Finalize current chunk
-                chunks.append({
-                    "text": current_chunk.strip(),
-                    "start_position": position - len(current_chunk),
-                    "end_position": position,
-                    "chunk_size": len(current_chunk),
-                    "complexity_score": self._calculate_complexity(current_chunk),
-                    "adaptive_size": adaptive_size,
-                    "metadata": {"type": "adaptive", "size": len(current_chunk)}
-                })
+                chunks.append(
+                    {
+                        "text": current_chunk.strip(),
+                        "start_position": position - len(current_chunk),
+                        "end_position": position,
+                        "chunk_size": len(current_chunk),
+                        "complexity_score": self._calculate_complexity(current_chunk),
+                        "adaptive_size": adaptive_size,
+                        "metadata": {"type": "adaptive", "size": len(current_chunk)},
+                    }
+                )
 
                 # Start new chunk
                 current_chunk = paragraph + "\n\n"
@@ -219,15 +251,17 @@ class AdaptiveChunking(ChunkingStrategy):
 
         # Add final chunk if exists
         if current_chunk.strip():
-            chunks.append({
-                "text": current_chunk.strip(),
-                "start_position": position - len(current_chunk),
-                "end_position": position,
-                "chunk_size": len(current_chunk),
-                "complexity_score": self._calculate_complexity(current_chunk),
-                "adaptive_size": self.base_chunk_size,
-                "metadata": {"type": "adaptive", "size": len(current_chunk)}
-            })
+            chunks.append(
+                {
+                    "text": current_chunk.strip(),
+                    "start_position": position - len(current_chunk),
+                    "end_position": position,
+                    "chunk_size": len(current_chunk),
+                    "complexity_score": self._calculate_complexity(current_chunk),
+                    "adaptive_size": self.base_chunk_size,
+                    "metadata": {"type": "adaptive", "size": len(current_chunk)},
+                }
+            )
 
         return chunks
 
@@ -237,24 +271,33 @@ class AdaptiveChunking(ChunkingStrategy):
             return 0.0
 
         # Factors for complexity
-        sentence_count = len(re.split(r'[.!?]+', text))
+        sentence_count = len(re.split(r"[.!?]+", text))
         word_count = len(text.split())
-        avg_word_length = sum(len(word) for word in text.split()) / word_count if word_count > 0 else 0
+        avg_word_length = (
+            sum(len(word) for word in text.split()) / word_count
+            if word_count > 0
+            else 0
+        )
 
         # Technical terms (simple heuristic)
-        technical_terms = len(re.findall(r'\b[A-Z]{2,}\b', text))  # Acronyms
-        numbers = len(re.findall(r'\d+', text))
+        technical_terms = len(re.findall(r"\b[A-Z]{2,}\b", text))  # Acronyms
+        numbers = len(re.findall(r"\d+", text))
 
         # Normalize factors
         sentence_density = sentence_count / word_count if word_count > 0 else 0
-        technical_density = (technical_terms + numbers) / word_count if word_count > 0 else 0
+        technical_density = (
+            (technical_terms + numbers) / word_count if word_count > 0 else 0
+        )
 
         # Combine factors (0-1 scale)
-        complexity = min(1.0, (
-            sentence_density * 0.3 +
-            min(avg_word_length / 10, 1.0) * 0.3 +
-            technical_density * 0.4
-        ))
+        complexity = min(
+            1.0,
+            (
+                sentence_density * 0.3
+                + min(avg_word_length / 10, 1.0) * 0.3
+                + technical_density * 0.4
+            ),
+        )
 
         return complexity
 
@@ -274,13 +317,13 @@ class AdaptiveChunking(ChunkingStrategy):
 class CitationAwareChunking(ChunkingStrategy):
     """Citation-aware chunking that preserves citation contexts and reference integrity"""
 
-    def __init__(self, config: Optional[ChunkConfig] = None):
+    def __init__(self, config: ChunkConfig | None = None):
         super().__init__(config)
         # Citation patterns for detection
         self.citation_patterns = [
-            r'\[[0-9,\-\s]+\]',  # [1], [1-3], [1, 2, 3]
-            r'\([A-Za-z]+(?:\s+et\s+al\.)?,?\s+\d{4}\)',  # (Smith, 2020), (Smith et al., 2020)
-            r'(?:Fig|Figure|Table|Eq|Equation)\.?\s*\d+',  # Figure 1, Table 2, etc.
+            r"\[[0-9,\-\s]+\]",  # [1], [1-3], [1, 2, 3]
+            r"\([A-Za-z]+(?:\s+et\s+al\.)?,?\s+\d{4}\)",  # (Smith, 2020), (Smith et al., 2020)
+            r"(?:Fig|Figure|Table|Eq|Equation)\.?\s*\d+",  # Figure 1, Table 2, etc.
         ]
 
     def chunk(self, text: str) -> list[dict[str, Any]]:
@@ -303,9 +346,14 @@ class CitationAwareChunking(ChunkingStrategy):
             # Check if adding up to this boundary would exceed chunk size
             potential_chunk = text[current_start:boundary]
 
-            if len(current_chunk) + len(potential_chunk) > self.config.chunk_size and current_chunk:
+            if (
+                len(current_chunk) + len(potential_chunk) > self.config.chunk_size
+                and current_chunk
+            ):
                 # Finalize current chunk
-                chunks.append(self._create_citation_chunk(current_chunk, current_start, position))
+                chunks.append(
+                    self._create_citation_chunk(current_chunk, current_start, position)
+                )
 
                 # Start new chunk
                 current_chunk = potential_chunk
@@ -319,16 +367,27 @@ class CitationAwareChunking(ChunkingStrategy):
         # Add remaining text
         if position < len(text):
             remaining_text = text[position:]
-            if len(current_chunk) + len(remaining_text) > self.config.chunk_size and current_chunk:
+            if (
+                len(current_chunk) + len(remaining_text) > self.config.chunk_size
+                and current_chunk
+            ):
                 # Finalize current chunk and start new one
-                chunks.append(self._create_citation_chunk(current_chunk, current_start, position))
-                chunks.append(self._create_citation_chunk(remaining_text, position, len(text)))
+                chunks.append(
+                    self._create_citation_chunk(current_chunk, current_start, position)
+                )
+                chunks.append(
+                    self._create_citation_chunk(remaining_text, position, len(text))
+                )
             else:
                 # Add to current chunk
                 current_chunk += remaining_text
-                chunks.append(self._create_citation_chunk(current_chunk, current_start, len(text)))
+                chunks.append(
+                    self._create_citation_chunk(current_chunk, current_start, len(text))
+                )
         elif current_chunk:
-            chunks.append(self._create_citation_chunk(current_chunk, current_start, position))
+            chunks.append(
+                self._create_citation_chunk(current_chunk, current_start, position)
+            )
 
         return chunks
 
@@ -348,16 +407,18 @@ class CitationAwareChunking(ChunkingStrategy):
         positions = []
 
         # Find paragraph boundaries
-        for match in re.finditer(r'\n\n+', text):
+        for match in re.finditer(r"\n\n+", text):
             positions.append(match.end())
 
         # Find potential headers (lines with few words, capitalized)
-        for match in re.finditer(r'\n([A-Z][A-Za-z\s]{5,50})\n', text):
+        for match in re.finditer(r"\n([A-Z][A-Za-z\s]{5,50})\n", text):
             positions.append(match.start())
 
         return positions
 
-    def _create_citation_chunk(self, text: str, start_pos: int, end_pos: int) -> dict[str, Any]:
+    def _create_citation_chunk(
+        self, text: str, start_pos: int, end_pos: int
+    ) -> dict[str, Any]:
         """Create a chunk with citation metadata"""
         citations = self._extract_citations(text)
 
@@ -368,13 +429,15 @@ class CitationAwareChunking(ChunkingStrategy):
             "chunk_size": len(text),
             "citations": citations,
             "citation_count": len(citations),
-            "has_figures": bool(re.search(r'(?:Fig|Figure|Table)\.?\s*\d+', text)),
-            "has_equations": bool(re.search(r'(?:Eq|Equation)\.?\s*\d+', text)),
+            "has_figures": bool(re.search(r"(?:Fig|Figure|Table)\.?\s*\d+", text)),
+            "has_equations": bool(re.search(r"(?:Eq|Equation)\.?\s*\d+", text)),
             "metadata": {
                 "type": "citation_aware",
                 "size": len(text),
-                "citation_density": len(citations) / len(text.split()) if text.split() else 0
-            }
+                "citation_density": len(citations) / len(text.split())
+                if text.split()
+                else 0,
+            },
         }
 
     def _extract_citations(self, text: str) -> list[dict[str, str]]:
@@ -384,24 +447,27 @@ class CitationAwareChunking(ChunkingStrategy):
         for pattern_idx, pattern in enumerate(self.citation_patterns):
             for match in re.finditer(pattern, text):
                 citation_type = ["numeric", "author_year", "figure_table"][pattern_idx]
-                citations.append({
-                    "text": match.group(),
-                    "type": citation_type,
-                    "start": match.start(),
-                    "end": match.end()
-                })
+                citations.append(
+                    {
+                        "text": match.group(),
+                        "type": citation_type,
+                        "start": match.start(),
+                        "end": match.end(),
+                    }
+                )
 
         return sorted(citations, key=lambda x: x["start"])
 
 
 # Export main classes
 __all__ = [
-    'ChunkConfig',
-    'ChunkingStrategy',
-    'SentenceChunker',
-    'ParagraphChunker',
-    'SemanticChunker',
-    'HybridChunker',
-    'AdaptiveChunking',
-    'CitationAwareChunking'
+    "ChunkConfig",
+    "ChunkingStrategy",
+    "SentenceChunker",
+    "ParagraphChunker",
+    "SemanticChunker",
+    "HybridChunker",
+    "AdaptiveChunking",
+    "CitationAwareChunking",
 ]
+logger = logging.getLogger(__name__)

@@ -1,0 +1,5 @@
+- [x] Baseline current gaps (auth routes/RBAC/services, rate_limit_monitor, security headers, rag coordinator/index builders/vector manager) from the coverage report.
+- [x] Add JWT/RBAC/auth route tests (unit + ASGI) covering valid token, expired/invalid token, missing role → 401/403, and ensure route guards enforce roles.
+- [x] Add middleware/monitoring tests for security headers and rate_limit_monitor metrics/log hooks; assert envelope consistency on handled exceptions.
+- [x] Add RAG pipeline tests (coordinator/index builder/vector manager) with stubbed repositories/embeddings to cover success/error branches without network/LLM calls.
+- [x] Update `tests/README.md` with new suites and rerun `make lint-ci` and `pytest --cov=backend --cov=src --cov-report=term` to show coverage lift toward the 75% gate.

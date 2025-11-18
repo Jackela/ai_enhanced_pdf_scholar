@@ -137,7 +137,7 @@ class WebAPILibraryController(BaseLibraryController):
             library_service = DocumentLibraryService(
                 document_repository=doc_repo,
                 hash_service=hash_service,
-                documents_dir=managed_documents_dir
+                documents_dir=managed_documents_dir,
             )
             logger.debug("Library service created directly with DI pattern (fallback)")
 

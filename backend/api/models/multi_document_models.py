@@ -74,6 +74,7 @@ class ErrorResponse(BaseResponse):
 
     success: bool = False
     error: str | None = None
+    detail: str | None = None
     error_code: str | None = None
 
 
@@ -201,15 +202,6 @@ class CollectionStatisticsResponse(BaseModel):
     avg_query_time_ms: float | None = None
 
 
-class ErrorResponse(BaseModel):
-    """Standard error response."""
-
-    error: str
-    detail: str | None = None
-    error_code: str | None = None
-
-
-# Additional models for API endpoints
 class DocumentUploadResponse(BaseModel):
     """Response after document upload."""
 

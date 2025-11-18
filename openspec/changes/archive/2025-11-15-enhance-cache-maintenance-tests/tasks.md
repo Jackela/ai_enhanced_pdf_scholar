@@ -1,0 +1,5 @@
+- [x] Inspect `scripts/preview_cache_maintenance.py`, `backend/api/utils/path_safety.py`, and the integrated cache manager to list target functions/CLI entry points.
+- [x] Build pytest fixtures that create temporary cache directories with controllable timestamps/sizes to simulate TTL and purge thresholds.
+- [x] Add tests for path sanitization helpers covering malicious filenames, missing directories, and allowed root overrides.
+- [x] Add tests for cache-hit/miss accounting and maintenance logging via stub metrics collectors.
+- [x] Update developer docs (e.g., `TESTING.md`) to mention the new cache/path-safety suites and run `pytest -q` + `make lint-ci`.

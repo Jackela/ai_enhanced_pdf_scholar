@@ -13,7 +13,7 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import psutil
 
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PerformanceMetrics:
     """Container for performance metrics"""
+
     operation: str
     start_time: float
     end_time: float = 0
@@ -32,7 +33,7 @@ class PerformanceMetrics:
     memory_delta: float = 0
     cpu_percent: float = 0
     success: bool = True
-    error_message: Optional[str] = None
+    error_message: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def complete(self):
@@ -50,7 +51,7 @@ class RAGPerformanceMonitor:
     def __init__(self, max_history: int = 1000):
         """
         Initialize performance monitor
-        
+
         Args:
             max_history: Maximum number of metrics to keep in history
         """
@@ -60,18 +61,20 @@ class RAGPerformanceMonitor:
             "query_time": 2.0,  # seconds
             "index_time": 10.0,  # seconds
             "memory_delta": 100,  # MB
-            "cpu_threshold": 80  # percent
+            "cpu_threshold": 80,  # percent
         }
         self.alerts: list[dict[str, Any]] = []
 
-    def start_operation(self, operation_name: str, metadata: Optional[dict[str, Any]] = None) -> str:
+    def start_operation(
+        self, operation_name: str, metadata: dict[str, Any] | None = None
+    ) -> str:
         """
         Start monitoring an operation
-        
+
         Args:
             operation_name: Name of the operation
             metadata: Optional metadata to attach
-            
+
         Returns:
             Operation ID
         """
@@ -81,7 +84,7 @@ class RAGPerformanceMonitor:
             operation=operation_name,
             start_time=time.time(),
             memory_before=psutil.Process().memory_info().rss / 1024 / 1024,  # MB
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.active_operations[operation_id] = metrics
@@ -89,10 +92,12 @@ class RAGPerformanceMonitor:
 
         return operation_id
 
-    def end_operation(self, operation_id: str, success: bool = True, error_message: Optional[str] = None):
+    def end_operation(
+        self, operation_id: str, success: bool = True, error_message: str | None = None
+    ):
         """
         End monitoring an operation
-        
+
         Args:
             operation_id: ID of the operation
             success: Whether operation succeeded
@@ -114,51 +119,67 @@ class RAGPerformanceMonitor:
         self.metrics_history.append(metrics)
         del self.active_operations[operation_id]
 
-        logger.debug(f"Completed monitoring operation: {operation_id} (duration: {metrics.duration:.2f}s)")
+        logger.debug(
+            f"Completed monitoring operation: {operation_id} (duration: {metrics.duration:.2f}s)"
+        )
 
     def _check_thresholds(self, metrics: PerformanceMetrics):
         """Check if metrics exceed thresholds and generate alerts"""
         alerts = []
 
         # Check query time threshold
-        if "query" in metrics.operation.lower() and metrics.duration > self.thresholds["query_time"]:
-            alerts.append({
-                "type": "SLOW_QUERY",
-                "operation": metrics.operation,
-                "duration": metrics.duration,
-                "threshold": self.thresholds["query_time"],
-                "timestamp": datetime.now().isoformat()
-            })
+        if (
+            "query" in metrics.operation.lower()
+            and metrics.duration > self.thresholds["query_time"]
+        ):
+            alerts.append(
+                {
+                    "type": "SLOW_QUERY",
+                    "operation": metrics.operation,
+                    "duration": metrics.duration,
+                    "threshold": self.thresholds["query_time"],
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # Check indexing time threshold
-        if "index" in metrics.operation.lower() and metrics.duration > self.thresholds["index_time"]:
-            alerts.append({
-                "type": "SLOW_INDEX",
-                "operation": metrics.operation,
-                "duration": metrics.duration,
-                "threshold": self.thresholds["index_time"],
-                "timestamp": datetime.now().isoformat()
-            })
+        if (
+            "index" in metrics.operation.lower()
+            and metrics.duration > self.thresholds["index_time"]
+        ):
+            alerts.append(
+                {
+                    "type": "SLOW_INDEX",
+                    "operation": metrics.operation,
+                    "duration": metrics.duration,
+                    "threshold": self.thresholds["index_time"],
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # Check memory usage
         if metrics.memory_delta > self.thresholds["memory_delta"]:
-            alerts.append({
-                "type": "HIGH_MEMORY",
-                "operation": metrics.operation,
-                "memory_delta": metrics.memory_delta,
-                "threshold": self.thresholds["memory_delta"],
-                "timestamp": datetime.now().isoformat()
-            })
+            alerts.append(
+                {
+                    "type": "HIGH_MEMORY",
+                    "operation": metrics.operation,
+                    "memory_delta": metrics.memory_delta,
+                    "threshold": self.thresholds["memory_delta"],
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # Check CPU usage
         if metrics.cpu_percent > self.thresholds["cpu_threshold"]:
-            alerts.append({
-                "type": "HIGH_CPU",
-                "operation": metrics.operation,
-                "cpu_percent": metrics.cpu_percent,
-                "threshold": self.thresholds["cpu_threshold"],
-                "timestamp": datetime.now().isoformat()
-            })
+            alerts.append(
+                {
+                    "type": "HIGH_CPU",
+                    "operation": metrics.operation,
+                    "cpu_percent": metrics.cpu_percent,
+                    "threshold": self.thresholds["cpu_threshold"],
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         for alert in alerts:
             logger.warning(f"Performance alert: {alert}")
@@ -171,7 +192,7 @@ class RAGPerformanceMonitor:
                 "total_operations": 0,
                 "average_duration": 0,
                 "success_rate": 0,
-                "alerts_count": len(self.alerts)
+                "alerts_count": len(self.alerts),
             }
 
         total_ops = len(self.metrics_history)
@@ -187,7 +208,7 @@ class RAGPerformanceMonitor:
                     "count": 0,
                     "total_duration": 0,
                     "failures": 0,
-                    "avg_memory_delta": 0
+                    "avg_memory_delta": 0,
                 }
 
             stats = operation_stats[op_type]
@@ -201,7 +222,9 @@ class RAGPerformanceMonitor:
         for op_type, stats in operation_stats.items():
             stats["avg_duration"] = stats["total_duration"] / stats["count"]
             stats["avg_memory_delta"] = stats["avg_memory_delta"] / stats["count"]
-            stats["success_rate"] = (stats["count"] - stats["failures"]) / stats["count"] * 100
+            stats["success_rate"] = (
+                (stats["count"] - stats["failures"]) / stats["count"] * 100
+            )
 
         return {
             "total_operations": total_ops,
@@ -210,7 +233,7 @@ class RAGPerformanceMonitor:
             "average_duration": avg_duration,
             "operation_stats": operation_stats,
             "alerts_count": len(self.alerts),
-            "recent_alerts": self.alerts[-10:] if self.alerts else []
+            "recent_alerts": self.alerts[-10:] if self.alerts else [],
         }
 
     def reset_alerts(self):
@@ -224,20 +247,22 @@ class RAGPerformanceMonitor:
                 "id": op_id,
                 "operation": metrics.operation,
                 "duration_so_far": time.time() - metrics.start_time,
-                "metadata": metrics.metadata
+                "metadata": metrics.metadata,
             }
             for op_id, metrics in self.active_operations.items()
         ]
 
-    async def monitor_async_operation(self, operation_name: str, func: Callable, *args, **kwargs):
+    async def monitor_async_operation(
+        self, operation_name: str, func: Callable, *args, **kwargs
+    ):
         """
         Monitor an async operation
-        
+
         Args:
             operation_name: Name of the operation
             func: Async function to monitor
             *args, **kwargs: Arguments for the function
-            
+
         Returns:
             Function result
         """
@@ -254,16 +279,22 @@ class RAGPerformanceMonitor:
     def monitor_operation(self, operation_name: str):
         """
         Decorator to monitor a function's performance
-        
+
         Args:
             operation_name: Name of the operation
         """
+
         def decorator(func):
             if asyncio.iscoroutinefunction(func):
+
                 async def async_wrapper(*args, **kwargs):
-                    return await self.monitor_async_operation(operation_name, func, *args, **kwargs)
+                    return await self.monitor_async_operation(
+                        operation_name, func, *args, **kwargs
+                    )
+
                 return async_wrapper
             else:
+
                 def sync_wrapper(*args, **kwargs):
                     op_id = self.start_operation(operation_name)
                     try:
@@ -273,7 +304,9 @@ class RAGPerformanceMonitor:
                     except Exception as e:
                         self.end_operation(op_id, success=False, error_message=str(e))
                         raise
+
                 return sync_wrapper
+
         return decorator
 
 
@@ -290,8 +323,4 @@ def get_monitor() -> RAGPerformanceMonitor:
 
 
 # Export main classes
-__all__ = [
-    'PerformanceMetrics',
-    'RAGPerformanceMonitor',
-    'get_monitor'
-]
+__all__ = ["PerformanceMetrics", "RAGPerformanceMonitor", "get_monitor"]

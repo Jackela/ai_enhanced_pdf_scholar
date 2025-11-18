@@ -1,0 +1,5 @@
+- [x] Baseline the gap: run `pytest --cov=backend --cov=src --cov-report=term` and note top uncovered modules (auth, middleware, rag_*); pick highest-yield targets.
+- [x] Add auth/RBAC/JWT tests (unit + minimal ASGI) covering valid token, invalid/expired token, missing roles, and anonymous requests hitting 401/403.
+- [x] Add middleware envelope/rate-limit tests to assert consistent error shapes/headers for handled vs. unhandled exceptions (including rate limit rejection).
+- [x] Add RAG/cache pipeline tests (rag_cache_service, vector_similarity, service factory) using in-memory stubs to cover success/error branches without network/LLM calls.
+- [x] Update `tests/README.md` with new suites/coverage deltas, rerun `make lint-ci` and `pytest --cov ...` to demonstrate coverage lift toward the 75% gate.

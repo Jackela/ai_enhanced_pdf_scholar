@@ -227,16 +227,15 @@ class ValidationErrorResponse(ErrorResponse):
     @classmethod
     def from_pydantic_error(cls, error) -> "ValidationErrorResponse":
         """Create response from Pydantic ValidationError."""
-        validation_errors = []
-        for err in error.errors():
-            validation_errors.append(
-                {
-                    "field": ".".join(str(x) for x in err.get("loc", [])),
-                    "message": err.get("msg", ""),
-                    "type": err.get("type", ""),
-                    "input": str(err.get("input", ""))[:100],  # Limit input display
-                }
-            )
+        validation_errors = [
+            {
+                "field": ".".join(str(x) for x in err.get("loc", [])),
+                "message": err.get("msg", ""),
+                "type": err.get("type", ""),
+                "input": str(err.get("input", ""))[:100],  # Limit input display
+            }
+            for err in error.errors()
+        ]
 
         return cls(
             message="Request validation failed",
@@ -326,7 +325,10 @@ class DocumentBase(BaseModel):
         None, max_length=MAX_PATH_LENGTH, description="File system path"
     )
     file_size: int = Field(
-        ..., ge=0, le=1024 * 1024 * 1024, description="File size in bytes"  # 1GB max
+        ...,
+        ge=0,
+        le=1024 * 1024 * 1024,
+        description="File size in bytes",  # 1GB max
     )
     file_type: str | None = Field(
         None,
@@ -596,7 +598,10 @@ class RAGQueryRequest(BaseModel):
 
     query: str = Field(..., min_length=1, max_length=2000, description="RAG query text")
     document_id: int = Field(
-        ..., gt=0, le=2147483647, description="Target document ID"  # Max 32-bit int
+        ...,
+        gt=0,
+        le=2147483647,
+        description="Target document ID",  # Max 32-bit int
     )
     use_cache: bool = Field(True, description="Whether to use query cache")
 
@@ -762,7 +767,10 @@ class SecureFileUpload(BaseModel):
     )
     content_type: str = Field(..., description="MIME content type")
     file_size: int = Field(
-        ..., ge=1, le=1024 * 1024 * 1024, description="File size in bytes"  # 1GB max
+        ...,
+        ge=1,
+        le=1024 * 1024 * 1024,
+        description="File size in bytes",  # 1GB max
     )
 
     @field_validator("filename")

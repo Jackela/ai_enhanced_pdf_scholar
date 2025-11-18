@@ -226,9 +226,11 @@ class CrossDocumentAnalyzer:
                     source = DocumentSource(
                         document_id=doc_id,
                         relevance_score=getattr(node, "score", 0.5),
-                        excerpt=node.node.text[:200] + "..."
-                        if len(node.node.text) > 200
-                        else node.node.text,
+                        excerpt=(
+                            node.node.text[:200] + "..."
+                            if len(node.node.text) > 200
+                            else node.node.text
+                        ),
                         page_number=metadata.get("page_number"),
                         chunk_id=metadata.get("chunk_id"),
                     )
@@ -246,7 +248,7 @@ class CrossDocumentAnalyzer:
         avg_score = total_score / len(sources)
 
         # Boost confidence if multiple documents contribute
-        num_docs = len(set(source.document_id for source in sources))
+        num_docs = len({source.document_id for source in sources})
         diversity_boost = min(num_docs * 0.1, 0.3)
 
         confidence = min(avg_score + diversity_boost, 1.0)
@@ -260,7 +262,7 @@ class CrossDocumentAnalyzer:
 
         # Simple cross-reference detection based on keyword overlap
         for i, source1 in enumerate(sources):
-            for j, source2 in enumerate(sources[i + 1 :], i + 1):
+            for _j, source2 in enumerate(sources[i + 1 :], i + 1):
                 if source1.document_id != source2.document_id:
                     # Calculate content similarity (simplified)
                     similarity = self._calculate_content_similarity(
@@ -527,9 +529,9 @@ class MultiDocumentRAGService:
             "document_count": len(documents),
             "total_file_size": total_size,
             "avg_file_size": avg_size,
-            "created_at": collection.created_at.isoformat()
-            if collection.created_at
-            else None,
+            "created_at": (
+                collection.created_at.isoformat() if collection.created_at else None
+            ),
         }
 
     async def _ensure_collection_index(self, collection_id: int) -> None:

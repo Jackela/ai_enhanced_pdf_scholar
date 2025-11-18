@@ -16,7 +16,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.database.models import VectorIndexModel
 from src.repositories.vector_repository import VectorIndexRepository

@@ -15,7 +15,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from enum import Enum
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any
 
 import aiohttp
 
@@ -29,8 +29,10 @@ logger = logging.getLogger(__name__)
 # Alert Configuration and Models
 # ============================================================================
 
+
 class AlertSeverity(str, Enum):
     """Alert severity levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -39,6 +41,7 @@ class AlertSeverity(str, Enum):
 
 class AlertState(str, Enum):
     """Alert states."""
+
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -47,6 +50,7 @@ class AlertState(str, Enum):
 
 class NotificationChannel(str, Enum):
     """Notification channel types."""
+
     EMAIL = "email"
     WEBHOOK = "webhook"
     SLACK = "slack"
@@ -57,6 +61,7 @@ class NotificationChannel(str, Enum):
 @dataclass
 class AlertRule:
     """Configurable alert rule."""
+
     rule_id: str
     name: str
     description: str
@@ -75,6 +80,7 @@ class AlertRule:
 @dataclass
 class NotificationConfig:
     """Notification configuration."""
+
     channel: NotificationChannel
     config: dict[str, Any]
     enabled: bool = True
@@ -86,6 +92,7 @@ class NotificationConfig:
 @dataclass
 class AlertEvent:
     """Individual alert event."""
+
     event_id: str
     rule_id: str
     alert_id: str
@@ -105,6 +112,7 @@ class AlertEvent:
 @dataclass
 class AlertInstance:
     """Active alert instance."""
+
     alert_id: str
     rule_id: str
     rule_name: str
@@ -124,6 +132,7 @@ class AlertInstance:
 # Performance Alerting Service
 # ============================================================================
 
+
 class PerformanceAlertingService:
     """
     Comprehensive performance alerting service with intelligent notifications.
@@ -133,7 +142,7 @@ class PerformanceAlertingService:
         self,
         apm_service: APMService,
         cache_telemetry: CacheTelemetryService,
-        config_path: Path | None = None
+        config_path: Path | None = None,
     ):
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
@@ -165,7 +174,9 @@ class PerformanceAlertingService:
         if not self.alert_rules:
             self._setup_default_alert_rules()
 
-        logger.info(f"Performance alerting service initialized with {len(self.alert_rules)} rules")
+        logger.info(
+            f"Performance alerting service initialized with {len(self.alert_rules)} rules"
+        )
 
     # ========================================================================
     # Configuration Management
@@ -190,8 +201,10 @@ class PerformanceAlertingService:
                         config=notif_data["config"],
                         enabled=notif_data.get("enabled", True),
                         severity_filter=[
-                            AlertSeverity(s) for s in notif_data.get("severity_filter", [])
-                        ] or list(AlertSeverity)
+                            AlertSeverity(s)
+                            for s in notif_data.get("severity_filter", [])
+                        ]
+                        or list(AlertSeverity),
                     )
                     self.notification_configs.append(notif)
 
@@ -212,13 +225,13 @@ class PerformanceAlertingService:
                         "channel": notif.channel.value,
                         "config": notif.config,
                         "enabled": notif.enabled,
-                        "severity_filter": [s.value for s in notif.severity_filter]
+                        "severity_filter": [s.value for s in notif.severity_filter],
                     }
                     for notif in self.notification_configs
-                ]
+                ],
             }
 
-            with open(self.config_path, 'w') as f:
+            with open(self.config_path, "w") as f:
                 json.dump(config, f, indent=2, default=str)
 
             logger.info(f"Saved alert configuration to {self.config_path}")
@@ -238,7 +251,7 @@ class PerformanceAlertingService:
                 threshold_value=2000.0,
                 severity=AlertSeverity.HIGH,
                 evaluation_window_minutes=5,
-                min_data_points=3
+                min_data_points=3,
             ),
             AlertRule(
                 rule_id="high_error_rate",
@@ -249,7 +262,7 @@ class PerformanceAlertingService:
                 threshold_value=5.0,
                 severity=AlertSeverity.CRITICAL,
                 evaluation_window_minutes=3,
-                min_data_points=2
+                min_data_points=2,
             ),
             AlertRule(
                 rule_id="low_cache_hit_rate",
@@ -260,7 +273,7 @@ class PerformanceAlertingService:
                 threshold_value=50.0,
                 severity=AlertSeverity.MEDIUM,
                 evaluation_window_minutes=10,
-                min_data_points=5
+                min_data_points=5,
             ),
             AlertRule(
                 rule_id="high_cpu_usage",
@@ -271,7 +284,7 @@ class PerformanceAlertingService:
                 threshold_value=85.0,
                 severity=AlertSeverity.HIGH,
                 evaluation_window_minutes=5,
-                min_data_points=3
+                min_data_points=3,
             ),
             AlertRule(
                 rule_id="high_memory_usage",
@@ -282,7 +295,7 @@ class PerformanceAlertingService:
                 threshold_value=90.0,
                 severity=AlertSeverity.CRITICAL,
                 evaluation_window_minutes=3,
-                min_data_points=2
+                min_data_points=2,
             ),
             AlertRule(
                 rule_id="low_throughput",
@@ -293,8 +306,8 @@ class PerformanceAlertingService:
                 threshold_value=1.0,
                 severity=AlertSeverity.MEDIUM,
                 evaluation_window_minutes=15,
-                min_data_points=8
-            )
+                min_data_points=8,
+            ),
         ]
 
         for rule in default_rules:
@@ -302,10 +315,7 @@ class PerformanceAlertingService:
 
         # Setup default notification (log only)
         self.notification_configs.append(
-            NotificationConfig(
-                channel=NotificationChannel.LOG_ONLY,
-                config={}
-            )
+            NotificationConfig(channel=NotificationChannel.LOG_ONLY, config={})
         )
 
         logger.info("Setup default alert rules")
@@ -408,7 +418,7 @@ class PerformanceAlertingService:
                     threshold_value=0,
                     message=f"Alert acknowledged by {acknowledged_by}",
                     acknowledged_by=acknowledged_by,
-                    acknowledged_at=datetime.utcnow()
+                    acknowledged_at=datetime.utcnow(),
                 )
 
                 alert.events.append(event)
@@ -440,7 +450,7 @@ class PerformanceAlertingService:
                     metric_value=0,
                     threshold_value=0,
                     message=f"Alert resolved: {resolution_note}",
-                    resolved_at=datetime.utcnow()
+                    resolved_at=datetime.utcnow(),
                 )
 
                 alert.events.append(event)
@@ -538,7 +548,7 @@ class PerformanceAlertingService:
                     "requests_per_second": snapshot.requests_per_second,
                     "cpu_percent": snapshot.cpu_percent,
                     "memory_percent": snapshot.memory_percent,
-                    "cache_hit_rate_percent": snapshot.cache_hit_rate_percent
+                    "cache_hit_rate_percent": snapshot.cache_hit_rate_percent,
                 }
 
                 # Store metrics in history
@@ -551,7 +561,8 @@ class PerformanceAlertingService:
                     # Keep only last 2 hours of data for evaluation
                     cutoff_time = datetime.utcnow() - timedelta(hours=2)
                     self.metric_history[metric_name] = [
-                        (ts, val) for ts, val in self.metric_history[metric_name]
+                        (ts, val)
+                        for ts, val in self.metric_history[metric_name]
                         if ts >= cutoff_time
                     ]
 
@@ -579,9 +590,12 @@ class PerformanceAlertingService:
                 if rule.metric_name not in self.metric_history:
                     continue
 
-                window_start = current_time - timedelta(minutes=rule.evaluation_window_minutes)
+                window_start = current_time - timedelta(
+                    minutes=rule.evaluation_window_minutes
+                )
                 metric_data = [
-                    (ts, val) for ts, val in self.metric_history[rule.metric_name]
+                    (ts, val)
+                    for ts, val in self.metric_history[rule.metric_name]
                     if ts >= window_start
                 ]
 
@@ -605,7 +619,9 @@ class PerformanceAlertingService:
             except Exception as e:
                 logger.error(f"Error evaluating rule {rule_id}: {e}")
 
-    def _evaluate_condition(self, value: float, condition: str, threshold: float) -> bool:
+    def _evaluate_condition(
+        self, value: float, condition: str, threshold: float
+    ) -> bool:
         """Evaluate alert condition."""
         if condition == ">":
             return value > threshold
@@ -635,7 +651,10 @@ class PerformanceAlertingService:
 
             # Check cooldown
             time_since_last_notification = current_time - alert.last_triggered
-            if time_since_last_notification.total_seconds() < rule.cooldown_minutes * 60:
+            if (
+                time_since_last_notification.total_seconds()
+                < rule.cooldown_minutes * 60
+            ):
                 return  # Still in cooldown
         else:
             # Create new alert
@@ -653,7 +672,7 @@ class PerformanceAlertingService:
                 current_value=current_value,
                 threshold_value=rule.threshold_value,
                 message=message,
-                context={"rule_tags": rule.tags}
+                context={"rule_tags": rule.tags},
             )
 
             self.active_alerts[alert_id] = alert
@@ -669,7 +688,7 @@ class PerformanceAlertingService:
             metric_name=rule.metric_name,
             metric_value=current_value,
             threshold_value=rule.threshold_value,
-            message=alert.message
+            message=alert.message,
         )
 
         alert.events.append(event)
@@ -695,7 +714,7 @@ class PerformanceAlertingService:
                 metric_value=0,
                 threshold_value=0,
                 message="Alert condition no longer met - auto-resolved",
-                resolved_at=datetime.utcnow()
+                resolved_at=datetime.utcnow(),
             )
 
             alert.events.append(resolution_event)
@@ -718,7 +737,7 @@ class PerformanceAlertingService:
                     metric_name=rule.metric_name,
                     current_value=current_value,
                     threshold_value=rule.threshold_value,
-                    condition=rule.condition
+                    condition=rule.condition,
                 )
             except Exception:
                 pass  # Fall back to default
@@ -740,42 +759,51 @@ class PerformanceAlertingService:
                 continue
 
             # Check severity filter
-            if (notification_config.severity_filter and
-                alert.severity not in notification_config.severity_filter):
+            if (
+                notification_config.severity_filter
+                and alert.severity not in notification_config.severity_filter
+            ):
                 continue
 
             try:
                 await self._send_single_notification(notification_config, alert, event)
             except Exception as e:
-                logger.error(f"Error sending notification via {notification_config.channel}: {e}")
+                logger.error(
+                    f"Error sending notification via {notification_config.channel}: {e}"
+                )
 
     async def _send_single_notification(
         self,
         notification_config: NotificationConfig,
         alert: AlertInstance,
-        event: AlertEvent
+        event: AlertEvent,
     ):
         """Send a single notification."""
         if notification_config.channel == NotificationChannel.LOG_ONLY:
             logger.warning(f"ALERT: {alert.message}")
 
         elif notification_config.channel == NotificationChannel.EMAIL:
-            await self._send_email_notification(notification_config.config, alert, event)
+            await self._send_email_notification(
+                notification_config.config, alert, event
+            )
 
         elif notification_config.channel == NotificationChannel.WEBHOOK:
-            await self._send_webhook_notification(notification_config.config, alert, event)
+            await self._send_webhook_notification(
+                notification_config.config, alert, event
+            )
 
         elif notification_config.channel == NotificationChannel.SLACK:
-            await self._send_slack_notification(notification_config.config, alert, event)
+            await self._send_slack_notification(
+                notification_config.config, alert, event
+            )
 
         elif notification_config.channel == NotificationChannel.DISCORD:
-            await self._send_discord_notification(notification_config.config, alert, event)
+            await self._send_discord_notification(
+                notification_config.config, alert, event
+            )
 
     async def _send_email_notification(
-        self,
-        config: dict[str, Any],
-        alert: AlertInstance,
-        event: AlertEvent
+        self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
     ):
         """Send email notification."""
         try:
@@ -788,9 +816,9 @@ class PerformanceAlertingService:
 
             # Create message
             msg = MIMEMultipart()
-            msg['From'] = from_addr
-            msg['To'] = ", ".join(to_addrs)
-            msg['Subject'] = f"[{alert.severity.upper()}] {alert.rule_name}"
+            msg["From"] = from_addr
+            msg["To"] = ", ".join(to_addrs)
+            msg["Subject"] = f"[{alert.severity.upper()}] {alert.rule_name}"
 
             # Create email body
             body = f"""
@@ -814,7 +842,7 @@ Alert Details:
 View Dashboard: http://your-domain/dashboard/performance
             """
 
-            msg.attach(MIMEText(body, 'plain'))
+            msg.attach(MIMEText(body, "plain"))
 
             # Send email
             server = smtplib.SMTP(smtp_server, smtp_port)
@@ -829,10 +857,7 @@ View Dashboard: http://your-domain/dashboard/performance
             logger.error(f"Error sending email notification: {e}")
 
     async def _send_webhook_notification(
-        self,
-        config: dict[str, Any],
-        alert: AlertInstance,
-        event: AlertEvent
+        self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
     ):
         """Send webhook notification."""
         try:
@@ -850,13 +875,17 @@ View Dashboard: http://your-domain/dashboard/performance
                 "metric_value": event.metric_value,
                 "threshold_value": event.threshold_value,
                 "timestamp": event.timestamp.isoformat(),
-                "trigger_count": alert.trigger_count
+                "trigger_count": alert.trigger_count,
             }
 
             async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, headers=headers, timeout=10) as response:
+                async with session.post(
+                    url, json=payload, headers=headers, timeout=10
+                ) as response:
                     if response.status == 200:
-                        logger.info(f"Webhook notification sent for alert {alert.alert_id}")
+                        logger.info(
+                            f"Webhook notification sent for alert {alert.alert_id}"
+                        )
                     else:
                         logger.error(f"Webhook returned status {response.status}")
 
@@ -864,10 +893,7 @@ View Dashboard: http://your-domain/dashboard/performance
             logger.error(f"Error sending webhook notification: {e}")
 
     async def _send_slack_notification(
-        self,
-        config: dict[str, Any],
-        alert: AlertInstance,
-        event: AlertEvent
+        self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
     ):
         """Send Slack notification."""
         try:
@@ -875,35 +901,57 @@ View Dashboard: http://your-domain/dashboard/performance
             channel = config.get("channel", "#alerts")
 
             color_map = {
-                AlertSeverity.LOW: "#36a64f",      # Green
-                AlertSeverity.MEDIUM: "#ffcc00",   # Yellow
-                AlertSeverity.HIGH: "#ff9900",     # Orange
-                AlertSeverity.CRITICAL: "#ff0000"  # Red
+                AlertSeverity.LOW: "#36a64f",  # Green
+                AlertSeverity.MEDIUM: "#ffcc00",  # Yellow
+                AlertSeverity.HIGH: "#ff9900",  # Orange
+                AlertSeverity.CRITICAL: "#ff0000",  # Red
             }
 
             payload = {
                 "channel": channel,
                 "username": "Performance Monitor",
                 "icon_emoji": ":warning:",
-                "attachments": [{
-                    "color": color_map.get(alert.severity, "#808080"),
-                    "title": f"[{alert.severity.upper()}] {alert.rule_name}",
-                    "text": alert.message,
-                    "fields": [
-                        {"title": "Metric", "value": event.metric_name, "short": True},
-                        {"title": "Value", "value": f"{event.metric_value:.2f}", "short": True},
-                        {"title": "Threshold", "value": f"{event.threshold_value:.2f}", "short": True},
-                        {"title": "State", "value": alert.state.upper(), "short": True}
-                    ],
-                    "footer": "Performance Monitor",
-                    "ts": int(event.timestamp.timestamp())
-                }]
+                "attachments": [
+                    {
+                        "color": color_map.get(alert.severity, "#808080"),
+                        "title": f"[{alert.severity.upper()}] {alert.rule_name}",
+                        "text": alert.message,
+                        "fields": [
+                            {
+                                "title": "Metric",
+                                "value": event.metric_name,
+                                "short": True,
+                            },
+                            {
+                                "title": "Value",
+                                "value": f"{event.metric_value:.2f}",
+                                "short": True,
+                            },
+                            {
+                                "title": "Threshold",
+                                "value": f"{event.threshold_value:.2f}",
+                                "short": True,
+                            },
+                            {
+                                "title": "State",
+                                "value": alert.state.upper(),
+                                "short": True,
+                            },
+                        ],
+                        "footer": "Performance Monitor",
+                        "ts": int(event.timestamp.timestamp()),
+                    }
+                ],
             }
 
             async with aiohttp.ClientSession() as session:
-                async with session.post(webhook_url, json=payload, timeout=10) as response:
+                async with session.post(
+                    webhook_url, json=payload, timeout=10
+                ) as response:
                     if response.status == 200:
-                        logger.info(f"Slack notification sent for alert {alert.alert_id}")
+                        logger.info(
+                            f"Slack notification sent for alert {alert.alert_id}"
+                        )
                     else:
                         logger.error(f"Slack webhook returned status {response.status}")
 
@@ -911,46 +959,67 @@ View Dashboard: http://your-domain/dashboard/performance
             logger.error(f"Error sending Slack notification: {e}")
 
     async def _send_discord_notification(
-        self,
-        config: dict[str, Any],
-        alert: AlertInstance,
-        event: AlertEvent
+        self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
     ):
         """Send Discord notification."""
         try:
             webhook_url = config["webhook_url"]
 
             color_map = {
-                AlertSeverity.LOW: 0x36a64f,      # Green
-                AlertSeverity.MEDIUM: 0xffcc00,   # Yellow
-                AlertSeverity.HIGH: 0xff9900,     # Orange
-                AlertSeverity.CRITICAL: 0xff0000  # Red
+                AlertSeverity.LOW: 0x36A64F,  # Green
+                AlertSeverity.MEDIUM: 0xFFCC00,  # Yellow
+                AlertSeverity.HIGH: 0xFF9900,  # Orange
+                AlertSeverity.CRITICAL: 0xFF0000,  # Red
             }
 
             payload = {
                 "username": "Performance Monitor",
                 "avatar_url": config.get("avatar_url"),
-                "embeds": [{
-                    "title": f"[{alert.severity.upper()}] {alert.rule_name}",
-                    "description": alert.message,
-                    "color": color_map.get(alert.severity, 0x808080),
-                    "fields": [
-                        {"name": "Metric", "value": event.metric_name, "inline": True},
-                        {"name": "Value", "value": f"{event.metric_value:.2f}", "inline": True},
-                        {"name": "Threshold", "value": f"{event.threshold_value:.2f}", "inline": True},
-                        {"name": "State", "value": alert.state.upper(), "inline": True}
-                    ],
-                    "footer": {"text": "Performance Monitor"},
-                    "timestamp": event.timestamp.isoformat()
-                }]
+                "embeds": [
+                    {
+                        "title": f"[{alert.severity.upper()}] {alert.rule_name}",
+                        "description": alert.message,
+                        "color": color_map.get(alert.severity, 0x808080),
+                        "fields": [
+                            {
+                                "name": "Metric",
+                                "value": event.metric_name,
+                                "inline": True,
+                            },
+                            {
+                                "name": "Value",
+                                "value": f"{event.metric_value:.2f}",
+                                "inline": True,
+                            },
+                            {
+                                "name": "Threshold",
+                                "value": f"{event.threshold_value:.2f}",
+                                "inline": True,
+                            },
+                            {
+                                "name": "State",
+                                "value": alert.state.upper(),
+                                "inline": True,
+                            },
+                        ],
+                        "footer": {"text": "Performance Monitor"},
+                        "timestamp": event.timestamp.isoformat(),
+                    }
+                ],
             }
 
             async with aiohttp.ClientSession() as session:
-                async with session.post(webhook_url, json=payload, timeout=10) as response:
+                async with session.post(
+                    webhook_url, json=payload, timeout=10
+                ) as response:
                     if response.status in [200, 204]:
-                        logger.info(f"Discord notification sent for alert {alert.alert_id}")
+                        logger.info(
+                            f"Discord notification sent for alert {alert.alert_id}"
+                        )
                     else:
-                        logger.error(f"Discord webhook returned status {response.status}")
+                        logger.error(
+                            f"Discord webhook returned status {response.status}"
+                        )
 
         except Exception as e:
             logger.error(f"Error sending Discord notification: {e}")
@@ -967,8 +1036,7 @@ View Dashboard: http://your-domain/dashboard/performance
             original_count = len(self.alert_history)
 
             self.alert_history = [
-                event for event in self.alert_history
-                if event.timestamp >= cutoff_time
+                event for event in self.alert_history if event.timestamp >= cutoff_time
             ]
 
             cleaned_count = original_count - len(self.alert_history)
@@ -983,7 +1051,8 @@ View Dashboard: http://your-domain/dashboard/performance
         try:
             current_time = datetime.utcnow()
             expired_rules = [
-                rule_id for rule_id, until_time in self.silenced_rules.items()
+                rule_id
+                for rule_id, until_time in self.silenced_rules.items()
                 if current_time >= until_time
             ]
 
@@ -1003,22 +1072,18 @@ View Dashboard: http://your-domain/dashboard/performance
         return [asdict(alert) for alert in self.active_alerts.values()]
 
     def get_alert_history(
-        self,
-        hours_back: int = 24,
-        severity_filter: list[AlertSeverity] | None = None
+        self, hours_back: int = 24, severity_filter: list[AlertSeverity] | None = None
     ) -> list[dict[str, Any]]:
         """Get alert history."""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
 
         filtered_events = [
-            event for event in self.alert_history
-            if event.timestamp >= cutoff_time
+            event for event in self.alert_history if event.timestamp >= cutoff_time
         ]
 
         if severity_filter:
             filtered_events = [
-                event for event in filtered_events
-                if event.severity in severity_filter
+                event for event in filtered_events if event.severity in severity_filter
             ]
 
         return [asdict(event) for event in filtered_events]
@@ -1030,8 +1095,7 @@ View Dashboard: http://your-domain/dashboard/performance
         # Count alerts by severity in last 24 hours
         last_24h = now - timedelta(hours=24)
         recent_events = [
-            event for event in self.alert_history
-            if event.timestamp >= last_24h
+            event for event in self.alert_history if event.timestamp >= last_24h
         ]
 
         severity_counts = {}
@@ -1055,11 +1119,12 @@ View Dashboard: http://your-domain/dashboard/performance
             "last_24h_events": len(recent_events),
             "severity_distribution": severity_counts,
             "top_alerting_rules": [
-                {"rule_id": rule_id, "count": count}
-                for rule_id, count in top_rules
+                {"rule_id": rule_id, "count": count} for rule_id, count in top_rules
             ],
             "system_health": {
                 "monitoring_active": self._running,
-                "last_evaluation": self.last_evaluation.isoformat() if self.last_evaluation else None
-            }
+                "last_evaluation": self.last_evaluation.isoformat()
+                if self.last_evaluation
+                else None,
+            },
         }

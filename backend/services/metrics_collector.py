@@ -450,9 +450,9 @@ class EnhancedMetricsCollector:
         # Track query complexity
         self.metrics.user_activity.labels(
             user_id="system",
-            activity_type="rag_query_complex"
-            if document_count > 1
-            else "rag_query_simple",
+            activity_type=(
+                "rag_query_complex" if document_count > 1 else "rag_query_simple"
+            ),
         ).inc()
 
     def record_security_incident(
@@ -493,9 +493,11 @@ class EnhancedMetricsCollector:
             health_status["checks"]["system"] = {
                 "memory_percent": memory.percent,
                 "cpu_percent": cpu_percent,
-                "status": "healthy"
-                if memory.percent < 85 and cpu_percent < 85
-                else "degraded",
+                "status": (
+                    "healthy"
+                    if memory.percent < 85 and cpu_percent < 85
+                    else "degraded"
+                ),
             }
 
             if memory.percent > 90 or cpu_percent > 90:

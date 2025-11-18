@@ -174,11 +174,11 @@ async def get_document_index(
         index_data = IndexData(
             id=index.id,
             document_id=index.document_id,
-            vector_index_path=index.vector_index_path or "",
+            vector_index_path=index.index_path or "",
             index_hash=index.index_hash or "",
             chunk_count=index.chunk_count or 0,
             created_at=index.created_at.isoformat() if index.created_at else "",
-            updated_at=index.updated_at.isoformat() if index.updated_at else "",
+            updated_at=index.created_at.isoformat() if index.created_at else "",
             status="ready",  # Placeholder - could check file existence
             _links=Links(
                 self=f"/api/indexes/{index.id}",
@@ -205,7 +205,7 @@ async def get_document_index(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve index",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -437,7 +437,7 @@ async def verify_index(
         # Verify (placeholder)
         from pathlib import Path
 
-        index_path = Path(index.vector_index_path) if index.vector_index_path else None
+        index_path = Path(index.index_path) if index.index_path else None
 
         verification_result = {
             "index_id": index_id,
@@ -469,7 +469,7 @@ async def verify_index(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Index verification failed",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -524,7 +524,7 @@ async def cleanup_orphaned_indexes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Orphaned index cleanup failed",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -572,4 +572,4 @@ async def get_storage_stats(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve storage statistics",
-        )
+        ) from e

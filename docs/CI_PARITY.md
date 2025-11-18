@@ -30,14 +30,19 @@ make pre-commit-install        # installs git hooks (.git/hooks/pre-commit)
    make ci-local
    ```
    This target executes:
-   - `make lint-full` (Ruff + MyPy across the repo)
+   - `make lint-ci` (Black + Ruff + MyPy on changed files, same as GitHub Actions)
    - `pytest -q`
    - `cd frontend && npm run test -- --run`
 
 ## 3. Handling existing lint debt
-- `make lint-full` currently fails because of historical Ruff/Mypy violations (see `openspec/changes/add-ci-parity-tooling/design.md`).
-- Use `make lint-full || true` to inspect the remaining failures and fix them in manageable batches.
+- `make lint-full` still exists to gauge the legacy Ruff/Mypy backlog, but GitHub Actions enforces the changed-file gate. Use `make lint-full || true` when you want to inspect or burn down that debt.
+- `make lint-ci` mirrors CI exactly. It resolves Python files changed vs. `origin/main` (or `CI_LINT_BASE=<ref>`), runs `black --check`, `ruff check`, and `scripts/mypy_changed.py` on that set, then exits non-zero if anything fails.
 - When cleaning a directory, run `ruff check <dir> --fix` and add tests to ensure behaviour stays stable.
+- RAG evaluation helpers have their own lint target while we burn down the backlog:
+  ```bash
+  python -m ruff check src/services/rag/vector_similarity.py
+  ```
+  Run it whenever you touch the retrieval/evaluation utilities so trailing-whitespace regressions are caught immediately.
 
 ## 4. Pre-commit hooks (optional but encouraged)
 `.pre-commit-config.yaml` includes:

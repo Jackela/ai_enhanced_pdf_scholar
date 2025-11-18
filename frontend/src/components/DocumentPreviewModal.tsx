@@ -82,7 +82,8 @@ export function DocumentPreviewModal({ document, open, onOpenChange }: DocumentP
   const close = () => onOpenChange(false)
 
   const disablePrev = page <= 1
-  const disableNext = document.page_count ? page >= document.page_count : false
+  const disableNext = page >= maxPage
+  const isLoading = status === 'loading'
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4'>
@@ -100,14 +101,16 @@ export function DocumentPreviewModal({ document, open, onOpenChange }: DocumentP
           <div className='flex items-center justify-between'>
             <div>
               <h2 className='text-lg font-semibold'>{document.title}</h2>
-              <p className='text-sm text-muted-foreground'>Page {page}</p>
+              <p className='text-sm text-muted-foreground'>
+                Page {page} of {maxPage}
+              </p>
             </div>
 
             <div className='flex items-center gap-2'>
               <button
                 type='button'
                 onClick={() => setPage(prev => Math.max(1, prev - 1))}
-                disabled={disablePrev || state.status === 'loading'}
+                disabled={disablePrev || isLoading}
                 className='rounded border px-3 py-1 text-sm disabled:opacity-50'
               >
                 <ChevronLeft className='mr-1 inline h-4 w-4' /> Prev
@@ -115,7 +118,7 @@ export function DocumentPreviewModal({ document, open, onOpenChange }: DocumentP
               <button
                 type='button'
                 onClick={() => setPage(prev => prev + 1)}
-                disabled={disableNext || state.status === 'loading'}
+                disabled={disableNext || isLoading}
                 className='rounded border px-3 py-1 text-sm disabled:opacity-50'
               >
                 Next <ChevronRight className='ml-1 inline h-4 w-4' />

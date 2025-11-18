@@ -242,7 +242,7 @@ async def query_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Query execution failed",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -328,9 +328,7 @@ async def query_multiple_documents(
             _links=Links(
                 self="/api/queries/multi-document",
                 related={
-                    "documents": [
-                        f"/api/documents/{doc_id}" for doc_id in request.document_ids
-                    ]
+                    "documents": f"/api/documents?ids={','.join(map(str, request.document_ids))}"
                 },
             ),
         )
@@ -353,7 +351,7 @@ async def query_multiple_documents(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Multi-document query execution failed",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -408,7 +406,7 @@ async def clear_document_cache(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Cache clearing failed",
-        )
+        ) from e
 
 
 # ============================================================================
@@ -456,4 +454,4 @@ async def get_cache_stats(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve cache statistics",
-        )
+        ) from e

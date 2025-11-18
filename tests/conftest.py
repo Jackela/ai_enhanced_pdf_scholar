@@ -14,7 +14,7 @@ def _install_pdf_stub() -> None:
             return ""
 
     class _StubDocument:
-        def __enter__(self) -> "_StubDocument":
+        def __enter__(self) -> _StubDocument:
             return self
 
         def __exit__(self, exc_type, exc_val, exc_tb) -> None:

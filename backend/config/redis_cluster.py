@@ -24,6 +24,7 @@ try:
         TimeoutError as RedisTimeoutError,
     )
     from redis.sentinel import Sentinel
+
     REDIS_AVAILABLE = True
 except ImportError:
     # Redis is optional - gracefully handle when not installed
@@ -41,13 +42,16 @@ logger = logging.getLogger(__name__)
 def check_redis_availability():
     """Check if Redis is available and log status."""
     if not REDIS_AVAILABLE:
-        logger.warning("Redis package not installed. Redis cluster features will be disabled.")
+        logger.warning(
+            "Redis package not installed. Redis cluster features will be disabled."
+        )
         return False
     return True
 
 
 class RedisBackendType(str, Enum):
     """Redis backend deployment types."""
+
     STANDALONE = "standalone"
     CLUSTER = "cluster"
     SENTINEL = "sentinel"
@@ -55,6 +59,7 @@ class RedisBackendType(str, Enum):
 
 class CacheEvictionPolicy(str, Enum):
     """Redis cache eviction policies."""
+
     ALLKEYS_LRU = "allkeys-lru"
     VOLATILE_LRU = "volatile-lru"
     ALLKEYS_LFU = "allkeys-lfu"
@@ -68,6 +73,7 @@ class CacheEvictionPolicy(str, Enum):
 @dataclass
 class RedisNodeConfig:
     """Configuration for a Redis node."""
+
     host: str
     port: int = 6379
     password: str | None = None
@@ -83,16 +89,19 @@ class RedisNodeConfig:
 @dataclass
 class ConnectionPoolConfig:
     """Redis connection pool configuration."""
+
     max_connections: int = 50
     connection_timeout: float = 5.0
     socket_timeout: float = 5.0
     socket_connect_timeout: float = 5.0
     socket_keepalive: bool = True
-    socket_keepalive_options: dict[str, int] = field(default_factory=lambda: {
-        1: 1,  # TCP_KEEPIDLE
-        2: 3,  # TCP_KEEPINTVL
-        3: 5,  # TCP_KEEPCNT
-    })
+    socket_keepalive_options: dict[str, int] = field(
+        default_factory=lambda: {
+            1: 1,  # TCP_KEEPIDLE
+            2: 3,  # TCP_KEEPINTVL
+            3: 5,  # TCP_KEEPCNT
+        }
+    )
     retry_on_timeout: bool = True
     health_check_interval: int = 30
     max_connections_per_node: int = 10
@@ -101,6 +110,7 @@ class ConnectionPoolConfig:
 @dataclass
 class ClusterConfig:
     """Redis cluster configuration."""
+
     startup_nodes: list[RedisNodeConfig] = field(default_factory=list)
     max_connections: int = 50
     skip_full_coverage_check: bool = False
@@ -114,6 +124,7 @@ class ClusterConfig:
 @dataclass
 class SentinelConfig:
     """Redis Sentinel configuration."""
+
     sentinel_nodes: list[tuple[str, int]] = field(default_factory=list)
     service_name: str = "mymaster"
     socket_timeout: float = 0.5
@@ -125,12 +136,13 @@ class SentinelConfig:
 @dataclass
 class CachingConfig:
     """Caching behavior configuration."""
+
     default_ttl: int = 3600
     max_ttl: int = 86400
     key_prefix: str = "ai_pdf_scholar:"
     compression_threshold: int = 1024
     compression_level: int = 6
-    serialization_format: str = "pickle"  # pickle, json, msgpack
+    serialization_format: str = "json"  # json, msgpack
     enable_pipelining: bool = True
     pipeline_buffer_size: int = 100
 
@@ -158,7 +170,7 @@ class RedisClusterManager:
         pool_config: ConnectionPoolConfig | None = None,
         cluster_config: ClusterConfig | None = None,
         sentinel_config: SentinelConfig | None = None,
-        caching_config: CachingConfig | None = None
+        caching_config: CachingConfig | None = None,
     ):
         """Initialize Redis cluster manager."""
         self.backend_type = backend_type
@@ -170,7 +182,9 @@ class RedisClusterManager:
 
         # Connection management
         self._redis_client: Union[redis.Redis, RedisCluster] | None = None
-        self._async_redis_client: Union[aioredis.Redis, aioredis.RedisCluster] | None = None
+        self._async_redis_client: (
+            Union[aioredis.Redis, aioredis.RedisCluster] | None
+        ) = None
         self._connection_pools: dict[str, redis.ConnectionPool] = {}
         self._health_status: dict[str, bool] = {}
 
@@ -185,7 +199,7 @@ class RedisClusterManager:
         self._operation_metrics: dict[str, list[float]] = {
             "response_times": [],
             "error_rates": [],
-            "throughput": []
+            "throughput": [],
         }
 
         logger.info(f"Initialized RedisClusterManager with {backend_type} backend")
@@ -228,7 +242,7 @@ class RedisClusterManager:
             ssl_cert_reqs=primary_node.ssl_cert_reqs,
             ssl_ca_certs=primary_node.ssl_ca_certs,
             ssl_certfile=primary_node.ssl_certfile,
-            ssl_keyfile=primary_node.ssl_keyfile
+            ssl_keyfile=primary_node.ssl_keyfile,
         )
 
         # Create Redis clients
@@ -243,7 +257,7 @@ class RedisClusterManager:
             socket_keepalive=self.pool_config.socket_keepalive,
             socket_keepalive_options=self.pool_config.socket_keepalive_options,
             max_connections=self.pool_config.max_connections,
-            ssl=primary_node.ssl
+            ssl=primary_node.ssl,
         )
 
         # Test connection
@@ -268,7 +282,7 @@ class RedisClusterManager:
             socket_connect_timeout=self.pool_config.socket_connect_timeout,
             socket_keepalive=self.pool_config.socket_keepalive,
             socket_keepalive_options=self.pool_config.socket_keepalive_options,
-            read_from_replicas=self.cluster_config.read_from_replicas
+            read_from_replicas=self.cluster_config.read_from_replicas,
         )
 
         # Create async cluster client
@@ -277,7 +291,7 @@ class RedisClusterManager:
             max_connections=self.cluster_config.max_connections,
             socket_timeout=self.pool_config.socket_timeout,
             socket_connect_timeout=self.pool_config.socket_connect_timeout,
-            skip_full_coverage_check=self.cluster_config.skip_full_coverage_check
+            skip_full_coverage_check=self.cluster_config.skip_full_coverage_check,
         )
 
         # Test cluster connection
@@ -289,7 +303,7 @@ class RedisClusterManager:
         sentinel = Sentinel(
             self.sentinel_config.sentinel_nodes,
             socket_timeout=self.sentinel_config.socket_timeout,
-            **self.sentinel_config.sentinel_kwargs
+            **self.sentinel_config.sentinel_kwargs,
         )
 
         # Discover master
@@ -300,7 +314,7 @@ class RedisClusterManager:
             socket_timeout=self.pool_config.socket_timeout,
             socket_connect_timeout=self.pool_config.socket_connect_timeout,
             socket_keepalive=self.pool_config.socket_keepalive,
-            socket_keepalive_options=self.pool_config.socket_keepalive_options
+            socket_keepalive_options=self.pool_config.socket_keepalive_options,
         )
 
         self._redis_client = master
@@ -310,7 +324,7 @@ class RedisClusterManager:
         self._async_redis_client = async_sentinel.master_for(
             self.sentinel_config.service_name,
             password=self.sentinel_config.password,
-            db=self.sentinel_config.db
+            db=self.sentinel_config.db,
         )
 
         # Test sentinel connection
@@ -337,7 +351,7 @@ class RedisClusterManager:
                         host=node.host,
                         port=node.port,
                         password=node.password,
-                        socket_timeout=2.0
+                        socket_timeout=2.0,
                     )
                     await client.ping()
                     self._health_status[f"{node.host}:{node.port}"] = True
@@ -349,10 +363,14 @@ class RedisClusterManager:
             try:
                 await self._async_redis_client.ping()
                 if self._current_master:
-                    self._health_status[f"{self._current_master.host}:{self._current_master.port}"] = True
+                    self._health_status[
+                        f"{self._current_master.host}:{self._current_master.port}"
+                    ] = True
             except Exception:
                 if self._current_master:
-                    self._health_status[f"{self._current_master.host}:{self._current_master.port}"] = False
+                    self._health_status[
+                        f"{self._current_master.host}:{self._current_master.port}"
+                    ] = False
 
         self._last_health_check = time.time()
 
@@ -365,7 +383,7 @@ class RedisClusterManager:
             self._connection_stats[node_key] = {
                 "created_connections": pool.created_connections,
                 "available_connections": len(pool._available_connections),
-                "in_use_connections": len(pool._in_use_connections)
+                "in_use_connections": len(pool._in_use_connections),
             }
 
     # ========================================================================
@@ -409,7 +427,7 @@ class RedisClusterManager:
         value: Any,
         ttl: int | None = None,
         nx: bool = False,
-        xx: bool = False
+        xx: bool = False,
     ) -> bool:
         """Set value with automatic failover and retries."""
         full_key = f"{self.caching_config.key_prefix}{key}"
@@ -423,11 +441,7 @@ class RedisClusterManager:
                 start_time = time.time()
 
                 result = await self._async_redis_client.set(
-                    full_key,
-                    serialized_value,
-                    ex=ttl,
-                    nx=nx,
-                    xx=xx
+                    full_key, serialized_value, ex=ttl, nx=nx, xx=xx
                 )
 
                 # Record metrics
@@ -562,16 +576,18 @@ class RedisClusterManager:
             "connection_stats": dict(self._connection_stats),
             "last_health_check": self._last_health_check,
             "available_nodes": len(self._available_nodes),
-            "failed_nodes": len(self._failed_nodes)
+            "failed_nodes": len(self._failed_nodes),
         }
 
         # Add performance metrics
         if self._operation_metrics["response_times"]:
-            response_times = self._operation_metrics["response_times"][-100:]  # Last 100
+            response_times = self._operation_metrics["response_times"][
+                -100:
+            ]  # Last 100
             stats["performance"] = {
                 "avg_response_time": sum(response_times) / len(response_times),
                 "max_response_time": max(response_times),
-                "min_response_time": min(response_times)
+                "min_response_time": min(response_times),
             }
 
         return stats
@@ -583,23 +599,24 @@ class RedisClusterManager:
     def _serialize(self, value: Any) -> bytes:
         """Serialize value based on configuration."""
         import json
-        import pickle
 
         try:
-            if self.caching_config.serialization_format == "json":
+            format_name = (self.caching_config.serialization_format or "json").lower()
+            if format_name == "json":
                 serialized = json.dumps(value).encode()
-            elif self.caching_config.serialization_format == "msgpack":
+            elif format_name == "msgpack":
                 import msgpack
+
                 serialized = msgpack.packb(value)
-            else:  # Default to pickle
-                serialized = pickle.dumps(value)
+            else:
+                raise ValueError(f"Unsupported serialization format: {format_name}")
 
             # Compress if above threshold
-            if (len(serialized) > self.caching_config.compression_threshold):
+            if len(serialized) > self.caching_config.compression_threshold:
                 import zlib
+
                 serialized = b"COMPRESSED:" + zlib.compress(
-                    serialized,
-                    self.caching_config.compression_level
+                    serialized, self.caching_config.compression_level
                 )
 
             return serialized
@@ -611,21 +628,22 @@ class RedisClusterManager:
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize value based on configuration."""
         import json
-        import pickle
 
         try:
             # Check if compressed
             if data.startswith(b"COMPRESSED:"):
                 import zlib
+
                 data = zlib.decompress(data[11:])  # Remove "COMPRESSED:" prefix
 
-            if self.caching_config.serialization_format == "json":
+            format_name = (self.caching_config.serialization_format or "json").lower()
+            if format_name == "json":
                 return json.loads(data.decode())
-            elif self.caching_config.serialization_format == "msgpack":
+            elif format_name == "msgpack":
                 import msgpack
+
                 return msgpack.unpackb(data, raw=False)
-            else:  # Default to pickle
-                return pickle.loads(data)
+            raise ValueError(f"Unsupported serialization format: {format_name}")
 
         except Exception as e:
             logger.error(f"Deserialization error: {e}")
@@ -666,17 +684,25 @@ class RedisClusterManager:
                             host=node.host,
                             port=node.port,
                             password=node.password,
-                            db=node.db
+                            db=node.db,
                         )
                         await client.ping()
 
                         # Update current master
                         self._current_master = node
                         self._async_redis_client = client
-                        logger.info(f"Failed over to Redis node {node.host}:{node.port}")
+                        logger.info(
+                            f"Failed over to Redis node {node.host}:{node.port}"
+                        )
                         return
 
-                    except Exception:
+                    except Exception as exc:
+                        logger.warning(
+                            "Failed to failover to Redis node %s:%s: %s",
+                            node.host,
+                            node.port,
+                            exc,
+                        )
                         continue
 
             logger.error("All Redis nodes are unavailable")
@@ -699,11 +725,12 @@ class RedisClusterManager:
 # Factory Functions
 # ============================================================================
 
+
 def create_redis_cluster_manager(
     nodes: list[str],
     backend_type: str = "standalone",
     max_connections: int = 50,
-    **kwargs
+    **kwargs,
 ) -> RedisClusterManager:
     """
     Factory function to create Redis cluster manager.
@@ -733,7 +760,9 @@ def create_redis_cluster_manager(
 
     # Create configuration
     pool_config = ConnectionPoolConfig(max_connections=max_connections)
-    caching_config = CachingConfig(**{k: v for k, v in kwargs.items() if k in CachingConfig.__dataclass_fields__})
+    caching_config = CachingConfig(
+        **{k: v for k, v in kwargs.items() if k in CachingConfig.__dataclass_fields__}
+    )
 
     if backend_type == "cluster":
         cluster_config = ClusterConfig(startup_nodes=redis_nodes)
@@ -742,7 +771,7 @@ def create_redis_cluster_manager(
             nodes=redis_nodes,
             pool_config=pool_config,
             cluster_config=cluster_config,
-            caching_config=caching_config
+            caching_config=caching_config,
         )
     elif backend_type == "sentinel":
         sentinel_nodes = [(node.host, node.port) for node in redis_nodes]
@@ -752,14 +781,14 @@ def create_redis_cluster_manager(
             nodes=redis_nodes,
             pool_config=pool_config,
             sentinel_config=sentinel_config,
-            caching_config=caching_config
+            caching_config=caching_config,
         )
     else:
         return RedisClusterManager(
             backend_type=RedisBackendType.STANDALONE,
             nodes=redis_nodes,
             pool_config=pool_config,
-            caching_config=caching_config
+            caching_config=caching_config,
         )
 
 
@@ -770,7 +799,7 @@ async def main():
         nodes=["redis://localhost:6379"],
         backend_type="standalone",
         max_connections=20,
-        default_ttl=3600
+        default_ttl=3600,
     )
 
     # Initialize

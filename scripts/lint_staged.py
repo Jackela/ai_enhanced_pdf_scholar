@@ -49,6 +49,11 @@ def parse_args() -> argparse.Namespace:
         nargs=argparse.REMAINDER,
         help="Additional arguments forwarded to Ruff (prefix with --)",
     )
+    parser.add_argument(
+        "--list-files",
+        action="store_true",
+        help="Print changed Python files and exit",
+    )
     return parser.parse_args()
 
 
@@ -103,7 +108,12 @@ def main() -> int:
 
     changed_files = gather_changed_files(args.base, args.staged, args.paths)
     if not changed_files:
-        print("No Python files changed. Ruff skipped.")
+        if not args.list_files:
+            print("No Python files changed. Ruff skipped.")
+        return 0
+
+    if args.list_files:
+        print("\n".join(changed_files))
         return 0
 
     ruff_cmd = [args.ruff_bin, "check", "--force-exclude", *changed_files]

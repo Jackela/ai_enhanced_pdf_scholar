@@ -1,0 +1,5 @@
+- [x] Identify highest-yield coverage gaps (upload_document branches, cache warming/wiring, Redis layer init) and pick test entry points (route vs. service).
+- [x] Add pytest coverage for `upload_document` covering success, duplicate, invalid PDF, missing file, and managed temp cleanup.
+- [x] Add ASGI-level contract tests (TestClient/httpx) for document routes to validate envelopes/headers for upload/download/preview.
+- [x] Add cache-layer tests for IntegratedCacheManager warming/performance/coherency steps with stubbed caches/metrics to hit background logic.
+- [x] Run `pytest -q` and `make lint-ci`; document the new suites in `tests/README.md` with coverage deltas.

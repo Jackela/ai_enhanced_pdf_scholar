@@ -17,7 +17,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 # Add project root to path for imports
@@ -75,7 +75,9 @@ from backend.services.metrics_service import FastAPIMetricsMiddleware
 
 # Note: add_middleware passes the app automatically as the first argument
 # We only need to pass additional arguments as keyword arguments
-app.add_middleware(FastAPIMetricsMiddleware, metrics_service=metrics_collector.metrics_service)
+app.add_middleware(
+    FastAPIMetricsMiddleware, metrics_service=metrics_collector.metrics_service
+)
 
 # WebSocket manager
 websocket_manager = WebSocketManager()
@@ -97,7 +99,9 @@ app.include_router(auth_routes.router, prefix="/api", tags=["authentication"])
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
 app.include_router(library.router, prefix="/api/library", tags=["library"])
-app.include_router(multi_document.router, prefix="/api/multi-document", tags=["multi-document"])
+app.include_router(
+    multi_document.router, prefix="/api/multi-document", tags=["multi-document"]
+)
 app.include_router(system.router, prefix="/api/system", tags=["system"])
 app.include_router(settings.router, prefix="/api")
 app.include_router(rate_limit_admin.router, prefix="/api/admin", tags=["rate-limiting"])
@@ -107,19 +111,22 @@ app.include_router(cache_admin.router, prefix="/api/admin", tags=["cache-admin"]
 # Basic Health Check Endpoints
 # ============================================================================
 
+
 @app.get("/")
 async def root():
     """Root endpoint for basic connectivity test."""
     return {
         "message": "AI Enhanced PDF Scholar API is running",
         "version": "2.0.0",
-        "docs": "/api/docs"
+        "docs": "/api/docs",
     }
+
 
 @app.get("/ping")
 async def ping():
     """Simple ping endpoint for connectivity test."""
     return {"pong": True}
+
 
 @app.get("/health")
 async def basic_health_check():
@@ -128,8 +135,9 @@ async def basic_health_check():
         "status": "healthy",
         "service": "AI Enhanced PDF Scholar API",
         "version": "2.0.0",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
+
 
 @app.get("/health/detailed")
 async def detailed_health_check():
@@ -142,12 +150,14 @@ async def detailed_health_check():
         return {
             "healthy": False,
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
+
 
 # ============================================================================
 # Monitoring Endpoints
 # ============================================================================
+
 
 @app.get("/metrics")
 async def get_metrics():
@@ -159,6 +169,7 @@ async def get_metrics():
         logger.error(f"Failed to generate metrics: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate metrics") from e
 
+
 @app.get("/metrics/dashboard")
 async def get_dashboard_metrics():
     """Get formatted metrics for custom dashboard."""
@@ -167,12 +178,16 @@ async def get_dashboard_metrics():
         return dashboard_data
     except Exception as e:
         logger.error(f"Failed to get dashboard metrics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get dashboard metrics") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to get dashboard metrics"
+        ) from e
+
 
 # Serve static files for frontend
 frontend_dist = project_root / "frontend" / "dist"
 if frontend_dist.exists():
     app.mount("/static", StaticFiles(directory=str(frontend_dist)), name="static")
+
 
 # WebSocket endpoint for real-time communication
 @app.websocket("/ws/{client_id}")
@@ -193,6 +208,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
             elif message.get("type") == "rag_query":
                 # Handle RAG query in background
                 import asyncio
+
                 asyncio.create_task(
                     handle_rag_query_websocket(
                         message.get("query", ""), message.get("document_id"), client_id
@@ -201,6 +217,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
     except WebSocketDisconnect:
         websocket_manager.disconnect(client_id)
         logger.info(f"WebSocket client {client_id} disconnected")
+
 
 async def handle_rag_query_websocket(
     query: str, document_id: int, client_id: str
@@ -241,10 +258,20 @@ async def handle_rag_query_websocket(
             json.dumps({"type": "rag_error", "error": str(e)}), client_id
         )
 
+
 # Log startup info
 logger.info("AI Enhanced PDF Scholar API (Simplified) initialized")
 logger.info("Using simplified startup without lifespan for Hypercorn compatibility")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main_simple:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+
+    server_host = os.getenv("API_SERVER_HOST", "127.0.0.1")
+    server_port = int(os.getenv("API_SERVER_PORT", "8000"))
+    uvicorn.run(
+        "main_simple:app",
+        host=server_host,
+        port=server_port,
+        reload=True,
+        log_level="info",
+    )

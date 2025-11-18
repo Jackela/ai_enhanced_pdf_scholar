@@ -723,7 +723,11 @@ class MetricsService:
         """Get metrics in Prometheus format."""
         return generate_latest(self.registry)
 
-    def start_metrics_server(self, port: int = 8000, addr: str = "0.0.0.0"):
+    def start_metrics_server(
+        self,
+        port: int = 8000,
+        addr: str = "0.0.0.0",  # noqa: S104 - intentional bind
+    ):
         """Start HTTP server for metrics endpoint."""
         try:
             start_http_server(port, addr, registry=self.registry)

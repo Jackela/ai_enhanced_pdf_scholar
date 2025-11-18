@@ -496,7 +496,7 @@ class ApplicationConfig:
         all_issues = []
 
         # Validate each configuration section
-        for config_name, config_obj in [
+        config_sections = [
             ("cors", self.cors),
             ("rate_limiting", self.rate_limiting),
             ("database", self.database),
@@ -506,11 +506,11 @@ class ApplicationConfig:
             ("preview", self.preview),
             ("logging", self.logging),
             ("caching", self.caching),
-        ]:
+        ]
+        for config_name, config_obj in config_sections:
             if config_obj is not None and hasattr(config_obj, "validate"):
                 issues = config_obj.validate(self.environment)
-                for issue in issues:
-                    all_issues.append(f"{config_name}: {issue}")
+                all_issues.extend(f"{config_name}: {issue}" for issue in issues)
 
         # Production security validation
         if self.environment.is_production():

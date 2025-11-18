@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from backend.api.auth.constants import TokenType
 from backend.api.auth.jwt_handler import jwt_handler
 from backend.api.auth.models import (
     AccountStatus,
@@ -54,7 +55,7 @@ class AuthenticationService:
         email: str,
         password: str,
         full_name: str | None = None,
-        auto_verify: bool = False
+        auto_verify: bool = False,
     ) -> tuple[UserModel | None, str | None]:
         """
         Register a new user.
@@ -71,12 +72,16 @@ class AuthenticationService:
         """
         try:
             # Check if username already exists
-            existing_user = self.db.query(UserModel).filter(
-                or_(
-                    UserModel.username == username.lower(),
-                    UserModel.email == email.lower()
+            existing_user = (
+                self.db.query(UserModel)
+                .filter(
+                    or_(
+                        UserModel.username == username.lower(),
+                        UserModel.email == email.lower(),
+                    )
                 )
-            ).first()
+                .first()
+            )
 
             if existing_user:
                 if existing_user.username == username.lower():
@@ -85,7 +90,9 @@ class AuthenticationService:
                     return None, "Email already registered"
 
             # Validate password strength
-            is_valid, errors = self.password_policy.validate_password_strength(password, username)
+            is_valid, errors = self.password_policy.validate_password_strength(
+                password, username
+            )
             if not is_valid:
                 return None, f"Password validation failed: {'; '.join(errors)}"
 
@@ -101,7 +108,9 @@ class AuthenticationService:
                 role=UserRole.USER.value,
                 is_active=True,
                 is_verified=auto_verify,
-                account_status=AccountStatus.ACTIVE.value if auto_verify else AccountStatus.PENDING_VERIFICATION.value,
+                account_status=AccountStatus.ACTIVE.value
+                if auto_verify
+                else AccountStatus.PENDING_VERIFICATION.value,
                 password_changed_at=datetime.utcnow(),
                 email_verified_at=datetime.utcnow() if auto_verify else None,
             )
@@ -127,10 +136,7 @@ class AuthenticationService:
     # ============================================================================
 
     def authenticate_user(
-        self,
-        username: str,
-        password: str,
-        ip_address: str | None = None
+        self, username: str, password: str, ip_address: str | None = None
     ) -> tuple[UserModel | None, str | None]:
         """
         Authenticate a user with username/email and password.
@@ -145,21 +151,29 @@ class AuthenticationService:
         """
         try:
             # Find user by username or email
-            user = self.db.query(UserModel).filter(
-                or_(
-                    UserModel.username == username.lower(),
-                    UserModel.email == username.lower()
+            user = (
+                self.db.query(UserModel)
+                .filter(
+                    or_(
+                        UserModel.username == username.lower(),
+                        UserModel.email == username.lower(),
+                    )
                 )
-            ).first()
+                .first()
+            )
 
             if not user:
                 # Log failed attempt (user not found)
-                logger.warning(f"Login attempt for non-existent user: {username} from IP: {ip_address}")
+                logger.warning(
+                    f"Login attempt for non-existent user: {username} from IP: {ip_address}"
+                )
                 return None, "Invalid username or password"
 
             # Check if account is locked
             if user.is_account_locked():
-                remaining_time = self.lockout_policy.get_remaining_lockout_time(user.account_locked_until)
+                remaining_time = self.lockout_policy.get_remaining_lockout_time(
+                    user.account_locked_until
+                )
                 minutes = remaining_time // 60
                 return None, f"Account is locked. Try again in {minutes} minutes"
 
@@ -175,7 +189,9 @@ class AuthenticationService:
 
                 # Check if account should be locked
                 if self.lockout_policy.should_lock_account(user.failed_login_attempts):
-                    lockout_duration = self.lockout_policy.get_lockout_duration(user.failed_login_attempts)
+                    lockout_duration = self.lockout_policy.get_lockout_duration(
+                        user.failed_login_attempts
+                    )
                     user.lock_account(lockout_duration)
                     logger.warning(f"Account locked due to failed attempts: {username}")
 
@@ -215,9 +231,7 @@ class AuthenticationService:
     # ============================================================================
 
     def create_tokens(
-        self,
-        user: UserModel,
-        device_info: str | None = None
+        self, user: UserModel, device_info: str | None = None
     ) -> tuple[str, str, int]:
         """
         Create access and refresh tokens for a user.
@@ -234,7 +248,7 @@ class AuthenticationService:
             user_id=user.id,
             username=user.username,
             role=user.role,
-            version=user.refresh_token_version
+            version=user.refresh_token_version,
         )
 
         # Create refresh token
@@ -242,7 +256,7 @@ class AuthenticationService:
             user_id=user.id,
             username=user.username,
             role=user.role,
-            version=user.refresh_token_version
+            version=user.refresh_token_version,
         )
 
         # Store refresh token in database
@@ -251,7 +265,7 @@ class AuthenticationService:
             token_jti=jti,
             token_family=jti,  # New family for this login
             expires_at=expires_at,
-            device_info=device_info
+            device_info=device_info,
         )
 
         self.db.add(refresh_token_model)
@@ -263,9 +277,7 @@ class AuthenticationService:
         return access_token, refresh_token, expires_in
 
     def refresh_tokens(
-        self,
-        refresh_token: str,
-        device_info: str | None = None
+        self, refresh_token: str, device_info: str | None = None
     ) -> tuple[str | None, str | None, int | None, str | None]:
         """
         Refresh access and refresh tokens using refresh token rotation.
@@ -279,15 +291,19 @@ class AuthenticationService:
         """
         try:
             # Decode refresh token
-            payload = jwt_handler.decode_token(refresh_token, token_type="refresh")
+            payload = jwt_handler.decode_token(
+                refresh_token, token_type=TokenType.REFRESH
+            )
 
             if not payload:
                 return None, None, None, "Invalid refresh token"
 
             # Get stored refresh token
-            stored_token = self.db.query(RefreshTokenModel).filter(
-                RefreshTokenModel.token_jti == payload.jti
-            ).first()
+            stored_token = (
+                self.db.query(RefreshTokenModel)
+                .filter(RefreshTokenModel.token_jti == payload.jti)
+                .first()
+            )
 
             if not stored_token:
                 return None, None, None, "Refresh token not found"
@@ -296,24 +312,34 @@ class AuthenticationService:
             if not stored_token.is_valid():
                 # Token has been revoked or expired
                 # Check for reuse attack - if this token family has newer tokens
-                newer_tokens = self.db.query(RefreshTokenModel).filter(
-                    and_(
-                        RefreshTokenModel.token_family == payload.token_family,
-                        RefreshTokenModel.created_at > stored_token.created_at
+                newer_tokens = (
+                    self.db.query(RefreshTokenModel)
+                    .filter(
+                        and_(
+                            RefreshTokenModel.token_family == payload.token_family,
+                            RefreshTokenModel.created_at > stored_token.created_at,
+                        )
                     )
-                ).all()
+                    .all()
+                )
 
                 if newer_tokens:
                     # Possible token reuse attack - revoke entire family
-                    self._revoke_token_family(payload.token_family, "Possible token reuse detected")
-                    logger.warning(f"Possible refresh token reuse attack for user {payload.sub}")
+                    self._revoke_token_family(
+                        payload.token_family, "Possible token reuse detected"
+                    )
+                    logger.warning(
+                        f"Possible refresh token reuse attack for user {payload.sub}"
+                    )
 
                 return None, None, None, "Refresh token is invalid or expired"
 
             # Get user
-            user = self.db.query(UserModel).filter(
-                UserModel.id == stored_token.user_id
-            ).first()
+            user = (
+                self.db.query(UserModel)
+                .filter(UserModel.id == stored_token.user_id)
+                .first()
+            )
 
             if not user or not user.is_active:
                 return None, None, None, "User account is not active"
@@ -332,7 +358,7 @@ class AuthenticationService:
                 user_id=user.id,
                 username=user.username,
                 role=user.role,
-                version=user.refresh_token_version
+                version=user.refresh_token_version,
             )
 
             # Create new refresh token with same family
@@ -341,7 +367,7 @@ class AuthenticationService:
                 username=user.username,
                 role=user.role,
                 version=user.refresh_token_version,
-                token_family=payload.token_family
+                token_family=payload.token_family,
             )
 
             # Store new refresh token
@@ -350,7 +376,7 @@ class AuthenticationService:
                 token_jti=new_jti,
                 token_family=payload.token_family,
                 expires_at=expires_at,
-                device_info=device_info or stored_token.device_info
+                device_info=device_info or stored_token.device_info,
             )
 
             self.db.add(new_token_model)
@@ -381,15 +407,19 @@ class AuthenticationService:
         """
         try:
             # Decode token
-            payload = jwt_handler.decode_token(refresh_token, token_type="refresh", verify_exp=False)
+            payload = jwt_handler.decode_token(
+                refresh_token, token_type=TokenType.REFRESH, verify_exp=False
+            )
 
             if not payload:
                 return False
 
             # Find and revoke token
-            stored_token = self.db.query(RefreshTokenModel).filter(
-                RefreshTokenModel.token_jti == payload.jti
-            ).first()
+            stored_token = (
+                self.db.query(RefreshTokenModel)
+                .filter(RefreshTokenModel.token_jti == payload.jti)
+                .first()
+            )
 
             if stored_token:
                 stored_token.revoke("User logout")
@@ -423,12 +453,14 @@ class AuthenticationService:
             self.db.query(RefreshTokenModel).filter(
                 and_(
                     RefreshTokenModel.user_id == user_id,
-                    RefreshTokenModel.revoked_at.is_(None)
+                    RefreshTokenModel.revoked_at.is_(None),
                 )
-            ).update({
-                "revoked_at": datetime.utcnow(),
-                "revoked_reason": "Logout from all devices"
-            })
+            ).update(
+                {
+                    "revoked_at": datetime.utcnow(),
+                    "revoked_reason": "Logout from all devices",
+                }
+            )
 
             self.db.commit()
             return True
@@ -449,22 +481,16 @@ class AuthenticationService:
         self.db.query(RefreshTokenModel).filter(
             and_(
                 RefreshTokenModel.token_family == token_family,
-                RefreshTokenModel.revoked_at.is_(None)
+                RefreshTokenModel.revoked_at.is_(None),
             )
-        ).update({
-            "revoked_at": datetime.utcnow(),
-            "revoked_reason": reason
-        })
+        ).update({"revoked_at": datetime.utcnow(), "revoked_reason": reason})
 
     # ============================================================================
     # Password Management
     # ============================================================================
 
     def change_password(
-        self,
-        user_id: int,
-        current_password: str,
-        new_password: str
+        self, user_id: int, current_password: str, new_password: str
     ) -> tuple[bool, str | None]:
         """
         Change user password.
@@ -484,16 +510,22 @@ class AuthenticationService:
                 return False, "User not found"
 
             # Verify current password
-            if not self.password_hasher.verify_password(current_password, user.password_hash):
+            if not self.password_hasher.verify_password(
+                current_password, user.password_hash
+            ):
                 return False, "Current password is incorrect"
 
             # Check password age
-            can_change, message = self.password_policy.check_password_age(user.password_changed_at)
+            can_change, message = self.password_policy.check_password_age(
+                user.password_changed_at
+            )
             if not can_change:
                 return False, message
 
             # Validate new password
-            is_valid, errors = self.password_policy.validate_password_strength(new_password, user.username)
+            is_valid, errors = self.password_policy.validate_password_strength(
+                new_password, user.username
+            )
             if not is_valid:
                 return False, f"Password validation failed: {'; '.join(errors)}"
 
@@ -524,9 +556,11 @@ class AuthenticationService:
             Tuple of (reset_token, error_message)
         """
         try:
-            user = self.db.query(UserModel).filter(
-                UserModel.email == email.lower()
-            ).first()
+            user = (
+                self.db.query(UserModel)
+                .filter(UserModel.email == email.lower())
+                .first()
+            )
 
             if not user:
                 # Don't reveal if email exists
@@ -548,11 +582,7 @@ class AuthenticationService:
             logger.error(f"Password reset request failed: {str(e)}")
             return None, "Password reset request failed"
 
-    def reset_password(
-        self,
-        token: str,
-        new_password: str
-    ) -> tuple[bool, str | None]:
+    def reset_password(self, token: str, new_password: str) -> tuple[bool, str | None]:
         """
         Reset password using reset token.
 
@@ -565,24 +595,33 @@ class AuthenticationService:
         """
         try:
             # Decode token
-            payload = jwt_handler.decode_verification_token(token, "password_reset")
+            payload = jwt_handler.decode_verification_token(
+                token, TokenType.PASSWORD_RESET
+            )
 
             if not payload:
                 return False, "Invalid or expired reset token"
 
-            user = self.db.query(UserModel).filter(
-                UserModel.id == int(payload["sub"])
-            ).first()
+            user = (
+                self.db.query(UserModel)
+                .filter(UserModel.id == int(payload["sub"]))
+                .first()
+            )
 
             if not user:
                 return False, "Invalid reset token"
 
             # Check if token is still valid
-            if not user.password_reset_expires or datetime.utcnow() > user.password_reset_expires:
+            if (
+                not user.password_reset_expires
+                or datetime.utcnow() > user.password_reset_expires
+            ):
                 return False, "Reset token has expired"
 
             # Validate new password
-            is_valid, errors = self.password_policy.validate_password_strength(new_password, user.username)
+            is_valid, errors = self.password_policy.validate_password_strength(
+                new_password, user.username
+            )
             if not is_valid:
                 return False, f"Password validation failed: {'; '.join(errors)}"
 
@@ -624,14 +663,18 @@ class AuthenticationService:
         """
         try:
             # Decode token
-            payload = jwt_handler.decode_verification_token(token, "email_verification")
+            payload = jwt_handler.decode_verification_token(
+                token, TokenType.EMAIL_VERIFICATION
+            )
 
             if not payload:
                 return False, "Invalid or expired verification token"
 
-            user = self.db.query(UserModel).filter(
-                UserModel.id == int(payload["sub"])
-            ).first()
+            user = (
+                self.db.query(UserModel)
+                .filter(UserModel.id == int(payload["sub"]))
+                .first()
+            )
 
             if not user:
                 return False, "Invalid verification token"
@@ -664,15 +707,15 @@ class AuthenticationService:
 
     def get_user_by_username(self, username: str) -> UserModel | None:
         """Get user by username."""
-        return self.db.query(UserModel).filter(
-            UserModel.username == username.lower()
-        ).first()
+        return (
+            self.db.query(UserModel)
+            .filter(UserModel.username == username.lower())
+            .first()
+        )
 
     def get_user_by_email(self, email: str) -> UserModel | None:
         """Get user by email."""
-        return self.db.query(UserModel).filter(
-            UserModel.email == email.lower()
-        ).first()
+        return self.db.query(UserModel).filter(UserModel.email == email.lower()).first()
 
     def update_user_activity(self, user_id: int):
         """Update user's last activity timestamp."""
@@ -685,7 +728,7 @@ class AuthenticationService:
             self.db.rollback()
             logger.error(f"Failed to update user activity: {str(e)}")
 
-    def log_login_attempt(self, login_attempt: 'LoginAttemptLog') -> bool:
+    def log_login_attempt(self, login_attempt: "LoginAttemptLog") -> bool:
         """
         Log a login attempt for audit and security monitoring.
 
@@ -708,7 +751,9 @@ class AuthenticationService:
             if login_attempt.success:
                 logger.info(f"[AUDIT] {log_message}")
             else:
-                logger.warning(f"[SECURITY] Failed {log_message}, Reason: {login_attempt.failure_reason}")
+                logger.warning(
+                    f"[SECURITY] Failed {log_message}, Reason: {login_attempt.failure_reason}"
+                )
 
             # TODO: In production, store in dedicated audit log table
             # audit_record = LoginAuditModel(**login_attempt.dict())
@@ -732,7 +777,7 @@ class AuthenticationService:
             expired_tokens = self.db.query(RefreshTokenModel).filter(
                 and_(
                     RefreshTokenModel.expires_at < datetime.utcnow(),
-                    RefreshTokenModel.revoked_at.is_(None)
+                    RefreshTokenModel.revoked_at.is_(None),
                 )
             )
 

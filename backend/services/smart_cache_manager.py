@@ -4,6 +4,7 @@ Intelligent caching strategies using machine learning for access pattern predict
 """
 
 import asyncio
+import contextlib
 import hashlib
 import json
 import logging
@@ -662,7 +663,7 @@ class SmartCacheManager:
         num_to_evict = max(1, len(eviction_candidates) // 10)
 
         evicted_keys = []
-        for key, score, profile in eviction_candidates[:num_to_evict]:
+        for key, _score, _profile in eviction_candidates[:num_to_evict]:
             if self.redis_cache.delete(key) > 0:
                 evicted_keys.append(key)
                 self.key_profiles.pop(key, None)
@@ -758,7 +759,7 @@ class SmartCacheManager:
                 return False  # Let Redis handle its own memory management for now
 
             return False
-        except:
+        except Exception:
             return False
 
     # ========================================================================
@@ -788,38 +789,32 @@ class SmartCacheManager:
 
         if self.optimization_task:
             self.optimization_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.optimization_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Stopped smart cache optimization")
+
+    async def _run_optimization_cycle(self) -> None:
+        if self.ml_predictor.needs_retraining():
+            await self.ml_predictor.train_models()
+
+        await self._cleanup_old_profiles()
+        await self._analyze_access_patterns()
+        await self._update_performance_metrics()
 
     async def _optimization_loop(self, interval_minutes: int):
         """Main optimization loop."""
         while self.is_optimizing:
             try:
-                # Train ML models if needed
-                if self.ml_predictor.needs_retraining():
-                    await self.ml_predictor.train_models()
-
-                # Clean up old profiles
-                await self._cleanup_old_profiles()
-
-                # Analyze access patterns
-                await self._analyze_access_patterns()
-
-                # Update performance metrics
-                await self._update_performance_metrics()
-
-                # Wait for next cycle
-                await asyncio.sleep(interval_minutes * 60)
-
+                await self._run_optimization_cycle()
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Error in optimization loop: {e}")
-                await asyncio.sleep(60)  # Short delay on error
+                await asyncio.sleep(60)
+                continue
+
+            await asyncio.sleep(interval_minutes * 60)
 
     async def _cleanup_old_profiles(self):
         """Clean up old and unused key profiles."""
@@ -858,7 +853,7 @@ class SmartCacheManager:
 
         # Pattern distribution
         pattern_counts = defaultdict(int)
-        for key, profile in self.key_profiles.items():
+        for profile in self.key_profiles.values():
             pattern_counts[profile.access_pattern] += 1
 
         logger.info(
@@ -963,9 +958,11 @@ class SmartCacheManager:
                 "total_accesses": profile.access_count,
                 "hit_count": profile.hit_count,
                 "miss_count": profile.miss_count,
-                "hit_rate": (profile.hit_count / profile.access_count * 100)
-                if profile.access_count > 0
-                else 0,
+                "hit_rate": (
+                    (profile.hit_count / profile.access_count * 100)
+                    if profile.access_count > 0
+                    else 0
+                ),
             },
             "timing": {
                 "first_access": profile.first_access.isoformat(),
@@ -1015,7 +1012,7 @@ if __name__ == "__main__":
             await smart_cache.set(key, f"value_{i}", user_id="user123")
 
             # Get operation
-            value = await smart_cache.get(key, user_id="user123")
+            await smart_cache.get(key, user_id="user123")
 
             await asyncio.sleep(0.1)  # Small delay
 

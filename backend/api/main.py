@@ -5,13 +5,16 @@ RAG functionality, and real-time features.
 """
 
 import asyncio
+import importlib
 import json
 import logging
 import os
 import sys
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 import uvicorn
 from dotenv import load_dotenv
@@ -24,18 +27,13 @@ print(f"[DEBUG] Loaded .env from: {env_path}")
 print(f"[DEBUG] CORS_ORIGINS from env: {os.getenv('CORS_ORIGINS', 'NOT SET')}")
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 from backend.api.cors_config import get_cors_config
-from backend.api.dependencies import (
-    get_database,
-    get_document_library_service,
-    get_rag_query_executor,
-)
 from backend.api.middleware.error_handling import setup_comprehensive_error_handling
 from backend.api.middleware.rate_limiting import RateLimitMiddleware
 from backend.api.middleware.security_headers import (
@@ -65,7 +63,7 @@ security_headers_config = SecurityHeadersConfig()
 rate_limit_config = get_env_override_config(get_rate_limit_config())
 
 
-async def _deferred_initialization(db_path: Path):
+async def _deferred_initialization(db_path: Path) -> None:
     """
     Handle non-essential initializations after server startup.
     This runs in the background to avoid blocking the server from accepting connections.
@@ -133,10 +131,7 @@ async def _deferred_initialization(db_path: Path):
 
         # Initialize cache system (lazy loading)
         try:
-            from backend.services.cache_service_integration import (
-                initialize_application_cache,
-            )
-
+            importlib.import_module("backend.services.cache_service_integration")
             logger.info("Cache system ready for initialization on first request")
         except ModuleNotFoundError as e:
             if e.name == "sklearn":
@@ -160,7 +155,7 @@ async def _deferred_initialization(db_path: Path):
 
 # Define lifespan context manager for proper ASGI lifespan handling
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan context manager for startup and shutdown events.
 
     REFACTORED: Minimized startup time by deferring non-essential initializations.
@@ -197,10 +192,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown cache system
     try:
-        from backend.services.cache_service_integration import (
-            shutdown_application_cache,
-        )
-
         logger.info("Cache system shutdown completed")
     except Exception as cache_error:
         logger.warning(f"Cache system shutdown error: {cache_error}")
@@ -242,7 +233,7 @@ app.add_middleware(
 )
 
 # WebSocket manager
-websocket_manager = WebSocketManager()
+websocket_manager: WebSocketManager = WebSocketManager()
 # Include API routes (only available v2 routes)
 from backend.api.routes import api_router
 
@@ -255,8 +246,8 @@ app.include_router(api_router, prefix="/api")
 # ============================================================================
 
 
-@app.get("/metrics")
-async def get_metrics():
+@app.get("/metrics")  # type: ignore[misc]
+async def get_metrics() -> Response:
     """Prometheus metrics endpoint."""
     try:
         metrics_data, content_type = metrics_collector.get_metrics_response()
@@ -266,8 +257,8 @@ async def get_metrics():
         raise HTTPException(status_code=500, detail="Failed to generate metrics") from e
 
 
-@app.get("/")
-async def root():
+@app.get("/")  # type: ignore[misc]
+async def root() -> dict[str, Any]:
     """Root endpoint for basic connectivity test."""
     return {
         "message": "AI Enhanced PDF Scholar API is running",
@@ -276,17 +267,17 @@ async def root():
     }
 
 
-@app.get("/ping")
-async def ping():
+@app.get("/ping")  # type: ignore[misc]
+async def ping() -> dict[str, bool]:
     """Simple ping endpoint for connectivity test."""
     return {"pong": True}
 
 
-@app.get("/health")
-@app.get(
+@app.get("/health")  # type: ignore[misc]
+@app.get(  # type: ignore[misc]
     "/api/system/health"
 )  # Alias for frontend compatibility (Vite proxy expects /api prefix)
-async def basic_health_check():
+async def basic_health_check() -> dict[str, Any]:
     """Basic health check endpoint - no dependencies."""
     return {
         "status": "healthy",
@@ -296,12 +287,12 @@ async def basic_health_check():
     }
 
 
-@app.get("/health/detailed")
-async def detailed_health_check():
+@app.get("/health/detailed")  # type: ignore[misc]
+async def detailed_health_check() -> dict[str, Any]:
     """Comprehensive health check endpoint."""
     try:
         health_status = await metrics_collector.check_comprehensive_health()
-        return health_status
+        return cast(dict[str, Any], health_status)
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {
@@ -311,12 +302,12 @@ async def detailed_health_check():
         }
 
 
-@app.get("/metrics/dashboard")
-async def get_dashboard_metrics():
+@app.get("/metrics/dashboard")  # type: ignore[misc]
+async def get_dashboard_metrics() -> dict[str, Any]:
     """Get formatted metrics for custom dashboard."""
     try:
         dashboard_data = metrics_collector.get_dashboard_metrics()
-        return dashboard_data
+        return cast(dict[str, Any], dashboard_data)
     except Exception as e:
         logger.error(f"Failed to get dashboard metrics: {e}")
         raise HTTPException(
@@ -331,7 +322,6 @@ if frontend_dist.exists():
 
 
 # WebSocket endpoint for real-time communication
-@app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
     """WebSocket endpoint for real-time communication."""
     await websocket_manager.connect(websocket, client_id)
@@ -355,6 +345,9 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
     except WebSocketDisconnect:
         websocket_manager.disconnect(client_id)
         logger.info(f"WebSocket client {client_id} disconnected")
+
+
+app.add_api_websocket_route("/ws/{client_id}", websocket_endpoint)
 
 
 async def handle_rag_query_websocket(
@@ -390,10 +383,12 @@ async def handle_rag_query_websocket(
 if __name__ == "__main__":
     # Fix 1: Correct module path for ASGI
     # Fix 2: Exclude .trunk directory to prevent watchfiles filesystem loop error
+    server_host = os.getenv("API_SERVER_HOST", "127.0.0.1")
+    server_port = int(os.getenv("API_SERVER_PORT", "8000"))
     uvicorn.run(
         "backend.api.main:app",
-        host="0.0.0.0",  # noqa: S104 - dev server intentionally binds all interfaces
-        port=8000,
+        host=server_host,
+        port=server_port,
         reload=True,
         reload_excludes=[".trunk/**", "node_modules/**", ".git/**"],
         log_level="info",

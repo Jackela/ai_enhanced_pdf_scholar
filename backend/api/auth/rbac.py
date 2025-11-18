@@ -4,24 +4,39 @@ Enterprise-grade role and permission management for production environments.
 """
 
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any
+from typing import Any, ParamSpec, TypeVar, cast
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship
 
-from backend.api.auth.jwt_auth import User
+try:
+    from backend.api.auth.jwt_auth import User
+except Exception:
+    # Test/standalone fallback
+    class User:  # type: ignore[no-redef]
+        def __init__(
+            self, id: int, username: str | None = None, role: str | None = None
+        ):
+            self.id = id
+            self.username = username or "stub"
+            self.role = role or "user"
+
+
 from backend.api.dependencies import get_db
 
 logger = logging.getLogger(__name__)
 
 Base = declarative_base()
+P = ParamSpec("P")
+R = TypeVar("R")
+AsyncEndpoint = Callable[P, Awaitable[R]]
 
 
 # ============================================================================
@@ -30,36 +45,40 @@ Base = declarative_base()
 
 # Association tables for many-to-many relationships
 user_roles = Table(
-    'user_roles', Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('role_id', Integer, ForeignKey('roles.id')),
-    Column('assigned_at', DateTime, default=datetime.utcnow),
-    Column('assigned_by', Integer, ForeignKey('users.id')),
-    Column('expires_at', DateTime, nullable=True)  # For temporary role assignments
+    "user_roles",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id")),
+    Column("role_id", Integer, ForeignKey("roles.id")),
+    Column("assigned_at", DateTime, default=datetime.utcnow),
+    Column("assigned_by", Integer, ForeignKey("users.id")),
+    Column("expires_at", DateTime, nullable=True),  # For temporary role assignments
 )
 
 role_permissions = Table(
-    'role_permissions', Base.metadata,
-    Column('role_id', Integer, ForeignKey('roles.id')),
-    Column('permission_id', Integer, ForeignKey('permissions.id')),
-    Column('granted_at', DateTime, default=datetime.utcnow),
-    Column('granted_by', Integer, ForeignKey('users.id'))
+    "role_permissions",
+    Base.metadata,
+    Column("role_id", Integer, ForeignKey("roles.id")),
+    Column("permission_id", Integer, ForeignKey("permissions.id")),
+    Column("granted_at", DateTime, default=datetime.utcnow),
+    Column("granted_by", Integer, ForeignKey("users.id")),
 )
 
 user_permissions = Table(
-    'user_permissions', Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('permission_id', Integer, ForeignKey('permissions.id')),
-    Column('granted_at', DateTime, default=datetime.utcnow),
-    Column('granted_by', Integer, ForeignKey('users.id')),
-    Column('expires_at', DateTime, nullable=True),  # For temporary permissions
-    Column('reason', String(500))  # Audit trail for direct permission grants
+    "user_permissions",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id")),
+    Column("permission_id", Integer, ForeignKey("permissions.id")),
+    Column("granted_at", DateTime, default=datetime.utcnow),
+    Column("granted_by", Integer, ForeignKey("users.id")),
+    Column("expires_at", DateTime, nullable=True),  # For temporary permissions
+    Column("reason", String(500)),  # Audit trail for direct permission grants
 )
 
 
 class Role(Base):
     """Role model for RBAC."""
-    __tablename__ = 'roles'
+
+    __tablename__ = "roles"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, nullable=False)
@@ -70,17 +89,20 @@ class Role(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    permissions = relationship('Permission', secondary=role_permissions, backref='roles')
-    users = relationship('User', secondary=user_roles, backref='roles')
+    permissions = relationship(
+        "Permission", secondary=role_permissions, backref="roles"
+    )
+    users = relationship("User", secondary=user_roles, backref="roles")
 
     # Parent role for inheritance
-    parent_role_id = Column(Integer, ForeignKey('roles.id'), nullable=True)
-    parent_role = relationship('Role', remote_side=[id])
+    parent_role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
+    parent_role = relationship("Role", remote_side=[id])
 
 
 class Permission(Base):
     """Permission model for fine-grained access control."""
-    __tablename__ = 'permissions'
+
+    __tablename__ = "permissions"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, nullable=False)
@@ -96,7 +118,8 @@ class Permission(Base):
 
 class ResourcePolicy(Base):
     """Resource-level policies for attribute-based access control."""
-    __tablename__ = 'resource_policies'
+
+    __tablename__ = "resource_policies"
 
     id = Column(Integer, primary_key=True)
     resource_type = Column(String(100), nullable=False)
@@ -104,15 +127,17 @@ class ResourcePolicy(Base):
     policy_type = Column(String(50))  # 'owner', 'department', 'project', etc.
     policy_value = Column(String(500))  # JSON for complex policies
     created_at = Column(DateTime, default=datetime.utcnow)
-    created_by = Column(Integer, ForeignKey('users.id'))
+    created_by = Column(Integer, ForeignKey("users.id"))
 
 
 # ============================================================================
 # Predefined Roles and Permissions
 # ============================================================================
 
+
 class SystemRoles(str, Enum):
     """System-defined roles that cannot be deleted."""
+
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     MODERATOR = "moderator"
@@ -123,6 +148,7 @@ class SystemRoles(str, Enum):
 
 class ResourceTypes(str, Enum):
     """Resource types for permission management."""
+
     DOCUMENT = "document"
     USER = "user"
     SYSTEM = "system"
@@ -135,6 +161,7 @@ class ResourceTypes(str, Enum):
 
 class Actions(str, Enum):
     """Standard CRUD+ actions."""
+
     CREATE = "create"
     READ = "read"
     UPDATE = "update"
@@ -151,9 +178,11 @@ class Actions(str, Enum):
 # RBAC Service
 # ============================================================================
 
+
 @dataclass
 class PermissionCheck:
     """Result of a permission check."""
+
     allowed: bool
     reason: str = ""
     context: dict[str, Any] = field(default_factory=dict)
@@ -180,7 +209,7 @@ class RBACService:
         resource: str,
         action: str,
         resource_id: str | None = None,
-        context: dict[str, Any] | None = None
+        context: dict[str, Any] | None = None,
     ) -> PermissionCheck:
         """
         Check if user has permission to perform action on resource.
@@ -210,7 +239,7 @@ class RBACService:
             result = PermissionCheck(
                 allowed=True,
                 reason="Super admin has all permissions",
-                context={"role": SystemRoles.SUPER_ADMIN}
+                context={"role": SystemRoles.SUPER_ADMIN},
             )
             self._cache_permission(cache_key, result)
             return result
@@ -220,7 +249,7 @@ class RBACService:
             result = PermissionCheck(
                 allowed=True,
                 reason="Permission granted through role",
-                context={"method": "role"}
+                context={"method": "role"},
             )
             self._cache_permission(cache_key, result)
             return result
@@ -230,17 +259,19 @@ class RBACService:
             result = PermissionCheck(
                 allowed=True,
                 reason="Direct permission grant",
-                context={"method": "direct"}
+                context={"method": "direct"},
             )
             self._cache_permission(cache_key, result)
             return result
 
         # Check resource-level policies
-        if resource_id and self._check_resource_policy(user, resource, action, resource_id, context):
+        if resource_id and self._check_resource_policy(
+            user, resource, action, resource_id, context
+        ):
             result = PermissionCheck(
                 allowed=True,
                 reason="Resource policy allows access",
-                context={"method": "policy", "resource_id": resource_id}
+                context={"method": "policy", "resource_id": resource_id},
             )
             self._cache_permission(cache_key, result)
             return result
@@ -249,7 +280,7 @@ class RBACService:
         result = PermissionCheck(
             allowed=False,
             reason=f"No permission for {action} on {resource}",
-            context={"user_id": user.id, "roles": [r.name for r in user.roles]}
+            context={"user_id": user.id, "roles": [r.name for r in user.roles]},
         )
         self._cache_permission(cache_key, result)
         return result
@@ -259,7 +290,7 @@ class RBACService:
         user: User,
         role_name: str,
         assigned_by: User,
-        expires_at: datetime | None = None
+        expires_at: datetime | None = None,
     ) -> bool:
         """
         Assign a role to a user.
@@ -274,17 +305,19 @@ class RBACService:
             Success status
         """
         # Check if assigner has permission
-        if not self.check_permission(assigned_by, ResourceTypes.USER, Actions.UPDATE).allowed:
+        if not self.check_permission(
+            assigned_by, ResourceTypes.USER, Actions.UPDATE
+        ).allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No permission to assign roles"
+                detail="No permission to assign roles",
             )
 
         role = self.db.query(Role).filter_by(name=role_name).first()
         if not role:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Role {role_name} not found"
+                detail=f"Role {role_name} not found",
             )
 
         # Check if user already has this role
@@ -298,7 +331,7 @@ class RBACService:
         # Log the assignment
         logger.info(
             f"Role {role_name} assigned to user {user.email} by {assigned_by.email}",
-            extra={"expires_at": expires_at}
+            extra={"expires_at": expires_at},
         )
 
         # Clear cache for this user
@@ -306,12 +339,7 @@ class RBACService:
 
         return True
 
-    def revoke_role(
-        self,
-        user: User,
-        role_name: str,
-        revoked_by: User
-    ) -> bool:
+    def revoke_role(self, user: User, role_name: str, revoked_by: User) -> bool:
         """
         Revoke a role from a user.
 
@@ -324,17 +352,19 @@ class RBACService:
             Success status
         """
         # Check if revoker has permission
-        if not self.check_permission(revoked_by, ResourceTypes.USER, Actions.UPDATE).allowed:
+        if not self.check_permission(
+            revoked_by, ResourceTypes.USER, Actions.UPDATE
+        ).allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No permission to revoke roles"
+                detail="No permission to revoke roles",
             )
 
         role = self.db.query(Role).filter_by(name=role_name).first()
         if not role:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Role {role_name} not found"
+                detail=f"Role {role_name} not found",
             )
 
         # Remove role if present
@@ -360,7 +390,7 @@ class RBACService:
         permission_name: str,
         granted_by: User,
         expires_at: datetime | None = None,
-        reason: str | None = None
+        reason: str | None = None,
     ) -> bool:
         """
         Grant a direct permission to a user.
@@ -376,17 +406,19 @@ class RBACService:
             Success status
         """
         # Check if granter has permission
-        if not self.check_permission(granted_by, ResourceTypes.USER, Actions.UPDATE).allowed:
+        if not self.check_permission(
+            granted_by, ResourceTypes.USER, Actions.UPDATE
+        ).allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No permission to grant permissions"
+                detail="No permission to grant permissions",
             )
 
         permission = self.db.query(Permission).filter_by(name=permission_name).first()
         if not permission:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Permission {permission_name} not found"
+                detail=f"Permission {permission_name} not found",
             )
 
         # Add direct permission grant
@@ -395,7 +427,7 @@ class RBACService:
         # Log the grant
         logger.info(
             f"Permission {permission_name} granted to user {user.email} by {granted_by.email}",
-            extra={"expires_at": expires_at, "reason": reason}
+            extra={"expires_at": expires_at, "reason": reason},
         )
 
         # Clear cache for this user
@@ -431,7 +463,7 @@ class RBACService:
         description: str,
         permissions: list[str],
         created_by: User,
-        parent_role: str | None = None
+        parent_role: str | None = None,
     ) -> Role:
         """
         Create a custom role with specified permissions.
@@ -447,25 +479,23 @@ class RBACService:
             Created role
         """
         # Check if creator has permission
-        if not self.check_permission(created_by, ResourceTypes.SYSTEM, Actions.CREATE).allowed:
+        if not self.check_permission(
+            created_by, ResourceTypes.SYSTEM, Actions.CREATE
+        ).allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="No permission to create roles"
+                detail="No permission to create roles",
             )
 
         # Check if role already exists
         if self.db.query(Role).filter_by(name=name).first():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Role {name} already exists"
+                detail=f"Role {name} already exists",
             )
 
         # Create role
-        role = Role(
-            name=name,
-            description=description,
-            is_system_role=False
-        )
+        role = Role(name=name, description=description, is_system_role=False)
 
         # Set parent role if specified
         if parent_role:
@@ -500,7 +530,10 @@ class RBACService:
 
         for role in user.roles:
             role_permissions = self._get_role_permissions_recursive(role)
-            if permission_name in role_permissions or f"{resource}:*" in role_permissions:
+            if (
+                permission_name in role_permissions
+                or f"{resource}:*" in role_permissions
+            ):
                 return True
 
         return False
@@ -518,14 +551,15 @@ class RBACService:
         resource: str,
         action: str,
         resource_id: str,
-        context: dict[str, Any] | None
+        context: dict[str, Any] | None,
     ) -> bool:
         """Check resource-level policies."""
         # Example: Check if user owns the resource
-        policies = self.db.query(ResourcePolicy).filter_by(
-            resource_type=resource,
-            resource_id=resource_id
-        ).all()
+        policies = (
+            self.db.query(ResourcePolicy)
+            .filter_by(resource_type=resource, resource_id=resource_id)
+            .all()
+        )
 
         for policy in policies:
             if policy.policy_type == "owner":
@@ -560,14 +594,16 @@ class RBACService:
 
         return permissions
 
-    def _cache_permission(self, key: str, result: PermissionCheck):
+    def _cache_permission(self, key: str, result: PermissionCheck) -> None:
         """Cache a permission check result."""
         if self.cache_enabled:
             self._permission_cache[key] = (result, datetime.utcnow())
 
-    def _clear_user_cache(self, user_id: int):
+    def _clear_user_cache(self, user_id: int) -> None:
         """Clear all cached permissions for a user."""
-        keys_to_remove = [k for k in self._permission_cache.keys() if k.startswith(f"{user_id}:")]
+        keys_to_remove = [
+            k for k in self._permission_cache.keys() if k.startswith(f"{user_id}:")
+        ]
         for key in keys_to_remove:
             del self._permission_cache[key]
 
@@ -575,6 +611,7 @@ class RBACService:
 # ============================================================================
 # Dependency Injection
 # ============================================================================
+
 
 def get_rbac_service(db: Session = Depends(get_db)) -> RBACService:
     """Get RBAC service instance."""
@@ -585,7 +622,10 @@ def get_rbac_service(db: Session = Depends(get_db)) -> RBACService:
 # Permission Decorators
 # ============================================================================
 
-def require_permission(resource: str, action: str):
+
+def require_permission(
+    resource: str, action: str
+) -> Callable[[AsyncEndpoint], AsyncEndpoint]:
     """
     Decorator to require specific permission for an endpoint.
 
@@ -598,15 +638,16 @@ def require_permission(resource: str, action: str):
         async def delete_document(doc_id: int, user: User = Depends(get_current_user)):
             ...
     """
-    def decorator(func: Callable) -> Callable:
+
+    def decorator(func: AsyncEndpoint) -> AsyncEndpoint:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # Extract user from kwargs
             user = kwargs.get("current_user") or kwargs.get("user")
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication required"
+                    detail="Authentication required",
                 )
 
             # Get RBAC service
@@ -614,7 +655,7 @@ def require_permission(resource: str, action: str):
             if not db:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Database session not available"
+                    detail="Database session not available",
                 )
 
             rbac = RBACService(db)
@@ -624,11 +665,11 @@ def require_permission(resource: str, action: str):
             if not permission_check.allowed:
                 logger.warning(
                     f"Permission denied for user {user.email}: {permission_check.reason}",
-                    extra=permission_check.context
+                    extra=permission_check.context,
                 )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=permission_check.reason
+                    detail=permission_check.reason,
                 )
 
             # Add permission context to kwargs
@@ -636,11 +677,14 @@ def require_permission(resource: str, action: str):
 
             return await func(*args, **kwargs)
 
-        return wrapper
+        return cast(AsyncEndpoint, wrapper)
+
     return decorator
 
 
-def require_any_permission(*permissions: tuple[str, str]):
+def require_any_permission(
+    *permissions: tuple[str, str],
+) -> Callable[[AsyncEndpoint], AsyncEndpoint]:
     """
     Decorator to require any of the specified permissions.
 
@@ -655,21 +699,22 @@ def require_any_permission(*permissions: tuple[str, str]):
         async def update_document(...):
             ...
     """
-    def decorator(func: Callable) -> Callable:
+
+    def decorator(func: AsyncEndpoint) -> AsyncEndpoint:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             user = kwargs.get("current_user") or kwargs.get("user")
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication required"
+                    detail="Authentication required",
                 )
 
             db = kwargs.get("db")
             if not db:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Database session not available"
+                    detail="Database session not available",
                 )
 
             rbac = RBACService(db)
@@ -684,14 +729,15 @@ def require_any_permission(*permissions: tuple[str, str]):
             # No permission granted
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Requires any of: {permissions}"
+                detail=f"Requires any of: {permissions}",
             )
 
-        return wrapper
+        return cast(AsyncEndpoint, wrapper)
+
     return decorator
 
 
-def require_role(role_name: str):
+def require_role(role_name: str) -> Callable[[AsyncEndpoint], AsyncEndpoint]:
     """
     Decorator to require a specific role.
 
@@ -703,33 +749,38 @@ def require_role(role_name: str):
         async def admin_endpoint(...):
             ...
     """
-    def decorator(func: Callable) -> Callable:
+
+    def decorator(func: AsyncEndpoint) -> AsyncEndpoint:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             user = kwargs.get("current_user") or kwargs.get("user")
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication required"
+                    detail="Authentication required",
                 )
 
             # Check if user has the required role
             if not any(role.name == role_name for role in user.roles):
-                logger.warning(f"Role {role_name} required but user {user.email} doesn't have it")
+                logger.warning(
+                    f"Role {role_name} required but user {user.email} doesn't have it"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Role {role_name} required"
+                    detail=f"Role {role_name} required",
                 )
 
             return await func(*args, **kwargs)
 
-        return wrapper
+        return cast(AsyncEndpoint, wrapper)
+
     return decorator
 
 
 # ============================================================================
 # Initialize Default Roles and Permissions
 # ============================================================================
+
 
 def initialize_rbac_system(db: Session):
     """
@@ -745,26 +796,31 @@ def initialize_rbac_system(db: Session):
         ("document:delete", ResourceTypes.DOCUMENT, Actions.DELETE, "Delete documents"),
         ("document:list", ResourceTypes.DOCUMENT, Actions.LIST, "List documents"),
         ("document:export", ResourceTypes.DOCUMENT, Actions.EXPORT, "Export documents"),
-
         # User permissions
         ("user:create", ResourceTypes.USER, Actions.CREATE, "Create users"),
         ("user:read", ResourceTypes.USER, Actions.READ, "Read user profiles"),
         ("user:update", ResourceTypes.USER, Actions.UPDATE, "Update users"),
         ("user:delete", ResourceTypes.USER, Actions.DELETE, "Delete users"),
         ("user:list", ResourceTypes.USER, Actions.LIST, "List users"),
-
         # System permissions
         ("system:read", ResourceTypes.SYSTEM, Actions.READ, "Read system info"),
-        ("system:update", ResourceTypes.SYSTEM, Actions.UPDATE, "Update system settings"),
-        ("system:execute", ResourceTypes.SYSTEM, Actions.EXECUTE, "Execute system commands"),
-
+        (
+            "system:update",
+            ResourceTypes.SYSTEM,
+            Actions.UPDATE,
+            "Update system settings",
+        ),
+        (
+            "system:execute",
+            ResourceTypes.SYSTEM,
+            Actions.EXECUTE,
+            "Execute system commands",
+        ),
         # Library permissions
         ("library:read", ResourceTypes.LIBRARY, Actions.READ, "Read library"),
         ("library:update", ResourceTypes.LIBRARY, Actions.UPDATE, "Update library"),
-
         # RAG permissions
         ("rag:execute", ResourceTypes.RAG, Actions.EXECUTE, "Execute RAG queries"),
-
         # Audit permissions
         ("audit:read", ResourceTypes.AUDIT, Actions.READ, "Read audit logs"),
         ("audit:export", ResourceTypes.AUDIT, Actions.EXPORT, "Export audit logs"),
@@ -777,7 +833,7 @@ def initialize_rbac_system(db: Session):
                 resource=resource,
                 action=action,
                 description=description,
-                is_system_permission=True
+                is_system_permission=True,
             )
             db.add(permission)
 
@@ -785,21 +841,37 @@ def initialize_rbac_system(db: Session):
     role_permissions = {
         SystemRoles.SUPER_ADMIN: ["*:*"],  # All permissions
         SystemRoles.ADMIN: [
-            "document:*", "user:*", "library:*", "rag:*", "system:read", "audit:*"
+            "document:*",
+            "user:*",
+            "library:*",
+            "rag:*",
+            "system:read",
+            "audit:*",
         ],
         SystemRoles.MODERATOR: [
-            "document:*", "user:read", "user:list", "library:*", "rag:*", "audit:read"
+            "document:*",
+            "user:read",
+            "user:list",
+            "library:*",
+            "rag:*",
+            "audit:read",
         ],
         SystemRoles.USER: [
-            "document:create", "document:read", "document:list", "document:update",
-            "library:read", "rag:execute", "user:read"
+            "document:create",
+            "document:read",
+            "document:list",
+            "document:update",
+            "library:read",
+            "rag:execute",
+            "user:read",
         ],
-        SystemRoles.GUEST: [
-            "document:read", "document:list", "library:read"
-        ],
+        SystemRoles.GUEST: ["document:read", "document:list", "library:read"],
         SystemRoles.SERVICE_ACCOUNT: [
-            "document:*", "library:*", "rag:*", "system:read"
-        ]
+            "document:*",
+            "library:*",
+            "rag:*",
+            "system:read",
+        ],
     }
 
     for role_name, permission_patterns in role_permissions.items():
@@ -808,7 +880,7 @@ def initialize_rbac_system(db: Session):
                 name=role_name,
                 description=f"System role: {role_name}",
                 is_system_role=True,
-                priority=list(SystemRoles).index(role_name)
+                priority=list(SystemRoles).index(role_name),
             )
 
             # Add permissions to role
@@ -820,7 +892,9 @@ def initialize_rbac_system(db: Session):
                 elif pattern.endswith(":*"):
                     # Add all permissions for a resource
                     resource = pattern.split(":")[0]
-                    resource_perms = db.query(Permission).filter_by(resource=resource).all()
+                    resource_perms = (
+                        db.query(Permission).filter_by(resource=resource).all()
+                    )
                     role.permissions.extend(resource_perms)
                 else:
                     # Add specific permission

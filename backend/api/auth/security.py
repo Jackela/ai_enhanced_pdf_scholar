@@ -16,6 +16,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
+from backend.api.auth.constants import TokenType, normalize_token_type
+
 
 # Security configuration
 class SecurityConfig:
@@ -62,23 +64,24 @@ class KeyManager:
         """Generate RSA key pair if not exists."""
         self.config.KEYS_DIR.mkdir(parents=True, exist_ok=True)
 
-        if not self.config.PRIVATE_KEY_PATH.exists() or not self.config.PUBLIC_KEY_PATH.exists():
+        if (
+            not self.config.PRIVATE_KEY_PATH.exists()
+            or not self.config.PUBLIC_KEY_PATH.exists()
+        ):
             self._generate_key_pair()
 
     def _generate_key_pair(self):
         """Generate new RSA key pair for JWT signing."""
         # Generate private key
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
+            public_exponent=65537, key_size=2048, backend=default_backend()
         )
 
         # Save private key
         private_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
+            encryption_algorithm=serialization.NoEncryption(),
         )
         self.config.PRIVATE_KEY_PATH.write_bytes(private_pem)
         self.config.PRIVATE_KEY_PATH.chmod(0o600)  # Restrict access to owner only
@@ -87,7 +90,7 @@ class KeyManager:
         public_key = private_key.public_key()
         public_pem = public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
         self.config.PUBLIC_KEY_PATH.write_bytes(public_pem)
         self.config.PUBLIC_KEY_PATH.chmod(0o644)  # Public key can be read by others
@@ -109,6 +112,7 @@ class KeyManager:
 # Initialize key manager (singleton)
 _key_manager = None
 
+
 def get_key_manager() -> KeyManager:
     """Get or create key manager instance."""
     global _key_manager
@@ -118,6 +122,7 @@ def get_key_manager() -> KeyManager:
 
 
 # Password hashing functions
+
 
 def hash_password(password: str) -> str:
     """
@@ -130,8 +135,8 @@ def hash_password(password: str) -> str:
         Hashed password string
     """
     salt = bcrypt.gensalt(rounds=SecurityConfig.BCRYPT_SALT_ROUNDS)
-    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hashed.decode('utf-8')
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -147,8 +152,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     try:
         return bcrypt.checkpw(
-            plain_password.encode('utf-8'),
-            hashed_password.encode('utf-8')
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
         )
     except Exception:
         return False
@@ -156,11 +160,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # Token generation and verification
 
+
 def create_access_token(
     user_id: int,
     username: str,
     role: str,
-    additional_claims: dict[str, Any] | None = None
+    additional_claims: dict[str, Any] | None = None,
 ) -> tuple[str, datetime]:
     """
     Create JWT access token.
@@ -186,7 +191,7 @@ def create_access_token(
         "sub": str(user_id),  # Subject (user ID)
         "username": username,
         "role": role,
-        "type": "access",
+        "type": TokenType.ACCESS.value,
         "iat": datetime.now(timezone.utc),
         "exp": expire,
         "iss": SecurityConfig.ISSUER,
@@ -200,18 +205,14 @@ def create_access_token(
 
     # Create token
     token = jwt.encode(
-        payload,
-        key_manager.get_private_key(),
-        algorithm=SecurityConfig.ALGORITHM
+        payload, key_manager.get_private_key(), algorithm=SecurityConfig.ALGORITHM
     )
 
     return token, expire
 
 
 def create_refresh_token(
-    user_id: int,
-    token_family: str | None = None,
-    device_info: str | None = None
+    user_id: int, token_family: str | None = None, device_info: str | None = None
 ) -> tuple[str, str, datetime]:
     """
     Create JWT refresh token with rotation support.
@@ -239,7 +240,7 @@ def create_refresh_token(
     jti = secrets.token_urlsafe(16)
     payload = {
         "sub": str(user_id),
-        "type": "refresh",
+        "type": TokenType.REFRESH.value,
         "family": token_family,
         "iat": datetime.now(timezone.utc),
         "exp": expire,
@@ -253,15 +254,15 @@ def create_refresh_token(
 
     # Create token
     token = jwt.encode(
-        payload,
-        key_manager.get_private_key(),
-        algorithm=SecurityConfig.ALGORITHM
+        payload, key_manager.get_private_key(), algorithm=SecurityConfig.ALGORITHM
     )
 
     return token, jti, expire
 
 
-def verify_token(token: str, token_type: str = "access") -> dict[str, Any] | None:
+def verify_token(
+    token: str, token_type: TokenType | str = TokenType.ACCESS
+) -> dict[str, Any] | None:
     """
     Verify and decode JWT token.
 
@@ -282,11 +283,12 @@ def verify_token(token: str, token_type: str = "access") -> dict[str, Any] | Non
             algorithms=[SecurityConfig.ALGORITHM],
             audience=SecurityConfig.AUDIENCE,
             issuer=SecurityConfig.ISSUER,
-            options={"require": ["exp", "iat", "sub", "type", "jti"]}
+            options={"require": ["exp", "iat", "sub", "type", "jti"]},
         )
 
         # Verify token type
-        if payload.get("type") != token_type:
+        expected_type = normalize_token_type(token_type)
+        if payload.get("type") != expected_type:
             return None
 
         return payload
@@ -321,6 +323,7 @@ def decode_token_unsafe(token: str) -> dict[str, Any] | None:
 
 # Security utility functions
 
+
 def generate_secure_token(length: int = 32) -> str:
     """
     Generate cryptographically secure random token.
@@ -354,15 +357,15 @@ def generate_password_reset_token(user_id: int, email: str) -> str:
         "sub": str(user_id),
         "email": email,
         "type": "password_reset",
+        "iss": SecurityConfig.ISSUER,
+        "aud": SecurityConfig.AUDIENCE,
         "exp": expire,
         "iat": datetime.now(timezone.utc),
         "jti": secrets.token_urlsafe(16),
     }
 
     return jwt.encode(
-        payload,
-        key_manager.get_private_key(),
-        algorithm=SecurityConfig.ALGORITHM
+        payload, key_manager.get_private_key(), algorithm=SecurityConfig.ALGORITHM
     )
 
 
@@ -376,8 +379,8 @@ def verify_password_reset_token(token: str) -> dict[str, Any] | None:
     Returns:
         Token payload if valid, None otherwise
     """
-    payload = verify_token(token, token_type="password_reset")
-    if payload and payload.get("type") == "password_reset":
+    payload = verify_token(token, token_type=TokenType.PASSWORD_RESET)
+    if payload and payload.get("type") == TokenType.PASSWORD_RESET.value:
         return payload
     return None
 
@@ -402,15 +405,15 @@ def generate_email_verification_token(user_id: int, email: str) -> str:
         "sub": str(user_id),
         "email": email,
         "type": "email_verification",
+        "iss": SecurityConfig.ISSUER,
+        "aud": SecurityConfig.AUDIENCE,
         "exp": expire,
         "iat": datetime.now(timezone.utc),
         "jti": secrets.token_urlsafe(16),
     }
 
     return jwt.encode(
-        payload,
-        key_manager.get_private_key(),
-        algorithm=SecurityConfig.ALGORITHM
+        payload, key_manager.get_private_key(), algorithm=SecurityConfig.ALGORITHM
     )
 
 
@@ -424,8 +427,8 @@ def verify_email_verification_token(token: str) -> dict[str, Any] | None:
     Returns:
         Token payload if valid, None otherwise
     """
-    payload = verify_token(token, token_type="email_verification")
-    if payload and payload.get("type") == "email_verification":
+    payload = verify_token(token, token_type=TokenType.EMAIL_VERIFICATION)
+    if payload and payload.get("type") == TokenType.EMAIL_VERIFICATION.value:
         return payload
     return None
 

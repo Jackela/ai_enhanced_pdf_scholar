@@ -455,9 +455,7 @@ class EnhancedRAGService:
 
         # Pre-flight health checks
         if not document.file_path or not Path(document.file_path).exists():
-            raise RAGIndexError(
-                f"Document file not found: {document.file_path}"
-            )
+            raise RAGIndexError(f"Document file not found: {document.file_path}")
 
         if not self._perform_preflight_checks(document):
             raise InsufficientResourcesError(
@@ -1415,9 +1413,13 @@ class EnhancedRAGService:
                     file_path = path / file_name
                     if not file_path.exists():
                         # Create minimal valid JSON content
-                        fake_content = {"test_mode": True, "created_at": datetime.now().isoformat()}
+                        fake_content = {
+                            "test_mode": True,
+                            "created_at": datetime.now().isoformat(),
+                        }
                         import json
-                        with open(file_path, 'w') as f:
+
+                        with open(file_path, "w") as f:
                             json.dump(fake_content, f)
                         logger.debug(f"Created test mode index file: {file_path}")
 

@@ -34,9 +34,11 @@ class RedisClusterConfig:
         if self.enabled and not self.nodes:
             issues.append("Redis cluster enabled but no nodes configured")
 
-        for node in self.nodes:
-            if not all(key in node for key in ["host", "port"]):
-                issues.append("Redis node missing required host/port configuration")
+        issues.extend(
+            "Redis node missing required host/port configuration"
+            for node in self.nodes
+            if not all(key in node for key in ["host", "port"])
+        )
 
         if self.max_connections <= 0:
             issues.append("Redis max_connections must be positive")
@@ -386,24 +388,27 @@ class CachingConfig:
         all_issues = []
 
         # Validate each configuration section
-        for config_name, config_obj in [
+        config_sections = [
             ("redis_cluster", self.redis_cluster),
             ("l1_cache", self.l1_cache),
             ("l2_cache", self.l2_cache),
             ("l3_cdn", self.l3_cdn),
             ("coherency", self.coherency),
-        ]:
+        ]
+        for config_name, config_obj in config_sections:
             if hasattr(config_obj, "validate"):
                 issues = config_obj.validate(environment)
-                for issue in issues:
-                    all_issues.append(f"{config_name}: {issue}")
+                all_issues.extend(f"{config_name}: {issue}" for issue in issues)
 
         # Cross-configuration validation
-        if self.enable_multi_layer:
-            if not self.l1_cache.enabled and not self.l2_cache.enabled:
-                all_issues.append(
-                    "Multi-layer caching enabled but no cache layers configured"
-                )
+        if (
+            self.enable_multi_layer
+            and not self.l1_cache.enabled
+            and not self.l2_cache.enabled
+        ):
+            all_issues.append(
+                "Multi-layer caching enabled but no cache layers configured"
+            )
 
         if self.l3_cdn.enabled and not self.l2_cache.enabled:
             all_issues.append("L3 CDN cache requires L2 cache to be enabled")

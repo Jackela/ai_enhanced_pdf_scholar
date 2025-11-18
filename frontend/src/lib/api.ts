@@ -8,11 +8,20 @@ import type {
   QueryResponse,
   MultiDocumentQueryRequest,
   ApiResponse,
+  DocumentCollection,
+  CollectionListResponse,
+  CreateCollectionRequest,
+  UpdateCollectionRequest,
+  CollectionStatistics,
+  CrossDocumentQueryRequest,
+  MultiDocumentQueryResponse,
+  SystemHealth,
 } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-  ? `${import.meta.env.VITE_API_BASE_URL}/api`
-  : '/api'
+const envBaseUrl =
+  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE_URL
+
+const API_BASE_URL = envBaseUrl ? `${envBaseUrl}/api` : '/api'
 
 export class ApiError extends Error {
   constructor(
@@ -175,5 +184,72 @@ export const api = {
       )
     }
     return response.blob()
+  },
+
+  async getCollections(page = 1, limit = 20): Promise<CollectionListResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    })
+    return apiRequest<CollectionListResponse>(`/collections?${params.toString()}`)
+  },
+
+  async createCollection(payload: CreateCollectionRequest): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>('/collections', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async updateCollection(
+    collectionId: number,
+    payload: UpdateCollectionRequest
+  ): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/collections/${collectionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async deleteCollection(collectionId: number): Promise<void> {
+    await apiRequest(`/collections/${collectionId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async createCollectionIndex(collectionId: number): Promise<{ message: string; collection_id?: number }> {
+    return apiRequest<{ message: string; collection_id?: number }>(
+      `/collections/${collectionId}/index`,
+      {
+        method: 'POST',
+      }
+    )
+  },
+
+  async removeDocumentFromCollection(
+    collectionId: number,
+    documentId: number
+  ): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/collections/${collectionId}/documents/${documentId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  async getCollectionStatistics(collectionId: number): Promise<CollectionStatistics> {
+    return apiRequest<CollectionStatistics>(`/collections/${collectionId}/statistics`)
+  },
+
+  async queryCollection(
+    collectionId: number,
+    payload: CrossDocumentQueryRequest
+  ): Promise<MultiDocumentQueryResponse> {
+    return apiRequest<MultiDocumentQueryResponse>(`/collections/${collectionId}/query`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async getSystemHealth(): Promise<SystemHealth> {
+    return apiRequest<SystemHealth>('/system/health')
   },
 }

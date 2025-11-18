@@ -63,6 +63,7 @@ export interface DocumentImportRequest {
   title?: string
   check_duplicates?: boolean
   auto_build_index?: boolean
+  overwrite_duplicates?: boolean
 }
 
 // RAG types

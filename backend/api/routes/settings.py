@@ -27,41 +27,47 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 class ApiKeyRequest(BaseModel):
     """API key test request with security validation."""
-    api_key: str = Field(..., min_length=10, max_length=200,
-                        description="API key to test")
 
-    @field_validator('api_key')
+    api_key: str = Field(
+        ..., min_length=10, max_length=200, description="API key to test"
+    )
+
+    @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
         """Validate API key format and security."""
         # Basic validation against injection attacks
-        validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'api_key', 'sql_injection')
-        validate_against_patterns(v, XSS_PATTERNS, 'api_key', 'xss_attempt')
+        validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, "api_key", "sql_injection")
+        validate_against_patterns(v, XSS_PATTERNS, "api_key", "xss_attempt")
 
         # API key format validation
         if not v.strip():
-            raise SecurityValidationError('api_key', 'API key cannot be empty')
+            raise SecurityValidationError("api_key", "API key cannot be empty")
 
         # Check for suspicious patterns
         suspicious_patterns = [
-            r'\s',  # No whitespace allowed in API keys
+            r"\s",  # No whitespace allowed in API keys
             r'[<>"\']',  # No HTML/quote characters
-            r'javascript:',  # No JS protocol
-            r'data:',  # No data protocol
+            r"javascript:",  # No JS protocol
+            r"data:",  # No data protocol
         ]
 
-        validate_against_patterns(v, suspicious_patterns, 'api_key', 'suspicious_pattern')
+        validate_against_patterns(
+            v, suspicious_patterns, "api_key", "suspicious_pattern"
+        )
 
         return v.strip()
 
 
 class SettingsRequest(BaseModel):
     """Settings update request with security validation."""
-    gemini_api_key: str | None = Field(None, min_length=10, max_length=200,
-                                         description="Google Gemini API key")
+
+    gemini_api_key: str | None = Field(
+        None, min_length=10, max_length=200, description="Google Gemini API key"
+    )
     rag_enabled: bool = Field(False, description="Enable RAG functionality")
 
-    @field_validator('gemini_api_key')
+    @field_validator("gemini_api_key")
     @classmethod
     def validate_gemini_api_key(cls, v: str | None) -> str | None:
         """Validate Gemini API key."""
@@ -69,32 +75,37 @@ class SettingsRequest(BaseModel):
             return v
 
         # Skip validation if it's a masked value (contains bullets)
-        if '●' in v:
+        if "●" in v:
             return v
 
         # Basic validation against injection attacks
-        validate_against_patterns(v, DANGEROUS_SQL_PATTERNS, 'gemini_api_key', 'sql_injection')
-        validate_against_patterns(v, XSS_PATTERNS, 'gemini_api_key', 'xss_attempt')
+        validate_against_patterns(
+            v, DANGEROUS_SQL_PATTERNS, "gemini_api_key", "sql_injection"
+        )
+        validate_against_patterns(v, XSS_PATTERNS, "gemini_api_key", "xss_attempt")
 
         # API key format validation
         if not v.strip():
-            raise SecurityValidationError('gemini_api_key', 'API key cannot be empty')
+            raise SecurityValidationError("gemini_api_key", "API key cannot be empty")
 
         # Check for suspicious patterns
         suspicious_patterns = [
-            r'\s',  # No whitespace allowed in API keys
+            r"\s",  # No whitespace allowed in API keys
             r'[<>"\']',  # No HTML/quote characters
-            r'javascript:',  # No JS protocol
-            r'data:',  # No data protocol
+            r"javascript:",  # No JS protocol
+            r"data:",  # No data protocol
         ]
 
-        validate_against_patterns(v, suspicious_patterns, 'gemini_api_key', 'suspicious_pattern')
+        validate_against_patterns(
+            v, suspicious_patterns, "gemini_api_key", "suspicious_pattern"
+        )
 
         return v.strip()
 
 
 class SettingsResponse(BaseModel):
     """Settings response model."""
+
     gemini_api_key: str = Field("", description="Masked API key")
     rag_enabled: bool = Field(False, description="RAG enabled status")
     has_api_key: bool = Field(False, description="Whether API key is configured")
@@ -102,6 +113,7 @@ class SettingsResponse(BaseModel):
 
 class ApiKeyTestResponse(BaseModel):
     """API key test response model."""
+
     valid: bool = Field(..., description="Whether API key is valid")
     error: str | None = Field(None, description="Error message if invalid")
 
@@ -225,8 +237,8 @@ async def get_settings(
     except Exception as e:
         logger.error(f"Failed to get settings: {e}")
         raise SystemException(
-            message="Failed to retrieve system settings",
-            error_type="database") from e
+            message="Failed to retrieve system settings", error_type="database"
+        ) from e
 
 
 @router.post("/settings")
@@ -250,8 +262,8 @@ async def update_settings(
     except Exception as e:
         logger.error(f"Failed to update settings: {e}")
         raise SystemException(
-            message="Failed to update system settings",
-            error_type="database") from e
+            message="Failed to update system settings", error_type="database"
+        ) from e
 
 
 @router.post("/test-api-key", response_model=ApiKeyTestResponse)
@@ -318,15 +330,15 @@ async def get_system_status(
         try:
             result = db.fetch_one("SELECT COUNT(*) as count FROM documents")
             doc_count = result["count"] if result else 0
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to fetch document count: %s", exc)
         # Check vector index count
         index_count = 0
         try:
             result = db.fetch_one("SELECT COUNT(*) as count FROM vector_indexes")
             index_count = result["count"] if result else 0
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to fetch vector index count: %s", exc)
         return {
             "database": {
                 "status": db_status,
@@ -343,5 +355,5 @@ async def get_system_status(
     except Exception as e:
         logger.error(f"Failed to get system status: {e}")
         raise SystemException(
-            message="Failed to retrieve system status",
-            error_type="general") from e
+            message="Failed to retrieve system status", error_type="general"
+        ) from e

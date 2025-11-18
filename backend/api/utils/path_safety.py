@@ -39,10 +39,7 @@ def is_within_allowed_roots(path: Path, allowed_roots: list[Path]) -> bool:
     """Ensure the resolved path is contained within one of the allowed roots."""
     try:
         resolved = path.resolve()
-        for root in allowed_roots:
-            if resolved.is_relative_to(root.resolve()):
-                return True
-        return False
+        return any(resolved.is_relative_to(root.resolve()) for root in allowed_roots)
     except FileNotFoundError:
         # If the path does not exist yet, validate parent directory
         parent = path.parent.resolve()

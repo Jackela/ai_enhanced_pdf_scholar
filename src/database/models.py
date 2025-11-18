@@ -246,9 +246,8 @@ class DocumentModel:
         if not normalized:
             return None
 
-        if "/" in normalized and not normalized.startswith("."):
-            if normalized == "application/pdf":
-                return ".pdf"
+        if normalized == "application/pdf":
+            return ".pdf"
 
         if not normalized.startswith("."):
             normalized = f".{normalized}"

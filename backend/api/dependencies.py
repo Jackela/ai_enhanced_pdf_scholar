@@ -7,7 +7,7 @@ import logging
 import threading
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, cast
 
 from fastapi import Depends, HTTPException, status
 
@@ -17,6 +17,7 @@ from backend.config.application_config import get_application_config
 from config import Config
 from src.controllers.library_controller import LibraryController
 from src.database.connection import DatabaseConnection
+from src.database.models import DocumentModel
 from src.interfaces.rag_service_interfaces import (
     IRAGCacheManager,
     IRAGHealthChecker,
@@ -203,7 +204,7 @@ def get_documents_dir() -> Path:
 
 def validate_document_access(
     document_id: int, controller: LibraryController = Depends(get_library_controller)
-):
+) -> DocumentModel:
     """Validate that document exists and is accessible."""
     try:
         document = controller.get_document_by_id(document_id)
@@ -224,7 +225,7 @@ def validate_document_access(
 
 # Configuration helpers
 @lru_cache
-def get_api_config() -> dict:
+def get_api_config() -> dict[str, Any]:
     """Get API configuration."""
     return {
         "max_file_size_mb": 100,
@@ -284,9 +285,12 @@ def get_document_library_service(
         with _doc_repo_lock:
             if _document_library_service is None:
                 hash_service = ContentHashService()
-                _document_library_service = DocumentLibraryService(
-                    document_repository=repo,
-                    hash_service=hash_service,
+                _document_library_service = cast(
+                    IDocumentLibraryService,
+                    DocumentLibraryService(
+                        document_repository=repo,
+                        hash_service=hash_service,
+                    ),
                 )
                 logger.info("Document library service initialized")
     return _document_library_service
@@ -377,7 +381,7 @@ def get_websocket_manager() -> WebSocketManager:
     global _websocket_manager
     if _websocket_manager is None:
         try:
-            _websocket_manager = WebSocketManager()
+            _websocket_manager = cast(WebSocketManager, WebSocketManager())
             logger.info("WebSocket manager initialized")
         except Exception as e:
             logger.error(f"Failed to initialize WebSocket manager: {e}")
@@ -390,12 +394,17 @@ def get_websocket_manager() -> WebSocketManager:
 
 def get_multi_document_rag_service(
     db: DatabaseConnection = Depends(get_db),
-    enhanced_rag: Optional[EnhancedRAGService] = Depends(get_enhanced_rag),
+    enhanced_rag: EnhancedRAGService | None = Depends(get_enhanced_rag),
 ) -> MultiDocumentRAGService:
     """Get multi-document RAG service dependency."""
     global _multi_document_rag_service
     if _multi_document_rag_service is None:
         try:
+            if enhanced_rag is None:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Enhanced RAG service is not configured",
+                )
             # Import repositories here to avoid circular imports
             from src.repositories.document_repository import DocumentRepository
             from src.repositories.multi_document_repositories import (

@@ -5,7 +5,7 @@ Provides integration points for existing services to use the new secrets managem
 
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from backend.api.auth.jwt_handler import JWTConfig as OldJWTConfig
 from backend.core.enhanced_config import get_config
@@ -40,8 +40,12 @@ class JWTSecretsAdapter:
             Tuple of (private_key_bytes, public_key_bytes)
         """
         # Try to get existing keys from secrets
-        private_key = self.secrets_manager.get_secret("jwt_private_key", SecretType.JWT_PRIVATE_KEY)
-        public_key = self.secrets_manager.get_secret("jwt_public_key", SecretType.JWT_PUBLIC_KEY)
+        private_key = self.secrets_manager.get_secret(
+            "jwt_private_key", SecretType.JWT_PRIVATE_KEY
+        )
+        public_key = self.secrets_manager.get_secret(
+            "jwt_public_key", SecretType.JWT_PUBLIC_KEY
+        )
 
         if private_key and public_key:
             return private_key.encode(), public_key.encode()
@@ -57,21 +61,21 @@ class JWTSecretsAdapter:
         private_key_obj = rsa.generate_private_key(
             public_exponent=65537,
             key_size=4096,  # Use 4096 for production
-            backend=default_backend()
+            backend=default_backend(),
         )
 
         # Serialize private key
         private_key_bytes = private_key_obj.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
+            encryption_algorithm=serialization.NoEncryption(),
         )
 
         # Get public key
         public_key_obj = private_key_obj.public_key()
         public_key_bytes = public_key_obj.public_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
 
         # Store in secrets management
@@ -80,7 +84,7 @@ class JWTSecretsAdapter:
             value=private_key_bytes.decode(),
             secret_type=SecretType.JWT_PRIVATE_KEY,
             rotation_interval_days=365,  # Rotate yearly
-            description="JWT RSA private key for token signing"
+            description="JWT RSA private key for token signing",
         )
 
         if success:
@@ -89,7 +93,7 @@ class JWTSecretsAdapter:
                 value=public_key_bytes.decode(),
                 secret_type=SecretType.JWT_PUBLIC_KEY,
                 rotation_interval_days=365,
-                description="JWT RSA public key for token verification"
+                description="JWT RSA public key for token verification",
             )
             logger.info("Successfully stored JWT keys in secrets management")
         else:
@@ -114,34 +118,30 @@ class JWTSecretsAdapter:
 
         # Generate new RSA key pair
         private_key_obj = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=4096,
-            backend=default_backend()
+            public_exponent=65537, key_size=4096, backend=default_backend()
         )
 
         # Serialize keys
         private_key_bytes = private_key_obj.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
+            encryption_algorithm=serialization.NoEncryption(),
         )
 
         public_key_obj = private_key_obj.public_key()
         public_key_bytes = public_key_obj.public_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
 
         # Rotate in secrets management
         success = self.secrets_manager.rotate_secret(
-            "jwt_private_key",
-            private_key_bytes.decode()
+            "jwt_private_key", private_key_bytes.decode()
         )
 
         if success:
             self.secrets_manager.rotate_secret(
-                "jwt_public_key",
-                public_key_bytes.decode()
+                "jwt_public_key", public_key_bytes.decode()
             )
             logger.info("Successfully rotated JWT keys")
             return True
@@ -177,11 +177,9 @@ class ConfigSecretsAdapter:
         Maintains compatibility with Config.is_api_key_configured()
         """
         config = get_config()
-        return any([
-            config.api_keys.gemini,
-            config.api_keys.openai,
-            config.api_keys.anthropic
-        ])
+        return any(
+            [config.api_keys.gemini, config.api_keys.openai, config.api_keys.anthropic]
+        )
 
     def migrate_settings_file(self) -> bool:
         """
@@ -204,31 +202,31 @@ class ConfigSecretsAdapter:
             migrated = []
 
             # Migrate API keys
-            if 'gemini_api_key' in settings:
+            if "gemini_api_key" in settings:
                 success = self.secrets_manager.set_secret(
                     key="api_key_gemini",
-                    value=settings['gemini_api_key'],
+                    value=settings["gemini_api_key"],
                     secret_type=SecretType.API_KEY,
-                    description="Gemini API key migrated from settings.json"
+                    description="Gemini API key migrated from settings.json",
                 )
                 if success:
                     migrated.append("gemini_api_key")
-                    del settings['gemini_api_key']
+                    del settings["gemini_api_key"]
 
-            if 'openai_api_key' in settings:
+            if "openai_api_key" in settings:
                 success = self.secrets_manager.set_secret(
                     key="api_key_openai",
-                    value=settings['openai_api_key'],
+                    value=settings["openai_api_key"],
                     secret_type=SecretType.API_KEY,
-                    description="OpenAI API key migrated from settings.json"
+                    description="OpenAI API key migrated from settings.json",
                 )
                 if success:
                     migrated.append("openai_api_key")
-                    del settings['openai_api_key']
+                    del settings["openai_api_key"]
 
             # Write back settings without secrets
             if migrated:
-                with open(settings_file, 'w') as f:
+                with open(settings_file, "w") as f:
                     json.dump(settings, f, indent=2)
 
                 logger.info(f"Migrated {len(migrated)} secrets from settings.json")
@@ -248,7 +246,9 @@ def monkey_patch_jwt_config():
     adapter = JWTSecretsAdapter()
 
     # Replace the ensure_keys_exist method
-    OldJWTConfig.ensure_keys_exist = classmethod(lambda cls: adapter.ensure_keys_exist())
+    OldJWTConfig.ensure_keys_exist = classmethod(
+        lambda cls: adapter.ensure_keys_exist()
+    )
 
     logger.info("JWT configuration patched to use secrets management")
 
@@ -333,7 +333,7 @@ def update_dependencies_to_use_secrets():
 def initialize_secrets_integration(
     provider: SecretProvider | None = None,
     auto_migrate: bool = True,
-    monkey_patch: bool = True
+    monkey_patch: bool = True,
 ) -> bool:
     """
     Initialize secrets management integration with existing system.
@@ -351,6 +351,7 @@ def initialize_secrets_integration(
         if provider:
             config = SecretConfig(primary_provider=provider)
             from backend.core.secrets import initialize_secrets_manager
+
             initialize_secrets_manager(config)
 
         # Auto-migrate if requested
@@ -400,7 +401,9 @@ def check_and_rotate_secrets() -> dict[str, bool]:
     secrets_to_rotate = secrets_manager.check_rotation_needed()
 
     for key, metadata in secrets_to_rotate:
-        logger.info(f"Secret {key} needs rotation (last rotated: {metadata.last_rotated})")
+        logger.info(
+            f"Secret {key} needs rotation (last rotated: {metadata.last_rotated})"
+        )
 
         # Handle special cases
         if key == "jwt_private_key":
@@ -432,11 +435,15 @@ def get_secret_health_status() -> dict[str, Any]:
         "configuration": {
             "environment": config.environment.value,
             "primary_provider": secrets_manager.config.primary_provider.value,
-            "fallback_providers": [p.value for p in secrets_manager.config.fallback_providers],
+            "fallback_providers": [
+                p.value for p in secrets_manager.config.fallback_providers
+            ],
         },
         "secrets": {
             "total": len(secrets_manager.list_secrets()),
-            "api_keys_configured": config.api_keys.model_dump(exclude_unset=True, exclude_none=True),
+            "api_keys_configured": config.api_keys.model_dump(
+                exclude_unset=True, exclude_none=True
+            ),
             "jwt_configured": bool(config.jwt.private_key and config.jwt.public_key),
             "database_configured": bool(config.database.url or config.database.host),
         },

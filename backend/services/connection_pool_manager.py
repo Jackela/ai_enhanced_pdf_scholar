@@ -12,32 +12,22 @@ import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Add parent directory to path for imports
-import sys
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-try:
-    from src.database.connection import DatabaseConnection
-except ImportError as e:
-    logger.error(f"Failed to import DatabaseConnection: {e}")
-    sys.exit(1)
-
 
 class PoolStrategy(Enum):
     """Connection pool strategies."""
-    FIXED = "fixed"           # Fixed pool size
-    DYNAMIC = "dynamic"       # Dynamic sizing based on load
-    ADAPTIVE = "adaptive"     # AI-driven adaptive sizing
+
+    FIXED = "fixed"  # Fixed pool size
+    DYNAMIC = "dynamic"  # Dynamic sizing based on load
+    ADAPTIVE = "adaptive"  # AI-driven adaptive sizing
 
 
 class ConnectionState(Enum):
     """Connection states."""
+
     IDLE = "idle"
     ACTIVE = "active"
     STALE = "stale"
@@ -47,6 +37,7 @@ class ConnectionState(Enum):
 @dataclass
 class ConnectionMetrics:
     """Metrics for a single connection."""
+
     connection_id: str
     created_at: float
     last_used: float
@@ -68,6 +59,7 @@ class ConnectionMetrics:
 @dataclass
 class PoolStatistics:
     """Connection pool statistics."""
+
     total_connections: int = 0
     active_connections: int = 0
     idle_connections: int = 0
@@ -86,6 +78,7 @@ class PoolStatistics:
 @dataclass
 class PoolConfiguration:
     """Connection pool configuration."""
+
     min_connections: int = 5
     max_connections: int = 50
     initial_connections: int = 10
@@ -102,7 +95,11 @@ class PoolConfiguration:
 class ManagedConnection:
     """Wrapper for database connections with metrics and lifecycle management."""
 
-    def __init__(self, connection: sqlite3.Connection, pool_manager: 'AdvancedConnectionPoolManager'):
+    def __init__(
+        self,
+        connection: sqlite3.Connection,
+        pool_manager: "AdvancedConnectionPoolManager",
+    ):
         self.connection = connection
         self.pool_manager = pool_manager
         self.metrics = ConnectionMetrics(
@@ -112,7 +109,7 @@ class ManagedConnection:
             total_queries=0,
             total_time_ms=0.0,
             avg_query_time_ms=0.0,
-            state=ConnectionState.IDLE
+            state=ConnectionState.IDLE,
         )
         self._lock = threading.Lock()
         self._in_use = False
@@ -175,11 +172,7 @@ class AdvancedConnectionPoolManager:
     - Thread-safe operations
     """
 
-    def __init__(
-        self,
-        database_url: str,
-        config: PoolConfiguration | None = None
-    ):
+    def __init__(self, database_url: str, config: PoolConfiguration | None = None):
         """
         Initialize the Advanced Connection Pool Manager.
 
@@ -216,18 +209,24 @@ class AdvancedConnectionPoolManager:
     def _initialize_pool(self) -> None:
         """Initialize the connection pool with initial connections."""
         try:
-            logger.info(f"Initializing connection pool with {self.config.initial_connections} connections")
+            logger.info(
+                f"Initializing connection pool with {self.config.initial_connections} connections"
+            )
 
             for i in range(self.config.initial_connections):
                 connection = self._create_new_connection()
                 managed_conn = ManagedConnection(connection, self)
 
                 with self._pool_lock:
-                    self._all_connections[managed_conn.metrics.connection_id] = managed_conn
+                    self._all_connections[managed_conn.metrics.connection_id] = (
+                        managed_conn
+                    )
                     self._idle_connections.put(managed_conn)
                     self._stats.total_connections += 1
 
-            logger.info(f"Connection pool initialized with {self._stats.total_connections} connections")
+            logger.info(
+                f"Connection pool initialized with {self._stats.total_connections} connections"
+            )
 
         except Exception as e:
             logger.error(f"Failed to initialize connection pool: {e}")
@@ -237,8 +236,8 @@ class AdvancedConnectionPoolManager:
         """Create a new database connection."""
         try:
             # Handle different database URL formats
-            if self.database_url.startswith('sqlite://'):
-                db_path = self.database_url.replace('sqlite://', '')
+            if self.database_url.startswith("sqlite://"):
+                db_path = self.database_url.replace("sqlite://", "")
             else:
                 db_path = self.database_url
 
@@ -246,7 +245,7 @@ class AdvancedConnectionPoolManager:
                 db_path,
                 check_same_thread=False,
                 timeout=self.config.connection_timeout_ms / 1000,
-                isolation_level=None  # Autocommit mode
+                isolation_level=None,  # Autocommit mode
             )
 
             # Configure connection for performance
@@ -268,17 +267,13 @@ class AdvancedConnectionPoolManager:
         """Start background monitoring and optimization tasks."""
         # Health monitoring thread
         self._health_monitor_thread = threading.Thread(
-            target=self._health_monitor_worker,
-            daemon=True,
-            name="PoolHealthMonitor"
+            target=self._health_monitor_worker, daemon=True, name="PoolHealthMonitor"
         )
         self._health_monitor_thread.start()
 
         # Pool optimization thread
         self._pool_optimizer_thread = threading.Thread(
-            target=self._pool_optimizer_worker,
-            daemon=True,
-            name="PoolOptimizer"
+            target=self._pool_optimizer_worker, daemon=True, name="PoolOptimizer"
         )
         self._pool_optimizer_thread.start()
 
@@ -328,9 +323,10 @@ class AdvancedConnectionPoolManager:
 
         with self._pool_lock:
             for conn_id, managed_conn in self._all_connections.items():
-                if (managed_conn.metrics.state == ConnectionState.IDLE and
-                    (managed_conn.is_stale(self.config.stale_timeout_ms) or
-                     managed_conn.is_expired(self.config.max_connection_age_ms))):
+                if managed_conn.metrics.state == ConnectionState.IDLE and (
+                    managed_conn.is_stale(self.config.stale_timeout_ms)
+                    or managed_conn.is_expired(self.config.max_connection_age_ms)
+                ):
                     stale_connections.append(conn_id)
                     managed_conn.metrics.state = ConnectionState.STALE
 
@@ -391,20 +387,25 @@ class AdvancedConnectionPoolManager:
                     try:
                         connection = self._create_new_connection()
                         managed_conn = ManagedConnection(connection, self)
-                        self._all_connections[managed_conn.metrics.connection_id] = managed_conn
+                        self._all_connections[managed_conn.metrics.connection_id] = (
+                            managed_conn
+                        )
                         self._idle_connections.put(managed_conn)
                         self._stats.total_connections += 1
                     except Exception as e:
-                        logger.error(f"Failed to create new connection during scaling: {e}")
+                        logger.error(
+                            f"Failed to create new connection during scaling: {e}"
+                        )
                         break
 
-                logger.info(f"Scaled up pool by {connections_to_add} connections (utilization: {utilization:.2f})")
+                logger.info(
+                    f"Scaled up pool by {connections_to_add} connections (utilization: {utilization:.2f})"
+                )
 
             # Scale down if low utilization
             elif utilization < 0.3 and total_count > self.config.min_connections:
                 excess_connections = min(
-                    idle_count // 2,
-                    total_count - self.config.min_connections
+                    idle_count // 2, total_count - self.config.min_connections
                 )
 
                 for _ in range(excess_connections):
@@ -416,7 +417,9 @@ class AdvancedConnectionPoolManager:
                         break
 
                 if excess_connections > 0:
-                    logger.info(f"Scaled down pool by {excess_connections} connections (utilization: {utilization:.2f})")
+                    logger.info(
+                        f"Scaled down pool by {excess_connections} connections (utilization: {utilization:.2f})"
+                    )
 
     def _optimize_pool_size_adaptive(self) -> None:
         """Optimize pool size using adaptive AI-driven strategy."""
@@ -425,7 +428,9 @@ class AdvancedConnectionPoolManager:
 
         with self._stats_lock:
             recent_wait_times = self._wait_times[-100:] if self._wait_times else [0]
-            recent_response_times = self._response_times[-100:] if self._response_times else [0]
+            recent_response_times = (
+                self._response_times[-100:] if self._response_times else [0]
+            )
 
             avg_wait_time = statistics.mean(recent_wait_times)
             avg_response_time = statistics.mean(recent_response_times)
@@ -446,20 +451,28 @@ class AdvancedConnectionPoolManager:
                 # Adaptive scaling: scale more aggressively under high load
                 scale_factor = 0.2 if reason == "high_wait_times" else 0.1
                 connections_to_add = max(1, int(current_size * scale_factor))
-                connections_to_add = min(connections_to_add, self.config.max_connections - current_size)
+                connections_to_add = min(
+                    connections_to_add, self.config.max_connections - current_size
+                )
 
                 for _ in range(connections_to_add):
                     try:
                         connection = self._create_new_connection()
                         managed_conn = ManagedConnection(connection, self)
-                        self._all_connections[managed_conn.metrics.connection_id] = managed_conn
+                        self._all_connections[managed_conn.metrics.connection_id] = (
+                            managed_conn
+                        )
                         self._idle_connections.put(managed_conn)
                         self._stats.total_connections += 1
                     except Exception as e:
-                        logger.error(f"Failed to create connection during adaptive scaling: {e}")
+                        logger.error(
+                            f"Failed to create connection during adaptive scaling: {e}"
+                        )
                         break
 
-                logger.info(f"Adaptive scale-up: +{connections_to_add} connections (reason: {reason})")
+                logger.info(
+                    f"Adaptive scale-up: +{connections_to_add} connections (reason: {reason})"
+                )
 
     def _scale_down_adaptive(self, reason: str) -> None:
         """Scale down connections based on adaptive algorithm."""
@@ -469,7 +482,9 @@ class AdvancedConnectionPoolManager:
 
             if current_size > self.config.min_connections and idle_count > 2:
                 # Conservative scaling down
-                connections_to_remove = min(idle_count // 3, current_size - self.config.min_connections)
+                connections_to_remove = min(
+                    idle_count // 3, current_size - self.config.min_connections
+                )
 
                 for _ in range(connections_to_remove):
                     try:
@@ -480,7 +495,9 @@ class AdvancedConnectionPoolManager:
                         break
 
                 if connections_to_remove > 0:
-                    logger.info(f"Adaptive scale-down: -{connections_to_remove} connections (reason: {reason})")
+                    logger.info(
+                        f"Adaptive scale-down: -{connections_to_remove} connections (reason: {reason})"
+                    )
 
     def _balance_connection_load(self) -> None:
         """Balance load across connections if load balancing is enabled."""
@@ -495,7 +512,10 @@ class AdvancedConnectionPoolManager:
             connection_loads = []
             for managed_conn in self._all_connections.values():
                 if managed_conn.metrics.state == ConnectionState.IDLE:
-                    load_score = managed_conn.metrics.total_queries * managed_conn.metrics.avg_query_time_ms
+                    load_score = (
+                        managed_conn.metrics.total_queries
+                        * managed_conn.metrics.avg_query_time_ms
+                    )
                     connection_loads.append((managed_conn, load_score))
 
             # Sort by load (highest first)
@@ -508,7 +528,9 @@ class AdvancedConnectionPoolManager:
                 lowest_load = connection_loads[-1][1]
 
                 if highest_load > 0 and highest_load / max(lowest_load, 1) > 3:
-                    logger.debug("Detected connection load imbalance - considering rebalancing")
+                    logger.debug(
+                        "Detected connection load imbalance - considering rebalancing"
+                    )
 
     def acquire_connection(self, timeout_ms: int | None = None) -> ManagedConnection:
         """
@@ -545,20 +567,26 @@ class AdvancedConnectionPoolManager:
                 connection = managed_conn.acquire(thread_id)
 
                 with self._pool_lock:
-                    self._active_connections[managed_conn.metrics.connection_id] = managed_conn
+                    self._active_connections[managed_conn.metrics.connection_id] = (
+                        managed_conn
+                    )
 
                 # Record wait time
                 wait_time = (time.time() - start_time) * 1000
                 with self._stats_lock:
                     self._wait_times.append(wait_time)
-                    if len(self._wait_times) > 1000:  # Keep only recent 1000 measurements
+                    if (
+                        len(self._wait_times) > 1000
+                    ):  # Keep only recent 1000 measurements
                         self._wait_times = self._wait_times[-500:]
 
                     self._stats.successful_requests += 1
                     self._stats.active_connections += 1
                     self._stats.idle_connections -= 1
 
-                logger.debug(f"Acquired connection {managed_conn.metrics.connection_id} (wait: {wait_time:.2f}ms)")
+                logger.debug(
+                    f"Acquired connection {managed_conn.metrics.connection_id} (wait: {wait_time:.2f}ms)"
+                )
                 return managed_conn
 
             except queue.Empty as e:
@@ -572,28 +600,38 @@ class AdvancedConnectionPoolManager:
                             connection = self._create_new_connection()
                             managed_conn = ManagedConnection(connection, self)
 
-                            self._all_connections[managed_conn.metrics.connection_id] = managed_conn
+                            self._all_connections[
+                                managed_conn.metrics.connection_id
+                            ] = managed_conn
                             self._stats.total_connections += 1
 
                             # Acquire immediately
                             _ = managed_conn.acquire(thread_id)
-                            self._active_connections[managed_conn.metrics.connection_id] = managed_conn
+                            self._active_connections[
+                                managed_conn.metrics.connection_id
+                            ] = managed_conn
 
                             with self._stats_lock:
                                 self._stats.successful_requests += 1
                                 self._stats.active_connections += 1
 
-                            logger.debug(f"Created and acquired new connection {managed_conn.metrics.connection_id}")
+                            logger.debug(
+                                f"Created and acquired new connection {managed_conn.metrics.connection_id}"
+                            )
                             return managed_conn
 
                         except Exception as create_err:
-                            logger.error(f"Failed to create new connection: {create_err}")
+                            logger.error(
+                                f"Failed to create new connection: {create_err}"
+                            )
 
                 # Pool is exhausted
                 with self._stats_lock:
                     self._stats.failed_requests += 1
 
-                raise TimeoutError(f"No database connections available within {timeout_ms}ms timeout") from e
+                raise TimeoutError(
+                    f"No database connections available within {timeout_ms}ms timeout"
+                ) from e
 
         except Exception as e:
             with self._stats_lock:
@@ -601,7 +639,12 @@ class AdvancedConnectionPoolManager:
             logger.error(f"Failed to acquire connection: {e}")
             raise
 
-    def release_connection(self, managed_conn: ManagedConnection, execution_time_ms: float = 0, success: bool = True) -> None:
+    def release_connection(
+        self,
+        managed_conn: ManagedConnection,
+        execution_time_ms: float = 0,
+        success: bool = True,
+    ) -> None:
         """
         Release a connection back to the pool.
 
@@ -617,7 +660,9 @@ class AdvancedConnectionPoolManager:
 
                 with self._stats_lock:
                     self._response_times.append(execution_time_ms)
-                    if len(self._response_times) > 1000:  # Keep only recent 1000 measurements
+                    if (
+                        len(self._response_times) > 1000
+                    ):  # Keep only recent 1000 measurements
                         self._response_times = self._response_times[-500:]
 
             # Release the connection
@@ -628,7 +673,10 @@ class AdvancedConnectionPoolManager:
                 self._active_connections.pop(managed_conn.metrics.connection_id, None)
 
                 # Return to idle pool if connection is still healthy
-                if managed_conn.is_healthy() and managed_conn.metrics.state != ConnectionState.INVALID:
+                if (
+                    managed_conn.is_healthy()
+                    and managed_conn.metrics.state != ConnectionState.INVALID
+                ):
                     self._idle_connections.put(managed_conn)
 
                     with self._stats_lock:
@@ -662,15 +710,21 @@ class AdvancedConnectionPoolManager:
                 # Calculate efficiency
                 if self._stats.total_requests > 0:
                     self._stats.pool_efficiency = (
-                        self._stats.successful_requests / self._stats.total_requests * 100
+                        self._stats.successful_requests
+                        / self._stats.total_requests
+                        * 100
                     )
 
                 # Calculate average times
                 if self._wait_times:
-                    self._stats.avg_wait_time_ms = statistics.mean(self._wait_times[-100:])
+                    self._stats.avg_wait_time_ms = statistics.mean(
+                        self._wait_times[-100:]
+                    )
 
                 if self._response_times:
-                    self._stats.avg_response_time_ms = statistics.mean(self._response_times[-100:])
+                    self._stats.avg_response_time_ms = statistics.mean(
+                        self._response_times[-100:]
+                    )
 
     def get_statistics(self) -> PoolStatistics:
         """Get current pool statistics."""
@@ -690,7 +744,7 @@ class AdvancedConnectionPoolManager:
                 avg_response_time_ms=self._stats.avg_response_time_ms,
                 peak_connections=self._stats.peak_connections,
                 pool_efficiency=self._stats.pool_efficiency,
-                connection_churn_rate=self._stats.connection_churn_rate
+                connection_churn_rate=self._stats.connection_churn_rate,
             )
 
     def get_connection_details(self) -> list[dict[str, Any]]:
@@ -700,16 +754,16 @@ class AdvancedConnectionPoolManager:
         with self._pool_lock:
             for managed_conn in self._all_connections.values():
                 details = {
-                    'connection_id': managed_conn.metrics.connection_id,
-                    'state': managed_conn.metrics.state.value,
-                    'created_at': managed_conn.metrics.created_at,
-                    'last_used': managed_conn.metrics.last_used,
-                    'total_queries': managed_conn.metrics.total_queries,
-                    'avg_query_time_ms': managed_conn.metrics.avg_query_time_ms,
-                    'errors': managed_conn.metrics.errors,
-                    'thread_id': managed_conn.metrics.thread_id,
-                    'age_seconds': time.time() - managed_conn.metrics.created_at,
-                    'idle_time_seconds': time.time() - managed_conn.metrics.last_used
+                    "connection_id": managed_conn.metrics.connection_id,
+                    "state": managed_conn.metrics.state.value,
+                    "created_at": managed_conn.metrics.created_at,
+                    "last_used": managed_conn.metrics.last_used,
+                    "total_queries": managed_conn.metrics.total_queries,
+                    "avg_query_time_ms": managed_conn.metrics.avg_query_time_ms,
+                    "errors": managed_conn.metrics.errors,
+                    "thread_id": managed_conn.metrics.thread_id,
+                    "age_seconds": time.time() - managed_conn.metrics.created_at,
+                    "idle_time_seconds": time.time() - managed_conn.metrics.last_used,
                 }
                 connection_details.append(details)
 
@@ -733,14 +787,18 @@ class AdvancedConnectionPoolManager:
 
         with self._pool_lock:
             current_size = len(self._all_connections)
-            connections_needed = min(target - current_size, self.config.max_connections - current_size)
+            connections_needed = min(
+                target - current_size, self.config.max_connections - current_size
+            )
 
             for _ in range(connections_needed):
                 try:
                     connection = self._create_new_connection()
                     managed_conn = ManagedConnection(connection, self)
 
-                    self._all_connections[managed_conn.metrics.connection_id] = managed_conn
+                    self._all_connections[managed_conn.metrics.connection_id] = (
+                        managed_conn
+                    )
                     self._idle_connections.put(managed_conn)
                     self._stats.total_connections += 1
                     connections_created += 1
@@ -750,7 +808,9 @@ class AdvancedConnectionPoolManager:
                     break
 
         if connections_created > 0:
-            logger.info(f"Warmed connection pool with {connections_created} connections")
+            logger.info(
+                f"Warmed connection pool with {connections_created} connections"
+            )
 
         return connections_created
 
@@ -783,11 +843,19 @@ def main():
     parser.add_argument("--db-url", required=True, help="Database URL")
     parser.add_argument("--test", action="store_true", help="Run performance test")
     parser.add_argument("--stats", action="store_true", help="Show pool statistics")
-    parser.add_argument("--details", action="store_true", help="Show connection details")
+    parser.add_argument(
+        "--details", action="store_true", help="Show connection details"
+    )
     parser.add_argument("--warm", type=int, help="Warm pool to specified size")
-    parser.add_argument("--strategy", choices=["fixed", "dynamic", "adaptive"],
-                       default="dynamic", help="Pool strategy")
-    parser.add_argument("--max-connections", type=int, default=20, help="Maximum connections")
+    parser.add_argument(
+        "--strategy",
+        choices=["fixed", "dynamic", "adaptive"],
+        default="dynamic",
+        help="Pool strategy",
+    )
+    parser.add_argument(
+        "--max-connections", type=int, default=20, help="Maximum connections"
+    )
 
     args = parser.parse_args()
 
@@ -797,7 +865,7 @@ def main():
             max_connections=args.max_connections,
             pool_strategy=PoolStrategy(args.strategy),
             enable_load_balancing=True,
-            enable_connection_warming=True
+            enable_connection_warming=True,
         )
 
         # Initialize pool manager
@@ -832,12 +900,17 @@ def main():
             # Run concurrent tests
             with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
                 futures = [executor.submit(test_connection) for _ in range(100)]
-                results = [future.result() for future in concurrent.futures.as_completed(futures)]
+                results = [
+                    future.result()
+                    for future in concurrent.futures.as_completed(futures)
+                ]
 
             successful_results = [r for r in results if isinstance(r, float)]
             print(f"Test completed: {len(successful_results)}/100 successful")
             if successful_results:
-                print(f"Average response time: {statistics.mean(successful_results):.2f}ms")
+                print(
+                    f"Average response time: {statistics.mean(successful_results):.2f}ms"
+                )
 
         if args.stats:
             stats = pool_manager.get_statistics()

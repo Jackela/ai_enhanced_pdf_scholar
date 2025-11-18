@@ -117,9 +117,8 @@ def ensure_safe_cache_dir(cache_dir: Path, force: bool) -> None:
     cache_dir = cache_dir.resolve()
     if force:
         return
-    if not str(cache_dir).startswith(str(home)) and not str(cache_dir).startswith(
-        "/tmp"
-    ):
+    tmp_dir = Path("/tmp").resolve()  # noqa: S108 - intentional temp path allowlist
+    if not cache_dir.is_relative_to(home) and not cache_dir.is_relative_to(tmp_dir):
         raise RuntimeError(
             f"Cowardly refusing to operate on cache outside HOME or /tmp: {cache_dir}. "
             "Pass --force if you know what you are doing."
