@@ -85,6 +85,25 @@ if os.path.exists(models_path):
     DocumentListResponse = (
         models_main.DocumentListResponse
     )  # Import from main models.py with correct structure
+
+    # CRITICAL: Import RAG models from main models.py (has document_id field)
+    # The multi_document_models version has user_id/session_id instead
+    RAGQueryRequest = models_main.RAGQueryRequest  # Override multi_document import
+    RAGQueryResponse = models_main.RAGQueryResponse  # Override multi_document import
+    IndexBuildRequest = models_main.IndexBuildRequest  # Override multi_document import
+    IndexBuildResponse = (
+        models_main.IndexBuildResponse
+    )  # Override multi_document import
+    IndexStatusResponse = (
+        models_main.IndexStatusResponse
+    )  # Override multi_document import
+    CacheStatsResponse = (
+        models_main.CacheStatsResponse
+    )  # Override multi_document import
+    CacheClearResponse = (
+        models_main.CacheClearResponse
+    )  # Override multi_document import
+
     sanitize_html_content = models_main.sanitize_html_content
     validate_filename = models_main.validate_filename
     validate_file_content_type = models_main.validate_file_content_type
