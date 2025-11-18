@@ -38,7 +38,7 @@ class ApplicationMetrics:
     Application-specific metrics for AI Enhanced PDF Scholar.
     """
 
-    def __init__(self, registry: CollectorRegistry | None = None):
+    def __init__(self, registry: CollectorRegistry | None = None) -> None:
         """Initialize application metrics."""
         self.registry = registry or REGISTRY
 
@@ -422,7 +422,7 @@ class MetricsService:
         registry: CollectorRegistry | None = None,
         enable_push_gateway: bool = False,
         push_gateway_url: str = "http://localhost:9091",
-    ):
+    ) -> None:
         """Initialize metrics service."""
         self.app_name = app_name
         self.version = version
@@ -448,10 +448,10 @@ class MetricsService:
 
         logger.info(f"Metrics service initialized for {app_name} v{version}")
 
-    def _start_resource_monitoring(self):
+    def _start_resource_monitoring(self) -> None:
         """Start background thread for resource monitoring."""
 
-        def monitor_resources():
+        def monitor_resources() -> None:
             import psutil
 
             while True:
@@ -501,7 +501,7 @@ class MetricsService:
         duration: float,
         request_size: int = 0,
         response_size: int = 0,
-    ):
+    ) -> None:
         """Record HTTP request metrics."""
         status_class = f"{status_code // 100}xx"
 
@@ -523,12 +523,14 @@ class MetricsService:
                 method=method, endpoint=endpoint
             ).observe(response_size)
 
-    def record_auth_attempt(self, auth_type: str, success: bool):
+    def record_auth_attempt(self, auth_type: str, success: bool) -> None:
         """Record authentication attempt."""
         result = "success" if success else "failure"
         self.metrics.auth_attempts_total.labels(type=auth_type, result=result).inc()
 
-    def record_document_upload(self, user_id: str, file_type: str, file_size: int):
+    def record_document_upload(
+        self, user_id: str, file_type: str, file_size: int
+    ) -> None:
         """Record document upload."""
         self.metrics.documents_uploaded.labels(
             user_id=user_id, file_type=file_type
@@ -542,7 +544,7 @@ class MetricsService:
         duration: float,
         success: bool,
         relevance_score: float = None,
-    ):
+    ) -> None:
         """Record RAG query metrics."""
         result = "success" if success else "failure"
 
@@ -557,7 +559,7 @@ class MetricsService:
 
     def record_db_query(
         self, operation: str, table: str, duration: float, success: bool
-    ):
+    ) -> None:
         """Record database query metrics."""
         result = "success" if success else "failure"
 
@@ -576,7 +578,7 @@ class MetricsService:
         hit: bool | None = None,
         duration: float = None,
         key_pattern: str = "default",
-    ):
+    ) -> None:
         """Record cache operation metrics."""
         if hit is True:
             self.metrics.cache_hits_total.labels(
@@ -592,13 +594,13 @@ class MetricsService:
                 operation=operation, cache_type=cache_type
             ).observe(duration)
 
-    def record_security_event(self, event_type: str, severity: str):
+    def record_security_event(self, event_type: str, severity: str) -> None:
         """Record security event."""
         self.metrics.security_events_total.labels(
             event_type=event_type, severity=severity
         ).inc()
 
-    def record_user_activity(self, user_id: str, activity_type: str):
+    def record_user_activity(self, user_id: str, activity_type: str) -> None:
         """Record user activity."""
         self.metrics.user_activity.labels(
             user_id=user_id, activity_type=activity_type
@@ -608,37 +610,37 @@ class MetricsService:
     # Gauge Updates
     # ========================================================================
 
-    def update_active_sessions(self, count: int):
+    def update_active_sessions(self, count: int) -> None:
         """Update active sessions count."""
         self.metrics.active_sessions.set(count)
 
-    def update_documents_total(self, count: int):
+    def update_documents_total(self, count: int) -> None:
         """Update total documents count."""
         self.metrics.documents_total.set(count)
 
-    def update_vector_index_size(self, index_type: str, size: int):
+    def update_vector_index_size(self, index_type: str, size: int) -> None:
         """Update vector index size."""
         self.metrics.vector_index_size.labels(index_type=index_type).set(size)
 
-    def update_db_connections(self, db_type: str, count: int):
+    def update_db_connections(self, db_type: str, count: int) -> None:
         """Update database connections count."""
         self.metrics.db_connections_active.labels(db_type=db_type).set(count)
 
-    def update_cache_size(self, cache_type: str, size_bytes: int):
+    def update_cache_size(self, cache_type: str, size_bytes: int) -> None:
         """Update cache size."""
         self.metrics.cache_size_bytes.labels(cache_type=cache_type).set(size_bytes)
 
-    def update_health_status(self, status: str):
+    def update_health_status(self, status: str) -> None:
         """Update application health status."""
         self.metrics.app_health.state(status)
 
-    def update_dependency_health(self, dependency: str, healthy: bool):
+    def update_dependency_health(self, dependency: str, healthy: bool) -> None:
         """Update dependency health status."""
         self.metrics.dependency_health.labels(dependency=dependency).set(
             1 if healthy else 0
         )
 
-    def update_error_rate(self, component: str, error_rate: float):
+    def update_error_rate(self, component: str, error_rate: float) -> None:
         """Update error rate for a component."""
         self.metrics.error_rate.labels(component=component).set(error_rate)
 
@@ -646,12 +648,14 @@ class MetricsService:
     # Decorators
     # ========================================================================
 
-    def track_duration(self, operation: str, labels: dict[str, str] | None = None):
+    def track_duration(
+        self, operation: str, labels: dict[str, str] | None = None
+    ) -> Any:
         """Decorator to track operation duration."""
 
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> Any:
                 start_time = time.time()
                 try:
                     result = func(*args, **kwargs)
@@ -699,12 +703,12 @@ class MetricsService:
 
         return decorator
 
-    def track_exceptions(self, component: str):
+    def track_exceptions(self, component: str) -> Any:
         """Decorator to track exceptions."""
 
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> Any:
                 try:
                     return func(*args, **kwargs)
                 except Exception:
@@ -727,7 +731,7 @@ class MetricsService:
         self,
         port: int = 8000,
         addr: str = "0.0.0.0",  # noqa: S104 - intentional bind
-    ):
+    ) -> None:
         """Start HTTP server for metrics endpoint."""
         try:
             start_http_server(port, addr, registry=self.registry)
@@ -735,7 +739,9 @@ class MetricsService:
         except Exception as e:
             logger.error(f"Failed to start metrics server: {e}")
 
-    def push_metrics(self, job: str = None, grouping_key: dict[str, str] = None):
+    def push_metrics(
+        self, job: str = None, grouping_key: dict[str, str] = None
+    ) -> None:
         """Push metrics to Prometheus Push Gateway."""
         if not self.enable_push_gateway:
             return
@@ -832,12 +838,12 @@ class FastAPIMetricsMiddleware:
     FastAPI middleware for automatic metrics collection.
     """
 
-    def __init__(self, app, metrics_service: MetricsService):
+    def __init__(self, app, metrics_service: MetricsService) -> None:
         """Initialize middleware."""
         self.app = app
         self.metrics = metrics_service
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope, receive, send) -> Any:
         """Process request and collect metrics."""
         if scope["type"] != "http":
             await self.app(scope, receive, send)
@@ -849,7 +855,7 @@ class FastAPIMetricsMiddleware:
         status_code = 200
 
         # Track request size
-        async def receive_wrapper():
+        async def receive_wrapper() -> Any:
             nonlocal request_size
             message = await receive()
             if message["type"] == "http.request":
@@ -857,7 +863,7 @@ class FastAPIMetricsMiddleware:
             return message
 
         # Track response size and status
-        async def send_wrapper(message):
+        async def send_wrapper(message) -> None:
             nonlocal response_size, status_code
             if message["type"] == "http.response.start":
                 status_code = message["status"]

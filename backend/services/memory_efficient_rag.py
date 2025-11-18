@@ -29,7 +29,7 @@ class MemoryOptimizedRAGProcessor:
         chunk_size: int = 512,
         enable_streaming: bool = True,
         gc_threshold: float = 0.8,
-    ):
+    ) -> None:
         self.ws_manager = ws_manager
         self.memory_limit_mb = memory_limit_mb
         self.chunk_size = chunk_size
@@ -249,7 +249,7 @@ class MemoryOptimizedRAGProcessor:
         client_id: str,
         task_id: str,
         cancellation_token: asyncio.Event,
-    ):
+    ) -> None:
         """Stream response in chunks to the client."""
 
         if not self.enable_streaming:
@@ -283,7 +283,7 @@ class MemoryOptimizedRAGProcessor:
         percentage: float,
         message: str,
         stage_data: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Send progress update with memory stats."""
 
         # Add memory information to stage data
@@ -337,7 +337,7 @@ class RAGMemoryContext:
         task_id: str,
         client_id: str,
         memory_limit_mb: float,
-    ):
+    ) -> None:
         self.processor = processor
         self.task_id = task_id
         self.client_id = client_id
@@ -348,7 +348,7 @@ class RAGMemoryContext:
         self.current_memory_mb = 0.0
         self.start_time = datetime.now()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Enter the memory context."""
         # Record initial memory usage
         memory_stats = self.processor.memory_monitor.get_memory_stats()
@@ -361,7 +361,7 @@ class RAGMemoryContext:
         )
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit the memory context with cleanup."""
         # Final memory measurement
         memory_stats = self.processor.memory_monitor.get_memory_stats()
@@ -381,7 +381,7 @@ class RAGMemoryContext:
             gc.collect()
             await asyncio.sleep(0.1)
 
-    async def check_memory_pressure(self):
+    async def check_memory_pressure(self) -> None:
         """Check for memory pressure and take action if needed."""
         memory_stats = self.processor.memory_monitor.get_memory_stats()
         self.current_memory_mb = memory_stats.used_mb
@@ -437,7 +437,7 @@ class RAGMemoryContext:
 class StreamingRAGChunker:
     """Utility for chunking large responses for streaming."""
 
-    def __init__(self, chunk_size: int = 512, overlap: int = 50):
+    def __init__(self, chunk_size: int = 512, overlap: int = 50) -> None:
         self.chunk_size = chunk_size
         self.overlap = overlap
 

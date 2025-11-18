@@ -98,7 +98,7 @@ class RecoveryOperation:
 class TransactionLogManager:
     """Manages transaction log files for PITR."""
 
-    def __init__(self, log_directory: str):
+    def __init__(self, log_directory: str) -> None:
         """Initialize transaction log manager."""
         self.log_directory = Path(log_directory)
         self.log_directory.mkdir(parents=True, exist_ok=True)
@@ -288,7 +288,7 @@ class TransactionLogManager:
 class PostgreSQLPITRManager:
     """PostgreSQL-specific PITR implementation."""
 
-    def __init__(self, connection_url: str, wal_directory: str):
+    def __init__(self, connection_url: str, wal_directory: str) -> None:
         """Initialize PostgreSQL PITR manager."""
         self.connection_url = connection_url
         self.wal_directory = Path(wal_directory)
@@ -499,7 +499,7 @@ recovery_target_action = 'promote'
 class PointInTimeRecoveryService:
     """Main PITR service orchestrator."""
 
-    def __init__(self, metrics_service: MetricsService | None = None):
+    def __init__(self, metrics_service: MetricsService | None = None) -> None:
         """Initialize PITR service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -515,7 +515,9 @@ class PointInTimeRecoveryService:
         self.backup_base_path = Path("/var/backups/pitr")
         self.recovery_base_path = Path("/var/recovery/pitr")
 
-    def initialize_postgresql_pitr(self, connection_url: str, wal_directory: str):
+    def initialize_postgresql_pitr(
+        self, connection_url: str, wal_directory: str
+    ) -> None:
         """Initialize PostgreSQL PITR support."""
         self.postgresql_manager = PostgreSQLPITRManager(connection_url, wal_directory)
         self.log_manager = TransactionLogManager(wal_directory)
@@ -773,7 +775,7 @@ class PointInTimeRecoveryService:
 
     async def _update_recovery_metrics(
         self, operation: RecoveryOperation, success: bool
-    ):
+    ) -> None:
         """Update metrics for recovery operation."""
         try:
             # Record recovery completion
@@ -834,7 +836,7 @@ class PointInTimeRecoveryService:
 
 
 # Example usage and testing
-async def main():
+async def main() -> None:
     """Example usage of PITR service."""
     service = PointInTimeRecoveryService()
 

@@ -36,7 +36,7 @@ class ErrorCategory(str, Enum):
 class _AutoStrEnum(str, Enum):
     """Enum helper that sets value equal to the member name."""
 
-    def _generate_next_value_(name, start, count, last_values):
+    def _generate_next_value_(name, start, count, last_values) -> Any:
         return name
 
 
@@ -183,7 +183,7 @@ class APIException(HTTPException):
         details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
         correlation_id: str | None = None,
         help_url: str | None = None,
-    ):
+    ) -> None:
         self.code = code
         self.message = message
         self.category = category
@@ -202,7 +202,7 @@ class ValidationException(APIException):
         message: str = "Request validation failed",
         details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
         correlation_id: str | None = None,
-    ):
+    ) -> None:
         super().__init__(
             code=ErrorCode.VALIDATION_ERROR,
             message=message,
@@ -223,7 +223,7 @@ class SecurityException(APIException):
         security_type: str = "general",
         details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
         correlation_id: str | None = None,
-    ):
+    ) -> None:
         code_mapping = {
             "sql_injection": ErrorCode.SQL_INJECTION_ATTEMPT,
             "xss_attempt": ErrorCode.XSS_ATTEMPT,
@@ -249,7 +249,7 @@ class AuthenticationException(APIException):
         self,
         message: str = "Authentication required",
         correlation_id: str | None = None,
-    ):
+    ) -> None:
         super().__init__(
             code=ErrorCode.AUTHENTICATION_REQUIRED,
             message=message,
@@ -265,7 +265,7 @@ class AuthorizationException(APIException):
 
     def __init__(
         self, message: str = "Permission denied", correlation_id: str | None = None
-    ):
+    ) -> None:
         super().__init__(
             code=ErrorCode.PERMISSION_DENIED,
             message=message,
@@ -285,7 +285,7 @@ class ResourceNotFoundException(APIException):
         resource_id: str | None = None,
         message: str | None = None,
         correlation_id: str | None = None,
-    ):
+    ) -> None:
         if message is None:
             if resource_id:
                 message = f"{resource_type.title()} with ID '{resource_id}' not found"
@@ -317,7 +317,7 @@ class ConflictException(APIException):
         resource_type: str = "resource",
         conflict_type: str = "duplicate",
         correlation_id: str | None = None,
-    ):
+    ) -> None:
         code_mapping = {
             "duplicate": ErrorCode.DUPLICATE_RESOURCE,
             "version": ErrorCode.VERSION_CONFLICT,
@@ -342,7 +342,7 @@ class BusinessLogicException(APIException):
         rule_type: str = "general",
         details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
         correlation_id: str | None = None,
-    ):
+    ) -> None:
         code_mapping = {
             "invalid_operation": ErrorCode.INVALID_OPERATION,
             "dependency": ErrorCode.DEPENDENCY_CONSTRAINT,
@@ -368,7 +368,7 @@ class RateLimitException(APIException):
         message: str = "Rate limit exceeded",
         retry_after: int | None = None,
         correlation_id: str | None = None,
-    ):
+    ) -> None:
         super().__init__(
             code=ErrorCode.RATE_LIMIT_EXCEEDED,
             message=message,
@@ -391,7 +391,7 @@ class SystemException(APIException):
         error_type: str = "general",
         correlation_id: str | None = None,
         include_traceback: bool = False,
-    ):
+    ) -> None:
         code_mapping = {
             "database": ErrorCode.DATABASE_ERROR,
             "external_service": ErrorCode.EXTERNAL_SERVICE_ERROR,
@@ -426,7 +426,7 @@ class ErrorLogger:
         exception: Union[APIException, Exception],
         request: Request | None = None,
         extra_context: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Log error with structured information and correlation ID."""
 
         correlation_id = getattr(exception, "correlation_id", str(uuid.uuid4()))

@@ -41,7 +41,7 @@ from src.services.content_hash_service import ContentHashService
 class PerformanceBaselineEstablisher:
     """Comprehensive performance baseline establishment system."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
         self.baselines = {}
         self.start_time = time.time()
@@ -674,7 +674,7 @@ class PerformanceBaselineEstablisher:
         print(f"📋 Summary saved to: {summary_file}")
 
 
-def main():
+def main() -> Any:
     """Main performance baseline establishment."""
     try:
         establisher = PerformanceBaselineEstablisher()

@@ -98,7 +98,7 @@ class RecoveryMetrics:
 class RetryMechanism:
     """Retry mechanism with exponential backoff and jitter."""
 
-    def __init__(self, config: RetryConfig):
+    def __init__(self, config: RetryConfig) -> None:
         self.config = config
         self.metrics = RecoveryMetrics()
 
@@ -106,7 +106,7 @@ class RetryMechanism:
         """Decorator for retry functionality."""
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> Any:
             return self._execute_with_retry(func, *args, **kwargs)
 
         return wrapper
@@ -175,7 +175,7 @@ class RetryMechanism:
 class CircuitBreaker:
     """Circuit breaker pattern implementation."""
 
-    def __init__(self, config: CircuitBreakerConfig):
+    def __init__(self, config: CircuitBreakerConfig) -> None:
         self.config = config
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
@@ -188,7 +188,7 @@ class CircuitBreaker:
         """Decorator for circuit breaker functionality."""
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> Any:
             return self._execute_with_circuit_breaker(func, *args, **kwargs)
 
         return wrapper
@@ -287,14 +287,14 @@ class CircuitBreaker:
 class ResourceCleanupManager:
     """Manages cleanup of resources with automatic tracking."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.cleanup_handlers: list[Callable] = []
         self.cleanup_paths: list[Path] = []
         self.metrics = RecoveryMetrics()
         self._lock = threading.Lock()
 
     @contextmanager
-    def cleanup_scope(self, description: str = ""):
+    def cleanup_scope(self, description: str = "") -> None:
         """Context manager for automatic cleanup."""
         logger.debug(f"Entering cleanup scope: {description}")
         try:
@@ -358,12 +358,12 @@ class ResourceCleanupManager:
 class TransactionManager:
     """Manages database transactions with automatic rollback."""
 
-    def __init__(self, db_connection):
+    def __init__(self, db_connection) -> None:
         self.db = db_connection
         self.metrics = RecoveryMetrics()
 
     @contextmanager
-    def transaction_scope(self, savepoint_name: str | None = None):
+    def transaction_scope(self, savepoint_name: str | None = None) -> None:
         """Context manager for transactional operations with rollback."""
         try:
             with self.db.transaction(savepoint_name):
@@ -385,7 +385,7 @@ class TransactionManager:
 class HealthChecker:
     """Health checking and system recovery verification."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.checks: dict[str, Callable] = {}
         self.metrics = RecoveryMetrics()
 
@@ -423,7 +423,7 @@ class HealthChecker:
 class RecoveryOrchestrator:
     """Orchestrates complex recovery operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.retry = RetryMechanism(RetryConfig())
         self.circuit_breaker = CircuitBreaker(CircuitBreakerConfig())
         self.cleanup_manager = ResourceCleanupManager()
@@ -530,7 +530,7 @@ def with_retry(
     initial_delay: float = 1.0,
     exponential_base: float = 2.0,
     retryable_exceptions: tuple = (Exception,),
-):
+) -> Any:
     """Decorator for retry with common settings."""
     config = RetryConfig(
         max_attempts=max_attempts,
@@ -545,7 +545,7 @@ def with_circuit_breaker(
     failure_threshold: int = 5,
     recovery_timeout: float = 60.0,
     expected_exception: type[Exception] = Exception,
-):
+) -> Any:
     """Decorator for circuit breaker with common settings."""
     config = CircuitBreakerConfig(
         failure_threshold=failure_threshold,

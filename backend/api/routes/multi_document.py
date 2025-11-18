@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Multi-Document RAG API Routes
 FastAPI routes for document collections and cross-document queries.
@@ -91,7 +93,7 @@ def convert_query_to_response(query_model) -> MultiDocumentQueryResponse:
 async def create_collection(
     request: CreateCollectionRequest,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Create a new document collection."""
     try:
         collection = service.create_collection(
@@ -112,7 +114,7 @@ async def list_collections(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """List all document collections with pagination."""
     try:
         offset = (page - 1) * limit
@@ -141,7 +143,7 @@ async def list_collections(
 async def get_collection(
     collection_id: int,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Get a specific collection by ID."""
     try:
         collection = service.get_collection(collection_id)
@@ -158,7 +160,7 @@ async def update_collection(
     collection_id: int,
     request: UpdateCollectionRequest,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Update a collection's metadata."""
     try:
         collection = service.get_collection(collection_id)
@@ -182,7 +184,7 @@ async def update_collection(
 async def delete_collection(
     collection_id: int,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Delete a collection and its associated index."""
     try:
         success = service.delete_collection(collection_id)
@@ -201,7 +203,7 @@ async def add_document_to_collection(
     collection_id: int,
     request: AddDocumentRequest,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Add a document to a collection."""
     try:
         collection = service.add_document_to_collection(
@@ -220,7 +222,7 @@ async def remove_document_from_collection(
     collection_id: int,
     document_id: int,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Remove a document from a collection."""
     try:
         collection = service.remove_document_from_collection(collection_id, document_id)
@@ -242,11 +244,11 @@ async def create_collection_index(
     collection_id: int,
     background_tasks: BackgroundTasks,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Create or rebuild the vector index for a collection."""
     try:
         # Create index in background for large collections
-        def create_index():
+        def create_index() -> None:
             service.create_collection_index(collection_id)
 
         background_tasks.add_task(create_index)
@@ -272,7 +274,7 @@ async def create_collection_index(
 async def get_collection_statistics(
     collection_id: int,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Get statistics for a collection."""
     try:
         stats = service.get_collection_statistics(collection_id)
@@ -294,7 +296,7 @@ async def query_collection(
     collection_id: int,
     request: CrossDocumentQueryRequest,
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Perform a cross-document query on a collection."""
     try:
         response = await service.query_collection(
@@ -359,7 +361,7 @@ async def get_query_history(
     limit: int = Query(20, ge=1, le=100),
     user_id: str | None = Query(None),
     service: MultiDocumentRAGService = Depends(get_multi_document_rag_service),
-):
+) -> Any:
     """Get query history for a collection."""
     try:
         # This would need to be implemented in the service

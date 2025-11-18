@@ -65,9 +65,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         try:
             # Create placeholders for SQL IN clause
             placeholders = ",".join("?" * len(entity_ids))
-            query = (
-                f"SELECT * FROM documents WHERE id IN ({placeholders})"  # noqa: S608
-            )
+            query = f"SELECT * FROM documents WHERE id IN ({placeholders})"  # noqa: S608
             rows = self.db.fetch_all(query, tuple(entity_ids))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:
@@ -310,7 +308,9 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             if not conditions:
                 return self.find_all()
             where_clause = " AND ".join(conditions)
-            query = f"SELECT * FROM documents WHERE {where_clause} ORDER BY created_at DESC"  # noqa: S608
+            query = (
+                f"SELECT * FROM documents WHERE {where_clause} ORDER BY created_at DESC"  # noqa: S608
+            )
             rows = self.db.fetch_all(query, tuple(params))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:

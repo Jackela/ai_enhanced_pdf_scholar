@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Library Management API Routes
 RESTful API endpoints for document library management operations.
@@ -28,7 +30,7 @@ router = APIRouter()
 @router.get("/stats", response_model=LibraryStatsResponse)
 async def get_library_statistics(
     controller: LibraryController = Depends(get_library_controller),
-):
+) -> Any:
     """Get comprehensive library statistics."""
     try:
         stats = controller.get_library_statistics()
@@ -65,7 +67,7 @@ async def get_library_statistics(
 @router.get("/duplicates", response_model=DuplicatesResponse)
 async def find_duplicate_documents(
     controller: LibraryController = Depends(get_library_controller),
-):
+) -> Any:
     """Find duplicate documents in the library."""
     try:
         duplicates = controller.find_duplicate_documents()
@@ -96,7 +98,7 @@ async def find_duplicate_documents(
 async def cleanup_library(
     cleanup_request: CleanupRequest,
     controller: LibraryController = Depends(get_library_controller),
-):
+) -> Any:
     """Perform library cleanup operations."""
     try:
         results = controller.cleanup_library()
@@ -124,7 +126,7 @@ async def cleanup_library(
 @router.get("/health", response_model=BaseResponse)
 async def check_library_health(
     controller: LibraryController = Depends(get_library_controller),
-):
+) -> Any:
     """Check library health status."""
     try:
         stats = controller.get_library_statistics()
@@ -152,7 +154,7 @@ async def check_library_health(
 @router.post("/optimize", response_model=BaseResponse)
 async def optimize_library(
     controller: LibraryController = Depends(get_library_controller),
-):
+) -> Any:
     """Optimize library storage and performance."""
     try:
         # This could include various optimization operations
@@ -198,7 +200,7 @@ async def search_documents(
     q: str,
     limit: int = 50,
     controller: LibraryController = Depends(get_library_controller),
-):
+) -> Any:
     """Search documents by title and content."""
     try:
         documents = controller.get_documents(search_query=q, limit=limit)
@@ -221,7 +223,7 @@ async def search_documents(
 @router.get("/recent", response_model=DocumentListResponse)
 async def get_recent_documents(
     limit: int = 20, controller: LibraryController = Depends(get_library_controller)
-):
+) -> Any:
     """Get recently accessed documents."""
     try:
         # Use the library service directly for recent documents
@@ -242,7 +244,7 @@ async def get_recent_documents(
         ) from e
 
 
-def get_library_service():
+def get_library_service() -> None:
     """Get library service for compatibility with tests."""
     # This is a compatibility function for unit tests
     # In actual implementation, services are injected via dependencies

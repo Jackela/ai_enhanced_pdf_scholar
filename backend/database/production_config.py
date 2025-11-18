@@ -95,7 +95,7 @@ class ProductionDatabaseManager:
         database_url: str,
         performance_config: DatabasePerformanceConfig | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize production database manager."""
         self.database_url = database_url
         self.performance_config = performance_config or DatabasePerformanceConfig()
@@ -238,7 +238,7 @@ class ProductionDatabaseManager:
             return
 
         @sa.event.listens_for(engine.sync_engine, "connect")
-        def on_connect(dbapi_connection, connection_record):
+        def on_connect(dbapi_connection, connection_record) -> None:
             """Handle new database connection."""
             self.connection_stats.total_connections += 1
             if self.metrics_service:
@@ -248,21 +248,21 @@ class ProductionDatabaseManager:
             logger.debug(f"New connection established to {engine_name}")
 
         @sa.event.listens_for(engine.sync_engine, "checkout")
-        def on_checkout(dbapi_connection, connection_record, connection_proxy):
+        def on_checkout(dbapi_connection, connection_record, connection_proxy) -> None:
             """Handle connection checkout from pool."""
             self.connection_stats.active_connections += 1
             if self.connection_stats.idle_connections > 0:
                 self.connection_stats.idle_connections -= 1
 
         @sa.event.listens_for(engine.sync_engine, "checkin")
-        def on_checkin(dbapi_connection, connection_record):
+        def on_checkin(dbapi_connection, connection_record) -> None:
             """Handle connection checkin to pool."""
             if self.connection_stats.active_connections > 0:
                 self.connection_stats.active_connections -= 1
             self.connection_stats.idle_connections += 1
 
         @sa.event.listens_for(engine.sync_engine, "invalidate")
-        def on_invalidate(dbapi_connection, connection_record, exception):
+        def on_invalidate(dbapi_connection, connection_record, exception) -> None:
             """Handle connection invalidation."""
             self.connection_stats.failed_connections += 1
             error_msg = f"Connection invalidated: {str(exception)}"
@@ -275,7 +275,7 @@ class ProductionDatabaseManager:
             return
 
         # Update connection metrics
-        def update_connection_metrics():
+        def update_connection_metrics() -> None:
             self.metrics_service.update_db_connections(
                 "postgresql", self.connection_stats.total_connections
             )

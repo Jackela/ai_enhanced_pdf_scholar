@@ -124,7 +124,7 @@ class CacheOptimizationService:
         cache_telemetry: CacheTelemetryService,
         redis_cache: RedisCacheService,
         rag_cache: RAGCacheService,
-    ):
+    ) -> None:
         self.telemetry = cache_telemetry
         self.redis_cache = redis_cache
         self.rag_cache = rag_cache
@@ -159,7 +159,7 @@ class CacheOptimizationService:
     # Service Lifecycle
     # ========================================================================
 
-    async def start_optimization(self):
+    async def start_optimization(self) -> None:
         """Start background optimization tasks."""
         if not self._running:
             self._running = True
@@ -167,7 +167,7 @@ class CacheOptimizationService:
             self._warming_task = asyncio.create_task(self._warming_loop())
             logger.info("Cache optimization service started")
 
-    async def stop_optimization(self):
+    async def stop_optimization(self) -> None:
         """Stop background optimization tasks."""
         self._running = False
 
@@ -191,7 +191,7 @@ class CacheOptimizationService:
     # Pattern Analysis
     # ========================================================================
 
-    async def _analysis_loop(self):
+    async def _analysis_loop(self) -> None:
         """Background loop for pattern analysis and optimization."""
         while self._running:
             try:
@@ -214,7 +214,7 @@ class CacheOptimizationService:
                 logger.error(f"Error in optimization analysis loop: {e}")
                 await asyncio.sleep(300)
 
-    async def _analyze_access_patterns(self):
+    async def _analyze_access_patterns(self) -> None:
         """Analyze cache access patterns to identify optimization opportunities."""
         try:
             # Analyze patterns for each cache layer
@@ -229,7 +229,7 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error analyzing access patterns: {e}")
 
-    async def _analyze_layer_patterns(self, layer: CacheLayer):
+    async def _analyze_layer_patterns(self, layer: CacheLayer) -> None:
         """Analyze access patterns for a specific cache layer."""
         # Get recent events from telemetry
         cutoff_time = datetime.utcnow() - timedelta(hours=2)
@@ -339,7 +339,7 @@ class CacheOptimizationService:
     # Predictive Models
     # ========================================================================
 
-    async def _update_pattern_models(self):
+    async def _update_pattern_models(self) -> None:
         """Update predictive models for cache access patterns."""
         try:
             for pattern_id, pattern in self.access_patterns.items():
@@ -433,7 +433,7 @@ class CacheOptimizationService:
     # Cache Warming
     # ========================================================================
 
-    async def _identify_warming_candidates(self):
+    async def _identify_warming_candidates(self) -> None:
         """Identify candidates for predictive cache warming."""
         try:
             candidates = []
@@ -536,7 +536,7 @@ class CacheOptimizationService:
 
         return candidates
 
-    async def _warming_loop(self):
+    async def _warming_loop(self) -> None:
         """Background loop for executing cache warming jobs."""
         while self._running:
             try:
@@ -554,7 +554,7 @@ class CacheOptimizationService:
                 logger.error(f"Error in warming loop: {e}")
                 await asyncio.sleep(60)
 
-    async def _execute_warming_jobs(self):
+    async def _execute_warming_jobs(self) -> None:
         """Execute pending warming jobs."""
         try:
             # Find jobs ready for execution
@@ -589,7 +589,7 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error executing warming jobs: {e}")
 
-    async def _execute_single_warming_job(self, job: WarmingJob):
+    async def _execute_single_warming_job(self, job: WarmingJob) -> None:
         """Execute a single cache warming job."""
         job_id = job.job_id
         self.active_jobs.add(job_id)
@@ -711,7 +711,7 @@ class CacheOptimizationService:
     # Optimization Recommendations
     # ========================================================================
 
-    async def _generate_optimization_recommendations(self):
+    async def _generate_optimization_recommendations(self) -> None:
         """Generate cache optimization recommendations."""
         try:
             recommendations = []
@@ -944,7 +944,7 @@ class CacheOptimizationService:
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
-    async def _cleanup_completed_jobs(self):
+    async def _cleanup_completed_jobs(self) -> None:
         """Clean up old completed warming jobs."""
         try:
             cutoff_time = datetime.utcnow() - timedelta(hours=24)

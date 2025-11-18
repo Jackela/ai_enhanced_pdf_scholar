@@ -37,7 +37,7 @@ except ImportError as e:
 class ComprehensivePerformanceSuite:
     """Orchestrates comprehensive performance testing"""
 
-    def __init__(self, output_dir: Path = None):
+    def __init__(self, output_dir: Path = None) -> None:
         self.output_dir = output_dir or Path("performance_results")
         self.output_dir.mkdir(exist_ok=True)
         self.results = {}
@@ -300,7 +300,7 @@ class ComprehensivePerformanceSuite:
             logger.error(f"Regression analysis failed: {e}")
             return {"error": str(e)}
 
-    def print_comprehensive_summary(self):
+    def print_comprehensive_summary(self) -> None:
         """Print comprehensive performance summary"""
         print("\n" + "=" * 100)
         print("COMPREHENSIVE PERFORMANCE TEST SUITE SUMMARY")
@@ -355,7 +355,9 @@ class ComprehensivePerformanceSuite:
             status = (
                 "✅ EXCELLENT"
                 if avg_time < 10
-                else "✅ GOOD" if avg_time < 50 else "⚠️ ACCEPTABLE"
+                else "✅ GOOD"
+                if avg_time < 50
+                else "⚠️ ACCEPTABLE"
             )
             print(f"   {status}")
         else:
@@ -421,7 +423,7 @@ class ComprehensivePerformanceSuite:
 
         print("\n" + "=" * 100)
 
-    def save_results(self, filename: str = None):
+    def save_results(self, filename: str = None) -> Any:
         """Save comprehensive results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -434,7 +436,7 @@ class ComprehensivePerformanceSuite:
         logger.info(f"Comprehensive results saved to: {output_path}")
         return output_path
 
-    def generate_html_report(self, filename: str = None):
+    def generate_html_report(self, filename: str = None) -> Any:
         """Generate HTML performance report"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -532,7 +534,7 @@ class ComprehensivePerformanceSuite:
         return output_path
 
 
-async def main():
+async def main() -> Any:
     """Main entry point"""
     import argparse
 

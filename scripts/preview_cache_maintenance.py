@@ -1,3 +1,5 @@
+from typing import Any
+
 """Preview cache maintenance utility.
 
 Usage examples:
@@ -40,7 +42,7 @@ class CacheStats:
         return time.ctime(self.newest_mtime) if self.newest_mtime else "n/a"
 
 
-def iter_cache_files(cache_dir: Path):
+def iter_cache_files(cache_dir: Path) -> None:
     for root, _, files in os.walk(cache_dir):
         for name in files:
             path = Path(root) / name

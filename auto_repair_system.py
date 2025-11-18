@@ -25,14 +25,14 @@ from typing import Any, Dict, List, Optional, Tuple
 class AutonomousRepairSystem:
     """Autonomous system for diagnosing and fixing UAT failures."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.project_root = Path(__file__).parent
         self.repair_log = []
         self.max_iterations = 10
         self.target_success_rate = 0.95
         self.fixes_applied = []
 
-    def log(self, message: str, level: str = "INFO"):
+    def log(self, message: str, level: str = "INFO") -> None:
         """Log messages with timestamp."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = f"[{timestamp}] [{level}] {message}"
@@ -297,12 +297,12 @@ def api_health_check():
                         method_code = '''
     def create_document(self, title: str, content: str = "", metadata: Optional[Dict] = None) -> Document:
         """Create a new document.
-        
+
         AUTONOMOUS REPAIR: Added missing method for UAT compatibility.
         """
         from datetime import datetime
         import uuid
-        
+
         document = Document(
             id=str(uuid.uuid4()),
             title=title,
@@ -311,11 +311,11 @@ def api_health_check():
             created_at=datetime.now(),
             updated_at=datetime.now()
         )
-        
+
         # Store in repository if available
         if hasattr(self, 'repository'):
             self.repository.create(document)
-            
+
         return document
 '''
                         # Insert the method into the class
@@ -379,11 +379,11 @@ sys.path.insert(0, str(project_root))
 def start_server():
     """Start the API server with maximum stability."""
     print("[AUTO-REPAIR] Starting API server with autonomous repair configuration...")
-    
+
     # Force uvicorn on Windows
     if sys.platform == "win32":
         print("[AUTO-REPAIR] Windows detected - using uvicorn for stability")
-        
+
     # Configure uvicorn
     config = uvicorn.Config(
         "backend.api.main:app",
@@ -394,9 +394,9 @@ def start_server():
         log_level="info",
         access_log=True
     )
-    
+
     server = uvicorn.Server(config)
-    
+
     try:
         print(f"[AUTO-REPAIR] Server starting on http://0.0.0.0:8000")
         server.run()
@@ -424,7 +424,7 @@ if __name__ == "__main__":
         self.fixes_applied.append("Created stable server startup script")
         return True
 
-    def repair_loop(self):
+    def repair_loop(self) -> Any:
         """Main repair loop that runs until target success rate is achieved."""
         self.log("=" * 60)
         self.log("AUTONOMOUS REPAIR SYSTEM ACTIVATED")
@@ -470,7 +470,7 @@ if __name__ == "__main__":
         self.save_repair_log(success=False, final_rate=success_rate)
         return False
 
-    def save_repair_log(self, success: bool, final_rate: float):
+    def save_repair_log(self, success: bool, final_rate: float) -> None:
         """Save the repair log to a file."""
         log_path = self.project_root / "autonomous_repair_log.json"
 
@@ -489,7 +489,7 @@ if __name__ == "__main__":
         self.log(f"Repair log saved to: {log_path}")
 
 
-def main():
+def main() -> None:
     """Main entry point for the autonomous repair system."""
     repair_system = AutonomousRepairSystem()
     success = repair_system.repair_loop()

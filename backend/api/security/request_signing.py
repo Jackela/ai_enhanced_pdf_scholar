@@ -91,7 +91,7 @@ class ProductionRequestSigning:
         secrets_manager: ProductionSecretsManager | None = None,
         production_config: ProductionConfig | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize request signing system."""
         self.secrets_manager = secrets_manager
         self.production_config = production_config
@@ -126,7 +126,7 @@ class ProductionRequestSigning:
 
         logger.info("Production request signing system initialized")
 
-    def _load_signing_keys(self):
+    def _load_signing_keys(self) -> None:
         """Load signing keys from secrets manager or configuration."""
         if self.secrets_manager:
             try:
@@ -600,7 +600,7 @@ class RequestSigningMiddleware:
         self,
         request_signing: ProductionRequestSigning,
         exempt_paths: set[str] | None = None,
-    ):
+    ) -> None:
         """Initialize request signing middleware."""
         self.request_signing = request_signing
         self.exempt_paths = exempt_paths or {
@@ -610,7 +610,7 @@ class RequestSigningMiddleware:
             "/security/csp-report",
         }
 
-    async def __call__(self, request: Request, call_next):
+    async def __call__(self, request: Request, call_next) -> Any:
         """Validate request signature before processing."""
         # Skip validation for exempt paths
         if request.url.path in self.exempt_paths:
@@ -691,7 +691,7 @@ def setup_request_signing_middleware(
 
     # Add management endpoints
     @app.get("/admin/signing/stats")
-    async def get_signing_stats():
+    async def get_signing_stats() -> Any:
         """Get request signing statistics."""
         return request_signing.get_signing_statistics()
 
@@ -703,7 +703,7 @@ def setup_request_signing_middleware(
         expires_in: int | None = None,
         client_id: str | None = None,
         description: str = "",
-    ):
+    ) -> Any:
         """Add new signing key."""
         try:
             algorithm_enum = SigningAlgorithm(algorithm)
@@ -720,13 +720,13 @@ def setup_request_signing_middleware(
             raise HTTPException(status_code=400, detail=str(e)) from e
 
     @app.put("/admin/signing/keys/{key_id}/rotate")
-    async def rotate_signing_key(key_id: str, new_secret: str):
+    async def rotate_signing_key(key_id: str, new_secret: str) -> Any:
         """Rotate signing key secret."""
         result = request_signing.rotate_signing_key(key_id, new_secret)
         return {"success": result}
 
     @app.delete("/admin/signing/keys/{key_id}")
-    async def remove_signing_key(key_id: str):
+    async def remove_signing_key(key_id: str) -> Any:
         """Remove signing key."""
         result = request_signing.remove_signing_key(key_id)
         return {"success": result}

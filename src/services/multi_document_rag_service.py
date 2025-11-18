@@ -65,7 +65,7 @@ class MultiDocumentQueryResponse:
 class CollectionIndexManager:
     """Manages vector indexes for document collections."""
 
-    def __init__(self, storage_path: str):
+    def __init__(self, storage_path: str) -> None:
         self.storage_path = storage_path
         Path(storage_path).mkdir(parents=True, exist_ok=True)
 
@@ -151,7 +151,7 @@ class CollectionIndexManager:
 class CrossDocumentAnalyzer:
     """Analyzes queries across multiple documents."""
 
-    def __init__(self, enhanced_rag_service: EnhancedRAGService):
+    def __init__(self, enhanced_rag_service: EnhancedRAGService) -> None:
         self.enhanced_rag = enhanced_rag_service
 
     async def analyze_cross_document_query(
@@ -332,7 +332,7 @@ class MultiDocumentRAGService:
         document_repository: IDocumentRepository,
         enhanced_rag_service: EnhancedRAGService,
         index_storage_path: str = "./data/multi_doc_indexes",
-    ):
+    ) -> None:
         self.collection_repo = collection_repository
         self.index_repo = index_repository
         self.query_repo = query_repository

@@ -148,7 +148,7 @@ class SecretsMonitoringService:
         secrets_manager: ProductionSecretsManager,
         validation_service: SecretValidationService,
         config: AlertingConfig | None = None,
-    ):
+    ) -> None:
         """Initialize the monitoring service."""
         self.secrets_manager = secrets_manager
         self.validation_service = validation_service
@@ -173,7 +173,7 @@ class SecretsMonitoringService:
 
         logger.info("Secrets monitoring service initialized")
 
-    def _initialize_alert_rules(self):
+    def _initialize_alert_rules(self) -> None:
         """Initialize default alert rules."""
         default_rules = [
             AlertRule(
@@ -263,7 +263,7 @@ class SecretsMonitoringService:
 
         logger.info(f"Initialized {len(default_rules)} alert rules")
 
-    async def start_monitoring(self):
+    async def start_monitoring(self) -> None:
         """Start background monitoring tasks."""
         if self.monitoring_task is None or self.monitoring_task.done():
             self.monitoring_task = asyncio.create_task(self._monitoring_loop())
@@ -273,7 +273,7 @@ class SecretsMonitoringService:
 
         logger.info("Started secrets monitoring background tasks")
 
-    async def stop_monitoring(self):
+    async def stop_monitoring(self) -> None:
         """Stop background monitoring tasks."""
         if self.monitoring_task and not self.monitoring_task.done():
             self.monitoring_task.cancel()
@@ -291,7 +291,7 @@ class SecretsMonitoringService:
 
         logger.info("Stopped secrets monitoring background tasks")
 
-    async def _monitoring_loop(self):
+    async def _monitoring_loop(self) -> None:
         """Main monitoring loop."""
         while True:
             try:
@@ -305,7 +305,7 @@ class SecretsMonitoringService:
                 logger.error(f"Error in monitoring loop: {e}")
                 await asyncio.sleep(60)  # Wait longer on error
 
-    async def _cleanup_loop(self):
+    async def _cleanup_loop(self) -> None:
         """Cleanup loop for old metrics and alerts."""
         while True:
             try:
@@ -317,7 +317,7 @@ class SecretsMonitoringService:
                 logger.error(f"Error in cleanup loop: {e}")
                 await asyncio.sleep(3600)
 
-    async def _collect_metrics(self):
+    async def _collect_metrics(self) -> None:
         """Collect monitoring metrics."""
         try:
             # Get secrets health status
@@ -374,7 +374,7 @@ class SecretsMonitoringService:
         except Exception as e:
             logger.error(f"Error collecting metrics: {e}")
 
-    async def _check_rotation_status(self):
+    async def _check_rotation_status(self) -> None:
         """Check if any secrets need rotation."""
         try:
             # Get secrets that need rotation
@@ -399,7 +399,7 @@ class SecretsMonitoringService:
         except Exception as e:
             logger.error(f"Error checking rotation status: {e}")
 
-    async def _check_compliance_status(self):
+    async def _check_compliance_status(self) -> None:
         """Check secrets compliance status."""
         try:
             # This would typically validate current secrets in production
@@ -431,7 +431,9 @@ class SecretsMonitoringService:
             logger.error(f"Error checking compliance status: {e}")
             self._record_metric(MonitoringMetric.COMPLIANCE_STATUS, 0.0)
 
-    async def _analyze_access_patterns(self, audit_entries: list[dict[str, Any]]):
+    async def _analyze_access_patterns(
+        self, audit_entries: list[dict[str, Any]]
+    ) -> None:
         """Analyze access patterns for anomalies."""
         try:
             # Simple anomaly detection based on access patterns
@@ -487,7 +489,7 @@ class SecretsMonitoringService:
         value: float,
         labels: dict[str, str] | None = None,
         metadata: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Record a metric data point."""
         metric_data = MetricData(
             metric=metric, value=value, labels=labels or {}, metadata=metadata or {}
@@ -500,7 +502,7 @@ class SecretsMonitoringService:
             m for m in self.metric_history if m.timestamp >= cutoff_time
         ]
 
-    async def _evaluate_alert_rules(self):
+    async def _evaluate_alert_rules(self) -> None:
         """Evaluate alert rules against current metrics."""
         for rule_name, rule in self.alert_rules.items():
             if not rule.enabled:
@@ -556,7 +558,7 @@ class SecretsMonitoringService:
             logger.error(f"Error evaluating condition '{condition}': {e}")
             return False
 
-    async def _create_alert(self, rule: AlertRule, metric: MetricData):
+    async def _create_alert(self, rule: AlertRule, metric: MetricData) -> None:
         """Create a new alert."""
         alert = Alert(
             rule_name=rule.name,
@@ -612,7 +614,7 @@ class SecretsMonitoringService:
 
     async def _send_alert_notifications(
         self, alert: Alert, channels: list[AlertChannel]
-    ):
+    ) -> None:
         """Send alert notifications to configured channels."""
         notification_tasks = []
 
@@ -642,7 +644,7 @@ class SecretsMonitoringService:
                     channel = channels[i]
                     logger.error(f"Failed to send alert via {channel}: {result}")
 
-    async def _send_email_alert(self, alert: Alert):
+    async def _send_email_alert(self, alert: Alert) -> None:
         """Send alert via email."""
         try:
             if not self.config.smtp_username or not self.config.smtp_password:
@@ -686,7 +688,7 @@ class SecretsMonitoringService:
         except Exception as e:
             logger.error(f"Failed to send email alert: {e}")
 
-    async def _send_slack_alert(self, alert: Alert):
+    async def _send_slack_alert(self, alert: Alert) -> None:
         """Send alert via Slack webhook."""
         try:
             if not self.config.slack_webhook_url:
@@ -747,7 +749,7 @@ class SecretsMonitoringService:
         except Exception as e:
             logger.error(f"Failed to send Slack alert: {e}")
 
-    async def _send_webhook_alert(self, alert: Alert):
+    async def _send_webhook_alert(self, alert: Alert) -> None:
         """Send alert via webhook."""
         try:
             if not self.config.webhook_urls:
@@ -783,7 +785,7 @@ class SecretsMonitoringService:
         except Exception as e:
             logger.error(f"Failed to send webhook alerts: {e}")
 
-    async def _send_pagerduty_alert(self, alert: Alert):
+    async def _send_pagerduty_alert(self, alert: Alert) -> None:
         """Send alert via PagerDuty."""
         try:
             if not self.config.pagerduty_integration_key:
@@ -817,14 +819,14 @@ class SecretsMonitoringService:
         except Exception as e:
             logger.error(f"Failed to send PagerDuty alert: {e}")
 
-    async def _log_alert(self, alert: Alert):
+    async def _log_alert(self, alert: Alert) -> None:
         """Log alert to system logs."""
         logger.warning(
             f"SECRETS_ALERT: {alert.severity.upper()} - {alert.message} "
             f"[ID: {alert.alert_id}] [Rule: {alert.rule_name}]"
         )
 
-    async def _process_alerts(self):
+    async def _process_alerts(self) -> None:
         """Process and manage active alerts."""
         # Auto-resolve alerts that are no longer triggering
         for alert_id, alert in list(self.active_alerts.items()):
@@ -860,7 +862,7 @@ class SecretsMonitoringService:
 
                     logger.info(f"Auto-resolved alert: {alert_id}")
 
-    async def _cleanup_old_data(self):
+    async def _cleanup_old_data(self) -> None:
         """Clean up old metrics and alerts."""
         # Clean up old metrics (keep last 7 days)
         cutoff_time = datetime.utcnow() - timedelta(days=7)
@@ -888,12 +890,12 @@ class SecretsMonitoringService:
 
     # Public API methods
 
-    def add_alert_rule(self, rule: AlertRule):
+    def add_alert_rule(self, rule: AlertRule) -> None:
         """Add a custom alert rule."""
         self.alert_rules[rule.name] = rule
         logger.info(f"Added alert rule: {rule.name}")
 
-    def remove_alert_rule(self, rule_name: str):
+    def remove_alert_rule(self, rule_name: str) -> None:
         """Remove an alert rule."""
         if rule_name in self.alert_rules:
             del self.alert_rules[rule_name]

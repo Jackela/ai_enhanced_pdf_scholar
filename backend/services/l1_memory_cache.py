@@ -68,7 +68,7 @@ class CacheEntry:
         expiry_time = self.created_at + timedelta(seconds=self.ttl_seconds)
         return datetime.utcnow() > expiry_time
 
-    def update_access(self):
+    def update_access(self) -> None:
         """Update access statistics."""
         now = datetime.utcnow()
         self.accessed_at = now
@@ -175,7 +175,7 @@ class CacheStatistics:
         }
     )
 
-    def calculate_hit_rate(self):
+    def calculate_hit_rate(self) -> None:
         """Calculate hit rate percentage."""
         total = self.hits + self.misses
         self.hit_rate_percent = (self.hits / total * 100) if total > 0 else 0
@@ -215,7 +215,7 @@ class L1MemoryCache:
     High-performance in-memory cache with intelligent eviction and multi-level storage.
     """
 
-    def __init__(self, config: CacheConfig | None = None):
+    def __init__(self, config: CacheConfig | None = None) -> None:
         """Initialize L1 memory cache."""
         self.config = config or CacheConfig()
 
@@ -401,7 +401,7 @@ class L1MemoryCache:
 
     def _consider_promotion(
         self, key: str, entry: CacheEntry, current_level: CacheLevel
-    ):
+    ) -> None:
         """Consider promoting entry to a higher cache level."""
         # Only promote if access count is high enough
         if entry.access_count < 3:
@@ -439,7 +439,9 @@ class L1MemoryCache:
                 if current_target_size + entry.size_bytes <= target_max_size:
                     self._move_entry(key, current_level, target_level)
 
-    def _move_entry(self, key: str, from_level: CacheLevel, to_level: CacheLevel):
+    def _move_entry(
+        self, key: str, from_level: CacheLevel, to_level: CacheLevel
+    ) -> None:
         """Move entry between cache levels."""
         entry = self.storage[from_level].pop(key)
         entry.level = to_level
@@ -475,7 +477,7 @@ class L1MemoryCache:
 
         return True  # Assume we can always make space
 
-    def _evict_entries(self, required_bytes: int):
+    def _evict_entries(self, required_bytes: int) -> None:
         """Evict entries to free up space."""
         freed_bytes = 0
         evicted_count = 0
@@ -517,7 +519,7 @@ class L1MemoryCache:
         self.stats.evictions += evicted_count
         logger.debug(f"Evicted {evicted_count} entries, freed {freed_bytes} bytes")
 
-    def _evict_from_level(self, level: CacheLevel, required_bytes: int):
+    def _evict_from_level(self, level: CacheLevel, required_bytes: int) -> None:
         """Evict entries from a specific level."""
         storage = self.storage[level]
         if not storage:
@@ -578,7 +580,7 @@ class L1MemoryCache:
     # Background Maintenance
     # ========================================================================
 
-    async def start_background_cleanup(self):
+    async def start_background_cleanup(self) -> None:
         """Start background cleanup task."""
         if self._is_running or not self.config.enable_background_cleanup:
             return
@@ -588,7 +590,7 @@ class L1MemoryCache:
 
         logger.info("Started background cache cleanup")
 
-    async def stop_background_cleanup(self):
+    async def stop_background_cleanup(self) -> None:
         """Stop background cleanup task."""
         self._is_running = False
 
@@ -601,7 +603,7 @@ class L1MemoryCache:
 
         logger.info("Stopped background cache cleanup")
 
-    async def _background_cleanup_loop(self):
+    async def _background_cleanup_loop(self) -> None:
         """Background cleanup loop."""
         while self._is_running:
             try:
@@ -616,7 +618,7 @@ class L1MemoryCache:
                 logger.error(f"Error in background cleanup: {e}")
                 await asyncio.sleep(5)
 
-    def _perform_maintenance(self):
+    def _perform_maintenance(self) -> None:
         """Perform cache maintenance."""
         with self._lock:
             # Remove expired entries
@@ -639,7 +641,7 @@ class L1MemoryCache:
                 bytes_to_free = self.stats.current_size_bytes - target_size
                 self._evict_entries(bytes_to_free)
 
-    def _cleanup_expired_entries(self):
+    def _cleanup_expired_entries(self) -> None:
         """Remove expired entries."""
         expired_keys = []
 
@@ -723,7 +725,7 @@ class L1MemoryCache:
 
             return stats
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all cache entries."""
         with self._lock:
             for storage in self.storage.values():
@@ -775,12 +777,12 @@ class L1MemoryCache:
     # Context Manager Support
     # ========================================================================
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Async context manager entry."""
         await self.start_background_cleanup()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.stop_background_cleanup()
 
@@ -808,7 +810,7 @@ def create_l1_cache(
 # Example usage
 if __name__ == "__main__":
 
-    async def main():
+    async def main() -> None:
         # Create cache
         cache = create_l1_cache(max_size_mb=50.0)
 

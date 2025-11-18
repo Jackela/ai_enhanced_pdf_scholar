@@ -103,7 +103,7 @@ class Span:
     error: str | None = None
     status_code: int | None = None
 
-    def finish(self, error: Exception | None = None):
+    def finish(self, error: Exception | None = None) -> None:
         """Finish the span."""
         self.end_time = datetime.utcnow()
         if self.start_time:
@@ -122,7 +122,7 @@ class Span:
                 },
             )
 
-    def log_event(self, event_type: str, fields: dict[str, Any]):
+    def log_event(self, event_type: str, fields: dict[str, Any]) -> None:
         """Log an event in the span."""
         self.logs.append(
             {
@@ -229,7 +229,7 @@ class APMService:
         max_traces: int = 10000,
         trace_retention_hours: int = 24,
         sampling_rate: float = 1.0,
-    ):
+    ) -> None:
         """Initialize APM service."""
         self.cache_telemetry = cache_telemetry
         self.metrics_service = metrics_service
@@ -366,7 +366,7 @@ class APMService:
         context: TraceContext | None = None,
         error: Exception | None = None,
         tags: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Finish a span."""
         context = context or self._get_current_context()
 
@@ -418,7 +418,7 @@ class APMService:
         operation_name: str,
         span_type: SpanType = SpanType.COMPUTATION,
         tags: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Context manager for tracing operations."""
         context = self.start_span(operation_name, span_type=span_type, tags=tags)
         try:
@@ -434,14 +434,14 @@ class APMService:
         operation_name: str | None = None,
         span_type: SpanType = SpanType.COMPUTATION,
         tags: dict[str, Any] | None = None,
-    ):
+    ) -> Any:
         """Decorator for automatic tracing."""
 
         def decorator(func: Callable) -> Callable:
             op_name = operation_name or f"{func.__module__}.{func.__qualname__}"
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> Any:
                 with self.trace_operation(op_name, span_type=span_type, tags=tags):
                     return func(*args, **kwargs)
 
@@ -539,7 +539,7 @@ class APMService:
 
         return snapshot
 
-    def _check_performance_alerts(self, snapshot: PerformanceSnapshot):
+    def _check_performance_alerts(self, snapshot: PerformanceSnapshot) -> None:
         """Check for performance issues and generate alerts."""
         for rule in self.alert_rules:
             alert = rule(snapshot)
@@ -547,7 +547,7 @@ class APMService:
                 self.alerts.append(alert)
                 logger.warning(f"Performance alert: {alert.title}")
 
-    def _setup_default_alert_rules(self):
+    def _setup_default_alert_rules(self) -> Any:
         """Setup default performance alert rules."""
 
         def high_latency_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
@@ -645,10 +645,10 @@ class APMService:
     # Background Monitoring
     # ========================================================================
 
-    def _start_background_monitoring(self):
+    def _start_background_monitoring(self) -> None:
         """Start background monitoring thread."""
 
-        def monitor():
+        def monitor() -> None:
             while True:
                 try:
                     # Capture performance snapshot every minute
@@ -667,7 +667,7 @@ class APMService:
         thread.start()
         logger.info("Background monitoring thread started")
 
-    def _cleanup_old_traces(self):
+    def _cleanup_old_traces(self) -> None:
         """Clean up traces older than retention period."""
         cutoff_time = datetime.utcnow() - self.trace_retention
 
@@ -694,11 +694,11 @@ class APMService:
         """Get current trace context for this thread."""
         return getattr(self._local, "context", None)
 
-    def _set_current_context(self, context: TraceContext):
+    def _set_current_context(self, context: TraceContext) -> None:
         """Set current trace context for this thread."""
         self._local.context = context
 
-    def _clear_current_context(self):
+    def _clear_current_context(self) -> None:
         """Clear current trace context for this thread."""
         if hasattr(self._local, "context"):
             delattr(self._local, "context")
@@ -845,7 +845,7 @@ class APMService:
         output_path: Path,
         format: str = "json",
         filter_func: Callable[[Trace], bool] | None = None,
-    ):
+    ) -> None:
         """Export traces to file."""
         traces_to_export = self.traces
 
@@ -914,11 +914,11 @@ class APMService:
 class FastAPIAPMMiddleware:
     """FastAPI middleware for automatic APM integration."""
 
-    def __init__(self, app, apm_service: APMService):
+    def __init__(self, app, apm_service: APMService) -> None:
         self.app = app
         self.apm = apm_service
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope, receive, send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -956,7 +956,7 @@ class FastAPIAPMMiddleware:
         error = None
 
         # Wrap send to capture response
-        async def send_wrapper(message):
+        async def send_wrapper(message) -> None:
             nonlocal status_code
             if message["type"] == "http.response.start":
                 status_code = message["status"]
@@ -979,7 +979,7 @@ def apm_trace(
     operation_name: str | None = None,
     span_type: SpanType = SpanType.COMPUTATION,
     tags: dict[str, Any] | None = None,
-):
+) -> Any:
     """Decorator for APM tracing."""
 
     def decorator(func: Callable) -> Callable:

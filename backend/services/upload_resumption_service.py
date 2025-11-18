@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Upload Resumption Service
 Service for handling interrupted upload resumption with persistent state tracking.
@@ -39,7 +41,7 @@ class UploadResumptionService:
         state_dir: Path,
         max_resume_age_hours: int = 24,
         cleanup_interval_minutes: int = 60,
-    ):
+    ) -> None:
         self.state_dir = Path(state_dir)
         self.state_dir.mkdir(exist_ok=True, parents=True)
 
@@ -53,12 +55,12 @@ class UploadResumptionService:
         self._cleanup_task: asyncio.Task | None = None
         self._start_cleanup_task()
 
-    def _start_cleanup_task(self):
+    def _start_cleanup_task(self) -> None:
         """Start background cleanup task."""
         if self._cleanup_task is None or self._cleanup_task.done():
             self._cleanup_task = asyncio.create_task(self._cleanup_stale_sessions())
 
-    async def _cleanup_stale_sessions(self):
+    async def _cleanup_stale_sessions(self) -> None:
         """Periodically clean up stale resumable sessions."""
         while True:
             try:
@@ -69,7 +71,7 @@ class UploadResumptionService:
             except Exception as e:
                 logger.error(f"Error in resumption cleanup task: {e}")
 
-    async def save_session_state(self, session: UploadSession):
+    async def save_session_state(self, session: UploadSession) -> None:
         """
         Save upload session state for potential resumption.
 
@@ -270,7 +272,7 @@ class UploadResumptionService:
             )
             return None
 
-    async def _validate_and_fix_temp_file(self, state: dict):
+    async def _validate_and_fix_temp_file(self, state: dict) -> None:
         """
         Validate temporary file and fix if needed.
 
@@ -366,7 +368,7 @@ class UploadResumptionService:
 
         return resumable
 
-    async def _cleanup_session_state(self, session_id: UUID):
+    async def _cleanup_session_state(self, session_id: UUID) -> None:
         """
         Clean up state files and data for a specific session.
 
@@ -388,7 +390,7 @@ class UploadResumptionService:
         except Exception as e:
             logger.error(f"Failed to cleanup session state {session_id}: {e}")
 
-    async def _cleanup_expired_resume_data(self):
+    async def _cleanup_expired_resume_data(self) -> None:
         """Clean up expired resumption data."""
         try:
             current_time = time.time()
@@ -461,7 +463,7 @@ class UploadResumptionService:
             logger.error(f"Failed to delete resumable session {session_id}: {e}")
             return False
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up all resources and stop background tasks."""
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():

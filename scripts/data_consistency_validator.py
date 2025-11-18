@@ -110,7 +110,7 @@ class ValidationReport:
 class DatabaseConsistencyValidator:
     """Database-specific consistency validation."""
 
-    def __init__(self, connection_url: str):
+    def __init__(self, connection_url: str) -> None:
         """Initialize database validator."""
         self.connection_url = connection_url
         self.engine = create_engine(connection_url)
@@ -354,7 +354,7 @@ class DatabaseConsistencyValidator:
 class FileSystemConsistencyValidator:
     """File system consistency validation."""
 
-    def __init__(self, base_paths: list[str]):
+    def __init__(self, base_paths: list[str]) -> None:
         """Initialize file system validator."""
         self.base_paths = [Path(p) for p in base_paths]
 
@@ -510,7 +510,7 @@ class FileSystemConsistencyValidator:
 
             def check_structure(
                 base_path: Path, structure: dict[str, Any], current_path: str = ""
-            ):
+            ) -> None:
                 for name, content in structure.items():
                     full_path = (
                         base_path / name
@@ -575,7 +575,7 @@ class FileSystemConsistencyValidator:
 class ApplicationConsistencyValidator:
     """Application-level consistency validation."""
 
-    def __init__(self, application_config: dict[str, Any]):
+    def __init__(self, application_config: dict[str, Any]) -> None:
         """Initialize application validator."""
         self.config = application_config
 
@@ -689,7 +689,7 @@ class ApplicationConsistencyValidator:
 class DataConsistencyValidator:
     """Main data consistency validation orchestrator."""
 
-    def __init__(self, metrics_service: MetricsService | None = None):
+    def __init__(self, metrics_service: MetricsService | None = None) -> None:
         """Initialize data consistency validator."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -702,24 +702,24 @@ class DataConsistencyValidator:
         self.fs_validator: FileSystemConsistencyValidator | None = None
         self.app_validator: ApplicationConsistencyValidator | None = None
 
-    def register_database_validation(self, connection_url: str):
+    def register_database_validation(self, connection_url: str) -> None:
         """Register database validation."""
         self.db_validator = DatabaseConsistencyValidator(connection_url)
         logger.info("Database consistency validator registered")
 
-    def register_filesystem_validation(self, base_paths: list[str]):
+    def register_filesystem_validation(self, base_paths: list[str]) -> None:
         """Register file system validation."""
         self.fs_validator = FileSystemConsistencyValidator(base_paths)
         logger.info(
             f"File system consistency validator registered for {len(base_paths)} paths"
         )
 
-    def register_application_validation(self, config: dict[str, Any]):
+    def register_application_validation(self, config: dict[str, Any]) -> None:
         """Register application validation."""
         self.app_validator = ApplicationConsistencyValidator(config)
         logger.info("Application consistency validator registered")
 
-    def add_custom_check(self, check: ValidationCheck):
+    def add_custom_check(self, check: ValidationCheck) -> None:
         """Add custom validation check."""
         self.validation_checks.append(check)
         logger.info(f"Custom validation check added: {check.name}")
@@ -916,7 +916,7 @@ class DataConsistencyValidator:
 
         return report
 
-    def _process_validation_results(self, report: ValidationReport):
+    def _process_validation_results(self, report: ValidationReport) -> None:
         """Process validation results and update report summary."""
         report.total_checks = len(report.check_results)
 
@@ -948,7 +948,7 @@ class DataConsistencyValidator:
         else:
             report.overall_status = ValidationResult.SKIPPED
 
-    async def _update_metrics(self, report: ValidationReport):
+    async def _update_metrics(self, report: ValidationReport) -> None:
         """Update metrics based on validation results."""
         try:
             # Record validation completion
@@ -1027,7 +1027,7 @@ class DataConsistencyValidator:
 
         return json.dumps(report_dict, indent=2, default=str)
 
-    async def save_report(self, report: ValidationReport, output_path: str):
+    async def save_report(self, report: ValidationReport, output_path: str) -> None:
         """Save validation report to file."""
         report_json = await self.generate_report_json(report)
 
@@ -1038,7 +1038,7 @@ class DataConsistencyValidator:
 
 
 # Example usage and testing
-async def main():
+async def main() -> None:
     """Example usage of data consistency validator."""
     validator = DataConsistencyValidator()
 

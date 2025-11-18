@@ -15,7 +15,7 @@ from typing import Any
 class TestOptimizer:
     """Test infrastructure optimizer and analyzer."""
 
-    def __init__(self, project_root: str = "."):
+    def __init__(self, project_root: str = ".") -> None:
         self.project_root = Path(project_root)
         self.test_dir = self.project_root / "tests"
         self.results = {}
@@ -44,7 +44,9 @@ class TestOptimizer:
                         "complexity": (
                             "high"
                             if lines > 200
-                            else "medium" if lines > 100 else "low"
+                            else "medium"
+                            if lines > 100
+                            else "low"
                         ),
                     }
                 )
@@ -380,7 +382,7 @@ class TestOptimizer:
 
         return "\n".join(report_lines)
 
-    def save_results(self, output_file: str = "test_optimization_results.json"):
+    def save_results(self, output_file: str = "test_optimization_results.json") -> None:
         """Save optimization results to file."""
         results_file = self.project_root / output_file
 
@@ -397,7 +399,7 @@ class TestOptimizer:
         print(f"📊 Report saved to {report_file}")
 
 
-def main():
+def main() -> None:
     """Main optimization script."""
     parser = argparse.ArgumentParser(description="Test Infrastructure Optimizer")
     parser.add_argument(

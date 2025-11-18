@@ -170,7 +170,7 @@ class L2RedisCache:
         cluster_manager: RedisClusterManager | None = None,
         l1_cache: L1MemoryCache | None = None,
         config: L2CacheConfig | None = None,
-    ):
+    ) -> None:
         """Initialize L2 Redis cache."""
         self.redis_cache = redis_cache
         self.cluster_manager = cluster_manager
@@ -559,7 +559,7 @@ class L2RedisCache:
             logger.error(f"Error decompressing entry for key {entry.key}: {e}")
             return entry.value
 
-    async def _promote_to_hot(self, key: str, entry: L2CacheEntry):
+    async def _promote_to_hot(self, key: str, entry: L2CacheEntry) -> None:
         """Promote key to hot data status."""
         self.hot_keys.add(key)
 
@@ -605,7 +605,7 @@ class L2RedisCache:
 
         return self.config.default_ttl_seconds
 
-    async def _update_entry_metadata(self, key: str, entry: L2CacheEntry):
+    async def _update_entry_metadata(self, key: str, entry: L2CacheEntry) -> None:
         """Update entry metadata in Redis."""
         try:
             redis_data = entry.to_redis_value()
@@ -619,7 +619,7 @@ class L2RedisCache:
     # Write-Behind Processing
     # ========================================================================
 
-    async def start_write_behind(self):
+    async def start_write_behind(self) -> None:
         """Start write-behind processing."""
         if self._write_behind_running or not self.config.enable_write_behind:
             return
@@ -629,7 +629,7 @@ class L2RedisCache:
 
         logger.info("Started L2 cache write-behind processing")
 
-    async def stop_write_behind(self):
+    async def stop_write_behind(self) -> None:
         """Stop write-behind processing."""
         self._write_behind_running = False
 
@@ -645,7 +645,7 @@ class L2RedisCache:
 
         logger.info("Stopped L2 cache write-behind processing")
 
-    async def _write_behind_loop(self):
+    async def _write_behind_loop(self) -> None:
         """Write-behind processing loop."""
         while self._write_behind_running:
             try:
@@ -658,7 +658,7 @@ class L2RedisCache:
                 logger.error(f"Error in write-behind loop: {e}")
                 await asyncio.sleep(5)
 
-    async def _flush_write_behind_queue(self):
+    async def _flush_write_behind_queue(self) -> None:
         """Flush write-behind queue to Redis."""
         if not self.write_behind_queue:
             return
@@ -695,7 +695,7 @@ class L2RedisCache:
     # Access Logging and Monitoring
     # ========================================================================
 
-    async def _log_access(self, key: str, operation: str, duration: float):
+    async def _log_access(self, key: str, operation: str, duration: float) -> None:
         """Log cache access for monitoring."""
         if not self.config.enable_access_logging:
             return
@@ -752,9 +752,7 @@ class L2RedisCache:
             "hot_keys_count": len(self.hot_keys),
             "top_keys_by_hits": sorted(
                 self.key_hit_counts.items(), key=lambda x: x[1], reverse=True
-            )[
-                :20
-            ],  # Top 20 keys
+            )[:20],  # Top 20 keys
             "hot_keys_list": list(self.hot_keys)[:50],  # First 50 hot keys
         }
 
@@ -765,9 +763,7 @@ class L2RedisCache:
             "access_patterns": self._analyze_access_patterns(),
             "slow_operations": [
                 record for record in self.access_log if record["is_slow"]
-            ][
-                -10:
-            ],  # Last 10 slow operations
+            ][-10:],  # Last 10 slow operations
         }
 
         # Operation time statistics
@@ -821,12 +817,12 @@ class L2RedisCache:
     # Context Manager Support
     # ========================================================================
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Async context manager entry."""
         await self.start_write_behind()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.stop_write_behind()
 
@@ -834,7 +830,7 @@ class L2RedisCache:
 # Example usage
 if __name__ == "__main__":
 
-    async def main():
+    async def main() -> None:
         from .l1_memory_cache import create_l1_cache
         from .redis_cache_service import RedisCacheService, RedisConfig
 

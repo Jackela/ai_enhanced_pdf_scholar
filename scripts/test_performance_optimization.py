@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Quick test script to validate database performance optimizations.
@@ -27,7 +29,7 @@ except ImportError as e:
     exit(1)
 
 
-def test_migration_005():
+def test_migration_005() -> Any:
     """Test migration 005 performance optimization features."""
     logger.info("Testing migration 005 performance optimization...")
 
@@ -112,7 +114,7 @@ def test_migration_005():
         Path(db_path).unlink(missing_ok=True)
 
 
-def test_query_performance_analysis():
+def test_query_performance_analysis() -> Any:
     """Test query performance analysis features."""
     logger.info("Testing query performance analysis...")
 
@@ -192,7 +194,7 @@ def test_query_performance_analysis():
         Path(db_path).unlink(missing_ok=True)
 
 
-def test_index_analysis():
+def test_index_analysis() -> Any:
     """Test index analysis and optimization features."""
     logger.info("Testing index analysis features...")
 
@@ -245,7 +247,7 @@ def test_index_analysis():
         Path(db_path).unlink(missing_ok=True)
 
 
-def test_database_optimization():
+def test_database_optimization() -> Any:
     """Test database optimization functions."""
     logger.info("Testing database optimization features...")
 
@@ -290,7 +292,7 @@ def test_database_optimization():
         Path(db_path).unlink(missing_ok=True)
 
 
-def main():
+def main() -> Any:
     """Main test function."""
     logger.info("🚀 Starting database performance optimization tests...")
 

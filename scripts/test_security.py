@@ -1,16 +1,19 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Legacy security test script for CI/CD pipeline
 This script is maintained for backward compatibility.
 For optimized security scanning, use optimized_security_scan.py
 """
+
 import json
 import os
 import subprocess
 import sys
 
 
-def run_command(cmd, cwd=None, timeout=60):
+def run_command(cmd, cwd=None, timeout=60) -> Any:
     """Run a command and return the result with timeout"""
     try:
         result = subprocess.run(
@@ -23,7 +26,7 @@ def run_command(cmd, cwd=None, timeout=60):
         return False, "", str(e)
 
 
-def test_python_security():
+def test_python_security() -> Any:
     """Test Python security with bandit (optimized)"""
     print("🔍 Testing Python security with bandit...")
 
@@ -40,7 +43,7 @@ def test_python_security():
         return False
 
 
-def test_frontend_security():
+def test_frontend_security() -> Any:
     """Test frontend security with npm audit"""
     print("🔍 Testing frontend security with npm audit...")
 
@@ -74,7 +77,7 @@ def test_frontend_security():
             return True
 
 
-def test_secrets():
+def test_secrets() -> Any:
     """Test for secrets in the codebase"""
     print("🔍 Testing for secrets...")
 
@@ -108,7 +111,7 @@ def test_secrets():
     return True
 
 
-def main():
+def main() -> Any:
     """Run all security tests"""
     print("🔒 Running security tests...")
 

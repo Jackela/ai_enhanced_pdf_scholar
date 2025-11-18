@@ -108,7 +108,7 @@ class DeploymentResult:
     metrics: dict[str, Any] = None
     error_message: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.logs is None:
             self.logs = []
         if self.metrics is None:
@@ -140,7 +140,7 @@ class DeploymentResult:
 class DeploymentOrchestrator:
     """Master deployment orchestrator"""
 
-    def __init__(self, work_dir: Path = None):
+    def __init__(self, work_dir: Path = None) -> None:
         self.work_dir = work_dir or Path.cwd()
         self.deployments: dict[str, DeploymentResult] = {}
         self.github_token = os.getenv("GITHUB_TOKEN")
@@ -482,7 +482,7 @@ class DeploymentOrchestrator:
         logger.info(f"📊 Loaded {len(self.deployments)} deployments from history")
 
 
-async def main():
+async def main() -> None:
     """Main CLI interface"""
     parser = argparse.ArgumentParser(
         description="🚀 Deployment Orchestrator for AI Enhanced PDF Scholar",

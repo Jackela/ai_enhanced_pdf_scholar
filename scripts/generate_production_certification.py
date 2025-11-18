@@ -32,7 +32,7 @@ class ProductionReadinessCertificationGenerator:
     comprehensive test results from all Agent A4 validation suites.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize certification generator."""
         self.certification_criteria = self._define_certification_criteria()
         self.test_results = {}
@@ -926,7 +926,7 @@ class ProductionReadinessCertificationGenerator:
         return html_content
 
 
-def generate_production_certification():
+def generate_production_certification() -> Any:
     """Generate production readiness certification report."""
     logger.info("Starting production readiness certification generation")
 

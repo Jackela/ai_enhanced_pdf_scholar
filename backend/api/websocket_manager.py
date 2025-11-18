@@ -74,7 +74,7 @@ class RAGStreamConfig:
 class WebSocketManager:
     """Manages WebSocket connections for real-time features with RAG streaming support."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Store active connections
         self.active_connections: dict[str, WebSocket] = {}
         # Group connections by rooms/channels
@@ -90,7 +90,7 @@ class WebSocketManager:
 
         # Don't start background task immediately - wait until first connection
 
-    async def connect(self, websocket: WebSocket, client_id: str):
+    async def connect(self, websocket: WebSocket, client_id: str) -> None:
         """Accept a new WebSocket connection."""
         await websocket.accept()
         self.active_connections[client_id] = websocket
@@ -113,7 +113,7 @@ class WebSocketManager:
             client_id,
         )
 
-    def disconnect(self, client_id: str):
+    def disconnect(self, client_id: str) -> None:
         """Remove a WebSocket connection and cleanup associated RAG tasks."""
         if client_id in self.active_connections:
             del self.active_connections[client_id]
@@ -129,7 +129,7 @@ class WebSocketManager:
                 f"WebSocket client {client_id} disconnected. Total: {len(self.active_connections)}"
             )
 
-    async def send_personal_message(self, message: str, client_id: str):
+    async def send_personal_message(self, message: str, client_id: str) -> None:
         """Send a message to a specific client."""
         if client_id in self.active_connections:
             try:
@@ -140,11 +140,11 @@ class WebSocketManager:
                 # Clean up broken connection
                 self.disconnect(client_id)
 
-    async def send_personal_json(self, data: dict, client_id: str):
+    async def send_personal_json(self, data: dict, client_id: str) -> None:
         """Send JSON data to a specific client."""
         await self.send_personal_message(json.dumps(data), client_id)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message: str) -> None:
         """Send a message to all connected clients."""
         disconnected = []
         for client_id, websocket in self.active_connections.items():
@@ -157,11 +157,11 @@ class WebSocketManager:
         for client_id in disconnected:
             self.disconnect(client_id)
 
-    async def broadcast_json(self, data: dict):
+    async def broadcast_json(self, data: dict) -> None:
         """Broadcast JSON data to all connected clients."""
         await self.broadcast(json.dumps(data))
 
-    async def join_room(self, client_id: str, room_name: str):
+    async def join_room(self, client_id: str, room_name: str) -> None:
         """Add a client to a room."""
         if room_name not in self.rooms:
             self.rooms[room_name] = []
@@ -169,13 +169,13 @@ class WebSocketManager:
             self.rooms[room_name].append(client_id)
         logger.info(f"Client {client_id} joined room {room_name}")
 
-    async def leave_room(self, client_id: str, room_name: str):
+    async def leave_room(self, client_id: str, room_name: str) -> None:
         """Remove a client from a room."""
         if room_name in self.rooms and client_id in self.rooms[room_name]:
             self.rooms[room_name].remove(client_id)
             logger.info(f"Client {client_id} left room {room_name}")
 
-    async def send_to_room(self, message: str, room_name: str):
+    async def send_to_room(self, message: str, room_name: str) -> None:
         """Send a message to all clients in a room."""
         if room_name not in self.rooms:
             return
@@ -194,7 +194,7 @@ class WebSocketManager:
         for client_id in disconnected:
             self.disconnect(client_id)
 
-    async def send_json_to_room(self, data: dict, room_name: str):
+    async def send_json_to_room(self, data: dict, room_name: str) -> None:
         """Send JSON data to all clients in a room."""
         await self.send_to_room(json.dumps(data), room_name)
 
@@ -210,7 +210,9 @@ class WebSocketManager:
         """Get total number of rooms."""
         return len(self.rooms)
 
-    async def send_rag_progress(self, client_id: str, document_id: int, message: str):
+    async def send_rag_progress(
+        self, client_id: str, document_id: int, message: str
+    ) -> None:
         """Send RAG query progress update."""
         await self.send_personal_json(
             {"type": "rag_progress", "document_id": document_id, "message": message},
@@ -219,7 +221,7 @@ class WebSocketManager:
 
     async def send_rag_response(
         self, client_id: str, query: str, response: str, document_id: int
-    ):
+    ) -> None:
         """Send RAG query response."""
         await self.send_personal_json(
             {
@@ -231,7 +233,9 @@ class WebSocketManager:
             client_id,
         )
 
-    async def send_rag_error(self, client_id: str, error: str, document_id: int = None):
+    async def send_rag_error(
+        self, client_id: str, error: str, document_id: int = None
+    ) -> None:
         """Send RAG query error."""
         await self.send_personal_json(
             {"type": "rag_error", "error": error, "document_id": document_id}, client_id
@@ -239,7 +243,7 @@ class WebSocketManager:
 
     async def send_index_progress(
         self, client_id: str, document_id: int, status: str, progress: int = None
-    ):
+    ) -> None:
         """Send index build progress."""
         data = {"type": "index_progress", "document_id": document_id, "status": status}
         if progress is not None:
@@ -248,7 +252,7 @@ class WebSocketManager:
 
     async def send_document_update(
         self, document_id: int, action: str, data: dict = None
-    ):
+    ) -> None:
         """Broadcast document update to all clients."""
         message = {
             "type": "document_update",
@@ -259,7 +263,7 @@ class WebSocketManager:
             message["data"] = data
         await self.broadcast_json(message)
 
-    async def send_upload_progress(self, client_id: str, progress_data: dict):
+    async def send_upload_progress(self, client_id: str, progress_data: dict) -> None:
         """Send streaming upload progress update to client."""
         await self.send_personal_json(
             {
@@ -271,7 +275,7 @@ class WebSocketManager:
 
     async def send_upload_status(
         self, client_id: str, session_id: str, status: str, message: str = None
-    ):
+    ) -> None:
         """Send upload status update to client."""
         data = {
             "type": "upload_status",
@@ -284,7 +288,7 @@ class WebSocketManager:
 
     async def send_upload_error(
         self, client_id: str, session_id: str, error: str, error_code: str = None
-    ):
+    ) -> None:
         """Send upload error to client."""
         data = {
             "type": "upload_error",
@@ -297,7 +301,7 @@ class WebSocketManager:
 
     async def send_upload_completed(
         self, client_id: str, session_id: str, document_data: dict = None
-    ):
+    ) -> None:
         """Send upload completion notification."""
         data = {
             "type": "upload_completed",
@@ -307,19 +311,19 @@ class WebSocketManager:
             data["document"] = document_data
         await self.send_personal_json(data, client_id)
 
-    async def join_upload_room(self, client_id: str, session_id: str):
+    async def join_upload_room(self, client_id: str, session_id: str) -> None:
         """Add client to an upload-specific room for progress tracking."""
         room_name = f"upload_{session_id}"
         await self.join_room(client_id, room_name)
 
-    async def leave_upload_room(self, client_id: str, session_id: str):
+    async def leave_upload_room(self, client_id: str, session_id: str) -> None:
         """Remove client from upload-specific room."""
         room_name = f"upload_{session_id}"
         await self.leave_room(client_id, room_name)
 
     async def broadcast_to_upload_room(
         self, session_id: str, message_type: str, data: dict
-    ):
+    ) -> None:
         """Broadcast message to all clients watching an upload."""
         room_name = f"upload_{session_id}"
         message_data = {
@@ -329,7 +333,7 @@ class WebSocketManager:
         }
         await self.send_json_to_room(message_data, room_name)
 
-    def _start_cleanup_task(self):
+    def _start_cleanup_task(self) -> None:
         """Start background task for cleaning up completed/failed RAG tasks."""
         try:
             # Only start if we have a running event loop and haven't started yet
@@ -343,7 +347,7 @@ class WebSocketManager:
             # No event loop running, task will be started later when needed
             pass
 
-    async def _cleanup_background(self):
+    async def _cleanup_background(self) -> None:
         """Background task to clean up old RAG tasks."""
         while True:
             try:
@@ -376,7 +380,7 @@ class WebSocketManager:
             except Exception as e:
                 logger.error(f"Error in RAG task cleanup: {e}")
 
-    def _cleanup_client_rag_tasks(self, client_id: str):
+    def _cleanup_client_rag_tasks(self, client_id: str) -> None:
         """Cancel and cleanup all RAG tasks for a specific client."""
         if client_id not in self.client_tasks:
             return
@@ -402,7 +406,7 @@ class WebSocketManager:
 
         logger.debug(f"Cancelled {len(task_ids)} RAG tasks for client {client_id}")
 
-    def _remove_rag_task(self, task_id: str):
+    def _remove_rag_task(self, task_id: str) -> None:
         """Remove a RAG task from all tracking dictionaries."""
         if task_id in self.rag_tasks:
             task = self.rag_tasks[task_id]
@@ -422,7 +426,7 @@ class WebSocketManager:
         timestamp = int(datetime.now().timestamp() * 1000)
         return f"rag_task_{timestamp}_{self._task_counter}"
 
-    async def send_memory_warning(self, client_id: str, memory_stats: dict):
+    async def send_memory_warning(self, client_id: str, memory_stats: dict) -> None:
         """Send memory usage warning to client."""
         await self.send_personal_json(
             {
@@ -442,7 +446,7 @@ class WebSocketManager:
         bytes_uploaded: int,
         total_bytes: int,
         upload_speed: float = None,
-    ):
+    ) -> None:
         """Send detailed chunk upload progress."""
         progress_percentage = (
             (bytes_uploaded / total_bytes) * 100 if total_bytes > 0 else 0
@@ -571,7 +575,9 @@ class WebSocketManager:
         logger.info(f"Started RAG streaming task {task_id} for client {client_id}")
         return task_id
 
-    async def _process_rag_task(self, task: RAGTask, rag_processor: Callable, **kwargs):
+    async def _process_rag_task(
+        self, task: RAGTask, rag_processor: Callable, **kwargs
+    ) -> None:
         """Background task to process RAG query with streaming."""
         try:
             task.status = RAGTaskStatus.PROCESSING
@@ -673,7 +679,7 @@ class WebSocketManager:
     # Notification Methods
     async def send_rag_task_started(
         self, client_id: str, task_id: str, document_id: int, query: str
-    ):
+    ) -> None:
         """Send RAG task started notification."""
         await self.send_personal_json(
             {
@@ -694,7 +700,7 @@ class WebSocketManager:
         percentage: float,
         message: str,
         stage_data: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Send detailed RAG progress update."""
         data = {
             "type": "rag_progress_update",
@@ -718,7 +724,7 @@ class WebSocketManager:
         chunk: str,
         chunk_index: int,
         total_chunks: int | None = None,
-    ):
+    ) -> None:
         """Send streaming RAG response chunk."""
         await self.send_personal_json(
             {
@@ -740,7 +746,7 @@ class WebSocketManager:
         query: str,
         result: str,
         processing_time_ms: float,
-    ):
+    ) -> None:
         """Send RAG task completion notification."""
         await self.send_personal_json(
             {
@@ -755,7 +761,9 @@ class WebSocketManager:
             client_id,
         )
 
-    async def send_rag_task_failed(self, client_id: str, task_id: str, error: str):
+    async def send_rag_task_failed(
+        self, client_id: str, task_id: str, error: str
+    ) -> None:
         """Send RAG task failure notification."""
         await self.send_personal_json(
             {
@@ -767,7 +775,7 @@ class WebSocketManager:
             client_id,
         )
 
-    async def send_rag_task_cancelled(self, client_id: str, task_id: str):
+    async def send_rag_task_cancelled(self, client_id: str, task_id: str) -> None:
         """Send RAG task cancellation notification."""
         await self.send_personal_json(
             {
@@ -778,7 +786,7 @@ class WebSocketManager:
             client_id,
         )
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up all resources and cancel background tasks."""
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():

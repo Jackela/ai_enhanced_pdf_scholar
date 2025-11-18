@@ -88,7 +88,7 @@ class BenchmarkResult:
 class PerformanceMonitor:
     """Monitors system performance during benchmark operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.process = psutil.Process()
         self.baseline_memory = self.process.memory_info().rss / 1024 / 1024
         self.baseline_cpu = self.process.cpu_percent()
@@ -103,20 +103,20 @@ class PerformanceMonitor:
 class BenchmarkTimer:
     """High-precision timer for benchmarking operations."""
 
-    def __init__(self, monitor: PerformanceMonitor):
+    def __init__(self, monitor: PerformanceMonitor) -> None:
         self.monitor = monitor
         self.start_time = None
         self.end_time = None
         self.start_memory = None
         self.start_cpu = None
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         gc.collect()  # Clean garbage before measurement
         self.start_memory, self.start_cpu = self.monitor.get_current_stats()
         self.start_time = time.perf_counter()
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args) -> None:
         self.end_time = time.perf_counter()
 
     @property
@@ -137,7 +137,7 @@ class BenchmarkTimer:
 class PDFBenchmark:
     """Benchmarks PDF processing operations."""
 
-    def __init__(self, test_data_dir: Path):
+    def __init__(self, test_data_dir: Path) -> None:
         self.test_data_dir = test_data_dir
         self.monitor = PerformanceMonitor()
 
@@ -285,7 +285,7 @@ class PDFBenchmark:
 class DatabaseBenchmark:
     """Benchmarks database operations."""
 
-    def __init__(self, db_path: str | None = None):
+    def __init__(self, db_path: str | None = None) -> None:
         self.db_path = db_path or tempfile.mktemp(suffix=".db")
         self.cleanup_db = db_path is None
         self.monitor = PerformanceMonitor()
@@ -295,7 +295,7 @@ class DatabaseBenchmark:
         self.migrator = DatabaseMigrator(self.db)
         self.doc_repo = DocumentRepository(self.db)
 
-    def setup_test_database(self):
+    def setup_test_database(self) -> None:
         """Setup test database with schema."""
         logger.info("Setting up test database")
 
@@ -534,7 +534,7 @@ class DatabaseBenchmark:
 
         return results
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up test database."""
         try:
             if hasattr(self, "db"):
@@ -549,7 +549,7 @@ class DatabaseBenchmark:
 class APIMockBenchmark:
     """Benchmarks simulated API endpoint operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.monitor = PerformanceMonitor()
 
     def simulate_api_endpoint(
@@ -629,7 +629,7 @@ class APIMockBenchmark:
 class ConcurrencyBenchmark:
     """Benchmarks concurrent operations performance."""
 
-    def __init__(self, db_path: str | None = None):
+    def __init__(self, db_path: str | None = None) -> None:
         self.db_path = db_path or tempfile.mktemp(suffix="_concurrent.db")
         self.cleanup_db = db_path is None
         self.monitor = PerformanceMonitor()
@@ -723,7 +723,7 @@ class ConcurrencyBenchmark:
 
         return results
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up test database."""
         try:
             if self.cleanup_db and Path(self.db_path).exists():
@@ -735,7 +735,7 @@ class ConcurrencyBenchmark:
 class ComprehensiveBenchmarkSuite:
     """Main benchmark suite coordinator."""
 
-    def __init__(self, output_dir: Path | None = None):
+    def __init__(self, output_dir: Path | None = None) -> None:
         self.output_dir = output_dir or Path("benchmark_results")
         self.output_dir.mkdir(exist_ok=True)
 
@@ -886,7 +886,9 @@ class ComprehensiveBenchmarkSuite:
             "overall_p95_duration_ms": (
                 statistics.quantiles(all_durations, n=20)[18]
                 if len(all_durations) >= 20
-                else max(all_durations) if all_durations else 0
+                else max(all_durations)
+                if all_durations
+                else 0
             ),
             "overall_avg_memory_mb": statistics.mean(all_memory) if all_memory else 0,
             "overall_avg_cpu_percent": statistics.mean(all_cpu) if all_cpu else 0,
@@ -913,7 +915,7 @@ class ComprehensiveBenchmarkSuite:
             "platform": sys.platform,
         }
 
-    def save_results(self, filename: str = None):
+    def save_results(self, filename: str = None) -> Any:
         """Save benchmark results to JSON file."""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -939,7 +941,7 @@ class ComprehensiveBenchmarkSuite:
         logger.info(f"Benchmark results saved to: {output_file}")
         return output_file
 
-    def print_summary_report(self):
+    def print_summary_report(self) -> None:
         """Print a comprehensive summary report."""
         print("\n" + "=" * 80)
         print("COMPREHENSIVE PERFORMANCE BENCHMARK REPORT")
@@ -1012,7 +1014,7 @@ class ComprehensiveBenchmarkSuite:
         print("\n" + "=" * 80)
 
 
-def main():
+def main() -> Any:
     """Main function to run benchmark suite."""
     import argparse
 

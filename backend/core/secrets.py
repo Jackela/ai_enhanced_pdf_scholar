@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Enterprise-Grade Secrets Management System
 Manages all sensitive configuration including API keys, database credentials, JWT keys, etc.
@@ -108,7 +110,7 @@ class SecretConfig(BaseModel):
     retry_delay_seconds: int = Field(default=1)
 
     @field_validator("environment")
-    def validate_environment(cls, v):
+    def validate_environment(cls, v) -> Any:
         allowed = ["development", "staging", "production", "test"]
         if v not in allowed:
             raise ValueError(f"Environment must be one of {allowed}")
@@ -190,12 +192,12 @@ class SecretProviderInterface(ABC):
 class VaultProvider(SecretProviderInterface):
     """HashiCorp Vault secret provider."""
 
-    def __init__(self, config: SecretConfig):
+    def __init__(self, config: SecretConfig) -> None:
         self.config = config
         self.client = None
         self._connect()
 
-    def _connect(self):
+    def _connect(self) -> None:
         """Establish connection to Vault."""
         try:
             self.client = hvac.Client(
@@ -354,11 +356,11 @@ class VaultProvider(SecretProviderInterface):
 class AWSSecretsManagerProvider(SecretProviderInterface):
     """AWS Secrets Manager provider."""
 
-    def __init__(self, config: SecretConfig):
+    def __init__(self, config: SecretConfig) -> None:
         self.config = config
         self.client = self._create_client()
 
-    def _create_client(self):
+    def _create_client(self) -> Any:
         """Create AWS Secrets Manager client."""
         try:
             if self.config.aws_access_key_id and self.config.aws_secret_access_key:
@@ -541,7 +543,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
 class LocalEncryptedProvider(SecretProviderInterface):
     """Local encrypted file storage provider for development."""
 
-    def __init__(self, config: SecretConfig):
+    def __init__(self, config: SecretConfig) -> None:
         self.config = config
         self.storage_path = config.local_storage_path
         self.storage_path.mkdir(parents=True, exist_ok=True)
@@ -761,7 +763,7 @@ class SecretsManager:
     Implements caching, rotation, audit logging, and fallback mechanisms.
     """
 
-    def __init__(self, config: SecretConfig | None = None):
+    def __init__(self, config: SecretConfig | None = None) -> None:
         """Initialize the secrets manager."""
         self.config = config or SecretConfig.from_env()
         self._providers: dict[SecretProvider, SecretProviderInterface] = {}
@@ -769,7 +771,7 @@ class SecretsManager:
         self._audit_log: list[dict] = []
         self._initialize_providers()
 
-    def _initialize_providers(self):
+    def _initialize_providers(self) -> None:
         """Initialize configured secret providers."""
         # Initialize primary provider
         self._providers[self.config.primary_provider] = self._create_provider(
@@ -809,7 +811,7 @@ class SecretsManager:
         success: bool,
         provider: SecretProvider | None = None,
         error: str | None = None,
-    ):
+    ) -> None:
         """Log an operation for audit purposes."""
         if self.config.enable_audit_logging:
             log_entry = {
@@ -845,7 +847,7 @@ class SecretsManager:
 
         return None
 
-    def _set_cache(self, key: str, value: str):
+    def _set_cache(self, key: str, value: str) -> None:
         """Store a secret in cache."""
         if self.config.cache_enabled:
             self._cache[key] = (value, datetime.utcnow())

@@ -583,7 +583,7 @@ async def get_performance_dashboard(
 async def websocket_dashboard(
     websocket: WebSocket,
     monitor: IntegratedPerformanceMonitor = Depends(get_performance_monitor),
-):
+) -> None:
     """WebSocket endpoint for real-time dashboard updates."""
     try:
         await monitor.dashboard_service.handle_websocket_connection(websocket)
@@ -689,7 +689,9 @@ async def stop_performance_monitoring(
 # ============================================================================
 
 
-def initialize_performance_monitor(monitor_instance: IntegratedPerformanceMonitor):
+def initialize_performance_monitor(
+    monitor_instance: IntegratedPerformanceMonitor,
+) -> None:
     """Initialize the performance monitor instance for dependency injection."""
     global performance_monitor
     performance_monitor = monitor_instance

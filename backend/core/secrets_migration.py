@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Secrets Migration Script
 Migrates existing secrets from config files and environment to the new secrets management system.
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 class SecretsMigration:
     """Handles migration of secrets to the new management system."""
 
-    def __init__(self, dry_run: bool = True):
+    def __init__(self, dry_run: bool = True) -> None:
         """
         Initialize migration tool.
 
@@ -443,7 +445,7 @@ class SecretsMigration:
         return "\n".join(report)
 
 
-def main():
+def main() -> None:
     """Main migration script."""
     import argparse
 

@@ -82,7 +82,7 @@ class EncryptionService:
         db: Session,
         secrets_manager: SecretsManagerService | None = None,
         key_rotation_days: int = 90,
-    ):
+    ) -> None:
         """Initialize encryption service."""
         self.db = db
         self.secrets_manager = secrets_manager or SecretsManagerService()
@@ -93,7 +93,7 @@ class EncryptionService:
         # Initialize master key
         self._initialize_master_key()
 
-    def _initialize_master_key(self):
+    def _initialize_master_key(self) -> None:
         """Initialize or retrieve master encryption key."""
         try:
             # Try to get master key from secrets manager
@@ -730,7 +730,9 @@ class TLSConfiguration:
     TLS/SSL configuration for secure communication.
     """
 
-    def __init__(self, cert_path: Path | None = None, key_path: Path | None = None):
+    def __init__(
+        self, cert_path: Path | None = None, key_path: Path | None = None
+    ) -> None:
         """Initialize TLS configuration."""
         self.cert_path = cert_path or Path("certs/server.crt")
         self.key_path = key_path or Path("certs/server.key")
@@ -809,7 +811,7 @@ class TLSConfiguration:
 
         return self.cert_path, self.key_path
 
-    def get_ssl_context(self):
+    def get_ssl_context(self) -> Any:
         """
         Get SSL context for server.
 
@@ -849,7 +851,7 @@ class SecureChannel:
     Secure communication channel with end-to-end encryption.
     """
 
-    def __init__(self, encryption_service: EncryptionService):
+    def __init__(self, encryption_service: EncryptionService) -> None:
         """Initialize secure channel."""
         self.encryption_service = encryption_service
         self.session_keys: dict[str, bytes] = {}

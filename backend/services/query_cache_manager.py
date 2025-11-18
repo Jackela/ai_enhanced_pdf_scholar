@@ -114,7 +114,7 @@ class IntelligentQueryCacheManager:
         eviction_policy: CacheEvictionPolicy = CacheEvictionPolicy.HYBRID,
         enable_compression: bool = True,
         enable_warming: bool = True,
-    ):
+    ) -> None:
         """
         Initialize the Intelligent Query Cache Manager.
 
@@ -787,7 +787,7 @@ class IntelligentQueryCacheManager:
         logger.info("Query cache manager shut down")
 
 
-def main():
+def main() -> Any:
     """CLI interface for the Query Cache Manager."""
     import argparse
     import json

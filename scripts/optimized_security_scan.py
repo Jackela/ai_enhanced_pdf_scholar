@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Optimized Security Scanning Script for CI/CD
@@ -16,7 +18,7 @@ from pathlib import Path
 class SecurityScanner:
     """Optimized security scanner with timeout management."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path) -> None:
         self.project_root = project_root
         self.results = {
             "python_dependencies": {"status": "pending", "issues": 0, "duration": 0},
@@ -275,7 +277,7 @@ class SecurityScanner:
         print(f"📄 Results saved to {results_file}")
 
 
-def main():
+def main() -> None:
     """Main security scanner entry point."""
     project_root = Path(__file__).parent.parent
     scanner = SecurityScanner(project_root)

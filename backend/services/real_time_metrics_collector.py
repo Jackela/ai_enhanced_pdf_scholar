@@ -135,7 +135,7 @@ class RealTimeMetricsCollector:
         integrated_monitor=None,
         collection_interval: float = 1.0,  # seconds
         retention_hours: int = 24,
-    ):
+    ) -> None:
         self.websocket_manager = websocket_manager
         self.integrated_monitor = integrated_monitor
         self.collection_interval = collection_interval
@@ -175,7 +175,7 @@ class RealTimeMetricsCollector:
             f"RealTimeMetricsCollector initialized with {collection_interval}s interval"
         )
 
-    async def start_collection(self):
+    async def start_collection(self) -> None:
         """Start real-time metrics collection."""
         if self._running:
             logger.warning("Metrics collection already running")
@@ -190,7 +190,7 @@ class RealTimeMetricsCollector:
 
         logger.info("Real-time metrics collection started")
 
-    async def stop_collection(self):
+    async def stop_collection(self) -> None:
         """Stop metrics collection."""
         self._running = False
 
@@ -205,15 +205,15 @@ class RealTimeMetricsCollector:
 
         logger.info("Real-time metrics collection stopped")
 
-    def subscribe_to_metrics(self, callback: Callable[[dict[str, Any]], None]):
+    def subscribe_to_metrics(self, callback: Callable[[dict[str, Any]], None]) -> None:
         """Subscribe to real-time metric updates."""
         self.metric_subscribers.add(callback)
 
-    def unsubscribe_from_metrics(self, callback: Callable):
+    def unsubscribe_from_metrics(self, callback: Callable) -> None:
         """Unsubscribe from metric updates."""
         self.metric_subscribers.discard(callback)
 
-    async def _collect_metrics_loop(self):
+    async def _collect_metrics_loop(self) -> None:
         """Main metrics collection loop."""
         while self._running:
             try:
@@ -513,7 +513,7 @@ class RealTimeMetricsCollector:
 
         return alerts
 
-    def _handle_alert(self, alert: AlertMetric):
+    def _handle_alert(self, alert: AlertMetric) -> None:
         """Handle triggered alert."""
         try:
             # Log the alert
@@ -536,7 +536,7 @@ class RealTimeMetricsCollector:
 
     async def _notify_subscribers(
         self, metrics_update: dict[MetricType, dict[str, Any]]
-    ):
+    ) -> None:
         """Notify all subscribers of metric updates."""
         for callback in self.metric_subscribers:
             try:
@@ -547,7 +547,7 @@ class RealTimeMetricsCollector:
             except Exception as e:
                 logger.error(f"Error notifying metric subscriber: {e}")
 
-    async def _stream_metrics_loop(self):
+    async def _stream_metrics_loop(self) -> None:
         """Stream metrics to WebSocket clients."""
         while self._running:
             try:
@@ -575,7 +575,7 @@ class RealTimeMetricsCollector:
 
             await asyncio.sleep(self.collection_interval)
 
-    async def _cleanup_old_metrics_loop(self):
+    async def _cleanup_old_metrics_loop(self) -> None:
         """Clean up old metrics data."""
         while self._running:
             try:

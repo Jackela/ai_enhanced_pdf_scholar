@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 
-def safe_get(row_obj, key):
+def safe_get(row_obj, key) -> Any:
     """Safely get value from row object (dict or sqlite3.Row)."""
     if hasattr(row_obj, "get"):
         return row_obj.get(key)

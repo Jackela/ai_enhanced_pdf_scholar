@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class EmailConfig:
     """Email configuration settings."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize email configuration from environment/secrets."""
         self.smtp_host = os.getenv("SMTP_HOST", "localhost")
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -51,7 +51,7 @@ class EmailConfig:
 class EmailTemplate:
     """Email template with HTML and text versions."""
 
-    def __init__(self, subject: str, html_body: str, text_body: str):
+    def __init__(self, subject: str, html_body: str, text_body: str) -> None:
         self.subject = subject
         self.html_body = html_body
         self.text_body = text_body
@@ -68,7 +68,7 @@ class EmailTemplate:
 class EmailService:
     """Service for sending transactional emails."""
 
-    def __init__(self, config: EmailConfig | None = None):
+    def __init__(self, config: EmailConfig | None = None) -> None:
         """Initialize email service with configuration."""
         self.config = config or EmailConfig()
         self.templates = self._load_templates()

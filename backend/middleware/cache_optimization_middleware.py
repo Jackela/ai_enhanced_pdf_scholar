@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class CacheConfig:
     """Configuration for cache optimization middleware."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Cache strategies
         self.enabled = True
         self.cache_get_requests = True
@@ -84,7 +84,7 @@ class CacheConfig:
 class CacheKeyGenerator:
     """Generate cache keys for HTTP requests."""
 
-    def __init__(self, config: CacheConfig):
+    def __init__(self, config: CacheConfig) -> None:
         self.config = config
 
     async def generate_key(self, request: Request) -> str:
@@ -113,7 +113,7 @@ class CacheKeyGenerator:
                 components.append(f"b:{body_hash}")
 
                 # Replace request stream for downstream processing
-                async def receive():
+                async def receive() -> Any:
                     return {"type": "http.request", "body": body, "more_body": False}
 
                 request._receive = receive
@@ -199,7 +199,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         warming_service: CacheWarmingService | None = None,
         metrics_service: MetricsService | None = None,
         config: CacheConfig | None = None,
-    ):
+    ) -> None:
         """Initialize cache optimization middleware."""
         super().__init__(app)
 
@@ -223,7 +223,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
         logger.info("Cache Optimization Middleware initialized")
 
-    async def dispatch(self, request: Request, call_next: Callable):
+    async def dispatch(self, request: Request, call_next: Callable) -> Any:
         """Main middleware dispatch method."""
         start_time = time.time()
 
@@ -358,7 +358,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
     async def _cache_response(
         self, request: Request, cache_key: str, response: Response
-    ):
+    ) -> None:
         """Cache response for future use."""
         try:
             # Read response body
@@ -407,7 +407,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 self.redis_cache.set(cache_key, cache_data, ttl=ttl)
 
             # Replace response body iterator
-            async def new_body_iterator():
+            async def new_body_iterator() -> None:
                 yield response_body
 
             response.body_iterator = new_body_iterator()
@@ -500,7 +500,9 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         logger.info(f"User cache invalidation requested for user: {user_id}")
         return 0
 
-    async def preload_cache(self, paths: list[str], base_url: str = "http://localhost"):
+    async def preload_cache(
+        self, paths: list[str], base_url: str = "http://localhost"
+    ) -> Any:
         """Preload cache with common requests."""
         if not self.warming_service:
             logger.warning("No warming service available for cache preloading")
@@ -511,7 +513,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             cache_key = f"{self.config.cache_key_prefix}GET:{path}"
 
             # Define a loader function
-            async def load_path_data(url=f"{base_url}{path}"):
+            async def load_path_data(url=f"{base_url}{path}") -> Any:
                 # This would make an internal HTTP request
                 # For now, just a placeholder
                 return {"preloaded": True, "path": path}
@@ -564,7 +566,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             ),
         }
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         """Reset cache statistics."""
         self.stats = {
             "total_requests": 0,
@@ -679,14 +681,14 @@ if __name__ == "__main__":
     app.add_middleware(CacheOptimizationMiddleware, redis_cache=redis_cache)
 
     @app.get("/api/test")
-    async def test_endpoint():
+    async def test_endpoint() -> Any:
         return {
             "message": "This response will be cached",
             "timestamp": datetime.utcnow().isoformat(),
         }
 
     @app.get("/api/cache/stats")
-    async def cache_stats():
+    async def cache_stats() -> Any:
         return cache_middleware.get_cache_stats()
 
     print("Example FastAPI app with cache middleware created")

@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Verify the core fixes applied to the UAT issues.
@@ -11,7 +13,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 
-def verify_fixes():
+def verify_fixes() -> Any:
     """Verify all fixes have been applied."""
     print("=" * 60)
     print("VERIFYING UAT FIXES")

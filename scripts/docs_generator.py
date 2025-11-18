@@ -26,7 +26,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 class DocumentationGenerator:
     """Comprehensive documentation generator for AI Enhanced PDF Scholar."""
 
-    def __init__(self, project_root: Path, output_dir: Path):
+    def __init__(self, project_root: Path, output_dir: Path) -> None:
         self.project_root = Path(project_root)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -149,7 +149,7 @@ class DocumentationGenerator:
         print(f"   Generated {len(generated_files)} files")
         return generated_files
 
-    def _analyze_codebase(self):
+    def _analyze_codebase(self) -> None:
         """Analyze the codebase to extract documentation information."""
         print("  🔍 Analyzing Python code...")
         self._analyze_python_files()
@@ -160,7 +160,7 @@ class DocumentationGenerator:
         print("  🔍 Analyzing configuration files...")
         self._analyze_configuration_files()
 
-    def _analyze_python_files(self):
+    def _analyze_python_files(self) -> None:
         """Analyze Python files for API endpoints, models, services, etc."""
         python_files = list(self.project_root.rglob("*.py"))
 
@@ -198,7 +198,9 @@ class DocumentationGenerator:
             except Exception as e:
                 print(f"     ⚠️  Warning: Error analyzing {py_file}: {e}")
 
-    def _extract_api_endpoints(self, tree: ast.AST, file_path: Path, content: str):
+    def _extract_api_endpoints(
+        self, tree: ast.AST, file_path: Path, content: str
+    ) -> None:
         """Extract FastAPI endpoint information."""
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
@@ -282,7 +284,9 @@ class DocumentationGenerator:
             print(f"     ⚠️  Warning: Error parsing endpoint {func_node.name}: {e}")
             return None
 
-    def _extract_database_models(self, tree: ast.AST, file_path: Path, content: str):
+    def _extract_database_models(
+        self, tree: ast.AST, file_path: Path, content: str
+    ) -> None:
         """Extract SQLAlchemy model information."""
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
@@ -416,7 +420,9 @@ class DocumentationGenerator:
 
         return rel_info
 
-    def _extract_service_classes(self, tree: ast.AST, file_path: Path, content: str):
+    def _extract_service_classes(
+        self, tree: ast.AST, file_path: Path, content: str
+    ) -> None:
         """Extract service class information."""
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef) and "Service" in node.name:
@@ -470,7 +476,9 @@ class DocumentationGenerator:
             print(f"     ⚠️  Warning: Error parsing service {class_node.name}: {e}")
             return None
 
-    def _extract_repository_classes(self, tree: ast.AST, file_path: Path, content: str):
+    def _extract_repository_classes(
+        self, tree: ast.AST, file_path: Path, content: str
+    ) -> None:
         """Extract repository class information."""
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef) and (
@@ -513,7 +521,9 @@ class DocumentationGenerator:
             print(f"     ⚠️  Warning: Error parsing repository {class_node.name}: {e}")
             return None
 
-    def _extract_type_definitions(self, tree: ast.AST, file_path: Path, content: str):
+    def _extract_type_definitions(
+        self, tree: ast.AST, file_path: Path, content: str
+    ) -> None:
         """Extract type definitions (TypedDict, Pydantic models, etc.)."""
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
@@ -580,7 +590,7 @@ class DocumentationGenerator:
             print(f"     ⚠️  Warning: Error parsing type {class_node.name}: {e}")
             return None
 
-    def _analyze_typescript_files(self):
+    def _analyze_typescript_files(self) -> None:
         """Analyze TypeScript files for frontend types and components."""
         ts_files = list(self.project_root.rglob("*.ts")) + list(
             self.project_root.rglob("*.tsx")
@@ -602,7 +612,7 @@ class DocumentationGenerator:
             except Exception as e:
                 print(f"     ⚠️  Warning: Error analyzing {ts_file}: {e}")
 
-    def _extract_typescript_interfaces(self, content: str, file_path: Path):
+    def _extract_typescript_interfaces(self, content: str, file_path: Path) -> None:
         """Extract TypeScript interface definitions."""
         # Simple regex-based extraction for interfaces
         interface_pattern = (
@@ -650,7 +660,7 @@ class DocumentationGenerator:
             }
             self.type_definitions.append(type_info)
 
-    def _analyze_configuration_files(self):
+    def _analyze_configuration_files(self) -> None:
         """Analyze configuration files for settings and options."""
         config_files = [
             "config.py",
@@ -669,7 +679,7 @@ class DocumentationGenerator:
                 except Exception as e:
                     print(f"     ⚠️  Warning: Error analyzing {config_file}: {e}")
 
-    def _parse_configuration_file(self, file_path: Path):
+    def _parse_configuration_file(self, file_path: Path) -> None:
         """Parse configuration file for options."""
         file_name = file_path.name
 
@@ -761,7 +771,7 @@ class DocumentationGenerator:
 
         return options
 
-    def _collect_metrics(self):
+    def _collect_metrics(self) -> None:
         """Collect various project metrics."""
         print("  📊 Collecting code metrics...")
         self._collect_code_metrics()
@@ -772,7 +782,7 @@ class DocumentationGenerator:
         print("  📈 Collecting performance metrics...")
         self._collect_performance_metrics()
 
-    def _collect_code_metrics(self):
+    def _collect_code_metrics(self) -> None:
         """Collect basic code metrics."""
         python_files = list(self.project_root.rglob("*.py"))
         ts_files = list(self.project_root.rglob("*.ts")) + list(
@@ -820,7 +830,7 @@ class DocumentationGenerator:
             }
         )
 
-    def _collect_test_coverage(self):
+    def _collect_test_coverage(self) -> None:
         """Collect test coverage information."""
         try:
             # Try to run coverage report
@@ -840,7 +850,7 @@ class DocumentationGenerator:
             print(f"     ⚠️  Warning: Could not collect test coverage: {e}")
             self.test_coverage = {"totals": {"percent_covered": 0}}
 
-    def _collect_performance_metrics(self):
+    def _collect_performance_metrics(self) -> None:
         """Collect performance metrics from benchmark files."""
         performance_files = list(self.project_root.rglob("*performance*.json"))
         benchmark_files = list(self.project_root.rglob("*benchmark*.json"))
@@ -1367,7 +1377,7 @@ Version: {{ metadata.version }}
 
         return Template(template_content)
 
-    def _create_default_templates(self):
+    def _create_default_templates(self) -> None:
         """Create default Jinja2 templates if they don't exist."""
         template_dir = self.project_root / "docs" / "templates"
         template_dir.mkdir(parents=True, exist_ok=True)
@@ -2062,7 +2072,7 @@ python -m pytest</code></pre>
 {% endblock %}"""
 
 
-def main():
+def main() -> None:
     """Main entry point for the documentation generator."""
     parser = argparse.ArgumentParser(
         description="Generate comprehensive documentation for AI Enhanced PDF Scholar",

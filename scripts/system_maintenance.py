@@ -105,7 +105,7 @@ class MaintenanceConfig:
 class SystemMaintenanceEngine:
     """Main maintenance automation engine."""
 
-    def __init__(self, config: MaintenanceConfig = None):
+    def __init__(self, config: MaintenanceConfig = None) -> None:
         self.config = config or MaintenanceConfig()
         self.tasks_completed: list[MaintenanceTask] = []
         self.start_time = datetime.now()
@@ -1882,7 +1882,7 @@ class MaintenanceReportFormatter:
 # ============================================================================
 
 
-def main():
+def main() -> Any:
     """Main CLI interface for system maintenance."""
     parser = argparse.ArgumentParser(
         description="Automated System Maintenance for AI Enhanced PDF Scholar",

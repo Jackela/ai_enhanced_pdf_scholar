@@ -559,7 +559,7 @@ class ConfigurationUpdate(BaseModel):
 class SecurityValidationError(ValueError):
     """Custom exception for security validation failures."""
 
-    def __init__(self, field: str, message: str, pattern: str | None = None):
+    def __init__(self, field: str, message: str, pattern: str | None = None) -> None:
         self.field = field
         self.pattern = pattern
         super().__init__(f"Security validation failed for field '{field}': {message}")
@@ -567,7 +567,7 @@ class SecurityValidationError(ValueError):
 
 def log_security_event(
     event_type: str, field: str, value: str, details: str | None = None
-):
+) -> None:
     """Log security validation events for monitoring and alerting."""
     security_logger.warning(
         f"Security Event: Type={event_type}, Field={field}, "

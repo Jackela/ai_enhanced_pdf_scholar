@@ -42,7 +42,7 @@ class IntegratedPerformanceMonitor:
         redis_cache: RedisCacheService,
         rag_cache: RAGCacheService,
         config_path: Path | None = None,
-    ):
+    ) -> None:
         """Initialize integrated performance monitor."""
         self.config_path = config_path or Path("performance_config.json")
 
@@ -90,7 +90,7 @@ class IntegratedPerformanceMonitor:
     # Service Lifecycle
     # ========================================================================
 
-    async def start_monitoring(self):
+    async def start_monitoring(self) -> None:
         """Start all performance monitoring services."""
         if self._running:
             logger.warning("Performance monitoring already running")
@@ -123,7 +123,7 @@ class IntegratedPerformanceMonitor:
             await self.stop_monitoring()
             raise
 
-    async def stop_monitoring(self):
+    async def stop_monitoring(self) -> None:
         """Stop all performance monitoring services."""
         if not self._running:
             return
@@ -153,7 +153,7 @@ class IntegratedPerformanceMonitor:
     # Health Monitoring
     # ========================================================================
 
-    async def _health_check_loop(self):
+    async def _health_check_loop(self) -> None:
         """Background health check loop."""
         while self._running:
             try:
@@ -166,7 +166,7 @@ class IntegratedPerformanceMonitor:
                 logger.error(f"Error in health check loop: {e}")
                 await asyncio.sleep(300)
 
-    async def _perform_health_check(self):
+    async def _perform_health_check(self) -> None:
         """Perform comprehensive system health check."""
         try:
             health_scores = {}
@@ -208,7 +208,9 @@ class IntegratedPerformanceMonitor:
             self.metrics_service.update_health_status(
                 "healthy"
                 if self.system_health_score > 80
-                else "degraded" if self.system_health_score > 60 else "unhealthy"
+                else "degraded"
+                if self.system_health_score > 60
+                else "unhealthy"
             )
 
             logger.debug(
@@ -298,7 +300,9 @@ class IntegratedPerformanceMonitor:
                 "status": (
                     "healthy"
                     if self.system_health_score > 80
-                    else "degraded" if self.system_health_score > 60 else "critical"
+                    else "degraded"
+                    if self.system_health_score > 60
+                    else "critical"
                 ),
             },
             "apm_summary": self.amp.get_performance_summary(),
@@ -408,7 +412,7 @@ class IntegratedPerformanceMonitor:
             logger.error(f"Error updating configuration: {e}")
             return False
 
-    def _save_configuration(self, config: dict[str, Any]):
+    def _save_configuration(self, config: dict[str, Any]) -> None:
         """Save configuration to file."""
         try:
             with open(self.config_path, "w") as f:
@@ -470,7 +474,9 @@ class IntegratedPerformanceMonitor:
                 "status": (
                     "healthy"
                     if self.system_health_score > 80
-                    else "degraded" if self.system_health_score > 60 else "critical"
+                    else "degraded"
+                    if self.system_health_score > 60
+                    else "critical"
                 ),
                 "last_check": (
                     self.last_health_check.isoformat()

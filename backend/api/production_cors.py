@@ -63,7 +63,7 @@ class ProductionCORSValidator:
     and threat detection for production environments.
     """
 
-    def __init__(self, security_policy: CORSSecurityPolicy | None = None):
+    def __init__(self, security_policy: CORSSecurityPolicy | None = None) -> None:
         """Initialize CORS validator."""
         self.security_policy = security_policy or CORSSecurityPolicy()
         self.validation_rules: list[OriginValidationRule] = []
@@ -74,7 +74,7 @@ class ProductionCORSValidator:
         self._initialize_default_rules()
         logger.info("Production CORS validator initialized")
 
-    def _initialize_default_rules(self):
+    def _initialize_default_rules(self) -> None:
         """Initialize default validation rules."""
         rules = [
             # High priority security rules
@@ -114,7 +114,7 @@ class ProductionCORSValidator:
         self.validation_rules.extend(rules)
         self.validation_rules.sort(key=lambda r: r.priority)
 
-    def add_validation_rule(self, rule: OriginValidationRule):
+    def add_validation_rule(self, rule: OriginValidationRule) -> None:
         """Add custom validation rule."""
         self.validation_rules.append(rule)
         self.validation_rules.sort(key=lambda r: r.priority)
@@ -258,7 +258,7 @@ class ProductionCORSValidator:
         suspicious_tlds = {"tk", "ml", "ga", "cf", "top", "work", "party"}
         return len(tld) >= 2 and tld.lower() not in suspicious_tlds
 
-    def _log_blocked_origin(self, origin: str, reason: str):
+    def _log_blocked_origin(self, origin: str, reason: str) -> None:
         """Log blocked origin attempt."""
         if self.security_policy.log_blocked_origins:
             logger.warning(f"Blocked CORS origin '{origin}': {reason}")
@@ -301,7 +301,7 @@ class ProductionCORSConfig:
     Production CORS configuration with advanced security features.
     """
 
-    def __init__(self, production_config: ProductionConfig | None = None):
+    def __init__(self, production_config: ProductionConfig | None = None) -> None:
         """Initialize production CORS configuration."""
         self.production_config = production_config
         self.validator = ProductionCORSValidator()
@@ -312,7 +312,7 @@ class ProductionCORSConfig:
         self._initialize_configuration()
         logger.info("Production CORS configuration initialized")
 
-    def _initialize_configuration(self):
+    def _initialize_configuration(self) -> None:
         """Initialize CORS configuration based on production settings."""
         if self.production_config:
             security_config = self.production_config.security
@@ -457,7 +457,7 @@ class ProductionCORSConfig:
             },
         }
 
-    def update_security_policy(self, policy: CORSSecurityPolicy):
+    def update_security_policy(self, policy: CORSSecurityPolicy) -> None:
         """Update security policy and re-validate origins."""
         self.validator.security_policy = policy
         self.validator.validation_cache.clear()
@@ -469,7 +469,7 @@ class ProductionCORSConfig:
 
 def create_production_cors_middleware(
     app, production_config: ProductionConfig | None = None
-):
+) -> Any:
     """
     Create and configure CORS middleware for production.
 
@@ -499,11 +499,11 @@ class CORSSecurityMiddleware:
     Custom CORS security middleware with advanced validation.
     """
 
-    def __init__(self, cors_config: ProductionCORSConfig):
+    def __init__(self, cors_config: ProductionCORSConfig) -> None:
         """Initialize CORS security middleware."""
         self.cors_config = cors_config
 
-    async def __call__(self, request, call_next):
+    async def __call__(self, request, call_next) -> Any:
         """Process request with CORS security validation."""
         # Get origin from request
         origin = request.headers.get("origin")

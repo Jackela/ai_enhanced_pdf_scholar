@@ -25,7 +25,7 @@ class Environment(str, Enum):
 class CORSConfig:
     """Secure CORS configuration manager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize CORS configuration based on environment."""
         self.environment = self._detect_environment()
         self.config = self._get_cors_config()

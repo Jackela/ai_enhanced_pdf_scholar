@@ -49,7 +49,7 @@ class DatabasePerformanceBenchmark:
     - Performance regression detection
     """
 
-    def __init__(self, db_path: str | None = None):
+    def __init__(self, db_path: str | None = None) -> None:
         """
         Initialize the benchmark suite.
         Args:
@@ -81,7 +81,7 @@ class DatabasePerformanceBenchmark:
             "baseline_comparisons": {},
         }
 
-    def setup_test_environment(self):
+    def setup_test_environment(self) -> None:
         """Setup the test environment with schema and sample data."""
         logger.info("Setting up test environment...")
 
@@ -99,7 +99,7 @@ class DatabasePerformanceBenchmark:
 
         logger.info("Test environment setup completed")
 
-    def _create_sample_data(self):
+    def _create_sample_data(self) -> None:
         """Create sample data for performance testing."""
         logger.info("Creating sample test data...")
 
@@ -346,7 +346,9 @@ class DatabasePerformanceBenchmark:
                     else (
                         "good"
                         if execution_time < 10 and index_used
-                        else "poor" if not index_used else "fair"
+                        else "poor"
+                        if not index_used
+                        else "fair"
                     )
                 ),
             }
@@ -670,7 +672,7 @@ class DatabasePerformanceBenchmark:
 
         return round(final_score, 2)
 
-    def save_results(self, output_file: str):
+    def save_results(self, output_file: str) -> None:
         """Save benchmark results to JSON file."""
         try:
             with open(output_file, "w") as f:
@@ -680,7 +682,7 @@ class DatabasePerformanceBenchmark:
             logger.error(f"Failed to save results to {output_file}: {e}")
             raise
 
-    def print_summary(self):
+    def print_summary(self) -> None:
         """Print a summary of benchmark results."""
         print("\n" + "=" * 80)
         print("DATABASE PERFORMANCE BENCHMARK SUMMARY")
@@ -732,7 +734,7 @@ class DatabasePerformanceBenchmark:
 
         print("\n" + "=" * 80)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Cleanup resources."""
         try:
             if hasattr(self, "db"):
@@ -745,14 +747,14 @@ class DatabasePerformanceBenchmark:
         except Exception as e:
             logger.warning(f"Cleanup error: {e}")
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.cleanup()
 
 
-def main():
+def main() -> Any:
     """Main function for command-line interface."""
     parser = argparse.ArgumentParser(description="Database Performance Benchmark Tool")
     parser.add_argument(

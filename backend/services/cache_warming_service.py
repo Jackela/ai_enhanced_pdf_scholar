@@ -137,7 +137,9 @@ class WarmingStatistics:
     # Time-based analysis
     hourly_effectiveness: dict[int, float] = field(default_factory=dict)
 
-    def update_completion(self, task: WarmingTask, success: bool, duration_ms: float):
+    def update_completion(
+        self, task: WarmingTask, success: bool, duration_ms: float
+    ) -> None:
         """Update statistics with task completion."""
         self.total_tasks += 1
 
@@ -187,7 +189,7 @@ class CacheWarmingService:
         redis_cache: RedisCacheService,
         smart_cache: SmartCacheManager | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize cache warming service."""
         self.redis_cache = redis_cache
         self.smart_cache = smart_cache
@@ -225,7 +227,7 @@ class CacheWarmingService:
     # Data Loader Registration
     # ========================================================================
 
-    def register_loader(self, pattern: str, loader_func: Callable):
+    def register_loader(self, pattern: str, loader_func: Callable) -> None:
         """Register a data loader for a key pattern."""
         self.data_loaders[pattern] = loader_func
         logger.info(f"Registered data loader for pattern: {pattern}")
@@ -313,7 +315,7 @@ class CacheWarmingService:
         logger.debug(f"Added warming task for key: {key} (priority: {priority})")
         return True
 
-    def _enqueue_task(self, task: WarmingTask):
+    def _enqueue_task(self, task: WarmingTask) -> None:
         """Add task to execution queue with proper ordering."""
         # Check queue size limit
         if len(self.task_queue) >= self.config["max_queue_size"]:
@@ -344,7 +346,7 @@ class CacheWarmingService:
     # Predictive Warming
     # ========================================================================
 
-    async def predict_and_schedule_warming(self):
+    async def predict_and_schedule_warming(self) -> None:
         """Predict which keys should be warmed and schedule tasks."""
         if not self.smart_cache:
             logger.info("Smart cache not available for predictive warming")
@@ -359,7 +361,6 @@ class CacheWarmingService:
         for key, probability in predictions.items():
             if probability >= self.config["warming_threshold_probability"]:
                 if key not in self.warming_tasks and not self.redis_cache.exists(key):
-
                     # Determine priority based on probability
                     if probability >= 0.8:
                         priority = WarmingPriority.HIGH
@@ -470,7 +471,7 @@ class CacheWarmingService:
     # Pattern-based Warming
     # ========================================================================
 
-    async def schedule_pattern_based_warming(self):
+    async def schedule_pattern_based_warming(self) -> None:
         """Schedule warming based on detected access patterns."""
         if not self.smart_cache:
             return
@@ -487,7 +488,7 @@ class CacheWarmingService:
 
     async def _schedule_pattern_group(
         self, pattern: AccessPattern, keys: list[tuple[str, Any]]
-    ):
+    ) -> None:
         """Schedule warming for a group of keys with the same pattern."""
         if pattern == AccessPattern.HOTSPOT:
             # Warm hotspot keys with high priority
@@ -525,7 +526,7 @@ class CacheWarmingService:
     # Reactive Warming
     # ========================================================================
 
-    async def handle_cache_miss(self, key: str, user_id: str | None = None):
+    async def handle_cache_miss(self, key: str, user_id: str | None = None) -> None:
         """Handle cache miss with reactive warming."""
         # Add immediate warming task for missed key
         self.add_warming_task(
@@ -564,7 +565,9 @@ class CacheWarmingService:
         key_prefix = (
             key.split(":")[0]
             if ":" in key
-            else key[: key.rfind("_")] if "_" in key else key
+            else key[: key.rfind("_")]
+            if "_" in key
+            else key
         )
 
         for other_key, profile in self.smart_cache.key_profiles.items():
@@ -585,7 +588,7 @@ class CacheWarmingService:
     # Task Execution
     # ========================================================================
 
-    async def start_warming_workers(self):
+    async def start_warming_workers(self) -> None:
         """Start background workers for cache warming."""
         if self.is_running:
             return
@@ -599,7 +602,7 @@ class CacheWarmingService:
 
         logger.info(f"Started {self.max_workers} cache warming workers")
 
-    async def stop_warming_workers(self):
+    async def stop_warming_workers(self) -> None:
         """Stop background workers."""
         if not self.is_running:
             return
@@ -616,7 +619,7 @@ class CacheWarmingService:
 
         logger.info("Stopped cache warming workers")
 
-    async def _warming_worker(self, worker_id: str):
+    async def _warming_worker(self, worker_id: str) -> None:
         """Background worker for processing warming tasks."""
         logger.info(f"Cache warming worker {worker_id} started")
 
@@ -655,7 +658,7 @@ class CacheWarmingService:
 
         return None
 
-    async def _execute_warming_task(self, task: WarmingTask, worker_id: str):
+    async def _execute_warming_task(self, task: WarmingTask, worker_id: str) -> None:
         """Execute a single warming task."""
         start_time = time.time()
 
@@ -726,7 +729,7 @@ class CacheWarmingService:
     # Scheduled Warming
     # ========================================================================
 
-    async def schedule_periodic_warming(self):
+    async def schedule_periodic_warming(self) -> None:
         """Schedule periodic warming based on time patterns."""
         current_time = datetime.utcnow()
 
@@ -742,7 +745,7 @@ class CacheWarmingService:
         elif current_time.hour == 17:  # 5 PM
             await self._schedule_evening_warming()
 
-    async def _schedule_business_hours_warming(self):
+    async def _schedule_business_hours_warming(self) -> None:
         """Schedule warming for business hours."""
         if not self.smart_cache:
             return
@@ -776,12 +779,12 @@ class CacheWarmingService:
             f"Scheduled {len(business_hour_keys)} keys for business hours warming"
         )
 
-    async def _schedule_lunch_time_warming(self):
+    async def _schedule_lunch_time_warming(self) -> None:
         """Schedule warming for lunch time patterns."""
         # Similar logic for lunch time patterns
         pass
 
-    async def _schedule_evening_warming(self):
+    async def _schedule_evening_warming(self) -> None:
         """Schedule warming for evening patterns."""
         # Similar logic for evening patterns
         pass
@@ -881,7 +884,7 @@ class CacheWarmingService:
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> Any:
         from .redis_cache_service import RedisCacheService, RedisConfig
 
         # Create services
@@ -890,7 +893,7 @@ if __name__ == "__main__":
         warming_service = CacheWarmingService(redis_cache)
 
         # Register a simple loader
-        def load_user_data(user_id: str):
+        def load_user_data(user_id: str) -> Any:
             return {"id": user_id, "name": f"User {user_id}", "data": "sample"}
 
         warming_service.register_loader("user:*", lambda: load_user_data("123"))

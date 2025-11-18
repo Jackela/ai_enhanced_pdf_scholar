@@ -212,7 +212,12 @@ exclude = [
     "migrations/",
     "htmlcov/",
     "coverage_.*/",
+    "tests_e2e/",
 ]
+
+# Use explicit package bases to avoid module conflicts
+explicit_package_bases = true
+namespace_packages = true
 
 # Per-module options
 [[tool.mypy.overrides]]

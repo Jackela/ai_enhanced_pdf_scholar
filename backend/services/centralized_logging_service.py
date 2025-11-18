@@ -55,7 +55,7 @@ class LogSource(str, Enum):
 class ElasticsearchConfig:
     """Elasticsearch configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Elasticsearch configuration from environment."""
         # Connection settings
         self.hosts = os.getenv("ELASTICSEARCH_HOSTS", "http://localhost:9200").split(
@@ -95,7 +95,7 @@ class ElasticsearchConfig:
 class LogstashConfig:
     """Logstash configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Logstash configuration from environment."""
         self.host = os.getenv("LOGSTASH_HOST", "localhost")
         self.port = int(os.getenv("LOGSTASH_PORT", "5044"))
@@ -114,7 +114,7 @@ class LogstashConfig:
 class StructuredFormatter(jsonlogger.JsonFormatter):
     """Structured JSON formatter for logs."""
 
-    def __init__(self, service_name: str = "ai-pdf-scholar"):
+    def __init__(self, service_name: str = "ai-pdf-scholar") -> None:
         """Initialize formatter."""
         self.service_name = service_name
         self.hostname = socket.gethostname()
@@ -138,7 +138,7 @@ class StructuredFormatter(jsonlogger.JsonFormatter):
             },
         )
 
-    def add_fields(self, log_record, record, message_dict):
+    def add_fields(self, log_record, record, message_dict) -> None:
         """Add custom fields to log record."""
         super().add_fields(log_record, record, message_dict)
 
@@ -191,7 +191,7 @@ class StructuredFormatter(jsonlogger.JsonFormatter):
 class ElasticsearchHandler(logging.Handler):
     """Custom logging handler for Elasticsearch."""
 
-    def __init__(self, config: ElasticsearchConfig):
+    def __init__(self, config: ElasticsearchConfig) -> None:
         """Initialize Elasticsearch handler."""
         super().__init__()
         self.config = config
@@ -205,7 +205,7 @@ class ElasticsearchHandler(logging.Handler):
         # Start flush timer
         self._start_flush_timer()
 
-    def _init_elasticsearch(self):
+    def _init_elasticsearch(self) -> None:
         """Initialize Elasticsearch client."""
         try:
             client_config = {
@@ -250,7 +250,7 @@ class ElasticsearchHandler(logging.Handler):
             )
             self.client = None
 
-    def emit(self, record):
+    def emit(self, record) -> None:
         """Emit a log record to Elasticsearch."""
         if not self.client:
             return
@@ -286,7 +286,7 @@ class ElasticsearchHandler(logging.Handler):
         except Exception:
             self.handleError(record)
 
-    def _flush_buffer(self):
+    def _flush_buffer(self) -> None:
         """Flush log buffer to Elasticsearch."""
         if not self.buffer or not self.client:
             return
@@ -301,10 +301,10 @@ class ElasticsearchHandler(logging.Handler):
                 f"Failed to flush logs to Elasticsearch: {e}"
             )
 
-    def _start_flush_timer(self):
+    def _start_flush_timer(self) -> None:
         """Start periodic buffer flush."""
 
-        def flush_periodically():
+        def flush_periodically() -> None:
             while True:
                 time.sleep(self.config.flush_interval)
                 with self.buffer_lock:
@@ -314,7 +314,7 @@ class ElasticsearchHandler(logging.Handler):
         timer_thread = threading.Thread(target=flush_periodically, daemon=True)
         timer_thread.start()
 
-    def close(self):
+    def close(self) -> None:
         """Close handler and flush remaining logs."""
         with self.buffer_lock:
             self._flush_buffer()
@@ -329,7 +329,7 @@ class ElasticsearchHandler(logging.Handler):
 class LogstashHandler(logging.handlers.SocketHandler):
     """Custom logging handler for Logstash."""
 
-    def __init__(self, config: LogstashConfig):
+    def __init__(self, config: LogstashConfig) -> None:
         """Initialize Logstash handler."""
         self.config = config
 
@@ -340,7 +340,7 @@ class LogstashHandler(logging.handlers.SocketHandler):
             super().__init__(config.host, config.port)
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def emit(self, record):
+    def emit(self, record) -> None:
         """Emit a log record to Logstash."""
         try:
             # Format the record as JSON
@@ -388,7 +388,7 @@ class CentralizedLoggingService:
         enable_logstash: bool = False,
         enable_file_logging: bool = True,
         log_directory: str = "./logs",
-    ):
+    ) -> None:
         """Initialize centralized logging service."""
         self.service_name = service_name
         self.log_level = getattr(logging, log_level.value.upper())
@@ -414,7 +414,7 @@ class CentralizedLoggingService:
             f"Centralized logging service initialized for {service_name}"
         )
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """Setup comprehensive logging configuration."""
         # Create structured formatter
         formatter = StructuredFormatter(self.service_name)
@@ -468,12 +468,14 @@ class CentralizedLoggingService:
         # Setup loguru for enhanced logging
         self._setup_loguru()
 
-    def _setup_file_handlers(self, formatter):
+    def _setup_file_handlers(self, formatter) -> None:
         """Setup file-based logging handlers."""
         # Application log file (rotating)
         app_log_file = self.log_directory / "application.log"
         app_handler = logging.handlers.RotatingFileHandler(
-            app_log_file, maxBytes=50 * 1024 * 1024, backupCount=10  # 50MB
+            app_log_file,
+            maxBytes=50 * 1024 * 1024,
+            backupCount=10,  # 50MB
         )
         app_handler.setFormatter(formatter)
         app_handler.setLevel(logging.INFO)
@@ -482,7 +484,9 @@ class CentralizedLoggingService:
         # Error log file
         error_log_file = self.log_directory / "error.log"
         error_handler = logging.handlers.RotatingFileHandler(
-            error_log_file, maxBytes=10 * 1024 * 1024, backupCount=5  # 10MB
+            error_log_file,
+            maxBytes=10 * 1024 * 1024,
+            backupCount=5,  # 10MB
         )
         error_handler.setFormatter(formatter)
         error_handler.setLevel(logging.ERROR)
@@ -505,7 +509,9 @@ class CentralizedLoggingService:
         # Security log file
         security_log_file = self.log_directory / "security.log"
         security_handler = logging.handlers.RotatingFileHandler(
-            security_log_file, maxBytes=20 * 1024 * 1024, backupCount=10  # 20MB
+            security_log_file,
+            maxBytes=20 * 1024 * 1024,
+            backupCount=10,  # 20MB
         )
         security_handler.setFormatter(formatter)
         security_handler.setLevel(logging.WARNING)
@@ -515,13 +521,13 @@ class CentralizedLoggingService:
         )
         self.handlers.append(security_handler)
 
-    def _setup_loguru(self):
+    def _setup_loguru(self) -> None:
         """Setup loguru for enhanced logging features."""
         # Remove default loguru handler
         loguru_logger.remove()
 
         # Add loguru handler that forwards to our logging system
-        def loguru_sink(message):
+        def loguru_sink(message) -> None:
             # Parse loguru message and forward to standard logging
             logger = logging.getLogger("loguru")
             level = message.record["level"].name.lower()
@@ -550,7 +556,7 @@ class CentralizedLoggingService:
 
         # Add contextual information
         class ContextFilter(logging.Filter):
-            def filter(self, record):
+            def filter(self, record) -> Any:
                 record.source = source.value
                 if correlation_id:
                     record.correlation_id = correlation_id
@@ -571,7 +577,7 @@ class CentralizedLoggingService:
         extra_fields: dict[str, Any] | None = None,
         audit_event: bool = False,
         security_event: bool = False,
-    ):
+    ) -> None:
         """Log a structured message with context."""
         logger = logging.getLogger(source.value)
 
@@ -610,7 +616,7 @@ class CentralizedLoggingService:
         user_agent: str | None = None,
         request_size: int | None = None,
         response_size: int | None = None,
-    ):
+    ) -> None:
         """Log API request with standard fields."""
         extra_fields = {
             "method": method,
@@ -642,7 +648,7 @@ class CentralizedLoggingService:
         user_id: int | None = None,
         ip_address: str | None = None,
         additional_data: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Log security event."""
         extra_fields = {
             "event_type": event_type,
@@ -676,7 +682,7 @@ class CentralizedLoggingService:
         rows_affected: int | None = None,
         user_id: int | None = None,
         query: str | None = None,
-    ):
+    ) -> None:
         """Log database query."""
         extra_fields = {
             "operation": operation,
@@ -707,7 +713,7 @@ class CentralizedLoggingService:
         file_size: int | None = None,
         pages: int | None = None,
         error: str | None = None,
-    ):
+    ) -> None:
         """Log document processing operation."""
         extra_fields = {
             "document_id": document_id,
@@ -741,7 +747,7 @@ class CentralizedLoggingService:
         relevance_scores: list[float] | None = None,
         model_used: str | None = None,
         user_id: int | None = None,
-    ):
+    ) -> None:
         """Log RAG query operation."""
         extra_fields = {
             "query_hash": query_hash,
@@ -881,7 +887,7 @@ class CentralizedLoggingService:
     # Log Management
     # ========================================================================
 
-    def cleanup_old_logs(self, days_to_keep: int = 30):
+    def cleanup_old_logs(self, days_to_keep: int = 30) -> None:
         """Clean up old log files and indices."""
         # Clean up file logs
         if self.enable_file_logging:
@@ -933,14 +939,14 @@ class CentralizedLoggingService:
                     f"Failed to cleanup Elasticsearch indices: {e}"
                 )
 
-    def flush_logs(self):
+    def flush_logs(self) -> None:
         """Flush all log handlers."""
         for handler in self.handlers:
             handler.flush()
             if hasattr(handler, "_flush_buffer"):
                 handler._flush_buffer()
 
-    def close(self):
+    def close(self) -> None:
         """Close all log handlers."""
         self.flush_logs()
 
@@ -958,17 +964,17 @@ class CentralizedLoggingService:
 class LoggingContext:
     """Context manager for adding correlation ID to logs."""
 
-    def __init__(self, correlation_id: str | None = None, **kwargs):
+    def __init__(self, correlation_id: str | None = None, **kwargs) -> None:
         """Initialize logging context."""
         self.correlation_id = correlation_id or str(uuid4())
         self.context_data = kwargs
         self.old_factory = None
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Enter context and set up log record factory."""
         self.old_factory = logging.getLogRecordFactory()
 
-        def record_factory(*args, **kwargs):
+        def record_factory(*args, **kwargs) -> Any:
             record = self.old_factory(*args, **kwargs)
             record.correlation_id = self.correlation_id
 
@@ -981,7 +987,7 @@ class LoggingContext:
         logging.setLogRecordFactory(record_factory)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit context and restore original factory."""
         logging.setLogRecordFactory(self.old_factory)
 

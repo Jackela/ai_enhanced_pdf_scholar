@@ -84,7 +84,7 @@ class QueryPerformanceAnalyzer:
 
     def __init__(
         self, db_connection: DatabaseConnection, enable_monitoring: bool = True
-    ):
+    ) -> None:
         """
         Initialize the Query Performance Analyzer.
 
@@ -804,7 +804,7 @@ class QueryPerformanceAnalyzer:
             return 0
 
 
-def main():
+def main() -> Any:
     """CLI interface for the Query Performance Analyzer."""
     import argparse
 

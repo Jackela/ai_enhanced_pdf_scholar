@@ -105,7 +105,7 @@ class ComplianceReport:
 class ComplianceValidator:
     """Main compliance validation engine"""
 
-    def __init__(self, project_root: Path = None):
+    def __init__(self, project_root: Path = None) -> None:
         self.project_root = project_root or Path.cwd()
         self.findings: list[ComplianceFinding] = []
         self.recommendations: list[str] = []
@@ -1212,7 +1212,7 @@ class ComplianceValidator:
         return colors.get(severity, "6c757d")
 
 
-async def main():
+async def main() -> None:
     """Main CLI interface"""
     parser = argparse.ArgumentParser(
         description="📋 Compliance Validator for AI Enhanced PDF Scholar",

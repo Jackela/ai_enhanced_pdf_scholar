@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class VectorSimilarityCalculator:
     """Calculator for vector similarity metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the vector similarity calculator."""
         self.supported_metrics = ["cosine", "euclidean", "manhattan", "dot_product"]
 
@@ -131,7 +131,7 @@ class VectorSimilarityCalculator:
 class SemanticSearchOptimizer:
     """Optimizer for semantic search performance."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the semantic search optimizer."""
         self.similarity_calculator = VectorSimilarityCalculator()
         self.optimization_strategies = [
@@ -249,7 +249,7 @@ class SemanticSearchOptimizer:
 class RetrievalRelevanceAnalyzer:
     """Analyzer for retrieval relevance and quality metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the retrieval relevance analyzer."""
         self.similarity_calculator = VectorSimilarityCalculator()
 

@@ -31,7 +31,7 @@ class QualityMetric:
     details: dict[str, Any] = None
     issues: list[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.details is None:
             self.details = {}
         if self.issues is None:
@@ -100,7 +100,7 @@ class QualityReport:
 class DocumentationQualityChecker:
     """Comprehensive documentation quality assessment tool."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path) -> None:
         self.project_root = Path(project_root)
         self.docs_dir = self.project_root / "docs"
 
@@ -119,7 +119,7 @@ class DocumentationQualityChecker:
         print(f"   Project: {self.project_root}")
         print(f"   Docs Dir: {self.docs_dir}")
 
-    def load_technical_terms(self):
+    def load_technical_terms(self) -> None:
         """Load project-specific technical terms for analysis."""
         terms = {
             # AI/ML terms
@@ -1178,7 +1178,7 @@ class DocumentationQualityChecker:
         return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     """Main entry point for documentation quality checker."""
     parser = argparse.ArgumentParser(description="Documentation Quality Checker")
     parser.add_argument(

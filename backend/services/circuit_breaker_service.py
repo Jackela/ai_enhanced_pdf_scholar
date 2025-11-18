@@ -108,7 +108,7 @@ class CircuitBreakerError(Exception):
 class CircuitBreakerOpenError(CircuitBreakerError):
     """Raised when circuit breaker is open."""
 
-    def __init__(self, circuit_name: str, retry_after: float):
+    def __init__(self, circuit_name: str, retry_after: float) -> None:
         self.circuit_name = circuit_name
         self.retry_after = retry_after
         super().__init__(
@@ -133,7 +133,7 @@ class CircuitBreaker(Generic[T]):
         on_state_change: (
             Callable[[CircuitBreakerState, CircuitBreakerState], None] | None
         ) = None,
-    ):
+    ) -> None:
         """Initialize circuit breaker."""
         self.name = name
         self.config = config or CircuitBreakerConfig()
@@ -313,7 +313,7 @@ class CircuitBreaker(Generic[T]):
 
             return False
 
-    def _record_call(self, call_result: CallResult):
+    def _record_call(self, call_result: CallResult) -> None:
         """Record the result of a call and update state accordingly."""
         with self._lock:
             # Add to recent calls
@@ -341,7 +341,7 @@ class CircuitBreaker(Generic[T]):
                 # Check if we should open the circuit
                 self._check_failure_threshold()
 
-    def _check_failure_threshold(self):
+    def _check_failure_threshold(self) -> None:
         """Check if we should open the circuit based on failure rates."""
         if len(self._recent_calls) < self.config.minimum_throughput:
             return
@@ -368,7 +368,7 @@ class CircuitBreaker(Generic[T]):
         if should_open and self._state != CircuitBreakerState.OPEN:
             self._transition_to_open()
 
-    def _transition_to_open(self):
+    def _transition_to_open(self) -> None:
         """Transition circuit breaker to open state."""
         old_state = self._state
         self._state = CircuitBreakerState.OPEN
@@ -394,7 +394,7 @@ class CircuitBreaker(Generic[T]):
         if self.on_state_change:
             self.on_state_change(old_state, self._state)
 
-    def _transition_to_half_open(self):
+    def _transition_to_half_open(self) -> None:
         """Transition circuit breaker to half-open state."""
         old_state = self._state
         self._state = CircuitBreakerState.HALF_OPEN
@@ -406,7 +406,7 @@ class CircuitBreaker(Generic[T]):
         if self.on_state_change:
             self.on_state_change(old_state, self._state)
 
-    def _transition_to_closed(self):
+    def _transition_to_closed(self) -> None:
         """Transition circuit breaker to closed state."""
         old_state = self._state
         self._state = CircuitBreakerState.CLOSED
@@ -474,7 +474,7 @@ class CircuitBreaker(Generic[T]):
                 recent_calls=self._recent_calls.copy(),
             )
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset circuit breaker to initial state."""
         with self._lock:
             old_state = self._state
@@ -503,7 +503,7 @@ class CircuitBreakerManager:
     Manager for multiple circuit breakers.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize circuit breaker manager."""
         self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self._default_config = CircuitBreakerConfig()
@@ -537,7 +537,7 @@ class CircuitBreakerManager:
 
     def _on_state_change(
         self, old_state: CircuitBreakerState, new_state: CircuitBreakerState
-    ):
+    ) -> None:
         """Handle circuit breaker state changes."""
         # This could be used for alerting, metrics, etc.
         pass
@@ -547,19 +547,19 @@ class CircuitBreakerManager:
         with self._lock:
             return {name: cb.get_stats() for name, cb in self._circuit_breakers.items()}
 
-    def reset_circuit_breaker(self, name: str):
+    def reset_circuit_breaker(self, name: str) -> None:
         """Reset a specific circuit breaker."""
         with self._lock:
             if name in self._circuit_breakers:
                 self._circuit_breakers[name].reset()
 
-    def reset_all(self):
+    def reset_all(self) -> None:
         """Reset all circuit breakers."""
         with self._lock:
             for cb in self._circuit_breakers.values():
                 cb.reset()
 
-    def remove_circuit_breaker(self, name: str):
+    def remove_circuit_breaker(self, name: str) -> None:
         """Remove a circuit breaker."""
         with self._lock:
             if name in self._circuit_breakers:
@@ -575,7 +575,7 @@ class CircuitBreakerManager:
 _global_manager = CircuitBreakerManager()
 
 
-def circuit_breaker(name: str, config: CircuitBreakerConfig | None = None):
+def circuit_breaker(name: str, config: CircuitBreakerConfig | None = None) -> Any:
     """
     Decorator for circuit breaker protection.
 
@@ -596,14 +596,14 @@ def circuit_breaker(name: str, config: CircuitBreakerConfig | None = None):
         if asyncio.iscoroutinefunction(func):
 
             @wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args, **kwargs) -> Any:
                 return await cb.async_call(func, *args, **kwargs)
 
             return async_wrapper
         else:
 
             @wraps(func)
-            def sync_wrapper(*args, **kwargs):
+            def sync_wrapper(*args, **kwargs) -> Any:
                 return cb.call(func, *args, **kwargs)
 
             return sync_wrapper
@@ -621,7 +621,7 @@ class HTTPCircuitBreaker(CircuitBreaker):
 
     def __init__(
         self, name: str, base_url: str, config: CircuitBreakerConfig | None = None
-    ):
+    ) -> None:
         """Initialize HTTP circuit breaker."""
         super().__init__(name, config)
         self.base_url = base_url
@@ -667,12 +667,12 @@ class DatabaseCircuitBreaker(CircuitBreaker):
 class CircuitBreakerContext:
     """Context manager for circuit breaker operations."""
 
-    def __init__(self, circuit_breaker: CircuitBreaker):
+    def __init__(self, circuit_breaker: CircuitBreaker) -> None:
         """Initialize context manager."""
         self.circuit_breaker = circuit_breaker
         self.start_time = None
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Enter context."""
         if not self.circuit_breaker._can_execute():
             raise CircuitBreakerOpenError(
@@ -683,7 +683,7 @@ class CircuitBreakerContext:
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit context and record result."""
         if self.start_time is None:
             return
@@ -717,7 +717,7 @@ if __name__ == "__main__":
     @circuit_breaker(
         "external_api", CircuitBreakerConfig(failure_threshold=3, recovery_timeout=30)
     )
-    def call_external_api():
+    def call_external_api() -> Any:
         response = requests.get("https://httpbin.org/delay/1", timeout=5)
         response.raise_for_status()
         return response.json()
@@ -725,7 +725,7 @@ if __name__ == "__main__":
     # Example 2: Using context manager
     cb = CircuitBreaker("test_service")
 
-    def test_function():
+    def test_function() -> Any:
         with CircuitBreakerContext(cb):
             # Your code here
             time.sleep(0.1)
@@ -733,13 +733,13 @@ if __name__ == "__main__":
 
     # Example 3: Async usage
     @circuit_breaker("async_api", CircuitBreakerConfig(timeout=10))
-    async def call_async_api():
+    async def call_async_api() -> Any:
         async with aiohttp.ClientSession() as session:
             async with session.get("https://httpbin.org/delay/1") as response:
                 return await response.json()
 
     # Test the circuit breaker
-    async def main():
+    async def main() -> None:
         try:
             # Test sync circuit breaker
             print("Testing sync circuit breaker:")

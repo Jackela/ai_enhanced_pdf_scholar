@@ -118,7 +118,7 @@ class ProductionMonitoringService:
         secrets_integration: ProductionSecretsIntegration | None = None,
         database_manager: ProductionDatabaseManager | None = None,
         redis_manager: RedisClusterManager | None = None,
-    ):
+    ) -> None:
         """Initialize production monitoring service."""
         self.production_config = production_config
         self.metrics_service = metrics_service or MetricsService()
@@ -188,7 +188,7 @@ class ProductionMonitoringService:
             },
         }
 
-    def _register_default_health_checks(self):
+    def _register_default_health_checks(self) -> None:
         """Register default health checks for core components."""
 
         # Database health check
@@ -251,7 +251,7 @@ class ProductionMonitoringService:
         critical: bool = False,
         dependencies: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Register a new health check."""
         health_check = HealthCheck(
             name=name,
@@ -267,7 +267,7 @@ class ProductionMonitoringService:
         self.health_checks[name] = health_check
         logger.info(f"Registered health check: {name}")
 
-    async def start_monitoring(self):
+    async def start_monitoring(self) -> None:
         """Start all monitoring tasks."""
         try:
             # Start system metrics collection
@@ -299,7 +299,7 @@ class ProductionMonitoringService:
             logger.error(f"Failed to start monitoring: {e}")
             raise
 
-    async def stop_monitoring(self):
+    async def stop_monitoring(self) -> None:
         """Stop all monitoring tasks."""
         for task in self._monitoring_tasks:
             task.cancel()
@@ -311,7 +311,7 @@ class ProductionMonitoringService:
         self._monitoring_tasks.clear()
         logger.info("Stopped all monitoring tasks")
 
-    async def _collect_system_metrics(self):
+    async def _collect_system_metrics(self) -> None:
         """Collect system resource metrics."""
         while True:
             try:
@@ -376,7 +376,7 @@ class ProductionMonitoringService:
                 logger.error(f"Error collecting system metrics: {e}")
                 await asyncio.sleep(60)
 
-    async def _collect_application_metrics(self):
+    async def _collect_application_metrics(self) -> None:
         """Collect application-specific metrics."""
         while True:
             try:
@@ -428,7 +428,7 @@ class ProductionMonitoringService:
                 logger.error(f"Error collecting application metrics: {e}")
                 await asyncio.sleep(60)
 
-    async def _run_health_check_loop(self, health_check: HealthCheck):
+    async def _run_health_check_loop(self, health_check: HealthCheck) -> None:
         """Run health check in a loop."""
         while True:
             try:
@@ -802,7 +802,7 @@ class ProductionMonitoringService:
                 error=str(e),
             )
 
-    async def _check_system_thresholds(self, metrics: SystemMetrics):
+    async def _check_system_thresholds(self, metrics: SystemMetrics) -> None:
         """Check system metrics against thresholds and trigger alerts."""
         thresholds = self.alert_thresholds["system"]
 
@@ -833,7 +833,7 @@ class ProductionMonitoringService:
                 metrics={"disk_percent": metrics.disk_percent},
             )
 
-    async def _check_application_thresholds(self, metrics: ApplicationMetrics):
+    async def _check_application_thresholds(self, metrics: ApplicationMetrics) -> None:
         """Check application metrics against thresholds and trigger alerts."""
         thresholds = self.alert_thresholds["application"]
 
@@ -861,7 +861,7 @@ class ProductionMonitoringService:
         severity: AlertSeverity,
         message: str,
         metrics: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Trigger an alert through the alerting service."""
         try:
             if self.alerting_service:
@@ -885,7 +885,7 @@ class ProductionMonitoringService:
 
     async def _trigger_health_alert(
         self, health_check: HealthCheck, result: HealthCheckResult
-    ):
+    ) -> None:
         """Trigger alert for unhealthy critical components."""
         severity = (
             AlertSeverity.CRITICAL if health_check.critical else AlertSeverity.WARNING
@@ -901,7 +901,7 @@ class ProductionMonitoringService:
             },
         )
 
-    async def _process_alerts(self):
+    async def _process_alerts(self) -> None:
         """Process and manage alerts."""
         while True:
             try:
@@ -913,7 +913,7 @@ class ProductionMonitoringService:
                 logger.error(f"Error processing alerts: {e}")
                 await asyncio.sleep(60)
 
-    async def _cleanup_metrics_history(self):
+    async def _cleanup_metrics_history(self) -> None:
         """Clean up old metrics history to prevent memory growth."""
         while True:
             try:

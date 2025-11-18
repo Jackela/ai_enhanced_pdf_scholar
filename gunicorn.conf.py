@@ -122,7 +122,7 @@ raw_env = [
 # Monitoring and Health Checks
 # ============================================================================
 
-def when_ready(server):
+def when_ready(server) -> None:
     """Called when the server is started and ready to accept connections."""
     server.log.info("AI PDF Scholar server is ready. Workers: %d", server.num_workers)
 
@@ -133,7 +133,7 @@ def when_ready(server):
     warmup_application()
 
 
-def on_starting(server):
+def on_starting(server) -> None:
     """Called at server startup."""
     server.log.info("Starting AI PDF Scholar server...")
     server.log.info("Configuration: %d workers, %s worker class",
@@ -143,22 +143,22 @@ def on_starting(server):
     setup_monitoring()
 
 
-def on_reload(server):
+def on_reload(server) -> None:
     """Called when configuration is reloaded."""
     server.log.info("Configuration reloaded")
 
 
-def worker_int(worker):
+def worker_int(worker) -> None:
     """Called when a worker receives a SIGINT or SIGQUIT signal."""
     worker.log.info("Worker received SIGINT/SIGQUIT")
 
 
-def pre_fork(server, worker):
+def pre_fork(server, worker) -> None:
     """Called before forking a worker."""
     server.log.debug("Worker %d forked", worker.pid)
 
 
-def post_fork(server, worker):
+def post_fork(server, worker) -> None:
     """Called after forking a worker."""
     server.log.debug("Worker %d ready", worker.pid)
 
@@ -166,40 +166,40 @@ def post_fork(server, worker):
     setup_worker_resources()
 
 
-def pre_exec(server):
+def pre_exec(server) -> None:
     """Called before re-executing the master process."""
     server.log.info("Forked child, re-executing")
 
 
-def when_ready(server):
+def when_ready(server) -> None:
     """Called when server is ready."""
     server.log.info("Server is ready. Listening on: %s", server.address)
 
 
-def worker_abort(worker):
+def worker_abort(worker) -> None:
     """Called when a worker is killed by SIGKILL."""
     worker.log.error("Worker was killed by SIGKILL")
 
 
-def pre_request(worker, req):
+def pre_request(worker, req) -> None:
     """Called before processing a request."""
     # Add request ID for tracing
     import uuid
     req.headers.append(("X-Request-ID", str(uuid.uuid4())))
 
 
-def post_request(worker, req, environ, resp):
+def post_request(worker, req, environ, resp) -> None:
     """Called after processing a request."""
     # Log performance metrics if needed
     pass
 
 
-def nworkers_changed(server, new_value, old_value):
+def nworkers_changed(server, new_value, old_value) -> None:
     """Called when number of workers changes."""
     server.log.info("Number of workers changed from %d to %d", old_value, new_value)
 
 
-def on_exit(server):
+def on_exit(server) -> None:
     """Called when server is shutting down."""
     server.log.info("Shutting down AI PDF Scholar server")
 
@@ -214,7 +214,7 @@ def on_exit(server):
 # Custom Hook Functions
 # ============================================================================
 
-def setup_monitoring():
+def setup_monitoring() -> None:
     """Initialize monitoring and metrics collection."""
     try:
         # Initialize Prometheus metrics if enabled
@@ -233,7 +233,7 @@ def setup_monitoring():
         logging.error(f"Failed to setup monitoring: {e}")
 
 
-def setup_worker_resources():
+def setup_worker_resources() -> None:
     """Set up worker-specific resources."""
     try:
         # Set memory limits for worker
@@ -252,7 +252,7 @@ def setup_worker_resources():
         logging.warning(f"Failed to setup worker resources: {e}")
 
 
-def warmup_application():
+def warmup_application() -> None:
     """Warm up the application after startup."""
     try:
         import time
@@ -271,7 +271,7 @@ def warmup_application():
         logging.warning(f"Application warmup failed: {e}")
 
 
-def register_with_service_discovery():
+def register_with_service_discovery() -> None:
     """Register with service discovery system."""
     try:
         # Placeholder for service discovery registration
@@ -283,7 +283,7 @@ def register_with_service_discovery():
         logging.error(f"Service discovery registration failed: {e}")
 
 
-def deregister_from_service_discovery():
+def deregister_from_service_discovery() -> None:
     """Deregister from service discovery system."""
     try:
         # Placeholder for service discovery deregistration
@@ -294,7 +294,7 @@ def deregister_from_service_discovery():
         logging.error(f"Service discovery deregistration failed: {e}")
 
 
-def cleanup_resources():
+def cleanup_resources() -> None:
     """Clean up resources on shutdown."""
     try:
         # Close database connections
@@ -309,7 +309,7 @@ def cleanup_resources():
 # Dynamic Configuration Based on Environment
 # ============================================================================
 
-def load_environment_config():
+def load_environment_config() -> None:
     """Load environment-specific configuration."""
     env = os.getenv("ENVIRONMENT", "production").lower()
 
@@ -387,12 +387,12 @@ def custom_error_page(status_code: int, message: str) -> str:
 class PerformanceMonitor:
     """Monitor worker performance and resource usage."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.request_count = 0
         self.error_count = 0
         self.start_time = None
 
-    def record_request(self, status_code: int):
+    def record_request(self, status_code: int) -> None:
         """Record request metrics."""
         self.request_count += 1
         if status_code >= 400:

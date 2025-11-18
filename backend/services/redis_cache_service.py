@@ -46,7 +46,7 @@ class CacheLevel(str, Enum):
 class RedisConfig:
     """Redis configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Redis configuration from environment."""
         import os
 
@@ -91,7 +91,7 @@ class RedisCacheService:
     Comprehensive Redis cache service with intelligent caching strategies.
     """
 
-    def __init__(self, config: RedisConfig | None = None):
+    def __init__(self, config: RedisConfig | None = None) -> None:
         """Initialize Redis cache service."""
         self.config = config or RedisConfig()
         self._redis_client = None
@@ -108,7 +108,7 @@ class RedisCacheService:
         # Initialize Redis connection
         self._init_redis()
 
-    def _init_redis(self):
+    def _init_redis(self) -> None:
         """Initialize Redis connection."""
         try:
             if self.config.sentinel_enabled:
@@ -499,7 +499,7 @@ class RedisCacheService:
         key_func: Callable | None = None,
         tags: list[str] | None = None,
         condition: Callable | None = None,
-    ):
+    ) -> Any:
         """
         Decorator for caching function results.
 
@@ -518,7 +518,7 @@ class RedisCacheService:
 
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> Any:
                 # Generate cache key
                 if key_func:
                     cache_key = key_func(*args, **kwargs)
@@ -594,7 +594,7 @@ class RedisCacheService:
     # Cache Warming and Preloading
     # ========================================================================
 
-    def warm_cache(self, data: dict[str, Any], ttl: int | None = None):
+    def warm_cache(self, data: dict[str, Any], ttl: int | None = None) -> Any:
         """Warm cache with pre-computed data."""
         return self.mset(data, ttl=ttl)
 
@@ -604,7 +604,7 @@ class RedisCacheService:
         ids: list[Any],
         loader: Callable,
         ttl: int | None = None,
-    ):
+    ) -> None:
         """
         Preload cache for a pattern of keys.
 
@@ -654,7 +654,7 @@ class RedisCacheService:
 
         return stats
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         """Reset cache statistics."""
         self._cache_stats = {
             "hits": 0,
@@ -704,7 +704,7 @@ class RedisCacheService:
 
         return pickle.loads(value)
 
-    def close(self):
+    def close(self) -> None:
         """Close Redis connection."""
         if self._redis_client:
             self._redis_client.close()
@@ -722,7 +722,7 @@ class IntelligentCacheStrategy:
     Intelligent caching strategy with adaptive TTL and invalidation.
     """
 
-    def __init__(self, cache_service: RedisCacheService):
+    def __init__(self, cache_service: RedisCacheService) -> None:
         """Initialize intelligent cache strategy."""
         self.cache = cache_service
         self.access_patterns = {}  # Track access patterns
@@ -755,7 +755,7 @@ class IntelligentCacheStrategy:
             # Rarely accessed
             return base_ttl
 
-    def smart_invalidation(self, entity_type: str, entity_id: Any):
+    def smart_invalidation(self, entity_type: str, entity_id: Any) -> None:
         """
         Smart cache invalidation based on entity relationships.
 
@@ -820,7 +820,7 @@ class IntelligentCacheStrategy:
 
         return cache_key
 
-    def _track_access(self, key: str):
+    def _track_access(self, key: str) -> None:
         """Track access pattern for a key."""
         if key not in self.access_patterns:
             self.access_patterns[key] = {"count": 0}

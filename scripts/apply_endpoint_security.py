@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Apply Security to All API Endpoints
@@ -201,7 +203,7 @@ def generate_security_update(
     }
 
 
-def update_route_file(file_path: Path, updates: list[dict]):
+def update_route_file(file_path: Path, updates: list[dict]) -> None:
     """
     Update a route file with security enhancements.
 
@@ -326,7 +328,7 @@ def generate_security_report(all_endpoints: list[dict]) -> str:
     return "\n".join(report)
 
 
-def main():
+def main() -> None:
     """Main function to apply security to all endpoints."""
     print("🔒 Applying Security to API Endpoints")
     print("=" * 50)

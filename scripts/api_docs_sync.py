@@ -25,7 +25,7 @@ import requests
 class APIDocumentationSync:
     """Synchronizes API documentation with actual implementation."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path) -> None:
         self.project_root = Path(project_root)
         self.api_base_url = "http://localhost:8000"
         self.docs_dir = self.project_root / "docs" / "api"
@@ -604,7 +604,7 @@ class APIDocumentationSync:
             return True
 
 
-def main():
+def main() -> None:
     """Main entry point for API documentation synchronization."""
     parser = argparse.ArgumentParser(description="API Documentation Synchronization")
     parser.add_argument(

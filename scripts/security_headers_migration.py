@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Security Headers Migration Script
@@ -37,7 +39,7 @@ class MigrationPhase(str, Enum):
 class SecurityHeadersMigration:
     """Manages gradual rollout of security headers."""
 
-    def __init__(self, environment: str = "production"):
+    def __init__(self, environment: str = "production") -> None:
         """Initialize migration manager."""
         self.environment = environment
         self.config_file = Path.home() / ".ai_pdf_scholar" / "security_migration.json"
@@ -390,7 +392,7 @@ echo "⚠️  Remember to restart the application for changes to take effect"
         logger.info(f"Generated rollback script: {rollback_file}")
 
 
-def main():
+def main() -> None:
     """Main entry point for migration script."""
     parser = argparse.ArgumentParser(description="Security Headers Migration Tool")
     parser.add_argument(

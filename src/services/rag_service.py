@@ -14,7 +14,7 @@ from src.services.enhanced_rag_service import EnhancedRAGService
 class RAGService(IRAGService):
     """Simple RAG service wrapper for UAT compatibility."""
 
-    def __init__(self, db_connection: DatabaseConnection):
+    def __init__(self, db_connection: DatabaseConnection) -> None:
         self.db = db_connection
         # Create EnhancedRAGService with required parameters
         self.enhanced_rag = EnhancedRAGService(

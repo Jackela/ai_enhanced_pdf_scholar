@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 API Models Package
 ==================
@@ -168,7 +170,7 @@ else:
         errors: list[dict[str, str]] = []
 
         @classmethod
-        def from_pydantic_error(cls, error):
+        def from_pydantic_error(cls, error) -> Any:
             error_items = []
             try:
                 error_items = error.errors()
@@ -188,7 +190,7 @@ else:
         pattern: str | None = None
 
         @classmethod
-        def from_security_error(cls, error):
+        def from_security_error(cls, error) -> Any:
             return cls(
                 message=str(error),
                 field=getattr(error, "field", None),

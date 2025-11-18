@@ -568,9 +568,7 @@ async def get_active_sessions(
             current_token_id is not None and str(token.id) == str(current_token_id)
         ) or (
             # Fallback: most recently created token if no JTI match
-            current_token_id is None and token == tokens[0]
-            if tokens
-            else False
+            current_token_id is None and token == tokens[0] if tokens else False
         )
 
         sessions.append(

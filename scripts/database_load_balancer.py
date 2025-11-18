@@ -120,7 +120,7 @@ class DatabaseServer:
     metrics: ServerMetrics = field(default_factory=lambda: None)
     connection_pool: AdvancedConnectionPoolManager | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.metrics is None:
             self.metrics = ServerMetrics(self.server_id)
 
@@ -172,7 +172,7 @@ class DatabaseLoadBalancer:
         health_check_interval_s: int = 30,
         enable_circuit_breaker: bool = True,
         enable_session_affinity: bool = True,
-    ):
+    ) -> None:
         """
         Initialize the Database Load Balancer.
 
@@ -993,7 +993,7 @@ class DatabaseLoadBalancer:
         logger.info("Database load balancer shutdown complete")
 
 
-def main():
+def main() -> Any:
     """CLI interface for testing the Database Load Balancer."""
     import argparse
 

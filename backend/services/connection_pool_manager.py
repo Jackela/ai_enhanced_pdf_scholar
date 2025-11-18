@@ -99,7 +99,7 @@ class ManagedConnection:
         self,
         connection: sqlite3.Connection,
         pool_manager: "AdvancedConnectionPoolManager",
-    ):
+    ) -> None:
         self.connection = connection
         self.pool_manager = pool_manager
         self.metrics = ConnectionMetrics(
@@ -172,7 +172,9 @@ class AdvancedConnectionPoolManager:
     - Thread-safe operations
     """
 
-    def __init__(self, database_url: str, config: PoolConfiguration | None = None):
+    def __init__(
+        self, database_url: str, config: PoolConfiguration | None = None
+    ) -> None:
         """
         Initialize the Advanced Connection Pool Manager.
 
@@ -835,7 +837,7 @@ class AdvancedConnectionPoolManager:
         logger.info("Connection pool manager shutdown complete")
 
 
-def main():
+def main() -> Any:
     """CLI interface for testing the Connection Pool Manager."""
     import argparse
 
@@ -881,7 +883,7 @@ def main():
             # Simulate concurrent load
             import concurrent.futures
 
-            def test_connection():
+            def test_connection() -> Any:
                 try:
                     managed_conn = pool_manager.acquire_connection()
                     start_time = time.time()

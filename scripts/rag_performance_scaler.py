@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 RAG Performance-Aware Scaling System
@@ -74,7 +76,7 @@ class RAGScalingDecision:
 class RAGWorkloadAnalyzer:
     """Analyze RAG workload characteristics for optimal scaling"""
 
-    def __init__(self, prometheus_url: str = "http://prometheus:9090"):
+    def __init__(self, prometheus_url: str = "http://prometheus:9090") -> None:
         self.prometheus = PrometheusConnect(url=prometheus_url, disable_ssl=True)
 
         # RAG-specific query patterns
@@ -197,9 +199,7 @@ class RAGWorkloadAnalyzer:
         )  # Avoid division by zero
         memory_per_query = metrics.get(
             "rag_memory_usage_per_query", 100 * 1024 * 1024
-        ) / (
-            1024 * 1024
-        )  # Convert to MB
+        ) / (1024 * 1024)  # Convert to MB
 
         # Calculate answer quality score (combination of relevance, completeness, accuracy)
         answer_quality = (
@@ -227,7 +227,7 @@ class RAGWorkloadAnalyzer:
 class RAGPerformanceScaler:
     """RAG performance-aware auto-scaling system"""
 
-    def __init__(self, prometheus_url: str = "http://prometheus:9090"):
+    def __init__(self, prometheus_url: str = "http://prometheus:9090") -> None:
         self.workload_analyzer = RAGWorkloadAnalyzer(prometheus_url)
 
         # Scaling thresholds optimized for RAG workloads
@@ -481,10 +481,11 @@ class RAGPerformanceScaler:
             )
 
             # Estimate performance and quality impact
-            expected_query_improvement, expected_quality_impact = (
-                await self.estimate_performance_impact(
-                    profile, current_replicas, optimal_replicas
-                )
+            (
+                expected_query_improvement,
+                expected_quality_impact,
+            ) = await self.estimate_performance_impact(
+                profile, current_replicas, optimal_replicas
             )
 
             # Calculate cost impact
@@ -611,7 +612,7 @@ class RAGPerformanceScaler:
 class RAGScalingOrchestrator:
     """Orchestrate RAG performance-aware scaling"""
 
-    def __init__(self, prometheus_url: str = "http://prometheus:9090"):
+    def __init__(self, prometheus_url: str = "http://prometheus:9090") -> None:
         self.scaler = RAGPerformanceScaler(prometheus_url)
         self.prometheus = PrometheusConnect(url=prometheus_url, disable_ssl=True)
 
@@ -665,7 +666,7 @@ class RAGScalingOrchestrator:
 
         return decision
 
-    async def run_continuous(self, interval_seconds: int = 120):
+    async def run_continuous(self, interval_seconds: int = 120) -> None:
         """Run continuous RAG performance scaling"""
         logger.info("Starting RAG performance-aware scaling orchestrator...")
 
@@ -705,7 +706,7 @@ class RAGScalingOrchestrator:
 
 
 # CLI interface
-async def main():
+async def main() -> None:
     """Main entry point for RAG performance scaler"""
     import argparse
 

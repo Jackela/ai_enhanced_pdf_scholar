@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 CORS Security Demonstration Script
@@ -20,7 +22,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(name)s - %(mes
 logger = logging.getLogger(__name__)
 
 
-def test_environment_configurations():
+def test_environment_configurations() -> None:
     """Test different environment configurations."""
     print("=" * 60)
     print("CORS Security Configuration Demonstration")
@@ -118,7 +120,7 @@ def test_environment_configurations():
             print(f"❌ ERROR: Unexpected error: {e}")
 
 
-def test_origin_validation():
+def test_origin_validation() -> None:
     """Test origin format validation."""
     print("\n" + "=" * 60)
     print("Origin Format Validation Tests")
@@ -147,7 +149,7 @@ def test_origin_validation():
         print(f"    Expected: {expected}, Got: {result}")
 
 
-def test_security_scenarios():
+def test_security_scenarios() -> None:
     """Test specific security scenarios."""
     print("\n" + "=" * 60)
     print("Security Scenario Tests")
@@ -206,7 +208,7 @@ def test_security_scenarios():
             print(f"   ❌ ERROR: {e}")
 
 
-def demonstrate_environment_differences():
+def demonstrate_environment_differences() -> None:
     """Demonstrate differences between environments."""
     print("\n" + "=" * 60)
     print("Environment-Specific Behavior")

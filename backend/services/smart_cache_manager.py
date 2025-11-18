@@ -133,7 +133,7 @@ class CacheKeyProfile:
         hit: bool,
         response_size: int = 0,
         processing_time: float = 0.0,
-    ):
+    ) -> None:
         """Update profile with new access."""
         # Update counters
         self.access_count += 1
@@ -160,7 +160,7 @@ class CacheKeyProfile:
             self.avg_processing_time * (self.access_count - 1) + processing_time
         ) / self.access_count
 
-    def calculate_scores(self):
+    def calculate_scores(self) -> None:
         """Calculate various scoring metrics."""
         now = datetime.utcnow()
 
@@ -178,7 +178,7 @@ class CacheKeyProfile:
         # Pattern detection
         self._detect_access_pattern()
 
-    def _detect_access_pattern(self):
+    def _detect_access_pattern(self) -> None:
         """Detect access pattern from historical data."""
         if len(self.inter_arrival_times) < 5:
             return
@@ -227,7 +227,7 @@ class CacheKeyProfile:
 class CacheMLPredictor:
     """Machine learning predictor for cache access patterns."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize ML models."""
         self.ml_enabled = SKLEARN_AVAILABLE
         self.access_predictor: RandomForestRegressor | None = None
@@ -262,7 +262,7 @@ class CacheMLPredictor:
 
     def add_training_sample(
         self, access_record: AccessRecord, key_profile: CacheKeyProfile
-    ):
+    ) -> None:
         """Add a training sample for the ML model."""
         if not self.ml_enabled:
             return
@@ -290,7 +290,7 @@ class CacheMLPredictor:
         if len(self.training_data) > 10000:
             self.training_data = self.training_data[-5000:]  # Keep recent half
 
-    async def train_models(self):
+    async def train_models(self) -> Any:
         """Train ML models with collected data."""
         if not self.ml_enabled:
             return False
@@ -415,7 +415,7 @@ class SmartCacheManager:
         self,
         redis_cache: RedisCacheService,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize smart cache manager."""
         self.redis_cache = redis_cache
         self.metrics_service = metrics_service
@@ -557,7 +557,7 @@ class SmartCacheManager:
     # Access Tracking and Analysis
     # ========================================================================
 
-    async def _record_access(self, access_record: AccessRecord):
+    async def _record_access(self, access_record: AccessRecord) -> None:
         """Record access for ML training and analysis."""
         self.access_history.append(access_record)
 
@@ -636,7 +636,7 @@ class SmartCacheManager:
         optimal_ttl = int(base_ttl * multiplier)
         return min(optimal_ttl, 86400)  # Max 24 hours
 
-    async def _intelligent_eviction(self):
+    async def _intelligent_eviction(self) -> None:
         """Perform intelligent cache eviction using ML predictions."""
         if not self.key_profiles:
             return
@@ -704,7 +704,7 @@ class SmartCacheManager:
 
     async def _intelligent_prefetch(
         self, accessed_key: str, access_record: AccessRecord
-    ):
+    ) -> None:
         """Perform intelligent prefetching based on access patterns."""
         if not self.ml_predictor.is_trained:
             return
@@ -766,7 +766,7 @@ class SmartCacheManager:
     # Background Optimization
     # ========================================================================
 
-    async def start_optimization(self, interval_minutes: int = 30):
+    async def start_optimization(self, interval_minutes: int = 30) -> None:
         """Start background optimization tasks."""
         if self.is_optimizing:
             return
@@ -780,7 +780,7 @@ class SmartCacheManager:
             f"Started smart cache optimization (interval: {interval_minutes}min)"
         )
 
-    async def stop_optimization(self):
+    async def stop_optimization(self) -> None:
         """Stop background optimization."""
         if not self.is_optimizing:
             return
@@ -802,7 +802,7 @@ class SmartCacheManager:
         await self._analyze_access_patterns()
         await self._update_performance_metrics()
 
-    async def _optimization_loop(self, interval_minutes: int):
+    async def _optimization_loop(self, interval_minutes: int) -> None:
         """Main optimization loop."""
         while self.is_optimizing:
             try:
@@ -816,7 +816,7 @@ class SmartCacheManager:
 
             await asyncio.sleep(interval_minutes * 60)
 
-    async def _cleanup_old_profiles(self):
+    async def _cleanup_old_profiles(self) -> None:
         """Clean up old and unused key profiles."""
         cutoff_time = datetime.utcnow() - timedelta(days=7)
 
@@ -832,7 +832,7 @@ class SmartCacheManager:
         if old_keys:
             logger.info(f"Cleaned up {len(old_keys)} old key profiles")
 
-    async def _analyze_access_patterns(self):
+    async def _analyze_access_patterns(self) -> None:
         """Analyze overall access patterns for insights."""
         if not self.access_history:
             return
@@ -862,7 +862,7 @@ class SmartCacheManager:
             f"Active keys: {len(self.key_profiles)}"
         )
 
-    async def _update_performance_metrics(self):
+    async def _update_performance_metrics(self) -> None:
         """Update performance metrics for monitoring."""
         if not self.metrics_service:
             return
@@ -991,7 +991,7 @@ class SmartCacheManager:
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> None:
         from .redis_cache_service import RedisCacheService, RedisConfig
 
         # Create Redis cache service

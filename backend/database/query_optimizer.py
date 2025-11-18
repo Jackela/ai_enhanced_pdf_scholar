@@ -78,7 +78,7 @@ class DynamicQueryOptimizer:
         self,
         db_connection: DatabaseConnection,
         optimization_level: OptimizationLevel = OptimizationLevel.MODERATE,
-    ):
+    ) -> None:
         """
         Initialize the Dynamic Query Optimizer.
 
@@ -696,7 +696,7 @@ class DynamicQueryOptimizer:
         }
 
 
-def main():
+def main() -> Any:
     """CLI interface for the Dynamic Query Optimizer."""
     import argparse
     import json

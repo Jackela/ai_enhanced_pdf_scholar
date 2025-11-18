@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Fix incorrect indentation of 'from e)' clauses.
@@ -45,7 +47,7 @@ def fix_from_e_indentation(filepath: Path) -> int:
         return 0
 
 
-def main():
+def main() -> Any:
     """Main function."""
     total_fixes = 0
 

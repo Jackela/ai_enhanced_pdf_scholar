@@ -101,7 +101,7 @@ def fix_file(filepath: Path) -> bool:
         return False
 
 
-def main():
+def main() -> Any:
     """Main function to fix syntax errors."""
     print("Scanning for syntax errors from B904 fixes...")
 

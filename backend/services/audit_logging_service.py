@@ -223,7 +223,7 @@ class AuditLogger:
         enable_compression: bool = True,
         enable_encryption: bool = True,
         enable_alerts: bool = True,
-    ):
+    ) -> None:
         """Initialize audit logger."""
         self.db_url = db_url or os.getenv("AUDIT_DB_URL", "sqlite:///audit.db")
         self.buffer_size = buffer_size
@@ -246,7 +246,7 @@ class AuditLogger:
         # Alert patterns
         self.alert_patterns = self._init_alert_patterns()
 
-    def _init_database(self):
+    def _init_database(self) -> None:
         """Initialize audit database."""
         # Create engine with connection pooling
         self.engine = create_engine(
@@ -267,11 +267,11 @@ class AuditLogger:
         # Setup database triggers for integrity
         self._setup_database_triggers()
 
-    def _setup_database_triggers(self):
+    def _setup_database_triggers(self) -> None:
         """Setup database triggers for audit log integrity."""
 
         @event.listens_for(AuditLog, "before_insert")
-        def generate_checksum(mapper, connection, target):
+        def generate_checksum(mapper, connection, target) -> None:
             """Generate checksum for audit log entry."""
             # Create checksum from critical fields
             checksum_data = f"{target.timestamp}{target.event_type}{target.user_id}{target.action}{target.result}"
@@ -394,7 +394,7 @@ class AuditLogger:
         user_agent: str | None = None,
         mfa_used: bool = False,
         **kwargs,
-    ):
+    ) -> None:
         """Log user login attempt."""
         self.log(
             event_type=AuditEventType.USER_LOGIN,
@@ -417,7 +417,7 @@ class AuditLogger:
         action: str,
         fields_accessed: list[str] | None = None,
         **kwargs,
-    ):
+    ) -> None:
         """Log data access event."""
         self.log(
             event_type=AuditEventType.DATA_READ,
@@ -436,7 +436,7 @@ class AuditLogger:
         ip_address: str,
         severity: AuditSeverity = AuditSeverity.ERROR,
         **kwargs,
-    ):
+    ) -> None:
         """Log security-related event."""
         self.log(
             event_type=event_type,
@@ -457,7 +457,7 @@ class AuditLogger:
         data_categories: list[str] | None = None,
         purposes: list[str] | None = None,
         **kwargs,
-    ):
+    ) -> Any:
         """Log compliance-related event."""
         log_entry = self.log(
             event_type=event_type,
@@ -479,13 +479,13 @@ class AuditLogger:
     # Buffer Management
     # ========================================================================
 
-    def _flush_worker(self):
+    def _flush_worker(self) -> None:
         """Background worker to flush buffer periodically."""
         while True:
             time.sleep(self.flush_interval)
             self._flush_buffer()
 
-    def _flush_buffer(self):
+    def _flush_buffer(self) -> None:
         """Flush buffer to database."""
         if not self.buffer:
             return
@@ -514,7 +514,7 @@ class AuditLogger:
         finally:
             session.close()
 
-    def flush(self):
+    def flush(self) -> None:
         """Force flush the buffer."""
         self._flush_buffer()
 
@@ -522,7 +522,7 @@ class AuditLogger:
     # Alert Detection
     # ========================================================================
 
-    def _check_alerts(self, logs: list[AuditLog]):
+    def _check_alerts(self, logs: list[AuditLog]) -> None:
         """Check for alert conditions."""
         if not self.enable_alerts:
             return
@@ -588,7 +588,7 @@ class AuditLogger:
         ]
         return len(denied_events) >= 10
 
-    def _create_alert(self, pattern: dict, logs: list[AuditLog]):
+    def _create_alert(self, pattern: dict, logs: list[AuditLog]) -> None:
         """Create an alert from detected pattern."""
         session = self.SessionFactory()
 
@@ -632,7 +632,7 @@ class AuditLogger:
             alert_type, "Review the alert and take appropriate action"
         )
 
-    def _send_alert_notification(self, alert: AuditLogAlert):
+    def _send_alert_notification(self, alert: AuditLogAlert) -> None:
         """Send alert notification."""
         # Implement based on your notification system
         # E.g., send email, Slack message, PagerDuty alert, etc.
@@ -813,7 +813,7 @@ class AuditLogger:
             "checksum": log.checksum,
         }
 
-    def _track_data_deletion(self, user_id: int, resource_id: str | None):
+    def _track_data_deletion(self, user_id: int, resource_id: str | None) -> None:
         """Track data deletion for compliance."""
         # Implement based on your compliance requirements
         pass
@@ -836,7 +836,7 @@ class AuditContext:
         resource_type: str | None = None,
         resource_id: str | None = None,
         **kwargs,
-    ):
+    ) -> None:
         """Initialize audit context."""
         self.audit_logger = audit_logger
         self.event_type = event_type
@@ -848,12 +848,12 @@ class AuditContext:
         self.start_time = None
         self.log_id = None
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Enter audit context."""
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit audit context and log the event."""
         duration_ms = (
             (time.time() - self.start_time) * 1000 if self.start_time else None

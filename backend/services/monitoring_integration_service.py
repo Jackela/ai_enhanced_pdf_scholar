@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Monitoring Integration Service
 
@@ -25,7 +27,7 @@ class MonitoringIntegrationService:
         self,
         websocket_manager: WebSocketManager | None = None,
         integrated_monitor: IntegratedPerformanceMonitor | None = None,
-    ):
+    ) -> None:
         self.websocket_manager = websocket_manager
         self.integrated_monitor = integrated_monitor
 
@@ -39,7 +41,7 @@ class MonitoringIntegrationService:
 
         logger.info("MonitoringIntegrationService initialized")
 
-    async def start_integrated_monitoring(self):
+    async def start_integrated_monitoring(self) -> None:
         """Start integrated monitoring with all services."""
         if self._running:
             logger.warning("Integrated monitoring already running")
@@ -65,7 +67,7 @@ class MonitoringIntegrationService:
             await self.stop_integrated_monitoring()
             raise
 
-    async def stop_integrated_monitoring(self):
+    async def stop_integrated_monitoring(self) -> None:
         """Stop integrated monitoring."""
         if not self._running:
             return
@@ -93,7 +95,7 @@ class MonitoringIntegrationService:
         except Exception as e:
             logger.error(f"Error stopping integrated monitoring: {e}")
 
-    async def _integration_bridge(self):
+    async def _integration_bridge(self) -> None:
         """Bridge between different monitoring services."""
         while self._running:
             try:
@@ -113,7 +115,7 @@ class MonitoringIntegrationService:
                 logger.error(f"Error in integration bridge: {e}")
                 await asyncio.sleep(10)  # Back off on error
 
-    async def _integrate_websocket_metrics(self):
+    async def _integrate_websocket_metrics(self) -> None:
         """Integrate WebSocket metrics with enhanced functionality."""
         try:
             # Get WebSocket stats
@@ -164,7 +166,7 @@ class MonitoringIntegrationService:
         except Exception as e:
             logger.error(f"Error integrating WebSocket metrics: {e}")
 
-    async def _integrate_performance_monitor(self):
+    async def _integrate_performance_monitor(self) -> None:
         """Integrate with performance monitor for enhanced metrics."""
         try:
             # Get comprehensive performance data
@@ -212,7 +214,7 @@ class MonitoringIntegrationService:
         message: str,
         value: float = None,
         threshold: float = None,
-    ):
+    ) -> None:
         """Send alert through WebSocket channels."""
         try:
             if self.websocket_manager:

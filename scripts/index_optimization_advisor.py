@@ -98,7 +98,7 @@ class IndexOptimizationAdvisor:
         self,
         db_connection: DatabaseConnection,
         query_analyzer: QueryPerformanceAnalyzer | None = None,
-    ):
+    ) -> None:
         """
         Initialize the Index Optimization Advisor.
 
@@ -744,7 +744,7 @@ class IndexOptimizationAdvisor:
         return report
 
 
-def main():
+def main() -> Any:
     """CLI interface for the Index Optimization Advisor."""
     import argparse
 

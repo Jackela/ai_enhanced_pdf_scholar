@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 FastAPI Main Application (Simplified for Hypercorn)
 Version without lifespan context manager for better Windows/Hypercorn compatibility.
@@ -113,7 +115,7 @@ app.include_router(cache_admin.router, prefix="/api/admin", tags=["cache-admin"]
 
 
 @app.get("/")
-async def root():
+async def root() -> Any:
     """Root endpoint for basic connectivity test."""
     return {
         "message": "AI Enhanced PDF Scholar API is running",
@@ -123,13 +125,13 @@ async def root():
 
 
 @app.get("/ping")
-async def ping():
+async def ping() -> Any:
     """Simple ping endpoint for connectivity test."""
     return {"pong": True}
 
 
 @app.get("/health")
-async def basic_health_check():
+async def basic_health_check() -> Any:
     """Basic health check endpoint - no dependencies."""
     return {
         "status": "healthy",
@@ -140,7 +142,7 @@ async def basic_health_check():
 
 
 @app.get("/health/detailed")
-async def detailed_health_check():
+async def detailed_health_check() -> Any:
     """Comprehensive health check endpoint."""
     try:
         health_status = await metrics_collector.check_comprehensive_health()
@@ -160,7 +162,7 @@ async def detailed_health_check():
 
 
 @app.get("/metrics")
-async def get_metrics():
+async def get_metrics() -> Any:
     """Prometheus metrics endpoint."""
     try:
         metrics_data, content_type = metrics_collector.get_metrics_response()
@@ -171,7 +173,7 @@ async def get_metrics():
 
 
 @app.get("/metrics/dashboard")
-async def get_dashboard_metrics():
+async def get_dashboard_metrics() -> Any:
     """Get formatted metrics for custom dashboard."""
     try:
         dashboard_data = metrics_collector.get_dashboard_metrics()

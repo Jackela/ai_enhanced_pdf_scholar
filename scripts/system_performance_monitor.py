@@ -116,7 +116,7 @@ class ReliabilityTest:
 class SystemPerformanceMonitor:
     """Comprehensive system performance monitoring and testing"""
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str = None) -> None:
         self.db_path = db_path or "E:\\Code\\ai_enhanced_pdf_scholar\\data\\library.db"
         self.results = {}
         self.start_time = time.time()
@@ -355,7 +355,7 @@ class SystemPerformanceMonitor:
         errors = []
         start_time = time.time()
 
-        def user_operations(user_id: int):
+        def user_operations(user_id: int) -> Any:
             """Simulate operations for a single user"""
             user_results = []
             user_errors = []
@@ -841,7 +841,7 @@ class SystemPerformanceMonitor:
         return str(output_path)
 
 
-def main():
+def main() -> Any:
     """Main entry point for system performance monitoring"""
     import argparse
 

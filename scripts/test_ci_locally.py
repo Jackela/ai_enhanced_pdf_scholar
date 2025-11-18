@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Local CI/CD Testing Script
@@ -13,7 +15,7 @@ from pathlib import Path
 
 
 class LocalCITester:
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None) -> None:
         self.project_root = Path(project_root or os.getcwd())
         self.workflows_dir = self.project_root / ".github" / "workflows"
         self.results = {
@@ -24,7 +26,7 @@ class LocalCITester:
             "summary": {},
         }
 
-    def log(self, message: str, level: str = "INFO"):
+    def log(self, message: str, level: str = "INFO") -> None:
         """Log a message with timestamp."""
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[{timestamp}] {level}: {message}")
@@ -196,7 +198,7 @@ class LocalCITester:
             )
             return False
 
-    def suggest_fixes(self):
+    def suggest_fixes(self) -> None:
         """Suggest fixes for found issues."""
         if not self.results["issues_found"]:
             self.log("🎉 No issues found! CI/CD pipeline is ready to run.")
@@ -240,7 +242,7 @@ class LocalCITester:
 
         return self.results["summary"]["all_tests_passed"]
 
-    def save_results(self, filename: str = "ci_test_results.json"):
+    def save_results(self, filename: str = "ci_test_results.json") -> None:
         """Save test results to file."""
         results_file = self.project_root / filename
         with open(results_file, "w") as f:
@@ -248,7 +250,7 @@ class LocalCITester:
         self.log(f"📊 Results saved to {results_file}")
 
 
-def main():
+def main() -> None:
     """Main function."""
     tester = LocalCITester()
 

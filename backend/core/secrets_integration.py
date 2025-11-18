@@ -26,7 +26,7 @@ class JWTSecretsAdapter:
     This maintains backward compatibility while using secure storage.
     """
 
-    def __init__(self, secrets_manager: SecretsManager | None = None):
+    def __init__(self, secrets_manager: SecretsManager | None = None) -> None:
         """Initialize JWT secrets adapter."""
         self.secrets_manager = secrets_manager or get_secrets_manager()
         self.config = get_config()
@@ -156,7 +156,7 @@ class ConfigSecretsAdapter:
     Provides backward compatibility for existing code.
     """
 
-    def __init__(self, secrets_manager: SecretsManager | None = None):
+    def __init__(self, secrets_manager: SecretsManager | None = None) -> None:
         """Initialize config secrets adapter."""
         self.secrets_manager = secrets_manager or get_secrets_manager()
         self.app_config = get_config()
@@ -238,7 +238,7 @@ class ConfigSecretsAdapter:
             return False
 
 
-def monkey_patch_jwt_config():
+def monkey_patch_jwt_config() -> None:
     """
     Monkey-patch the JWT configuration to use secrets management.
     This allows existing code to work without modification.
@@ -253,7 +253,7 @@ def monkey_patch_jwt_config():
     logger.info("JWT configuration patched to use secrets management")
 
 
-def monkey_patch_config():
+def monkey_patch_config() -> None:
     """
     Monkey-patch the Config class to use secrets management.
     This allows existing code to work without modification.
@@ -278,7 +278,7 @@ def monkey_patch_config():
         logger.warning("Could not import Config class for patching")
 
 
-def update_dependencies_to_use_secrets():
+def update_dependencies_to_use_secrets() -> Any:
     """
     Update the API dependencies to use secrets management.
     This should be called during application startup.
@@ -290,7 +290,7 @@ def update_dependencies_to_use_secrets():
 
     # Override the get_enhanced_rag function to use secrets
 
-    def get_enhanced_rag_with_secrets(db=None):
+    def get_enhanced_rag_with_secrets(db=None) -> Any:
         """Enhanced RAG service using secrets management."""
         global _enhanced_rag_service
 

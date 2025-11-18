@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Verify that S106 (hardcoded password) violations have been fixed.
@@ -10,7 +12,7 @@ import sys
 from pathlib import Path
 
 
-def check_file_for_hardcoded_passwords(file_path):
+def check_file_for_hardcoded_passwords(file_path) -> Any:
     """Check a Python file for hardcoded passwords."""
     violations = []
 
@@ -61,7 +63,7 @@ def check_file_for_hardcoded_passwords(file_path):
     return violations
 
 
-def main():
+def main() -> Any:
     """Main function to check for S106 violations."""
     print("🔍 Checking for S106 (hardcoded password) violations...\n")
 

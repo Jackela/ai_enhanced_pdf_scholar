@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Enable Encryption for Data at Rest and in Transit
@@ -31,7 +33,7 @@ class EncryptionSetup:
     Setup and manage encryption for the application.
     """
 
-    def __init__(self, environment: str = "production"):
+    def __init__(self, environment: str = "production") -> None:
         """Initialize encryption setup."""
         self.environment = environment
         self.project_root = Path(__file__).parent.parent
@@ -52,7 +54,7 @@ class EncryptionSetup:
             "last_updated": None,
         }
 
-    def _save_status(self):
+    def _save_status(self) -> None:
         """Save encryption status."""
         self.status["last_updated"] = datetime.utcnow().isoformat()
         with open(self.config_file, "w") as f:
@@ -153,7 +155,7 @@ class EncryptionSetup:
             logger.error(f"TLS setup failed: {e}")
             return False
 
-    def _update_web_server_config(self, cert_path: Path, key_path: Path):
+    def _update_web_server_config(self, cert_path: Path, key_path: Path) -> None:
         """Update web server configuration for TLS."""
         # Generate nginx configuration
         nginx_config = f"""
@@ -212,7 +214,7 @@ server {{
 
         logger.info(f"Generated nginx configuration: {nginx_config_path}")
 
-    def _update_app_tls_config(self, cert_path: Path, key_path: Path):
+    def _update_app_tls_config(self, cert_path: Path, key_path: Path) -> None:
         """Update application TLS configuration."""
         tls_config = {
             "enabled": True,
@@ -522,7 +524,7 @@ WantedBy=multi-user.target
         return "\n".join(report)
 
 
-def main():
+def main() -> None:
     """Main function to setup encryption."""
     parser = argparse.ArgumentParser(description="Setup encryption for AI PDF Scholar")
     parser.add_argument(

@@ -99,7 +99,7 @@ class AssetInfo:
     last_optimized: datetime | None = None
     optimization_count: int = 0
 
-    def calculate_optimization_ratio(self):
+    def calculate_optimization_ratio(self) -> None:
         """Calculate optimization ratio."""
         if self.original_size > 0:
             self.optimization_ratio = (
@@ -144,7 +144,7 @@ class OptimizationStatistics:
     files_by_type: dict[str, int] = field(default_factory=dict)
     optimization_by_type: dict[str, dict[str, Any]] = field(default_factory=dict)
 
-    def calculate_totals(self):
+    def calculate_totals(self) -> None:
         """Calculate total statistics."""
         if self.original_total_size > 0:
             self.bytes_saved = self.original_total_size - self.optimized_total_size
@@ -198,7 +198,7 @@ class OptimizationStatistics:
 class ImageOptimizer:
     """Optimizer for image assets."""
 
-    def __init__(self, config: OptimizationConfig):
+    def __init__(self, config: OptimizationConfig) -> None:
         """Initialize image optimizer."""
         self.config = config
 
@@ -245,7 +245,6 @@ class ImageOptimizer:
                     img.width > self.config.max_image_width
                     or img.height > self.config.max_image_height
                 ):
-
                     img.thumbnail(
                         (self.config.max_image_width, self.config.max_image_height),
                         Image.Resampling.LANCZOS,
@@ -370,7 +369,7 @@ class ImageOptimizer:
 class CSSOptimizer:
     """Optimizer for CSS assets."""
 
-    def __init__(self, config: OptimizationConfig):
+    def __init__(self, config: OptimizationConfig) -> None:
         """Initialize CSS optimizer."""
         self.config = config
 
@@ -455,7 +454,7 @@ class CSSOptimizer:
 class JavaScriptOptimizer:
     """Optimizer for JavaScript assets."""
 
-    def __init__(self, config: OptimizationConfig):
+    def __init__(self, config: OptimizationConfig) -> None:
         """Initialize JavaScript optimizer."""
         self.config = config
 
@@ -549,7 +548,7 @@ class StaticAssetOptimizer:
     Comprehensive static asset optimizer for images, CSS, and JavaScript.
     """
 
-    def __init__(self, config: OptimizationConfig):
+    def __init__(self, config: OptimizationConfig) -> None:
         """Initialize static asset optimizer."""
         self.config = config
 
@@ -711,7 +710,7 @@ class StaticAssetOptimizer:
                 logger.error(f"Error optimizing {asset_path}: {e}")
                 return None
 
-    async def _generate_manifest(self, output_dir: Path):
+    async def _generate_manifest(self, output_dir: Path) -> None:
         """Generate optimization manifest."""
         manifest = {
             "generated_at": datetime.utcnow().isoformat(),
@@ -884,7 +883,7 @@ class StaticAssetOptimizer:
 # ============================================================================
 
 
-async def main():
+async def main() -> Any:
     """Main function for command line usage."""
     import argparse
 

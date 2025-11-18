@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 AI-Enhanced Scaling Predictor
@@ -83,7 +85,7 @@ class ScalingRecommendation:
 class PrometheusMetricsCollector:
     """Collect and preprocess metrics from Prometheus"""
 
-    def __init__(self, prometheus_url: str = "http://prometheus:9090"):
+    def __init__(self, prometheus_url: str = "http://prometheus:9090") -> None:
         self.prometheus = PrometheusConnect(url=prometheus_url, disable_ssl=True)
 
         # Define key metrics for scaling decisions
@@ -171,7 +173,7 @@ class PrometheusMetricsCollector:
 class ScalingPredictor:
     """ML-based scaling predictor"""
 
-    def __init__(self, model_path: str = "/tmp/scaling_models"):
+    def __init__(self, model_path: str = "/tmp/scaling_models") -> None:
         self.model_path = Path(model_path)
         self.model_path.mkdir(exist_ok=True, parents=True)
 
@@ -241,7 +243,7 @@ class ScalingPredictor:
 
         return df
 
-    async def train_models(self, historical_data: pd.DataFrame):
+    async def train_models(self, historical_data: pd.DataFrame) -> None:
         """Train the ML models with historical data"""
         logger.info("Training scaling prediction models...")
 
@@ -382,7 +384,7 @@ class ScalingPredictor:
             urgency=urgency,
         )
 
-    async def save_models(self):
+    async def save_models(self) -> None:
         """Save trained models to disk"""
         try:
             joblib.dump(
@@ -399,7 +401,7 @@ class ScalingPredictor:
         except Exception as e:
             logger.error(f"Error saving models: {e}")
 
-    async def load_models(self):
+    async def load_models(self) -> None:
         """Load trained models from disk"""
         try:
             if (self.model_path / "load_predictor.pkl").exists():
@@ -426,7 +428,7 @@ class ScalingPredictor:
 class KubernetesScalingController:
     """Interface with Kubernetes for scaling operations"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.k8s_available = KUBERNETES_AVAILABLE
         if self.k8s_available:
             try:
@@ -544,7 +546,7 @@ class KubernetesScalingController:
 class ScalingManager:
     """Main scaling management orchestrator"""
 
-    def __init__(self, prometheus_url: str = "http://prometheus:9090"):
+    def __init__(self, prometheus_url: str = "http://prometheus:9090") -> None:
         self.metrics_collector = PrometheusMetricsCollector(prometheus_url)
         self.predictor = ScalingPredictor()
         self.k8s_controller = KubernetesScalingController()
@@ -558,7 +560,7 @@ class ScalingManager:
         self.predictions_history = []
         self.recommendations_history = []
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the scaling manager"""
         logger.info("Initializing AI-Enhanced Scaling Manager...")
 
@@ -578,7 +580,7 @@ class ScalingManager:
 
         logger.info("Scaling Manager initialized successfully")
 
-    async def run_prediction_cycle(self):
+    async def run_prediction_cycle(self) -> Any:
         """Run a single prediction cycle"""
         try:
             # Collect current metrics
@@ -618,7 +620,6 @@ class ScalingManager:
                 )
                 >= 2
             ):
-
                 await self.apply_scaling_recommendation(recommendation)
 
             return recommendation
@@ -627,7 +628,9 @@ class ScalingManager:
             logger.error(f"Error in prediction cycle: {e}")
             return None
 
-    async def apply_scaling_recommendation(self, recommendation: ScalingRecommendation):
+    async def apply_scaling_recommendation(
+        self, recommendation: ScalingRecommendation
+    ) -> None:
         """Apply scaling recommendation to Kubernetes"""
         try:
             # Update HPA bounds to allow the recommended scaling
@@ -646,7 +649,7 @@ class ScalingManager:
         except Exception as e:
             logger.error(f"Error applying scaling recommendation: {e}")
 
-    async def retrain_models(self):
+    async def retrain_models(self) -> None:
         """Retrain models with latest data"""
         try:
             logger.info("Retraining models with latest data...")
@@ -662,7 +665,7 @@ class ScalingManager:
         except Exception as e:
             logger.error(f"Error retraining models: {e}")
 
-    async def run_continuous(self):
+    async def run_continuous(self) -> None:
         """Run the scaling manager continuously"""
         logger.info("Starting continuous scaling management...")
 
@@ -714,7 +717,7 @@ class ScalingManager:
 
 
 # CLI interface
-async def main():
+async def main() -> None:
     """Main entry point for the scaling predictor"""
     import argparse
 

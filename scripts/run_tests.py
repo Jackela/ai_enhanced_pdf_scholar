@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Optimized test runner for AI Enhanced PDF Scholar backend tests.
@@ -19,7 +21,7 @@ from pathlib import Path
 class TestRunner:
     """Optimized test runner with CI integration."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path) -> None:
         self.project_root = project_root
         self.test_dir = project_root / "tests"
         self.coverage_dir = project_root / "coverage_html"
@@ -214,7 +216,7 @@ class TestRunner:
         return unit_success and integration_success
 
 
-def main():
+def main() -> None:
     """Main test runner entry point."""
     project_root = Path(__file__).parent.parent
     runner = TestRunner(project_root)

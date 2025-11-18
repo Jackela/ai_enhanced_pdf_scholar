@@ -45,7 +45,7 @@ Base = declarative_base()
 class PostgreSQLConfig:
     """PostgreSQL database configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize PostgreSQL configuration from environment."""
         # Connection parameters
         self.host = os.getenv("POSTGRES_HOST", "localhost")
@@ -140,7 +140,7 @@ class PostgreSQLConnectionPool:
     PostgreSQL connection pool manager with read/write splitting.
     """
 
-    def __init__(self, config: PostgreSQLConfig):
+    def __init__(self, config: PostgreSQLConfig) -> None:
         """Initialize connection pools."""
         self.config = config
 
@@ -173,7 +173,7 @@ class PostgreSQLConnectionPool:
             if conn:
                 pool.putconn(conn)
 
-    def close_all(self):
+    def close_all(self) -> None:
         """Close all connections in pools."""
         self.write_pool.closeall()
         self.read_pool.closeall()
@@ -234,11 +234,11 @@ class PostgreSQLEngineFactory:
         return engine
 
     @staticmethod
-    def _setup_engine_events(engine: Engine, config: PostgreSQLConfig):
+    def _setup_engine_events(engine: Engine, config: PostgreSQLConfig) -> None:
         """Setup engine event listeners for optimization."""
 
         @event.listens_for(engine, "connect")
-        def set_postgresql_params(dbapi_conn, connection_record):
+        def set_postgresql_params(dbapi_conn, connection_record) -> None:
             """Set PostgreSQL session parameters on connect."""
             with dbapi_conn.cursor() as cursor:
                 # Set performance parameters
@@ -263,14 +263,14 @@ class PostgreSQLEngineFactory:
         @event.listens_for(engine, "before_cursor_execute")
         def before_cursor_execute(
             conn, cursor, statement, parameters, context, executemany
-        ):
+        ) -> None:
             """Log slow queries."""
             conn.info.setdefault("query_start_time", []).append(datetime.utcnow())
 
         @event.listens_for(engine, "after_cursor_execute")
         def after_cursor_execute(
             conn, cursor, statement, parameters, context, executemany
-        ):
+        ) -> None:
             """Log query execution time."""
             total_time = datetime.utcnow() - conn.info["query_start_time"].pop(-1)
 
@@ -297,7 +297,7 @@ class SQLiteToPostgresMigration:
         sqlite_path: str,
         postgres_config: PostgreSQLConfig,
         batch_size: int = 1000,
-    ):
+    ) -> None:
         """Initialize migration."""
         self.sqlite_path = sqlite_path
         self.postgres_config = postgres_config
@@ -307,7 +307,7 @@ class SQLiteToPostgresMigration:
         self.sqlite_engine = create_engine(f"sqlite:///{sqlite_path}")
         self.postgres_engine = PostgreSQLEngineFactory.create_engine(postgres_config)
 
-    def migrate_schema(self):
+    def migrate_schema(self) -> None:
         """Migrate database schema to PostgreSQL."""
         logger.info("Starting schema migration...")
 
@@ -340,7 +340,7 @@ class SQLiteToPostgresMigration:
 
         logger.info("Schema migration completed")
 
-    def migrate_data(self):
+    def migrate_data(self) -> None:
         """Migrate data from SQLite to PostgreSQL."""
         logger.info("Starting data migration...")
 
@@ -453,7 +453,7 @@ class SQLiteToPostgresMigration:
 
         return results
 
-    def _convert_column(self, sqlite_column):
+    def _convert_column(self, sqlite_column) -> Any:
         """Convert SQLite column to PostgreSQL column."""
 
         # Map SQLite types to PostgreSQL types
@@ -484,13 +484,13 @@ class SQLiteToPostgresMigration:
 
         return pg_column
 
-    def _create_index(self, table, sqlite_index):
+    def _create_index(self, table, sqlite_index) -> None:
         """Create PostgreSQL index from SQLite index."""
         columns = [table.c[col.name] for col in sqlite_index.columns]
 
         Index(sqlite_index.name, *columns, unique=sqlite_index.unique)
 
-    def _insert_batch(self, session, table_name: str, rows):
+    def _insert_batch(self, session, table_name: str, rows) -> None:
         """Insert batch of rows into PostgreSQL."""
         if not rows:
             return
@@ -506,7 +506,7 @@ class SQLiteToPostgresMigration:
 
         session.execute(insert_query, row_dicts)
 
-    def _update_sequences(self, session, table_name: str):
+    def _update_sequences(self, session, table_name: str) -> None:
         """Update PostgreSQL sequences for auto-increment columns."""
         try:
             # Find primary key column
@@ -548,11 +548,11 @@ class PostgreSQLOptimizer:
     PostgreSQL database optimization utilities.
     """
 
-    def __init__(self, engine: Engine):
+    def __init__(self, engine: Engine) -> None:
         """Initialize optimizer."""
         self.engine = engine
 
-    def analyze_tables(self):
+    def analyze_tables(self) -> None:
         """Run ANALYZE on all tables to update statistics."""
         with self.engine.connect() as conn:
             tables = conn.execute(
@@ -564,7 +564,7 @@ class PostgreSQLOptimizer:
                 conn.execute(text(f"ANALYZE {table[0]}"))
                 logger.info(f"Analyzed table: {table[0]}")
 
-    def create_missing_indexes(self):
+    def create_missing_indexes(self) -> None:
         """Create recommended indexes based on query patterns."""
         recommended_indexes = [
             # User tables
@@ -605,7 +605,7 @@ class PostgreSQLOptimizer:
 
                     logger.info(f"Created index: {index_name}")
 
-    def vacuum_analyze(self):
+    def vacuum_analyze(self) -> None:
         """Run VACUUM ANALYZE on all tables."""
         with self.engine.connect() as conn:
             conn.execute(

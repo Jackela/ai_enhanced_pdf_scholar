@@ -19,7 +19,7 @@ from typing import Any
 class TestBenchmark:
     """Test performance benchmarking utility."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
         self.results = {}
 
@@ -313,7 +313,7 @@ class TestBenchmark:
         print(f"📁 Results saved to: {results_file}")
 
 
-def main():
+def main() -> None:
     """Main benchmarking function."""
     benchmark = TestBenchmark()
     results = benchmark.run_benchmark_suite()

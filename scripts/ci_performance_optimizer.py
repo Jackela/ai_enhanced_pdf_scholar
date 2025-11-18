@@ -24,7 +24,7 @@ from typing import Any
 class CIPerformanceOptimizer:
     """Ultra-smart CI/CD performance optimization and analytics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
         self.metrics = {}
         self.cache_stats = {}
@@ -367,7 +367,7 @@ class CIPerformanceOptimizer:
         print("=" * 70)
 
 
-def main():
+def main() -> Any:
     """Main performance optimization analysis."""
     print("🚀 Starting Ultra-Optimized CI/CD Performance Analysis...")
 

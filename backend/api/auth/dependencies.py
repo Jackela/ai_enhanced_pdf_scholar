@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Authentication Dependencies
 FastAPI dependency injection for authentication and authorization.
@@ -31,7 +33,7 @@ class AuthenticationRequired:
         self,
         required_roles: list[UserRole] | None = None,
         allow_unverified: bool = False,
-    ):
+    ) -> None:
         """
         Initialize authentication requirement.
 
@@ -240,7 +242,7 @@ class RateLimitByUser:
     Falls back to IP address for anonymous users.
     """
 
-    def __init__(self, max_requests: int = 100, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 100, window_seconds: int = 60) -> None:
         """
         Initialize rate limiter.
 
@@ -283,7 +285,7 @@ class PermissionChecker:
     Fine-grained permission checking for resources.
     """
 
-    def __init__(self, resource_type: str, action: str):
+    def __init__(self, resource_type: str, action: str) -> None:
         """
         Initialize permission checker.
 
@@ -353,7 +355,9 @@ class PermissionChecker:
 
 
 # Decorator for protecting routes
-def require_auth(roles: list[UserRole] | None = None, allow_unverified: bool = False):
+def require_auth(
+    roles: list[UserRole] | None = None, allow_unverified: bool = False
+) -> Any:
     """
     Decorator for protecting FastAPI routes.
 
@@ -368,7 +372,7 @@ def require_auth(roles: list[UserRole] | None = None, allow_unverified: bool = F
             return {"message": f"Hello {user.username}"}
     """
 
-    def decorator(func):
+    def decorator(func) -> Any:
         # This is a placeholder for route decoration logic
         # In practice, use Dependencies directly in route definitions
         func._auth_required = True

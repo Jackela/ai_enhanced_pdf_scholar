@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Rate Limiting Monitoring and Metrics Module
 Provides monitoring, metrics collection, and alerting for rate limiting
@@ -43,7 +45,7 @@ class RateLimitMetrics:
     top_ips: list[tuple[str, int]] = None
     rate_limit_effectiveness: float = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.top_endpoints is None:
             self.top_endpoints = []
         if self.top_ips is None:
@@ -59,7 +61,7 @@ class RateLimitMonitor:
         metrics_window_minutes: int = 60,
         alert_threshold: float = 0.8,
         log_file: str | None = None,
-    ):
+    ) -> None:
         """
         Initialize rate limit monitor.
 
@@ -89,7 +91,7 @@ class RateLimitMonitor:
 
         logger.info(f"Rate limit monitor initialized with {max_events} event capacity")
 
-    def record_event(self, event: RateLimitEvent):
+    def record_event(self, event: RateLimitEvent) -> None:
         """Record a rate limiting event."""
         self._events.append(event)
 
@@ -111,7 +113,7 @@ class RateLimitMonitor:
         if self.log_file:
             self._log_event_to_file(event)
 
-    def _log_event_to_file(self, event: RateLimitEvent):
+    def _log_event_to_file(self, event: RateLimitEvent) -> None:
         """Log event to file."""
         try:
             log_path = Path(self.log_file)
@@ -122,7 +124,7 @@ class RateLimitMonitor:
         except Exception as e:
             logger.error(f"Failed to log event to file: {e}")
 
-    def _check_alert_conditions(self, event: RateLimitEvent):
+    def _check_alert_conditions(self, event: RateLimitEvent) -> None:
         """Check if alert conditions are met."""
         current_time = datetime.fromtimestamp(event.timestamp)
 
@@ -181,7 +183,7 @@ class RateLimitMonitor:
             return True
         return current_time - last_alert > self._alert_cooldown
 
-    def _trigger_alert(self, alert_type: str, context: dict):
+    def _trigger_alert(self, alert_type: str, context: dict) -> None:
         """Trigger a rate limiting alert."""
         logger.warning(f"Rate limiting alert [{alert_type}]: {context}")
 
@@ -421,7 +423,7 @@ class RateLimitMonitor:
 
         return sorted(suspicious_ips, key=lambda x: x["suspicion_score"], reverse=True)
 
-    def export_events(self, filename: str, window_minutes: int | None = None):
+    def export_events(self, filename: str, window_minutes: int | None = None) -> None:
         """Export events to JSON file."""
         if window_minutes:
             cutoff_time = time.time() - (window_minutes * 60)
@@ -435,7 +437,7 @@ class RateLimitMonitor:
 
         logger.info(f"Exported {len(events)} events to {filename}")
 
-    def clear_old_events(self, hours_to_keep: int = 24):
+    def clear_old_events(self, hours_to_keep: int = 24) -> None:
         """Clear events older than specified hours."""
         cutoff_time = time.time() - (hours_to_keep * 3600)
 
@@ -470,7 +472,7 @@ def record_rate_limit_event(
     limit_type: str | None = None,
     limit_value: int | None = None,
     remaining: int | None = None,
-):
+) -> None:
     """Convenience function to record a rate limiting event."""
     monitor = get_monitor()
     event = RateLimitEvent(

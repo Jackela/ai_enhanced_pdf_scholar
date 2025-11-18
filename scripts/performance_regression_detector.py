@@ -27,18 +27,20 @@ class PerformanceRegression:
         current: float,
         change_percent: float,
         severity: str,
-    ):
+    ) -> None:
         self.metric_name = metric_name
         self.baseline = baseline
         self.current = current
         self.change_percent = change_percent
         self.severity = severity  # "minor", "major", "critical"
 
-    def __str__(self):
+    def __str__(self) -> Any:
         symbol = (
             "🔴"
             if self.severity == "critical"
-            else "🟡" if self.severity == "major" else "🟠"
+            else "🟡"
+            if self.severity == "major"
+            else "🟠"
         )
         return f"{symbol} {self.metric_name}: {self.baseline:.2f}ms → {self.current:.2f}ms ({self.change_percent:+.1f}%)"
 
@@ -46,7 +48,7 @@ class PerformanceRegression:
 class PerformanceBaseline:
     """Manages performance baselines and regression detection"""
 
-    def __init__(self, baseline_file: Path = None):
+    def __init__(self, baseline_file: Path = None) -> None:
         self.baseline_file = baseline_file or Path("performance_baselines.json")
         self.baselines = self.load_baselines()
 
@@ -65,7 +67,7 @@ class PerformanceBaseline:
             logger.error(f"Failed to load baselines: {e}")
             return {}
 
-    def save_baselines(self):
+    def save_baselines(self) -> None:
         """Save baselines to file"""
         try:
             with open(self.baseline_file, "w") as f:
@@ -364,7 +366,7 @@ class PerformanceBaseline:
 
         return recommendations
 
-    def print_report(self, report: dict[str, Any]):
+    def print_report(self, report: dict[str, Any]) -> None:
         """Print formatted performance report"""
         print("\n" + "=" * 80)
         print("PERFORMANCE REGRESSION ANALYSIS REPORT")
@@ -390,7 +392,9 @@ class PerformanceBaseline:
                 severity_symbol = (
                     "🔴"
                     if reg["severity"] == "critical"
-                    else "🟡" if reg["severity"] == "major" else "🟠"
+                    else "🟡"
+                    if reg["severity"] == "major"
+                    else "🟠"
                 )
                 print(f"   {severity_symbol} {reg['metric']}:")
                 print(
@@ -417,7 +421,7 @@ class PerformanceBaseline:
         print("\n" + "=" * 80)
 
 
-def main():
+def main() -> Any:
     """Main entry point"""
     import argparse
 

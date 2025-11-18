@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def create_migration_004_performance_optimization():
+def create_migration_004_performance_optimization() -> Any:
     """Create migration 004 for performance optimization."""
 
     migration_content = '''"""
@@ -277,7 +277,7 @@ class PerformanceOptimizationMigration(BaseMigration):
     return migration_content
 
 
-def create_migration_005_advanced_performance():
+def create_migration_005_advanced_performance() -> Any:
     """Create migration 005 for advanced performance analysis."""
 
     migration_content = '''"""
@@ -610,7 +610,7 @@ class AdvancedPerformanceAnalysisMigration(BaseMigration):
     return migration_content
 
 
-def create_migration_007_add_tags_column():
+def create_migration_007_add_tags_column() -> Any:
     """Create migration 007 for adding tags column."""
 
     migration_content = '''"""
@@ -781,7 +781,7 @@ class AddTagsColumnMigration(BaseMigration):
     return migration_content
 
 
-def main():
+def main() -> None:
     """Main conversion function."""
     # Get the project root directory
     current_dir = Path(__file__).parent

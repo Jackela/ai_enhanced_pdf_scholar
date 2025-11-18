@@ -117,7 +117,7 @@ class AlertService:
     Multi-channel alert service with escalation logic.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize alert service."""
         self.channels: dict[NotificationChannel, NotificationChannelConfig] = {}
         self.rules: list[AlertRule] = []
@@ -236,7 +236,7 @@ class AlertService:
         config: dict[str, Any],
         enabled: bool = True,
         rate_limit: int | None = None,
-    ):
+    ) -> None:
         """Configure a notification channel."""
         self.channels[channel] = NotificationChannelConfig(
             channel=channel, enabled=enabled, config=config, rate_limit=rate_limit
@@ -244,12 +244,12 @@ class AlertService:
 
         logger.info(f"Configured {channel.value} notification channel")
 
-    def add_rule(self, rule: AlertRule):
+    def add_rule(self, rule: AlertRule) -> None:
         """Add an alert routing rule."""
         self.rules.append(rule)
         logger.info(f"Added alert rule: {rule.name}")
 
-    def _setup_default_rules(self):
+    def _setup_default_rules(self) -> None:
         """Setup default alert routing rules."""
         # Critical alerts - immediate multi-channel notification
         critical_rule = AlertRule(
@@ -600,7 +600,7 @@ class AlertService:
     # Escalation Logic
     # ========================================================================
 
-    async def _schedule_escalation(self, alert: Alert, rule: AlertRule):
+    async def _schedule_escalation(self, alert: Alert, rule: AlertRule) -> None:
         """Schedule escalation for unresolved alert."""
         try:
             # Wait for escalation delay
@@ -612,7 +612,6 @@ class AlertService:
                 and not self.active_alerts[alert.id].escalated
                 and not self.active_alerts[alert.id].resolved
             ):
-
                 # Mark as escalated
                 self.active_alerts[alert.id].escalated = True
                 self.active_alerts[alert.id].escalated_at = datetime.utcnow()
@@ -629,7 +628,7 @@ class AlertService:
 
     async def _send_escalation_notification(
         self, alert: Alert, channel: NotificationChannel
-    ):
+    ) -> None:
         """Send escalation notification."""
         # Create escalated alert with modified message
         escalated_alert = Alert(
@@ -648,7 +647,7 @@ class AlertService:
 
         await self._send_via_channel(escalated_alert, channel)
 
-    async def _send_resolution_notification(self, alert: Alert):
+    async def _send_resolution_notification(self, alert: Alert) -> None:
         """Send alert resolution notification."""
         try:
             resolution_alert = Alert(
@@ -682,12 +681,12 @@ class AlertService:
         """Check if alert is suppressed."""
         return alert.id in self.suppressed_alerts
 
-    def _suppress_alert(self, alert: Alert, rule: AlertRule):
+    def _suppress_alert(self, alert: Alert, rule: AlertRule) -> None:
         """Add alert to suppression list."""
         self.suppressed_alerts.add(alert.id)
 
         # Schedule removal from suppression
-        async def remove_suppression():
+        async def remove_suppression() -> None:
             await asyncio.sleep(rule.suppression_duration * 60)
             if alert.id in self.suppressed_alerts:
                 self.suppressed_alerts.remove(alert.id)
@@ -726,7 +725,7 @@ class AlertService:
         channel: NotificationChannel,
         success: bool,
         error: str | None = None,
-    ):
+    ) -> None:
         """Record notification attempt in history."""
         record = {
             "alert_id": alert.id,
@@ -845,7 +844,7 @@ if __name__ == "__main__":
     # Example usage
     import asyncio
 
-    async def main():
+    async def main() -> None:
         alert_service = AlertService()
 
         # Configure email channel

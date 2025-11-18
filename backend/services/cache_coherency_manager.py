@@ -124,7 +124,7 @@ class CacheLevelWrapper:
         cache: Union[L1MemoryCache, L2RedisCache, L3CDNCache],
         level_name: str,
         coherency_manager: "CacheCoherencyManager",
-    ):
+    ) -> None:
         """Initialize cache level wrapper."""
         self.cache = cache
         self.level_name = level_name
@@ -321,7 +321,7 @@ class CacheCoherencyManager:
         l2_cache: L2RedisCache | None = None,
         l3_cache: L3CDNCache | None = None,
         config: CoherencyConfig | None = None,
-    ):
+    ) -> None:
         """Initialize cache coherency manager."""
         self.config = config or CoherencyConfig()
 
@@ -616,7 +616,7 @@ class CacheCoherencyManager:
 
     async def _promote_to_higher_levels(
         self, key: str, value: Any, version: CacheEntryVersion, source_level: str
-    ):
+    ) -> None:
         """Promote cache entry to higher levels."""
         # Determine promotion targets
         promotion_targets = []
@@ -696,9 +696,9 @@ class CacheCoherencyManager:
 
         # Generate recommendations
         if not coherency_info["consistent"]:
-            coherency_info["recommendations"] = (
-                await self._generate_coherency_recommendations(key, versions)
-            )
+            coherency_info[
+                "recommendations"
+            ] = await self._generate_coherency_recommendations(key, versions)
 
         return coherency_info
 
@@ -784,7 +784,9 @@ class CacheCoherencyManager:
         # Placeholder for custom resolution logic
         return await self._resolve_last_write_wins(key)
 
-    async def _sync_all_levels(self, key: str, value: Any, version: CacheEntryVersion):
+    async def _sync_all_levels(
+        self, key: str, value: Any, version: CacheEntryVersion
+    ) -> None:
         """Sync all cache levels to a specific version."""
         for level_name, level in self.cache_levels.items():
             try:
@@ -799,7 +801,7 @@ class CacheCoherencyManager:
     # Background Processing
     # ========================================================================
 
-    async def start_background_processing(self):
+    async def start_background_processing(self) -> None:
         """Start background coherency processing."""
         if self.is_running:
             return
@@ -815,7 +817,7 @@ class CacheCoherencyManager:
 
         logger.info("Started cache coherency background processing")
 
-    async def stop_background_processing(self):
+    async def stop_background_processing(self) -> None:
         """Stop background coherency processing."""
         self.is_running = False
 
@@ -829,7 +831,7 @@ class CacheCoherencyManager:
 
         logger.info("Stopped cache coherency background processing")
 
-    async def _process_write_behind_queue(self):
+    async def _process_write_behind_queue(self) -> None:
         """Process write-behind operations."""
         while self.is_running:
             try:
@@ -876,7 +878,7 @@ class CacheCoherencyManager:
                 logger.error(f"Error in write-behind processing: {e}")
                 await asyncio.sleep(1)
 
-    async def _periodic_coherency_check(self):
+    async def _periodic_coherency_check(self) -> None:
         """Periodically check cache coherency."""
         while self.is_running:
             try:
@@ -919,7 +921,7 @@ class CacheCoherencyManager:
             except Exception as e:
                 logger.error(f"Error in periodic coherency check: {e}")
 
-    async def _cleanup_expired_versions(self):
+    async def _cleanup_expired_versions(self) -> None:
         """Clean up expired version information."""
         while self.is_running:
             try:
@@ -960,7 +962,7 @@ class CacheCoherencyManager:
     # Statistics and Monitoring
     # ========================================================================
 
-    async def _record_event(self, event: CoherencyEvent):
+    async def _record_event(self, event: CoherencyEvent) -> None:
         """Record coherency event."""
         self.coherency_events.append(event)
 
@@ -1047,12 +1049,12 @@ class CacheCoherencyManager:
     # Context Manager Support
     # ========================================================================
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Async context manager entry."""
         await self.start_background_processing()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.stop_background_processing()
 
@@ -1060,7 +1062,7 @@ class CacheCoherencyManager:
 # Example usage
 if __name__ == "__main__":
 
-    async def main():
+    async def main() -> None:
         from .l1_memory_cache import create_l1_cache
         from .l2_redis_cache import L2RedisCache
         from .redis_cache_service import RedisCacheService, RedisConfig

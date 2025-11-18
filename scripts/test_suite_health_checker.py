@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Test Suite Health Checker for AI Enhanced PDF Scholar
@@ -46,7 +48,7 @@ class TestSuiteHealthReport:
 class TestSuiteHealthChecker:
     """Comprehensive test suite health checker."""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None) -> None:
         """Initialize health checker."""
         self.project_root = (
             Path(project_root) if project_root else Path(__file__).parent.parent
@@ -477,7 +479,7 @@ class TestSuiteHealthChecker:
         return report
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Check test suite health")
     parser.add_argument(

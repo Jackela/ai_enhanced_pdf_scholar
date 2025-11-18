@@ -63,7 +63,7 @@ class RAGIndexBuilder:
 
     def __init__(
         self, api_key: str, file_manager: RAGFileManager, test_mode: bool = False
-    ):
+    ) -> None:
         """
         Initialize RAG index builder.
 
@@ -207,7 +207,7 @@ class RAGIndexBuilder:
             exponential_base=self.api_retry_config.exponential_base,
             retryable_exceptions=self.api_retry_config.retryable_exceptions,
         )
-        def protected_creation():
+        def protected_creation() -> Any:
             from llama_index.core import VectorStoreIndex
 
             return VectorStoreIndex.from_documents(documents)

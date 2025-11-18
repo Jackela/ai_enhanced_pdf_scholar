@@ -105,7 +105,7 @@ class HealthCheckService:
         self,
         postgres_config: PostgreSQLConfig | None = None,
         redis_service: RedisCacheService | None = None,
-    ):
+    ) -> None:
         """Initialize health check service."""
         self.postgres_config = postgres_config or PostgreSQLConfig()
         self.redis_service = redis_service
@@ -128,7 +128,7 @@ class HealthCheckService:
 
         logger.info("Health check service initialized")
 
-    def _register_default_checks(self):
+    def _register_default_checks(self) -> None:
         """Register default health checks."""
         self.register_check(
             name="database",
@@ -186,7 +186,7 @@ class HealthCheckService:
         severity: CheckSeverity = CheckSeverity.MAJOR,
         timeout: float = 5.0,
         enabled: bool = True,
-    ):
+    ) -> None:
         """Register a health check."""
         self.health_checks[name] = {
             "func": check_func,
@@ -200,18 +200,18 @@ class HealthCheckService:
 
         logger.info(f"Registered health check: {name}")
 
-    def unregister_check(self, name: str):
+    def unregister_check(self, name: str) -> None:
         """Unregister a health check."""
         if name in self.health_checks:
             del self.health_checks[name]
             logger.info(f"Unregistered health check: {name}")
 
-    def enable_check(self, name: str):
+    def enable_check(self, name: str) -> None:
         """Enable a health check."""
         if name in self.health_checks:
             self.health_checks[name]["enabled"] = True
 
-    def disable_check(self, name: str):
+    def disable_check(self, name: str) -> None:
         """Disable a health check."""
         if name in self.health_checks:
             self.health_checks[name]["enabled"] = False
@@ -901,7 +901,7 @@ class HealthCheckService:
             "total_duration_ms": round(total_duration, 2),
         }
 
-    def _store_health_history(self, system_health: SystemHealth):
+    def _store_health_history(self, system_health: SystemHealth) -> None:
         """Store health check result in history."""
         self.health_history.append(
             {
@@ -990,7 +990,7 @@ class HealthCheckService:
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> None:
         health_service = HealthCheckService()
 
         # Check overall health

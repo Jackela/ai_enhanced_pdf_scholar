@@ -124,7 +124,7 @@ class NodeHealth:
     operations_per_second: int = 0
     last_error: str | None = None
 
-    def update_success(self, response_time_ms: float):
+    def update_success(self, response_time_ms: float) -> None:
         """Update health on successful check."""
         self.is_healthy = True
         self.last_check = datetime.utcnow()
@@ -133,7 +133,7 @@ class NodeHealth:
         self.response_time_ms = response_time_ms
         self.last_error = None
 
-    def update_failure(self, error: str):
+    def update_failure(self, error: str) -> None:
         """Update health on failed check."""
         self.last_check = datetime.utcnow()
         self.consecutive_failures += 1
@@ -155,7 +155,7 @@ class RedisClusterManager:
     Advanced Redis cluster management with high availability and monitoring.
     """
 
-    def __init__(self, config: ClusterConfig):
+    def __init__(self, config: ClusterConfig) -> None:
         """Initialize cluster manager."""
         self.config = config
         self._clients: dict[str, Redis] = {}
@@ -206,7 +206,7 @@ class RedisClusterManager:
             logger.error(f"Failed to initialize Redis cluster: {e}")
             return False
 
-    async def _initialize_cluster(self):
+    async def _initialize_cluster(self) -> None:
         """Initialize Redis Cluster mode."""
         startup_nodes = [
             {"host": node.host, "port": node.port} for node in self.config.nodes
@@ -228,7 +228,7 @@ class RedisClusterManager:
         # Initialize individual node clients for monitoring
         await self._initialize_node_clients()
 
-    async def _initialize_sentinel(self):
+    async def _initialize_sentinel(self) -> None:
         """Initialize Redis Sentinel mode."""
         sentinel_addresses = [
             (node.host, node.port) for node in self.config.sentinel_nodes
@@ -250,7 +250,7 @@ class RedisClusterManager:
         # Initialize node health tracking
         await self._initialize_sentinel_health()
 
-    async def _initialize_standalone(self):
+    async def _initialize_standalone(self) -> None:
         """Initialize standalone Redis mode."""
         if not self.config.nodes:
             raise ValueError("No nodes configured for standalone mode")
@@ -271,7 +271,7 @@ class RedisClusterManager:
         # Test connection
         await asyncio.to_thread(self._cluster_client.ping)
 
-    async def _initialize_node_clients(self):
+    async def _initialize_node_clients(self) -> None:
         """Initialize individual node clients for monitoring."""
         for node in self.config.nodes:
             try:
@@ -298,7 +298,7 @@ class RedisClusterManager:
             except Exception as e:
                 logger.error(f"Failed to initialize client for {node.address}: {e}")
 
-    async def _initialize_sentinel_health(self):
+    async def _initialize_sentinel_health(self) -> None:
         """Initialize health tracking for Sentinel mode."""
         try:
             # Get master info
@@ -324,7 +324,7 @@ class RedisClusterManager:
     # Health Monitoring
     # ========================================================================
 
-    async def _start_monitoring(self):
+    async def _start_monitoring(self) -> None:
         """Start cluster health monitoring."""
         if self._is_monitoring:
             return
@@ -333,7 +333,7 @@ class RedisClusterManager:
         self._monitoring_task = asyncio.create_task(self._monitor_cluster_health())
         logger.info("Started Redis cluster health monitoring")
 
-    async def _monitor_cluster_health(self):
+    async def _monitor_cluster_health(self) -> None:
         """Monitor cluster health continuously."""
         while self._is_monitoring:
             try:
@@ -345,7 +345,7 @@ class RedisClusterManager:
                 logger.error(f"Error in cluster health monitoring: {e}")
                 await asyncio.sleep(5)  # Short delay on error
 
-    async def _check_cluster_health(self):
+    async def _check_cluster_health(self) -> None:
         """Check health of all cluster nodes."""
         healthy_nodes = 0
         total_nodes = len(self._node_health)
@@ -397,7 +397,7 @@ class RedisClusterManager:
         if self.config.enable_auto_scaling:
             await self._check_auto_scaling()
 
-    async def _check_auto_scaling(self):
+    async def _check_auto_scaling(self) -> None:
         """Check if auto-scaling actions are needed."""
         try:
             # Calculate average resource usage
@@ -422,7 +422,6 @@ class RedisClusterManager:
                 memory_usage_percent > self.config.memory_threshold
                 or connection_usage_percent > self.config.connection_threshold
             ):
-
                 logger.info(
                     f"Auto-scaling triggered: Memory {memory_usage_percent:.1f}%, "
                     f"Connections {connection_usage_percent:.1f}%"
@@ -432,7 +431,7 @@ class RedisClusterManager:
         except Exception as e:
             logger.error(f"Error in auto-scaling check: {e}")
 
-    async def _trigger_scale_up(self):
+    async def _trigger_scale_up(self) -> None:
         """Trigger cluster scale-up (implementation depends on infrastructure)."""
         # This would integrate with infrastructure automation (Kubernetes, Terraform, etc.)
         logger.info(
@@ -518,7 +517,7 @@ class RedisClusterManager:
     # Failover and Recovery
     # ========================================================================
 
-    async def handle_node_failure(self, node_id: str):
+    async def handle_node_failure(self, node_id: str) -> None:
         """Handle node failure."""
         health = self._node_health.get(node_id)
         if not health:
@@ -535,7 +534,6 @@ class RedisClusterManager:
             and health.role == NodeRole.MASTER
             and self._sentinel_client
         ):
-
             try:
                 await asyncio.to_thread(
                     self._sentinel_client.sentinel_failover, self.config.service_name
@@ -547,7 +545,7 @@ class RedisClusterManager:
         # Notify monitoring system
         await self._notify_failure(node_id, health.last_error)
 
-    async def _notify_failure(self, node_id: str, error: str):
+    async def _notify_failure(self, node_id: str, error: str) -> None:
         """Notify external systems about node failure."""
         # This would integrate with alerting systems
         logger.error(f"Node failure notification: {node_id} - {error}")
@@ -653,7 +651,7 @@ class RedisClusterManager:
     # Cleanup
     # ========================================================================
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Shutdown cluster manager and cleanup resources."""
         logger.info("Shutting down Redis cluster manager")
 
@@ -771,7 +769,7 @@ class RedisClusterFactory:
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> None:
         # Create a simple standalone cluster for testing
         manager = RedisClusterFactory.create_standalone()
 

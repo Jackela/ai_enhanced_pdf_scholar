@@ -113,7 +113,7 @@ class CacheAnalyticsEngine:
         smart_cache: SmartCacheManager | None = None,
         warming_service: CacheWarmingService | None = None,
         monitoring_service: RedisMonitoringService | None = None,
-    ):
+    ) -> None:
         """Initialize cache analytics engine."""
         self.redis_cache = redis_cache
         self.smart_cache = smart_cache
@@ -213,7 +213,7 @@ class CacheAnalyticsEngine:
 
         return metrics
 
-    async def _calculate_derived_metrics(self, metrics: CacheAnalyticsMetrics):
+    async def _calculate_derived_metrics(self, metrics: CacheAnalyticsMetrics) -> None:
         """Calculate derived metrics from collected data."""
         # Time-based analysis
         metrics.hourly_hit_rates = self._calculate_hourly_hit_rates()
@@ -446,7 +446,7 @@ class CacheAnalyticsEngine:
 
     async def _analyze_key_patterns_for_recommendations(
         self, recommendations: list[CacheRecommendation], metrics: CacheAnalyticsMetrics
-    ):
+    ) -> None:
         """Analyze key patterns and add relevant recommendations."""
         if not metrics.key_distribution:
             return
@@ -492,7 +492,7 @@ class CacheAnalyticsEngine:
 
     async def _analyze_temporal_patterns_for_recommendations(
         self, recommendations: list[CacheRecommendation], metrics: CacheAnalyticsMetrics
-    ):
+    ) -> None:
         """Analyze temporal access patterns for recommendations."""
         if not metrics.hourly_hit_rates:
             return
@@ -627,7 +627,9 @@ class CacheAnalyticsEngine:
                         else (
                             "improving"
                             if slope > 0 and column != "response_time"
-                            else "declining" if slope != 0 else "stable"
+                            else "declining"
+                            if slope != 0
+                            else "stable"
                         )
                     ),
                     "r_squared": r_value**2,
@@ -833,7 +835,7 @@ class CacheAnalyticsEngine:
     # Visualization
     # ========================================================================
 
-    async def create_performance_dashboard(self, output_dir: str = "."):
+    async def create_performance_dashboard(self, output_dir: str = ".") -> Any:
         """Create visual performance dashboard."""
         try:
             # Set style
@@ -904,7 +906,7 @@ class CacheAnalyticsEngine:
 # ============================================================================
 
 
-async def main():
+async def main() -> Any:
     """Main function for command line usage."""
     import argparse
 

@@ -240,7 +240,7 @@ class CachingConfig:
 
         return config
 
-    def _load_redis_cluster_config(self, environment: Environment):
+    def _load_redis_cluster_config(self, environment: Environment) -> None:
         """Load Redis cluster configuration."""
         # Parse Redis nodes from environment
         redis_nodes = []
@@ -273,7 +273,7 @@ class CachingConfig:
             health_check_interval=int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "30")),
         )
 
-    def _load_l1_config(self, environment: Environment):
+    def _load_l1_config(self, environment: Environment) -> None:
         """Load L1 cache configuration."""
         # Environment-specific defaults
         if environment.is_production():
@@ -302,7 +302,7 @@ class CachingConfig:
             cleanup_interval_seconds=int(os.getenv("L1_CLEANUP_INTERVAL", "60")),
         )
 
-    def _load_l2_config(self, environment: Environment):
+    def _load_l2_config(self, environment: Environment) -> None:
         """Load L2 cache configuration."""
         self.l2_cache = L2CacheConfig(
             enabled=os.getenv("L2_CACHE_ENABLED", "true").lower() == "true",
@@ -321,7 +321,7 @@ class CachingConfig:
             ),
         )
 
-    def _load_l3_config(self, environment: Environment):
+    def _load_l3_config(self, environment: Environment) -> None:
         """Load L3 CDN cache configuration."""
         self.l3_cdn = L3CDNConfig(
             enabled=os.getenv("L3_CDN_ENABLED", "false").lower() == "true",
@@ -337,7 +337,7 @@ class CachingConfig:
             enable_ssl=os.getenv("CDN_SSL", "true").lower() == "true",
         )
 
-    def _load_coherency_config(self, environment: Environment):
+    def _load_coherency_config(self, environment: Environment) -> None:
         """Load cache coherency configuration."""
         self.coherency = CacheCoherencyConfig(
             protocol=os.getenv("CACHE_COHERENCY_PROTOCOL", "write_through"),
@@ -353,7 +353,7 @@ class CachingConfig:
             == "true",
         )
 
-    def _load_global_config(self, environment: Environment):
+    def _load_global_config(self, environment: Environment) -> None:
         """Load global cache configuration."""
         self.enable_multi_layer = (
             os.getenv("MULTI_LAYER_CACHE_ENABLED", "true").lower() == "true"

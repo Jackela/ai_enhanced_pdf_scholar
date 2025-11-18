@@ -241,7 +241,7 @@ def secure_owner_only(
 
     def decorator(func: AsyncEndpoint) -> AsyncEndpoint:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             user = kwargs.get("current_user") or kwargs.get("user")
             if not user:
                 raise HTTPException(
@@ -340,7 +340,7 @@ class BatchSecurityValidator:
     Validates security for batch operations.
     """
 
-    def __init__(self, user: User, db: Session):
+    def __init__(self, user: User, db: Session) -> None:
         """Initialize batch validator."""
         self.user = user
         self.rbac = RBACService(db)
@@ -393,7 +393,7 @@ class APIKeyAuth:
     API key authentication for service accounts and external integrations.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         """Initialize API key auth."""
         self.db = db
 
@@ -412,7 +412,7 @@ class APIKeyAuth:
         return None
 
 
-def require_api_key(scopes: list[str] = None):
+def require_api_key(scopes: list[str] = None) -> Any:
     """
     Decorator to require API key authentication.
 
@@ -427,7 +427,7 @@ def require_api_key(scopes: list[str] = None):
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             request = kwargs.get("request")
             if not request:
                 raise HTTPException(
@@ -482,7 +482,7 @@ class SecurityContext:
 
     def __init__(
         self, user: User, resource: str, action: str, db: Session, audit: bool = True
-    ):
+    ) -> None:
         """Initialize security context."""
         self.user = user
         self.resource = resource
@@ -492,7 +492,7 @@ class SecurityContext:
         self.rbac = RBACService(db)
         self.start_time = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Enter security context."""
         import time
 
@@ -520,7 +520,7 @@ class SecurityContext:
 
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit security context."""
         import time
 
@@ -560,7 +560,7 @@ class AutoSecurityMiddleware:
     Middleware that automatically applies security to all endpoints.
     """
 
-    def __init__(self, app, config: dict[str, Any]):
+    def __init__(self, app, config: dict[str, Any]) -> None:
         """Initialize middleware."""
         self.app = app
         self.config = config
@@ -576,7 +576,7 @@ class AutoSecurityMiddleware:
             ],
         )
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope, receive, send) -> None:
         """Process request through security middleware."""
         if scope["type"] == "http":
             path = scope["path"]

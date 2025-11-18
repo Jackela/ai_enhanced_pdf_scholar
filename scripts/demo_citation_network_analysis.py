@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Citation Network Analysis Demo Script
@@ -263,7 +265,7 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
 
 def demonstrate_network_analysis(
     citation_service: CitationService, doc_ids: dict[str, int]
-):
+) -> None:
     """
     Demonstrate various citation network analysis features.
 
@@ -374,7 +376,7 @@ def demonstrate_network_analysis(
                 )
 
 
-def export_network_data(network: dict, output_file: str):
+def export_network_data(network: dict, output_file: str) -> None:
     """
     Export network data to JSON for visualization.
 
@@ -405,7 +407,7 @@ def export_network_data(network: dict, output_file: str):
     print("   This file can be used for network visualization tools")
 
 
-def main():
+def main() -> None:
     """Main demo execution."""
     logger.info("Starting Citation Network Analysis Demo")
 

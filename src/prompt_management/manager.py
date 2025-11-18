@@ -8,7 +8,7 @@ from jinja2 import Template
 class PromptManager:
     """Manages loading and formatting of prompts from a directory."""
 
-    def __init__(self, template_dir: str = "prompt_templates"):
+    def __init__(self, template_dir: str = "prompt_templates") -> None:
         """
         Initializes the PromptManager.
 
@@ -19,7 +19,7 @@ class PromptManager:
         self.prompts: dict[str, dict[str, Any]] = {}
         self._load_prompts()
 
-    def _load_prompts(self):
+    def _load_prompts(self) -> None:
         """Loads all prompt YAML files from the template directory."""
         if not os.path.isdir(self.template_dir):
             raise FileNotFoundError(

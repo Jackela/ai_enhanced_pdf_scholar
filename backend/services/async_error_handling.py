@@ -66,7 +66,7 @@ class ErrorContext:
     last_occurrence: datetime = field(default_factory=datetime.now)
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def update_occurrence(self):
+    def update_occurrence(self) -> None:
         """Update last occurrence timestamp."""
         self.last_occurrence = datetime.now()
         self.attempt_count += 1
@@ -95,7 +95,7 @@ class AsyncCircuitBreaker:
         failure_threshold: int = 5,
         recovery_timeout: float = 300.0,
         expected_exception: type[Exception] = Exception,
-    ):
+    ) -> None:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.expected_exception = expected_exception
@@ -104,7 +104,7 @@ class AsyncCircuitBreaker:
         self.last_failure_time = None
         self.state = "closed"  # closed, open, half-open
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Enter circuit breaker context."""
         if self.state == "open":
             if self._should_attempt_reset():
@@ -115,7 +115,7 @@ class AsyncCircuitBreaker:
                 )
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit circuit breaker context."""
         if exc_type is None:
             # Success
@@ -132,12 +132,12 @@ class AsyncCircuitBreaker:
             return True
         return time.time() - self.last_failure_time >= self.recovery_timeout
 
-    def _on_success(self):
+    def _on_success(self) -> None:
         """Handle successful operation."""
         self.failure_count = 0
         self.state = "closed"
 
-    def _on_failure(self):
+    def _on_failure(self) -> None:
         """Handle failed operation."""
         self.failure_count += 1
         self.last_failure_time = time.time()
@@ -155,7 +155,7 @@ class CircuitBreakerOpenError(Exception):
 class AsyncErrorHandler:
     """Comprehensive async error handling with recovery strategies."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.error_history: dict[str, list[ErrorContext]] = {}
         self.circuit_breakers: dict[str, AsyncCircuitBreaker] = {}
         self.recovery_configs: dict[ErrorCategory, RecoveryConfig] = {
@@ -299,7 +299,7 @@ class AsyncErrorHandler:
         config: RecoveryConfig | None = None,
         task_id: str | None = None,
         client_id: str | None = None,
-    ):
+    ) -> None:
         """Context manager for retry logic with exponential backoff."""
 
         attempt = 0
@@ -449,7 +449,7 @@ class AsyncErrorHandler:
             "error_operations": list(self.error_history.keys()),
         }
 
-    async def clear_error_history(self, older_than_hours: int = 24):
+    async def clear_error_history(self, older_than_hours: int = 24) -> Any:
         """Clear old error history to prevent memory buildup."""
 
         cutoff_time = datetime.now() - timedelta(hours=older_than_hours)
@@ -477,12 +477,12 @@ def with_async_error_handling(
     max_retries: int = 3,
     circuit_breaker: bool = False,
     timeout_seconds: float | None = None,
-):
+) -> Any:
     """Decorator for automatic async error handling."""
 
-    def decorator(func):
+    def decorator(func) -> Any:
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             nonlocal operation_name
             if operation_name is None:
                 operation_name = f"{func.__module__}.{func.__name__}"

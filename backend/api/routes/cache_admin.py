@@ -108,7 +108,7 @@ async def get_cache_health(
     cache_service: CacheServiceIntegration | None = Depends(
         get_cache_service_dependency
     ),
-):
+) -> Any:
     """
     Get comprehensive cache system health status.
 
@@ -155,7 +155,7 @@ async def get_cache_statistics(
         get_cache_service_dependency
     ),
     current_user=Depends(get_current_user),  # Require authentication for detailed stats
-):
+) -> Any:
     """
     Get detailed cache performance statistics.
 
@@ -192,7 +192,7 @@ async def get_cache_statistics(
 @router.get("/configuration")
 async def get_cache_configuration(
     current_user=Depends(get_current_user),  # Require authentication for config access
-):
+) -> Any:
     """
     Get current cache system configuration.
 
@@ -235,7 +235,7 @@ async def invalidate_cache_pattern(
     current_user=Depends(
         get_current_user
     ),  # Require authentication for cache management
-):
+) -> Any:
     """
     Invalidate cache entries matching a pattern.
 
@@ -281,7 +281,7 @@ async def warm_cache(
     current_user=Depends(
         get_current_user
     ),  # Require authentication for cache management
-):
+) -> Any:
     """
     Warm cache with provided data.
 
@@ -326,7 +326,7 @@ async def clear_all_caches(
     current_user=Depends(
         get_current_user
     ),  # Require authentication for dangerous operations
-):
+) -> Any:
     """
     Clear all cache entries across all levels.
 
@@ -373,7 +373,7 @@ async def get_cache_value(
         get_cache_service_dependency
     ),
     current_user=Depends(get_current_user),  # Require authentication
-):
+) -> Any:
     """
     Get value from cache by key.
 
@@ -413,7 +413,7 @@ async def set_cache_value(
         get_cache_service_dependency
     ),
     current_user=Depends(get_current_user),  # Require authentication
-):
+) -> Any:
     """
     Set value in cache.
 
@@ -458,7 +458,7 @@ async def delete_cache_value(
         get_cache_service_dependency
     ),
     current_user=Depends(get_current_user),  # Require authentication
-):
+) -> Any:
     """
     Delete value from cache.
 
@@ -495,7 +495,7 @@ async def set_multiple_cache_values(
         get_cache_service_dependency
     ),
     current_user=Depends(get_current_user),  # Require authentication
-):
+) -> Any:
     """
     Set multiple values in cache.
 
@@ -541,7 +541,7 @@ async def get_multiple_cache_values(
         get_cache_service_dependency
     ),
     current_user=Depends(get_current_user),  # Require authentication
-):
+) -> Any:
     """
     Get multiple values from cache.
 

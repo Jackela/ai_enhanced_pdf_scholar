@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Quick API Health Test
@@ -17,7 +19,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 
-async def test_health_endpoints():
+async def test_health_endpoints() -> Any:
     """Test various health endpoints."""
     endpoints = [
         ("http://127.0.0.1:8000/", "Root endpoint"),
@@ -63,7 +65,7 @@ async def test_health_endpoints():
         return False
 
 
-async def main():
+async def main() -> Any:
     """Main test function."""
     # First check if server is already running
     print("Checking if API server is already running...")

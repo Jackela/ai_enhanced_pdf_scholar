@@ -67,7 +67,7 @@ class CostOptimization:
 class AWSCostAnalyzer:
     """Analyze AWS costs and usage patterns"""
 
-    def __init__(self, region: str = "us-west-2"):
+    def __init__(self, region: str = "us-west-2") -> None:
         self.region = region
         self.ec2_client = boto3.client("ec2", region_name=region)
         self.autoscaling_client = boto3.client("autoscaling", region_name=region)
@@ -208,9 +208,7 @@ class AWSCostAnalyzer:
             network_io = (
                 sum([m["Sum"] for m in network_in["Datapoints"]])
                 + sum([m["Sum"] for m in network_out["Datapoints"]])
-            ) / (
-                1024 * 1024 * 1024
-            )  # Convert to GB
+            ) / (1024 * 1024 * 1024)  # Convert to GB
 
             # Disk I/O
             try:
@@ -237,9 +235,7 @@ class AWSCostAnalyzer:
                 disk_io = (
                     sum([m["Sum"] for m in disk_read["Datapoints"]])
                     + sum([m["Sum"] for m in disk_write["Datapoints"]])
-                ) / (
-                    1024 * 1024 * 1024
-                )  # Convert to GB
+                ) / (1024 * 1024 * 1024)  # Convert to GB
             except:
                 disk_io = 0
 
@@ -354,7 +350,7 @@ class CostOptimizer:
 
     def __init__(
         self, region: str = "us-west-2", prometheus_url: str = "http://prometheus:9090"
-    ):
+    ) -> None:
         self.aws_analyzer = AWSCostAnalyzer(region)
         self.prometheus = PrometheusConnect(url=prometheus_url, disable_ssl=True)
 
@@ -794,7 +790,7 @@ class CostOptimizer:
 
 
 # CLI interface
-async def main():
+async def main() -> None:
     """Main entry point for cost optimizer"""
     import argparse
 

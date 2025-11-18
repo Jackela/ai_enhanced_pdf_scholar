@@ -44,7 +44,7 @@ class MetricsSubscriptionRequest(BaseModel):
 class MetricsWebSocketHandler:
     """Handles WebSocket connections for real-time metrics streaming."""
 
-    def __init__(self, client_id: str, websocket: WebSocket):
+    def __init__(self, client_id: str, websocket: WebSocket) -> None:
         self.client_id = client_id
         self.websocket = websocket
         self.subscriptions: set[MetricType] = set()
@@ -52,7 +52,7 @@ class MetricsWebSocketHandler:
         self.streaming_task: asyncio.Task | None = None
         self.last_update = datetime.now()
 
-    async def handle_connection(self):
+    async def handle_connection(self) -> None:
         """Handle the WebSocket connection lifecycle."""
         try:
             # Accept connection
@@ -93,7 +93,7 @@ class MetricsWebSocketHandler:
         finally:
             await self.cleanup()
 
-    async def handle_client_message(self, message: dict[str, Any]):
+    async def handle_client_message(self, message: dict[str, Any]) -> None:
         """Handle incoming client messages."""
         try:
             message_type = message.get("type")
@@ -115,7 +115,7 @@ class MetricsWebSocketHandler:
             logger.error(f"Error handling client message: {e}")
             await self.send_error(f"Error processing message: {e}")
 
-    async def handle_subscription(self, message: dict[str, Any]):
+    async def handle_subscription(self, message: dict[str, Any]) -> None:
         """Handle subscription requests."""
         try:
             metric_types = message.get("metric_types", [])
@@ -162,7 +162,7 @@ class MetricsWebSocketHandler:
             logger.error(f"Error handling subscription: {e}")
             await self.send_error(f"Subscription error: {e}")
 
-    async def handle_unsubscription(self, message: dict[str, Any]):
+    async def handle_unsubscription(self, message: dict[str, Any]) -> None:
         """Handle unsubscription requests."""
         try:
             metric_types = message.get("metric_types", [])
@@ -204,7 +204,7 @@ class MetricsWebSocketHandler:
             logger.error(f"Error handling unsubscription: {e}")
             await self.send_error(f"Unsubscription error: {e}")
 
-    async def handle_current_metrics_request(self):
+    async def handle_current_metrics_request(self) -> None:
         """Handle request for current metrics snapshot."""
         try:
             if not metrics_collector:
@@ -237,7 +237,7 @@ class MetricsWebSocketHandler:
             logger.error(f"Error handling current metrics request: {e}")
             await self.send_error(f"Current metrics error: {e}")
 
-    async def _stream_metrics(self):
+    async def _stream_metrics(self) -> None:
         """Background task to stream metrics at specified interval."""
         try:
             while self.subscriptions:
@@ -276,7 +276,7 @@ class MetricsWebSocketHandler:
 
     async def _on_metrics_update(
         self, metrics_update: dict[MetricType, dict[str, Any]]
-    ):
+    ) -> None:
         """Handle metrics update from collector."""
         try:
             # Only process if we have active subscriptions
@@ -302,7 +302,7 @@ class MetricsWebSocketHandler:
         except Exception as e:
             logger.error(f"Error handling metrics update: {e}")
 
-    async def send_message(self, message: dict[str, Any]):
+    async def send_message(self, message: dict[str, Any]) -> None:
         """Send message to WebSocket client."""
         try:
             await self.websocket.send_text(json.dumps(message))
@@ -310,7 +310,7 @@ class MetricsWebSocketHandler:
             logger.error(f"Failed to send message to client {self.client_id}: {e}")
             raise
 
-    async def send_error(self, error_message: str):
+    async def send_error(self, error_message: str) -> None:
         """Send error message to client."""
         try:
             await self.send_message(
@@ -323,7 +323,7 @@ class MetricsWebSocketHandler:
         except Exception as e:
             logger.error(f"Failed to send error message: {e}")
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up resources when connection closes."""
         try:
             # Cancel streaming task
@@ -350,7 +350,7 @@ class MetricsWebSocketHandler:
 
 
 @router.websocket("/ws/metrics/{client_id}")
-async def metrics_websocket_endpoint(websocket: WebSocket, client_id: str):
+async def metrics_websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
     """
     WebSocket endpoint for real-time metrics streaming.
 
@@ -364,7 +364,7 @@ async def metrics_websocket_endpoint(websocket: WebSocket, client_id: str):
 
 
 @router.websocket("/ws/system-health/{client_id}")
-async def system_health_websocket(websocket: WebSocket, client_id: str):
+async def system_health_websocket(websocket: WebSocket, client_id: str) -> None:
     """
     WebSocket endpoint for system health monitoring with alerts.
     """
@@ -437,7 +437,7 @@ async def system_health_websocket(websocket: WebSocket, client_id: str):
 
 
 @router.get("/metrics/websocket/stats")
-async def get_websocket_stats():
+async def get_websocket_stats() -> Any:
     """Get statistics about active WebSocket connections and subscriptions."""
     try:
         stats = {
@@ -483,7 +483,7 @@ async def get_websocket_stats():
 
 def initialize_metrics_websocket(
     collector_instance: RealTimeMetricsCollector, ws_manager: WebSocketManager
-):
+) -> None:
     """Initialize metrics WebSocket services."""
     global metrics_collector, websocket_manager
     metrics_collector = collector_instance

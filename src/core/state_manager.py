@@ -54,7 +54,7 @@ class StateManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize state manager with default application state."""
         if hasattr(self, "_initialized"):
             return

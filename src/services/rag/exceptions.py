@@ -17,7 +17,7 @@ class RAGBaseException(Exception):
         error_code: str | None = None,
         details: dict[str, Any] | None = None,
         suggestions: list[str] | None = None,
-    ):
+    ) -> None:
         self.message = message
         self.error_code = error_code or self.__class__.__name__
         self.details = details or {}
@@ -134,7 +134,7 @@ class RAGAuthorizationError(RAGBaseException):
 class DocumentProcessingError(RAGProcessingError):
     """Raised when document processing fails."""
 
-    def __init__(self, document_id: int, stage: str, message: str, **kwargs):
+    def __init__(self, document_id: int, stage: str, message: str, **kwargs) -> None:
         self.document_id = document_id
         self.stage = stage
         details = {
@@ -153,7 +153,7 @@ class DocumentProcessingError(RAGProcessingError):
 class IndexBuildError(RAGIndexError):
     """Raised when index building fails."""
 
-    def __init__(self, document_id: int, message: str, **kwargs):
+    def __init__(self, document_id: int, message: str, **kwargs) -> None:
         self.document_id = document_id
         details = {"document_id": document_id, **kwargs.get("details", {})}
         suggestions = [
@@ -169,7 +169,7 @@ class QueryProcessingError(RAGQueryError):
 
     def __init__(
         self, query: str, document_id: int | None = None, message: str = "", **kwargs
-    ):
+    ) -> None:
         self.query = query
         self.document_id = document_id
         details = {
@@ -192,7 +192,7 @@ class QueryProcessingError(RAGQueryError):
 class VectorStoreError(RAGVectorError):
     """Raised when vector store operations fail."""
 
-    def __init__(self, operation: str, message: str, **kwargs):
+    def __init__(self, operation: str, message: str, **kwargs) -> None:
         self.operation = operation
         details = {"operation": operation, **kwargs.get("details", {})}
         suggestions = [
@@ -206,7 +206,7 @@ class VectorStoreError(RAGVectorError):
 class LLMServiceError(RAGBaseException):
     """Raised when LLM service interactions fail."""
 
-    def __init__(self, service: str, message: str, **kwargs):
+    def __init__(self, service: str, message: str, **kwargs) -> None:
         self.service = service
         details = {"service": service, **kwargs.get("details", {})}
         suggestions = [
@@ -220,7 +220,7 @@ class LLMServiceError(RAGBaseException):
 class ContextBuildError(RAGBaseException):
     """Raised when context building fails."""
 
-    def __init__(self, context_type: str, message: str, **kwargs):
+    def __init__(self, context_type: str, message: str, **kwargs) -> None:
         self.context_type = context_type
         details = {"context_type": context_type, **kwargs.get("details", {})}
         suggestions = [
@@ -237,7 +237,7 @@ class ContextBuildError(RAGBaseException):
 class FileOperationError(RAGFileError):
     """Raised when file operations fail."""
 
-    def __init__(self, operation: str, file_path: str, message: str, **kwargs):
+    def __init__(self, operation: str, file_path: str, message: str, **kwargs) -> None:
         self.operation = operation
         self.file_path = file_path
         details = {
@@ -256,7 +256,7 @@ class FileOperationError(RAGFileError):
 class StorageQuotaExceededError(RAGStorageError):
     """Raised when storage quota is exceeded."""
 
-    def __init__(self, current_usage: int, quota_limit: int, **kwargs):
+    def __init__(self, current_usage: int, quota_limit: int, **kwargs) -> None:
         self.current_usage = current_usage
         self.quota_limit = quota_limit
         details = {
@@ -282,7 +282,9 @@ class StorageQuotaExceededError(RAGStorageError):
 class PerformanceDegradationError(RAGPerformanceError):
     """Raised when significant performance degradation detected."""
 
-    def __init__(self, metric: str, current_value: float, threshold: float, **kwargs):
+    def __init__(
+        self, metric: str, current_value: float, threshold: float, **kwargs
+    ) -> None:
         self.metric = metric
         self.current_value = current_value
         self.threshold = threshold
@@ -305,7 +307,7 @@ class PerformanceDegradationError(RAGPerformanceError):
 class QualityAssessmentError(RAGQualityError):
     """Raised when quality assessment fails."""
 
-    def __init__(self, assessment_type: str, message: str, **kwargs):
+    def __init__(self, assessment_type: str, message: str, **kwargs) -> None:
         self.assessment_type = assessment_type
         details = {"assessment_type": assessment_type, **kwargs.get("details", {})}
         suggestions = [
@@ -319,7 +321,9 @@ class QualityAssessmentError(RAGQualityError):
 class HallucinationDetectedError(RAGQualityError):
     """Raised when potential hallucination is detected in responses."""
 
-    def __init__(self, confidence: float, fabricated_claims: list[str], **kwargs):
+    def __init__(
+        self, confidence: float, fabricated_claims: list[str], **kwargs
+    ) -> None:
         self.confidence = confidence
         self.fabricated_claims = fabricated_claims
         details = {
@@ -342,7 +346,7 @@ class HallucinationDetectedError(RAGQualityError):
 class MemoryLimitExceededError(RAGMemoryError):
     """Raised when memory limits are exceeded."""
 
-    def __init__(self, current_usage: int, memory_limit: int, **kwargs):
+    def __init__(self, current_usage: int, memory_limit: int, **kwargs) -> None:
         self.current_usage = current_usage
         self.memory_limit = memory_limit
         details = {
@@ -365,7 +369,7 @@ class MemoryLimitExceededError(RAGMemoryError):
 class ConcurrencyLimitError(RAGBaseException):
     """Raised when concurrency limits are exceeded."""
 
-    def __init__(self, active_operations: int, max_concurrent: int, **kwargs):
+    def __init__(self, active_operations: int, max_concurrent: int, **kwargs) -> None:
         self.active_operations = active_operations
         self.max_concurrent = max_concurrent
         details = {

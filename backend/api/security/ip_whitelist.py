@@ -113,7 +113,7 @@ class ProductionIPWhitelist:
         self,
         production_config: ProductionConfig | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize IP whitelist system."""
         self.production_config = production_config
         self.metrics_service = metrics_service
@@ -147,7 +147,7 @@ class ProductionIPWhitelist:
 
         logger.info("Production IP whitelist system initialized")
 
-    def _initialize_default_rules(self):
+    def _initialize_default_rules(self) -> None:
         """Initialize default IP rules for production."""
         default_rules = [
             # Private network ranges (usually blocked in production)
@@ -209,7 +209,7 @@ class ProductionIPWhitelist:
         self.ip_rules.extend(default_rules)
         self.ip_rules.sort(key=lambda r: r.priority)
 
-    def _load_production_rules(self):
+    def _load_production_rules(self) -> None:
         """Load production-specific IP rules."""
         if not self.production_config:
             return
@@ -334,7 +334,7 @@ class ProductionIPWhitelist:
             logger.error(f"Invalid IP range: {ip_range} - {e}")
             return False
 
-    def _clear_cache_for_network(self, network):
+    def _clear_cache_for_network(self, network) -> None:
         """Clear cache entries that might be affected by network rule change."""
         # This is simplified - in production you'd check which cached IPs fall within the network
         if len(self.ip_cache) > 10000:  # If cache is large, clear it entirely
@@ -545,7 +545,7 @@ class ProductionIPWhitelist:
 
     async def _log_access_attempt(
         self, ip_address: str, action: IPAccessAction, request: Request | None
-    ):
+    ) -> None:
         """Log IP access attempt."""
         try:
             attempt = IPAccessAttempt(
@@ -658,11 +658,11 @@ class IPWhitelistMiddleware:
     FastAPI middleware for IP whitelist enforcement.
     """
 
-    def __init__(self, ip_whitelist: ProductionIPWhitelist):
+    def __init__(self, ip_whitelist: ProductionIPWhitelist) -> None:
         """Initialize IP whitelist middleware."""
         self.ip_whitelist = ip_whitelist
 
-    async def __call__(self, request: Request, call_next):
+    async def __call__(self, request: Request, call_next) -> Any:
         """Check IP access before processing request."""
         # Get client IP address
         client_ip = self._get_client_ip(request)
@@ -725,14 +725,14 @@ def setup_ip_whitelist_middleware(
 
     # Add management endpoints
     @app.get("/admin/ip-whitelist/stats")
-    async def get_ip_stats():
+    async def get_ip_stats() -> Any:
         """Get IP whitelist statistics."""
         return ip_whitelist.get_statistics()
 
     @app.post("/admin/ip-whitelist/add")
     async def add_ip_rule(
         ip_range: str, action: str, description: str, priority: int = 1000
-    ):
+    ) -> Any:
         """Add new IP rule."""
         try:
             action_enum = IPAccessAction(action)
@@ -744,7 +744,7 @@ def setup_ip_whitelist_middleware(
             raise HTTPException(status_code=400, detail=str(e)) from e
 
     @app.delete("/admin/ip-whitelist/remove")
-    async def remove_ip_rule(ip_range: str):
+    async def remove_ip_rule(ip_range: str) -> Any:
         """Remove IP rule."""
         result = ip_whitelist.remove_ip_rule(ip_range)
         return {"success": result}

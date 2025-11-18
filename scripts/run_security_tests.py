@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class SecurityTestOrchestrator:
     """Orchestrates all security testing activities."""
 
-    def __init__(self, target_url: str, output_dir: str = "security_reports"):
+    def __init__(self, target_url: str, output_dir: str = "security_reports") -> None:
         self.target_url = target_url
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
@@ -601,7 +601,7 @@ web application security, and common penetration testing techniques.
         logger.info(f"HTML report saved: {html_file}")
 
 
-async def main():
+async def main() -> Any:
     """Main function to run security testing."""
     parser = argparse.ArgumentParser(description="Comprehensive Security Testing Suite")
     parser.add_argument("--target", "-t", required=True, help="Target URL to test")

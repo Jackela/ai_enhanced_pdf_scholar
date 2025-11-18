@@ -49,7 +49,7 @@ class ProductionEnvironmentManager:
     and graceful shutdown.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize production environment manager."""
         self.services: ProductionServices | None = None
         self.initialization_complete = False
@@ -175,7 +175,7 @@ class ProductionEnvironmentManager:
 
     async def _initialization_step(
         self, step_name: str, description: str, step_function
-    ):
+    ) -> Any:
         """Execute an initialization step with monitoring."""
         step_start = time.time()
         logger.info(f"Step: {description}")
@@ -214,7 +214,7 @@ class ProductionEnvironmentManager:
 
             raise
 
-    async def _initialize_production_config(self):
+    async def _initialize_production_config(self) -> None:
         """Initialize production configuration."""
         from ..config.production import ProductionConfig
 
@@ -236,7 +236,7 @@ class ProductionEnvironmentManager:
         else:
             self.services.production_config = production_config
 
-    async def _initialize_secrets_integration(self):
+    async def _initialize_secrets_integration(self) -> None:
         """Initialize secrets management integration with Agent A1."""
         from ..config.secrets_integration import create_production_secrets_integration
 
@@ -247,7 +247,7 @@ class ProductionEnvironmentManager:
         await secrets_integration.initialize()
         self.services.secrets_integration = secrets_integration
 
-    async def _initialize_database_manager(self):
+    async def _initialize_database_manager(self) -> None:
         """Initialize production database manager."""
         from ..database.production_config import create_production_database_manager
 
@@ -258,7 +258,7 @@ class ProductionEnvironmentManager:
         await database_manager.initialize()
         self.services.database_manager = database_manager
 
-    async def _initialize_redis_manager(self):
+    async def _initialize_redis_manager(self) -> None:
         """Initialize Redis cluster manager."""
         from ..config.redis_cluster import create_redis_cluster_manager
 
@@ -273,7 +273,7 @@ class ProductionEnvironmentManager:
         await redis_manager.initialize()
         self.services.redis_manager = redis_manager
 
-    async def _initialize_metrics_and_alerting(self):
+    async def _initialize_metrics_and_alerting(self) -> None:
         """Initialize metrics and alerting services (Agent A2 integration)."""
         from ..services.alert_service import AlertingService
         from ..services.metrics_service import MetricsService
@@ -296,7 +296,7 @@ class ProductionEnvironmentManager:
         self.services.metrics_service = metrics_service
         self.services.alerting_service = alerting_service
 
-    async def _initialize_security_components(self):
+    async def _initialize_security_components(self) -> None:
         """Initialize security components."""
         from ..api.security.ip_whitelist import create_production_ip_whitelist
         from ..api.security.production_headers import create_production_security_headers
@@ -323,7 +323,7 @@ class ProductionEnvironmentManager:
         self.services.ip_whitelist = ip_whitelist
         self.services.request_signing = request_signing
 
-    async def _initialize_monitoring_service(self):
+    async def _initialize_monitoring_service(self) -> None:
         """Initialize comprehensive monitoring service."""
         from ..services.production_monitoring import (
             create_production_monitoring_service,
@@ -340,14 +340,14 @@ class ProductionEnvironmentManager:
 
         self.services.monitoring_service = monitoring_service
 
-    async def _start_background_tasks(self):
+    async def _start_background_tasks(self) -> None:
         """Start all background monitoring and maintenance tasks."""
         # Start monitoring service
         await self.services.monitoring_service.start_monitoring()
 
         logger.info("All background tasks started successfully")
 
-    async def _run_initial_health_checks(self):
+    async def _run_initial_health_checks(self) -> None:
         """Run initial health checks to verify system status."""
         health_status = self.services.monitoring_service.get_overall_health()
 
@@ -362,10 +362,10 @@ class ProductionEnvironmentManager:
 
         logger.info(f"Initial health check passed: {health_status['status']}")
 
-    async def _register_shutdown_handlers(self):
+    async def _register_shutdown_handlers(self) -> None:
         """Register graceful shutdown handlers."""
 
-        def signal_handler(signum, frame):
+        def signal_handler(signum, frame) -> None:
             logger.info(f"Received signal {signum}, initiating graceful shutdown")
             asyncio.create_task(self.shutdown_production_environment())
 
@@ -375,7 +375,7 @@ class ProductionEnvironmentManager:
 
         logger.info("Shutdown handlers registered")
 
-    async def shutdown_production_environment(self):
+    async def shutdown_production_environment(self) -> None:
         """Gracefully shutdown all production services."""
         if self.shutdown_initiated:
             logger.info("Shutdown already in progress")
@@ -404,7 +404,7 @@ class ProductionEnvironmentManager:
             logger.error(f"Error during shutdown: {e}")
             raise
 
-    async def _cleanup_services(self):
+    async def _cleanup_services(self) -> None:
         """Cleanup all services in proper order."""
         if not self.services:
             return
@@ -433,7 +433,7 @@ class ProductionEnvironmentManager:
         logger.info("Service cleanup completed")
 
     @asynccontextmanager
-    async def production_environment_context(self):
+    async def production_environment_context(self) -> None:
         """Context manager for production environment lifecycle."""
         services = None
         try:
@@ -509,14 +509,14 @@ async def initialize_production_environment() -> ProductionServices:
     return await manager.initialize_production_environment()
 
 
-async def shutdown_production_environment():
+async def shutdown_production_environment() -> None:
     """Shutdown production environment."""
     manager = get_production_manager()
     await manager.shutdown_production_environment()
 
 
 @asynccontextmanager
-async def production_environment():
+async def production_environment() -> None:
     """Context manager for complete production environment."""
     manager = get_production_manager()
     async with manager.production_environment_context() as services:
@@ -524,11 +524,11 @@ async def production_environment():
 
 
 # FastAPI integration
-def setup_production_app(app):
+def setup_production_app(app) -> Any:
     """Set up FastAPI application with all production services."""
 
     @app.on_event("startup")
-    async def startup_event():
+    async def startup_event() -> None:
         """Initialize production environment on application startup."""
         try:
             services = await initialize_production_environment()
@@ -539,7 +539,7 @@ def setup_production_app(app):
             raise
 
     @app.on_event("shutdown")
-    async def shutdown_event():
+    async def shutdown_event() -> None:
         """Cleanup production environment on application shutdown."""
         try:
             await shutdown_production_environment()
@@ -549,7 +549,7 @@ def setup_production_app(app):
 
     # Add health check endpoints
     @app.get("/health/production")
-    async def production_health():
+    async def production_health() -> Any:
         """Get production environment health status."""
         if hasattr(app.state, "production_services"):
             services = app.state.production_services
@@ -559,7 +559,7 @@ def setup_production_app(app):
         return {"status": "unknown", "message": "Production services not initialized"}
 
     @app.get("/admin/production/initialization")
-    async def initialization_report():
+    async def initialization_report() -> Any:
         """Get production environment initialization report."""
         manager = get_production_manager()
         return manager.get_initialization_report()

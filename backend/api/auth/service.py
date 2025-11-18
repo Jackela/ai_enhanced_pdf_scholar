@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Authentication Service
 Core authentication business logic and user management.
@@ -33,7 +35,7 @@ class AuthenticationService:
     Authentication service handling user registration, login, and token management.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         """
         Initialize authentication service.
 
@@ -472,7 +474,7 @@ class AuthenticationService:
             logger.error(f"Failed to revoke all tokens: {str(e)}")
             return False
 
-    def _revoke_token_family(self, token_family: str, reason: str):
+    def _revoke_token_family(self, token_family: str, reason: str) -> None:
         """
         Revoke all tokens in a family (security measure).
 
@@ -719,7 +721,7 @@ class AuthenticationService:
         """Get user by email."""
         return self.db.query(UserModel).filter(UserModel.email == email.lower()).first()
 
-    def update_user_activity(self, user_id: int):
+    def update_user_activity(self, user_id: int) -> None:
         """Update user's last activity timestamp."""
         try:
             user = self.db.query(UserModel).filter(UserModel.id == user_id).first()

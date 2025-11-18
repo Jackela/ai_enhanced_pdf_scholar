@@ -306,7 +306,7 @@ class LogPatternLibrary:
 class LogParser:
     """Advanced log parser with multiple format support."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Common log format patterns
         self.format_patterns = {
             # Standard Python logging format
@@ -494,7 +494,7 @@ class LogParser:
 class LogAnalysisEngine:
     """Advanced log analysis engine with pattern recognition and predictive capabilities."""
 
-    def __init__(self, cache_dir: Path | None = None):
+    def __init__(self, cache_dir: Path | None = None) -> None:
         self.parser = LogParser()
         self.pattern_library = LogPatternLibrary()
         self.cache_dir = cache_dir or Path("/tmp/log_analysis_cache")
@@ -576,7 +576,7 @@ class LogAnalysisEngine:
 
         return results
 
-    def _load_logs(self, log_sources: list[Union[str, Path]], timeframe: str):
+    def _load_logs(self, log_sources: list[Union[str, Path]], timeframe: str) -> None:
         """Load and parse log files within the specified timeframe."""
 
         # Calculate time window
@@ -1241,7 +1241,7 @@ class OutputFormatter:
     def _format_json(results: dict[str, Any]) -> str:
         """Format as JSON."""
 
-        def json_serializer(obj):
+        def json_serializer(obj) -> Any:
             if isinstance(obj, (datetime, LogLevel, AnalysisType)):
                 return str(obj)
             elif hasattr(obj, "__dict__"):
@@ -1524,7 +1524,7 @@ class OutputFormatter:
 # ============================================================================
 
 
-def main():
+def main() -> Any:
     """Main CLI interface for the log analysis system."""
     parser = argparse.ArgumentParser(
         description="Advanced Log Analysis System for AI Enhanced PDF Scholar",

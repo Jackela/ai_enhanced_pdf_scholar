@@ -74,7 +74,7 @@ class SimpleAlertingService:
     threshold-based rules and notification capabilities.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.rules: dict[str, AlertRule] = {}
         self.active_alerts: dict[str, Alert] = {}
         self.alert_history: list[Alert] = []
@@ -86,7 +86,7 @@ class SimpleAlertingService:
 
         logger.info("SimpleAlertingService initialized")
 
-    def _initialize_default_rules(self):
+    def _initialize_default_rules(self) -> None:
         """Initialize default alert rules for common metrics."""
         default_rules = [
             AlertRule(
@@ -238,18 +238,18 @@ class SimpleAlertingService:
             logger.error(f"Error disabling alert rule: {e}")
             return False
 
-    def add_alert_callback(self, callback: Callable[[Alert], None]):
+    def add_alert_callback(self, callback: Callable[[Alert], None]) -> None:
         """Add a callback function to be called when alerts are triggered."""
         self.alert_callbacks.append(callback)
 
-    def remove_alert_callback(self, callback: Callable[[Alert], None]):
+    def remove_alert_callback(self, callback: Callable[[Alert], None]) -> None:
         """Remove an alert callback."""
         try:
             self.alert_callbacks.remove(callback)
         except ValueError:
             pass
 
-    def evaluate_metrics(self, metrics_data: dict[str, Any]):
+    def evaluate_metrics(self, metrics_data: dict[str, Any]) -> None:
         """Evaluate metrics against alert rules and trigger alerts."""
         try:
             current_time = time.time()
@@ -343,7 +343,7 @@ class SimpleAlertingService:
             metadata={"rule_id": rule.rule_id, "condition": rule.condition},
         )
 
-    def _trigger_alert(self, alert: Alert):
+    def _trigger_alert(self, alert: Alert) -> None:
         """Trigger an alert and notify callbacks."""
         try:
             # Add to active alerts

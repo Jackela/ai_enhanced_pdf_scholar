@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class TestEnvironmentValidator:
     """Comprehensive test environment validator."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.results = {
             "python_environment": {"status": "unknown", "details": {}},
             "test_dependencies": {"status": "unknown", "details": {}},
@@ -74,7 +74,7 @@ class TestEnvironmentValidator:
                 "ready_for_testing": False,
             }
 
-    def _validate_python_environment(self):
+    def _validate_python_environment(self) -> None:
         """Validate Python environment and version."""
         print("🐍 Checking Python environment...")
 
@@ -116,7 +116,7 @@ class TestEnvironmentValidator:
             self.issues.append(f"Python environment check failed: {e}")
             print(f"❌ Python environment check failed: {e}")
 
-    def _validate_test_dependencies(self):
+    def _validate_test_dependencies(self) -> None:
         """Validate test framework dependencies."""
         print("\n📦 Checking test dependencies...")
 
@@ -160,7 +160,7 @@ class TestEnvironmentValidator:
                 "installed": installed_packages
             }
 
-    def _validate_import_system(self):
+    def _validate_import_system(self) -> None:
         """Validate project import system."""
         print("\n🔗 Checking import system...")
 
@@ -195,7 +195,7 @@ class TestEnvironmentValidator:
             self.results["import_system"]["status"] = "ok"
             self.results["import_system"]["details"] = {"status": import_status}
 
-    def _validate_database_system(self):
+    def _validate_database_system(self) -> None:
         """Validate database connection and basic operations."""
         print("\n🗄️  Checking database system...")
 
@@ -248,7 +248,7 @@ class TestEnvironmentValidator:
             self.issues.append(f"Database system error: {e}")
             print(f"❌ Database system: {e}")
 
-    def _validate_migration_system(self):
+    def _validate_migration_system(self) -> None:
         """Validate database migration system."""
         print("\n🔄 Checking migration system...")
 
@@ -319,7 +319,7 @@ class TestEnvironmentValidator:
             self.issues.append(f"Migration system error: {e}")
             print(f"❌ Migration system: {e}")
 
-    def _validate_mock_framework(self):
+    def _validate_mock_framework(self) -> None:
         """Validate mock framework configuration."""
         print("\n🎭 Checking mock framework...")
 
@@ -369,7 +369,7 @@ class TestEnvironmentValidator:
             self.issues.append(f"Mock framework error: {e}")
             print(f"❌ Mock framework: {e}")
 
-    def _calculate_overall_health(self):
+    def _calculate_overall_health(self) -> None:
         """Calculate overall health percentage."""
         total_checks = len(self.results)
         passed_checks = sum(
@@ -378,7 +378,7 @@ class TestEnvironmentValidator:
 
         self.overall_health = int((passed_checks / total_checks) * 100)
 
-    def _print_summary(self):
+    def _print_summary(self) -> None:
         """Print comprehensive summary."""
         print("\n" + "=" * 60)
         print("📊 TEST ENVIRONMENT HEALTH REPORT")
@@ -406,7 +406,7 @@ class TestEnvironmentValidator:
         print("\n" + "=" * 60)
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     validator = TestEnvironmentValidator()
     results = validator.validate_all()

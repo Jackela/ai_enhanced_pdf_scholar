@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Simple Performance Benchmark Script
@@ -29,12 +31,12 @@ from src.database.connection import DatabaseConnection
 class SimpleBenchmark:
     """Simple benchmark suite for core operations"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.db_path = tempfile.mktemp(suffix=".db")
         self.db = None
         self.results = {}
 
-    def setup_database(self):
+    def setup_database(self) -> None:
         """Setup test database"""
         logger.info("Setting up test database...")
         self.db = DatabaseConnection(self.db_path)
@@ -45,7 +47,7 @@ class SimpleBenchmark:
 
         logger.info("Database setup complete")
 
-    def benchmark_basic_queries(self, runs: int = 50):
+    def benchmark_basic_queries(self, runs: int = 50) -> Any:
         """Benchmark basic database operations"""
         logger.info(f"Benchmarking basic database queries with {runs} runs")
 
@@ -99,7 +101,7 @@ class SimpleBenchmark:
         self.results["database_queries"] = metrics
         return metrics
 
-    def benchmark_file_operations(self, runs: int = 30):
+    def benchmark_file_operations(self, runs: int = 30) -> Any:
         """Benchmark file I/O operations"""
         logger.info(f"Benchmarking file operations with {runs} runs")
 
@@ -170,7 +172,7 @@ class SimpleBenchmark:
         self.results["file_operations"] = metrics
         return metrics
 
-    def benchmark_text_processing(self, runs: int = 50):
+    def benchmark_text_processing(self, runs: int = 50) -> Any:
         """Benchmark text processing operations"""
         logger.info(f"Benchmarking text processing with {runs} runs")
 
@@ -229,7 +231,7 @@ class SimpleBenchmark:
         self.results["text_processing"] = metrics
         return metrics
 
-    def run_all_benchmarks(self):
+    def run_all_benchmarks(self) -> Any:
         """Run all benchmark tests"""
         logger.info("Starting simple benchmark suite...")
         start_time = time.time()
@@ -266,7 +268,7 @@ class SimpleBenchmark:
 
         return self.results
 
-    def print_summary(self):
+    def print_summary(self) -> None:
         """Print benchmark summary"""
         print("\n" + "=" * 80)
         print("SIMPLE PERFORMANCE BENCHMARK SUMMARY")
@@ -336,7 +338,7 @@ class SimpleBenchmark:
 
         print("\n" + "=" * 80)
 
-    def save_results(self, filename: str = None):
+    def save_results(self, filename: str = None) -> Any:
         """Save results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -349,7 +351,7 @@ class SimpleBenchmark:
         logger.info(f"Results saved to: {output_path}")
         return output_path
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up resources"""
         try:
             if self.db:
@@ -360,7 +362,7 @@ class SimpleBenchmark:
             logger.warning(f"Cleanup error: {e}")
 
 
-def main():
+def main() -> Any:
     """Main entry point"""
     import argparse
 

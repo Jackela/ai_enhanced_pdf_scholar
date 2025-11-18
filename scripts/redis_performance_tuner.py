@@ -75,7 +75,7 @@ class PerformanceMetrics:
     total_net_input_bytes: int = 0
     total_net_output_bytes: int = 0
 
-    def calculate_derived_metrics(self):
+    def calculate_derived_metrics(self) -> None:
         """Calculate derived metrics."""
         # Hit rate
         total_requests = self.keyspace_hits + self.keyspace_misses
@@ -132,7 +132,7 @@ class RedisPerformanceTuner:
         self,
         cluster_manager: RedisClusterManager | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize performance tuner."""
         self.cluster_manager = cluster_manager
         self.metrics_service = metrics_service
@@ -525,7 +525,7 @@ class RedisPerformanceTuner:
         client: Union[Redis, RedisCluster],
         interval_minutes: int = 60,
         auto_apply: bool = False,
-    ):
+    ) -> None:
         """Run continuous performance monitoring and tuning."""
         logger.info(
             f"Starting continuous tuning (interval: {interval_minutes}min, auto_apply: {auto_apply})"
@@ -684,7 +684,7 @@ class RedisPerformanceTuner:
 # ============================================================================
 
 
-async def main():
+async def main() -> Any:
     """Main function for command line usage."""
     import argparse
 

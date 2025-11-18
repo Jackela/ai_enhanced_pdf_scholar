@@ -57,7 +57,7 @@ class DatabaseEndpoint:
     lag_ms: float | None = None
     connection_count: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.last_health_check = time.time()
 
 
@@ -110,7 +110,7 @@ class ReadWriteSplitter:
         max_lag_ms: int = 1000,
         health_check_interval: int = 30,
         failover_enabled: bool = True,
-    ):
+    ) -> None:
         """
         Initialize the Read/Write Splitter.
 
@@ -366,7 +366,6 @@ class ReadWriteSplitter:
             or query_type in {QueryType.WRITE, QueryType.TRANSACTION, QueryType.DDL}
             or not self.enable_read_splitting
         ):
-
             # Route to primary
             endpoint_id = self._route_to_primary()
 
@@ -667,7 +666,7 @@ class ReadWriteSplitter:
         logger.info("Read/Write splitter shutdown complete")
 
 
-def main():
+def main() -> Any:
     """CLI interface for testing the Read/Write Splitter."""
     import argparse
 

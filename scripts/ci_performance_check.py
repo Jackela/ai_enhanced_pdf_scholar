@@ -42,7 +42,7 @@ class CIPerformanceCheck:
         "regression_threshold_percent": 50.0,  # Alert on >50% performance degradation
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.results = {}
         self.violations = []
         self.warnings = []
@@ -229,7 +229,7 @@ class CIPerformanceCheck:
             self.results["error"] = str(e)
             return False
 
-    def print_ci_summary(self):
+    def print_ci_summary(self) -> None:
         """Print CI-friendly performance summary"""
         if "error" in self.results:
             print(f"❌ CI PERFORMANCE VALIDATION FAILED: {self.results['error']}")
@@ -281,7 +281,7 @@ class CIPerformanceCheck:
 
         print("=" * 70)
 
-    def save_ci_results(self, filename: str = "ci_performance_results.json"):
+    def save_ci_results(self, filename: str = "ci_performance_results.json") -> None:
         """Save CI results for artifacts"""
         try:
             with open(filename, "w") as f:
@@ -291,7 +291,7 @@ class CIPerformanceCheck:
             logger.warning(f"Failed to save CI results: {e}")
 
 
-def main():
+def main() -> Any:
     """Main entry point for CI performance validation"""
     import argparse
 

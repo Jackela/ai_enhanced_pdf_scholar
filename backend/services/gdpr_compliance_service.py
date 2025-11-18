@@ -234,7 +234,7 @@ class GDPRComplianceService:
         db: Session,
         audit_logger: AuditLogger,
         encryption_service: EncryptionService,
-    ):
+    ) -> None:
         """Initialize GDPR compliance service."""
         self.db = db
         self.audit_logger = audit_logger
@@ -914,7 +914,7 @@ class GDPRComplianceService:
 
         return erased_items
 
-    def _anonymize_user_data(self, user_id: int):
+    def _anonymize_user_data(self, user_id: int) -> None:
         """Anonymize user data instead of deletion where required."""
         # Replace identifying information with anonymized values
         pass

@@ -91,7 +91,7 @@ class EncryptionKey:
 class BackupEncryptionService:
     """Service for encrypting and decrypting backup files."""
 
-    def __init__(self, metrics_service: MetricsService | None = None):
+    def __init__(self, metrics_service: MetricsService | None = None) -> None:
         """Initialize backup encryption service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -214,7 +214,7 @@ class BackupEncryptionService:
         logger.info(f"Generated encryption key: {key_id} ({algorithm.value})")
         return encryption_key
 
-    async def _persist_encryption_key(self, key: EncryptionKey):
+    async def _persist_encryption_key(self, key: EncryptionKey) -> None:
         """Persist encryption key to secure storage."""
         # Encrypt key with master key
         aesgcm = AESGCM(self.master_key)
@@ -599,7 +599,7 @@ class BackupEncryptionService:
 
     async def _save_encryption_metadata(
         self, metadata_file: Path, metadata: EncryptionMetadata
-    ):
+    ) -> None:
         """Save encryption metadata to file."""
         metadata_dict = {
             "algorithm": metadata.algorithm.value,
@@ -706,7 +706,7 @@ class BackupEncryptionService:
 
 
 # Example usage
-async def main():
+async def main() -> None:
     """Example usage of backup encryption service."""
     service = BackupEncryptionService()
 

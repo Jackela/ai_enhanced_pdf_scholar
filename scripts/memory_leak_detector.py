@@ -31,7 +31,9 @@ from src.database.connection import DatabaseConnection
 class MemoryLeakDetector:
     """Advanced memory leak detection and analysis system."""
 
-    def __init__(self, duration_minutes: int = 10, sample_interval_seconds: int = 30):
+    def __init__(
+        self, duration_minutes: int = 10, sample_interval_seconds: int = 30
+    ) -> None:
         self.duration_minutes = duration_minutes
         self.sample_interval = sample_interval_seconds
         self.project_root = Path(__file__).parent.parent
@@ -94,7 +96,7 @@ class MemoryLeakDetector:
     def _start_memory_monitoring(self) -> threading.Thread:
         """Start background memory monitoring thread."""
 
-        def monitor_memory():
+        def monitor_memory() -> None:
             """Background memory monitoring function."""
             start_time = time.time()
             duration_seconds = self.duration_minutes * 60
@@ -634,7 +636,7 @@ class MemoryLeakDetector:
         print(f"💾 Memory analysis saved to: {results_file}")
 
 
-def main():
+def main() -> Any:
     """Main memory leak detection function."""
     parser = argparse.ArgumentParser(description="Memory Leak Detection Analysis")
     parser.add_argument(

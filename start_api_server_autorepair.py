@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 AUTONOMOUS REPAIR: Simplified API server startup script.
@@ -15,7 +17,7 @@ import uvicorn
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-def start_server():
+def start_server() -> None:
     """Start the API server with maximum stability."""
     print("[AUTO-REPAIR] Starting API server with autonomous repair configuration...")
 

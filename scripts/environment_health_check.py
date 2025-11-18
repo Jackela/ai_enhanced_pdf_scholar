@@ -72,7 +72,6 @@ def check_core_dependencies() -> dict[str, str]:
 def test_pdf_processing() -> tuple[bool, str]:
     """测试PDF处理功能"""
     try:
-
         import fitz
 
         # Create test PDF

@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Simple API server starter - minimal initialization for testing.
@@ -18,7 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def main():
+def main() -> None:
     """Start the API server with minimal configuration."""
     try:
         import uvicorn

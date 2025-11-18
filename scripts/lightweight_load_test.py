@@ -41,7 +41,7 @@ class LoadTestResult:
     error: str | None = None
     timestamp: datetime = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.now(timezone.utc)
 
@@ -63,7 +63,7 @@ class SystemResourceSnapshot:
 class LightweightLoadTester:
     """Lightweight concurrent load testing framework."""
 
-    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+    def __init__(self, base_url: str = "http://127.0.0.1:8000") -> None:
         self.base_url = base_url
         self.project_root = Path(__file__).parent.parent
         self.api_process = None
@@ -176,7 +176,7 @@ class LightweightLoadTester:
     def _start_resource_monitoring(self, duration: int) -> None:
         """Start background resource monitoring."""
 
-        def monitor_resources():
+        def monitor_resources() -> None:
             start_time = time.time()
             process = psutil.Process()
 
@@ -593,7 +593,7 @@ class LightweightLoadTester:
         print(f"💾 Results saved to: {results_file}")
 
 
-def main():
+def main() -> Any:
     """Main load testing function with CLI interface."""
     parser = argparse.ArgumentParser(description="Lightweight Load Testing")
     parser.add_argument(

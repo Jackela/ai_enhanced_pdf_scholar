@@ -36,7 +36,7 @@ class DashboardMetrics:
         apm_service: APMService,
         cache_telemetry: CacheTelemetryService,
         metrics_service: MetricsService,
-    ):
+    ) -> None:
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.metrics = metrics_service
@@ -194,9 +194,7 @@ class DashboardMetrics:
                 [{"operation": op, **stats} for op, stats in operation_stats.items()],
                 key=lambda x: x["avg_duration_ms"],
                 reverse=True,
-            )[
-                :20
-            ],  # Top 20 operations
+            )[:20],  # Top 20 operations
         }
 
 
@@ -208,11 +206,13 @@ class DashboardMetrics:
 class ConnectionManager:
     """Manages WebSocket connections for real-time updates."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.active_connections: list[WebSocket] = []
         self.connection_metadata: dict[WebSocket, dict[str, Any]] = {}
 
-    async def connect(self, websocket: WebSocket, client_info: dict[str, Any] = None):
+    async def connect(
+        self, websocket: WebSocket, client_info: dict[str, Any] = None
+    ) -> None:
         """Accept a WebSocket connection."""
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -221,7 +221,7 @@ class ConnectionManager:
             f"WebSocket connection established. Total connections: {len(self.active_connections)}"
         )
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket) -> None:
         """Remove a WebSocket connection."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
@@ -232,7 +232,7 @@ class ConnectionManager:
 
     async def send_personal_message(
         self, message: dict[str, Any], websocket: WebSocket
-    ):
+    ) -> None:
         """Send a message to a specific WebSocket."""
         if websocket.client_state == WebSocketState.CONNECTED:
             try:
@@ -241,7 +241,7 @@ class ConnectionManager:
                 logger.error(f"Error sending WebSocket message: {e}")
                 self.disconnect(websocket)
 
-    async def broadcast(self, message: dict[str, Any]):
+    async def broadcast(self, message: dict[str, Any]) -> None:
         """Broadcast a message to all connected WebSockets."""
         if not self.active_connections:
             return
@@ -264,7 +264,7 @@ class ConnectionManager:
 
     async def send_to_subscribers(
         self, message: dict[str, Any], subscription_type: str
-    ):
+    ) -> None:
         """Send message to subscribers of a specific type."""
         for connection in self.active_connections:
             metadata = self.connection_metadata.get(connection, {})
@@ -289,7 +289,7 @@ class PerformanceDashboardService:
         apm_service: APMService,
         cache_telemetry: CacheTelemetryService,
         metrics_service: MetricsService,
-    ):
+    ) -> None:
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.metrics = metrics_service
@@ -303,14 +303,14 @@ class PerformanceDashboardService:
         self._update_task: asyncio.Task | None = None
         self._running = False
 
-    async def start_real_time_updates(self):
+    async def start_real_time_updates(self) -> None:
         """Start background task for real-time updates."""
         if not self._running:
             self._running = True
             self._update_task = asyncio.create_task(self._real_time_update_loop())
             logger.info("Real-time dashboard updates started")
 
-    async def stop_real_time_updates(self):
+    async def stop_real_time_updates(self) -> None:
         """Stop background task for real-time updates."""
         self._running = False
         if self._update_task:
@@ -321,7 +321,7 @@ class PerformanceDashboardService:
                 pass
             logger.info("Real-time dashboard updates stopped")
 
-    async def _real_time_update_loop(self):
+    async def _real_time_update_loop(self) -> None:
         """Background loop for sending real-time updates."""
         while self._running:
             try:
@@ -359,7 +359,7 @@ class PerformanceDashboardService:
     # WebSocket Handlers
     # ========================================================================
 
-    async def handle_websocket_connection(self, websocket: WebSocket):
+    async def handle_websocket_connection(self, websocket: WebSocket) -> None:
         """Handle new WebSocket connection."""
         try:
             # Accept connection
@@ -398,7 +398,7 @@ class PerformanceDashboardService:
 
     async def _handle_client_message(
         self, websocket: WebSocket, message: dict[str, Any]
-    ):
+    ) -> None:
         """Handle message from WebSocket client."""
         message_type = message.get("type")
 
@@ -476,7 +476,7 @@ class PerformanceDashboardService:
     def _build_span_tree(self, trace) -> dict[str, Any]:
         """Build hierarchical span tree for visualization."""
 
-        def build_node(span, children):
+        def build_node(span, children) -> Any:
             return {
                 "span_id": span.span_id,
                 "operation_name": span.operation_name,
@@ -495,7 +495,7 @@ class PerformanceDashboardService:
             span_map[span.span_id] = span
 
         # Build tree recursively
-        def build_children(parent_span_id):
+        def build_children(parent_span_id) -> Any:
             children = []
             for span in trace.spans:
                 if span.parent_span_id == parent_span_id:

@@ -143,7 +143,7 @@ class PerformanceAlertingService:
         apm_service: APMService,
         cache_telemetry: CacheTelemetryService,
         config_path: Path | None = None,
-    ):
+    ) -> None:
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.config_path = config_path or Path("alert_config.json")
@@ -182,7 +182,7 @@ class PerformanceAlertingService:
     # Configuration Management
     # ========================================================================
 
-    def _load_configuration(self):
+    def _load_configuration(self) -> None:
         """Load alert configuration from file."""
         try:
             if self.config_path.exists():
@@ -215,7 +215,7 @@ class PerformanceAlertingService:
         except Exception as e:
             logger.error(f"Error loading alert configuration: {e}")
 
-    def save_configuration(self):
+    def save_configuration(self) -> None:
         """Save current alert configuration to file."""
         try:
             config = {
@@ -239,7 +239,7 @@ class PerformanceAlertingService:
         except Exception as e:
             logger.error(f"Error saving alert configuration: {e}")
 
-    def _setup_default_alert_rules(self):
+    def _setup_default_alert_rules(self) -> None:
         """Setup default alert rules."""
         default_rules = [
             AlertRule(
@@ -470,7 +470,7 @@ class PerformanceAlertingService:
     # Metric Collection and Evaluation
     # ========================================================================
 
-    async def start_monitoring(self):
+    async def start_monitoring(self) -> None:
         """Start background monitoring tasks."""
         if not self._running:
             self._running = True
@@ -478,7 +478,7 @@ class PerformanceAlertingService:
             self._cleanup_task = asyncio.create_task(self._cleanup_loop())
             logger.info("Performance alerting monitoring started")
 
-    async def stop_monitoring(self):
+    async def stop_monitoring(self) -> None:
         """Stop background monitoring tasks."""
         self._running = False
 
@@ -498,7 +498,7 @@ class PerformanceAlertingService:
 
         logger.info("Performance alerting monitoring stopped")
 
-    async def _evaluation_loop(self):
+    async def _evaluation_loop(self) -> None:
         """Main evaluation loop for checking alert conditions."""
         while self._running:
             try:
@@ -516,7 +516,7 @@ class PerformanceAlertingService:
                 logger.error(f"Error in alert evaluation loop: {e}")
                 await asyncio.sleep(30)
 
-    async def _cleanup_loop(self):
+    async def _cleanup_loop(self) -> None:
         """Cleanup loop for maintaining alert history and silenced rules."""
         while self._running:
             try:
@@ -532,7 +532,7 @@ class PerformanceAlertingService:
                 logger.error(f"Error in cleanup loop: {e}")
                 await asyncio.sleep(600)
 
-    async def _collect_current_metrics(self):
+    async def _collect_current_metrics(self) -> None:
         """Collect current performance metrics."""
         try:
             # Get latest performance snapshot
@@ -569,7 +569,7 @@ class PerformanceAlertingService:
         except Exception as e:
             logger.error(f"Error collecting metrics: {e}")
 
-    async def _evaluate_alert_rules(self):
+    async def _evaluate_alert_rules(self) -> None:
         """Evaluate all alert rules against current metrics."""
         current_time = datetime.utcnow()
 
@@ -637,7 +637,9 @@ class PerformanceAlertingService:
             logger.error(f"Unknown condition: {condition}")
             return False
 
-    async def _handle_alert_trigger(self, rule: AlertRule, current_value: float):
+    async def _handle_alert_trigger(
+        self, rule: AlertRule, current_value: float
+    ) -> None:
         """Handle alert trigger event."""
         alert_id = rule.rule_id
         current_time = datetime.utcnow()
@@ -697,7 +699,7 @@ class PerformanceAlertingService:
         # Send notifications
         await self._send_notifications(alert, event)
 
-    async def _handle_alert_recovery(self, rule_id: str):
+    async def _handle_alert_recovery(self, rule_id: str) -> None:
         """Handle alert recovery (condition no longer met)."""
         if rule_id in self.active_alerts:
             alert = self.active_alerts[rule_id]
@@ -752,7 +754,9 @@ class PerformanceAlertingService:
     # Notification System
     # ========================================================================
 
-    async def _send_notifications(self, alert: AlertInstance, event: AlertEvent):
+    async def _send_notifications(
+        self, alert: AlertInstance, event: AlertEvent
+    ) -> None:
         """Send notifications for alert event."""
         for notification_config in self.notification_configs:
             if not notification_config.enabled:
@@ -777,7 +781,7 @@ class PerformanceAlertingService:
         notification_config: NotificationConfig,
         alert: AlertInstance,
         event: AlertEvent,
-    ):
+    ) -> None:
         """Send a single notification."""
         if notification_config.channel == NotificationChannel.LOG_ONLY:
             logger.warning(f"ALERT: {alert.message}")
@@ -804,7 +808,7 @@ class PerformanceAlertingService:
 
     async def _send_email_notification(
         self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
-    ):
+    ) -> None:
         """Send email notification."""
         try:
             smtp_server = config["smtp_server"]
@@ -858,7 +862,7 @@ View Dashboard: http://your-domain/dashboard/performance
 
     async def _send_webhook_notification(
         self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
-    ):
+    ) -> None:
         """Send webhook notification."""
         try:
             url = config["url"]
@@ -894,7 +898,7 @@ View Dashboard: http://your-domain/dashboard/performance
 
     async def _send_slack_notification(
         self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
-    ):
+    ) -> None:
         """Send Slack notification."""
         try:
             webhook_url = config["webhook_url"]
@@ -958,7 +962,7 @@ View Dashboard: http://your-domain/dashboard/performance
 
     async def _send_discord_notification(
         self, config: dict[str, Any], alert: AlertInstance, event: AlertEvent
-    ):
+    ) -> None:
         """Send Discord notification."""
         try:
             webhook_url = config["webhook_url"]
@@ -1022,7 +1026,7 @@ View Dashboard: http://your-domain/dashboard/performance
     # Cleanup and Maintenance
     # ========================================================================
 
-    async def _cleanup_old_data(self):
+    async def _cleanup_old_data(self) -> None:
         """Clean up old alert history and metric data."""
         try:
             # Clean up alert history (keep 7 days)
@@ -1040,7 +1044,7 @@ View Dashboard: http://your-domain/dashboard/performance
         except Exception as e:
             logger.error(f"Error cleaning up old data: {e}")
 
-    async def _cleanup_silenced_rules(self):
+    async def _cleanup_silenced_rules(self) -> None:
         """Clean up expired silenced rules."""
         try:
             current_time = datetime.utcnow()

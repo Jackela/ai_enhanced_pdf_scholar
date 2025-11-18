@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Actual Dependency Verification Script
@@ -15,7 +17,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 
-def load_configuration():
+def load_configuration() -> Any:
     """Load application configuration."""
     try:
         # Load environment variables from .env file
@@ -38,7 +40,7 @@ def load_configuration():
         return False
 
 
-def test_sqlite_connection():
+def test_sqlite_connection() -> Any:
     """Test SQLite database connection (the default database)."""
     try:
         # Get the database URL or use default
@@ -80,7 +82,7 @@ def test_sqlite_connection():
         return False
 
 
-def test_configured_database():
+def test_configured_database() -> Any:
     """Test PostgreSQL if configured."""
     try:
         import psycopg2
@@ -129,7 +131,7 @@ def test_configured_database():
         return False
 
 
-def test_optional_redis():
+def test_optional_redis() -> Any:
     """Test Redis if configured, but don't fail if not available."""
     try:
         # Check if Redis is explicitly disabled or not configured
@@ -176,7 +178,7 @@ def test_optional_redis():
         return True
 
 
-def main():
+def main() -> None:
     """Main dependency verification function."""
     # Suppress all logging to keep output clean
     logging.getLogger().setLevel(logging.CRITICAL)

@@ -107,7 +107,7 @@ class JWTHandler:
     Uses RS256 (RSA with SHA-256) for asymmetric signing.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize JWT handler with RSA keys."""
         self.private_key, self.public_key = JWTConfig.ensure_keys_exist()
         self.config = JWTConfig()

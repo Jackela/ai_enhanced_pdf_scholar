@@ -106,7 +106,7 @@ class MemoryMonitor:
 
     def __init__(
         self, critical_threshold: float = 85.0, warning_threshold: float = 75.0
-    ):
+    ) -> None:
         self.critical_threshold = critical_threshold
         self.warning_threshold = warning_threshold
         self._last_check = datetime.now()
@@ -160,7 +160,7 @@ class AsyncTaskManager:
         max_queue_size: int = 100,
         memory_limit_mb: float | None = None,
         enable_memory_monitoring: bool = True,
-    ):
+    ) -> None:
         self.max_concurrent_tasks = max_concurrent_tasks
         self.max_queue_size = max_queue_size
         self.memory_limit_mb = memory_limit_mb
@@ -189,7 +189,7 @@ class AsyncTaskManager:
         self._total_tasks_processed = 0
         self._total_errors = 0
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the background task processor."""
         if self._running:
             return
@@ -199,7 +199,7 @@ class AsyncTaskManager:
         self._cleanup_task = asyncio.create_task(self._cleanup_completed_tasks())
         logger.info("AsyncTaskManager started")
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the background task processor."""
         self._running = False
 
@@ -354,7 +354,7 @@ class AsyncTaskManager:
             ],
         }
 
-    async def _process_tasks(self):
+    async def _process_tasks(self) -> None:
         """Background task processor."""
         while self._running:
             try:
@@ -394,7 +394,7 @@ class AsyncTaskManager:
                 logger.error(f"Error in task processor: {e}")
                 await asyncio.sleep(1.0)
 
-    async def _execute_task(self, task: AsyncTask):
+    async def _execute_task(self, task: AsyncTask) -> None:
         """Execute a single task with monitoring."""
         try:
             # Setup cancellation handling
@@ -456,7 +456,7 @@ class AsyncTaskManager:
                 self.completed_tasks[task.task_id] = task
                 self._total_tasks_processed += 1
 
-    async def _cleanup_completed_tasks(self):
+    async def _cleanup_completed_tasks(self) -> None:
         """Cleanup old completed tasks to prevent memory leaks."""
         while self._running:
             try:
@@ -491,14 +491,14 @@ def get_task_manager() -> AsyncTaskManager:
     return _task_manager
 
 
-async def initialize_task_manager():
+async def initialize_task_manager() -> Any:
     """Initialize the global task manager."""
     manager = get_task_manager()
     await manager.start()
     return manager
 
 
-async def shutdown_task_manager():
+async def shutdown_task_manager() -> None:
     """Shutdown the global task manager."""
     global _task_manager
     if _task_manager:

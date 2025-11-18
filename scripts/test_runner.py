@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 AI Enhanced PDF Scholar - Test Runner Utility
@@ -28,7 +30,7 @@ def run_command(cmd: list[str], description: str) -> int:
         return 1
 
 
-def main():
+def main() -> Any:
     parser = argparse.ArgumentParser(
         description="Test runner for AI Enhanced PDF Scholar",
         formatter_class=argparse.RawDescriptionHelpFormatter,

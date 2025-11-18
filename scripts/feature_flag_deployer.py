@@ -98,7 +98,7 @@ class FeatureFlagConfig:
     updated_at: datetime = None
     tags: list[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.rules is None:
             self.rules = []
         if self.depends_on is None:
@@ -178,7 +178,7 @@ class FeatureFlagDeployment:
 class FeatureFlagDeployer:
     """Feature flag deployment and management system"""
 
-    def __init__(self, config_dir: Path = None, state_file: Path = None):
+    def __init__(self, config_dir: Path = None, state_file: Path = None) -> None:
         self.config_dir = config_dir or Path.cwd() / "feature_flags"
         self.state_file = state_file or self.config_dir / "state.json"
 
@@ -723,7 +723,7 @@ class FeatureFlagDeployer:
         logger.info(f"Imported {imported_count} flags from {input_file}")
 
 
-async def main():
+async def main() -> Any:
     """Main CLI interface"""
     parser = argparse.ArgumentParser(
         description="🚩 Feature Flag Automation for AI Enhanced PDF Scholar",

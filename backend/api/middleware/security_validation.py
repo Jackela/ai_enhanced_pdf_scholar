@@ -108,7 +108,7 @@ def create_security_exception_handlers() -> dict[Any, Callable]:
     }
 
 
-def log_security_metrics(event_type: str, field: str, client_ip: str = None):
+def log_security_metrics(event_type: str, field: str, client_ip: str = None) -> None:
     """Log security metrics for monitoring."""
     metrics_logger = logging.getLogger("security.metrics")
 

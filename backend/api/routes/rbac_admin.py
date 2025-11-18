@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 RBAC Administration API Routes
 Endpoints for managing roles, permissions, and user access control.
@@ -136,7 +138,7 @@ async def list_roles(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     List all available roles.
     Requires system:read permission.
@@ -175,7 +177,7 @@ async def create_role(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     Create a new custom role.
     Requires admin role.
@@ -213,7 +215,7 @@ async def delete_role(
     role_name: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> None:
     """
     Delete a custom role.
     Cannot delete system roles.
@@ -255,7 +257,7 @@ async def assign_role_to_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     Assign a role to a user.
     Requires user:update permission.
@@ -307,7 +309,7 @@ async def revoke_role_from_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     Revoke a role from a user.
     Requires user:update permission.
@@ -357,7 +359,7 @@ async def list_permissions(
     resource: str | None = Query(None, description="Filter by resource type"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> Any:
     """
     List all available permissions.
     Requires system:read permission.
@@ -393,7 +395,7 @@ async def grant_direct_permission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     Grant a direct permission to a user.
     Direct permissions bypass role assignments.
@@ -450,7 +452,7 @@ async def get_user_permissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     Get all permissions for a specific user.
     Includes roles, direct grants, and effective permissions.
@@ -487,7 +489,7 @@ async def get_my_permissions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     Get current user's permissions.
     """
@@ -513,7 +515,7 @@ async def check_permission(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     rbac: RBACService = Depends(get_rbac_service),
-):
+) -> Any:
     """
     Check if current user has a specific permission.
     """
@@ -540,7 +542,7 @@ async def create_resource_policy(
     request: ResourcePolicyRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> Any:
     """
     Create a resource-level access policy.
     Requires system:update permission.
@@ -582,7 +584,7 @@ async def get_rbac_audit_logs(
     limit: int = Query(100, le=1000),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> Any:
     """
     Get RBAC audit logs.
     Requires audit:read permission.
@@ -602,7 +604,7 @@ async def get_rbac_audit_logs(
 @require_permission(ResourceTypes.SYSTEM, Actions.READ)
 async def get_rbac_statistics(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
+) -> Any:
     """
     Get RBAC system statistics.
     Requires system:read permission.

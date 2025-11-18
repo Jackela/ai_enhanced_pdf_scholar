@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Simple script to fix 'from e' syntax errors.
@@ -46,7 +48,7 @@ def fix_file(filepath: Path) -> int:
         return 0
 
 
-def main():
+def main() -> Any:
     """Main function."""
     total_fixed = 0
 

@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 AI Enhanced PDF Scholar - Test Diagnostics Utility
@@ -13,14 +15,14 @@ from pathlib import Path
 class TestDiagnostics:
     """Test diagnostics and repair utility."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
         self.tests_dir = self.project_root / "tests"
         self.src_dir = self.project_root / "src"
         self.issues_found = []
         self.recommendations = []
 
-    def check_directory_structure(self):
+    def check_directory_structure(self) -> None:
         """Check if all required directories and files exist."""
         print("🔍 Checking directory structure...")
 
@@ -53,7 +55,7 @@ class TestDiagnostics:
                 else:
                     print(f"✅ {init_file} exists")
 
-    def check_pytest_config(self):
+    def check_pytest_config(self) -> None:
         """Check pytest configuration."""
         print("\n🔍 Checking pytest configuration...")
 
@@ -80,7 +82,7 @@ class TestDiagnostics:
 
                 print("✅ pytest.ini contains required configurations")
 
-    def check_python_path(self):
+    def check_python_path(self) -> None:
         """Check if Python can find the source modules."""
         print("\n🔍 Checking Python import paths...")
 
@@ -95,7 +97,7 @@ class TestDiagnostics:
                 "Add src to Python path or install in development mode"
             )
 
-    def check_test_discovery(self):
+    def check_test_discovery(self) -> None:
         """Check pytest test discovery."""
         print("\n🔍 Checking test discovery...")
 
@@ -126,7 +128,7 @@ class TestDiagnostics:
         except Exception as e:
             self.issues_found.append(f"Error running test discovery: {e}")
 
-    def check_dependencies(self):
+    def check_dependencies(self) -> None:
         """Check if required test dependencies are available."""
         print("\n🔍 Checking test dependencies...")
 
@@ -147,7 +149,7 @@ class TestDiagnostics:
                 self.issues_found.append(f"Missing package: {package}")
                 self.recommendations.append(f"Install {package}: pip install {package}")
 
-    def check_test_file_patterns(self):
+    def check_test_file_patterns(self) -> None:
         """Check if test files follow naming conventions."""
         print("\n🔍 Checking test file naming patterns...")
 
@@ -169,7 +171,7 @@ class TestDiagnostics:
         else:
             print(f"✅ All {len(test_files)} test files follow naming conventions")
 
-    def run_sample_test(self):
+    def run_sample_test(self) -> None:
         """Run a simple test to verify the setup works."""
         print("\n🔍 Running sample test...")
 
@@ -200,7 +202,7 @@ class TestDiagnostics:
         except Exception as e:
             self.issues_found.append(f"Error running sample test: {e}")
 
-    def generate_recommendations(self):
+    def generate_recommendations(self) -> None:
         """Generate repair recommendations."""
         if not self.issues_found and not self.recommendations:
             print("\n✅ All diagnostics passed! Your test setup looks good.")
@@ -237,7 +239,7 @@ class TestDiagnostics:
         print("  # Install missing dependencies")
         print("  pip install pytest pytest-cov pytest-xdist pytest-asyncio pytest-mock")
 
-    def run_full_diagnostics(self):
+    def run_full_diagnostics(self) -> None:
         """Run all diagnostic checks."""
         print("🏥 AI Enhanced PDF Scholar - Test Diagnostics")
         print("=" * 60)
@@ -252,7 +254,7 @@ class TestDiagnostics:
         self.generate_recommendations()
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     import argparse
 

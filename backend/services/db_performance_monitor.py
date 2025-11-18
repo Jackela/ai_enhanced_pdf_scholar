@@ -170,7 +170,7 @@ class DatabasePerformanceMonitor:
         monitoring_interval_s: int = 10,
         alert_thresholds: dict[str, float] | None = None,
         enable_system_monitoring: bool = True,
-    ):
+    ) -> None:
         """
         Initialize the Database Performance Monitor.
 
@@ -1154,7 +1154,7 @@ class DatabasePerformanceMonitor:
         logger.info("Database performance monitor shutdown complete")
 
 
-def main():
+def main() -> Any:
     """CLI interface for the Database Performance Monitor."""
     import argparse
 

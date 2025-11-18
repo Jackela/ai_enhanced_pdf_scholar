@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Streaming Upload Performance Benchmark
@@ -20,7 +22,7 @@ from backend.services.streaming_validation_service import StreamingValidationSer
 class MemoryMonitor:
     """Monitor memory usage during operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.process = psutil.Process()
         self.baseline_memory = self.get_current_memory()
         self.peak_memory = self.baseline_memory
@@ -30,7 +32,7 @@ class MemoryMonitor:
         """Get current memory usage in MB."""
         return self.process.memory_info().rss / (1024 * 1024)
 
-    def sample(self, label: str = ""):
+    def sample(self, label: str = "") -> Any:
         """Take a memory usage sample."""
         current = self.get_current_memory()
         self.peak_memory = max(self.peak_memory, current)
@@ -52,13 +54,13 @@ class MemoryMonitor:
 class MockWebSocketManager:
     """Mock WebSocket manager for benchmarking."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.progress_updates = []
 
-    async def send_upload_progress(self, client_id: str, progress_data: dict):
+    async def send_upload_progress(self, client_id: str, progress_data: dict) -> None:
         self.progress_updates.append((time.time(), progress_data))
 
-    async def join_upload_room(self, client_id: str, session_id: str):
+    async def join_upload_room(self, client_id: str, session_id: str) -> None:
         pass
 
 
@@ -243,7 +245,7 @@ async def benchmark_streaming_upload(
     return stats
 
 
-def print_comparison(traditional_stats: dict, streaming_stats: dict):
+def print_comparison(traditional_stats: dict, streaming_stats: dict) -> None:
     """Print comparison between traditional and streaming methods."""
     print(f"\n{'='*60}")
     print("PERFORMANCE COMPARISON")
@@ -290,7 +292,7 @@ def print_comparison(traditional_stats: dict, streaming_stats: dict):
         print("❌ Poor memory efficiency")
 
 
-async def run_benchmark_suite():
+async def run_benchmark_suite() -> Any:
     """Run comprehensive benchmark suite."""
     print("Streaming Upload Performance Benchmark")
     print("=" * 60)

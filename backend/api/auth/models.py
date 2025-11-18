@@ -114,17 +114,17 @@ class UserModel(Base):
             "last_login": self.last_login.isoformat() if self.last_login else None,
         }
 
-    def increment_failed_login(self):
+    def increment_failed_login(self) -> None:
         """Increment failed login attempts and update timestamp."""
         self.failed_login_attempts += 1
         self.last_failed_login = datetime.utcnow()
 
-    def reset_failed_login_attempts(self):
+    def reset_failed_login_attempts(self) -> None:
         """Reset failed login attempts after successful login."""
         self.failed_login_attempts = 0
         self.last_failed_login = None
 
-    def lock_account(self, duration_minutes: int = 30):
+    def lock_account(self, duration_minutes: int = 30) -> None:
         """Lock account for specified duration."""
         from datetime import timedelta
 
@@ -139,7 +139,7 @@ class UserModel(Base):
             return datetime.utcnow() < self.account_locked_until
         return False
 
-    def unlock_account(self):
+    def unlock_account(self) -> None:
         """Unlock account."""
         self.account_locked_until = None
         self.account_status = (
@@ -174,7 +174,7 @@ class RefreshTokenModel(Base):
             return False
         return datetime.utcnow() < self.expires_at
 
-    def revoke(self, reason: str = "Manual revocation"):
+    def revoke(self, reason: str = "Manual revocation") -> None:
         """Revoke this token."""
         self.revoked_at = datetime.utcnow()
         self.revoked_reason = reason
@@ -312,7 +312,7 @@ class PasswordChange(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def validate_passwords_different(self):
+    def validate_passwords_different(self) -> Any:
         """Ensure new password is different from current."""
         if self.current_password == self.new_password:
             raise ValueError("New password must be different from current password")

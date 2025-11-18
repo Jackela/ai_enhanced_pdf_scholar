@@ -106,7 +106,7 @@ class BackupConfiguration:
 class PostgreSQLWALBackup:
     """PostgreSQL Write-Ahead Log backup implementation."""
 
-    def __init__(self, config: BackupConfiguration):
+    def __init__(self, config: BackupConfiguration) -> None:
         """Initialize PostgreSQL WAL backup."""
         self.config = config
         self.engine = create_engine(config.connection_url)
@@ -117,7 +117,7 @@ class PostgreSQLWALBackup:
         # Create directories
         self._create_backup_directories()
 
-    def _create_backup_directories(self):
+    def _create_backup_directories(self) -> None:
         """Create necessary backup directories."""
         dirs_to_create = [
             self.config.archive_log_dir,
@@ -218,7 +218,7 @@ class PostgreSQLWALBackup:
             self.is_streaming = False
             return False
 
-    async def _wal_archive_monitor(self):
+    async def _wal_archive_monitor(self) -> None:
         """Monitor WAL archive directory for new files."""
         archive_dir = Path(self.config.archive_log_dir)
         processed_files = set()
@@ -249,7 +249,7 @@ class PostgreSQLWALBackup:
                 logger.error(f"Error in WAL archive monitor: {e}")
                 await asyncio.sleep(10)
 
-    async def _process_wal_file(self, wal_file: Path):
+    async def _process_wal_file(self, wal_file: Path) -> None:
         """Process a new WAL file."""
         try:
             # Create log segment metadata
@@ -286,7 +286,7 @@ class PostgreSQLWALBackup:
         except Exception as e:
             logger.error(f"Error processing WAL file {wal_file}: {e}")
 
-    async def _backup_wal_segment(self, segment: LogSegment):
+    async def _backup_wal_segment(self, segment: LogSegment) -> None:
         """Backup a WAL segment with optional compression and encryption."""
         try:
             source_file = Path(segment.file_path)
@@ -401,7 +401,7 @@ class PostgreSQLWALBackup:
             logger.error(f"Error encrypting WAL file: {e}")
             return None
 
-    async def _wal_streaming_backup(self):
+    async def _wal_streaming_backup(self) -> None:
         """Stream WAL using pg_receivewal for real-time backup."""
         if not self.config.streaming_enabled:
             return
@@ -464,7 +464,7 @@ class PostgreSQLWALBackup:
         except Exception as e:
             logger.error(f"Error in WAL streaming backup: {e}")
 
-    async def _cleanup_old_archives(self):
+    async def _cleanup_old_archives(self) -> None:
         """Clean up old archived WAL files based on retention policy."""
         while self.is_streaming:
             try:
@@ -568,7 +568,7 @@ class PostgreSQLWALBackup:
                 "error": str(e),
             }
 
-    async def _save_segment_metadata(self, segment: LogSegment):
+    async def _save_segment_metadata(self, segment: LogSegment) -> None:
         """Save segment metadata to file."""
         try:
             metadata_dir = Path(self.config.backup_log_dir) / "metadata"
@@ -621,7 +621,7 @@ class PostgreSQLWALBackup:
             "password": parsed.password,
         }
 
-    async def stop_continuous_backup(self):
+    async def stop_continuous_backup(self) -> None:
         """Stop continuous backup process."""
         logger.info("Stopping continuous WAL backup")
         self.is_streaming = False
@@ -661,7 +661,7 @@ class PostgreSQLWALBackup:
 class TransactionLogBackupService:
     """Main transaction log backup service."""
 
-    def __init__(self, metrics_service: MetricsService | None = None):
+    def __init__(self, metrics_service: MetricsService | None = None) -> None:
         """Initialize transaction log backup service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -669,7 +669,7 @@ class TransactionLogBackupService:
         # Active backup instances
         self.backup_instances: dict[str, PostgreSQLWALBackup] = {}
 
-    def register_database(self, database_id: str, config: BackupConfiguration):
+    def register_database(self, database_id: str, config: BackupConfiguration) -> None:
         """Register a database for transaction log backup."""
         backup_instance = PostgreSQLWALBackup(config)
         self.backup_instances[database_id] = backup_instance
@@ -697,7 +697,7 @@ class TransactionLogBackupService:
 
         return results
 
-    async def stop_all_backups(self):
+    async def stop_all_backups(self) -> None:
         """Stop transaction log backup for all databases."""
         for database_id, backup_instance in self.backup_instances.items():
             try:
@@ -727,7 +727,7 @@ class TransactionLogBackupService:
 
 
 # Example usage and testing
-async def main():
+async def main() -> None:
     """Example usage of transaction log backup service."""
     service = TransactionLogBackupService()
 

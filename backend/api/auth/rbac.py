@@ -23,7 +23,7 @@ except Exception:
     class User:  # type: ignore[no-redef]
         def __init__(
             self, id: int, username: str | None = None, role: str | None = None
-        ):
+        ) -> None:
             self.id = id
             self.username = username or "stub"
             self.role = role or "user"
@@ -196,7 +196,7 @@ class RBACService:
     Implements hierarchical roles, dynamic permissions, and resource policies.
     """
 
-    def __init__(self, db: Session, cache_enabled: bool = True):
+    def __init__(self, db: Session, cache_enabled: bool = True) -> None:
         """Initialize RBAC service."""
         self.db = db
         self.cache_enabled = cache_enabled
@@ -782,7 +782,7 @@ def require_role(role_name: str) -> Callable[[AsyncEndpoint], AsyncEndpoint]:
 # ============================================================================
 
 
-def initialize_rbac_system(db: Session):
+def initialize_rbac_system(db: Session) -> None:
     """
     Initialize the RBAC system with default roles and permissions.
     Should be called during application startup.

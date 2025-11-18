@@ -16,7 +16,7 @@ from typing import Any
 class TestCoverageGenerator:
     """Generate comprehensive test coverage reports."""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None) -> None:
         """Initialize coverage generator."""
         self.project_root = (
             Path(project_root) if project_root else Path(__file__).parent.parent
@@ -357,7 +357,7 @@ class TestCoverageGenerator:
         return status
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Generate test coverage report")
     parser.add_argument(

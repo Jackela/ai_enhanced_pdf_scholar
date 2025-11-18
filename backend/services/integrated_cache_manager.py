@@ -130,7 +130,7 @@ class IntegratedCacheManager:
 
     def __init__(
         self, config: CachingConfig, metrics: ApplicationMetrics | None = None
-    ):
+    ) -> None:
         """Initialize integrated cache manager."""
         self.config = config
         self.metrics = metrics
@@ -394,7 +394,7 @@ class IntegratedCacheManager:
             logger.warning(f"Error retrieving CDN cache for {prefixed_key}: {e}")
             return None
 
-    async def _initialize_redis(self):
+    async def _initialize_redis(self) -> None:
         """Initialize Redis infrastructure."""
         if not self.config.redis_cluster.enabled:
             logger.info("Redis cluster disabled, skipping Redis initialization")
@@ -440,7 +440,7 @@ class IntegratedCacheManager:
                     "Redis cluster initialization failed, falling back to single node"
                 )
 
-    async def _initialize_cache_layers(self):
+    async def _initialize_cache_layers(self) -> None:
         """Initialize cache layers (L1, L2, L3)."""
 
         # Initialize L1 memory cache
@@ -497,7 +497,7 @@ class IntegratedCacheManager:
                 f"L3 CDN cache initialized with provider: {self.config.l3_cdn.provider}"
             )
 
-    async def _initialize_support_services(self):
+    async def _initialize_support_services(self) -> None:
         """Initialize support services."""
 
         # Initialize cache coherency manager
@@ -534,7 +534,7 @@ class IntegratedCacheManager:
             )
             logger.info("Cache warming service initialized")
 
-    async def _start_background_tasks(self):
+    async def _start_background_tasks(self) -> None:
         """Start background monitoring and maintenance tasks."""
 
         # Start L2 cache write-behind if enabled
@@ -955,7 +955,7 @@ class IntegratedCacheManager:
 
     async def _update_metrics(
         self, operation: str, cache_level: str, duration_ms: float
-    ):
+    ) -> None:
         """Update Prometheus metrics if available."""
         if self.metrics:
             try:
@@ -966,9 +966,7 @@ class IntegratedCacheManager:
 
                 self.metrics.cache_operation_duration.labels(
                     operation=operation, cache_level=cache_level.lower()
-                ).observe(
-                    duration_ms / 1000
-                )  # Convert to seconds
+                ).observe(duration_ms / 1000)  # Convert to seconds
 
             except Exception as e:
                 logger.warning(f"Failed to update metrics: {e}")
@@ -977,7 +975,7 @@ class IntegratedCacheManager:
     # Background Tasks
     # ========================================================================
 
-    async def _coherency_monitoring_loop(self):
+    async def _coherency_monitoring_loop(self) -> None:
         """Background task for cache coherency monitoring."""
         await self._run_periodic_task(
             self._coherency_step,
@@ -985,7 +983,7 @@ class IntegratedCacheManager:
             error_backoff=30,
         )
 
-    async def _performance_monitoring_loop(self):
+    async def _performance_monitoring_loop(self) -> None:
         """Background task for performance monitoring."""
         await self._run_periodic_task(
             self._performance_step,
@@ -993,7 +991,7 @@ class IntegratedCacheManager:
             error_backoff=60,
         )
 
-    async def _cache_warming_loop(self):
+    async def _cache_warming_loop(self) -> None:
         """Background task for predictive cache warming."""
         await self._run_periodic_task(
             self._warming_step,
@@ -1001,7 +999,7 @@ class IntegratedCacheManager:
             error_backoff=300,
         )
 
-    async def _collect_performance_metrics(self):
+    async def _collect_performance_metrics(self) -> None:
         """Collect and report performance metrics."""
         try:
             stats = self.get_statistics()
@@ -1064,7 +1062,7 @@ class IntegratedCacheManager:
     # Lifecycle Management
     # ========================================================================
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Shutdown cache manager and cleanup resources."""
         logger.info("Shutting down integrated cache manager...")
 
@@ -1094,12 +1092,12 @@ class IntegratedCacheManager:
     # Context Manager Support
     # ========================================================================
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Async context manager entry."""
         await self.initialize()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.shutdown()
 
@@ -1141,7 +1139,7 @@ async def create_integrated_cache_manager(
 @asynccontextmanager
 async def cache_manager_context(
     config: CachingConfig | None = None, metrics: ApplicationMetrics | None = None
-):
+) -> None:
     """
     Async context manager for integrated cache manager.
 

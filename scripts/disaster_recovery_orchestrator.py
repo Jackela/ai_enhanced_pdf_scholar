@@ -133,7 +133,7 @@ class RecoveryExecution:
 class InfrastructureManager:
     """Manages infrastructure during disaster recovery."""
 
-    def __init__(self, aws_session: boto3.Session):
+    def __init__(self, aws_session: boto3.Session) -> None:
         """Initialize infrastructure manager."""
         self.aws_session = aws_session
         self.ec2 = aws_session.client("ec2")
@@ -268,9 +268,7 @@ class InfrastructureManager:
                         "ReadReplicaSourceDBInstanceIdentifier"
                     ) == db_identifier and replica_info.get(
                         "AvailabilityZone", ""
-                    ).startswith(
-                        target_region
-                    ):
+                    ).startswith(target_region):
                         target_replica = replica_info["DBInstanceIdentifier"]
                         break
 
@@ -379,7 +377,7 @@ class InfrastructureManager:
 class KubernetesManager:
     """Manages Kubernetes resources during disaster recovery."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Kubernetes manager."""
         try:
             config.load_incluster_config()
@@ -599,7 +597,7 @@ class KubernetesManager:
 class DisasterRecoveryOrchestrator:
     """Main disaster recovery orchestrator."""
 
-    def __init__(self, metrics_service: MetricsService | None = None):
+    def __init__(self, metrics_service: MetricsService | None = None) -> None:
         """Initialize disaster recovery orchestrator."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -617,7 +615,7 @@ class DisasterRecoveryOrchestrator:
         # Load recovery plans
         self._load_recovery_plans()
 
-    def _load_recovery_plans(self):
+    def _load_recovery_plans(self) -> None:
         """Load recovery plans from configuration."""
         # Default recovery plans
 
@@ -1051,7 +1049,7 @@ class DisasterRecoveryOrchestrator:
 
     async def _send_notifications(
         self, channels: list[str], subject: str, message: str
-    ):
+    ) -> None:
         """Send notifications about recovery status."""
         for channel in channels:
             try:
@@ -1064,7 +1062,7 @@ class DisasterRecoveryOrchestrator:
             except Exception as e:
                 logger.error(f"Failed to send {channel} notification: {e}")
 
-    async def _send_slack_notification(self, subject: str, message: str):
+    async def _send_slack_notification(self, subject: str, message: str) -> None:
         """Send Slack notification."""
         webhook_url = self.secrets_manager.get_secret("SLACK_WEBHOOK_URL")
         if not webhook_url:
@@ -1077,7 +1075,9 @@ class DisasterRecoveryOrchestrator:
                     "color": (
                         "danger"
                         if "🚨" in subject
-                        else "good" if "✅" in subject else "warning"
+                        else "good"
+                        if "✅" in subject
+                        else "warning"
                     ),
                     "text": message,
                     "footer": "Disaster Recovery Orchestrator",
@@ -1095,12 +1095,12 @@ class DisasterRecoveryOrchestrator:
                         f"Failed to send Slack notification: {response.status}"
                     )
 
-    async def _send_email_notification(self, subject: str, message: str):
+    async def _send_email_notification(self, subject: str, message: str) -> None:
         """Send email notification."""
         # Implementation would send email via SMTP
         logger.info(f"Email notification: {subject}")
 
-    async def _send_sms_notification(self, subject: str, message: str):
+    async def _send_sms_notification(self, subject: str, message: str) -> None:
         """Send SMS notification."""
         # Implementation would send SMS via service like Twilio
         logger.info(f"SMS notification: {subject}")
@@ -1130,7 +1130,7 @@ class DisasterRecoveryOrchestrator:
 
 
 # Example usage and testing
-async def main():
+async def main() -> None:
     """Example usage of disaster recovery orchestrator."""
     orchestrator = DisasterRecoveryOrchestrator()
 

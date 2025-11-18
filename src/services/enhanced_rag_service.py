@@ -612,7 +612,7 @@ class EnhancedRAGService:
             exponential_base=self.api_retry_config.exponential_base,
             retryable_exceptions=self.api_retry_config.retryable_exceptions,
         )
-        def protected_build_operation():
+        def protected_build_operation() -> Any:
             return self.build_index_from_pdf(pdf_path, cache_dir)
 
         return protected_build_operation()
@@ -625,7 +625,7 @@ class EnhancedRAGService:
             initial_delay=self.file_retry_config.initial_delay,
             retryable_exceptions=self.file_retry_config.retryable_exceptions,
         )
-        def calculate_hash():
+        def calculate_hash() -> Any:
             return ContentHashService.calculate_file_hash(document.file_path)
 
         try:
@@ -644,7 +644,7 @@ class EnhancedRAGService:
             initial_delay=self.file_retry_config.initial_delay,
             retryable_exceptions=self.file_retry_config.retryable_exceptions,
         )
-        def prepare_directory():
+        def prepare_directory() -> None:
             if vector_index_path.exists():
                 shutil.rmtree(vector_index_path, ignore_errors=False)
             vector_index_path.mkdir(parents=True, exist_ok=True)
@@ -659,7 +659,7 @@ class EnhancedRAGService:
             initial_delay=self.file_retry_config.initial_delay,
             retryable_exceptions=self.file_retry_config.retryable_exceptions,
         )
-        def copy_files():
+        def copy_files() -> None:
             self._copy_index_files(source_path, dest_path)
             # Verify copy was successful
             if not self._verify_index_files(str(dest_path)):

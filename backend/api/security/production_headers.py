@@ -142,7 +142,7 @@ class ProductionSecurityHeaders:
         config: SecurityHeaderConfig | None = None,
         production_config: ProductionConfig | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize security headers manager."""
         self.config = config or SecurityHeaderConfig()
         self.production_config = production_config
@@ -162,7 +162,7 @@ class ProductionSecurityHeaders:
 
         logger.info("Production security headers manager initialized")
 
-    def _initialize_default_csp(self):
+    def _initialize_default_csp(self) -> None:
         """Initialize default production CSP policy."""
         self.config.csp_directives = {
             CSPDirective.DEFAULT_SRC: ["'self'"],
@@ -197,7 +197,7 @@ class ProductionSecurityHeaders:
 
         return nonce
 
-    def _cleanup_old_nonces(self):
+    def _cleanup_old_nonces(self) -> None:
         """Clean up old nonces to prevent memory leaks."""
         # This is simplified; in production you'd track nonce creation times
         if len(self.nonces) > 1000:
@@ -497,12 +497,12 @@ class SecurityHeadersMiddleware:
 
     def __init__(
         self, security_headers: ProductionSecurityHeaders, generate_nonces: bool = True
-    ):
+    ) -> None:
         """Initialize security headers middleware."""
         self.security_headers = security_headers
         self.generate_nonces = generate_nonces
 
-    async def __call__(self, request: Request, call_next):
+    async def __call__(self, request: Request, call_next) -> Any:
         """Apply security headers to all responses."""
         # Generate nonce for this request if enabled
         nonce = self.security_headers.generate_nonce() if self.generate_nonces else None
@@ -582,7 +582,7 @@ def setup_security_headers_middleware(
 
     # Add CSP violation reporting endpoint
     @app.post("/security/csp-report")
-    async def csp_violation_report(request: Request):
+    async def csp_violation_report(request: Request) -> Any:
         """Handle CSP violation reports."""
         try:
             violation_data = await request.json()

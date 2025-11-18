@@ -32,7 +32,7 @@ class CacheServiceIntegration:
         self,
         app_config: ApplicationConfig | None = None,
         metrics: ApplicationMetrics | None = None,
-    ):
+    ) -> None:
         """Initialize cache service integration."""
         self.app_config = app_config or get_application_config()
         self.metrics = metrics
@@ -80,7 +80,7 @@ class CacheServiceIntegration:
             logger.error(f"Failed to initialize cache service integration: {e}")
             return False
 
-    def _log_configuration_summary(self):
+    def _log_configuration_summary(self) -> None:
         """Log a summary of the cache configuration."""
         if not self.app_config.caching:
             return
@@ -125,7 +125,7 @@ class CacheServiceIntegration:
 
         return self.cache_manager
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Shutdown the cache service integration."""
         if self.cache_manager:
             await self.cache_manager.shutdown()
@@ -253,12 +253,12 @@ class CacheServiceIntegration:
     # Context Manager Support
     # ========================================================================
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Async context manager entry."""
         await self.initialize()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.shutdown()
 
@@ -313,7 +313,7 @@ async def get_cache_service(
     return _cache_service
 
 
-async def shutdown_cache_service():
+async def shutdown_cache_service() -> None:
     """Shutdown the global cache service."""
     global _cache_service
 
@@ -327,7 +327,7 @@ async def shutdown_cache_service():
 async def cache_service_context(
     app_config: ApplicationConfig | None = None,
     metrics: ApplicationMetrics | None = None,
-):
+) -> None:
     """
     Async context manager for cache service.
 
@@ -358,7 +358,7 @@ async def cache_service_context(
 # ============================================================================
 
 
-def create_cache_dependency():
+def create_cache_dependency() -> Any:
     """
     Create FastAPI dependency for cache service.
 
@@ -387,7 +387,7 @@ def cache_response(
     use_l1: bool = True,
     use_l2: bool = True,
     use_l3: bool = False,
-):
+) -> Any:
     """
     Decorator for caching API responses.
 
@@ -404,8 +404,8 @@ def cache_response(
             # Function implementation
     """
 
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
+    def decorator(func) -> Any:
+        async def wrapper(*args, **kwargs) -> Any:
             # Extract cache service from kwargs
             cache_service = next(
                 (
@@ -491,7 +491,7 @@ async def initialize_application_cache(
         return False
 
 
-async def shutdown_application_cache():
+async def shutdown_application_cache() -> None:
     """
     Shutdown application-wide cache system.
 

@@ -26,7 +26,7 @@ class EnhancedMetricsCollector:
     Extends the base MetricsService with business-specific monitoring.
     """
 
-    def __init__(self, db_path: str = None, redis_url: str = None):
+    def __init__(self, db_path: str = None, redis_url: str = None) -> None:
         """Initialize enhanced metrics collector."""
         self.db_path = db_path or os.getenv("DATABASE_URL", "data/library.db")
         self.redis_url = redis_url or os.getenv("REDIS_URL")
@@ -63,11 +63,11 @@ class EnhancedMetricsCollector:
 
         logger.info("Enhanced metrics collector initialized")
 
-    def _start_background_collection(self):
+    def _start_background_collection(self) -> None:
         """Start background threads for metrics collection."""
 
         # System metrics collection
-        def collect_system_metrics():
+        def collect_system_metrics() -> None:
             while True:
                 try:
                     self._collect_system_metrics()
@@ -78,7 +78,7 @@ class EnhancedMetricsCollector:
                 time.sleep(self.system_metrics_interval)
 
         # Business metrics collection
-        def collect_business_metrics():
+        def collect_business_metrics() -> None:
             while True:
                 try:
                     self._collect_document_metrics()
@@ -99,7 +99,7 @@ class EnhancedMetricsCollector:
     # System Metrics Collection
     # ========================================================================
 
-    def _collect_system_metrics(self):
+    def _collect_system_metrics(self) -> None:
         """Collect comprehensive system metrics."""
         try:
             # Process information
@@ -148,7 +148,7 @@ class EnhancedMetricsCollector:
         except Exception as e:
             logger.error(f"Failed to collect system metrics: {e}")
 
-    def _collect_database_metrics(self):
+    def _collect_database_metrics(self) -> None:
         """Collect database-specific metrics."""
         try:
             if not os.path.exists(self.db_path):
@@ -193,7 +193,7 @@ class EnhancedMetricsCollector:
         except Exception as e:
             logger.error(f"Failed to collect database metrics: {e}")
 
-    def _collect_cache_metrics(self):
+    def _collect_cache_metrics(self) -> None:
         """Collect cache-specific metrics."""
         try:
             if self.redis_url:
@@ -234,7 +234,7 @@ class EnhancedMetricsCollector:
     # Business Metrics Collection
     # ========================================================================
 
-    def _collect_document_metrics(self):
+    def _collect_document_metrics(self) -> None:
         """Collect document processing metrics."""
         try:
             if not os.path.exists(self.db_path):
@@ -305,7 +305,7 @@ class EnhancedMetricsCollector:
         except Exception as e:
             logger.error(f"Failed to collect document metrics: {e}")
 
-    def _collect_user_activity_metrics(self):
+    def _collect_user_activity_metrics(self) -> None:
         """Collect user activity and engagement metrics."""
         try:
             if not os.path.exists(self.db_path):
@@ -346,7 +346,7 @@ class EnhancedMetricsCollector:
             return False
         return any(row[1] == column for row in cursor.fetchall())
 
-    def _collect_performance_metrics(self):
+    def _collect_performance_metrics(self) -> None:
         """Collect application performance metrics."""
         try:
             # Could collect more sophisticated performance metrics
@@ -379,7 +379,7 @@ class EnhancedMetricsCollector:
         except Exception as e:
             logger.error(f"Failed to collect performance metrics: {e}")
 
-    def _check_performance_baselines(self):
+    def _check_performance_baselines(self) -> None:
         """Check if performance metrics meet baseline requirements."""
         try:
             # This would typically query recent metrics to check baselines
@@ -400,7 +400,9 @@ class EnhancedMetricsCollector:
     # Custom Recording Methods
     # ========================================================================
 
-    def record_document_processing_start(self, document_id: int, operation: str):
+    def record_document_processing_start(
+        self, document_id: int, operation: str
+    ) -> None:
         """Record start of document processing operation."""
         self.metrics.document_processing_duration.labels(operation=operation).observe(0)
         self.metrics.user_activity.labels(
@@ -414,7 +416,7 @@ class EnhancedMetricsCollector:
         duration: float,
         success: bool,
         error_type: str = None,
-    ):
+    ) -> None:
         """Record completion of document processing operation."""
         self.metrics.document_processing_duration.labels(operation=operation).observe(
             duration
@@ -435,7 +437,7 @@ class EnhancedMetricsCollector:
         success: bool,
         relevance_score: float = None,
         response_length: int = None,
-    ):
+    ) -> None:
         """Record detailed RAG query metrics."""
         # Use base service method
         self.metrics_service.record_rag_query(
@@ -457,7 +459,7 @@ class EnhancedMetricsCollector:
 
     def record_security_incident(
         self, incident_type: str, severity: str, details: dict[str, Any]
-    ):
+    ) -> None:
         """Record security incident with detailed context."""
         self.metrics_service.record_security_event(incident_type, severity)
 
@@ -622,12 +624,14 @@ def get_metrics_collector() -> EnhancedMetricsCollector:
 # ============================================================================
 
 
-def track_operation_metrics(operation_name: str, operation_type: str = "general"):
+def track_operation_metrics(
+    operation_name: str, operation_type: str = "general"
+) -> Any:
     """Decorator to automatically track operation metrics."""
 
-    def decorator(func):
+    def decorator(func) -> Any:
         @wraps(func)
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args, **kwargs) -> Any:
             collector = get_metrics_collector()
 
             try:
@@ -654,7 +658,7 @@ def track_operation_metrics(operation_name: str, operation_type: str = "general"
                 raise
 
         @wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args, **kwargs) -> Any:
             collector = get_metrics_collector()
 
             try:

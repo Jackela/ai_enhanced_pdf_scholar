@@ -222,7 +222,7 @@ class ProductionConfig:
         self,
         secrets_manager: ProductionSecretsManager | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize production configuration."""
         self.secrets_manager = secrets_manager
         self.metrics_service = metrics_service
@@ -354,7 +354,7 @@ class ProductionConfig:
             jaeger_endpoint=os.getenv("JAEGER_ENDPOINT"),
         )
 
-    def _validate_configuration(self):
+    def _validate_configuration(self) -> None:
         """Validate production configuration."""
         issues = []
 
@@ -514,7 +514,7 @@ class ProductionConfig:
             },
         }
 
-    def integrate_with_secrets(self, secrets_manager: ProductionSecretsManager):
+    def integrate_with_secrets(self, secrets_manager: ProductionSecretsManager) -> None:
         """Integrate configuration with secrets management."""
         self.secrets_manager = secrets_manager
 
@@ -527,7 +527,7 @@ class ProductionConfig:
         except Exception as e:
             logger.error(f"Failed to integrate with secrets manager: {e}")
 
-    def integrate_with_monitoring(self, metrics_service: MetricsService):
+    def integrate_with_monitoring(self, metrics_service: MetricsService) -> None:
         """Integrate configuration with monitoring service."""
         self.metrics_service = metrics_service
 

@@ -72,7 +72,9 @@ class IncrementalSnapshot:
 class FileSystemTracker:
     """Tracks file system changes for incremental backup."""
 
-    def __init__(self, base_path: str, exclude_patterns: list[str] | None = None):
+    def __init__(
+        self, base_path: str, exclude_patterns: list[str] | None = None
+    ) -> None:
         """Initialize file system tracker."""
         self.base_path = Path(base_path)
         self.exclude_patterns = exclude_patterns or []
@@ -249,7 +251,7 @@ class FileSystemTracker:
 
         return hash_sha256.hexdigest()
 
-    async def _save_snapshot(self, snapshot: IncrementalSnapshot):
+    async def _save_snapshot(self, snapshot: IncrementalSnapshot) -> None:
         """Save snapshot to disk."""
         snapshot_data = {
             "snapshot_id": snapshot.snapshot_id,
@@ -265,7 +267,7 @@ class FileSystemTracker:
         async with aiofiles.open(self.snapshot_file, "w") as f:
             await f.write(json.dumps(snapshot_data, indent=2))
 
-    async def _load_snapshot(self):
+    async def _load_snapshot(self) -> None:
         """Load snapshot from disk."""
         if not self.snapshot_file.exists():
             return
@@ -294,7 +296,7 @@ class FileSystemTracker:
 class DatabaseTracker:
     """Tracks database changes for incremental backup."""
 
-    def __init__(self, connection_url: str, tables: list[str] | None = None):
+    def __init__(self, connection_url: str, tables: list[str] | None = None) -> None:
         """Initialize database tracker."""
         self.connection_url = connection_url
         self.tables = tables
@@ -312,7 +314,7 @@ class DatabaseTracker:
         pattern = r"^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$"
         return bool(re.match(pattern, table_name))
 
-    async def setup_tracking(self):
+    async def setup_tracking(self) -> None:
         """Set up database tracking infrastructure."""
         with self.engine.connect() as conn:
             # Create snapshot tracking table
@@ -520,7 +522,7 @@ class DatabaseTracker:
 class IncrementalBackupService:
     """Main incremental backup service."""
 
-    def __init__(self, metrics_service: MetricsService | None = None):
+    def __init__(self, metrics_service: MetricsService | None = None) -> None:
         """Initialize incremental backup service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -529,7 +531,7 @@ class IncrementalBackupService:
 
     def register_filesystem_source(
         self, source_id: str, path: str, exclude_patterns: list[str] | None = None
-    ):
+    ) -> None:
         """Register a file system source for tracking."""
         tracker = FileSystemTracker(path, exclude_patterns)
         self.trackers[source_id] = tracker
@@ -537,13 +539,13 @@ class IncrementalBackupService:
 
     def register_database_source(
         self, source_id: str, connection_url: str, tables: list[str] | None = None
-    ):
+    ) -> None:
         """Register a database source for tracking."""
         tracker = DatabaseTracker(connection_url, tables)
         self.trackers[source_id] = tracker
         logger.info(f"Registered database source: {source_id}")
 
-    async def initialize_tracking(self):
+    async def initialize_tracking(self) -> None:
         """Initialize tracking for all registered sources."""
         for source_id, tracker in self.trackers.items():
             if isinstance(tracker, DatabaseTracker):
@@ -713,7 +715,7 @@ class IncrementalBackupService:
 
 
 # Example usage and testing
-async def main():
+async def main() -> None:
     """Example usage of the incremental backup service."""
     service = IncrementalBackupService()
 

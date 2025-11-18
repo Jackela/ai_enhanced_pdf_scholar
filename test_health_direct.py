@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python
 """
 Direct test of the health endpoint using FastAPI TestClient.
@@ -13,7 +15,7 @@ from fastapi.testclient import TestClient
 from backend.api.main import app
 
 
-def test_health_endpoint_direct():
+def test_health_endpoint_direct() -> Any:
     """Test the health endpoint directly without starting the server."""
 
     print("Creating test client...")

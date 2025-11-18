@@ -49,7 +49,7 @@ class StreamingUploadService:
         memory_limit_mb: float = 500.0,
         session_timeout_minutes: int = 60,
         cleanup_interval_seconds: int = 300,
-    ):
+    ) -> None:
         self.upload_dir = Path(upload_dir)
         self.upload_dir.mkdir(exist_ok=True, parents=True)
 
@@ -75,12 +75,12 @@ class StreamingUploadService:
         self._cleanup_task: asyncio.Task | None = None
         self._start_cleanup_task()
 
-    def _start_cleanup_task(self):
+    def _start_cleanup_task(self) -> None:
         """Start background cleanup task."""
         if self._cleanup_task is None or self._cleanup_task.done():
             self._cleanup_task = asyncio.create_task(self._cleanup_expired_sessions())
 
-    async def _cleanup_expired_sessions(self):
+    async def _cleanup_expired_sessions(self) -> None:
         """Periodically clean up expired upload sessions."""
         while True:
             try:
@@ -91,7 +91,7 @@ class StreamingUploadService:
             except Exception as e:
                 logger.error(f"Error in cleanup task: {e}")
 
-    async def _cleanup_expired(self):
+    async def _cleanup_expired(self) -> None:
         """Clean up expired sessions and temporary files."""
         current_time = datetime.utcnow()
         expired_sessions = []
@@ -105,7 +105,7 @@ class StreamingUploadService:
             logger.info(f"Cleaning up expired session: {session_id}")
             await self._cleanup_session(session_id, "Session expired")
 
-    async def _cleanup_session(self, session_id: UUID, reason: str = "Cleanup"):
+    async def _cleanup_session(self, session_id: UUID, reason: str = "Cleanup") -> None:
         """Clean up a specific upload session."""
         if session_id in self.active_sessions:
             session = self.active_sessions[session_id]
@@ -372,7 +372,9 @@ class StreamingUploadService:
 
                 return False, str(e)
 
-    async def _finalize_upload(self, session: UploadSession, websocket_manager=None):
+    async def _finalize_upload(
+        self, session: UploadSession, websocket_manager=None
+    ) -> None:
         """
         Finalize upload by validating file integrity and preparing for processing.
 
@@ -506,7 +508,9 @@ class StreamingUploadService:
 
         return result
 
-    async def _send_progress_update(self, session: UploadSession, websocket_manager):
+    async def _send_progress_update(
+        self, session: UploadSession, websocket_manager
+    ) -> None:
         """
         Send progress update via WebSocket.
 
@@ -644,7 +648,7 @@ class StreamingUploadService:
         except Exception:
             return 0.0
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up all resources and stop background tasks."""
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():
@@ -663,7 +667,9 @@ class StreamingUploadService:
 
 
 # WebSocket extension methods
-async def send_upload_progress(websocket_manager, client_id: str, progress_data: dict):
+async def send_upload_progress(
+    websocket_manager, client_id: str, progress_data: dict
+) -> None:
     """Send upload progress update via WebSocket."""
     await websocket_manager.send_personal_json(
         {
@@ -675,7 +681,7 @@ async def send_upload_progress(websocket_manager, client_id: str, progress_data:
 
 
 # Monkey patch WebSocket manager to add upload progress method
-def extend_websocket_manager():
+def extend_websocket_manager() -> None:
     """Extend WebSocket manager with upload-specific methods."""
     from backend.api.websocket_manager import WebSocketManager
 

@@ -70,7 +70,7 @@ class LoadTestResults:
 class DocumentLoadTester:
     """Specialized load testing for document processing operations"""
 
-    def __init__(self, output_dir: str = "performance_results"):
+    def __init__(self, output_dir: str = "performance_results") -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.results = {}
@@ -599,7 +599,7 @@ class DocumentLoadTester:
         logger.info(f"Load test results saved to: {output_path}")
         return str(output_path)
 
-    def print_summary(self):
+    def print_summary(self) -> None:
         """Print load test summary"""
         if not self.results:
             print("No results to display")
@@ -663,7 +663,7 @@ class DocumentLoadTester:
         print("\n" + "=" * 120)
 
 
-def main():
+def main() -> Any:
     """Main entry point for document load testing"""
     import argparse
 

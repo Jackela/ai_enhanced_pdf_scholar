@@ -39,7 +39,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def check_redis_availability():
+def check_redis_availability() -> Any:
     """Check if Redis is available and log status."""
     if not REDIS_AVAILABLE:
         logger.warning(
@@ -171,7 +171,7 @@ class RedisClusterManager:
         cluster_config: ClusterConfig | None = None,
         sentinel_config: SentinelConfig | None = None,
         caching_config: CachingConfig | None = None,
-    ):
+    ) -> None:
         """Initialize Redis cluster manager."""
         self.backend_type = backend_type
         self.nodes = nodes or [RedisNodeConfig("localhost", 6379)]
@@ -792,7 +792,7 @@ def create_redis_cluster_manager(
         )
 
 
-async def main():
+async def main() -> None:
     """Example usage of Redis cluster manager."""
     # Create cluster manager
     manager = create_redis_cluster_manager(

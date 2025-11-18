@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class TracingConfig:
     """OpenTelemetry tracing configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize tracing configuration from environment."""
         # Service configuration
         self.service_name = os.getenv("OTEL_SERVICE_NAME", "ai-pdf-scholar")
@@ -92,7 +92,7 @@ class TracingService:
     Comprehensive OpenTelemetry tracing service.
     """
 
-    def __init__(self, config: TracingConfig | None = None):
+    def __init__(self, config: TracingConfig | None = None) -> None:
         """Initialize tracing service."""
         self.config = config or TracingConfig()
         self.tracer_provider = None
@@ -103,7 +103,7 @@ class TracingService:
 
         logger.info(f"Tracing service initialized for {self.config.service_name}")
 
-    def _setup_tracing(self):
+    def _setup_tracing(self) -> None:
         """Setup OpenTelemetry tracing."""
         # Create resource
         resource = Resource.create(
@@ -135,13 +135,13 @@ class TracingService:
         # Setup auto-instrumentation
         self._setup_auto_instrumentation()
 
-    def _create_sampler(self):
+    def _create_sampler(self) -> Any:
         """Create trace sampler."""
         from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
         return TraceIdRatioBased(self.config.sample_rate)
 
-    def _setup_exporters(self):
+    def _setup_exporters(self) -> None:
         """Setup trace exporters."""
         processors = []
 
@@ -161,7 +161,7 @@ class TracingService:
         for processor in processors:
             self.tracer_provider.add_span_processor(processor)
 
-    def _setup_propagators(self):
+    def _setup_propagators(self) -> None:
         """Setup trace propagators."""
         propagators = []
 
@@ -177,7 +177,7 @@ class TracingService:
             composite_propagator = CompositePropagator(propagators)
             set_global_textmap(composite_propagator)
 
-    def _setup_auto_instrumentation(self):
+    def _setup_auto_instrumentation(self) -> None:
         """Setup automatic instrumentation."""
         # HTTP requests instrumentation
         if self.config.auto_instrument_requests:
@@ -230,7 +230,7 @@ class TracingService:
         name: str,
         kind: trace.SpanKind | None = None,
         attributes: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """
         Context manager for tracing operations.
 
@@ -259,7 +259,7 @@ class TracingService:
         kind: trace.SpanKind | None = None,
         attributes: dict[str, Any] | None = None,
         record_exception: bool = True,
-    ):
+    ) -> Any:
         """
         Decorator for automatic tracing.
 
@@ -279,7 +279,7 @@ class TracingService:
             span_name = name or f"{func.__module__}.{func.__name__}"
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> Any:
                 with self.trace(span_name, kind, attributes) as span:
                     # Add function attributes
                     span.set_attribute("function.name", func.__name__)
@@ -309,7 +309,7 @@ class TracingService:
 
             # Add async support
             @wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def async_wrapper(*args, **kwargs) -> Any:
                 with self.trace(span_name, kind, attributes) as span:
                     span.set_attribute("function.name", func.__name__)
                     span.set_attribute("function.module", func.__module__)
@@ -349,7 +349,7 @@ class TracingService:
         user_id: str | None = None,
         request_size: int | None = None,
         response_size: int | None = None,
-    ):
+    ) -> None:
         """Trace HTTP request with standard attributes."""
         span = trace.get_current_span()
 
@@ -379,7 +379,7 @@ class TracingService:
         query: str | None = None,
         rows_affected: int | None = None,
         duration: float | None = None,
-    ):
+    ) -> None:
         """Trace database query with standard attributes."""
         span = trace.get_current_span()
 
@@ -404,7 +404,7 @@ class TracingService:
         file_type: str | None = None,
         file_size: int | None = None,
         page_count: int | None = None,
-    ):
+    ) -> None:
         """Trace document processing operations."""
         span = trace.get_current_span()
 
@@ -428,7 +428,7 @@ class TracingService:
         retrieval_count: int | None = None,
         relevance_scores: list[float] | None = None,
         model_used: str | None = None,
-    ):
+    ) -> None:
         """Trace RAG (Retrieval-Augmented Generation) queries."""
         span = trace.get_current_span()
 
@@ -462,7 +462,7 @@ class TracingService:
         hit: bool | None = None,
         size: int | None = None,
         ttl: int | None = None,
-    ):
+    ) -> None:
         """Trace cache operations."""
         span = trace.get_current_span()
 
@@ -487,7 +487,7 @@ class TracingService:
     # Baggage Management
     # ========================================================================
 
-    def set_baggage(self, key: str, value: str):
+    def set_baggage(self, key: str, value: str) -> None:
         """Set baggage that propagates across service boundaries."""
         ctx = baggage.set_baggage(key, value)
         context.attach(ctx)
@@ -496,7 +496,7 @@ class TracingService:
         """Get baggage value."""
         return baggage.get_baggage(key)
 
-    def clear_baggage(self, key: str):
+    def clear_baggage(self, key: str) -> None:
         """Clear specific baggage key."""
         ctx = baggage.clear_baggage(key)
         context.attach(ctx)
@@ -526,7 +526,7 @@ class TracingService:
         inject(headers)
         return headers
 
-    def extract_trace_context(self, headers: dict[str, str]):
+    def extract_trace_context(self, headers: dict[str, str]) -> Any:
         """Extract trace context from HTTP headers."""
         from opentelemetry.propagate import extract
 
@@ -536,13 +536,15 @@ class TracingService:
     # Custom Events and Logs
     # ========================================================================
 
-    def add_event(self, name: str, attributes: dict[str, Any] | None = None):
+    def add_event(self, name: str, attributes: dict[str, Any] | None = None) -> None:
         """Add an event to the current span."""
         span = trace.get_current_span()
         if span:
             span.add_event(name, attributes or {})
 
-    def log_error(self, error: Exception, attributes: dict[str, Any] | None = None):
+    def log_error(
+        self, error: Exception, attributes: dict[str, Any] | None = None
+    ) -> None:
         """Log an error to the current span."""
         span = trace.get_current_span()
         if span:
@@ -555,7 +557,7 @@ class TracingService:
 
     def set_user_context(
         self, user_id: str, user_email: str | None = None, user_role: str | None = None
-    ):
+    ) -> None:
         """Set user context in current span."""
         span = trace.get_current_span()
         if span:
@@ -569,11 +571,11 @@ class TracingService:
     # Performance Monitoring
     # ========================================================================
 
-    def measure_performance(self, operation: str):
+    def measure_performance(self, operation: str) -> Any:
         """Context manager to measure operation performance."""
 
         @contextmanager
-        def performance_context():
+        def performance_context() -> None:
             start_time = time.time()
 
             with self.trace(f"perf.{operation}") as span:
@@ -599,7 +601,7 @@ class TracingService:
     # FastAPI Integration
     # ========================================================================
 
-    def instrument_fastapi(self, app):
+    def instrument_fastapi(self, app) -> None:
         """Instrument FastAPI application."""
         # Set excluded URLs
         excluded_urls = get_excluded_urls("OTEL_PYTHON_FASTAPI_EXCLUDED_URLS")
@@ -633,7 +635,7 @@ class TracingService:
         ]
         return any(sensitive in key.lower() for sensitive in sensitive_keys)
 
-    def close(self):
+    def close(self) -> None:
         """Close tracing service and flush remaining spans."""
         if self.tracer_provider:
             # Shutdown span processors

@@ -133,7 +133,7 @@ class BackupMetadata:
 class BackupSource:
     """Base class for backup sources."""
 
-    def __init__(self, name: str, tier: BackupTier, source_path: str):
+    def __init__(self, name: str, tier: BackupTier, source_path: str) -> None:
         self.name = name
         self.tier = tier
         self.source_path = source_path
@@ -162,12 +162,12 @@ class BackupSource:
 class PostgreSQLBackupSource(BackupSource):
     """PostgreSQL database backup source."""
 
-    def __init__(self, name: str, tier: BackupTier, connection_url: str):
+    def __init__(self, name: str, tier: BackupTier, connection_url: str) -> None:
         super().__init__(name, tier, connection_url)
         self.connection_url = connection_url
         self._parse_connection()
 
-    def _parse_connection(self):
+    def _parse_connection(self) -> None:
         """Parse PostgreSQL connection URL."""
         parsed = urlparse(self.connection_url)
         self.host = parsed.hostname or "localhost"
@@ -260,12 +260,12 @@ class PostgreSQLBackupSource(BackupSource):
 class RedisBackupSource(BackupSource):
     """Redis backup source."""
 
-    def __init__(self, name: str, tier: BackupTier, connection_url: str):
+    def __init__(self, name: str, tier: BackupTier, connection_url: str) -> None:
         super().__init__(name, tier, connection_url)
         self.connection_url = connection_url
         self._parse_connection()
 
-    def _parse_connection(self):
+    def _parse_connection(self) -> None:
         """Parse Redis connection URL."""
         parsed = urlparse(self.connection_url)
         self.host = parsed.hostname or "localhost"
@@ -359,7 +359,7 @@ class FileSystemBackupSource(BackupSource):
         tier: BackupTier,
         source_path: str,
         exclude_patterns: list[str] | None = None,
-    ):
+    ) -> None:
         super().__init__(name, tier, source_path)
         self.exclude_patterns = exclude_patterns or []
 
@@ -427,14 +427,16 @@ class FileSystemBackupSource(BackupSource):
 class S3StorageProvider:
     """AWS S3 storage provider for backups."""
 
-    def __init__(self, bucket: str, region: str = "us-east-1", prefix: str = ""):
+    def __init__(
+        self, bucket: str, region: str = "us-east-1", prefix: str = ""
+    ) -> None:
         self.bucket = bucket
         self.region = region
         self.prefix = prefix
         self._client = None
 
     @property
-    def client(self):
+    def client(self) -> Any:
         """Lazy initialization of S3 client."""
         if self._client is None:
             self._client = boto3.client("s3", region_name=self.region)
@@ -511,7 +513,7 @@ class S3StorageProvider:
 class BackupOrchestrator:
     """Main backup orchestration system."""
 
-    def __init__(self, config: BackupConfig | None = None):
+    def __init__(self, config: BackupConfig | None = None) -> None:
         """Initialize backup orchestrator."""
         self.config = config or BackupConfig()
         self.sources: list[BackupSource] = []
@@ -534,7 +536,7 @@ class BackupOrchestrator:
         # Create backup directories
         self._create_backup_directories()
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """Configure logging for backup operations."""
         log_path = Path(self.config.backup_base_path) / "logs"
         log_path.mkdir(parents=True, exist_ok=True)
@@ -548,7 +550,7 @@ class BackupOrchestrator:
         logger.addHandler(handler)
         logger.setLevel(logging.INFO)
 
-    def _initialize_storage_providers(self):
+    def _initialize_storage_providers(self) -> None:
         """Initialize backup storage providers."""
         # Local storage (always available)
         self.storage_providers[StorageProvider.LOCAL] = True
@@ -569,7 +571,7 @@ class BackupOrchestrator:
             except Exception as e:
                 logger.error(f"Failed to initialize S3 storage: {e}")
 
-    def _create_backup_directories(self):
+    def _create_backup_directories(self) -> None:
         """Create necessary backup directory structure."""
         base_path = Path(self.config.backup_base_path)
 
@@ -586,7 +588,7 @@ class BackupOrchestrator:
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
 
-    def register_source(self, source: BackupSource):
+    def register_source(self, source: BackupSource) -> None:
         """Register a backup source."""
         self.sources.append(source)
         logger.info(
@@ -776,7 +778,7 @@ class BackupOrchestrator:
                 logger.error(f"Backup error: {backup_id} - {error_msg}")
                 return metadata
 
-    async def cleanup_expired_backups(self):
+    async def cleanup_expired_backups(self) -> None:
         """Clean up expired backups based on retention policies."""
         now = datetime.utcnow()
         cleaned_count = 0
@@ -808,7 +810,7 @@ class BackupOrchestrator:
         if cleaned_count > 0:
             logger.info(f"Cleaned up {cleaned_count} expired backups")
 
-    async def backup_cycle(self):
+    async def backup_cycle(self) -> None:
         """Execute one backup cycle for all sources."""
         now = datetime.utcnow()
         cycle_start = time.time()
@@ -872,7 +874,7 @@ class BackupOrchestrator:
         cycle_duration = time.time() - cycle_start
         logger.info(f"Backup cycle completed in {cycle_duration:.2f} seconds")
 
-    async def start_orchestrator(self):
+    async def start_orchestrator(self) -> None:
         """Start the backup orchestration service."""
         logger.info("Starting backup orchestrator")
         self.running = True
@@ -889,7 +891,7 @@ class BackupOrchestrator:
                 logger.error(f"Error in backup orchestrator main loop: {e}")
                 await asyncio.sleep(60)  # Wait before retrying
 
-    def stop_orchestrator(self):
+    def stop_orchestrator(self) -> None:
         """Stop the backup orchestrator."""
         logger.info("Stopping backup orchestrator")
         self.running = False
@@ -939,7 +941,7 @@ class BackupOrchestrator:
         }
 
 
-async def main():
+async def main() -> None:
     """Main entry point for backup orchestrator."""
     # Load configuration
     config = BackupConfig()

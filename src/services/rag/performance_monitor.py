@@ -36,7 +36,7 @@ class PerformanceMetrics:
     error_message: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def complete(self):
+    def complete(self) -> None:
         """Mark operation as complete and calculate metrics"""
         self.end_time = time.time()
         self.duration = self.end_time - self.start_time
@@ -48,7 +48,7 @@ class PerformanceMetrics:
 class RAGPerformanceMonitor:
     """Monitor and track RAG pipeline performance"""
 
-    def __init__(self, max_history: int = 1000):
+    def __init__(self, max_history: int = 1000) -> None:
         """
         Initialize performance monitor
 
@@ -94,7 +94,7 @@ class RAGPerformanceMonitor:
 
     def end_operation(
         self, operation_id: str, success: bool = True, error_message: str | None = None
-    ):
+    ) -> None:
         """
         End monitoring an operation
 
@@ -123,7 +123,7 @@ class RAGPerformanceMonitor:
             f"Completed monitoring operation: {operation_id} (duration: {metrics.duration:.2f}s)"
         )
 
-    def _check_thresholds(self, metrics: PerformanceMetrics):
+    def _check_thresholds(self, metrics: PerformanceMetrics) -> None:
         """Check if metrics exceed thresholds and generate alerts"""
         alerts = []
 
@@ -236,7 +236,7 @@ class RAGPerformanceMonitor:
             "recent_alerts": self.alerts[-10:] if self.alerts else [],
         }
 
-    def reset_alerts(self):
+    def reset_alerts(self) -> None:
         """Clear all alerts"""
         self.alerts.clear()
 
@@ -254,7 +254,7 @@ class RAGPerformanceMonitor:
 
     async def monitor_async_operation(
         self, operation_name: str, func: Callable, *args, **kwargs
-    ):
+    ) -> Any:
         """
         Monitor an async operation
 
@@ -276,7 +276,7 @@ class RAGPerformanceMonitor:
             self.end_operation(op_id, success=False, error_message=str(e))
             raise
 
-    def monitor_operation(self, operation_name: str):
+    def monitor_operation(self, operation_name: str) -> Any:
         """
         Decorator to monitor a function's performance
 
@@ -284,10 +284,10 @@ class RAGPerformanceMonitor:
             operation_name: Name of the operation
         """
 
-        def decorator(func):
+        def decorator(func) -> Any:
             if asyncio.iscoroutinefunction(func):
 
-                async def async_wrapper(*args, **kwargs):
+                async def async_wrapper(*args, **kwargs) -> Any:
                     return await self.monitor_async_operation(
                         operation_name, func, *args, **kwargs
                     )
@@ -295,7 +295,7 @@ class RAGPerformanceMonitor:
                 return async_wrapper
             else:
 
-                def sync_wrapper(*args, **kwargs):
+                def sync_wrapper(*args, **kwargs) -> Any:
                     op_id = self.start_operation(operation_name)
                     try:
                         result = func(*args, **kwargs)

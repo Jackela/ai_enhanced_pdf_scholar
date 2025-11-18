@@ -17,7 +17,7 @@ class _Metric:
         if registry is not None:
             registry.metrics.append(self)
 
-    def labels(self, *args: Any, **kwargs: Any) -> "_Metric":
+    def labels(self, *args: Any, **kwargs: Any) -> _Metric:
         return self
 
     def inc(self, *args: Any, **kwargs: Any) -> None:
@@ -32,7 +32,7 @@ class _Metric:
     def set(self, *args: Any, **kwargs: Any) -> None:
         return None
 
-    def time(self, *args: Any, **kwargs: Any) -> "_Metric":
+    def time(self, *args: Any, **kwargs: Any) -> _Metric:
         return self
 
     def state(self, *args: Any, **kwargs: Any) -> None:

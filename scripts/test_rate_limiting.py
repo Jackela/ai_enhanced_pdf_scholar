@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Rate Limiting Performance and Load Testing Script
 Tests rate limiting under high load conditions
@@ -36,18 +38,18 @@ class TestResult:
 class RateLimitTester:
     """Rate limiting performance tester."""
 
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "http://localhost:8000") -> None:
         self.base_url = base_url
         self.session: aiohttp.ClientSession = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         self.session = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=30),
             headers={"User-Agent": "rate-limit-tester"},
         )
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.session:
             await self.session.close()
 
@@ -247,7 +249,7 @@ class RateLimitTester:
         return results
 
 
-def print_results(result: TestResult):
+def print_results(result: TestResult) -> None:
     """Print test results in a readable format."""
     print(f"\n{'='*60}")
     print(f"Results for {result.endpoint}")
@@ -276,7 +278,7 @@ def print_results(result: TestResult):
         print(f"Rate Limit Effectiveness: {effectiveness:.1f}%")
 
 
-async def main():
+async def main() -> Any:
     """Main test runner."""
     parser = argparse.ArgumentParser(description="Rate Limiting Performance Tests")
     parser.add_argument(

@@ -121,11 +121,11 @@ class ApiKeyTestResponse(BaseModel):
 class SettingsManager:
     """Manages system settings persistence."""
 
-    def __init__(self, db: DatabaseConnection):
+    def __init__(self, db: DatabaseConnection) -> None:
         self.db = db
         self._initialize_settings_table()
 
-    def _initialize_settings_table(self):
+    def _initialize_settings_table(self) -> None:
         """Initialize settings table if not exists."""
         try:
             self.db.execute(
@@ -224,7 +224,7 @@ def mask_api_key(api_key: str) -> str:
 @router.get("/settings", response_model=SettingsResponse)
 async def get_settings(
     settings_manager: SettingsManager = Depends(get_settings_manager),
-):
+) -> Any:
     """Get current system settings."""
     try:
         gemini_api_key = settings_manager.get_setting("gemini_api_key", "")
@@ -245,7 +245,7 @@ async def get_settings(
 async def update_settings(
     request: SettingsRequest,
     settings_manager: SettingsManager = Depends(get_settings_manager),
-):
+) -> Any:
     """Update system settings."""
     try:
         # Update API key if provided
@@ -267,7 +267,7 @@ async def update_settings(
 
 
 @router.post("/test-api-key", response_model=ApiKeyTestResponse)
-async def test_api_key(request: ApiKeyRequest):
+async def test_api_key(request: ApiKeyRequest) -> Any:
     """Test if provided API key is valid."""
     try:
         api_key = request.api_key.strip()
@@ -313,7 +313,7 @@ async def test_api_key(request: ApiKeyRequest):
 async def get_system_status(
     db: DatabaseConnection = Depends(get_db),
     settings_manager: SettingsManager = Depends(get_settings_manager),
-):
+) -> Any:
     """Get comprehensive system status."""
     try:
         # Check database

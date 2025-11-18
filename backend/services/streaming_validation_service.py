@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Streaming Validation Service
 Advanced file validation service for streaming uploads with detailed PDF analysis.
@@ -68,7 +70,7 @@ class StreamingValidationService:
         ],
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Validation statistics
         self.validation_stats = {
             "files_validated": 0,
@@ -328,7 +330,7 @@ class StreamingValidationService:
         objects_found: set[int],
         pages_found: set[int],
         security_threats: dict[str, list[int]],
-    ):
+    ) -> None:
         """
         Analyze a chunk of PDF content for structure and security threats.
 
@@ -482,7 +484,7 @@ class StreamingValidationService:
         """Get current validation statistics."""
         return self.validation_stats.copy()
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         """Reset validation statistics."""
         self.validation_stats = {
             "files_validated": 0,

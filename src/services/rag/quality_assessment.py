@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class SemanticRelevanceScorer:
     """Scorer for semantic relevance of RAG responses to queries."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the semantic relevance scorer."""
         self.model_name = "mock-embedding-model"
 
@@ -70,7 +70,7 @@ class SemanticRelevanceScorer:
 class CitationAccuracyValidator:
     """Validator for citation accuracy in RAG responses."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the citation accuracy validator."""
         self.confidence_threshold = 0.7
 
@@ -134,7 +134,7 @@ class CitationAccuracyValidator:
 class RAGQualityAssessment:
     """Main class for comprehensive RAG quality assessment."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the RAG quality assessment system."""
         self.relevance_scorer = SemanticRelevanceScorer()
         self.citation_validator = CitationAccuracyValidator()

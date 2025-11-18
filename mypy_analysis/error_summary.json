@@ -1,0 +1,129 @@
+{
+  "total_errors": 4086,
+  "total_files": 287,
+  "by_type": {
+    "no-untyped-def": 1350,
+    "attr-defined": 523,
+    "arg-type": 280,
+    "type-arg": 249,
+    "assignment": 240,
+    "Any": 205,
+    "str": 180,
+    "union-attr": 154,
+    "var-annotated": 142,
+    "index": 120,
+    "call-arg": 120,
+    "no-any-return": 85,
+    "operator": 57,
+    "misc": 49,
+    "int": 32,
+    "_T": 31,
+    "valid-type": 30,
+    "datetime": 29,
+    "dict-item": 26,
+    "call-overload": 21,
+    "bool": 21,
+    "return-value": 17,
+    "unused-ignore": 14,
+    "method-assign": 12,
+    "import-untyped": 11,
+    "no-redef": 10,
+    "comparison-overlap": 9,
+    "AnyStr": 6,
+    "HealthCheckResult": 6,
+    "_T1": 5,
+    "DocumentModel": 4,
+    "override": 3,
+    "return": 3,
+    "ClusterNode": 3,
+    "redundant-cast": 3,
+    "bytes": 2,
+    "Exception": 2,
+    "None": 2,
+    "SecurityValidationErrorResponse": 2,
+    "float": 2,
+    "Config": 2,
+    "Trace": 1,
+    "FeatureFlagRule": 1,
+    "name-defined": 1,
+    "PerformanceBottleneck": 1,
+    "SecurityEvent": 1,
+    "BusinessMetric": 1,
+    "Anomaly": 1,
+    "PredictiveInsight": 1,
+    "PatternMatch": 1,
+    "Never": 1,
+    "NullPool": 1,
+    "QueuePool": 1,
+    "RedisCluster": 1,
+    "Sentinel": 1,
+    "RedisCacheService": 1,
+    "type-var": 1,
+    "Request": 1,
+    "SecretProvider": 1,
+    "Meta": 1,
+    "P": 1,
+    "ErrorHandlingMiddleware": 1,
+    "0": 1,
+    "list-item": 1,
+    "True": 1
+  },
+  "by_category": {
+    "auto": 1350,
+    "semi_auto": 648,
+    "manual_complex": 1515,
+    "manual_simple": 573
+  },
+  "top_10_files": [
+    {
+      "file": "backend/api/routes/system.py",
+      "errors": 85,
+      "risk": "high"
+    },
+    {
+      "file": "src/database/migrations.py",
+      "errors": 76,
+      "risk": "high"
+    },
+    {
+      "file": "backend/config/production_integration.py",
+      "errors": 66,
+      "risk": "high"
+    },
+    {
+      "file": "backend/services/gdpr_compliance_service.py",
+      "errors": 62,
+      "risk": "high"
+    },
+    {
+      "file": "scripts/docs_generator.py",
+      "errors": 61,
+      "risk": "low"
+    },
+    {
+      "file": "backend/api/websocket_manager.py",
+      "errors": 61,
+      "risk": "high"
+    },
+    {
+      "file": "scripts/database_performance_benchmark.py",
+      "errors": 60,
+      "risk": "low"
+    },
+    {
+      "file": "backend/services/metrics_service.py",
+      "errors": 53,
+      "risk": "high"
+    },
+    {
+      "file": "backend/services/cache_optimization_service.py",
+      "errors": 53,
+      "risk": "high"
+    },
+    {
+      "file": "backend/api/auth/service.py",
+      "errors": 52,
+      "risk": "high"
+    }
+  ]
+}

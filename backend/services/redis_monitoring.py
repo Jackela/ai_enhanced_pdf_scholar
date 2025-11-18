@@ -167,7 +167,7 @@ class RedisMetricsSnapshot:
     # Error metrics
     errorstats: dict[str, int] = field(default_factory=dict)
 
-    def calculate_derived_metrics(self):
+    def calculate_derived_metrics(self) -> None:
         """Calculate derived metrics from raw data."""
         # Memory percentage
         if self.maxmemory > 0:
@@ -276,7 +276,7 @@ class RedisMonitoringService:
         cluster_manager: RedisClusterManager | None = None,
         metrics_service: MetricsService | None = None,
         alert_handlers: list[Callable[[str, AlertSeverity, str], None]] | None = None,
-    ):
+    ) -> None:
         """Initialize Redis monitoring service."""
         self.cluster_manager = cluster_manager
         self.metrics_service = metrics_service
@@ -301,7 +301,7 @@ class RedisMonitoringService:
 
         logger.info("Redis Monitoring Service initialized")
 
-    def _load_default_alert_rules(self):
+    def _load_default_alert_rules(self) -> None:
         """Load default alert rules."""
         default_rules = [
             # Memory alerts
@@ -407,7 +407,7 @@ class RedisMonitoringService:
     # Monitoring Control
     # ========================================================================
 
-    async def start_monitoring(self, interval_seconds: float = 30.0):
+    async def start_monitoring(self, interval_seconds: float = 30.0) -> None:
         """Start continuous Redis monitoring."""
         if self.is_monitoring:
             logger.warning("Monitoring is already running")
@@ -419,7 +419,7 @@ class RedisMonitoringService:
 
         logger.info(f"Started Redis monitoring with {interval_seconds}s interval")
 
-    async def stop_monitoring(self):
+    async def stop_monitoring(self) -> None:
         """Stop continuous Redis monitoring."""
         if not self.is_monitoring:
             return
@@ -435,7 +435,7 @@ class RedisMonitoringService:
 
         logger.info("Stopped Redis monitoring")
 
-    async def _monitoring_loop(self):
+    async def _monitoring_loop(self) -> None:
         """Main monitoring loop."""
         while self.is_monitoring:
             try:
@@ -464,7 +464,7 @@ class RedisMonitoringService:
     # Metrics Collection
     # ========================================================================
 
-    async def _collect_all_metrics(self):
+    async def _collect_all_metrics(self) -> None:
         """Collect metrics from all Redis nodes."""
         if self.cluster_manager:
             # Collect from cluster manager
@@ -481,7 +481,7 @@ class RedisMonitoringService:
 
     async def _collect_node_metrics(
         self, client: Union[Redis, RedisCluster], node_id: str
-    ):
+    ) -> None:
         """Collect metrics from a specific Redis node."""
         try:
             # Get Redis INFO
@@ -505,7 +505,7 @@ class RedisMonitoringService:
         except Exception as e:
             logger.error(f"Failed to collect metrics from node {node_id}: {e}")
 
-    async def _export_node_metrics(self, snapshot: RedisMetricsSnapshot):
+    async def _export_node_metrics(self, snapshot: RedisMetricsSnapshot) -> None:
         """Export node metrics to external metrics service."""
         try:
             # Record memory metrics
@@ -542,7 +542,7 @@ class RedisMonitoringService:
     # Alert Management
     # ========================================================================
 
-    async def _check_alerts(self):
+    async def _check_alerts(self) -> None:
         """Check all alert rules against current metrics."""
         for node_id, history in self.metrics_history.items():
             if not history:
@@ -579,7 +579,7 @@ class RedisMonitoringService:
         except AttributeError:
             return None
 
-    async def _send_alert(self, severity: AlertSeverity, message: str):
+    async def _send_alert(self, severity: AlertSeverity, message: str) -> None:
         """Send alert to all registered handlers."""
         timestamp = datetime.utcnow().isoformat()
 
@@ -601,7 +601,7 @@ class RedisMonitoringService:
             except Exception as e:
                 logger.error(f"Alert handler failed: {e}")
 
-    def add_alert_rule(self, rule: AlertRule):
+    def add_alert_rule(self, rule: AlertRule) -> None:
         """Add a new alert rule."""
         self.alert_rules.append(rule)
         logger.info(f"Added alert rule: {rule.name}")
@@ -617,7 +617,9 @@ class RedisMonitoringService:
 
         return removed
 
-    def add_alert_handler(self, handler: Callable[[str, AlertSeverity, str], None]):
+    def add_alert_handler(
+        self, handler: Callable[[str, AlertSeverity, str], None]
+    ) -> None:
         """Add an alert handler function."""
         self.alert_handlers.append(handler)
 
@@ -625,7 +627,7 @@ class RedisMonitoringService:
     # Performance Baselines
     # ========================================================================
 
-    async def _update_baselines(self):
+    async def _update_baselines(self) -> None:
         """Update performance baselines from historical data."""
         cutoff_time = datetime.utcnow() - timedelta(hours=self.baseline_window_hours)
 
@@ -658,7 +660,7 @@ class RedisMonitoringService:
     # Data Export and API
     # ========================================================================
 
-    async def _export_metrics(self):
+    async def _export_metrics(self) -> None:
         """Export metrics to external systems."""
         # This could export to time-series databases, monitoring systems, etc.
         pass
@@ -779,14 +781,16 @@ class RedisMonitoringService:
 # ============================================================================
 
 
-def console_alert_handler(message: str, severity: AlertSeverity, timestamp: str):
+def console_alert_handler(
+    message: str, severity: AlertSeverity, timestamp: str
+) -> None:
     """Simple console alert handler."""
     print(f"[{timestamp}] {severity.value.upper()}: {message}")
 
 
 async def webhook_alert_handler(
     webhook_url: str, message: str, severity: AlertSeverity, timestamp: str
-):
+) -> None:
     """Send alert to webhook endpoint."""
     import aiohttp
 
@@ -808,7 +812,7 @@ async def webhook_alert_handler(
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> None:
         # Create monitoring service
         monitoring = RedisMonitoringService()
 

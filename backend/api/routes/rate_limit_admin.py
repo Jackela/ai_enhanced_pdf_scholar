@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Rate Limiting Administration and Monitoring Endpoints
 Provides admin interface for monitoring and managing rate limiting
@@ -96,7 +98,7 @@ class SuspiciousIPResponse(BaseModel):
 
 
 # Security dependency (simplified - in production, use proper auth)
-async def require_admin():
+async def require_admin() -> Any:
     """Require admin privileges for rate limiting management."""
     # In production, implement proper authentication/authorization
     # For now, this is a placeholder
@@ -110,7 +112,7 @@ if not MONITORING_AVAILABLE:
     # Provide placeholder responses when monitoring is not available
 
     @router.get("/rate-limit/status")
-    async def get_rate_limit_status():
+    async def get_rate_limit_status() -> Any:
         """Get rate limiting system status."""
         return {
             "status": "disabled",
@@ -122,7 +124,7 @@ else:
     # Full monitoring endpoints when available
 
     @router.get("/rate-limit/status")
-    async def get_rate_limit_status():
+    async def get_rate_limit_status() -> Any:
         """Get rate limiting system status."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=60)
@@ -141,8 +143,8 @@ else:
     async def get_rate_limit_metrics(
         window_minutes: int = Query(
             60, ge=1, le=1440, description="Time window in minutes"
-        )
-    ):
+        ),
+    ) -> Any:
         """Get rate limiting metrics for specified time window."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=window_minutes)
@@ -155,7 +157,7 @@ else:
         window_minutes: int = Query(
             60, ge=1, le=1440, description="Analysis window in minutes"
         ),
-    ):
+    ) -> Any:
         """Get detailed analysis for a specific IP address."""
         monitor = get_monitor()
         analysis = monitor.get_ip_metrics(client_ip, window_minutes)
@@ -171,7 +173,7 @@ else:
         window_minutes: int = Query(
             60, ge=1, le=1440, description="Analysis window in minutes"
         ),
-    ):
+    ) -> Any:
         """Get detailed analysis for a specific endpoint."""
         monitor = get_monitor()
         analysis = monitor.get_endpoint_metrics(endpoint, window_minutes)
@@ -190,7 +192,7 @@ else:
             50, ge=10, le=1000, description="Minimum requests to be considered"
         ),
         limit: int = Query(20, ge=1, le=100, description="Maximum number of results"),
-    ):
+    ) -> Any:
         """Get list of suspicious IP addresses based on behavior patterns."""
         monitor = get_monitor()
         suspicious_ips = monitor.get_suspicious_ips(
@@ -212,7 +214,7 @@ else:
         limit: int = Query(
             10, ge=1, le=50, description="Number of top endpoints to return"
         ),
-    ):
+    ) -> Any:
         """Get most frequently accessed endpoints."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=window_minutes)
@@ -229,7 +231,7 @@ else:
             60, ge=1, le=1440, description="Analysis window in minutes"
         ),
         limit: int = Query(10, ge=1, le=50, description="Number of top IPs to return"),
-    ):
+    ) -> Any:
         """Get most active IP addresses."""
         monitor = get_monitor()
         metrics = monitor.get_metrics(window_minutes=window_minutes)
@@ -246,7 +248,7 @@ else:
             None, ge=1, le=10080, description="Export window in minutes"
         ),
         filename: str = Query("rate_limit_export.json", description="Export filename"),
-    ):
+    ) -> Any:
         """Export rate limiting data to JSON file."""
         monitor = get_monitor()
 
@@ -266,8 +268,8 @@ else:
     async def cleanup_old_events(
         hours_to_keep: int = Query(
             24, ge=1, le=168, description="Hours of data to keep"
-        )
-    ):
+        ),
+    ) -> Any:
         """Clean up old rate limiting events to free memory."""
         monitor = get_monitor()
 
@@ -284,7 +286,7 @@ else:
         }
 
     @router.get("/rate-limit/health")
-    async def get_rate_limit_health():
+    async def get_rate_limit_health() -> Any:
         """Get health status of rate limiting system."""
         monitor = get_monitor()
 
@@ -332,7 +334,7 @@ else:
         }
 
     @router.get("/rate-limit/alerts")
-    async def get_recent_alerts():
+    async def get_recent_alerts() -> Any:
         """Get recent rate limiting alerts and warnings."""
         # This would typically integrate with an alerting system
         # For now, return placeholder data
@@ -357,7 +359,7 @@ else:
 
 # Always provide configuration endpoints
 @router.get("/rate-limit/config")
-async def get_rate_limit_config():
+async def get_rate_limit_config() -> Any:
     """Get current rate limiting configuration."""
     # Import here to avoid circular imports
     from ..rate_limit_config import get_rate_limit_config

@@ -36,7 +36,7 @@ class ProcessingConfig:
 class LargeDocumentProcessor:
     """Handles processing of large documents for RAG"""
 
-    def __init__(self, config: ProcessingConfig | None = None):
+    def __init__(self, config: ProcessingConfig | None = None) -> None:
         """
         Initialize large document processor
 
@@ -241,7 +241,7 @@ class LargeDocumentProcessor:
 
         return stats
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the document cache"""
         self.cache.clear()
         logger.info("Document cache cleared")

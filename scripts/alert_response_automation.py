@@ -93,7 +93,7 @@ class AutoRemediationConfig:
 class AlertResponseAutomation:
     """Main automation engine for alert response and remediation."""
 
-    def __init__(self, config: AutoRemediationConfig = None):
+    def __init__(self, config: AutoRemediationConfig = None) -> None:
         self.config = config or AutoRemediationConfig()
         self.redis_client = None
         self.action_history: list[RemediationAction] = []
@@ -117,7 +117,7 @@ class AlertResponseAutomation:
             f"Alert Response Automation initialized. Test mode: {self.config.TEST_MODE}"
         )
 
-    def _init_redis(self):
+    def _init_redis(self) -> None:
         """Initialize Redis connection for coordination and state tracking."""
         try:
             self.redis_client = redis.Redis(
@@ -1088,7 +1088,9 @@ class AlertResponseAutomation:
     # Utility Methods
     # ============================================================================
 
-    def _record_action_metrics(self, alert: AlertData, action: RemediationAction):
+    def _record_action_metrics(
+        self, alert: AlertData, action: RemediationAction
+    ) -> None:
         """Record remediation action metrics."""
         try:
             if self.redis_client:
@@ -1111,7 +1113,7 @@ class AlertResponseAutomation:
 
     async def _send_remediation_notification(
         self, alert: AlertData, action: RemediationAction
-    ):
+    ) -> None:
         """Send notification about remediation action taken."""
         try:
             if not self.config.SLACK_WEBHOOK_URL:
@@ -1121,7 +1123,9 @@ class AlertResponseAutomation:
             color = (
                 "good"
                 if action.status == "success"
-                else "warning" if action.status == "partial" else "danger"
+                else "warning"
+                if action.status == "partial"
+                else "danger"
             )
 
             notification = {
@@ -1209,7 +1213,7 @@ class AlertResponseAutomation:
 # ============================================================================
 
 
-async def main():
+async def main() -> None:
     """Main function for running the alert response automation system."""
     import argparse
 

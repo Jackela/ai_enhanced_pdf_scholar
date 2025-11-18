@@ -191,7 +191,7 @@ class L3CDNCache:
     Global CDN cache service for content delivery optimization.
     """
 
-    def __init__(self, config: CDNConfig):
+    def __init__(self, config: CDNConfig) -> None:
         """Initialize L3 CDN cache."""
         self.config = config
 
@@ -214,7 +214,7 @@ class L3CDNCache:
 
         logger.info(f"L3 CDN Cache initialized with provider: {self.config.provider}")
 
-    def _initialize_cdn_client(self):
+    def _initialize_cdn_client(self) -> None:
         """Initialize CDN provider client."""
         try:
             if self.config.provider == CDNProvider.CLOUDFRONT:
@@ -229,7 +229,7 @@ class L3CDNCache:
         except Exception as e:
             logger.error(f"Error initializing CDN client: {e}")
 
-    def _initialize_cloudfront_client(self):
+    def _initialize_cloudfront_client(self) -> None:
         """Initialize AWS CloudFront client."""
         if not BOTO3_AVAILABLE:
             logger.warning("boto3 not available - CloudFront features disabled")
@@ -248,12 +248,12 @@ class L3CDNCache:
         except (NoCredentialsError, ClientError) as e:
             logger.error(f"Failed to initialize CloudFront client: {e}")
 
-    def _initialize_cloudflare_client(self):
+    def _initialize_cloudflare_client(self) -> None:
         """Initialize Cloudflare client."""
         # Placeholder for Cloudflare API client
         logger.info("Cloudflare client placeholder initialized")
 
-    def _initialize_fastly_client(self):
+    def _initialize_fastly_client(self) -> None:
         """Initialize Fastly client."""
         # Placeholder for Fastly API client
         logger.info("Fastly client placeholder initialized")
@@ -564,7 +564,7 @@ class L3CDNCache:
             logger.error(f"Error creating CloudFront invalidation: {e}")
             return False
 
-    async def _wait_for_cloudfront_invalidation(self, invalidation_id: str):
+    async def _wait_for_cloudfront_invalidation(self, invalidation_id: str) -> None:
         """Wait for CloudFront invalidation to complete."""
         max_wait_time = 300  # 5 minutes
         start_time = time.time()
@@ -621,7 +621,7 @@ class L3CDNCache:
             logger.error(f"Error fetching origin content: {e}")
             return None
 
-    async def _warm_edge_locations(self, cdn_url: str):
+    async def _warm_edge_locations(self, cdn_url: str) -> None:
         """Warm CDN edge locations with content."""
         for edge_location in self.config.edge_locations:
             try:
@@ -667,7 +667,7 @@ class L3CDNCache:
     # Analytics and Monitoring
     # ========================================================================
 
-    async def _log_cache_access(self, url: str, access_type: str):
+    async def _log_cache_access(self, url: str, access_type: str) -> None:
         """Log cache access for analytics."""
         access_record = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -842,7 +842,7 @@ class L3CDNCache:
     # Cleanup and Maintenance
     # ========================================================================
 
-    async def cleanup_expired_entries(self):
+    async def cleanup_expired_entries(self) -> None:
         """Clean up expired cache entries."""
         expired_urls = [
             url for url, entry in self.cached_urls.items() if entry.is_expired()
@@ -854,7 +854,7 @@ class L3CDNCache:
         if expired_urls:
             logger.info(f"Cleaned up {len(expired_urls)} expired cache entries")
 
-    async def close(self):
+    async def close(self) -> None:
         """Close CDN cache service."""
         if self._http_session:
             await self._http_session.close()
@@ -865,11 +865,11 @@ class L3CDNCache:
     # Context Manager Support
     # ========================================================================
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.close()
 
@@ -899,7 +899,7 @@ def create_cdn_cache(
 # Example usage
 if __name__ == "__main__":
 
-    async def main():
+    async def main() -> None:
         # Create CDN cache
         cdn_config = CDNConfig(
             provider=CDNProvider.CLOUDFRONT,

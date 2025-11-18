@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class SecretType(StrEnum):
     """Classifies the different secret use-cases."""
 
-    def _generate_next_value_(name, start, count, last_values):
+    def _generate_next_value_(name, start, count, last_values) -> Any:
         return name.lower()
 
     GENERIC = auto()
@@ -168,7 +168,7 @@ class ProductionSecretsIntegration:
         secrets_manager: ProductionSecretsManager | None = None,
         production_config: ProductionConfig | None = None,
         metrics_service: MetricsService | None = None,
-    ):
+    ) -> None:
         """Initialize secrets integration."""
         self.secrets_manager = secrets_manager or ProductionSecretsManager()
         self.production_config = production_config
@@ -183,9 +183,9 @@ class ProductionSecretsIntegration:
         self.secret_metadata: dict[str, dict[str, Any]] = {}
 
         # Rotation tracking
-        self.rotation_schedule: dict[str, float] = (
-            {}
-        )  # secret_key -> next_rotation_time
+        self.rotation_schedule: dict[
+            str, float
+        ] = {}  # secret_key -> next_rotation_time
         self.rotation_in_progress: set = set()
 
         # Security monitoring
@@ -194,7 +194,7 @@ class ProductionSecretsIntegration:
 
         logger.info("Production secrets integration initialized")
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize secrets management system."""
         try:
             # Initialize the secrets manager
@@ -221,7 +221,7 @@ class ProductionSecretsIntegration:
             logger.error(f"Failed to initialize secrets integration: {e}")
             raise
 
-    async def load_production_secrets(self):
+    async def load_production_secrets(self) -> None:
         """Load all production secrets from various sources."""
         all_secrets = {}
 
@@ -331,7 +331,7 @@ class ProductionSecretsIntegration:
             logger.error(f"Failed to generate secret for {secret_def.key}: {e}")
             return None
 
-    async def _store_secret(self, secret_key: str, secret_value: str):
+    async def _store_secret(self, secret_key: str, secret_value: str) -> None:
         """Store secret in encrypted vault."""
         try:
             encrypted_data, context = await asyncio.to_thread(
@@ -501,7 +501,7 @@ class ProductionSecretsIntegration:
 
         return None
 
-    def _setup_rotation_schedules(self):
+    def _setup_rotation_schedules(self) -> None:
         """Set up automatic secret rotation schedules."""
         current_time = time.time()
 
@@ -527,7 +527,7 @@ class ProductionSecretsIntegration:
             f"Set up rotation schedules for {len(self.rotation_schedule)} secrets"
         )
 
-    async def _rotation_monitor(self):
+    async def _rotation_monitor(self) -> None:
         """Background task to monitor and execute secret rotations."""
         while True:
             try:
@@ -558,7 +558,7 @@ class ProductionSecretsIntegration:
                 logger.error(f"Error in rotation monitor: {e}")
                 await asyncio.sleep(300)  # Wait 5 minutes on error
 
-    async def _access_monitor(self):
+    async def _access_monitor(self) -> None:
         """Background task to monitor secret access patterns."""
         while True:
             try:
@@ -591,7 +591,7 @@ class ProductionSecretsIntegration:
                 logger.error(f"Error in access monitor: {e}")
                 await asyncio.sleep(300)
 
-    def _track_secret_access(self, secret_key: str):
+    def _track_secret_access(self, secret_key: str) -> None:
         """Track secret access for monitoring."""
         current_time = time.time()
 

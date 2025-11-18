@@ -54,13 +54,13 @@ class SecurityConfig:
 class KeyManager:
     """Manages RSA key pairs for JWT signing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize key manager and ensure keys exist."""
         self.config = SecurityConfig()
         self._ensure_keys_exist()
         self._load_keys()
 
-    def _ensure_keys_exist(self):
+    def _ensure_keys_exist(self) -> None:
         """Generate RSA key pair if not exists."""
         self.config.KEYS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -70,7 +70,7 @@ class KeyManager:
         ):
             self._generate_key_pair()
 
-    def _generate_key_pair(self):
+    def _generate_key_pair(self) -> None:
         """Generate new RSA key pair for JWT signing."""
         # Generate private key
         private_key = rsa.generate_private_key(
@@ -95,7 +95,7 @@ class KeyManager:
         self.config.PUBLIC_KEY_PATH.write_bytes(public_pem)
         self.config.PUBLIC_KEY_PATH.chmod(0o644)  # Public key can be read by others
 
-    def _load_keys(self):
+    def _load_keys(self) -> None:
         """Load RSA keys from files."""
         self.private_key = self.config.PRIVATE_KEY_PATH.read_text()
         self.public_key = self.config.PUBLIC_KEY_PATH.read_text()

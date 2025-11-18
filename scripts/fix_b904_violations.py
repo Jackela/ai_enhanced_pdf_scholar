@@ -131,7 +131,7 @@ def fix_violation(filepath: str, line_num: int) -> bool:
         return False
 
 
-def main():
+def main() -> Any:
     """Main function to fix all B904 violations."""
     print("Scanning for B904 violations...")
     violations = get_b904_violations()

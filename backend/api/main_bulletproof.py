@@ -27,12 +27,12 @@ DB_PATH = Path(__file__).parent.parent.parent / "data" / "pdf_scholar.db"
 
 # Health check endpoints
 @app.get("/health")
-def health():
+def health() -> Any:
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
 @app.get("/api/health")
-def api_health():
+def api_health() -> Any:
     return {
         "status": "healthy",
         "service": "api",
@@ -41,7 +41,7 @@ def api_health():
 
 
 @app.get("/ping")
-def ping():
+def ping() -> Any:
     return {"message": "pong"}
 
 
@@ -63,7 +63,7 @@ class Document(BaseModel):
 
 # Document endpoints
 @app.post("/api/documents", response_model=Document)
-def create_document(doc: DocumentCreate):
+def create_document(doc: DocumentCreate) -> Any:
     doc_id = str(uuid.uuid4())
     now = datetime.now()
 
@@ -92,7 +92,7 @@ def create_document(doc: DocumentCreate):
 
 
 @app.get("/api/documents/{doc_id}", response_model=Document)
-def get_document(doc_id: str):
+def get_document(doc_id: str) -> Any:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -121,7 +121,7 @@ def get_document(doc_id: str):
 
 
 @app.get("/api/documents", response_model=list[Document])
-def list_documents():
+def list_documents() -> Any:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -155,7 +155,7 @@ class CollectionCreate(BaseModel):
 
 
 @app.post("/api/collections")
-def create_collection(collection: CollectionCreate):
+def create_collection(collection: CollectionCreate) -> Any:
     coll_id = str(uuid.uuid4())
     now = datetime.now()
 
@@ -184,7 +184,7 @@ def create_collection(collection: CollectionCreate):
 
 # Multi-document index endpoints
 @app.post("/api/multi-document-indexes")
-def create_index(data: dict[str, Any]):
+def create_index(data: dict[str, Any]) -> Any:
     index_id = str(uuid.uuid4())
     now = datetime.now()
 

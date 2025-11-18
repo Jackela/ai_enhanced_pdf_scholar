@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 RAG API Routes
 RESTful API endpoints for RAG (Retrieval-Augmented Generation) operations.
@@ -51,7 +53,7 @@ async def query_document(
     cache_service: CacheServiceIntegration | None = Depends(
         get_cache_service_dependency
     ),
-):
+) -> Any:
     """Query a document using RAG with intelligent caching."""
     try:
         # Validate document exists
@@ -101,7 +103,9 @@ async def query_document(
         if cache_service and query_request.use_cache:
             try:
                 await cache_service.set(
-                    cache_key, rag_response.dict(), ttl_seconds=3600  # Cache for 1 hour
+                    cache_key,
+                    rag_response.dict(),
+                    ttl_seconds=3600,  # Cache for 1 hour
                 )
                 logger.debug(f"Cached RAG response: doc={query_request.document_id}")
             except Exception as cache_error:
@@ -123,7 +127,7 @@ async def build_index(
     background_tasks: BackgroundTasks,
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
-):
+) -> Any:
     """Build vector index for a document."""
     try:
         # Validate document exists
@@ -162,7 +166,7 @@ async def build_index(
 @router.get("/index/{document_id}/status", response_model=IndexStatusResponse)
 async def get_index_status(
     document_id: int, controller: LibraryController = Depends(get_library_controller)
-):
+) -> Any:
     """Get vector index status for a document."""
     try:
         # Validate document exists
@@ -192,7 +196,7 @@ async def delete_index(
     document_id: int,
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
-):
+) -> Any:
     """Delete vector index for a document."""
     try:
         # Validate document exists
@@ -222,7 +226,7 @@ async def rebuild_index(
     background_tasks: BackgroundTasks,
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
-):
+) -> Any:
     """Rebuild vector index for a document."""
     return await build_index(
         IndexBuildRequest(document_id=document_id, force_rebuild=True),
@@ -235,7 +239,7 @@ async def rebuild_index(
 @router.get("/cache/stats", response_model=CacheStatsResponse)
 async def get_cache_stats(
     controller: LibraryController = Depends(get_library_controller),
-):
+) -> Any:
     """Get RAG cache statistics."""
     try:
         stats = controller.get_cache_statistics()
@@ -259,7 +263,9 @@ async def get_cache_stats(
 
 
 @router.delete("/cache", response_model=CacheClearResponse)
-async def clear_cache(controller: LibraryController = Depends(get_library_controller)):
+async def clear_cache(
+    controller: LibraryController = Depends(get_library_controller),
+) -> Any:
     """Clear RAG query cache."""
     try:
         success = controller.clear_cache()
@@ -283,7 +289,7 @@ async def clear_cache(controller: LibraryController = Depends(get_library_contro
 @router.delete("/cache/{document_id}", response_model=BaseResponse)
 async def clear_document_cache(
     document_id: int, controller: LibraryController = Depends(get_library_controller)
-):
+) -> Any:
     """Clear cache for a specific document."""
     try:
         # Validate document exists

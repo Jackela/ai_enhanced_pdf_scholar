@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 System API Routes
 RESTful API endpoints for system status, configuration, and health checks.
@@ -49,7 +51,7 @@ metrics_collector: RealTimeMetricsCollector | None = None
 async def get_system_health(
     db: DatabaseConnection = Depends(get_db),
     rag_service: EnhancedRAGService = Depends(get_enhanced_rag),
-):
+) -> Any:
     """Get system health status."""
     try:
         # Check database connection
@@ -107,7 +109,7 @@ async def get_system_health(
 
 
 @router.get("/config", response_model=ConfigurationResponse)
-async def get_configuration(config: dict = Depends(get_api_config)):
+async def get_configuration(config: dict = Depends(get_api_config)) -> Any:
     """Get system configuration."""
     try:
         # Feature availability
@@ -139,7 +141,7 @@ async def get_configuration(config: dict = Depends(get_api_config)):
 
 
 @router.get("/info", response_model=SystemInfoResponse)
-async def get_system_info():
+async def get_system_info() -> Any:
     """Get system information."""
     try:
         info = {
@@ -158,13 +160,13 @@ async def get_system_info():
 
 
 @router.get("/version")
-async def get_version():
+async def get_version() -> Any:
     """Get API version."""
     return {"version": "2.0.0", "name": "AI Enhanced PDF Scholar API"}
 
 
 @router.post("/initialize", response_model=BaseResponse)
-async def initialize_system(db: DatabaseConnection = Depends(get_db)):
+async def initialize_system(db: DatabaseConnection = Depends(get_db)) -> Any:
     """Initialize system (run migrations, create directories, etc.)."""
     try:
         from src.database import DatabaseMigrator
@@ -199,7 +201,7 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
 
 
 @router.get("/storage", response_model=BaseResponse)
-async def get_storage_info():
+async def get_storage_info() -> Any:
     """Get storage usage information."""
     try:
         base_dir = Path.home() / ".ai_pdf_scholar"
@@ -243,7 +245,7 @@ async def get_storage_info():
 
 
 @router.post("/maintenance", response_model=BaseResponse)
-async def run_maintenance():
+async def run_maintenance() -> Any:
     """Run system maintenance tasks."""
     try:
         maintenance_tasks = []
@@ -277,7 +279,7 @@ async def run_maintenance():
 
 
 @router.get("/health/secrets", response_model=BaseResponse)
-async def get_secrets_health():
+async def get_secrets_health() -> Any:
     """Get comprehensive secrets management system health status."""
     try:
         secrets_manager = ProductionSecretsManager()
@@ -323,7 +325,7 @@ async def get_secrets_health():
 @router.post("/secrets/validate", response_model=BaseResponse)
 async def validate_environment_secrets(
     environment: str = "production", compliance_standards: list | None = None
-):
+) -> Any:
     """Validate all secrets in an environment for compliance."""
     try:
         # Get environment secrets (this would integrate with actual secret storage)
@@ -389,7 +391,7 @@ async def validate_environment_secrets(
 
 
 @router.post("/secrets/rotate/{secret_name}", response_model=BaseResponse)
-async def rotate_secret(secret_name: str):
+async def rotate_secret(secret_name: str) -> Any:
     """Rotate a specific secret with zero-downtime."""
     try:
         secrets_manager = ProductionSecretsManager()
@@ -420,7 +422,7 @@ async def rotate_secret(secret_name: str):
 
 
 @router.post("/secrets/backup", response_model=BaseResponse)
-async def backup_secrets(backup_name: str | None = None):
+async def backup_secrets(backup_name: str | None = None) -> Any:
     """Create encrypted backup of all secrets."""
     try:
         secrets_manager = ProductionSecretsManager()
@@ -448,7 +450,7 @@ async def backup_secrets(backup_name: str | None = None):
 async def detailed_health_check(
     db: DatabaseConnection = Depends(get_db),
     rag_service: EnhancedRAGService = Depends(get_enhanced_rag),
-):
+) -> Any:
     """Comprehensive health status with detailed component information."""
     try:
         health_data = {}
@@ -466,7 +468,9 @@ async def detailed_health_check(
                 "status": (
                     "healthy"
                     if memory.percent < 80
-                    else "warning" if memory.percent < 90 else "critical"
+                    else "warning"
+                    if memory.percent < 90
+                    else "critical"
                 ),
             },
             "disk": {
@@ -476,7 +480,9 @@ async def detailed_health_check(
                 "status": (
                     "healthy"
                     if disk.free > disk.total * 0.2
-                    else "warning" if disk.free > disk.total * 0.1 else "critical"
+                    else "warning"
+                    if disk.free > disk.total * 0.1
+                    else "critical"
                 ),
             },
             "cpu": {
@@ -485,7 +491,9 @@ async def detailed_health_check(
                 "status": (
                     "healthy"
                     if cpu_percent < 70
-                    else "warning" if cpu_percent < 85 else "critical"
+                    else "warning"
+                    if cpu_percent < 85
+                    else "critical"
                 ),
             },
         }
@@ -638,7 +646,7 @@ async def detailed_health_check(
 
 
 @router.get("/health/dependencies", response_model=BaseResponse)
-async def dependency_health_check():
+async def dependency_health_check() -> Any:
     """Check health of external dependencies and services."""
     try:
         dependencies = {}
@@ -755,7 +763,9 @@ async def dependency_health_check():
         overall_status = (
             "healthy"
             if health_score >= 0.8
-            else "degraded" if health_score >= 0.5 else "unhealthy"
+            else "degraded"
+            if health_score >= 0.5
+            else "unhealthy"
         )
 
         return BaseResponse(
@@ -780,7 +790,7 @@ async def dependency_health_check():
 
 
 @router.get("/health/performance", response_model=BaseResponse)
-async def performance_health_check():
+async def performance_health_check() -> Any:
     """Real-time performance metrics and health indicators."""
     try:
         performance_data = {}
@@ -997,7 +1007,7 @@ async def performance_health_check():
 
 
 @router.get("/secrets/audit", response_model=BaseResponse)
-async def get_secrets_audit_log(hours: int = 24, operation: str | None = None):
+async def get_secrets_audit_log(hours: int = 24, operation: str | None = None) -> Any:
     """Get secrets management audit log."""
     try:
         secrets_manager = ProductionSecretsManager()
@@ -1048,7 +1058,7 @@ async def get_secrets_audit_log(hours: int = 24, operation: str | None = None):
 
 
 @router.get("/metrics/current", response_model=BaseResponse)
-async def get_current_metrics():
+async def get_current_metrics() -> Any:
     """Get current real-time metrics snapshot."""
     try:
         if not metrics_collector:
@@ -1078,7 +1088,7 @@ async def get_current_metrics():
 
 
 @router.get("/metrics/history/{metric_type}", response_model=BaseResponse)
-async def get_metrics_history(metric_type: str, hours_back: int = 1):
+async def get_metrics_history(metric_type: str, hours_back: int = 1) -> Any:
     """Get historical metrics for a specific metric type."""
     try:
         if not metrics_collector:
@@ -1117,7 +1127,7 @@ async def get_metrics_history(metric_type: str, hours_back: int = 1):
 
 
 @router.get("/metrics/system/detailed", response_model=BaseResponse)
-async def get_detailed_system_metrics():
+async def get_detailed_system_metrics() -> Any:
     """Get comprehensive system performance metrics with historical context."""
     try:
         if not metrics_collector:
@@ -1177,7 +1187,7 @@ async def get_detailed_system_metrics():
 
 
 @router.get("/metrics/database/status", response_model=BaseResponse)
-async def get_database_metrics():
+async def get_database_metrics() -> Any:
     """Get database performance and connection metrics."""
     try:
         if not metrics_collector:
@@ -1236,7 +1246,7 @@ async def get_database_metrics():
 
 
 @router.get("/metrics/websocket/status", response_model=BaseResponse)
-async def get_websocket_metrics():
+async def get_websocket_metrics() -> Any:
     """Get WebSocket connection and RAG task metrics."""
     try:
         if not metrics_collector:
@@ -1292,7 +1302,7 @@ async def get_websocket_metrics():
 
 
 @router.get("/metrics/memory/leak-detection", response_model=BaseResponse)
-async def get_memory_leak_metrics():
+async def get_memory_leak_metrics() -> Any:
     """Get memory leak detection metrics and analysis."""
     try:
         if not metrics_collector:
@@ -1354,7 +1364,7 @@ async def get_memory_leak_metrics():
         ) from e
 
 
-def initialize_metrics_collector(collector_instance: RealTimeMetricsCollector):
+def initialize_metrics_collector(collector_instance: RealTimeMetricsCollector) -> None:
     """Initialize the metrics collector instance for dependency injection."""
     global metrics_collector
     metrics_collector = collector_instance

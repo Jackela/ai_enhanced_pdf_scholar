@@ -70,7 +70,7 @@ class HealthCheckResult:
     error_message: str | None = None
     timestamp: datetime = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.now(timezone.utc)
 
@@ -86,7 +86,7 @@ class RollbackTarget:
     health_check_endpoints: list[str]
     backup_urls: list[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.backup_urls is None:
             self.backup_urls = []
 
@@ -134,7 +134,7 @@ class RollbackResult:
     metrics: dict[str, Any] = None
     error_message: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.pre_rollback_health is None:
             self.pre_rollback_health = []
         if self.post_rollback_health is None:
@@ -200,7 +200,7 @@ class RollbackResult:
 class RollbackAutomation:
     """Automated rollback system"""
 
-    def __init__(self, work_dir: Path = None):
+    def __init__(self, work_dir: Path = None) -> None:
         self.work_dir = work_dir or Path.cwd()
         self.rollbacks: dict[str, RollbackResult] = {}
         self.github_token = os.getenv("GITHUB_TOKEN")
@@ -516,7 +516,6 @@ class RollbackAutomation:
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=timeout)
         ) as session:
-
             tasks = []
             for endpoint in endpoints:
                 task = self._check_endpoint_health(session, endpoint)
@@ -688,7 +687,7 @@ class RollbackAutomation:
         logger.info(f"📊 Rollback history saved to {file_path}")
 
 
-async def main():
+async def main() -> None:
     """Main CLI interface"""
     parser = argparse.ArgumentParser(
         description="🛡️ Automated Rollback System for AI Enhanced PDF Scholar",

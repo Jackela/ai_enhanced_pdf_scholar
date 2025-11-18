@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Production Validation Master Test Runner
 Orchestrates all Agent A4 testing suites and generates final production readiness certification.
@@ -49,7 +51,7 @@ class ProductionValidationOrchestrator:
     Runs tests in optimal order and handles dependencies.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize validation orchestrator."""
         self.start_time = None
         self.validation_results = {}
@@ -123,7 +125,7 @@ class ProductionValidationOrchestrator:
             },
         ]
 
-    async def _run_production_readiness_tests(self):
+    async def _run_production_readiness_tests(self) -> Any:
         """Run production readiness tests."""
         logger.info("🔄 Running production readiness tests...")
 
@@ -140,37 +142,37 @@ class ProductionValidationOrchestrator:
 
         return results
 
-    async def _run_sql_injection_tests(self):
+    async def _run_sql_injection_tests(self) -> Any:
         """Run SQL injection protection tests."""
         logger.info("🔄 Running SQL injection protection tests...")
         return await test_complete_sql_injection_protection()
 
-    async def _run_xss_protection_tests(self):
+    async def _run_xss_protection_tests(self) -> Any:
         """Run XSS protection tests."""
         logger.info("🔄 Running XSS protection tests...")
         return await test_complete_xss_protection()
 
-    async def _run_performance_regression_tests(self):
+    async def _run_performance_regression_tests(self) -> Any:
         """Run performance regression tests."""
         logger.info("🔄 Running performance regression tests...")
         return await test_complete_performance_regression()
 
-    async def _run_fault_tolerance_tests(self):
+    async def _run_fault_tolerance_tests(self) -> Any:
         """Run fault tolerance tests."""
         logger.info("🔄 Running fault tolerance tests...")
         return await test_complete_fault_tolerance_suite()
 
-    async def _run_load_testing(self):
+    async def _run_load_testing(self) -> Any:
         """Run load testing."""
         logger.info("🔄 Running load testing...")
         return await test_complete_load_testing_suite()
 
-    async def _run_system_integration_tests(self):
+    async def _run_system_integration_tests(self) -> Any:
         """Run system integration tests."""
         logger.info("🔄 Running system integration tests...")
         return await test_complete_system_integration_suite()
 
-    def _check_prerequisites(self, test_config):
+    def _check_prerequisites(self, test_config) -> Any:
         """Check if test prerequisites are met."""
         for prereq in test_config["prerequisites"]:
             if prereq not in self.validation_results:
@@ -182,7 +184,7 @@ class ProductionValidationOrchestrator:
 
         return True, "Prerequisites met"
 
-    async def _run_single_test_suite(self, test_config):
+    async def _run_single_test_suite(self, test_config) -> Any:
         """Run a single test suite with error handling and timeout."""
         test_name = test_config["name"]
         logger.info("=" * 60)
@@ -264,7 +266,7 @@ class ProductionValidationOrchestrator:
                 "error": str(e),
             }
 
-    def _determine_test_success(self, result, test_name):
+    def _determine_test_success(self, result, test_name) -> Any:
         """Determine if test was successful based on result structure."""
         if isinstance(result, bool):
             return result
@@ -299,7 +301,7 @@ class ProductionValidationOrchestrator:
         # Default: assume success if no explicit failure
         return True
 
-    async def run_complete_production_validation(self):
+    async def run_complete_production_validation(self) -> Any:
         """Run complete production validation test suite."""
         self.start_time = time.time()
 
@@ -394,7 +396,7 @@ class ProductionValidationOrchestrator:
 
         return summary
 
-    async def generate_final_certification(self, validation_summary):
+    async def generate_final_certification(self, validation_summary) -> Any:
         """Generate final production readiness certification."""
         logger.info("📜 Generating Production Readiness Certification...")
 
@@ -428,7 +430,7 @@ class ProductionValidationOrchestrator:
             return None
 
 
-async def main():
+async def main() -> Any:
     """Main function to run complete production validation."""
     print("🚀 AI Enhanced PDF Scholar - Production Validation Suite")
     print("=" * 70)

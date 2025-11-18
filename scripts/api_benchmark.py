@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 API Performance Benchmark Script
@@ -30,19 +32,19 @@ except ImportError:
 class APIBenchmark:
     """Benchmark suite for API endpoint performance"""
 
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "http://localhost:8000") -> None:
         self.base_url = base_url.rstrip("/")
         self.results = {}
         self.client = None
 
-    async def setup(self):
+    async def setup(self) -> None:
         """Setup HTTP client"""
         self.client = httpx.AsyncClient(
             timeout=30.0,
             limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
         )
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Cleanup resources"""
         if self.client:
             await self.client.aclose()
@@ -293,7 +295,7 @@ class APIBenchmark:
 
         return self.results
 
-    def print_summary(self):
+    def print_summary(self) -> None:
         """Print comprehensive benchmark summary"""
         print("\n" + "=" * 80)
         print("API PERFORMANCE BENCHMARK SUMMARY")
@@ -346,7 +348,9 @@ class APIBenchmark:
                 status = (
                     "✅"
                     if success_rate >= 95 and mean_time < 100
-                    else "⚠️" if success_rate >= 80 else "❌"
+                    else "⚠️"
+                    if success_rate >= 80
+                    else "❌"
                 )
 
                 print(f"   {status} {endpoint}:")
@@ -402,7 +406,7 @@ class APIBenchmark:
 
         print("\n" + "=" * 80)
 
-    def save_results(self, filename: str = None):
+    def save_results(self, filename: str = None) -> Any:
         """Save results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -416,7 +420,7 @@ class APIBenchmark:
         return output_path
 
 
-async def main():
+async def main() -> Any:
     """Main entry point"""
     import argparse
 

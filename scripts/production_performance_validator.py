@@ -29,7 +29,7 @@ from scripts.memory_leak_detector import MemoryLeakDetector
 class ProductionPerformanceValidator:
     """Comprehensive production performance validation system."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
         self.validation_results = {}
         self.start_time = time.time()
@@ -821,7 +821,7 @@ class ProductionPerformanceValidator:
             f.write(html_content)
 
 
-def main():
+def main() -> Any:
     """Main production performance validation function."""
     parser = argparse.ArgumentParser(description="Production Performance Validation")
     parser.add_argument(

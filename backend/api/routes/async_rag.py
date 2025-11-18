@@ -68,7 +68,7 @@ class RAGStreamingProcessor:
         ws_manager: WebSocketManager,
         controller: LibraryController,
         rag_service: EnhancedRAGService,
-    ):
+    ) -> None:
         self.ws_manager = ws_manager
         self.controller = controller
         self.rag_service = rag_service
@@ -202,7 +202,7 @@ async def async_query_document(
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
-):
+) -> Any:
     """Start an async RAG query with WebSocket streaming support."""
     try:
         # Validate WebSocket connection
@@ -243,7 +243,7 @@ async def get_async_query_status(
     task_id: str,
     client_id: str,
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
-):
+) -> Any:
     """Get the status of an async RAG query."""
     try:
         status_info = await ws_manager.get_rag_task_status(client_id, task_id)
@@ -270,7 +270,7 @@ async def cancel_async_query(
     task_id: str,
     client_id: str,
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
-):
+) -> Any:
     """Cancel a running async RAG query."""
     try:
         success = await ws_manager.cancel_rag_task(client_id, task_id)
@@ -300,7 +300,7 @@ async def cancel_async_query(
 async def websocket_rag_endpoint(
     websocket: WebSocket,
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
-):
+) -> None:
     """WebSocket endpoint for RAG streaming operations."""
     client_id = None
     try:
@@ -366,7 +366,7 @@ async def websocket_rag_endpoint(
 @router.get("/stream/stats", response_model=dict[str, Any])
 async def get_streaming_stats(
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
-):
+) -> Any:
     """Get RAG streaming statistics."""
     try:
         stats = ws_manager.get_stats()
@@ -386,7 +386,7 @@ async def hybrid_query_document(
     controller: LibraryController = Depends(get_library_controller),
     rag_service: EnhancedRAGService = Depends(require_rag_service),
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
-):
+) -> Any:
     """Hybrid RAG query that falls back to sync if WebSocket not available."""
     try:
         # If client_id provided and connected, use async streaming

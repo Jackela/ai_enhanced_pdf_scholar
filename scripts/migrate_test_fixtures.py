@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Test Infrastructure Migration Script
@@ -10,7 +12,7 @@ from pathlib import Path
 class TestMigrationHelper:
     """Helper for migrating existing tests to optimized infrastructure."""
 
-    def __init__(self, project_root: str = "."):
+    def __init__(self, project_root: str = ".") -> None:
         self.project_root = Path(project_root)
         self.test_dir = self.project_root / "tests"
 
@@ -288,7 +290,7 @@ def specialized_mock():
 '''
         return example
 
-    def save_migration_files(self):
+    def save_migration_files(self) -> None:
         """Save migration report and example files."""
         # Save migration report
         report_file = self.project_root / "TEST_MIGRATION_REPORT.md"
@@ -301,7 +303,7 @@ def specialized_mock():
         print(f"📝 Example test file saved to {example_file}")
 
 
-def main():
+def main() -> None:
     """Main migration helper script."""
     print("🔧 Test Infrastructure Migration Helper")
     print("=" * 40)

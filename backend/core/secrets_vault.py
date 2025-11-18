@@ -108,7 +108,7 @@ class ProductionSecretsManager:
         backup_location: Path | None = None,
         encryption_algorithm: EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
         enable_hsm: bool = False,
-    ):
+    ) -> None:
         """Initialize the production secrets manager."""
         self._lock = RLock()
         self._rotation_locks: dict[str, Lock] = {}
@@ -142,7 +142,7 @@ class ProductionSecretsManager:
         # Initialize crypto components
         self._initialize_crypto()
 
-    def _initialize_crypto(self):
+    def _initialize_crypto(self) -> None:
         """Initialize cryptographic components."""
         try:
             # Load or generate master key
@@ -159,7 +159,7 @@ class ProductionSecretsManager:
             logger.error(f"Failed to initialize crypto: {e}")
             raise
 
-    def _load_or_generate_master_key(self):
+    def _load_or_generate_master_key(self) -> None:
         """Load existing master key or generate a new one."""
         self._master_key_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -183,7 +183,7 @@ class ProductionSecretsManager:
 
         logger.info(f"Loaded master key with {len(self._key_versions)} versions")
 
-    def _generate_new_master_key(self):
+    def _generate_new_master_key(self) -> None:
         """Generate a new master key."""
         if (
             self._encryption_algorithm == EncryptionAlgorithm.AES_256_GCM
@@ -197,7 +197,7 @@ class ProductionSecretsManager:
 
         self._key_versions[self._current_key_version] = key
 
-    def _save_master_key(self):
+    def _save_master_key(self) -> None:
         """Save master key to secure storage."""
         key_info = {
             "current_version": self._current_key_version,
@@ -288,7 +288,7 @@ class ProductionSecretsManager:
         # This would ideally come from system keyring/TPM in production
         return f"ai_pdf_scholar_{os.environ.get('COMPUTERNAME', os.environ.get('HOSTNAME', 'default'))}"
 
-    def _initialize_hsm(self):
+    def _initialize_hsm(self) -> None:
         """Initialize Hardware Security Module if available."""
         try:
             # Placeholder for HSM initialization
@@ -717,7 +717,7 @@ class ProductionSecretsManager:
                 logger.error(f"Secrets restoration failed: {e}")
                 return False
 
-    def _backup_key_version(self, version: int):
+    def _backup_key_version(self, version: int) -> None:
         """Backup a specific key version."""
         if version in self._key_versions:
             backup_path = (
@@ -806,7 +806,7 @@ class ProductionSecretsManager:
         success: bool,
         metadata: dict[str, Any] | None = None,
         error: str | None = None,
-    ):
+    ) -> None:
         """Log operation for audit trail."""
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),

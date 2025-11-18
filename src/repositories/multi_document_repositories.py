@@ -62,7 +62,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
 
                 cursor.execute(
                     """
-                    INSERT INTO multi_document_collections 
+                    INSERT INTO multi_document_collections
                     (name, description, document_ids, document_count, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """,
@@ -141,7 +141,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
 
                 cursor.execute(
                     """
-                    UPDATE multi_document_collections 
+                    UPDATE multi_document_collections
                     SET name = ?, description = ?, document_ids = ?, document_count = ?, updated_at = ?
                     WHERE id = ?
                 """,
@@ -185,7 +185,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
                 cursor.execute(
                     """
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
-                    FROM multi_document_collections 
+                    FROM multi_document_collections
                     ORDER BY created_at DESC
                     LIMIT ? OFFSET ?
                 """,
@@ -231,7 +231,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
                 cursor.execute(
                     """
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
-                    FROM multi_document_collections 
+                    FROM multi_document_collections
                     WHERE name LIKE ? OR description LIKE ?
                     ORDER BY created_at DESC
                     LIMIT ?
@@ -331,7 +331,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
 
                 cursor.execute(
                     """
-                    INSERT INTO multi_document_indexes 
+                    INSERT INTO multi_document_indexes
                     (collection_id, index_path, index_hash, embedding_model, chunk_count, created_at, metadata)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -360,7 +360,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT id, collection_id, index_path, index_hash, embedding_model, 
+                    SELECT id, collection_id, index_path, index_hash, embedding_model,
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE id = ?
                 """,
@@ -386,7 +386,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 placeholders = ",".join("?" * len(entity_ids))
                 cursor.execute(
                     f"""
-                    SELECT id, collection_id, index_path, index_hash, embedding_model, 
+                    SELECT id, collection_id, index_path, index_hash, embedding_model,
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE id IN ({placeholders})
                 """,
@@ -410,7 +410,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
 
                 cursor.execute(
                     """
-                    UPDATE multi_document_indexes 
+                    UPDATE multi_document_indexes
                     SET collection_id = ?, index_path = ?, index_hash = ?, embedding_model = ?,
                         chunk_count = ?, metadata = ?
                     WHERE id = ?
@@ -455,7 +455,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT id, collection_id, index_path, index_hash, embedding_model, 
+                    SELECT id, collection_id, index_path, index_hash, embedding_model,
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE collection_id = ?
                 """,
@@ -477,7 +477,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT id, collection_id, index_path, index_hash, embedding_model, 
+                    SELECT id, collection_id, index_path, index_hash, embedding_model,
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE index_hash = ?
                 """,
@@ -499,7 +499,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT i.id, i.collection_id, i.index_path, i.index_hash, i.embedding_model, 
+                    SELECT i.id, i.collection_id, i.index_path, i.index_hash, i.embedding_model,
                            i.chunk_count, i.created_at, i.metadata
                     FROM multi_document_indexes i
                     LEFT JOIN multi_document_collections c ON i.collection_id = c.id
@@ -522,7 +522,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    DELETE FROM multi_document_indexes 
+                    DELETE FROM multi_document_indexes
                     WHERE collection_id NOT IN (
                         SELECT id FROM multi_document_collections
                     )
@@ -582,7 +582,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 cursor.execute(
                     """
-                    INSERT INTO cross_document_queries 
+                    INSERT INTO cross_document_queries
                     (collection_id, query_text, user_id, response_text, confidence_score,
                      sources, cross_references, status, error_message, processing_time_ms,
                      tokens_used, created_at, completed_at)
@@ -671,7 +671,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 cursor.execute(
                     """
-                    UPDATE cross_document_queries 
+                    UPDATE cross_document_queries
                     SET collection_id = ?, query_text = ?, user_id = ?, response_text = ?,
                         confidence_score = ?, sources = ?, cross_references = ?, status = ?,
                         error_message = ?, processing_time_ms = ?, tokens_used = ?, completed_at = ?
@@ -726,7 +726,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
-                    FROM cross_document_queries 
+                    FROM cross_document_queries
                     WHERE collection_id = ?
                     ORDER BY created_at DESC
                     LIMIT ?
@@ -754,7 +754,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
-                    FROM cross_document_queries 
+                    FROM cross_document_queries
                     WHERE user_id = ?
                     ORDER BY created_at DESC
                     LIMIT ?
@@ -782,7 +782,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
-                    FROM cross_document_queries 
+                    FROM cross_document_queries
                     WHERE status = ?
                     ORDER BY created_at DESC
                     LIMIT ?
@@ -812,7 +812,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
-                    FROM cross_document_queries 
+                    FROM cross_document_queries
                     WHERE created_at >= ?
                     ORDER BY created_at DESC
                     LIMIT ?
@@ -837,7 +837,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                 # Basic statistics
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_queries,
                         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_queries,
                         COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_queries,
@@ -862,7 +862,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    DELETE FROM cross_document_queries 
+                    DELETE FROM cross_document_queries
                     WHERE created_at < ?
                 """,
                     (cutoff_date,),

@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Custom Metrics Collector Service
 =================================
@@ -53,7 +55,7 @@ class BusinessMetric:
 class CustomMetricsCollector:
     """Collect custom business and application metrics for scaling decisions"""
 
-    def __init__(self, registry: CollectorRegistry | None = None):
+    def __init__(self, registry: CollectorRegistry | None = None) -> None:
         self.registry = registry or CollectorRegistry()
         self.secrets_manager = SecretsManager()
 
@@ -72,7 +74,7 @@ class CustomMetricsCollector:
         self.collection_interval = 15  # seconds
         self.metric_retention_hours = 24
 
-    def _init_prometheus_metrics(self):
+    def _init_prometheus_metrics(self) -> None:
         """Initialize Prometheus metrics"""
 
         # Request and Response Metrics
@@ -561,7 +563,7 @@ class CustomMetricsCollector:
 
         return metrics
 
-    async def update_prometheus_metrics(self, all_metrics: dict[str, float]):
+    async def update_prometheus_metrics(self, all_metrics: dict[str, float]) -> None:
         """Update Prometheus metrics with collected values"""
         try:
             # Update all Prometheus gauges
@@ -646,7 +648,7 @@ class CustomMetricsCollector:
             logger.error(f"Error collecting metrics: {e}")
             return {}
 
-    def record_request(self, duration: float):
+    def record_request(self, duration: float) -> None:
         """Record a request for metrics calculation"""
         current_time = time.time()
         self.request_times.append(current_time)
@@ -655,7 +657,7 @@ class CustomMetricsCollector:
         cutoff_time = current_time - 3600
         self.request_times = [t for t in self.request_times if t > cutoff_time]
 
-    def record_rag_query(self, duration: float):
+    def record_rag_query(self, duration: float) -> None:
         """Record a RAG query for metrics calculation"""
         current_time = time.time()
         self.rag_query_times.append(current_time)
@@ -664,11 +666,11 @@ class CustomMetricsCollector:
         cutoff_time = current_time - 3600
         self.rag_query_times = [t for t in self.rag_query_times if t > cutoff_time]
 
-    def record_error(self):
+    def record_error(self) -> None:
         """Record an error for metrics calculation"""
         self.error_counts["last_hour"] += 1
 
-    def record_cache_hit(self, hit: bool):
+    def record_cache_hit(self, hit: bool) -> None:
         """Record cache hit/miss for metrics calculation"""
         self.cache_stats["total"] += 1
         if hit:
@@ -676,11 +678,11 @@ class CustomMetricsCollector:
         else:
             self.cache_stats["misses"] += 1
 
-    def update_user_activity(self, user_id: str):
+    def update_user_activity(self, user_id: str) -> None:
         """Update user activity for metrics calculation"""
         self.user_sessions[user_id] = {"last_activity": time.time()}
 
-    async def run_continuous_collection(self):
+    async def run_continuous_collection(self) -> None:
         """Run continuous metrics collection"""
         logger.info("Starting continuous metrics collection...")
 
@@ -696,7 +698,7 @@ class CustomMetricsCollector:
                 logger.error(f"Error in continuous collection: {e}")
                 await asyncio.sleep(30)  # Wait 30 seconds before retrying
 
-    def start_metrics_server(self, port: int = 8000):
+    def start_metrics_server(self, port: int = 8000) -> None:
         """Start Prometheus metrics HTTP server"""
         try:
             start_http_server(port, registry=self.registry)
@@ -718,38 +720,38 @@ def get_metrics_collector() -> CustomMetricsCollector:
 
 
 # Convenience functions for the FastAPI app
-async def record_request_metric(duration: float):
+async def record_request_metric(duration: float) -> None:
     """Record a request metric"""
     collector = get_metrics_collector()
     collector.record_request(duration)
 
 
-async def record_rag_query_metric(duration: float):
+async def record_rag_query_metric(duration: float) -> None:
     """Record a RAG query metric"""
     collector = get_metrics_collector()
     collector.record_rag_query(duration)
 
 
-async def record_error_metric():
+async def record_error_metric() -> None:
     """Record an error metric"""
     collector = get_metrics_collector()
     collector.record_error()
 
 
-async def record_cache_metric(hit: bool):
+async def record_cache_metric(hit: bool) -> None:
     """Record a cache hit/miss metric"""
     collector = get_metrics_collector()
     collector.record_cache_hit(hit)
 
 
-async def update_user_activity_metric(user_id: str):
+async def update_user_activity_metric(user_id: str) -> None:
     """Update user activity metric"""
     collector = get_metrics_collector()
     collector.update_user_activity(user_id)
 
 
 # CLI interface
-async def main():
+async def main() -> None:
     """Main entry point for the metrics collector"""
     import argparse
 

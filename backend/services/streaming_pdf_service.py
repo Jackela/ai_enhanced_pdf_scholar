@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Streaming PDF Processing Service
 Memory-efficient PDF processing for large files with incremental indexing.
@@ -33,7 +35,7 @@ class StreamingPDFProcessor:
         max_pages_per_chunk: int = 5,
         max_text_length_per_page: int = 10000,
         enable_ocr: bool = False,
-    ):
+    ) -> None:
         self.max_pages_per_chunk = max_pages_per_chunk
         self.max_text_length_per_page = max_text_length_per_page
         self.enable_ocr = enable_ocr
@@ -432,7 +434,7 @@ class StreamingPDFProcessor:
         """Get current processing statistics."""
         return self.processing_stats.copy()
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         """Reset processing statistics."""
         self.processing_stats = {
             "documents_processed": 0,

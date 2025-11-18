@@ -194,7 +194,7 @@ class ShardingManager:
         metadata_connection: DatabaseConnection,
         enable_cross_shard_queries: bool = True,
         enable_auto_migration: bool = True,
-    ):
+    ) -> None:
         """
         Initialize the Sharding Manager.
 
@@ -1117,7 +1117,7 @@ class ShardingManager:
         logger.info("Sharding manager shutdown complete")
 
 
-def main():
+def main() -> Any:
     """CLI interface for testing the Sharding Manager."""
     import argparse
 

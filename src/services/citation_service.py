@@ -731,7 +731,7 @@ class CitationService:
             visited = set()
             clusters = []
 
-            def dfs_cluster(node_id, current_cluster):
+            def dfs_cluster(node_id, current_cluster) -> None:
                 if node_id in visited:
                     return
                 visited.add(node_id)
