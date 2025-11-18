@@ -78,6 +78,7 @@ if os.path.exists(models_path):
     models_main = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(models_main)
     SystemHealthResponse = models_main.SystemHealthResponse
+    SystemInfoResponse = models_main.SystemInfoResponse
     SearchFilter = models_main.SearchFilter
     DocumentQueryParams = (
         models_main.DocumentQueryParams
@@ -102,6 +103,13 @@ if os.path.exists(models_path):
     )  # Override multi_document import
     CacheClearResponse = (
         models_main.CacheClearResponse
+    )  # Override multi_document import
+
+    # CRITICAL: Import system models from main models.py (correct field names)
+    # multi_document_models.ConfigurationResponse has config/environment fields
+    # main models.py ConfigurationResponse has features/limits/version fields
+    ConfigurationResponse = (
+        models_main.ConfigurationResponse
     )  # Override multi_document import
 
     # CRITICAL: Import library models from main models.py (correct field names)

@@ -181,6 +181,12 @@ class BaseResponse(BaseModel):
     message: str | None = None
 
 
+class SystemInfoResponse(BaseResponse):
+    """System information response with data field."""
+
+    data: dict[str, Any]
+
+
 class ErrorResponse(BaseResponse):
     """Error response model."""
 

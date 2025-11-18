@@ -20,6 +20,7 @@ from backend.api.models import (
     BaseResponse,
     ConfigurationResponse,
     SystemHealthResponse,
+    SystemInfoResponse,
 )
 from backend.core.secrets_vault import ProductionSecretsManager
 from backend.services.real_time_metrics_collector import (
@@ -101,8 +102,8 @@ async def get_system_health(
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise SystemException(
-            message="System health check failed",
-            error_type="general") from e
+            message="System health check failed", error_type="general"
+        ) from e
 
 
 @router.get("/config", response_model=ConfigurationResponse)
@@ -133,11 +134,11 @@ async def get_configuration(config: dict = Depends(get_api_config)):
     except Exception as e:
         logger.error(f"Failed to get configuration: {e}")
         raise SystemException(
-            message="Configuration retrieval failed",
-            error_type="configuration") from e
+            message="Configuration retrieval failed", error_type="configuration"
+        ) from e
 
 
-@router.get("/info", response_model=BaseResponse)
+@router.get("/info", response_model=SystemInfoResponse)
 async def get_system_info():
     """Get system information."""
     try:
@@ -148,12 +149,12 @@ async def get_system_info():
             "data_directory": str(Path.home() / ".ai_pdf_scholar"),
             "uptime_seconds": time.time() - startup_time,
         }
-        return BaseResponse(message="System information retrieved", data=info)
+        return SystemInfoResponse(message="System information retrieved", data=info)
     except Exception as e:
         logger.error(f"Failed to get system info: {e}")
         raise SystemException(
-            message="System information retrieval failed",
-            error_type="general") from e
+            message="System information retrieval failed", error_type="general"
+        ) from e
 
 
 @router.get("/version")
@@ -174,8 +175,7 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
             success = migrator.migrate()
             if not success:
                 raise SystemException(
-                    message="Database migration failed",
-                    error_type="database"
+                    message="Database migration failed", error_type="database"
                 )
         # Create necessary directories
         base_dir = Path.home() / ".ai_pdf_scholar"
@@ -194,8 +194,8 @@ async def initialize_system(db: DatabaseConnection = Depends(get_db)):
     except Exception as e:
         logger.error(f"System initialization failed: {e}")
         raise SystemException(
-            message="System initialization failed",
-            error_type="configuration") from e
+            message="System initialization failed", error_type="configuration"
+        ) from e
 
 
 @router.get("/storage", response_model=BaseResponse)
@@ -238,8 +238,8 @@ async def get_storage_info():
     except Exception as e:
         logger.error(f"Failed to get storage info: {e}")
         raise SystemException(
-            message="Storage information retrieval failed",
-            error_type="general") from e
+            message="Storage information retrieval failed", error_type="general"
+        ) from e
 
 
 @router.post("/maintenance", response_model=BaseResponse)
@@ -272,8 +272,8 @@ async def run_maintenance():
     except Exception as e:
         logger.error(f"Maintenance failed: {e}")
         raise SystemException(
-            message="System maintenance failed",
-            error_type="general") from e
+            message="System maintenance failed", error_type="general"
+        ) from e
 
 
 @router.get("/health/secrets", response_model=BaseResponse)
@@ -292,36 +292,35 @@ async def get_secrets_health():
             test_report = await validation_service.validate_secret(
                 "test_secret", "TestPassword123!", "production"
             )
-            test_results.append({
-                "validation_test": "passed",
-                "overall_status": test_report.overall_status
-            })
+            test_results.append(
+                {
+                    "validation_test": "passed",
+                    "overall_status": test_report.overall_status,
+                }
+            )
         except Exception as e:
-            test_results.append({
-                "validation_test": "failed",
-                "error": str(e)
-            })
+            test_results.append({"validation_test": "failed", "error": str(e)})
 
         health_status["validation_service"] = {
-            "status": "healthy" if test_results and test_results[0].get("validation_test") == "passed" else "error",
-            "test_results": test_results
+            "status": "healthy"
+            if test_results and test_results[0].get("validation_test") == "passed"
+            else "error",
+            "test_results": test_results,
         }
 
         return BaseResponse(
-            message="Secrets health check completed",
-            data=health_status
+            message="Secrets health check completed", data=health_status
         )
     except Exception as e:
         logger.error(f"Secrets health check failed: {e}")
         raise SystemException(
-            message="Secrets health check failed",
-            error_type="secrets_management") from e
+            message="Secrets health check failed", error_type="secrets_management"
+        ) from e
 
 
 @router.post("/secrets/validate", response_model=BaseResponse)
 async def validate_environment_secrets(
-    environment: str = "production",
-    compliance_standards: list | None = None
+    environment: str = "production", compliance_standards: list | None = None
 ):
     """Validate all secrets in an environment for compliance."""
     try:
@@ -331,7 +330,7 @@ async def validate_environment_secrets(
             "database_password": "SecureDbPassword123!",
             "jwt_secret": "super_secure_jwt_signing_key_2023",
             "encryption_key": "encryption_key_with_256_bit_strength_abc123",
-            "google_api_key": "AIzaSyD_example_key_1234567890"
+            "google_api_key": "AIzaSyD_example_key_1234567890",
         }
 
         secrets_manager = ProductionSecretsManager()
@@ -363,22 +362,28 @@ async def validate_environment_secrets(
                     name: {
                         "overall_status": report.overall_status,
                         "compliance_status": report.compliance_status,
-                        "issues_count": len([r for r in report.validation_results if not r.passed]),
-                        "critical_issues": len([
-                            r for r in report.validation_results
-                            if not r.passed and r.severity == ValidationSeverity.CRITICAL
-                        ])
+                        "issues_count": len(
+                            [r for r in report.validation_results if not r.passed]
+                        ),
+                        "critical_issues": len(
+                            [
+                                r
+                                for r in report.validation_results
+                                if not r.passed
+                                and r.severity == ValidationSeverity.CRITICAL
+                            ]
+                        ),
                     }
                     for name, report in validation_results.items()
                 },
-                "compliance_report": compliance_report
-            }
+                "compliance_report": compliance_report,
+            },
         )
     except Exception as e:
         logger.error(f"Secrets validation failed: {e}")
         raise SystemException(
-            message="Secrets validation failed",
-            error_type="secrets_validation") from e
+            message="Secrets validation failed", error_type="secrets_validation"
+        ) from e
 
 
 @router.post("/secrets/rotate/{secret_name}", response_model=BaseResponse)
@@ -391,24 +396,25 @@ async def rotate_secret(secret_name: str):
         new_version = secrets_manager.rotate_key(secret_name)
 
         # Get audit trail for the rotation
-        audit_entries = secrets_manager.get_audit_trail(
-            operation="rotate_secret"
-        )
+        audit_entries = secrets_manager.get_audit_trail(operation="rotate_secret")
 
         return BaseResponse(
             message=f"Secret {secret_name} rotated successfully",
             data={
                 "secret_name": secret_name,
                 "new_version": new_version,
-                "rotation_time": audit_entries[-1]["timestamp"] if audit_entries else None,
-                "status": "completed"
-            }
+                "rotation_time": audit_entries[-1]["timestamp"]
+                if audit_entries
+                else None,
+                "status": "completed",
+            },
         )
     except Exception as e:
         logger.error(f"Secret rotation failed for {secret_name}: {e}")
         raise SystemException(
             message=f"Secret rotation failed for {secret_name}",
-            error_type="secret_rotation") from e
+            error_type="secret_rotation",
+        ) from e
 
 
 @router.post("/secrets/backup", response_model=BaseResponse)
@@ -426,14 +432,14 @@ async def backup_secrets(backup_name: str | None = None):
                 "backup_path": str(backup_path),
                 "backup_name": backup_name or backup_path.stem,
                 "backup_size_bytes": backup_path.stat().st_size,
-                "backup_time": backup_path.stat().st_ctime
-            }
+                "backup_time": backup_path.stat().st_ctime,
+            },
         )
     except Exception as e:
         logger.error(f"Secrets backup failed: {e}")
         raise SystemException(
-            message="Secrets backup failed",
-            error_type="secrets_backup") from e
+            message="Secrets backup failed", error_type="secrets_backup"
+        ) from e
 
 
 @router.get("/health/detailed", response_model=BaseResponse)
@@ -447,7 +453,7 @@ async def detailed_health_check(
 
         # System resources
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
         cpu_percent = psutil.cpu_percent(interval=1)
 
         health_data["system_resources"] = {
@@ -455,47 +461,63 @@ async def detailed_health_check(
                 "total_bytes": memory.total,
                 "available_bytes": memory.available,
                 "used_percent": memory.percent,
-                "status": "healthy" if memory.percent < 80 else "warning" if memory.percent < 90 else "critical"
+                "status": "healthy"
+                if memory.percent < 80
+                else "warning"
+                if memory.percent < 90
+                else "critical",
             },
             "disk": {
                 "total_bytes": disk.total,
                 "free_bytes": disk.free,
                 "used_percent": round(100 * (disk.used / disk.total), 2),
-                "status": "healthy" if disk.free > disk.total * 0.2 else "warning" if disk.free > disk.total * 0.1 else "critical"
+                "status": "healthy"
+                if disk.free > disk.total * 0.2
+                else "warning"
+                if disk.free > disk.total * 0.1
+                else "critical",
             },
             "cpu": {
                 "usage_percent": cpu_percent,
                 "core_count": psutil.cpu_count(),
-                "status": "healthy" if cpu_percent < 70 else "warning" if cpu_percent < 85 else "critical"
-            }
+                "status": "healthy"
+                if cpu_percent < 70
+                else "warning"
+                if cpu_percent < 85
+                else "critical",
+            },
         }
 
         # Database health
-        db_health = {"status": "unknown", "connection_pool": {}, "response_time_ms": None}
+        db_health = {
+            "status": "unknown",
+            "connection_pool": {},
+            "response_time_ms": None,
+        }
         try:
             start_time = time.time()
             result = db.fetch_one("SELECT 1 as test, datetime('now') as current_time")
             response_time = (time.time() - start_time) * 1000
 
-            db_health.update({
-                "status": "healthy",
-                "response_time_ms": round(response_time, 2),
-                "connection_active": True,
-                "last_check": result["current_time"] if result else None
-            })
+            db_health.update(
+                {
+                    "status": "healthy",
+                    "response_time_ms": round(response_time, 2),
+                    "connection_active": True,
+                    "last_check": result["current_time"] if result else None,
+                }
+            )
         except Exception as e:
-            db_health.update({
-                "status": "error",
-                "error": str(e),
-                "connection_active": False
-            })
+            db_health.update(
+                {"status": "error", "error": str(e), "connection_active": False}
+            )
 
         health_data["database"] = db_health
 
         # RAG service health
         rag_health = {
             "available": rag_service is not None,
-            "status": "healthy" if rag_service is not None else "unavailable"
+            "status": "healthy" if rag_service is not None else "unavailable",
         }
 
         if rag_service:
@@ -504,13 +526,10 @@ async def detailed_health_check(
                 rag_health["components"] = {
                     "llama_index": "available",
                     "embedding_service": "healthy",
-                    "vector_store": "operational"
+                    "vector_store": "operational",
                 }
             except Exception as e:
-                rag_health.update({
-                    "status": "error",
-                    "error": str(e)
-                })
+                rag_health.update({"status": "error", "error": str(e)})
 
         health_data["rag_service"] = rag_health
 
@@ -525,19 +544,23 @@ async def detailed_health_check(
                 for dir_name in critical_dirs:
                     dir_path = base_dir / dir_name
                     if dir_path.exists():
-                        dir_size = sum(f.stat().st_size for f in dir_path.rglob("*") if f.is_file())
-                        file_count = len([f for f in dir_path.rglob("*") if f.is_file()])
+                        dir_size = sum(
+                            f.stat().st_size for f in dir_path.rglob("*") if f.is_file()
+                        )
+                        file_count = len(
+                            [f for f in dir_path.rglob("*") if f.is_file()]
+                        )
 
                         storage_health["directories"][dir_name] = {
                             "exists": True,
                             "size_bytes": dir_size,
                             "file_count": file_count,
-                            "writable": os.access(dir_path, os.W_OK)
+                            "writable": os.access(dir_path, os.W_OK),
                         }
                     else:
                         storage_health["directories"][dir_name] = {
                             "exists": False,
-                            "error": "Directory not found"
+                            "error": "Directory not found",
                         }
 
                 storage_health["status"] = "healthy"
@@ -545,10 +568,7 @@ async def detailed_health_check(
                 storage_health["status"] = "not_initialized"
 
         except Exception as e:
-            storage_health.update({
-                "status": "error",
-                "error": str(e)
-            })
+            storage_health.update({"status": "error", "error": str(e)})
 
         health_data["storage"] = storage_health
 
@@ -556,7 +576,7 @@ async def detailed_health_check(
         api_health = {
             "gemini_api_configured": Config.get_gemini_api_key() is not None,
             "environment": Config.ENVIRONMENT,
-            "debug_mode": Config.DEBUG
+            "debug_mode": Config.DEBUG,
         }
         health_data["api_configuration"] = api_health
 
@@ -603,19 +623,16 @@ async def detailed_health_check(
             "status": overall_status,
             "score": round(overall_score, 2),
             "uptime_seconds": time.time() - startup_time,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
-        return BaseResponse(
-            message="Detailed health check completed",
-            data=health_data
-        )
+        return BaseResponse(message="Detailed health check completed", data=health_data)
 
     except Exception as e:
         logger.error(f"Detailed health check failed: {e}")
         raise SystemException(
-            message="Detailed health check failed",
-            error_type="health_check") from e
+            message="Detailed health check failed", error_type="health_check"
+        ) from e
 
 
 @router.get("/health/dependencies", response_model=BaseResponse)
@@ -628,31 +645,33 @@ async def dependency_health_check():
         redis_health = {"available": False, "status": "unknown"}
         try:
             # Try to connect to Redis (assuming default config)
-            r = redis.Redis(host='localhost', port=6379, db=0, socket_timeout=5)
+            r = redis.Redis(host="localhost", port=6379, db=0, socket_timeout=5)
             r.ping()
 
             # Get Redis info
             info = r.info()
-            redis_health.update({
-                "available": True,
-                "status": "healthy",
-                "version": info.get("redis_version"),
-                "connected_clients": info.get("connected_clients"),
-                "used_memory_human": info.get("used_memory_human"),
-                "role": info.get("role")
-            })
+            redis_health.update(
+                {
+                    "available": True,
+                    "status": "healthy",
+                    "version": info.get("redis_version"),
+                    "connected_clients": info.get("connected_clients"),
+                    "used_memory_human": info.get("used_memory_human"),
+                    "role": info.get("role"),
+                }
+            )
         except redis.ConnectionError:
-            redis_health.update({
-                "available": False,
-                "status": "unavailable",
-                "error": "Could not connect to Redis"
-            })
+            redis_health.update(
+                {
+                    "available": False,
+                    "status": "unavailable",
+                    "error": "Could not connect to Redis",
+                }
+            )
         except Exception as e:
-            redis_health.update({
-                "available": False,
-                "status": "error",
-                "error": str(e)
-            })
+            redis_health.update(
+                {"available": False, "status": "error", "error": str(e)}
+            )
 
         dependencies["redis"] = redis_health
 
@@ -670,27 +689,30 @@ async def dependency_health_check():
                 genai.configure(api_key=api_key)
 
                 # Test with a simple request (without actually making a call)
-                gemini_health.update({
-                    "status": "healthy",
-                    "api_key_length": len(api_key),
-                    "last_check": datetime.now().isoformat()
-                })
+                gemini_health.update(
+                    {
+                        "status": "healthy",
+                        "api_key_length": len(api_key),
+                        "last_check": datetime.now().isoformat(),
+                    }
+                )
             except ImportError:
-                gemini_health.update({
-                    "status": "error",
-                    "error": "Google GenerativeAI library not available"
-                })
+                gemini_health.update(
+                    {
+                        "status": "error",
+                        "error": "Google GenerativeAI library not available",
+                    }
+                )
             except Exception as e:
-                gemini_health.update({
-                    "status": "error",
-                    "error": str(e)
-                })
+                gemini_health.update({"status": "error", "error": str(e)})
         else:
-            gemini_health.update({
-                "configured": False,
-                "status": "not_configured",
-                "error": "API key not provided"
-            })
+            gemini_health.update(
+                {
+                    "configured": False,
+                    "status": "not_configured",
+                    "error": "API key not provided",
+                }
+            )
 
         dependencies["google_gemini"] = gemini_health
 
@@ -706,27 +728,35 @@ async def dependency_health_check():
             content = test_file.read_text()
             test_file.unlink()
 
-            filesystem_health.update({
-                "status": "healthy",
-                "writable": True,
-                "readable": content == "health_check",
-                "base_directory": str(base_dir)
-            })
+            filesystem_health.update(
+                {
+                    "status": "healthy",
+                    "writable": True,
+                    "readable": content == "health_check",
+                    "base_directory": str(base_dir),
+                }
+            )
         except Exception as e:
-            filesystem_health.update({
-                "status": "error",
-                "error": str(e),
-                "writable": False
-            })
+            filesystem_health.update(
+                {"status": "error", "error": str(e), "writable": False}
+            )
 
         dependencies["filesystem"] = filesystem_health
 
         # Calculate overall dependency health
-        healthy_deps = sum(1 for dep in dependencies.values() if dep["status"] == "healthy")
+        healthy_deps = sum(
+            1 for dep in dependencies.values() if dep["status"] == "healthy"
+        )
         total_deps = len(dependencies)
         health_score = healthy_deps / total_deps if total_deps > 0 else 0
 
-        overall_status = "healthy" if health_score >= 0.8 else "degraded" if health_score >= 0.5 else "unhealthy"
+        overall_status = (
+            "healthy"
+            if health_score >= 0.8
+            else "degraded"
+            if health_score >= 0.5
+            else "unhealthy"
+        )
 
         return BaseResponse(
             message="Dependency health check completed",
@@ -737,16 +767,16 @@ async def dependency_health_check():
                     "healthy_dependencies": healthy_deps,
                     "health_score": round(health_score, 2),
                     "overall_status": overall_status,
-                    "timestamp": datetime.now().isoformat()
-                }
-            }
+                    "timestamp": datetime.now().isoformat(),
+                },
+            },
         )
 
     except Exception as e:
         logger.error(f"Dependency health check failed: {e}")
         raise SystemException(
-            message="Dependency health check failed",
-            error_type="dependency_health") from e
+            message="Dependency health check failed", error_type="dependency_health"
+        ) from e
 
 
 @router.get("/health/performance", response_model=BaseResponse)
@@ -757,7 +787,7 @@ async def performance_health_check():
 
         # System performance metrics
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
 
         # CPU metrics with more detail
         cpu_count = psutil.cpu_count()
@@ -767,9 +797,11 @@ async def performance_health_check():
             "usage_percent": psutil.cpu_percent(interval=1),
             "core_count": cpu_count,
             "frequency_mhz": cpu_freq.current if cpu_freq else None,
-            "load_average": list(psutil.getloadavg()) if hasattr(psutil, 'getloadavg') else None,
+            "load_average": list(psutil.getloadavg())
+            if hasattr(psutil, "getloadavg")
+            else None,
             "context_switches": psutil.cpu_stats().ctx_switches,
-            "interrupts": psutil.cpu_stats().interrupts
+            "interrupts": psutil.cpu_stats().interrupts,
         }
 
         # Memory metrics with swap info
@@ -779,11 +811,11 @@ async def performance_health_check():
             "available_bytes": memory.available,
             "used_bytes": memory.used,
             "free_bytes": memory.free,
-            "cached_bytes": getattr(memory, 'cached', 0),
-            "buffers_bytes": getattr(memory, 'buffers', 0),
+            "cached_bytes": getattr(memory, "cached", 0),
+            "buffers_bytes": getattr(memory, "buffers", 0),
             "swap_total_bytes": swap.total,
             "swap_used_bytes": swap.used,
-            "swap_percent": swap.percent
+            "swap_percent": swap.percent,
         }
 
         # Disk I/O metrics
@@ -797,7 +829,7 @@ async def performance_health_check():
             "read_bytes": disk_io.read_bytes if disk_io else 0,
             "write_bytes": disk_io.write_bytes if disk_io else 0,
             "read_time_ms": disk_io.read_time if disk_io else 0,
-            "write_time_ms": disk_io.write_time if disk_io else 0
+            "write_time_ms": disk_io.write_time if disk_io else 0,
         }
 
         # Network I/O metrics
@@ -810,7 +842,7 @@ async def performance_health_check():
             "errin": net_io.errin if net_io else 0,
             "errout": net_io.errout if net_io else 0,
             "dropin": net_io.dropin if net_io else 0,
-            "dropout": net_io.dropout if net_io else 0
+            "dropout": net_io.dropout if net_io else 0,
         }
 
         # Process-specific metrics
@@ -823,15 +855,18 @@ async def performance_health_check():
             "memory_rss_bytes": process_memory.rss,
             "memory_vms_bytes": process_memory.vms,
             "num_threads": current_process.num_threads(),
-            "num_fds": current_process.num_fds() if hasattr(current_process, 'num_fds') else None,
+            "num_fds": current_process.num_fds()
+            if hasattr(current_process, "num_fds")
+            else None,
             "create_time": current_process.create_time(),
-            "uptime_seconds": time.time() - current_process.create_time()
+            "uptime_seconds": time.time() - current_process.create_time(),
         }
 
         # Database performance test
         db_performance = {"status": "unknown"}
         try:
             from backend.api.dependencies import get_db
+
             db = next(get_db())
 
             # Simple query performance test
@@ -839,16 +874,15 @@ async def performance_health_check():
             _ = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
             query_time = (time.time() - start_time) * 1000
 
-            db_performance.update({
-                "status": "healthy",
-                "simple_query_ms": round(query_time, 2),
-                "connection_pool_active": True
-            })
+            db_performance.update(
+                {
+                    "status": "healthy",
+                    "simple_query_ms": round(query_time, 2),
+                    "connection_pool_active": True,
+                }
+            )
         except Exception as e:
-            db_performance.update({
-                "status": "error",
-                "error": str(e)
-            })
+            db_performance.update({"status": "error", "error": str(e)})
 
         performance_data["database"] = db_performance
 
@@ -857,32 +891,81 @@ async def performance_health_check():
 
         # CPU health
         if performance_data["cpu"]["usage_percent"] > 90:
-            health_indicators.append({"component": "cpu", "level": "critical", "message": "CPU usage very high"})
+            health_indicators.append(
+                {
+                    "component": "cpu",
+                    "level": "critical",
+                    "message": "CPU usage very high",
+                }
+            )
         elif performance_data["cpu"]["usage_percent"] > 75:
-            health_indicators.append({"component": "cpu", "level": "warning", "message": "CPU usage elevated"})
+            health_indicators.append(
+                {
+                    "component": "cpu",
+                    "level": "warning",
+                    "message": "CPU usage elevated",
+                }
+            )
 
         # Memory health
         memory_percent = (memory.used / memory.total) * 100
         if memory_percent > 90:
-            health_indicators.append({"component": "memory", "level": "critical", "message": "Memory usage very high"})
+            health_indicators.append(
+                {
+                    "component": "memory",
+                    "level": "critical",
+                    "message": "Memory usage very high",
+                }
+            )
         elif memory_percent > 80:
-            health_indicators.append({"component": "memory", "level": "warning", "message": "Memory usage elevated"})
+            health_indicators.append(
+                {
+                    "component": "memory",
+                    "level": "warning",
+                    "message": "Memory usage elevated",
+                }
+            )
 
         # Disk health
         disk_percent = (disk.used / disk.total) * 100
         if disk_percent > 95:
-            health_indicators.append({"component": "disk", "level": "critical", "message": "Disk space critically low"})
+            health_indicators.append(
+                {
+                    "component": "disk",
+                    "level": "critical",
+                    "message": "Disk space critically low",
+                }
+            )
         elif disk_percent > 85:
-            health_indicators.append({"component": "disk", "level": "warning", "message": "Disk space low"})
+            health_indicators.append(
+                {"component": "disk", "level": "warning", "message": "Disk space low"}
+            )
 
         # Database performance health
-        if db_performance["status"] == "healthy" and db_performance.get("simple_query_ms", 0) > 1000:
-            health_indicators.append({"component": "database", "level": "warning", "message": "Database queries slow"})
+        if (
+            db_performance["status"] == "healthy"
+            and db_performance.get("simple_query_ms", 0) > 1000
+        ):
+            health_indicators.append(
+                {
+                    "component": "database",
+                    "level": "warning",
+                    "message": "Database queries slow",
+                }
+            )
         elif db_performance["status"] != "healthy":
-            health_indicators.append({"component": "database", "level": "critical", "message": "Database not responding"})
+            health_indicators.append(
+                {
+                    "component": "database",
+                    "level": "critical",
+                    "message": "Database not responding",
+                }
+            )
 
         # Overall performance score
-        critical_issues = len([i for i in health_indicators if i["level"] == "critical"])
+        critical_issues = len(
+            [i for i in health_indicators if i["level"] == "critical"]
+        )
         warning_issues = len([i for i in health_indicators if i["level"] == "warning"])
 
         if critical_issues > 0:
@@ -897,26 +980,22 @@ async def performance_health_check():
             "critical_issues": critical_issues,
             "warning_issues": warning_issues,
             "health_indicators": health_indicators,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         return BaseResponse(
-            message="Performance health check completed",
-            data=performance_data
+            message="Performance health check completed", data=performance_data
         )
 
     except Exception as e:
         logger.error(f"Performance health check failed: {e}")
         raise SystemException(
-            message="Performance health check failed",
-            error_type="performance_health") from e
+            message="Performance health check failed", error_type="performance_health"
+        ) from e
 
 
 @router.get("/secrets/audit", response_model=BaseResponse)
-async def get_secrets_audit_log(
-    hours: int = 24,
-    operation: str | None = None
-):
+async def get_secrets_audit_log(hours: int = 24, operation: str | None = None):
     """Get secrets management audit log."""
     try:
         secrets_manager = ProductionSecretsManager()
@@ -925,40 +1004,46 @@ async def get_secrets_audit_log(
         start_datetime = datetime.fromtimestamp(start_time)
 
         audit_entries = secrets_manager.get_audit_trail(
-            start_time=start_datetime,
-            operation=operation
+            start_time=start_datetime, operation=operation
         )
 
         # Summarize audit data
         summary = {
             "total_operations": len(audit_entries),
-            "successful_operations": len([e for e in audit_entries if e.get("success", False)]),
-            "failed_operations": len([e for e in audit_entries if not e.get("success", True)]),
-            "operations_by_type": {}
+            "successful_operations": len(
+                [e for e in audit_entries if e.get("success", False)]
+            ),
+            "failed_operations": len(
+                [e for e in audit_entries if not e.get("success", True)]
+            ),
+            "operations_by_type": {},
         }
 
         for entry in audit_entries:
             op_type = entry.get("operation", "unknown")
-            summary["operations_by_type"][op_type] = summary["operations_by_type"].get(op_type, 0) + 1
+            summary["operations_by_type"][op_type] = (
+                summary["operations_by_type"].get(op_type, 0) + 1
+            )
 
         return BaseResponse(
             message=f"Retrieved {len(audit_entries)} audit entries from last {hours} hours",
             data={
                 "summary": summary,
                 "entries": audit_entries[:100],  # Limit to last 100 entries
-                "total_entries": len(audit_entries)
-            }
+                "total_entries": len(audit_entries),
+            },
         )
     except Exception as e:
         logger.error(f"Failed to get secrets audit log: {e}")
         raise SystemException(
-            message="Failed to retrieve secrets audit log",
-            error_type="secrets_audit") from e
+            message="Failed to retrieve secrets audit log", error_type="secrets_audit"
+        ) from e
 
 
 # ============================================================================
 # Real-time Performance Monitoring Endpoints
 # ============================================================================
+
 
 @router.get("/metrics/current", response_model=BaseResponse)
 async def get_current_metrics():
@@ -966,8 +1051,7 @@ async def get_current_metrics():
     try:
         if not metrics_collector:
             raise HTTPException(
-                status_code=503,
-                detail="Metrics collection not initialized"
+                status_code=503, detail="Metrics collection not initialized"
             )
 
         current_metrics = metrics_collector.get_current_metrics()
@@ -978,8 +1062,8 @@ async def get_current_metrics():
             data={
                 "metrics": current_metrics,
                 "health_summary": system_health,
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         )
     except HTTPException:
         raise
@@ -987,20 +1071,17 @@ async def get_current_metrics():
         logger.error(f"Failed to get current metrics: {e}")
         raise SystemException(
             message="Failed to retrieve current metrics",
-            error_type="metrics_collection") from e
+            error_type="metrics_collection",
+        ) from e
 
 
 @router.get("/metrics/history/{metric_type}", response_model=BaseResponse)
-async def get_metrics_history(
-    metric_type: str,
-    hours_back: int = 1
-):
+async def get_metrics_history(metric_type: str, hours_back: int = 1):
     """Get historical metrics for a specific metric type."""
     try:
         if not metrics_collector:
             raise HTTPException(
-                status_code=503,
-                detail="Metrics collection not initialized"
+                status_code=503, detail="Metrics collection not initialized"
             )
 
         # Convert string to MetricType enum
@@ -1009,7 +1090,7 @@ async def get_metrics_history(
         except ValueError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid metric type. Valid types: {[t.value for t in MetricType]}"
+                detail=f"Invalid metric type. Valid types: {[t.value for t in MetricType]}",
             ) from None
 
         history = metrics_collector.get_metrics_history(metric_enum, hours_back)
@@ -1020,8 +1101,8 @@ async def get_metrics_history(
                 "metric_type": metric_type,
                 "hours_back": hours_back,
                 "data_points": len(history),
-                "history": history
-            }
+                "history": history,
+            },
         )
     except HTTPException:
         raise
@@ -1029,7 +1110,8 @@ async def get_metrics_history(
         logger.error(f"Failed to get metrics history for {metric_type}: {e}")
         raise SystemException(
             message=f"Failed to retrieve metrics history for {metric_type}",
-            error_type="metrics_history") from e
+            error_type="metrics_history",
+        ) from e
 
 
 @router.get("/metrics/system/detailed", response_model=BaseResponse)
@@ -1039,7 +1121,7 @@ async def get_detailed_system_metrics():
         if not metrics_collector:
             # Fallback to direct psutil calls if metrics collector not available
             memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             cpu_percent = psutil.cpu_percent(interval=1)
 
             return BaseResponse(
@@ -1049,8 +1131,8 @@ async def get_detailed_system_metrics():
                     "cpu_percent": cpu_percent,
                     "memory_percent": memory.percent,
                     "disk_percent": round((disk.used / disk.total) * 100, 2),
-                    "timestamp": datetime.now().isoformat()
-                }
+                    "timestamp": datetime.now().isoformat(),
+                },
             )
 
         # Get current metrics
@@ -1066,9 +1148,12 @@ async def get_detailed_system_metrics():
             previous = system_history[0]
 
             trends = {
-                "cpu_trend": recent.get("cpu_percent", 0) - previous.get("cpu_percent", 0),
-                "memory_trend": recent.get("memory_percent", 0) - previous.get("memory_percent", 0),
-                "disk_trend": recent.get("disk_usage_percent", 0) - previous.get("disk_usage_percent", 0)
+                "cpu_trend": recent.get("cpu_percent", 0)
+                - previous.get("cpu_percent", 0),
+                "memory_trend": recent.get("memory_percent", 0)
+                - previous.get("memory_percent", 0),
+                "disk_trend": recent.get("disk_usage_percent", 0)
+                - previous.get("disk_usage_percent", 0),
             }
 
         return BaseResponse(
@@ -1078,14 +1163,15 @@ async def get_detailed_system_metrics():
                 "trends": trends,
                 "history_points": len(system_history),
                 "collection_active": True,
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         )
     except Exception as e:
         logger.error(f"Failed to get detailed system metrics: {e}")
         raise SystemException(
             message="Failed to retrieve detailed system metrics",
-            error_type="system_metrics") from e
+            error_type="system_metrics",
+        ) from e
 
 
 @router.get("/metrics/database/status", response_model=BaseResponse)
@@ -1096,6 +1182,7 @@ async def get_database_metrics():
             # Fallback database check
             try:
                 from backend.api.dependencies import get_db
+
                 db = next(get_db())
 
                 start_time = time.time()
@@ -1108,8 +1195,8 @@ async def get_database_metrics():
                         "fallback_mode": True,
                         "connection_active": True,
                         "simple_query_ms": round(query_time, 2),
-                        "timestamp": datetime.now().isoformat()
-                    }
+                        "timestamp": datetime.now().isoformat(),
+                    },
                 )
             except Exception as e:
                 return BaseResponse(
@@ -1118,8 +1205,8 @@ async def get_database_metrics():
                         "fallback_mode": True,
                         "connection_active": False,
                         "error": str(e),
-                        "timestamp": datetime.now().isoformat()
-                    }
+                        "timestamp": datetime.now().isoformat(),
+                    },
                 )
 
         current_metrics = metrics_collector.get_current_metrics()
@@ -1133,15 +1220,17 @@ async def get_database_metrics():
             data={
                 "current": db_metrics,
                 "history_points": len(db_history),
-                "recent_history": db_history[-10:] if db_history else [],  # Last 10 points
-                "timestamp": datetime.now().isoformat()
-            }
+                "recent_history": db_history[-10:]
+                if db_history
+                else [],  # Last 10 points
+                "timestamp": datetime.now().isoformat(),
+            },
         )
     except Exception as e:
         logger.error(f"Failed to get database metrics: {e}")
         raise SystemException(
-            message="Failed to retrieve database metrics",
-            error_type="database_metrics") from e
+            message="Failed to retrieve database metrics", error_type="database_metrics"
+        ) from e
 
 
 @router.get("/metrics/websocket/status", response_model=BaseResponse)
@@ -1150,8 +1239,7 @@ async def get_websocket_metrics():
     try:
         if not metrics_collector:
             raise HTTPException(
-                status_code=503,
-                detail="Metrics collection not initialized"
+                status_code=503, detail="Metrics collection not initialized"
             )
 
         current_metrics = metrics_collector.get_current_metrics()
@@ -1166,10 +1254,20 @@ async def get_websocket_metrics():
             recent_data = ws_history[-10:] if len(ws_history) >= 10 else ws_history
 
             activity_stats = {
-                "avg_connections": sum(d.get("active_connections", 0) for d in recent_data) / len(recent_data),
-                "max_connections": max(d.get("active_connections", 0) for d in recent_data),
-                "avg_task_duration": sum(d.get("avg_task_duration_ms", 0) for d in recent_data) / len(recent_data),
-                "total_completed_tasks": sum(d.get("rag_tasks_completed", 0) for d in recent_data)
+                "avg_connections": sum(
+                    d.get("active_connections", 0) for d in recent_data
+                )
+                / len(recent_data),
+                "max_connections": max(
+                    d.get("active_connections", 0) for d in recent_data
+                ),
+                "avg_task_duration": sum(
+                    d.get("avg_task_duration_ms", 0) for d in recent_data
+                )
+                / len(recent_data),
+                "total_completed_tasks": sum(
+                    d.get("rag_tasks_completed", 0) for d in recent_data
+                ),
             }
 
         return BaseResponse(
@@ -1178,8 +1276,8 @@ async def get_websocket_metrics():
                 "current": ws_metrics,
                 "activity_stats": activity_stats,
                 "history_points": len(ws_history),
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         )
     except HTTPException:
         raise
@@ -1187,7 +1285,8 @@ async def get_websocket_metrics():
         logger.error(f"Failed to get WebSocket metrics: {e}")
         raise SystemException(
             message="Failed to retrieve WebSocket metrics",
-            error_type="websocket_metrics") from e
+            error_type="websocket_metrics",
+        ) from e
 
 
 @router.get("/metrics/memory/leak-detection", response_model=BaseResponse)
@@ -1205,8 +1304,8 @@ async def get_memory_leak_metrics():
                     "fallback_mode": True,
                     "current_rss_mb": round(memory_info.rss / (1024 * 1024), 2),
                     "current_vms_mb": round(memory_info.vms / (1024 * 1024), 2),
-                    "timestamp": datetime.now().isoformat()
-                }
+                    "timestamp": datetime.now().isoformat(),
+                },
             )
 
         current_metrics = metrics_collector.get_current_metrics()
@@ -1220,18 +1319,20 @@ async def get_memory_leak_metrics():
         if len(memory_history) >= 10:
             recent_memory = [m.get("heap_size_mb", 0) for m in memory_history[-10:]]
             if len(recent_memory) >= 2:
-                growth_rate = (recent_memory[-1] - recent_memory[0]) / len(recent_memory)
+                growth_rate = (recent_memory[-1] - recent_memory[0]) / len(
+                    recent_memory
+                )
                 if growth_rate > 10:  # More than 10MB growth per measurement
                     leak_analysis = {
                         "status": "warning",
                         "message": f"Potential memory leak detected: {growth_rate:.2f}MB/interval growth",
-                        "growth_rate_mb": round(growth_rate, 2)
+                        "growth_rate_mb": round(growth_rate, 2),
                     }
                 elif growth_rate > 50:  # More than 50MB growth per measurement
                     leak_analysis = {
                         "status": "critical",
                         "message": f"Memory leak likely: {growth_rate:.2f}MB/interval growth",
-                        "growth_rate_mb": round(growth_rate, 2)
+                        "growth_rate_mb": round(growth_rate, 2),
                     }
 
         return BaseResponse(
@@ -1240,14 +1341,15 @@ async def get_memory_leak_metrics():
                 "current": memory_metrics,
                 "leak_analysis": leak_analysis,
                 "history_points": len(memory_history),
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         )
     except Exception as e:
         logger.error(f"Failed to get memory leak metrics: {e}")
         raise SystemException(
             message="Failed to retrieve memory leak metrics",
-            error_type="memory_metrics") from e
+            error_type="memory_metrics",
+        ) from e
 
 
 def initialize_metrics_collector(collector_instance: RealTimeMetricsCollector):
