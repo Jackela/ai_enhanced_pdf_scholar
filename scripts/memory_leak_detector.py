@@ -42,10 +42,10 @@ class MemoryLeakDetector:
 
         # Detection thresholds
         self.thresholds = {
-            'leak_growth_mb_per_hour': 5.0,  # Growth >5MB/hour indicates leak
-            'peak_to_baseline_ratio': 2.0,    # Peak >2x baseline indicates issues
-            'gc_effectiveness_threshold': 0.8,  # GC should reclaim >80% of allocations
-            'memory_stability_threshold': 0.9   # Memory should be stable >90% of time
+            "leak_growth_mb_per_hour": 5.0,  # Growth >5MB/hour indicates leak
+            "peak_to_baseline_ratio": 2.0,  # Peak >2x baseline indicates issues
+            "gc_effectiveness_threshold": 0.8,  # GC should reclaim >80% of allocations
+            "memory_stability_threshold": 0.9,  # Memory should be stable >90% of time
         }
 
         # Database connection for testing
@@ -93,12 +93,15 @@ class MemoryLeakDetector:
 
     def _start_memory_monitoring(self) -> threading.Thread:
         """Start background memory monitoring thread."""
+
         def monitor_memory():
             """Background memory monitoring function."""
             start_time = time.time()
             duration_seconds = self.duration_minutes * 60
 
-            print(f"📊 Memory monitoring started for {self.duration_minutes} minutes...")
+            print(
+                f"📊 Memory monitoring started for {self.duration_minutes} minutes..."
+            )
 
             while time.time() - start_time < duration_seconds:
                 # Collect memory sample
@@ -108,8 +111,10 @@ class MemoryLeakDetector:
                 # Print progress
                 elapsed_minutes = (time.time() - start_time) / 60
                 if len(self.memory_samples) % 10 == 0:  # Print every 10 samples
-                    print(f"   📊 {elapsed_minutes:.1f}m: {sample['process_memory_mb']:.1f}MB RSS, "
-                          f"{sample['system_memory_percent']:.1f}% system")
+                    print(
+                        f"   📊 {elapsed_minutes:.1f}m: {sample['process_memory_mb']:.1f}MB RSS, "
+                        f"{sample['system_memory_percent']:.1f}% system"
+                    )
 
                 # Wait for next sample
                 time.sleep(self.sample_interval)
@@ -136,28 +141,25 @@ class MemoryLeakDetector:
         memory_after_gc = process.memory_info().rss
 
         sample = {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'elapsed_seconds': time.time() - (time.time() - len(self.memory_samples) * self.sample_interval),
-
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "elapsed_seconds": time.time()
+            - (time.time() - len(self.memory_samples) * self.sample_interval),
             # Process memory metrics
-            'process_memory_mb': process.memory_info().rss / 1024 / 1024,
-            'process_memory_vms_mb': process.memory_info().vms / 1024 / 1024,
-            'memory_percent': process.memory_percent(),
-
+            "process_memory_mb": process.memory_info().rss / 1024 / 1024,
+            "process_memory_vms_mb": process.memory_info().vms / 1024 / 1024,
+            "memory_percent": process.memory_percent(),
             # System memory metrics
-            'system_memory_total_gb': system_memory.total / 1024 / 1024 / 1024,
-            'system_memory_available_gb': system_memory.available / 1024 / 1024 / 1024,
-            'system_memory_percent': system_memory.percent,
-
+            "system_memory_total_gb": system_memory.total / 1024 / 1024 / 1024,
+            "system_memory_available_gb": system_memory.available / 1024 / 1024 / 1024,
+            "system_memory_percent": system_memory.percent,
             # Garbage collection metrics
-            'gc_objects_before': gc_before,
-            'gc_objects_after': gc_after,
-            'gc_objects_reclaimed': gc_before - gc_after,
-            'memory_freed_by_gc_mb': (memory_before_gc - memory_after_gc) / 1024 / 1024,
-
+            "gc_objects_before": gc_before,
+            "gc_objects_after": gc_after,
+            "gc_objects_reclaimed": gc_before - gc_after,
+            "memory_freed_by_gc_mb": (memory_before_gc - memory_after_gc) / 1024 / 1024,
             # CPU metrics
-            'cpu_percent': process.cpu_percent(),
-            'num_threads': process.num_threads()
+            "cpu_percent": process.cpu_percent(),
+            "num_threads": process.num_threads(),
         }
 
         return sample
@@ -183,11 +185,13 @@ class MemoryLeakDetector:
                 self._perform_memory_operations(operation_count)
 
                 # Log operation
-                self.operation_logs.append({
-                    'timestamp': datetime.now(timezone.utc).isoformat(),
-                    'operation_id': operation_count,
-                    'operation_type': 'sustained_test'
-                })
+                self.operation_logs.append(
+                    {
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "operation_id": operation_count,
+                        "operation_type": "sustained_test",
+                    }
+                )
 
                 operation_count += 1
 
@@ -212,10 +216,13 @@ class MemoryLeakDetector:
                 test_hash = f"hash_{operation_id:06d}"
 
                 # Insert operation
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT OR REPLACE INTO documents (title, file_path, file_hash, file_size, page_count)
                     VALUES (?, ?, ?, ?, ?)
-                """, (test_title, test_path, test_hash, 1000, 5))
+                """,
+                    (test_title, test_path, test_hash, 1000, 5),
+                )
 
                 # Query operation
                 cursor.execute("SELECT COUNT(*) FROM documents")
@@ -223,11 +230,13 @@ class MemoryLeakDetector:
 
                 # Cleanup older test data to prevent database growth
                 if operation_id % 100 == 0:
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         DELETE FROM documents
                         WHERE title LIKE 'Memory Test Document %'
                         AND id < (SELECT MAX(id) - 50 FROM documents WHERE title LIKE 'Memory Test Document %')
-                    """)
+                    """
+                    )
 
                 conn.commit()
 
@@ -280,11 +289,14 @@ class MemoryLeakDetector:
     def _analyze_memory_patterns(self) -> dict[str, Any]:
         """Analyze memory usage patterns for leaks and anomalies."""
         if not self.memory_samples:
-            return {'error': 'No memory samples collected'}
+            return {"error": "No memory samples collected"}
 
         # Extract memory values
-        memory_values = [sample['process_memory_mb'] for sample in self.memory_samples]
-        timestamps = [datetime.fromisoformat(sample['timestamp'].replace('Z', '+00:00')) for sample in self.memory_samples]
+        memory_values = [sample["process_memory_mb"] for sample in self.memory_samples]
+        timestamps = [
+            datetime.fromisoformat(sample["timestamp"].replace("Z", "+00:00"))
+            for sample in self.memory_samples
+        ]
 
         # Basic statistics
         initial_memory = memory_values[0]
@@ -309,27 +321,31 @@ class MemoryLeakDetector:
 
         # Memory health assessment
         health_assessment = self._assess_memory_health(
-            growth_rate_mb_per_hour, peak_memory, initial_memory, stability_analysis, gc_analysis
+            growth_rate_mb_per_hour,
+            peak_memory,
+            initial_memory,
+            stability_analysis,
+            gc_analysis,
         )
 
         analysis = {
-            'duration_minutes': self.duration_minutes,
-            'sample_count': len(self.memory_samples),
-            'memory_statistics': {
-                'initial_mb': initial_memory,
-                'final_mb': final_memory,
-                'peak_mb': peak_memory,
-                'min_mb': min_memory,
-                'avg_mb': avg_memory,
-                'memory_growth_mb': memory_growth,
-                'growth_rate_mb_per_hour': growth_rate_mb_per_hour
+            "duration_minutes": self.duration_minutes,
+            "sample_count": len(self.memory_samples),
+            "memory_statistics": {
+                "initial_mb": initial_memory,
+                "final_mb": final_memory,
+                "peak_mb": peak_memory,
+                "min_mb": min_memory,
+                "avg_mb": avg_memory,
+                "memory_growth_mb": memory_growth,
+                "growth_rate_mb_per_hour": growth_rate_mb_per_hour,
             },
-            'trend_analysis': trend_analysis,
-            'stability_analysis': stability_analysis,
-            'gc_analysis': gc_analysis,
-            'health_assessment': health_assessment,
-            'operations_completed': len(self.operation_logs),
-            'thresholds': self.thresholds
+            "trend_analysis": trend_analysis,
+            "stability_analysis": stability_analysis,
+            "gc_analysis": gc_analysis,
+            "health_assessment": health_assessment,
+            "operations_completed": len(self.operation_logs),
+            "thresholds": self.thresholds,
         }
 
         return analysis
@@ -338,7 +354,7 @@ class MemoryLeakDetector:
         """Calculate memory usage trend using linear regression."""
         n = len(memory_values)
         if n < 2:
-            return {'error': 'Insufficient data for trend analysis'}
+            return {"error": "Insufficient data for trend analysis"}
 
         x_values = list(range(n))
 
@@ -359,7 +375,10 @@ class MemoryLeakDetector:
         mean_x = sum_x / n
         mean_y = sum_y / n
 
-        numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, memory_values, strict=False))
+        numerator = sum(
+            (x - mean_x) * (y - mean_y)
+            for x, y in zip(x_values, memory_values, strict=False)
+        )
         sum_sq_x = sum((x - mean_x) ** 2 for x in x_values)
         sum_sq_y = sum((y - mean_y) ** 2 for y in memory_values)
 
@@ -369,28 +388,32 @@ class MemoryLeakDetector:
             correlation = numerator / (sum_sq_x * sum_sq_y) ** 0.5
 
         return {
-            'slope_mb_per_sample': slope,
-            'correlation_coefficient': correlation,
-            'trend_strength': abs(correlation),
-            'trend_direction': 'increasing' if slope > 0 else 'decreasing' if slope < 0 else 'stable'
+            "slope_mb_per_sample": slope,
+            "correlation_coefficient": correlation,
+            "trend_strength": abs(correlation),
+            "trend_direction": (
+                "increasing" if slope > 0 else "decreasing" if slope < 0 else "stable"
+            ),
         }
 
     def _analyze_memory_stability(self, memory_values: list[float]) -> dict[str, Any]:
         """Analyze memory usage stability."""
         if len(memory_values) < 3:
-            return {'error': 'Insufficient data for stability analysis'}
+            return {"error": "Insufficient data for stability analysis"}
 
         # Calculate moving averages and deviations
         window_size = min(10, len(memory_values) // 3)
         moving_averages = []
 
         for i in range(len(memory_values) - window_size + 1):
-            window = memory_values[i:i + window_size]
+            window = memory_values[i : i + window_size]
             moving_averages.append(statistics.mean(window))
 
         # Stability metrics
         overall_std = statistics.stdev(memory_values)
-        overall_cv = overall_std / statistics.mean(memory_values)  # Coefficient of variation
+        overall_cv = overall_std / statistics.mean(
+            memory_values
+        )  # Coefficient of variation
 
         # Detect memory spikes
         mean_memory = statistics.mean(memory_values)
@@ -398,49 +421,57 @@ class MemoryLeakDetector:
         spikes = [v for v in memory_values if v > threshold]
 
         return {
-            'standard_deviation_mb': overall_std,
-            'coefficient_of_variation': overall_cv,
-            'stability_score': max(0, 1 - overall_cv),  # Higher is more stable
-            'memory_spikes_count': len(spikes),
-            'largest_spike_mb': max(spikes) if spikes else 0,
-            'is_stable': overall_cv < 0.1  # CV < 10% considered stable
+            "standard_deviation_mb": overall_std,
+            "coefficient_of_variation": overall_cv,
+            "stability_score": max(0, 1 - overall_cv),  # Higher is more stable
+            "memory_spikes_count": len(spikes),
+            "largest_spike_mb": max(spikes) if spikes else 0,
+            "is_stable": overall_cv < 0.1,  # CV < 10% considered stable
         }
 
     def _analyze_gc_effectiveness(self) -> dict[str, Any]:
         """Analyze garbage collection effectiveness."""
         if not self.memory_samples:
-            return {'error': 'No GC data available'}
+            return {"error": "No GC data available"}
 
         gc_data = []
         memory_freed_data = []
 
         for sample in self.memory_samples:
-            if 'gc_objects_reclaimed' in sample:
-                gc_data.append(sample['gc_objects_reclaimed'])
-            if 'memory_freed_by_gc_mb' in sample:
-                memory_freed_data.append(sample['memory_freed_by_gc_mb'])
+            if "gc_objects_reclaimed" in sample:
+                gc_data.append(sample["gc_objects_reclaimed"])
+            if "memory_freed_by_gc_mb" in sample:
+                memory_freed_data.append(sample["memory_freed_by_gc_mb"])
 
         if not gc_data:
-            return {'error': 'No GC metrics collected'}
+            return {"error": "No GC metrics collected"}
 
         # GC effectiveness metrics
         total_objects_reclaimed = sum(gc_data)
         avg_objects_reclaimed = statistics.mean(gc_data)
         total_memory_freed = sum(memory_freed_data)
-        avg_memory_freed = statistics.mean(memory_freed_data) if memory_freed_data else 0
+        avg_memory_freed = (
+            statistics.mean(memory_freed_data) if memory_freed_data else 0
+        )
 
         return {
-            'total_objects_reclaimed': total_objects_reclaimed,
-            'avg_objects_per_gc': avg_objects_reclaimed,
-            'total_memory_freed_mb': total_memory_freed,
-            'avg_memory_freed_mb': avg_memory_freed,
-            'gc_samples': len(gc_data),
-            'gc_effectiveness_score': min(1.0, avg_objects_reclaimed / 1000)  # Normalize to 0-1
+            "total_objects_reclaimed": total_objects_reclaimed,
+            "avg_objects_per_gc": avg_objects_reclaimed,
+            "total_memory_freed_mb": total_memory_freed,
+            "avg_memory_freed_mb": avg_memory_freed,
+            "gc_samples": len(gc_data),
+            "gc_effectiveness_score": min(
+                1.0, avg_objects_reclaimed / 1000
+            ),  # Normalize to 0-1
         }
 
     def _assess_memory_health(
-        self, growth_rate: float, peak_memory: float, initial_memory: float,
-        stability_analysis: dict[str, Any], gc_analysis: dict[str, Any]
+        self,
+        growth_rate: float,
+        peak_memory: float,
+        initial_memory: float,
+        stability_analysis: dict[str, Any],
+        gc_analysis: dict[str, Any],
     ) -> dict[str, Any]:
         """Assess overall memory health and detect leaks."""
 
@@ -449,30 +480,36 @@ class MemoryLeakDetector:
         health_score = 100
 
         # Growth rate analysis
-        if growth_rate > self.thresholds['leak_growth_mb_per_hour']:
+        if growth_rate > self.thresholds["leak_growth_mb_per_hour"]:
             leak_indicators.append(f"High growth rate: {growth_rate:.1f} MB/hour")
             health_score -= 30
 
         # Peak memory analysis
-        peak_to_baseline_ratio = peak_memory / initial_memory if initial_memory > 0 else 1
-        if peak_to_baseline_ratio > self.thresholds['peak_to_baseline_ratio']:
-            leak_indicators.append(f"High peak ratio: {peak_to_baseline_ratio:.1f}x baseline")
+        peak_to_baseline_ratio = (
+            peak_memory / initial_memory if initial_memory > 0 else 1
+        )
+        if peak_to_baseline_ratio > self.thresholds["peak_to_baseline_ratio"]:
+            leak_indicators.append(
+                f"High peak ratio: {peak_to_baseline_ratio:.1f}x baseline"
+            )
             health_score -= 20
 
         # Stability analysis
-        if not stability_analysis.get('is_stable', True):
+        if not stability_analysis.get("is_stable", True):
             leak_indicators.append("Memory instability detected")
             health_score -= 20
 
         # GC effectiveness
-        gc_score = gc_analysis.get('gc_effectiveness_score', 1.0)
-        if gc_score < self.thresholds['gc_effectiveness_threshold']:
+        gc_score = gc_analysis.get("gc_effectiveness_score", 1.0)
+        if gc_score < self.thresholds["gc_effectiveness_threshold"]:
             leak_indicators.append(f"Poor GC effectiveness: {gc_score:.2f}")
             health_score -= 15
 
         # Memory spike analysis
-        spike_count = stability_analysis.get('memory_spikes_count', 0)
-        if spike_count > len(self.memory_samples) * 0.1:  # More than 10% samples are spikes
+        spike_count = stability_analysis.get("memory_spikes_count", 0)
+        if (
+            spike_count > len(self.memory_samples) * 0.1
+        ):  # More than 10% samples are spikes
             leak_indicators.append(f"Frequent memory spikes: {spike_count}")
             health_score -= 15
 
@@ -490,20 +527,20 @@ class MemoryLeakDetector:
             recommendation = "Memory leak detected, investigation required"
 
         return {
-            'status': status,
-            'health_score': health_score,
-            'leak_indicators': leak_indicators,
-            'recommendation': recommendation,
-            'growth_rate_mb_per_hour': growth_rate,
-            'peak_to_baseline_ratio': peak_to_baseline_ratio,
-            'memory_stability': stability_analysis.get('is_stable', False)
+            "status": status,
+            "health_score": health_score,
+            "leak_indicators": leak_indicators,
+            "recommendation": recommendation,
+            "growth_rate_mb_per_hour": growth_rate,
+            "peak_to_baseline_ratio": peak_to_baseline_ratio,
+            "memory_stability": stability_analysis.get("is_stable", False),
         }
 
     def _generate_memory_report(self, analysis: dict[str, Any]) -> None:
         """Generate comprehensive memory analysis report."""
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("🔍 MEMORY LEAK DETECTION ANALYSIS COMPLETE")
-        print("="*70)
+        print("=" * 70)
 
         # Duration and sample info
         print(f"📊 Analysis Duration: {analysis['duration_minutes']} minutes")
@@ -511,38 +548,48 @@ class MemoryLeakDetector:
         print(f"🔄 Operations Completed: {analysis['operations_completed']}")
 
         # Memory statistics
-        stats = analysis.get('memory_statistics', {})
+        stats = analysis.get("memory_statistics", {})
         print("\n📈 Memory Pattern Analysis:")
         print(f"  - Initial Memory: {stats.get('initial_mb', 0):.1f} MB")
         print(f"  - Final Memory: {stats.get('final_mb', 0):.1f} MB")
         print(f"  - Peak Memory: {stats.get('peak_mb', 0):.1f} MB")
-        print(f"  - Memory Growth Rate: {stats.get('growth_rate_mb_per_hour', 0):+.1f} MB/hour")
+        print(
+            f"  - Memory Growth Rate: {stats.get('growth_rate_mb_per_hour', 0):+.1f} MB/hour"
+        )
 
         # Trend analysis
-        trend = analysis.get('trend_analysis', {})
-        if 'error' not in trend:
-            print(f"  - Trend Direction: {trend.get('trend_direction', 'unknown').title()}")
+        trend = analysis.get("trend_analysis", {})
+        if "error" not in trend:
+            print(
+                f"  - Trend Direction: {trend.get('trend_direction', 'unknown').title()}"
+            )
             print(f"  - Trend Strength: {trend.get('trend_strength', 0):.2f}")
 
         # Stability analysis
-        stability = analysis.get('stability_analysis', {})
-        if 'error' not in stability:
-            print(f"  - Memory Stability: {'✅ Stable' if stability.get('is_stable', False) else '⚠️ Unstable'}")
+        stability = analysis.get("stability_analysis", {})
+        if "error" not in stability:
+            print(
+                f"  - Memory Stability: {'✅ Stable' if stability.get('is_stable', False) else '⚠️ Unstable'}"
+            )
             print(f"  - Memory Spikes: {stability.get('memory_spikes_count', 0)}")
 
         # Garbage collection effectiveness
-        gc_analysis = analysis.get('gc_analysis', {})
-        if 'error' not in gc_analysis:
-            print(f"  - GC Effectiveness: {gc_analysis.get('gc_effectiveness_score', 0):.2f}")
-            print(f"  - Memory Freed by GC: {gc_analysis.get('total_memory_freed_mb', 0):.1f} MB")
+        gc_analysis = analysis.get("gc_analysis", {})
+        if "error" not in gc_analysis:
+            print(
+                f"  - GC Effectiveness: {gc_analysis.get('gc_effectiveness_score', 0):.2f}"
+            )
+            print(
+                f"  - Memory Freed by GC: {gc_analysis.get('total_memory_freed_mb', 0):.1f} MB"
+            )
 
         # Health assessment
-        health = analysis.get('health_assessment', {})
+        health = analysis.get("health_assessment", {})
         print("\n🎯 Memory Health Assessment:")
         print(f"  - Status: {health.get('status', 'Unknown')}")
         print(f"  - Health Score: {health.get('health_score', 0):.0f}/100")
 
-        leak_indicators = health.get('leak_indicators', [])
+        leak_indicators = health.get("leak_indicators", [])
         if leak_indicators:
             print("  - Issues Detected:")
             for indicator in leak_indicators:
@@ -550,9 +597,11 @@ class MemoryLeakDetector:
         else:
             print("  - No memory leaks detected")
 
-        print(f"  - Recommendation: {health.get('recommendation', 'No recommendation')}")
+        print(
+            f"  - Recommendation: {health.get('recommendation', 'No recommendation')}"
+        )
 
-        print("="*70)
+        print("=" * 70)
 
     def _save_analysis_results(self, analysis: dict[str, Any]) -> None:
         """Save memory analysis results to file."""
@@ -564,20 +613,22 @@ class MemoryLeakDetector:
 
         # Prepare data for saving (convert any datetime objects to strings)
         save_data = {
-            'metadata': {
-                'analysis_timestamp': datetime.now(timezone.utc).isoformat(),
-                'duration_minutes': self.duration_minutes,
-                'sample_interval_seconds': self.sample_interval,
-                'total_samples': len(self.memory_samples),
-                'total_operations': len(self.operation_logs)
+            "metadata": {
+                "analysis_timestamp": datetime.now(timezone.utc).isoformat(),
+                "duration_minutes": self.duration_minutes,
+                "sample_interval_seconds": self.sample_interval,
+                "total_samples": len(self.memory_samples),
+                "total_operations": len(self.operation_logs),
             },
-            'analysis_results': analysis,
-            'raw_samples': self.memory_samples[:100],  # Save first 100 samples to avoid huge files
-            'thresholds': self.thresholds
+            "analysis_results": analysis,
+            "raw_samples": self.memory_samples[
+                :100
+            ],  # Save first 100 samples to avoid huge files
+            "thresholds": self.thresholds,
         }
 
         results_file = results_dir / filename
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(save_data, f, indent=2, default=str)
 
         print(f"💾 Memory analysis saved to: {results_file}")
@@ -586,10 +637,18 @@ class MemoryLeakDetector:
 def main():
     """Main memory leak detection function."""
     parser = argparse.ArgumentParser(description="Memory Leak Detection Analysis")
-    parser.add_argument("--duration", type=int, default=10,
-                       help="Analysis duration in minutes (default: 10)")
-    parser.add_argument("--interval", type=int, default=30,
-                       help="Sample interval in seconds (default: 30)")
+    parser.add_argument(
+        "--duration",
+        type=int,
+        default=10,
+        help="Analysis duration in minutes (default: 10)",
+    )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=30,
+        help="Sample interval in seconds (default: 30)",
+    )
 
     args = parser.parse_args()
 
@@ -598,8 +657,8 @@ def main():
         results = detector.run_memory_analysis()
 
         # Determine exit code based on health assessment
-        health = results.get('health_assessment', {})
-        health_score = health.get('health_score', 0)
+        health = results.get("health_assessment", {})
+        health_score = health.get("health_score", 0)
 
         if health_score >= 85:
             print("✅ Memory analysis passed - No leaks detected")

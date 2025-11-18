@@ -239,48 +239,58 @@ class CustomMetricsCollector:
 
                 # Recent document uploads (last 24 hours)
                 result = await session.execute(
-                    text("""
+                    text(
+                        """
                     SELECT COUNT(*) FROM documents
                     WHERE created_at > NOW() - INTERVAL '24 hours'
-                """)
+                """
+                    )
                 )
                 recent_documents = result.scalar() or 0
                 metrics["documents_uploaded_24h"] = float(recent_documents)
 
                 # Average document size
                 result = await session.execute(
-                    text("""
+                    text(
+                        """
                     SELECT AVG(LENGTH(content)) FROM documents WHERE content IS NOT NULL
-                """)
+                """
+                    )
                 )
                 avg_doc_size = result.scalar() or 0
                 metrics["average_document_size_chars"] = float(avg_doc_size)
 
                 # RAG queries in last hour
                 result = await session.execute(
-                    text("""
+                    text(
+                        """
                     SELECT COUNT(*) FROM rag_queries
                     WHERE created_at > NOW() - INTERVAL '1 hour'
-                """)
+                """
+                    )
                 )
                 rag_queries_1h = result.scalar() or 0
                 metrics["rag_queries_last_hour"] = float(rag_queries_1h)
 
                 # Database connection count
                 result = await session.execute(
-                    text("""
+                    text(
+                        """
                     SELECT count(*) FROM pg_stat_activity
                     WHERE state = 'active'
-                """)
+                """
+                    )
                 )
                 active_connections = result.scalar() or 0
                 metrics["db_active_connections"] = float(active_connections)
 
                 # Database size
                 result = await session.execute(
-                    text("""
+                    text(
+                        """
                     SELECT pg_size_pretty(pg_database_size(current_database()))
-                """)
+                """
+                    )
                 )
                 db_size_str = result.scalar() or "0 MB"
                 # Extract numeric value (simplified parsing)

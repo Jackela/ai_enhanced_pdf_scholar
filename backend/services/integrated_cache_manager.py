@@ -966,7 +966,9 @@ class IntegratedCacheManager:
 
                 self.metrics.cache_operation_duration.labels(
                     operation=operation, cache_level=cache_level.lower()
-                ).observe(duration_ms / 1000)  # Convert to seconds
+                ).observe(
+                    duration_ms / 1000
+                )  # Convert to seconds
 
             except Exception as e:
                 logger.warning(f"Failed to update metrics: {e}")

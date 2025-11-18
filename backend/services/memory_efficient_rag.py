@@ -28,7 +28,7 @@ class MemoryOptimizedRAGProcessor:
         memory_limit_mb: float = 512.0,
         chunk_size: int = 512,
         enable_streaming: bool = True,
-        gc_threshold: float = 0.8
+        gc_threshold: float = 0.8,
     ):
         self.ws_manager = ws_manager
         self.memory_limit_mb = memory_limit_mb
@@ -47,7 +47,7 @@ class MemoryOptimizedRAGProcessor:
         cancellation_token: asyncio.Event,
         client_id: str,
         controller: Any,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Process RAG query with comprehensive memory management."""
 
@@ -55,7 +55,7 @@ class MemoryOptimizedRAGProcessor:
             processor=self,
             task_id=task_id,
             client_id=client_id,
-            memory_limit_mb=self.memory_limit_mb
+            memory_limit_mb=self.memory_limit_mb,
         )
 
         self._active_processors.add(processor)
@@ -63,30 +63,39 @@ class MemoryOptimizedRAGProcessor:
         try:
             async with processor:
                 return await self._execute_rag_query(
-                    processor, query, document_id, task_id,
-                    cancellation_token, client_id, controller, **kwargs
+                    processor,
+                    query,
+                    document_id,
+                    task_id,
+                    cancellation_token,
+                    client_id,
+                    controller,
+                    **kwargs,
                 )
         finally:
             self._active_processors.discard(processor)
 
     async def _execute_rag_query(
         self,
-        processor: 'RAGMemoryContext',
+        processor: "RAGMemoryContext",
         query: str,
         document_id: int,
         task_id: str,
         cancellation_token: asyncio.Event,
         client_id: str,
         controller: Any,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Execute RAG query with streaming and memory monitoring."""
 
         try:
             # Stage 1: Initial validation and memory check
             await self._progress_update(
-                client_id, task_id, RAGProgressType.STARTED, 5.0,
-                "Starting memory-optimized RAG processing"
+                client_id,
+                task_id,
+                RAGProgressType.STARTED,
+                5.0,
+                "Starting memory-optimized RAG processing",
             )
 
             await processor.check_memory_pressure()
@@ -96,8 +105,11 @@ class MemoryOptimizedRAGProcessor:
 
             # Stage 2: Document access validation
             await self._progress_update(
-                client_id, task_id, RAGProgressType.PARSING, 15.0,
-                "Validating document access"
+                client_id,
+                task_id,
+                RAGProgressType.PARSING,
+                15.0,
+                "Validating document access",
             )
 
             # Use controller to validate document
@@ -115,13 +127,18 @@ class MemoryOptimizedRAGProcessor:
 
             # Stage 3: Index status verification
             await self._progress_update(
-                client_id, task_id, RAGProgressType.INDEXING, 30.0,
-                "Checking vector index status"
+                client_id,
+                task_id,
+                RAGProgressType.INDEXING,
+                30.0,
+                "Checking vector index status",
             )
 
             index_status = controller.get_index_status(document_id)
             if not index_status.get("can_query", False):
-                raise ValueError(f"Vector index for document {document_id} is not ready for querying")
+                raise ValueError(
+                    f"Vector index for document {document_id} is not ready for querying"
+                )
 
             await processor.check_memory_pressure()
 
@@ -130,8 +147,11 @@ class MemoryOptimizedRAGProcessor:
 
             # Stage 4: Query processing with memory monitoring
             await self._progress_update(
-                client_id, task_id, RAGProgressType.QUERYING, 50.0,
-                "Executing RAG query with memory optimization"
+                client_id,
+                task_id,
+                RAGProgressType.QUERYING,
+                50.0,
+                "Executing RAG query with memory optimization",
             )
 
             # Process query in chunks to manage memory
@@ -148,8 +168,11 @@ class MemoryOptimizedRAGProcessor:
             # Stage 5: Response streaming (if enabled)
             if self.enable_streaming and len(response) > self.chunk_size:
                 await self._progress_update(
-                    client_id, task_id, RAGProgressType.STREAMING_RESPONSE, 80.0,
-                    f"Streaming response ({len(response)} characters)"
+                    client_id,
+                    task_id,
+                    RAGProgressType.STREAMING_RESPONSE,
+                    80.0,
+                    f"Streaming response ({len(response)} characters)",
                 )
 
                 await self._stream_response(
@@ -160,22 +183,31 @@ class MemoryOptimizedRAGProcessor:
 
             # Final stage
             await self._progress_update(
-                client_id, task_id, RAGProgressType.COMPLETED, 100.0,
-                f"RAG processing completed ({processor.peak_memory_mb:.1f}MB peak)"
+                client_id,
+                task_id,
+                RAGProgressType.COMPLETED,
+                100.0,
+                f"RAG processing completed ({processor.peak_memory_mb:.1f}MB peak)",
             )
 
             return response
 
         except asyncio.CancelledError:
             await self._progress_update(
-                client_id, task_id, RAGProgressType.ERROR, 0.0,
-                "RAG processing was cancelled"
+                client_id,
+                task_id,
+                RAGProgressType.ERROR,
+                0.0,
+                "RAG processing was cancelled",
             )
             raise
         except Exception as e:
             await self._progress_update(
-                client_id, task_id, RAGProgressType.ERROR, 0.0,
-                f"RAG processing failed: {str(e)}"
+                client_id,
+                task_id,
+                RAGProgressType.ERROR,
+                0.0,
+                f"RAG processing failed: {str(e)}",
             )
             raise
 
@@ -184,8 +216,8 @@ class MemoryOptimizedRAGProcessor:
         controller: Any,
         document_id: int,
         query: str,
-        processor: 'RAGMemoryContext',
-        cancellation_token: asyncio.Event
+        processor: "RAGMemoryContext",
+        cancellation_token: asyncio.Event,
     ) -> str:
         """Process query with memory-efficient chunking."""
 
@@ -216,7 +248,7 @@ class MemoryOptimizedRAGProcessor:
         response: str,
         client_id: str,
         task_id: str,
-        cancellation_token: asyncio.Event
+        cancellation_token: asyncio.Event,
     ):
         """Stream response in chunks to the client."""
 
@@ -225,7 +257,7 @@ class MemoryOptimizedRAGProcessor:
 
         # Split response into chunks
         chunks = [
-            response[i:i+self.chunk_size]
+            response[i : i + self.chunk_size]
             for i in range(0, len(response), self.chunk_size)
         ]
 
@@ -250,7 +282,7 @@ class MemoryOptimizedRAGProcessor:
         progress_type: RAGProgressType,
         percentage: float,
         message: str,
-        stage_data: dict[str, Any] | None = None
+        stage_data: dict[str, Any] | None = None,
     ):
         """Send progress update with memory stats."""
 
@@ -259,7 +291,7 @@ class MemoryOptimizedRAGProcessor:
         enhanced_stage_data = {
             "memory_used_mb": memory_stats.used_mb,
             "memory_percentage": memory_stats.percentage,
-            **(stage_data or {})
+            **(stage_data or {}),
         }
 
         await self.ws_manager.send_rag_progress_update(
@@ -292,7 +324,7 @@ class MemoryOptimizedRAGProcessor:
                 "chunk_size": self.chunk_size,
                 "streaming_enabled": self.enable_streaming,
                 "gc_threshold": self.gc_threshold,
-            }
+            },
         }
 
 
@@ -304,7 +336,7 @@ class RAGMemoryContext:
         processor: MemoryOptimizedRAGProcessor,
         task_id: str,
         client_id: str,
-        memory_limit_mb: float
+        memory_limit_mb: float,
     ):
         self.processor = processor
         self.task_id = task_id
@@ -324,7 +356,9 @@ class RAGMemoryContext:
         self.current_memory_mb = self.start_memory_mb
         self.peak_memory_mb = self.start_memory_mb
 
-        logger.debug(f"RAG context started for task {self.task_id} - Initial memory: {self.start_memory_mb:.1f}MB")
+        logger.debug(
+            f"RAG context started for task {self.task_id} - Initial memory: {self.start_memory_mb:.1f}MB"
+        )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -360,12 +394,13 @@ class RAGMemoryContext:
         if memory_stats.is_critical:
             # Send warning to client
             await self.processor.ws_manager.send_memory_warning(
-                self.client_id, {
+                self.client_id,
+                {
                     "used_mb": memory_stats.used_mb,
                     "percentage": memory_stats.percentage,
                     "task_id": self.task_id,
-                    "action": "critical_cleanup"
-                }
+                    "action": "critical_cleanup",
+                },
             )
 
             # Force garbage collection
@@ -389,12 +424,13 @@ class RAGMemoryContext:
 
             # Send warning to client
             await self.processor.ws_manager.send_memory_warning(
-                self.client_id, {
+                self.client_id,
+                {
                     "used_mb": self.current_memory_mb,
                     "limit_mb": self.memory_limit_mb,
                     "task_id": self.task_id,
-                    "action": "task_limit_exceeded"
-                }
+                    "action": "task_limit_exceeded",
+                },
             )
 
 
@@ -406,9 +442,7 @@ class StreamingRAGChunker:
         self.overlap = overlap
 
     async def chunk_response(
-        self,
-        response: str,
-        preserve_sentences: bool = True
+        self, response: str, preserve_sentences: bool = True
     ) -> AsyncGenerator[str, None]:
         """Chunk response into streaming-friendly pieces."""
 
@@ -426,7 +460,7 @@ class StreamingRAGChunker:
 
             if preserve_sentences and end_pos < len(response):
                 # Try to break at sentence boundary
-                sentence_break = response.rfind('.', position, end_pos)
+                sentence_break = response.rfind(".", position, end_pos)
                 if sentence_break > position:
                     end_pos = sentence_break + 1
 

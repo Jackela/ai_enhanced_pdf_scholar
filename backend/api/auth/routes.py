@@ -568,7 +568,9 @@ async def get_active_sessions(
             current_token_id is not None and str(token.id) == str(current_token_id)
         ) or (
             # Fallback: most recently created token if no JTI match
-            current_token_id is None and token == tokens[0] if tokens else False
+            current_token_id is None and token == tokens[0]
+            if tokens
+            else False
         )
 
         sessions.append(
@@ -577,9 +579,11 @@ async def get_active_sessions(
                 "device_info": token.device_info,
                 "created_at": token.created_at.isoformat(),
                 "expires_at": token.expires_at.isoformat(),
-                "last_used": token.last_used.isoformat()
-                if hasattr(token, "last_used") and token.last_used
-                else None,
+                "last_used": (
+                    token.last_used.isoformat()
+                    if hasattr(token, "last_used") and token.last_used
+                    else None
+                ),
                 "is_current": is_current,
             }
         )

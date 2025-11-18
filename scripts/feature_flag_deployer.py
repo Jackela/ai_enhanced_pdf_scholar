@@ -24,14 +24,14 @@ import yaml
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
 class FeatureFlagStatus(Enum):
     """Feature flag status values"""
+
     DISABLED = "disabled"
     ENABLED = "enabled"
     TESTING = "testing"
@@ -42,6 +42,7 @@ class FeatureFlagStatus(Enum):
 
 class RolloutStrategy(Enum):
     """Feature rollout strategies"""
+
     IMMEDIATE = "immediate"
     GRADUAL = "gradual"
     CANARY = "canary"
@@ -51,6 +52,7 @@ class RolloutStrategy(Enum):
 
 class Environment(Enum):
     """Target environments"""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -59,6 +61,7 @@ class Environment(Enum):
 @dataclass
 class FeatureFlagRule:
     """Feature flag targeting rule"""
+
     name: str
     condition: str  # e.g., "user.role == 'admin'" or "user.id in [1,2,3]"
     percentage: float = 100.0  # Percentage of matching users
@@ -68,6 +71,7 @@ class FeatureFlagRule:
 @dataclass
 class FeatureFlagConfig:
     """Feature flag configuration"""
+
     key: str
     name: str
     description: str
@@ -111,29 +115,38 @@ class FeatureFlagConfig:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
-            'key': self.key,
-            'name': self.name,
-            'description': self.description,
-            'status': self.status.value,
-            'rollout_strategy': self.rollout_strategy.value,
-            'environments': [env.value for env in self.environments],
-            'rollout_percentage': self.rollout_percentage,
-            'target_percentage': self.target_percentage,
-            'rollout_increment': self.rollout_increment,
-            'rollout_interval_hours': self.rollout_interval_hours,
-            'rules': [{'name': r.name, 'condition': r.condition, 'percentage': r.percentage, 'enabled': r.enabled} for r in self.rules],
-            'depends_on': self.depends_on,
-            'conflicts_with': self.conflicts_with,
-            'created_by': self.created_by,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            'tags': self.tags
+            "key": self.key,
+            "name": self.name,
+            "description": self.description,
+            "status": self.status.value,
+            "rollout_strategy": self.rollout_strategy.value,
+            "environments": [env.value for env in self.environments],
+            "rollout_percentage": self.rollout_percentage,
+            "target_percentage": self.target_percentage,
+            "rollout_increment": self.rollout_increment,
+            "rollout_interval_hours": self.rollout_interval_hours,
+            "rules": [
+                {
+                    "name": r.name,
+                    "condition": r.condition,
+                    "percentage": r.percentage,
+                    "enabled": r.enabled,
+                }
+                for r in self.rules
+            ],
+            "depends_on": self.depends_on,
+            "conflicts_with": self.conflicts_with,
+            "created_by": self.created_by,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "tags": self.tags,
         }
 
 
 @dataclass
 class FeatureFlagDeployment:
     """Feature flag deployment record"""
+
     flag_key: str
     environment: Environment
     deployment_id: str
@@ -148,17 +161,17 @@ class FeatureFlagDeployment:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            'flag_key': self.flag_key,
-            'environment': self.environment.value,
-            'deployment_id': self.deployment_id,
-            'previous_status': self.previous_status.value,
-            'new_status': self.new_status.value,
-            'previous_percentage': self.previous_percentage,
-            'new_percentage': self.new_percentage,
-            'deployed_at': self.deployed_at.isoformat(),
-            'deployed_by': self.deployed_by,
-            'success': self.success,
-            'error_message': self.error_message
+            "flag_key": self.flag_key,
+            "environment": self.environment.value,
+            "deployment_id": self.deployment_id,
+            "previous_status": self.previous_status.value,
+            "new_status": self.new_status.value,
+            "previous_percentage": self.previous_percentage,
+            "new_percentage": self.new_percentage,
+            "deployed_at": self.deployed_at.isoformat(),
+            "deployed_by": self.deployed_by,
+            "success": self.success,
+            "error_message": self.error_message,
         }
 
 
@@ -187,16 +200,18 @@ class FeatureFlagDeployer:
                     state = json.load(f)
 
                 # Load flags
-                for flag_data in state.get('flags', []):
+                for flag_data in state.get("flags", []):
                     flag = self._dict_to_flag(flag_data)
                     self.flags[flag.key] = flag
 
                 # Load deployments
-                for deployment_data in state.get('deployments', []):
+                for deployment_data in state.get("deployments", []):
                     deployment = self._dict_to_deployment(deployment_data)
                     self.deployments.append(deployment)
 
-                logger.info(f"Loaded {len(self.flags)} flags and {len(self.deployments)} deployments")
+                logger.info(
+                    f"Loaded {len(self.flags)} flags and {len(self.deployments)} deployments"
+                )
         except Exception as e:
             logger.warning(f"Failed to load state: {e}")
 
@@ -204,12 +219,14 @@ class FeatureFlagDeployer:
         """Save current state to disk"""
         try:
             state = {
-                'flags': [flag.to_dict() for flag in self.flags.values()],
-                'deployments': [deployment.to_dict() for deployment in self.deployments],
-                'saved_at': datetime.now(timezone.utc).isoformat()
+                "flags": [flag.to_dict() for flag in self.flags.values()],
+                "deployments": [
+                    deployment.to_dict() for deployment in self.deployments
+                ],
+                "saved_at": datetime.now(timezone.utc).isoformat(),
             }
 
-            with open(self.state_file, 'w') as f:
+            with open(self.state_file, "w") as f:
                 json.dump(state, f, indent=2)
 
             logger.info(f"State saved to {self.state_file}")
@@ -220,47 +237,48 @@ class FeatureFlagDeployer:
         """Convert dictionary to FeatureFlagConfig"""
         rules = [
             FeatureFlagRule(
-                name=r['name'],
-                condition=r['condition'],
-                percentage=r.get('percentage', 100.0),
-                enabled=r.get('enabled', True)
-            ) for r in data.get('rules', [])
+                name=r["name"],
+                condition=r["condition"],
+                percentage=r.get("percentage", 100.0),
+                enabled=r.get("enabled", True),
+            )
+            for r in data.get("rules", [])
         ]
 
         return FeatureFlagConfig(
-            key=data['key'],
-            name=data['name'],
-            description=data['description'],
-            status=FeatureFlagStatus(data['status']),
-            rollout_strategy=RolloutStrategy(data['rollout_strategy']),
-            environments=[Environment(env) for env in data['environments']],
-            rollout_percentage=data.get('rollout_percentage', 0.0),
-            target_percentage=data.get('target_percentage', 100.0),
-            rollout_increment=data.get('rollout_increment', 10.0),
-            rollout_interval_hours=data.get('rollout_interval_hours', 24),
+            key=data["key"],
+            name=data["name"],
+            description=data["description"],
+            status=FeatureFlagStatus(data["status"]),
+            rollout_strategy=RolloutStrategy(data["rollout_strategy"]),
+            environments=[Environment(env) for env in data["environments"]],
+            rollout_percentage=data.get("rollout_percentage", 0.0),
+            target_percentage=data.get("target_percentage", 100.0),
+            rollout_increment=data.get("rollout_increment", 10.0),
+            rollout_interval_hours=data.get("rollout_interval_hours", 24),
             rules=rules,
-            depends_on=data.get('depends_on', []),
-            conflicts_with=data.get('conflicts_with', []),
-            created_by=data.get('created_by', 'system'),
-            created_at=datetime.fromisoformat(data['created_at']),
-            updated_at=datetime.fromisoformat(data['updated_at']),
-            tags=data.get('tags', [])
+            depends_on=data.get("depends_on", []),
+            conflicts_with=data.get("conflicts_with", []),
+            created_by=data.get("created_by", "system"),
+            created_at=datetime.fromisoformat(data["created_at"]),
+            updated_at=datetime.fromisoformat(data["updated_at"]),
+            tags=data.get("tags", []),
         )
 
     def _dict_to_deployment(self, data: dict[str, Any]) -> FeatureFlagDeployment:
         """Convert dictionary to FeatureFlagDeployment"""
         return FeatureFlagDeployment(
-            flag_key=data['flag_key'],
-            environment=Environment(data['environment']),
-            deployment_id=data['deployment_id'],
-            previous_status=FeatureFlagStatus(data['previous_status']),
-            new_status=FeatureFlagStatus(data['new_status']),
-            previous_percentage=data['previous_percentage'],
-            new_percentage=data['new_percentage'],
-            deployed_at=datetime.fromisoformat(data['deployed_at']),
-            deployed_by=data['deployed_by'],
-            success=data.get('success', True),
-            error_message=data.get('error_message')
+            flag_key=data["flag_key"],
+            environment=Environment(data["environment"]),
+            deployment_id=data["deployment_id"],
+            previous_status=FeatureFlagStatus(data["previous_status"]),
+            new_status=FeatureFlagStatus(data["new_status"]),
+            previous_percentage=data["previous_percentage"],
+            new_percentage=data["new_percentage"],
+            deployed_at=datetime.fromisoformat(data["deployed_at"]),
+            deployed_by=data["deployed_by"],
+            success=data.get("success", True),
+            error_message=data.get("error_message"),
         )
 
     def create_flag(self, config: FeatureFlagConfig) -> None:
@@ -286,12 +304,19 @@ class FeatureFlagDeployer:
         # Apply updates
         for key, value in updates.items():
             if hasattr(flag, key):
-                if key == 'status' and isinstance(value, str):
+                if key == "status" and isinstance(value, str):
                     setattr(flag, key, FeatureFlagStatus(value))
-                elif key == 'rollout_strategy' and isinstance(value, str):
+                elif key == "rollout_strategy" and isinstance(value, str):
                     setattr(flag, key, RolloutStrategy(value))
-                elif key == 'environments' and isinstance(value, list):
-                    setattr(flag, key, [Environment(env) if isinstance(env, str) else env for env in value])
+                elif key == "environments" and isinstance(value, list):
+                    setattr(
+                        flag,
+                        key,
+                        [
+                            Environment(env) if isinstance(env, str) else env
+                            for env in value
+                        ],
+                    )
                 else:
                     setattr(flag, key, value)
 
@@ -311,8 +336,13 @@ class FeatureFlagDeployer:
         for conflict in config.conflicts_with:
             if conflict in self.flags:
                 conflict_flag = self.flags[conflict]
-                if conflict_flag.status in [FeatureFlagStatus.ENABLED, FeatureFlagStatus.PRODUCTION]:
-                    raise ValueError(f"Conflicting flag '{conflict}' is currently enabled")
+                if conflict_flag.status in [
+                    FeatureFlagStatus.ENABLED,
+                    FeatureFlagStatus.PRODUCTION,
+                ]:
+                    raise ValueError(
+                        f"Conflicting flag '{conflict}' is currently enabled"
+                    )
 
     async def deploy_flag(
         self,
@@ -320,7 +350,7 @@ class FeatureFlagDeployer:
         environment: Environment,
         new_status: FeatureFlagStatus | None = None,
         new_percentage: float | None = None,
-        deployed_by: str = "system"
+        deployed_by: str = "system",
     ) -> FeatureFlagDeployment:
         """Deploy feature flag to specified environment"""
         if flag_key not in self.flags:
@@ -329,7 +359,9 @@ class FeatureFlagDeployer:
         flag = self.flags[flag_key]
 
         if environment not in flag.environments:
-            raise ValueError(f"Flag '{flag_key}' is not configured for environment '{environment.value}'")
+            raise ValueError(
+                f"Flag '{flag_key}' is not configured for environment '{environment.value}'"
+            )
 
         # Current state
         current_status = flag.status
@@ -346,10 +378,14 @@ class FeatureFlagDeployer:
 
         try:
             # Validate deployment
-            await self._validate_deployment(flag, environment, new_status, new_percentage)
+            await self._validate_deployment(
+                flag, environment, new_status, new_percentage
+            )
 
             # Execute deployment
-            await self._execute_deployment(flag, environment, new_status, new_percentage)
+            await self._execute_deployment(
+                flag, environment, new_status, new_percentage
+            )
 
             # Update flag state
             flag.status = new_status
@@ -367,13 +403,15 @@ class FeatureFlagDeployer:
                 new_percentage=new_percentage,
                 deployed_at=datetime.now(timezone.utc),
                 deployed_by=deployed_by,
-                success=True
+                success=True,
             )
 
             self.deployments.append(deployment)
             self.save_state()
 
-            logger.info(f"Successfully deployed flag '{flag_key}' to {environment.value}")
+            logger.info(
+                f"Successfully deployed flag '{flag_key}' to {environment.value}"
+            )
             return deployment
 
         except Exception as e:
@@ -389,13 +427,15 @@ class FeatureFlagDeployer:
                 deployed_at=datetime.now(timezone.utc),
                 deployed_by=deployed_by,
                 success=False,
-                error_message=str(e)
+                error_message=str(e),
             )
 
             self.deployments.append(deployment)
             self.save_state()
 
-            logger.error(f"Failed to deploy flag '{flag_key}' to {environment.value}: {e}")
+            logger.error(
+                f"Failed to deploy flag '{flag_key}' to {environment.value}: {e}"
+            )
             raise
 
     async def _validate_deployment(
@@ -403,7 +443,7 @@ class FeatureFlagDeployer:
         flag: FeatureFlagConfig,
         environment: Environment,
         new_status: FeatureFlagStatus,
-        new_percentage: float
+        new_percentage: float,
     ) -> None:
         """Validate deployment before execution"""
 
@@ -411,16 +451,26 @@ class FeatureFlagDeployer:
         for dep_key in flag.depends_on:
             if dep_key in self.flags:
                 dep_flag = self.flags[dep_key]
-                if dep_flag.status not in [FeatureFlagStatus.ENABLED, FeatureFlagStatus.PRODUCTION]:
+                if dep_flag.status not in [
+                    FeatureFlagStatus.ENABLED,
+                    FeatureFlagStatus.PRODUCTION,
+                ]:
                     raise ValueError(f"Dependency '{dep_key}' is not enabled")
 
         # Check conflicts
         for conflict_key in flag.conflicts_with:
             if conflict_key in self.flags:
                 conflict_flag = self.flags[conflict_key]
-                if (new_status in [FeatureFlagStatus.ENABLED, FeatureFlagStatus.PRODUCTION] and
-                    conflict_flag.status in [FeatureFlagStatus.ENABLED, FeatureFlagStatus.PRODUCTION]):
-                    raise ValueError(f"Cannot enable flag due to conflict with '{conflict_key}'")
+                if new_status in [
+                    FeatureFlagStatus.ENABLED,
+                    FeatureFlagStatus.PRODUCTION,
+                ] and conflict_flag.status in [
+                    FeatureFlagStatus.ENABLED,
+                    FeatureFlagStatus.PRODUCTION,
+                ]:
+                    raise ValueError(
+                        f"Cannot enable flag due to conflict with '{conflict_key}'"
+                    )
 
         # Validate percentage range
         if not 0 <= new_percentage <= 100:
@@ -430,14 +480,16 @@ class FeatureFlagDeployer:
         if environment == Environment.PRODUCTION:
             if new_status == FeatureFlagStatus.PRODUCTION and new_percentage > 50:
                 # Require manual approval for high-impact production deployments
-                logger.warning(f"High-impact production deployment: {new_percentage}% rollout")
+                logger.warning(
+                    f"High-impact production deployment: {new_percentage}% rollout"
+                )
 
     async def _execute_deployment(
         self,
         flag: FeatureFlagConfig,
         environment: Environment,
         new_status: FeatureFlagStatus,
-        new_percentage: float
+        new_percentage: float,
     ) -> None:
         """Execute the actual deployment"""
 
@@ -447,7 +499,9 @@ class FeatureFlagDeployer:
         # 3. Notify application instances
         # 4. Verify deployment success
 
-        logger.info(f"Executing deployment: {flag.key} -> {new_status.value} ({new_percentage}%)")
+        logger.info(
+            f"Executing deployment: {flag.key} -> {new_status.value} ({new_percentage}%)"
+        )
 
         # Simulate deployment time
         await asyncio.sleep(1)
@@ -467,7 +521,7 @@ class FeatureFlagDeployer:
         self,
         flag: FeatureFlagConfig,
         environment: Environment,
-        target_percentage: float
+        target_percentage: float,
     ) -> None:
         """Execute gradual rollout"""
         current = flag.rollout_percentage
@@ -489,7 +543,7 @@ class FeatureFlagDeployer:
         self,
         flag: FeatureFlagConfig,
         environment: Environment,
-        target_percentage: float
+        target_percentage: float,
     ) -> None:
         """Execute canary deployment"""
         logger.info(f"Starting canary deployment to {target_percentage}%")
@@ -514,21 +568,21 @@ class FeatureFlagDeployer:
         self,
         flag: FeatureFlagConfig,
         environment: Environment,
-        target_percentage: float
+        target_percentage: float,
     ) -> None:
         """Execute A/B test deployment"""
         logger.info(f"Starting A/B test deployment to {target_percentage}%")
 
         # Split traffic
-        logger.info(f"Splitting traffic: {target_percentage}% treatment, {100-target_percentage}% control")
+        logger.info(
+            f"Splitting traffic: {target_percentage}% treatment, {100-target_percentage}% control"
+        )
         await asyncio.sleep(1)
 
         logger.info("A/B test deployment completed")
 
     async def _verify_deployment(
-        self,
-        flag: FeatureFlagConfig,
-        environment: Environment
+        self, flag: FeatureFlagConfig, environment: Environment
     ) -> None:
         """Verify deployment success"""
         logger.info("Verifying deployment...")
@@ -547,16 +601,13 @@ class FeatureFlagDeployer:
 
     def _generate_deployment_id(self, flag_key: str, environment: Environment) -> str:
         """Generate unique deployment ID"""
-        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         hash_input = f"{flag_key}-{environment.value}-{timestamp}"
         hash_suffix = hashlib.sha256(hash_input.encode()).hexdigest()[:8]
         return f"deploy-{flag_key}-{environment.value}-{timestamp}-{hash_suffix}"
 
     async def gradual_rollout(
-        self,
-        flag_key: str,
-        environment: Environment,
-        deployed_by: str = "system"
+        self, flag_key: str, environment: Environment, deployed_by: str = "system"
     ) -> list[FeatureFlagDeployment]:
         """Execute gradual rollout according to flag configuration"""
         if flag_key not in self.flags:
@@ -572,18 +623,22 @@ class FeatureFlagDeployer:
         target_percentage = flag.target_percentage
         increment = flag.rollout_increment
 
-        logger.info(f"Starting gradual rollout for '{flag_key}': {current_percentage}% -> {target_percentage}%")
+        logger.info(
+            f"Starting gradual rollout for '{flag_key}': {current_percentage}% -> {target_percentage}%"
+        )
 
         while current_percentage < target_percentage:
             next_percentage = min(current_percentage + increment, target_percentage)
 
-            logger.info(f"Deploying {flag_key} at {next_percentage}% to {environment.value}")
+            logger.info(
+                f"Deploying {flag_key} at {next_percentage}% to {environment.value}"
+            )
 
             deployment = await self.deploy_flag(
                 flag_key,
                 environment,
                 new_percentage=next_percentage,
-                deployed_by=deployed_by
+                deployed_by=deployed_by,
             )
 
             deployments.append(deployment)
@@ -605,7 +660,7 @@ class FeatureFlagDeployer:
         self,
         environment: Environment | None = None,
         status: FeatureFlagStatus | None = None,
-        tags: list[str] | None = None
+        tags: list[str] | None = None,
     ) -> list[FeatureFlagConfig]:
         """List feature flags with optional filtering"""
         flags = list(self.flags.values())
@@ -625,7 +680,7 @@ class FeatureFlagDeployer:
         self,
         flag_key: str | None = None,
         environment: Environment | None = None,
-        limit: int = 10
+        limit: int = 10,
     ) -> list[FeatureFlagDeployment]:
         """Get deployment history with optional filtering"""
         deployments = self.deployments
@@ -643,12 +698,9 @@ class FeatureFlagDeployer:
 
     def export_flags(self, output_file: Path) -> None:
         """Export all flags to YAML file"""
-        flags_data = {
-            flag_key: flag.to_dict()
-            for flag_key, flag in self.flags.items()
-        }
+        flags_data = {flag_key: flag.to_dict() for flag_key, flag in self.flags.items()}
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             yaml.safe_dump(flags_data, f, indent=2)
 
         logger.info(f"Exported {len(self.flags)} flags to {output_file}")
@@ -692,77 +744,123 @@ Examples:
 
   # Get deployment history
   python feature_flag_deployer.py history --key new_ui --limit 5
-        """
+        """,
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Create command
-    create_parser = subparsers.add_parser('create', help='Create new feature flag')
-    create_parser.add_argument('--key', type=str, required=True, help='Flag key')
-    create_parser.add_argument('--name', type=str, required=True, help='Flag name')
-    create_parser.add_argument('--description', type=str, required=True, help='Flag description')
-    create_parser.add_argument('--strategy', type=str, default='manual',
-                              choices=['immediate', 'gradual', 'canary', 'ab_test', 'manual'],
-                              help='Rollout strategy')
-    create_parser.add_argument('--environments', type=str, nargs='*',
-                              choices=['development', 'staging', 'production'],
-                              default=['development', 'staging', 'production'],
-                              help='Target environments')
-    create_parser.add_argument('--tags', type=str, nargs='*', help='Flag tags')
+    create_parser = subparsers.add_parser("create", help="Create new feature flag")
+    create_parser.add_argument("--key", type=str, required=True, help="Flag key")
+    create_parser.add_argument("--name", type=str, required=True, help="Flag name")
+    create_parser.add_argument(
+        "--description", type=str, required=True, help="Flag description"
+    )
+    create_parser.add_argument(
+        "--strategy",
+        type=str,
+        default="manual",
+        choices=["immediate", "gradual", "canary", "ab_test", "manual"],
+        help="Rollout strategy",
+    )
+    create_parser.add_argument(
+        "--environments",
+        type=str,
+        nargs="*",
+        choices=["development", "staging", "production"],
+        default=["development", "staging", "production"],
+        help="Target environments",
+    )
+    create_parser.add_argument("--tags", type=str, nargs="*", help="Flag tags")
 
     # Deploy command
-    deploy_parser = subparsers.add_parser('deploy', help='Deploy feature flag')
-    deploy_parser.add_argument('--key', type=str, required=True, help='Flag key')
-    deploy_parser.add_argument('--env', '--environment', type=str, required=True,
-                              choices=['development', 'staging', 'production'],
-                              help='Target environment')
-    deploy_parser.add_argument('--status', type=str,
-                              choices=['disabled', 'enabled', 'testing', 'staged', 'production'],
-                              help='New status')
-    deploy_parser.add_argument('--percentage', type=float, help='Rollout percentage (0-100)')
-    deploy_parser.add_argument('--deployed-by', type=str, default='cli-user', help='Deployer name')
+    deploy_parser = subparsers.add_parser("deploy", help="Deploy feature flag")
+    deploy_parser.add_argument("--key", type=str, required=True, help="Flag key")
+    deploy_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        required=True,
+        choices=["development", "staging", "production"],
+        help="Target environment",
+    )
+    deploy_parser.add_argument(
+        "--status",
+        type=str,
+        choices=["disabled", "enabled", "testing", "staged", "production"],
+        help="New status",
+    )
+    deploy_parser.add_argument(
+        "--percentage", type=float, help="Rollout percentage (0-100)"
+    )
+    deploy_parser.add_argument(
+        "--deployed-by", type=str, default="cli-user", help="Deployer name"
+    )
 
     # Rollout command
-    rollout_parser = subparsers.add_parser('rollout', help='Execute gradual rollout')
-    rollout_parser.add_argument('--key', type=str, required=True, help='Flag key')
-    rollout_parser.add_argument('--env', '--environment', type=str, required=True,
-                               choices=['development', 'staging', 'production'],
-                               help='Target environment')
-    rollout_parser.add_argument('--deployed-by', type=str, default='cli-user', help='Deployer name')
+    rollout_parser = subparsers.add_parser("rollout", help="Execute gradual rollout")
+    rollout_parser.add_argument("--key", type=str, required=True, help="Flag key")
+    rollout_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        required=True,
+        choices=["development", "staging", "production"],
+        help="Target environment",
+    )
+    rollout_parser.add_argument(
+        "--deployed-by", type=str, default="cli-user", help="Deployer name"
+    )
 
     # List command
-    list_parser = subparsers.add_parser('list', help='List feature flags')
-    list_parser.add_argument('--env', '--environment', type=str,
-                            choices=['development', 'staging', 'production'],
-                            help='Filter by environment')
-    list_parser.add_argument('--status', type=str,
-                            choices=['disabled', 'enabled', 'testing', 'staged', 'production'],
-                            help='Filter by status')
-    list_parser.add_argument('--tags', type=str, nargs='*', help='Filter by tags')
+    list_parser = subparsers.add_parser("list", help="List feature flags")
+    list_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        choices=["development", "staging", "production"],
+        help="Filter by environment",
+    )
+    list_parser.add_argument(
+        "--status",
+        type=str,
+        choices=["disabled", "enabled", "testing", "staged", "production"],
+        help="Filter by status",
+    )
+    list_parser.add_argument("--tags", type=str, nargs="*", help="Filter by tags")
 
     # History command
-    history_parser = subparsers.add_parser('history', help='Get deployment history')
-    history_parser.add_argument('--key', type=str, help='Filter by flag key')
-    history_parser.add_argument('--env', '--environment', type=str,
-                               choices=['development', 'staging', 'production'],
-                               help='Filter by environment')
-    history_parser.add_argument('--limit', type=int, default=10, help='Number of deployments to show')
+    history_parser = subparsers.add_parser("history", help="Get deployment history")
+    history_parser.add_argument("--key", type=str, help="Filter by flag key")
+    history_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        choices=["development", "staging", "production"],
+        help="Filter by environment",
+    )
+    history_parser.add_argument(
+        "--limit", type=int, default=10, help="Number of deployments to show"
+    )
 
     # Update command
-    update_parser = subparsers.add_parser('update', help='Update feature flag')
-    update_parser.add_argument('--key', type=str, required=True, help='Flag key')
-    update_parser.add_argument('--name', type=str, help='New name')
-    update_parser.add_argument('--description', type=str, help='New description')
-    update_parser.add_argument('--target-percentage', type=float, help='New target percentage')
+    update_parser = subparsers.add_parser("update", help="Update feature flag")
+    update_parser.add_argument("--key", type=str, required=True, help="Flag key")
+    update_parser.add_argument("--name", type=str, help="New name")
+    update_parser.add_argument("--description", type=str, help="New description")
+    update_parser.add_argument(
+        "--target-percentage", type=float, help="New target percentage"
+    )
 
     # Export command
-    export_parser = subparsers.add_parser('export', help='Export flags to YAML')
-    export_parser.add_argument('--output', type=str, default='feature_flags.yml', help='Output file')
+    export_parser = subparsers.add_parser("export", help="Export flags to YAML")
+    export_parser.add_argument(
+        "--output", type=str, default="feature_flags.yml", help="Output file"
+    )
 
     # Import command
-    import_parser = subparsers.add_parser('import', help='Import flags from YAML')
-    import_parser.add_argument('--input', type=str, required=True, help='Input file')
+    import_parser = subparsers.add_parser("import", help="Import flags from YAML")
+    import_parser.add_argument("--input", type=str, required=True, help="Input file")
 
     args = parser.parse_args()
 
@@ -774,7 +872,7 @@ Examples:
     deployer = FeatureFlagDeployer()
 
     try:
-        if args.command == 'create':
+        if args.command == "create":
             config = FeatureFlagConfig(
                 key=args.key,
                 name=args.name,
@@ -782,33 +880,37 @@ Examples:
                 status=FeatureFlagStatus.DISABLED,
                 rollout_strategy=RolloutStrategy(args.strategy),
                 environments=[Environment(env) for env in args.environments],
-                tags=args.tags or []
+                tags=args.tags or [],
             )
 
             deployer.create_flag(config)
             print(f"✅ Created feature flag: {args.key}")
 
-        elif args.command == 'deploy':
+        elif args.command == "deploy":
             deployment = await deployer.deploy_flag(
                 flag_key=args.key,
                 environment=Environment(args.env),
                 new_status=FeatureFlagStatus(args.status) if args.status else None,
                 new_percentage=args.percentage,
-                deployed_by=args.deployed_by
+                deployed_by=args.deployed_by,
             )
 
             print("🚀 Deployment Result:")
             print(f"  Flag: {deployment.flag_key}")
             print(f"  Environment: {deployment.environment.value}")
-            print(f"  Status: {deployment.previous_status.value} → {deployment.new_status.value}")
-            print(f"  Percentage: {deployment.previous_percentage}% → {deployment.new_percentage}%")
+            print(
+                f"  Status: {deployment.previous_status.value} → {deployment.new_status.value}"
+            )
+            print(
+                f"  Percentage: {deployment.previous_percentage}% → {deployment.new_percentage}%"
+            )
             print(f"  Success: {deployment.success}")
 
-        elif args.command == 'rollout':
+        elif args.command == "rollout":
             deployments = await deployer.gradual_rollout(
                 flag_key=args.key,
                 environment=Environment(args.env),
-                deployed_by=args.deployed_by
+                deployed_by=args.deployed_by,
             )
 
             print("📈 Gradual Rollout Completed:")
@@ -817,16 +919,16 @@ Examples:
             print(f"  Deployments: {len(deployments)}")
 
             for i, deployment in enumerate(deployments, 1):
-                print(f"    {i}. {deployment.new_percentage}% ({deployment.deployed_at.strftime('%H:%M:%S')})")
+                print(
+                    f"    {i}. {deployment.new_percentage}% ({deployment.deployed_at.strftime('%H:%M:%S')})"
+                )
 
-        elif args.command == 'list':
+        elif args.command == "list":
             environment = Environment(args.env) if args.env else None
             status = FeatureFlagStatus(args.status) if args.status else None
 
             flags = deployer.list_flags(
-                environment=environment,
-                status=status,
-                tags=args.tags
+                environment=environment, status=status, tags=args.tags
             )
 
             if not flags:
@@ -841,19 +943,21 @@ Examples:
                 print(f"     Name: {flag.name}")
                 print(f"     Status: {flag.status.value}")
                 print(f"     Strategy: {flag.rollout_strategy.value}")
-                print(f"     Rollout: {flag.rollout_percentage}% / {flag.target_percentage}%")
-                print(f"     Environments: {', '.join(env.value for env in flag.environments)}")
+                print(
+                    f"     Rollout: {flag.rollout_percentage}% / {flag.target_percentage}%"
+                )
+                print(
+                    f"     Environments: {', '.join(env.value for env in flag.environments)}"
+                )
                 if flag.tags:
                     print(f"     Tags: {', '.join(flag.tags)}")
                 print()
 
-        elif args.command == 'history':
+        elif args.command == "history":
             environment = Environment(args.env) if args.env else None
 
             deployments = deployer.get_deployment_history(
-                flag_key=args.key,
-                environment=environment,
-                limit=args.limit
+                flag_key=args.key, environment=environment, limit=args.limit
             )
 
             if not deployments:
@@ -868,31 +972,37 @@ Examples:
                 print(f"  {status_icon} {deployment.deployment_id}")
                 print(f"     Flag: {deployment.flag_key}")
                 print(f"     Environment: {deployment.environment.value}")
-                print(f"     Change: {deployment.previous_status.value} → {deployment.new_status.value}")
-                print(f"     Percentage: {deployment.previous_percentage}% → {deployment.new_percentage}%")
-                print(f"     Deployed: {deployment.deployed_at.strftime('%Y-%m-%d %H:%M:%S')} by {deployment.deployed_by}")
+                print(
+                    f"     Change: {deployment.previous_status.value} → {deployment.new_status.value}"
+                )
+                print(
+                    f"     Percentage: {deployment.previous_percentage}% → {deployment.new_percentage}%"
+                )
+                print(
+                    f"     Deployed: {deployment.deployed_at.strftime('%Y-%m-%d %H:%M:%S')} by {deployment.deployed_by}"
+                )
                 if not deployment.success:
                     print(f"     Error: {deployment.error_message}")
                 print()
 
-        elif args.command == 'update':
+        elif args.command == "update":
             updates = {}
             if args.name:
-                updates['name'] = args.name
+                updates["name"] = args.name
             if args.description:
-                updates['description'] = args.description
+                updates["description"] = args.description
             if args.target_percentage is not None:
-                updates['target_percentage'] = args.target_percentage
+                updates["target_percentage"] = args.target_percentage
 
             deployer.update_flag(args.key, updates)
             print(f"✅ Updated feature flag: {args.key}")
 
-        elif args.command == 'export':
+        elif args.command == "export":
             output_file = Path(args.output)
             deployer.export_flags(output_file)
             print(f"📤 Exported flags to: {output_file}")
 
-        elif args.command == 'import':
+        elif args.command == "import":
             input_file = Path(args.input)
             deployer.import_flags(input_file)
             print(f"📥 Imported flags from: {input_file}")
@@ -904,6 +1014,7 @@ Examples:
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     sys.exit(asyncio.run(main()))

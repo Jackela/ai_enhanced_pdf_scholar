@@ -36,12 +36,18 @@ class TestOptimizer:
                 lines = len(content.splitlines())
                 fixture_count = content.count("@pytest.fixture")
 
-                conftest_analysis.append({
-                    "file": str(conftest.relative_to(self.project_root)),
-                    "lines": lines,
-                    "fixtures": fixture_count,
-                    "complexity": "high" if lines > 200 else "medium" if lines > 100 else "low"
-                })
+                conftest_analysis.append(
+                    {
+                        "file": str(conftest.relative_to(self.project_root)),
+                        "lines": lines,
+                        "fixtures": fixture_count,
+                        "complexity": (
+                            "high"
+                            if lines > 200
+                            else "medium" if lines > 100 else "low"
+                        ),
+                    }
+                )
             except Exception as e:
                 print(f"Warning: Could not analyze {conftest}: {e}")
 
@@ -49,7 +55,7 @@ class TestOptimizer:
             "total_test_files": len(test_files),
             "total_conftest_files": len(conftest_files),
             "conftest_analysis": conftest_analysis,
-            "test_categories": self._categorize_tests(test_files)
+            "test_categories": self._categorize_tests(test_files),
         }
 
         self.results["structure"] = structure
@@ -65,7 +71,7 @@ class TestOptimizer:
             "performance": 0,
             "repository": 0,
             "service": 0,
-            "other": 0
+            "other": 0,
         }
 
         for test_file in test_files:
@@ -100,7 +106,7 @@ class TestOptimizer:
             "unit": ["-m", "unit"],
             "database": ["-m", "database", "--maxfail=3"],
             "integration": ["-m", "integration", "--maxfail=2"],
-            "all": []
+            "all": [],
         }
 
         test_args = test_subsets.get(subset, test_subsets["smoke"])
@@ -109,19 +115,26 @@ class TestOptimizer:
         start_time = time.time()
 
         try:
-            cmd = ["python", "-m", "pytest", "--tb=no", "-v", "--disable-warnings"] + test_args
+            cmd = [
+                "python",
+                "-m",
+                "pytest",
+                "--tb=no",
+                "-v",
+                "--disable-warnings",
+            ] + test_args
             result = subprocess.run(
                 cmd,
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minute timeout
+                timeout=300,  # 5 minute timeout
             )
 
             execution_time = time.time() - start_time
 
             # Parse output for test results
-            output_lines = result.stdout.split('\n')
+            output_lines = result.stdout.split("\n")
             test_results = self._parse_pytest_output(output_lines)
 
             benchmark = {
@@ -132,8 +145,10 @@ class TestOptimizer:
                 "passed": test_results.get("passed", 0),
                 "failed": test_results.get("failed", 0),
                 "skipped": test_results.get("skipped", 0),
-                "tests_per_second": round(test_results.get("total", 0) / max(execution_time, 0.1), 2),
-                "stderr": result.stderr[:500] if result.stderr else None
+                "tests_per_second": round(
+                    test_results.get("total", 0) / max(execution_time, 0.1), 2
+                ),
+                "stderr": result.stderr[:500] if result.stderr else None,
             }
 
         except subprocess.TimeoutExpired:
@@ -142,14 +157,14 @@ class TestOptimizer:
                 "execution_time": 300,
                 "return_code": -1,
                 "error": "Timeout after 5 minutes",
-                "tests_per_second": 0
+                "tests_per_second": 0,
             }
         except Exception as e:
             benchmark = {
                 "subset": subset,
                 "error": str(e),
                 "execution_time": time.time() - start_time,
-                "tests_per_second": 0
+                "tests_per_second": 0,
             }
 
         self.results["benchmark"] = benchmark
@@ -189,7 +204,7 @@ class TestOptimizer:
         dependencies = {
             "common_imports": {},
             "fixture_dependencies": {},
-            "slow_imports": []
+            "slow_imports": [],
         }
 
         # Analyze imports in test files
@@ -200,8 +215,11 @@ class TestOptimizer:
                 content = test_file.read_text()
 
                 # Count imports
-                import_lines = [line.strip() for line in content.split('\n')
-                               if line.strip().startswith(('import ', 'from '))]
+                import_lines = [
+                    line.strip()
+                    for line in content.split("\n")
+                    if line.strip().startswith(("import ", "from "))
+                ]
 
                 for imp in import_lines:
                     if imp in dependencies["common_imports"]:
@@ -210,21 +228,30 @@ class TestOptimizer:
                         dependencies["common_imports"][imp] = 1
 
                 # Check for potentially slow imports
-                slow_patterns = ['llama', 'torch', 'transformers', 'tensorflow', 'requests']
+                slow_patterns = [
+                    "llama",
+                    "torch",
+                    "transformers",
+                    "tensorflow",
+                    "requests",
+                ]
                 for pattern in slow_patterns:
                     if pattern in content.lower():
-                        dependencies["slow_imports"].append({
-                            "file": str(test_file.relative_to(self.project_root)),
-                            "pattern": pattern
-                        })
+                        dependencies["slow_imports"].append(
+                            {
+                                "file": str(test_file.relative_to(self.project_root)),
+                                "pattern": pattern,
+                            }
+                        )
 
             except Exception as e:
                 print(f"Warning: Could not analyze imports in {test_file}: {e}")
 
         # Get top 10 most common imports
         dependencies["common_imports"] = dict(
-            sorted(dependencies["common_imports"].items(),
-                  key=lambda x: x[1], reverse=True)[:10]
+            sorted(
+                dependencies["common_imports"].items(), key=lambda x: x[1], reverse=True
+            )[:10]
         )
 
         self.results["dependencies"] = dependencies
@@ -243,50 +270,58 @@ class TestOptimizer:
             # Check conftest complexity
             for conftest in structure.get("conftest_analysis", []):
                 if conftest["complexity"] == "high":
-                    recommendations.append({
-                        "type": "fixture_optimization",
-                        "priority": "high",
-                        "title": "Simplify complex conftest.py",
-                        "description": f"{conftest['file']} has {conftest['lines']} lines and {conftest['fixtures']} fixtures. Consider splitting or optimizing.",
-                        "action": "Split large conftest.py files and optimize fixture scopes"
-                    })
+                    recommendations.append(
+                        {
+                            "type": "fixture_optimization",
+                            "priority": "high",
+                            "title": "Simplify complex conftest.py",
+                            "description": f"{conftest['file']} has {conftest['lines']} lines and {conftest['fixtures']} fixtures. Consider splitting or optimizing.",
+                            "action": "Split large conftest.py files and optimize fixture scopes",
+                        }
+                    )
 
             # Check test organization
             categories = structure.get("test_categories", {})
             if categories.get("other", 0) > categories.get("unit", 0):
-                recommendations.append({
-                    "type": "organization",
-                    "priority": "medium",
-                    "title": "Improve test organization",
-                    "description": f"Found {categories['other']} uncategorized tests vs {categories['unit']} unit tests",
-                    "action": "Reorganize tests into clear categories (unit, integration, e2e)"
-                })
+                recommendations.append(
+                    {
+                        "type": "organization",
+                        "priority": "medium",
+                        "title": "Improve test organization",
+                        "description": f"Found {categories['other']} uncategorized tests vs {categories['unit']} unit tests",
+                        "action": "Reorganize tests into clear categories (unit, integration, e2e)",
+                    }
+                )
 
         # Check performance issues
         if "benchmark" in self.results:
             benchmark = self.results["benchmark"]
 
             if benchmark.get("tests_per_second", 0) < 2:
-                recommendations.append({
-                    "type": "performance",
-                    "priority": "high",
-                    "title": "Improve test execution speed",
-                    "description": f"Tests running at {benchmark.get('tests_per_second', 0):.2f} tests/second",
-                    "action": "Optimize fixtures, use mocking, and implement connection pooling"
-                })
+                recommendations.append(
+                    {
+                        "type": "performance",
+                        "priority": "high",
+                        "title": "Improve test execution speed",
+                        "description": f"Tests running at {benchmark.get('tests_per_second', 0):.2f} tests/second",
+                        "action": "Optimize fixtures, use mocking, and implement connection pooling",
+                    }
+                )
 
         # Check dependency issues
         if "dependencies" in self.results:
             deps = self.results["dependencies"]
 
             if len(deps.get("slow_imports", [])) > 0:
-                recommendations.append({
-                    "type": "dependencies",
-                    "priority": "medium",
-                    "title": "Optimize slow imports",
-                    "description": f"Found {len(deps['slow_imports'])} files with potentially slow imports",
-                    "action": "Move slow imports inside test functions or use lazy loading"
-                })
+                recommendations.append(
+                    {
+                        "type": "dependencies",
+                        "priority": "medium",
+                        "title": "Optimize slow imports",
+                        "description": f"Found {len(deps['slow_imports'])} files with potentially slow imports",
+                        "action": "Move slow imports inside test functions or use lazy loading",
+                    }
+                )
 
         self.results["recommendations"] = recommendations
         return recommendations
@@ -303,12 +338,14 @@ class TestOptimizer:
         # Structure summary
         if "structure" in self.results:
             structure = self.results["structure"]
-            report_lines.extend([
-                f"- **Total Test Files**: {structure['total_test_files']}",
-                f"- **Conftest Files**: {structure['total_conftest_files']}",
-                "",
-                "### Test Categories",
-            ])
+            report_lines.extend(
+                [
+                    f"- **Total Test Files**: {structure['total_test_files']}",
+                    f"- **Conftest Files**: {structure['total_conftest_files']}",
+                    "",
+                    "### Test Categories",
+                ]
+            )
 
             for category, count in structure.get("test_categories", {}).items():
                 report_lines.append(f"- {category.title()}: {count}")
@@ -316,30 +353,30 @@ class TestOptimizer:
         # Performance summary
         if "benchmark" in self.results:
             benchmark = self.results["benchmark"]
-            report_lines.extend([
-                "",
-                "## Performance Benchmark",
-                f"- **Execution Time**: {benchmark.get('execution_time', 0)}s",
-                f"- **Tests/Second**: {benchmark.get('tests_per_second', 0):.2f}",
-                f"- **Success Rate**: {benchmark.get('passed', 0)}/{benchmark.get('total', 0)} tests passed",
-            ])
+            report_lines.extend(
+                [
+                    "",
+                    "## Performance Benchmark",
+                    f"- **Execution Time**: {benchmark.get('execution_time', 0)}s",
+                    f"- **Tests/Second**: {benchmark.get('tests_per_second', 0):.2f}",
+                    f"- **Success Rate**: {benchmark.get('passed', 0)}/{benchmark.get('total', 0)} tests passed",
+                ]
+            )
 
         # Recommendations
         if "recommendations" in self.results:
-            report_lines.extend([
-                "",
-                "## Optimization Recommendations",
-                ""
-            ])
+            report_lines.extend(["", "## Optimization Recommendations", ""])
 
             for i, rec in enumerate(self.results["recommendations"], 1):
-                report_lines.extend([
-                    f"### {i}. {rec['title']} ({rec['priority']} priority)",
-                    f"**Type**: {rec['type']}",
-                    f"**Description**: {rec['description']}",
-                    f"**Action**: {rec['action']}",
-                    ""
-                ])
+                report_lines.extend(
+                    [
+                        f"### {i}. {rec['title']} ({rec['priority']} priority)",
+                        f"**Type**: {rec['type']}",
+                        f"**Description**: {rec['description']}",
+                        f"**Action**: {rec['action']}",
+                        "",
+                    ]
+                )
 
         return "\n".join(report_lines)
 
@@ -347,14 +384,14 @@ class TestOptimizer:
         """Save optimization results to file."""
         results_file = self.project_root / output_file
 
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(self.results, f, indent=2, default=str)
 
         print(f"📄 Results saved to {results_file}")
 
         # Also save markdown report
-        report_file = self.project_root / output_file.replace('.json', '_report.md')
-        with open(report_file, 'w') as f:
+        report_file = self.project_root / output_file.replace(".json", "_report.md")
+        with open(report_file, "w") as f:
             f.write(self.generate_report())
 
         print(f"📊 Report saved to {report_file}")
@@ -363,12 +400,20 @@ class TestOptimizer:
 def main():
     """Main optimization script."""
     parser = argparse.ArgumentParser(description="Test Infrastructure Optimizer")
-    parser.add_argument("--benchmark", choices=["smoke", "unit", "database", "integration", "all"],
-                       default="smoke", help="Test subset to benchmark")
-    parser.add_argument("--output", default="test_optimization_results.json",
-                       help="Output file for results")
-    parser.add_argument("--skip-benchmark", action="store_true",
-                       help="Skip performance benchmarking")
+    parser.add_argument(
+        "--benchmark",
+        choices=["smoke", "unit", "database", "integration", "all"],
+        default="smoke",
+        help="Test subset to benchmark",
+    )
+    parser.add_argument(
+        "--output",
+        default="test_optimization_results.json",
+        help="Output file for results",
+    )
+    parser.add_argument(
+        "--skip-benchmark", action="store_true", help="Skip performance benchmarking"
+    )
 
     args = parser.parse_args()
 

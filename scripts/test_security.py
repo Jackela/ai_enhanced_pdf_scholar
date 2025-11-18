@@ -14,14 +14,14 @@ def run_command(cmd, cwd=None, timeout=60):
     """Run a command and return the result with timeout"""
     try:
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True,
-            cwd=cwd, timeout=timeout
+            cmd, shell=True, capture_output=True, text=True, cwd=cwd, timeout=timeout
         )
         return result.returncode == 0, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
         return False, "", f"Command timed out after {timeout}s"
     except Exception as e:
         return False, "", str(e)
+
 
 def test_python_security():
     """Test Python security with bandit (optimized)"""
@@ -38,6 +38,7 @@ def test_python_security():
     else:
         print(f"⚠️ Bandit found issues: {stderr}")
         return False
+
 
 def test_frontend_security():
     """Test frontend security with npm audit"""
@@ -58,7 +59,9 @@ def test_frontend_security():
                 high = meta.get("high", 0)
                 critical = meta.get("critical", 0)
                 if high > 0 or critical > 0:
-                    print(f"❌ Found {critical} critical and {high} high vulnerabilities")
+                    print(
+                        f"❌ Found {critical} critical and {high} high vulnerabilities"
+                    )
                     return False
                 else:
                     print("⚠️ Only moderate vulnerabilities found")
@@ -70,6 +73,7 @@ def test_frontend_security():
             print("⚠️ Could not parse audit results")
             return True
 
+
 def test_secrets():
     """Test for secrets in the codebase"""
     print("🔍 Testing for secrets...")
@@ -79,7 +83,7 @@ def test_secrets():
         r"password\s*=\s*['\"][^'\"]+['\"]",
         r"api_key\s*=\s*['\"][^'\"]+['\"]",
         r"secret\s*=\s*['\"][^'\"]+['\"]",
-        r"token\s*=\s*['\"][^'\"]+['\"]"
+        r"token\s*=\s*['\"][^'\"]+['\"]",
     ]
 
     # Check common files
@@ -88,18 +92,21 @@ def test_secrets():
         "backend/api/main.py",
         "src/**/*.py",
         "frontend/src/**/*.ts",
-        "frontend/src/**/*.tsx"
+        "frontend/src/**/*.tsx",
     ]
 
     # Simple grep-like check
     for pattern in patterns:
-        success, stdout, stderr = run_command(f"grep -r -i '{pattern}' --include='*.py' --include='*.ts' --include='*.tsx' .")
+        success, stdout, stderr = run_command(
+            f"grep -r -i '{pattern}' --include='*.py' --include='*.ts' --include='*.tsx' ."
+        )
         if success and stdout.strip():
             print(f"⚠️ Potential secret pattern found: {pattern}")
             return False
 
     print("✅ No obvious secrets found")
     return True
+
 
 def main():
     """Run all security tests"""
@@ -108,7 +115,7 @@ def main():
     tests = [
         ("Python Security", test_python_security),
         ("Frontend Security", test_frontend_security),
-        ("Secrets Check", test_secrets)
+        ("Secrets Check", test_secrets),
     ]
 
     results = []
@@ -132,6 +139,7 @@ def main():
     else:
         print("\n⚠️ Some security tests failed!")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

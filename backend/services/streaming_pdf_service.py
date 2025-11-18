@@ -43,10 +43,10 @@ class StreamingPDFProcessor:
 
         # Processing statistics
         self.processing_stats = {
-            'documents_processed': 0,
-            'total_pages_processed': 0,
-            'text_extraction_errors': 0,
-            'ocr_pages': 0,
+            "documents_processed": 0,
+            "total_pages_processed": 0,
+            "text_extraction_errors": 0,
+            "ocr_pages": 0,
         }
 
     async def process_pdf_streaming(
@@ -81,7 +81,7 @@ class StreamingPDFProcessor:
                     session.client_id,
                     str(session.session_id),
                     "processing",
-                    "Starting PDF text extraction..."
+                    "Starting PDF text extraction...",
                 )
 
             total_pages = 0
@@ -92,41 +92,43 @@ class StreamingPDFProcessor:
                 try:
                     # Extract text from page chunk
                     documents = await self._extract_text_from_chunk(
-                        page_chunk,
-                        session.filename,
-                        processed_pages
+                        page_chunk, session.filename, processed_pages
                     )
 
                     # Yield each document
                     for doc in documents:
                         yield doc
 
-                    processed_pages += len(page_chunk['pages'])
+                    processed_pages += len(page_chunk["pages"])
 
                     # Update progress
                     if total_pages == 0:
-                        total_pages = page_chunk.get('total_pages', processed_pages)
+                        total_pages = page_chunk.get("total_pages", processed_pages)
 
-                    progress_percentage = (processed_pages / total_pages) * 100 if total_pages > 0 else 0
+                    progress_percentage = (
+                        (processed_pages / total_pages) * 100 if total_pages > 0 else 0
+                    )
 
                     # Send progress update
                     if websocket_manager:
                         await websocket_manager.send_upload_progress(
                             session.client_id,
                             {
-                                'session_id': str(session.session_id),
-                                'status': 'processing',
-                                'stage': 'text_extraction',
-                                'progress_percentage': progress_percentage,
-                                'pages_processed': processed_pages,
-                                'total_pages': total_pages,
-                                'message': f'Extracting text from page {processed_pages} of {total_pages}...'
-                            }
+                                "session_id": str(session.session_id),
+                                "status": "processing",
+                                "stage": "text_extraction",
+                                "progress_percentage": progress_percentage,
+                                "pages_processed": processed_pages,
+                                "total_pages": total_pages,
+                                "message": f"Extracting text from page {processed_pages} of {total_pages}...",
+                            },
                         )
 
                     # Call progress callback if provided
                     if progress_callback:
-                        await progress_callback(processed_pages, total_pages, 'text_extraction')
+                        await progress_callback(
+                            processed_pages, total_pages, "text_extraction"
+                        )
 
                     logger.debug(
                         f"Processed {processed_pages}/{total_pages} pages "
@@ -135,25 +137,25 @@ class StreamingPDFProcessor:
 
                 except Exception as e:
                     logger.error(f"Error processing page chunk {processed_pages}: {e}")
-                    self.processing_stats['text_extraction_errors'] += 1
+                    self.processing_stats["text_extraction_errors"] += 1
 
                     # Send error update but continue processing
                     if websocket_manager:
                         await websocket_manager.send_upload_progress(
                             session.client_id,
                             {
-                                'session_id': str(session.session_id),
-                                'status': 'processing',
-                                'stage': 'text_extraction',
-                                'warning': f'Error processing pages around {processed_pages}: {str(e)}'
-                            }
+                                "session_id": str(session.session_id),
+                                "status": "processing",
+                                "stage": "text_extraction",
+                                "warning": f"Error processing pages around {processed_pages}: {str(e)}",
+                            },
                         )
 
                     continue
 
             # Update statistics
-            self.processing_stats['documents_processed'] += 1
-            self.processing_stats['total_pages_processed'] += processed_pages
+            self.processing_stats["documents_processed"] += 1
+            self.processing_stats["total_pages_processed"] += processed_pages
 
             logger.info(
                 f"Completed streaming PDF processing: {session.filename} "
@@ -168,15 +170,12 @@ class StreamingPDFProcessor:
                 await websocket_manager.send_upload_error(
                     session.client_id,
                     str(session.session_id),
-                    f"PDF processing failed: {str(e)}"
+                    f"PDF processing failed: {str(e)}",
                 )
 
             raise RuntimeError(f"PDF processing failed: {str(e)}") from e
 
-    async def _process_pdf_chunks(
-        self,
-        pdf_path: str
-    ) -> AsyncGenerator[dict, None]:
+    async def _process_pdf_chunks(self, pdf_path: str) -> AsyncGenerator[dict, None]:
         """
         Process PDF file in chunks to minimize memory usage.
 
@@ -202,25 +201,29 @@ class StreamingPDFProcessor:
                 for page_idx in range(chunk_start, chunk_end):
                     try:
                         page_doc = documents[page_idx]
-                        chunk_pages.append({
-                            'page_number': page_idx + 1,
-                            'text': page_doc.text,
-                            'metadata': page_doc.metadata or {},
-                        })
+                        chunk_pages.append(
+                            {
+                                "page_number": page_idx + 1,
+                                "text": page_doc.text,
+                                "metadata": page_doc.metadata or {},
+                            }
+                        )
                     except Exception as e:
                         logger.warning(f"Error processing page {page_idx + 1}: {e}")
                         # Add empty page to maintain page numbering
-                        chunk_pages.append({
-                            'page_number': page_idx + 1,
-                            'text': '',
-                            'metadata': {'error': str(e)},
-                        })
+                        chunk_pages.append(
+                            {
+                                "page_number": page_idx + 1,
+                                "text": "",
+                                "metadata": {"error": str(e)},
+                            }
+                        )
 
                 yield {
-                    'pages': chunk_pages,
-                    'chunk_start': chunk_start,
-                    'chunk_end': chunk_end,
-                    'total_pages': total_pages,
+                    "pages": chunk_pages,
+                    "chunk_start": chunk_start,
+                    "chunk_end": chunk_end,
+                    "total_pages": total_pages,
                 }
 
                 # Allow other tasks to run
@@ -250,13 +253,13 @@ class StreamingPDFProcessor:
         documents = []
 
         try:
-            pages = page_chunk['pages']
+            pages = page_chunk["pages"]
 
             for page_info in pages:
                 try:
-                    page_number = page_info['page_number']
-                    text_content = page_info.get('text', '').strip()
-                    page_metadata = page_info.get('metadata', {})
+                    page_number = page_info["page_number"]
+                    text_content = page_info.get("text", "").strip()
+                    page_metadata = page_info.get("metadata", {})
 
                     # Skip empty pages
                     if not text_content:
@@ -265,15 +268,15 @@ class StreamingPDFProcessor:
 
                     # Limit text length per page
                     if len(text_content) > self.max_text_length_per_page:
-                        text_content = text_content[:self.max_text_length_per_page]
+                        text_content = text_content[: self.max_text_length_per_page]
                         logger.debug(f"Truncated long text on page {page_number}")
 
                     # Create document metadata
                     doc_metadata = {
-                        'filename': filename,
-                        'page_number': page_number,
-                        'source': 'streaming_pdf_processor',
-                        'processing_order': processed_pages + len(documents),
+                        "filename": filename,
+                        "page_number": page_number,
+                        "source": "streaming_pdf_processor",
+                        "processing_order": processed_pages + len(documents),
                     }
 
                     # Add any additional metadata from PDF
@@ -294,7 +297,9 @@ class StreamingPDFProcessor:
                     )
 
                 except Exception as e:
-                    logger.error(f"Error creating document for page {page_info.get('page_number', '?')}: {e}")
+                    logger.error(
+                        f"Error creating document for page {page_info.get('page_number', '?')}: {e}"
+                    )
                     continue
 
         except Exception as e:
@@ -315,47 +320,49 @@ class StreamingPDFProcessor:
         """
         try:
             info = {
-                'page_count': None,
-                'file_size': 0,
-                'is_encrypted': False,
-                'metadata': {},
-                'processing_estimate': {},
+                "page_count": None,
+                "file_size": 0,
+                "is_encrypted": False,
+                "metadata": {},
+                "processing_estimate": {},
             }
 
             # Get file size
             pdf_file = Path(pdf_path)
-            info['file_size'] = pdf_file.stat().st_size
+            info["file_size"] = pdf_file.stat().st_size
 
             # Quick PDF analysis
             try:
                 documents = self.pdf_reader.load_data(file=pdf_file)
-                info['page_count'] = len(documents)
+                info["page_count"] = len(documents)
 
                 # Estimate processing time and memory usage
-                info['processing_estimate'] = {
-                    'estimated_chunks': (len(documents) + self.max_pages_per_chunk - 1) // self.max_pages_per_chunk,
-                    'estimated_memory_mb': min(50, len(documents) * 2),  # Rough estimate
-                    'estimated_duration_seconds': len(documents) * 0.5,  # Rough estimate
+                info["processing_estimate"] = {
+                    "estimated_chunks": (len(documents) + self.max_pages_per_chunk - 1)
+                    // self.max_pages_per_chunk,
+                    "estimated_memory_mb": min(
+                        50, len(documents) * 2
+                    ),  # Rough estimate
+                    "estimated_duration_seconds": len(documents)
+                    * 0.5,  # Rough estimate
                 }
 
                 # Extract basic metadata if available
                 if documents and documents[0].metadata:
-                    info['metadata'] = documents[0].metadata
+                    info["metadata"] = documents[0].metadata
 
             except Exception as e:
                 logger.warning(f"Could not analyze PDF structure: {e}")
-                info['error'] = str(e)
+                info["error"] = str(e)
 
             return info
 
         except Exception as e:
             logger.error(f"Failed to get PDF info: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     async def validate_pdf_processing_readiness(
-        self,
-        pdf_path: str,
-        available_memory_mb: float
+        self, pdf_path: str, available_memory_mb: float
     ) -> tuple[bool, list[str], list[str]]:
         """
         Validate if PDF is ready for streaming processing.
@@ -384,12 +391,14 @@ class StreamingPDFProcessor:
             # Get PDF info
             pdf_info = await self.get_pdf_info_streaming(pdf_path)
 
-            if 'error' in pdf_info:
+            if "error" in pdf_info:
                 errors.append(f"Cannot process PDF: {pdf_info['error']}")
                 return False, errors, warnings
 
             # Check memory requirements
-            estimated_memory = pdf_info.get('processing_estimate', {}).get('estimated_memory_mb', 0)
+            estimated_memory = pdf_info.get("processing_estimate", {}).get(
+                "estimated_memory_mb", 0
+            )
             if estimated_memory > available_memory_mb * 0.8:
                 warnings.append(
                     f"Estimated memory usage ({estimated_memory}MB) is high "
@@ -397,17 +406,21 @@ class StreamingPDFProcessor:
                 )
 
             # Check page count
-            page_count = pdf_info.get('page_count', 0)
+            page_count = pdf_info.get("page_count", 0)
             if page_count == 0:
                 errors.append("PDF appears to have no pages")
                 return False, errors, warnings
             elif page_count > 1000:
-                warnings.append(f"Large PDF with {page_count} pages may take significant time to process")
+                warnings.append(
+                    f"Large PDF with {page_count} pages may take significant time to process"
+                )
 
             # Check file size
-            file_size_mb = pdf_info.get('file_size', 0) / (1024 * 1024)
+            file_size_mb = pdf_info.get("file_size", 0) / (1024 * 1024)
             if file_size_mb > 500:  # > 500MB
-                warnings.append(f"Large file size ({file_size_mb:.1f}MB) may impact processing speed")
+                warnings.append(
+                    f"Large file size ({file_size_mb:.1f}MB) may impact processing speed"
+                )
 
             return True, errors, warnings
 
@@ -422,8 +435,8 @@ class StreamingPDFProcessor:
     def reset_stats(self):
         """Reset processing statistics."""
         self.processing_stats = {
-            'documents_processed': 0,
-            'total_pages_processed': 0,
-            'text_extraction_errors': 0,
-            'ocr_pages': 0,
+            "documents_processed": 0,
+            "total_pages_processed": 0,
+            "text_extraction_errors": 0,
+            "ocr_pages": 0,
         }

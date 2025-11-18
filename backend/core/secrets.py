@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class SecretType(str, Enum):
     """Types of secrets managed by the system."""
+
     DATABASE_URL = "database_url"
     API_KEY = "api_key"
     JWT_PRIVATE_KEY = "jwt_private_key"
@@ -39,6 +40,7 @@ class SecretType(str, Enum):
 
 class SecretProvider(str, Enum):
     """Available secret storage providers."""
+
     VAULT = "vault"
     AWS_SECRETS_MANAGER = "aws_secrets_manager"
     LOCAL_ENCRYPTED = "local_encrypted"
@@ -48,6 +50,7 @@ class SecretProvider(str, Enum):
 @dataclass
 class SecretMetadata:
     """Metadata for a secret."""
+
     name: str
     type: SecretType
     version: int = 1
@@ -62,6 +65,7 @@ class SecretMetadata:
 
 class SecretConfig(BaseModel):
     """Configuration for the secrets management system."""
+
     # Provider configuration
     primary_provider: SecretProvider = SecretProvider.LOCAL_ENCRYPTED
     fallback_providers: list[SecretProvider] = Field(default_factory=list)
@@ -84,8 +88,12 @@ class SecretConfig(BaseModel):
     aws_secret_prefix: str = Field(default="ai-pdf-scholar")
 
     # Local encrypted storage configuration
-    local_storage_path: Path = Field(default=Path.home() / ".ai_pdf_scholar" / "secrets")
-    local_encryption_key_path: Path = Field(default=Path.home() / ".ai_pdf_scholar" / "master.key")
+    local_storage_path: Path = Field(
+        default=Path.home() / ".ai_pdf_scholar" / "secrets"
+    )
+    local_encryption_key_path: Path = Field(
+        default=Path.home() / ".ai_pdf_scholar" / "master.key"
+    )
 
     # Security settings
     enable_audit_logging: bool = Field(default=True)
@@ -99,9 +107,9 @@ class SecretConfig(BaseModel):
     max_retry_attempts: int = Field(default=3)
     retry_delay_seconds: int = Field(default=1)
 
-    @field_validator('environment')
+    @field_validator("environment")
     def validate_environment(cls, v):
-        allowed = ['development', 'staging', 'production', 'test']
+        allowed = ["development", "staging", "production", "test"]
         if v not in allowed:
             raise ValueError(f"Environment must be one of {allowed}")
         return v
@@ -147,7 +155,9 @@ class SecretProviderInterface(ABC):
         pass
 
     @abstractmethod
-    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
+    def set_secret(
+        self, key: str, value: str, metadata: SecretMetadata | None = None
+    ) -> bool:
         """Store a secret value."""
         pass
 
@@ -190,8 +200,12 @@ class VaultProvider(SecretProviderInterface):
         try:
             self.client = hvac.Client(
                 url=self.config.vault_url,
-                token=self.config.vault_token.get_secret_value() if self.config.vault_token else None,
-                namespace=self.config.vault_namespace
+                token=(
+                    self.config.vault_token.get_secret_value()
+                    if self.config.vault_token
+                    else None
+                ),
+                namespace=self.config.vault_namespace,
             )
 
             if not self.client.is_authenticated():
@@ -215,40 +229,40 @@ class VaultProvider(SecretProviderInterface):
 
             # Read secret from KV v2 engine
             response = self.client.secrets.kv.v2.read_secret_version(
-                path=path,
-                version=version,
-                mount_point=self.config.vault_mount_point
+                path=path, version=version, mount_point=self.config.vault_mount_point
             )
 
-            if response and 'data' in response and 'data' in response['data']:
-                return response['data']['data'].get('value')
+            if response and "data" in response and "data" in response["data"]:
+                return response["data"]["data"].get("value")
 
             return None
         except Exception as e:
             logger.error(f"Failed to get secret from Vault: {e}")
             return None
 
-    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
+    def set_secret(
+        self, key: str, value: str, metadata: SecretMetadata | None = None
+    ) -> bool:
         """Store a secret in Vault."""
         try:
             path = self._get_secret_path(key)
 
-            secret_data = {'value': value}
+            secret_data = {"value": value}
             if metadata:
-                secret_data['metadata'] = {
-                    'type': metadata.type.value,
-                    'version': metadata.version,
-                    'created_at': metadata.created_at.isoformat(),
-                    'updated_at': metadata.updated_at.isoformat(),
-                    'expires_at': metadata.expires_at.isoformat() if metadata.expires_at else None,
-                    'tags': json.dumps(metadata.tags),
-                    'description': metadata.description
+                secret_data["metadata"] = {
+                    "type": metadata.type.value,
+                    "version": metadata.version,
+                    "created_at": metadata.created_at.isoformat(),
+                    "updated_at": metadata.updated_at.isoformat(),
+                    "expires_at": (
+                        metadata.expires_at.isoformat() if metadata.expires_at else None
+                    ),
+                    "tags": json.dumps(metadata.tags),
+                    "description": metadata.description,
                 }
 
             self.client.secrets.kv.v2.create_or_update_secret(
-                path=path,
-                secret=secret_data,
-                mount_point=self.config.vault_mount_point
+                path=path, secret=secret_data, mount_point=self.config.vault_mount_point
             )
 
             logger.info(f"Successfully stored secret in Vault: {key}")
@@ -262,8 +276,7 @@ class VaultProvider(SecretProviderInterface):
         try:
             path = self._get_secret_path(key)
             self.client.secrets.kv.v2.delete_metadata_and_all_versions(
-                path=path,
-                mount_point=self.config.vault_mount_point
+                path=path, mount_point=self.config.vault_mount_point
             )
             logger.info(f"Successfully deleted secret from Vault: {key}")
             return True
@@ -279,12 +292,11 @@ class VaultProvider(SecretProviderInterface):
                 base_path = f"{base_path}/{prefix}"
 
             response = self.client.secrets.kv.v2.list_secrets(
-                path=base_path,
-                mount_point=self.config.vault_mount_point
+                path=base_path, mount_point=self.config.vault_mount_point
             )
 
-            if response and 'data' in response and 'keys' in response['data']:
-                return response['data']['keys']
+            if response and "data" in response and "keys" in response["data"]:
+                return response["data"]["keys"]
 
             return []
         except Exception as e:
@@ -301,19 +313,28 @@ class VaultProvider(SecretProviderInterface):
         try:
             path = self._get_secret_path(key)
             response = self.client.secrets.kv.v2.read_secret_metadata(
-                path=path,
-                mount_point=self.config.vault_mount_point
+                path=path, mount_point=self.config.vault_mount_point
             )
 
-            if response and 'data' in response:
+            if response and "data" in response:
                 # Parse metadata from custom_metadata if available
-                custom_metadata = response['data'].get('custom_metadata', {})
+                custom_metadata = response["data"].get("custom_metadata", {})
                 return SecretMetadata(
                     name=key,
-                    type=SecretType(custom_metadata.get('type', SecretType.API_KEY.value)),
-                    version=response['data'].get('current_version', 1),
-                    created_at=datetime.fromisoformat(response['data'].get('created_time', datetime.utcnow().isoformat())),
-                    updated_at=datetime.fromisoformat(response['data'].get('updated_time', datetime.utcnow().isoformat()))
+                    type=SecretType(
+                        custom_metadata.get("type", SecretType.API_KEY.value)
+                    ),
+                    version=response["data"].get("current_version", 1),
+                    created_at=datetime.fromisoformat(
+                        response["data"].get(
+                            "created_time", datetime.utcnow().isoformat()
+                        )
+                    ),
+                    updated_at=datetime.fromisoformat(
+                        response["data"].get(
+                            "updated_time", datetime.utcnow().isoformat()
+                        )
+                    ),
                 )
 
             return None
@@ -342,14 +363,16 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
         try:
             if self.config.aws_access_key_id and self.config.aws_secret_access_key:
                 return boto3_client(
-                    'secretsmanager',
+                    "secretsmanager",
                     region_name=self.config.aws_region,
                     aws_access_key_id=self.config.aws_access_key_id.get_secret_value(),
-                    aws_secret_access_key=self.config.aws_secret_access_key.get_secret_value()
+                    aws_secret_access_key=self.config.aws_secret_access_key.get_secret_value(),
                 )
             else:
                 # Use default credentials (IAM role, environment, etc.)
-                return boto3_client('secretsmanager', region_name=self.config.aws_region)
+                return boto3_client(
+                    "secretsmanager", region_name=self.config.aws_region
+                )
         except Exception as e:
             logger.error(f"Failed to create AWS Secrets Manager client: {e}")
             raise
@@ -363,58 +386,63 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
         try:
             secret_name = self._get_secret_name(key)
 
-            kwargs = {'SecretId': secret_name}
+            kwargs = {"SecretId": secret_name}
             if version:
-                kwargs['VersionId'] = version
+                kwargs["VersionId"] = version
 
             response = self.client.get_secret_value(**kwargs)
 
-            if 'SecretString' in response:
-                secret_data = json.loads(response['SecretString'])
-                return secret_data.get('value')
-            elif 'SecretBinary' in response:
-                return base64.b64decode(response['SecretBinary']).decode('utf-8')
+            if "SecretString" in response:
+                secret_data = json.loads(response["SecretString"])
+                return secret_data.get("value")
+            elif "SecretBinary" in response:
+                return base64.b64decode(response["SecretBinary"]).decode("utf-8")
 
             return None
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
                 logger.debug(f"Secret not found in AWS: {key}")
             else:
                 logger.error(f"Failed to get secret from AWS: {e}")
             return None
 
-    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
+    def set_secret(
+        self, key: str, value: str, metadata: SecretMetadata | None = None
+    ) -> bool:
         """Store a secret in AWS Secrets Manager."""
         try:
             secret_name = self._get_secret_name(key)
 
-            secret_data = {'value': value}
+            secret_data = {"value": value}
             if metadata:
-                secret_data['metadata'] = {
-                    'type': metadata.type.value,
-                    'version': metadata.version,
-                    'created_at': metadata.created_at.isoformat(),
-                    'expires_at': metadata.expires_at.isoformat() if metadata.expires_at else None
+                secret_data["metadata"] = {
+                    "type": metadata.type.value,
+                    "version": metadata.version,
+                    "created_at": metadata.created_at.isoformat(),
+                    "expires_at": (
+                        metadata.expires_at.isoformat() if metadata.expires_at else None
+                    ),
                 }
 
             # Try to update existing secret first
             try:
                 self.client.update_secret(
-                    SecretId=secret_name,
-                    SecretString=json.dumps(secret_data)
+                    SecretId=secret_name, SecretString=json.dumps(secret_data)
                 )
             except ClientError as e:
-                if e.response['Error']['Code'] == 'ResourceNotFoundException':
+                if e.response["Error"]["Code"] == "ResourceNotFoundException":
                     # Create new secret
                     tags = []
                     if metadata and metadata.tags:
-                        tags = [{'Key': k, 'Value': v} for k, v in metadata.tags.items()]
+                        tags = [
+                            {"Key": k, "Value": v} for k, v in metadata.tags.items()
+                        ]
 
                     self.client.create_secret(
                         Name=secret_name,
                         SecretString=json.dumps(secret_data),
                         Tags=tags,
-                        Description=metadata.description if metadata else None
+                        Description=metadata.description if metadata else None,
                     )
                 else:
                     raise
@@ -431,7 +459,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
             secret_name = self._get_secret_name(key)
             self.client.delete_secret(
                 SecretId=secret_name,
-                ForceDeleteWithoutRecovery=False  # Allow recovery within grace period
+                ForceDeleteWithoutRecovery=False,  # Allow recovery within grace period
             )
             logger.info(f"Successfully deleted secret from AWS: {key}")
             return True
@@ -447,13 +475,13 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
                 base_prefix = f"{base_prefix}/{prefix}"
 
             secrets = []
-            paginator = self.client.get_paginator('list_secrets')
+            paginator = self.client.get_paginator("list_secrets")
 
             for page in paginator.paginate():
-                for secret in page['SecretList']:
-                    if secret['Name'].startswith(base_prefix):
+                for secret in page["SecretList"]:
+                    if secret["Name"].startswith(base_prefix):
                         # Extract the key part from the full name
-                        key = secret['Name'].replace(f"{base_prefix}/", "")
+                        key = secret["Name"].replace(f"{base_prefix}/", "")
                         secrets.append(key)
 
             return secrets
@@ -468,8 +496,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
 
             # Put new version of secret
             self.client.put_secret_value(
-                SecretId=secret_name,
-                SecretString=json.dumps({'value': new_value})
+                SecretId=secret_name, SecretString=json.dumps({"value": new_value})
             )
 
             logger.info(f"Successfully rotated secret in AWS: {key}")
@@ -484,17 +511,17 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
             secret_name = self._get_secret_name(key)
             response = self.client.describe_secret(SecretId=secret_name)
 
-            tags = {tag['Key']: tag['Value'] for tag in response.get('Tags', [])}
+            tags = {tag["Key"]: tag["Value"] for tag in response.get("Tags", [])}
 
             return SecretMetadata(
                 name=key,
                 type=SecretType.API_KEY,  # Default, can be enhanced with tags
-                version=len(response.get('VersionIdsToStages', {})),
-                created_at=response.get('CreatedDate', datetime.utcnow()),
-                updated_at=response.get('LastChangedDate', datetime.utcnow()),
-                last_rotated=response.get('LastRotatedDate'),
+                version=len(response.get("VersionIdsToStages", {})),
+                created_at=response.get("CreatedDate", datetime.utcnow()),
+                updated_at=response.get("LastChangedDate", datetime.utcnow()),
+                last_rotated=response.get("LastRotatedDate"),
                 tags=tags,
-                description=response.get('Description')
+                description=response.get("Description"),
             )
         except Exception as e:
             logger.error(f"Failed to get secret metadata from AWS: {e}")
@@ -529,16 +556,16 @@ class LocalEncryptedProvider(SecretProviderInterface):
         key_path.parent.mkdir(parents=True, exist_ok=True)
 
         if key_path.exists():
-            with open(key_path, 'rb') as f:
+            with open(key_path, "rb") as f:
                 key = f.read()
         else:
             # Generate new key
             key = Fernet.generate_key()
-            with open(key_path, 'wb') as f:
+            with open(key_path, "wb") as f:
                 f.write(key)
 
             # Set restrictive permissions (Unix-like systems)
-            if os.name != 'nt':
+            if os.name != "nt":
                 os.chmod(key_path, 0o600)
 
             logger.info("Generated new master encryption key")
@@ -551,11 +578,11 @@ class LocalEncryptedProvider(SecretProviderInterface):
             return {}
 
         try:
-            with open(self._secrets_file, 'rb') as f:
+            with open(self._secrets_file, "rb") as f:
                 encrypted_data = f.read()
 
             decrypted_data = self._fernet.decrypt(encrypted_data)
-            return json.loads(decrypted_data.decode('utf-8'))
+            return json.loads(decrypted_data.decode("utf-8"))
         except Exception as e:
             logger.error(f"Failed to load secrets: {e}")
             return {}
@@ -564,13 +591,13 @@ class LocalEncryptedProvider(SecretProviderInterface):
         """Encrypt and save secrets to file."""
         try:
             json_data = json.dumps(secrets, indent=2)
-            encrypted_data = self._fernet.encrypt(json_data.encode('utf-8'))
+            encrypted_data = self._fernet.encrypt(json_data.encode("utf-8"))
 
-            with open(self._secrets_file, 'wb') as f:
+            with open(self._secrets_file, "wb") as f:
                 f.write(encrypted_data)
 
             # Set restrictive permissions (Unix-like systems)
-            if os.name != 'nt':
+            if os.name != "nt":
                 os.chmod(self._secrets_file, 0o600)
 
             return True
@@ -593,11 +620,11 @@ class LocalEncryptedProvider(SecretProviderInterface):
     def _save_metadata(self, metadata: dict[str, dict]) -> bool:
         """Save metadata to file."""
         try:
-            with open(self._metadata_file, 'w') as f:
+            with open(self._metadata_file, "w") as f:
                 json.dump(metadata, f, indent=2, default=str)
 
             # Set restrictive permissions (Unix-like systems)
-            if os.name != 'nt':
+            if os.name != "nt":
                 os.chmod(self._metadata_file, 0o600)
 
             return True
@@ -610,7 +637,9 @@ class LocalEncryptedProvider(SecretProviderInterface):
         secrets = self._load_secrets()
         return secrets.get(key)
 
-    def set_secret(self, key: str, value: str, metadata: SecretMetadata | None = None) -> bool:
+    def set_secret(
+        self, key: str, value: str, metadata: SecretMetadata | None = None
+    ) -> bool:
         """Store a secret in encrypted local storage."""
         secrets = self._load_secrets()
         secrets[key] = value
@@ -618,15 +647,19 @@ class LocalEncryptedProvider(SecretProviderInterface):
         if metadata:
             all_metadata = self._load_metadata()
             all_metadata[key] = {
-                'type': metadata.type.value,
-                'version': metadata.version,
-                'created_at': metadata.created_at.isoformat(),
-                'updated_at': metadata.updated_at.isoformat(),
-                'expires_at': metadata.expires_at.isoformat() if metadata.expires_at else None,
-                'rotation_interval_days': metadata.rotation_interval_days,
-                'last_rotated': metadata.last_rotated.isoformat() if metadata.last_rotated else None,
-                'tags': metadata.tags,
-                'description': metadata.description
+                "type": metadata.type.value,
+                "version": metadata.version,
+                "created_at": metadata.created_at.isoformat(),
+                "updated_at": metadata.updated_at.isoformat(),
+                "expires_at": (
+                    metadata.expires_at.isoformat() if metadata.expires_at else None
+                ),
+                "rotation_interval_days": metadata.rotation_interval_days,
+                "last_rotated": (
+                    metadata.last_rotated.isoformat() if metadata.last_rotated else None
+                ),
+                "tags": metadata.tags,
+                "description": metadata.description,
             }
             self._save_metadata(all_metadata)
 
@@ -667,9 +700,9 @@ class LocalEncryptedProvider(SecretProviderInterface):
         """Rotate a secret in local storage."""
         metadata_dict = self._load_metadata()
         if key in metadata_dict:
-            metadata_dict[key]['version'] = metadata_dict[key].get('version', 1) + 1
-            metadata_dict[key]['updated_at'] = datetime.utcnow().isoformat()
-            metadata_dict[key]['last_rotated'] = datetime.utcnow().isoformat()
+            metadata_dict[key]["version"] = metadata_dict[key].get("version", 1) + 1
+            metadata_dict[key]["updated_at"] = datetime.utcnow().isoformat()
+            metadata_dict[key]["last_rotated"] = datetime.utcnow().isoformat()
             self._save_metadata(metadata_dict)
 
         return self.set_secret(key, new_value)
@@ -681,15 +714,31 @@ class LocalEncryptedProvider(SecretProviderInterface):
             meta = metadata_dict[key]
             return SecretMetadata(
                 name=key,
-                type=SecretType(meta.get('type', SecretType.API_KEY.value)),
-                version=meta.get('version', 1),
-                created_at=datetime.fromisoformat(meta['created_at']) if meta.get('created_at') else datetime.utcnow(),
-                updated_at=datetime.fromisoformat(meta['updated_at']) if meta.get('updated_at') else datetime.utcnow(),
-                expires_at=datetime.fromisoformat(meta['expires_at']) if meta.get('expires_at') else None,
-                rotation_interval_days=meta.get('rotation_interval_days'),
-                last_rotated=datetime.fromisoformat(meta['last_rotated']) if meta.get('last_rotated') else None,
-                tags=meta.get('tags', {}),
-                description=meta.get('description')
+                type=SecretType(meta.get("type", SecretType.API_KEY.value)),
+                version=meta.get("version", 1),
+                created_at=(
+                    datetime.fromisoformat(meta["created_at"])
+                    if meta.get("created_at")
+                    else datetime.utcnow()
+                ),
+                updated_at=(
+                    datetime.fromisoformat(meta["updated_at"])
+                    if meta.get("updated_at")
+                    else datetime.utcnow()
+                ),
+                expires_at=(
+                    datetime.fromisoformat(meta["expires_at"])
+                    if meta.get("expires_at")
+                    else None
+                ),
+                rotation_interval_days=meta.get("rotation_interval_days"),
+                last_rotated=(
+                    datetime.fromisoformat(meta["last_rotated"])
+                    if meta.get("last_rotated")
+                    else None
+                ),
+                tags=meta.get("tags", {}),
+                description=meta.get("description"),
             )
         return None
 
@@ -731,11 +780,17 @@ class SecretsManager:
         for provider_type in self.config.fallback_providers:
             if provider_type not in self._providers:
                 try:
-                    self._providers[provider_type] = self._create_provider(provider_type)
+                    self._providers[provider_type] = self._create_provider(
+                        provider_type
+                    )
                 except Exception as e:
-                    logger.warning(f"Failed to initialize fallback provider {provider_type}: {e}")
+                    logger.warning(
+                        f"Failed to initialize fallback provider {provider_type}: {e}"
+                    )
 
-    def _create_provider(self, provider_type: SecretProvider) -> SecretProviderInterface:
+    def _create_provider(
+        self, provider_type: SecretProvider
+    ) -> SecretProviderInterface:
         """Create a provider instance based on type."""
         if provider_type == SecretProvider.VAULT:
             return VaultProvider(self.config)
@@ -753,18 +808,18 @@ class SecretsManager:
         key: str,
         success: bool,
         provider: SecretProvider | None = None,
-        error: str | None = None
+        error: str | None = None,
     ):
         """Log an operation for audit purposes."""
         if self.config.enable_audit_logging:
             log_entry = {
-                'timestamp': datetime.utcnow().isoformat(),
-                'operation': operation,
-                'key': key,
-                'success': success,
-                'provider': provider.value if provider else None,
-                'environment': self.config.environment,
-                'error': error
+                "timestamp": datetime.utcnow().isoformat(),
+                "operation": operation,
+                "key": key,
+                "success": success,
+                "provider": provider.value if provider else None,
+                "environment": self.config.environment,
+                "error": error,
             }
             self._audit_log.append(log_entry)
 
@@ -781,7 +836,9 @@ class SecretsManager:
 
         if key in self._cache:
             value, cached_at = self._cache[key]
-            if (datetime.utcnow() - cached_at).total_seconds() < self.config.cache_ttl_seconds:
+            if (
+                datetime.utcnow() - cached_at
+            ).total_seconds() < self.config.cache_ttl_seconds:
                 return value
             else:
                 del self._cache[key]
@@ -798,7 +855,7 @@ class SecretsManager:
         key: str,
         secret_type: SecretType | None = None,
         use_cache: bool = True,
-        version: str | None = None
+        version: str | None = None,
     ) -> str | None:
         """
         Retrieve a secret with fallback support.
@@ -824,7 +881,9 @@ class SecretsManager:
             value = primary_provider.get_secret(key, version)
             if value:
                 self._set_cache(key, value)
-                self._audit_log_operation('get', key, True, self.config.primary_provider)
+                self._audit_log_operation(
+                    "get", key, True, self.config.primary_provider
+                )
                 return value
 
         # Try fallback providers
@@ -836,8 +895,10 @@ class SecretsManager:
                 value = provider.get_secret(key, version)
                 if value:
                     self._set_cache(key, value)
-                    self._audit_log_operation('get', key, True, provider_type)
-                    logger.warning(f"Retrieved secret from fallback provider: {provider_type}")
+                    self._audit_log_operation("get", key, True, provider_type)
+                    logger.warning(
+                        f"Retrieved secret from fallback provider: {provider_type}"
+                    )
                     return value
 
         # Try environment variables as last resort
@@ -845,10 +906,12 @@ class SecretsManager:
         env_value = os.getenv(env_key)
         if env_value:
             self._set_cache(key, env_value)
-            self._audit_log_operation('get', key, True, SecretProvider.ENVIRONMENT)
+            self._audit_log_operation("get", key, True, SecretProvider.ENVIRONMENT)
             return env_value
 
-        self._audit_log_operation('get', key, False, error="Secret not found in any provider")
+        self._audit_log_operation(
+            "get", key, False, error="Secret not found in any provider"
+        )
         return None
 
     def set_secret(
@@ -859,7 +922,7 @@ class SecretsManager:
         rotation_interval_days: int | None = None,
         expires_in_days: int | None = None,
         tags: dict[str, str] | None = None,
-        description: str | None = None
+        description: str | None = None,
     ) -> bool:
         """
         Store a secret in the primary provider.
@@ -880,15 +943,19 @@ class SecretsManager:
             name=key,
             type=secret_type,
             rotation_interval_days=rotation_interval_days,
-            expires_at=datetime.utcnow() + timedelta(days=expires_in_days) if expires_in_days else None,
+            expires_at=(
+                datetime.utcnow() + timedelta(days=expires_in_days)
+                if expires_in_days
+                else None
+            ),
             tags=tags or {},
-            description=description
+            description=description,
         )
 
         primary_provider = self._providers.get(self.config.primary_provider)
         if primary_provider:
             success = primary_provider.set_secret(key, value, metadata)
-            self._audit_log_operation('set', key, success, self.config.primary_provider)
+            self._audit_log_operation("set", key, success, self.config.primary_provider)
 
             if success:
                 # Clear cache for this key
@@ -897,7 +964,9 @@ class SecretsManager:
 
             return success
 
-        self._audit_log_operation('set', key, False, error="Primary provider not available")
+        self._audit_log_operation(
+            "set", key, False, error="Primary provider not available"
+        )
         return False
 
     def rotate_secret(self, key: str, new_value: str) -> bool:
@@ -914,7 +983,9 @@ class SecretsManager:
         primary_provider = self._providers.get(self.config.primary_provider)
         if primary_provider:
             success = primary_provider.rotate_secret(key, new_value)
-            self._audit_log_operation('rotate', key, success, self.config.primary_provider)
+            self._audit_log_operation(
+                "rotate", key, success, self.config.primary_provider
+            )
 
             if success:
                 # Clear cache for this key
@@ -923,7 +994,9 @@ class SecretsManager:
 
             return success
 
-        self._audit_log_operation('rotate', key, False, error="Primary provider not available")
+        self._audit_log_operation(
+            "rotate", key, False, error="Primary provider not available"
+        )
         return False
 
     def delete_secret(self, key: str) -> bool:
@@ -942,14 +1015,16 @@ class SecretsManager:
             if provider.health_check():
                 if provider.delete_secret(key):
                     deleted = True
-                    self._audit_log_operation('delete', key, True, provider_type)
+                    self._audit_log_operation("delete", key, True, provider_type)
 
         # Clear cache
         if key in self._cache:
             del self._cache[key]
 
         if not deleted:
-            self._audit_log_operation('delete', key, False, error="Failed to delete from any provider")
+            self._audit_log_operation(
+                "delete", key, False, error="Failed to delete from any provider"
+            )
 
         return deleted
 
@@ -985,7 +1060,9 @@ class SecretsManager:
             metadata = self.get_secret_metadata(key)
             if metadata and metadata.rotation_interval_days:
                 if metadata.last_rotated:
-                    days_since_rotation = (datetime.utcnow() - metadata.last_rotated).days
+                    days_since_rotation = (
+                        datetime.utcnow() - metadata.last_rotated
+                    ).days
                     if days_since_rotation >= metadata.rotation_interval_days:
                         secrets_to_rotate.append((key, metadata))
                 else:
@@ -1040,7 +1117,7 @@ class SecretsManager:
         self,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-        operation: str | None = None
+        operation: str | None = None,
     ) -> list[dict]:
         """
         Get audit log entries.
@@ -1056,13 +1133,17 @@ class SecretsManager:
         logs = self._audit_log
 
         if start_time:
-            logs = [l for l in logs if datetime.fromisoformat(l['timestamp']) >= start_time]
+            logs = [
+                l for l in logs if datetime.fromisoformat(l["timestamp"]) >= start_time
+            ]
 
         if end_time:
-            logs = [l for l in logs if datetime.fromisoformat(l['timestamp']) <= end_time]
+            logs = [
+                l for l in logs if datetime.fromisoformat(l["timestamp"]) <= end_time
+            ]
 
         if operation:
-            logs = [l for l in logs if l['operation'] == operation]
+            logs = [l for l in logs if l["operation"] == operation]
 
         return logs
 

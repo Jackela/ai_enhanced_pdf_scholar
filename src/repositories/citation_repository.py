@@ -386,7 +386,9 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
             results = self.db.fetch_all(sql, tuple(citation_ids))
 
             citations = [CitationModel.from_database_row(row) for row in results]
-            logger.debug(f"Found {len(citations)} citations from {len(citation_ids)} IDs")
+            logger.debug(
+                f"Found {len(citations)} citations from {len(citation_ids)} IDs"
+            )
 
             return citations
 
@@ -409,54 +411,64 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
             stats["total_citations"] = result["count"] if result else 0
 
             # Complete citations (have authors, title, and year)
-            result = self.db.fetch_one("""
+            result = self.db.fetch_one(
+                """
                 SELECT COUNT(*) as count FROM citations
                 WHERE authors IS NOT NULL
                 AND title IS NOT NULL
                 AND publication_year IS NOT NULL
-            """)
+            """
+            )
             stats["complete_citations"] = result["count"] if result else 0
 
             # Average confidence score
-            result = self.db.fetch_one("""
+            result = self.db.fetch_one(
+                """
                 SELECT AVG(confidence_score) as avg_confidence
                 FROM citations
                 WHERE confidence_score IS NOT NULL
-            """)
+            """
+            )
             stats["avg_confidence_score"] = (
                 result["avg_confidence"] if result and result["avg_confidence"] else 0.0
             )
 
             # Citation types breakdown
-            type_results = self.db.fetch_all("""
+            type_results = self.db.fetch_all(
+                """
                 SELECT citation_type, COUNT(*) as count
                 FROM citations
                 WHERE citation_type IS NOT NULL
                 GROUP BY citation_type
                 ORDER BY count DESC
-            """)
+            """
+            )
             stats["citation_types"] = {
                 row["citation_type"]: row["count"] for row in type_results
             }
 
             # Years breakdown (last 10 years)
-            year_results = self.db.fetch_all("""
+            year_results = self.db.fetch_all(
+                """
                 SELECT publication_year, COUNT(*) as count
                 FROM citations
                 WHERE publication_year IS NOT NULL
                 AND publication_year >= datetime('now', '-10 years')
                 GROUP BY publication_year
                 ORDER BY publication_year DESC
-            """)
+            """
+            )
             stats["years_breakdown"] = {
                 row["publication_year"]: row["count"] for row in year_results
             }
 
             # Document coverage
-            result = self.db.fetch_one("""
+            result = self.db.fetch_one(
+                """
                 SELECT COUNT(DISTINCT document_id) as docs_with_citations
                 FROM citations
-            """)
+            """
+            )
             stats["documents_with_citations"] = (
                 result["docs_with_citations"] if result else 0
             )

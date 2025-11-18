@@ -25,8 +25,10 @@ from pythonjsonlogger import jsonlogger
 # Logging Configuration
 # ============================================================================
 
+
 class LogLevel(str, Enum):
     """Log severity levels."""
+
     TRACE = "trace"
     DEBUG = "debug"
     INFO = "info"
@@ -37,6 +39,7 @@ class LogLevel(str, Enum):
 
 class LogSource(str, Enum):
     """Log source types."""
+
     API = "api"
     DATABASE = "database"
     AUTHENTICATION = "authentication"
@@ -55,7 +58,9 @@ class ElasticsearchConfig:
     def __init__(self):
         """Initialize Elasticsearch configuration from environment."""
         # Connection settings
-        self.hosts = os.getenv("ELASTICSEARCH_HOSTS", "http://localhost:9200").split(",")
+        self.hosts = os.getenv("ELASTICSEARCH_HOSTS", "http://localhost:9200").split(
+            ","
+        )
         self.username = os.getenv("ELASTICSEARCH_USERNAME", "")
         self.password = os.getenv("ELASTICSEARCH_PASSWORD", "")
         self.api_key = os.getenv("ELASTICSEARCH_API_KEY", "")
@@ -65,11 +70,15 @@ class ElasticsearchConfig:
         self.ca_certs = os.getenv("ELASTICSEARCH_CA_CERTS", "")
         self.client_cert = os.getenv("ELASTICSEARCH_CLIENT_CERT", "")
         self.client_key = os.getenv("ELASTICSEARCH_CLIENT_KEY", "")
-        self.verify_certs = os.getenv("ELASTICSEARCH_VERIFY_CERTS", "true").lower() == "true"
+        self.verify_certs = (
+            os.getenv("ELASTICSEARCH_VERIFY_CERTS", "true").lower() == "true"
+        )
 
         # Index settings
         self.index_prefix = os.getenv("ELASTICSEARCH_INDEX_PREFIX", "ai-pdf-scholar")
-        self.index_template = os.getenv("ELASTICSEARCH_INDEX_TEMPLATE", f"{self.index_prefix}-%Y.%m.%d")
+        self.index_template = os.getenv(
+            "ELASTICSEARCH_INDEX_TEMPLATE", f"{self.index_prefix}-%Y.%m.%d"
+        )
 
         # Performance settings
         self.timeout = int(os.getenv("ELASTICSEARCH_TIMEOUT", "30"))
@@ -78,7 +87,9 @@ class ElasticsearchConfig:
 
         # Bulk indexing
         self.bulk_size = int(os.getenv("ELASTICSEARCH_BULK_SIZE", "500"))
-        self.flush_interval = int(os.getenv("ELASTICSEARCH_FLUSH_INTERVAL", "5"))  # seconds
+        self.flush_interval = int(
+            os.getenv("ELASTICSEARCH_FLUSH_INTERVAL", "5")
+        )  # seconds
 
 
 class LogstashConfig:
@@ -98,6 +109,7 @@ class LogstashConfig:
 # ============================================================================
 # Custom Log Formatters
 # ============================================================================
+
 
 class StructuredFormatter(jsonlogger.JsonFormatter):
     """Structured JSON formatter for logs."""
@@ -122,8 +134,8 @@ class StructuredFormatter(jsonlogger.JsonFormatter):
                 "funcName": "function",
                 "lineno": "line",
                 "pathname": "file_path",
-                "module": "module"
-            }
+                "module": "module",
+            },
         )
 
     def add_fields(self, log_record, record, message_dict):
@@ -163,7 +175,9 @@ class StructuredFormatter(jsonlogger.JsonFormatter):
         if "timestamp" in log_record:
             try:
                 # Convert to datetime and back to ensure consistent format
-                dt = datetime.fromisoformat(log_record["timestamp"].replace("Z", "+00:00"))
+                dt = datetime.fromisoformat(
+                    log_record["timestamp"].replace("Z", "+00:00")
+                )
                 log_record["timestamp"] = dt.isoformat()
             except:
                 log_record["timestamp"] = datetime.utcnow().isoformat()
@@ -172,6 +186,7 @@ class StructuredFormatter(jsonlogger.JsonFormatter):
 # ============================================================================
 # Elasticsearch Handler
 # ============================================================================
+
 
 class ElasticsearchHandler(logging.Handler):
     """Custom logging handler for Elasticsearch."""
@@ -197,14 +212,17 @@ class ElasticsearchHandler(logging.Handler):
                 "hosts": self.config.hosts,
                 "timeout": self.config.timeout,
                 "max_retries": self.config.max_retries,
-                "retry_on_timeout": self.config.retry_on_timeout
+                "retry_on_timeout": self.config.retry_on_timeout,
             }
 
             # Authentication
             if self.config.api_key:
                 client_config["api_key"] = self.config.api_key
             elif self.config.username and self.config.password:
-                client_config["http_auth"] = (self.config.username, self.config.password)
+                client_config["http_auth"] = (
+                    self.config.username,
+                    self.config.password,
+                )
 
             # SSL configuration
             if self.config.use_ssl:
@@ -227,7 +245,9 @@ class ElasticsearchHandler(logging.Handler):
                 raise Exception("Failed to ping Elasticsearch")
 
         except Exception as e:
-            logging.getLogger(__name__).error(f"Failed to connect to Elasticsearch: {e}")
+            logging.getLogger(__name__).error(
+                f"Failed to connect to Elasticsearch: {e}"
+            )
             self.client = None
 
     def emit(self, record):
@@ -247,15 +267,17 @@ class ElasticsearchHandler(logging.Handler):
                     "timestamp": datetime.utcnow().isoformat(),
                     "level": record.levelname,
                     "message": log_entry,
-                    "logger_name": record.name
+                    "logger_name": record.name,
                 }
 
             # Add to buffer
             with self.buffer_lock:
-                self.buffer.append({
-                    "_index": datetime.now().strftime(self.config.index_template),
-                    "_source": log_data
-                })
+                self.buffer.append(
+                    {
+                        "_index": datetime.now().strftime(self.config.index_template),
+                        "_source": log_data,
+                    }
+                )
 
                 # Flush if buffer is full
                 if len(self.buffer) >= self.config.bulk_size:
@@ -275,10 +297,13 @@ class ElasticsearchHandler(logging.Handler):
             self.buffer.clear()
 
         except Exception as e:
-            logging.getLogger(__name__).error(f"Failed to flush logs to Elasticsearch: {e}")
+            logging.getLogger(__name__).error(
+                f"Failed to flush logs to Elasticsearch: {e}"
+            )
 
     def _start_flush_timer(self):
         """Start periodic buffer flush."""
+
         def flush_periodically():
             while True:
                 time.sleep(self.config.flush_interval)
@@ -299,6 +324,7 @@ class ElasticsearchHandler(logging.Handler):
 # ============================================================================
 # Logstash Handler
 # ============================================================================
+
 
 class LogstashHandler(logging.handlers.SocketHandler):
     """Custom logging handler for Logstash."""
@@ -322,7 +348,7 @@ class LogstashHandler(logging.handlers.SocketHandler):
 
             if isinstance(self.formatter, StructuredFormatter):
                 # Already JSON formatted
-                data = log_entry.encode('utf-8')
+                data = log_entry.encode("utf-8")
             else:
                 # Convert to JSON
                 log_data = {
@@ -330,9 +356,9 @@ class LogstashHandler(logging.handlers.SocketHandler):
                     "level": record.levelname,
                     "message": log_entry,
                     "logger_name": record.name,
-                    "service": "ai-pdf-scholar"
+                    "service": "ai-pdf-scholar",
                 }
-                data = json.dumps(log_data).encode('utf-8')
+                data = json.dumps(log_data).encode("utf-8")
 
             if self.config.use_tcp:
                 super().emit(record)
@@ -348,6 +374,7 @@ class LogstashHandler(logging.handlers.SocketHandler):
 # Centralized Logging Service
 # ============================================================================
 
+
 class CentralizedLoggingService:
     """
     Comprehensive centralized logging service with ELK stack integration.
@@ -360,7 +387,7 @@ class CentralizedLoggingService:
         enable_elasticsearch: bool = True,
         enable_logstash: bool = False,
         enable_file_logging: bool = True,
-        log_directory: str = "./logs"
+        log_directory: str = "./logs",
     ):
         """Initialize centralized logging service."""
         self.service_name = service_name
@@ -383,7 +410,9 @@ class CentralizedLoggingService:
         # Setup logging
         self._setup_logging()
 
-        logging.getLogger(__name__).info(f"Centralized logging service initialized for {service_name}")
+        logging.getLogger(__name__).info(
+            f"Centralized logging service initialized for {service_name}"
+        )
 
     def _setup_logging(self):
         """Setup comprehensive logging configuration."""
@@ -408,7 +437,9 @@ class CentralizedLoggingService:
                 es_handler.setLevel(logging.DEBUG)
                 self.handlers.append(es_handler)
             except Exception as e:
-                logging.getLogger(__name__).warning(f"Failed to setup Elasticsearch handler: {e}")
+                logging.getLogger(__name__).warning(
+                    f"Failed to setup Elasticsearch handler: {e}"
+                )
 
         # Logstash handler
         if self.enable_logstash:
@@ -418,7 +449,9 @@ class CentralizedLoggingService:
                 logstash_handler.setLevel(logging.DEBUG)
                 self.handlers.append(logstash_handler)
             except Exception as e:
-                logging.getLogger(__name__).warning(f"Failed to setup Logstash handler: {e}")
+                logging.getLogger(__name__).warning(
+                    f"Failed to setup Logstash handler: {e}"
+                )
 
         # Configure root logger
         root_logger = logging.getLogger()
@@ -440,9 +473,7 @@ class CentralizedLoggingService:
         # Application log file (rotating)
         app_log_file = self.log_directory / "application.log"
         app_handler = logging.handlers.RotatingFileHandler(
-            app_log_file,
-            maxBytes=50*1024*1024,  # 50MB
-            backupCount=10
+            app_log_file, maxBytes=50 * 1024 * 1024, backupCount=10  # 50MB
         )
         app_handler.setFormatter(formatter)
         app_handler.setLevel(logging.INFO)
@@ -451,9 +482,7 @@ class CentralizedLoggingService:
         # Error log file
         error_log_file = self.log_directory / "error.log"
         error_handler = logging.handlers.RotatingFileHandler(
-            error_log_file,
-            maxBytes=10*1024*1024,  # 10MB
-            backupCount=5
+            error_log_file, maxBytes=10 * 1024 * 1024, backupCount=5  # 10MB
         )
         error_handler.setFormatter(formatter)
         error_handler.setLevel(logging.ERROR)
@@ -463,27 +492,27 @@ class CentralizedLoggingService:
         audit_log_file = self.log_directory / "audit.log"
         audit_handler = logging.handlers.TimedRotatingFileHandler(
             audit_log_file,
-            when='midnight',
+            when="midnight",
             interval=1,
-            backupCount=365  # Keep for 1 year
+            backupCount=365,  # Keep for 1 year
         )
         audit_handler.setFormatter(formatter)
         audit_handler.setLevel(logging.INFO)
         # Only add audit events to this handler
-        audit_handler.addFilter(lambda record: getattr(record, 'audit_event', False))
+        audit_handler.addFilter(lambda record: getattr(record, "audit_event", False))
         self.handlers.append(audit_handler)
 
         # Security log file
         security_log_file = self.log_directory / "security.log"
         security_handler = logging.handlers.RotatingFileHandler(
-            security_log_file,
-            maxBytes=20*1024*1024,  # 20MB
-            backupCount=10
+            security_log_file, maxBytes=20 * 1024 * 1024, backupCount=10  # 20MB
         )
         security_handler.setFormatter(formatter)
         security_handler.setLevel(logging.WARNING)
         # Only add security events to this handler
-        security_handler.addFilter(lambda record: getattr(record, 'security_event', False))
+        security_handler.addFilter(
+            lambda record: getattr(record, "security_event", False)
+        )
         self.handlers.append(security_handler)
 
     def _setup_loguru(self):
@@ -503,7 +532,7 @@ class CentralizedLoggingService:
         loguru_logger.add(
             loguru_sink,
             format="{time} | {level} | {name}:{function}:{line} | {message}",
-            level="DEBUG"
+            level="DEBUG",
         )
 
     # ========================================================================
@@ -514,7 +543,7 @@ class CentralizedLoggingService:
         self,
         name: str,
         source: LogSource = LogSource.SYSTEM,
-        correlation_id: str | None = None
+        correlation_id: str | None = None,
     ) -> logging.Logger:
         """Get a configured logger instance."""
         logger = logging.getLogger(name)
@@ -541,7 +570,7 @@ class CentralizedLoggingService:
         correlation_id: str | None = None,
         extra_fields: dict[str, Any] | None = None,
         audit_event: bool = False,
-        security_event: bool = False
+        security_event: bool = False,
     ):
         """Log a structured message with context."""
         logger = logging.getLogger(source.value)
@@ -554,7 +583,7 @@ class CentralizedLoggingService:
             lno=0,
             msg=message,
             args=(),
-            exc_info=None
+            exc_info=None,
         )
 
         # Add context
@@ -580,7 +609,7 @@ class CentralizedLoggingService:
         ip_address: str | None = None,
         user_agent: str | None = None,
         request_size: int | None = None,
-        response_size: int | None = None
+        response_size: int | None = None,
     ):
         """Log API request with standard fields."""
         extra_fields = {
@@ -591,7 +620,7 @@ class CentralizedLoggingService:
             "ip_address": ip_address,
             "user_agent": user_agent,
             "request_size": request_size,
-            "response_size": response_size
+            "response_size": response_size,
         }
 
         level = LogLevel.INFO if status_code < 400 else LogLevel.ERROR
@@ -602,7 +631,7 @@ class CentralizedLoggingService:
             source=LogSource.API,
             user_id=user_id,
             extra_fields=extra_fields,
-            audit_event=True
+            audit_event=True,
         )
 
     def log_security_event(
@@ -612,21 +641,21 @@ class CentralizedLoggingService:
         severity: str = "medium",
         user_id: int | None = None,
         ip_address: str | None = None,
-        additional_data: dict[str, Any] | None = None
+        additional_data: dict[str, Any] | None = None,
     ):
         """Log security event."""
         extra_fields = {
             "event_type": event_type,
             "severity": severity,
             "ip_address": ip_address,
-            **(additional_data or {})
+            **(additional_data or {}),
         }
 
         level_map = {
             "low": LogLevel.INFO,
             "medium": LogLevel.WARNING,
             "high": LogLevel.ERROR,
-            "critical": LogLevel.CRITICAL
+            "critical": LogLevel.CRITICAL,
         }
 
         self.log_structured(
@@ -636,7 +665,7 @@ class CentralizedLoggingService:
             user_id=user_id,
             extra_fields=extra_fields,
             security_event=True,
-            audit_event=True
+            audit_event=True,
         )
 
     def log_database_query(
@@ -646,7 +675,7 @@ class CentralizedLoggingService:
         duration: float,
         rows_affected: int | None = None,
         user_id: int | None = None,
-        query: str | None = None
+        query: str | None = None,
     ):
         """Log database query."""
         extra_fields = {
@@ -654,7 +683,7 @@ class CentralizedLoggingService:
             "table": table,
             "duration": duration,
             "rows_affected": rows_affected,
-            "query": query[:200] if query else None  # Truncate long queries
+            "query": query[:200] if query else None,  # Truncate long queries
         }
 
         # Log slow queries as warnings
@@ -665,7 +694,7 @@ class CentralizedLoggingService:
             message=f"DB {operation} on {table} ({duration:.3f}s)",
             source=LogSource.DATABASE,
             user_id=user_id,
-            extra_fields=extra_fields
+            extra_fields=extra_fields,
         )
 
     def log_document_processing(
@@ -677,7 +706,7 @@ class CentralizedLoggingService:
         user_id: int | None = None,
         file_size: int | None = None,
         pages: int | None = None,
-        error: str | None = None
+        error: str | None = None,
     ):
         """Log document processing operation."""
         extra_fields = {
@@ -687,7 +716,7 @@ class CentralizedLoggingService:
             "success": success,
             "file_size": file_size,
             "pages": pages,
-            "error": error
+            "error": error,
         }
 
         level = LogLevel.INFO if success else LogLevel.ERROR
@@ -699,7 +728,7 @@ class CentralizedLoggingService:
             source=LogSource.DOCUMENT_PROCESSING,
             user_id=user_id,
             extra_fields=extra_fields,
-            audit_event=True
+            audit_event=True,
         )
 
     def log_rag_query(
@@ -711,7 +740,7 @@ class CentralizedLoggingService:
         retrieval_count: int | None = None,
         relevance_scores: list[float] | None = None,
         model_used: str | None = None,
-        user_id: int | None = None
+        user_id: int | None = None,
     ):
         """Log RAG query operation."""
         extra_fields = {
@@ -721,8 +750,12 @@ class CentralizedLoggingService:
             "success": success,
             "retrieval_count": retrieval_count,
             "max_relevance": max(relevance_scores) if relevance_scores else None,
-            "avg_relevance": sum(relevance_scores) / len(relevance_scores) if relevance_scores else None,
-            "model_used": model_used
+            "avg_relevance": (
+                sum(relevance_scores) / len(relevance_scores)
+                if relevance_scores
+                else None
+            ),
+            "model_used": model_used,
         }
 
         level = LogLevel.INFO if success else LogLevel.ERROR
@@ -734,7 +767,7 @@ class CentralizedLoggingService:
             source=LogSource.RAG_QUERY,
             user_id=user_id,
             extra_fields=extra_fields,
-            audit_event=True
+            audit_event=True,
         )
 
     # ========================================================================
@@ -749,21 +782,16 @@ class CentralizedLoggingService:
         log_level: LogLevel | None = None,
         source: LogSource | None = None,
         user_id: int | None = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> list[dict[str, Any]]:
         """Search logs in Elasticsearch."""
-        if not self.enable_elasticsearch or not hasattr(self, 'elasticsearch_handler'):
+        if not self.enable_elasticsearch or not hasattr(self, "elasticsearch_handler"):
             return []
 
         try:
             # Build Elasticsearch query
             es_query = {
-                "bool": {
-                    "must": [
-                        {"query_string": {"query": query}}
-                    ],
-                    "filter": []
-                }
+                "bool": {"must": [{"query_string": {"query": query}}], "filter": []}
             }
 
             # Add filters
@@ -790,8 +818,8 @@ class CentralizedLoggingService:
                 body={
                     "query": es_query,
                     "sort": [{"timestamp": {"order": "desc"}}],
-                    "size": limit
-                }
+                    "size": limit,
+                },
             )
 
             return [hit["_source"] for hit in response["hits"]["hits"]]
@@ -801,12 +829,10 @@ class CentralizedLoggingService:
             return []
 
     def get_log_statistics(
-        self,
-        start_time: datetime,
-        end_time: datetime
+        self, start_time: datetime, end_time: datetime
     ) -> dict[str, Any]:
         """Get log statistics for a time period."""
-        if not self.enable_elasticsearch or not hasattr(self, 'elasticsearch_handler'):
+        if not self.enable_elasticsearch or not hasattr(self, "elasticsearch_handler"):
             return {}
 
         try:
@@ -816,43 +842,35 @@ class CentralizedLoggingService:
                     "range": {
                         "timestamp": {
                             "gte": start_time.isoformat(),
-                            "lte": end_time.isoformat()
+                            "lte": end_time.isoformat(),
                         }
                     }
                 },
                 "aggs": {
-                    "levels": {
-                        "terms": {"field": "level"}
-                    },
-                    "sources": {
-                        "terms": {"field": "source"}
-                    },
+                    "levels": {"terms": {"field": "level"}},
+                    "sources": {"terms": {"field": "source"}},
                     "hourly_distribution": {
-                        "date_histogram": {
-                            "field": "timestamp",
-                            "interval": "1h"
-                        }
+                        "date_histogram": {"field": "timestamp", "interval": "1h"}
                     },
                     "error_rate": {
-                        "filter": {
-                            "terms": {"level": ["error", "critical"]}
-                        }
-                    }
+                        "filter": {"terms": {"level": ["error", "critical"]}}
+                    },
                 },
-                "size": 0
+                "size": 0,
             }
 
             response = self.elasticsearch_handler.client.search(
-                index=f"{self.elasticsearch_config.index_prefix}-*",
-                body=query
+                index=f"{self.elasticsearch_config.index_prefix}-*", body=query
             )
 
             return {
                 "total_logs": response["hits"]["total"]["value"],
                 "levels": response["aggregations"]["levels"]["buckets"],
                 "sources": response["aggregations"]["sources"]["buckets"],
-                "hourly_distribution": response["aggregations"]["hourly_distribution"]["buckets"],
-                "error_count": response["aggregations"]["error_rate"]["doc_count"]
+                "hourly_distribution": response["aggregations"]["hourly_distribution"][
+                    "buckets"
+                ],
+                "error_count": response["aggregations"]["error_rate"]["doc_count"],
             }
 
         except Exception as e:
@@ -873,12 +891,16 @@ class CentralizedLoggingService:
                 try:
                     if log_file.stat().st_mtime < cutoff_date.timestamp():
                         log_file.unlink()
-                        logging.getLogger(__name__).info(f"Deleted old log file: {log_file}")
+                        logging.getLogger(__name__).info(
+                            f"Deleted old log file: {log_file}"
+                        )
                 except Exception as e:
-                    logging.getLogger(__name__).error(f"Failed to delete log file {log_file}: {e}")
+                    logging.getLogger(__name__).error(
+                        f"Failed to delete log file {log_file}: {e}"
+                    )
 
         # Clean up Elasticsearch indices
-        if self.enable_elasticsearch and hasattr(self, 'elasticsearch_handler'):
+        if self.enable_elasticsearch and hasattr(self, "elasticsearch_handler"):
             try:
                 cutoff_date = datetime.now() - timedelta(days=days_to_keep)
 
@@ -890,24 +912,32 @@ class CentralizedLoggingService:
                 for index_name in indices:
                     # Extract date from index name
                     try:
-                        date_str = index_name.split("-")[-3:]  # Assumes YYYY.MM.DD format
+                        date_str = index_name.split("-")[
+                            -3:
+                        ]  # Assumes YYYY.MM.DD format
                         index_date = datetime.strptime(".".join(date_str), "%Y.%m.%d")
 
                         if index_date < cutoff_date:
-                            self.elasticsearch_handler.client.indices.delete(index=index_name)
-                            logging.getLogger(__name__).info(f"Deleted old Elasticsearch index: {index_name}")
+                            self.elasticsearch_handler.client.indices.delete(
+                                index=index_name
+                            )
+                            logging.getLogger(__name__).info(
+                                f"Deleted old Elasticsearch index: {index_name}"
+                            )
                     except (ValueError, IndexError):
                         # Skip indices that don't match expected format
                         continue
 
             except Exception as e:
-                logging.getLogger(__name__).error(f"Failed to cleanup Elasticsearch indices: {e}")
+                logging.getLogger(__name__).error(
+                    f"Failed to cleanup Elasticsearch indices: {e}"
+                )
 
     def flush_logs(self):
         """Flush all log handlers."""
         for handler in self.handlers:
             handler.flush()
-            if hasattr(handler, '_flush_buffer'):
+            if hasattr(handler, "_flush_buffer"):
                 handler._flush_buffer()
 
     def close(self):
@@ -923,6 +953,7 @@ class CentralizedLoggingService:
 # ============================================================================
 # Log Context Manager
 # ============================================================================
+
 
 class LoggingContext:
     """Context manager for adding correlation ID to logs."""
@@ -966,7 +997,7 @@ if __name__ == "__main__":
             message="User logged in successfully",
             source=LogSource.AUTHENTICATION,
             user_id=123,
-            extra_fields={"login_method": "oauth2"}
+            extra_fields={"login_method": "oauth2"},
         )
 
     # Example API logging
@@ -976,7 +1007,7 @@ if __name__ == "__main__":
         status_code=200,
         duration=1.2,
         user_id=123,
-        request_size=1024000
+        request_size=1024000,
     )
 
     print("Centralized logging service demo completed")

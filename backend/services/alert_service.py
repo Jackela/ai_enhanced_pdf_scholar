@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 # Alert Types and Severities
 # ============================================================================
 
+
 class AlertSeverity(Enum):
     """Alert severity levels."""
+
     CRITICAL = "critical"
     WARNING = "warning"
     INFO = "info"
@@ -34,6 +36,7 @@ class AlertSeverity(Enum):
 
 class AlertCategory(Enum):
     """Alert categories for routing."""
+
     SYSTEM = "system"
     APPLICATION = "application"
     SECURITY = "security"
@@ -44,6 +47,7 @@ class AlertCategory(Enum):
 
 class NotificationChannel(Enum):
     """Available notification channels."""
+
     EMAIL = "email"
     SLACK = "slack"
     DISCORD = "discord"
@@ -57,9 +61,11 @@ class NotificationChannel(Enum):
 # Data Classes
 # ============================================================================
 
+
 @dataclass
 class Alert:
     """Alert data structure."""
+
     id: str
     name: str
     severity: AlertSeverity
@@ -80,6 +86,7 @@ class Alert:
 @dataclass
 class NotificationChannelConfig:
     """Configuration for notification channels."""
+
     channel: NotificationChannel
     enabled: bool = True
     config: dict[str, Any] = field(default_factory=dict)
@@ -90,6 +97,7 @@ class NotificationChannelConfig:
 @dataclass
 class AlertRule:
     """Alert routing and escalation rules."""
+
     name: str
     conditions: dict[str, Any]
     channels: list[NotificationChannel]
@@ -102,6 +110,7 @@ class AlertRule:
 # ============================================================================
 # Alert Service
 # ============================================================================
+
 
 class AlertService:
     """
@@ -118,7 +127,8 @@ class AlertService:
         self.rate_limits: dict[str, list[datetime]] = {}
 
         # Templates
-        self.email_template = Template("""
+        self.email_template = Template(
+            """
         <html>
         <head><title>{{ alert.severity.value.upper() }} Alert: {{ alert.name }}</title></head>
         <body style="font-family: Arial, sans-serif; margin: 20px;">
@@ -153,9 +163,11 @@ class AlertService:
             </div>
         </body>
         </html>
-        """)
+        """
+        )
 
-        self.slack_template = Template("""
+        self.slack_template = Template(
+            """
         {
             "blocks": [
                 {
@@ -210,7 +222,8 @@ class AlertService:
                 {% endif %}
             ]
         }
-        """)
+        """
+        )
 
         # Initialize default rules
         self._setup_default_rules()
@@ -222,14 +235,11 @@ class AlertService:
         channel: NotificationChannel,
         config: dict[str, Any],
         enabled: bool = True,
-        rate_limit: int | None = None
+        rate_limit: int | None = None,
     ):
         """Configure a notification channel."""
         self.channels[channel] = NotificationChannelConfig(
-            channel=channel,
-            enabled=enabled,
-            config=config,
-            rate_limit=rate_limit
+            channel=channel, enabled=enabled, config=config, rate_limit=rate_limit
         )
 
         logger.info(f"Configured {channel.value} notification channel")
@@ -248,7 +258,7 @@ class AlertService:
             channels=[NotificationChannel.EMAIL, NotificationChannel.SLACK],
             escalation_chain=[NotificationChannel.PAGERDUTY, NotificationChannel.SMS],
             escalation_delay=5,  # 5 minutes
-            suppression_duration=30
+            suppression_duration=30,
         )
 
         # Security alerts - security team notification
@@ -258,7 +268,7 @@ class AlertService:
             channels=[NotificationChannel.EMAIL, NotificationChannel.SLACK],
             escalation_chain=[NotificationChannel.PAGERDUTY],
             escalation_delay=10,
-            suppression_duration=60
+            suppression_duration=60,
         )
 
         # Warning alerts - standard notification
@@ -267,7 +277,7 @@ class AlertService:
             conditions={"severity": AlertSeverity.WARNING},
             channels=[NotificationChannel.EMAIL],
             escalation_delay=30,
-            suppression_duration=120
+            suppression_duration=120,
         )
 
         self.rules.extend([critical_rule, security_rule, warning_rule])
@@ -303,9 +313,7 @@ class AlertService:
             # Schedule escalation if needed
             for rule in matching_rules:
                 if rule.escalation_chain:
-                    asyncio.create_task(
-                        self._schedule_escalation(alert, rule)
-                    )
+                    asyncio.create_task(self._schedule_escalation(alert, rule))
 
             # Add to suppression list
             self._suppress_alert(alert, matching_rules[0])
@@ -373,7 +381,9 @@ class AlertService:
 
         return success
 
-    async def _send_via_channel(self, alert: Alert, channel: NotificationChannel) -> bool:
+    async def _send_via_channel(
+        self, alert: Alert, channel: NotificationChannel
+    ) -> bool:
         """Send alert via specific channel."""
         try:
             # Check rate limits
@@ -408,21 +418,21 @@ class AlertService:
             config = self.channels[NotificationChannel.EMAIL].config
 
             # Create email message
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f"[{alert.severity.value.upper()}] {alert.name}"
-            msg['From'] = config.get('from_address', 'alerts@ai-pdf-scholar.com')
-            msg['To'] = config.get('to_address', 'alerts@ai-pdf-scholar.com')
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"[{alert.severity.value.upper()}] {alert.name}"
+            msg["From"] = config.get("from_address", "alerts@ai-pdf-scholar.com")
+            msg["To"] = config.get("to_address", "alerts@ai-pdf-scholar.com")
 
             # Generate HTML content
             html_content = self.email_template.render(alert=alert)
-            html_part = MIMEText(html_content, 'html')
+            html_part = MIMEText(html_content, "html")
             msg.attach(html_part)
 
             # Send email
-            smtp_server = config.get('smtp_server', 'localhost')
-            smtp_port = config.get('smtp_port', 587)
-            username = config.get('username')
-            password = config.get('password')
+            smtp_server = config.get("smtp_server", "localhost")
+            smtp_port = config.get("smtp_port", 587)
+            username = config.get("username")
+            password = config.get("password")
 
             with smtplib.SMTP(smtp_server, smtp_port) as server:
                 if username and password:
@@ -443,7 +453,7 @@ class AlertService:
         """Send alert to Slack."""
         try:
             config = self.channels[NotificationChannel.SLACK].config
-            webhook_url = config.get('webhook_url')
+            webhook_url = config.get("webhook_url")
 
             if not webhook_url:
                 logger.error("Slack webhook URL not configured")
@@ -456,14 +466,16 @@ class AlertService:
             color_map = {
                 AlertSeverity.CRITICAL: "danger",
                 AlertSeverity.WARNING: "warning",
-                AlertSeverity.INFO: "good"
+                AlertSeverity.INFO: "good",
             }
 
             # Add color attachment for older Slack versions
-            payload["attachments"] = [{
-                "color": color_map.get(alert.severity, "good"),
-                "fallback": f"{alert.severity.value.upper()}: {alert.message}"
-            }]
+            payload["attachments"] = [
+                {
+                    "color": color_map.get(alert.severity, "good"),
+                    "fallback": f"{alert.severity.value.upper()}: {alert.message}",
+                }
+            ]
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(webhook_url, json=payload)
@@ -481,7 +493,7 @@ class AlertService:
         """Send alert via webhook."""
         try:
             config = self.channels[NotificationChannel.WEBHOOK].config
-            webhook_url = config.get('url')
+            webhook_url = config.get("url")
 
             if not webhook_url:
                 logger.error("Webhook URL not configured")
@@ -499,11 +511,11 @@ class AlertService:
                 "source": alert.source,
                 "labels": alert.labels,
                 "annotations": alert.annotations,
-                "runbook_url": alert.runbook_url
+                "runbook_url": alert.runbook_url,
             }
 
-            headers = config.get('headers', {})
-            auth = config.get('auth')
+            headers = config.get("headers", {})
+            auth = config.get("auth")
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -511,7 +523,7 @@ class AlertService:
                     json=payload,
                     headers=headers,
                     auth=auth if auth else None,
-                    timeout=30
+                    timeout=30,
                 )
                 response.raise_for_status()
 
@@ -527,7 +539,7 @@ class AlertService:
         """Send alert to Microsoft Teams."""
         try:
             config = self.channels[NotificationChannel.TEAMS].config
-            webhook_url = config.get('webhook_url')
+            webhook_url = config.get("webhook_url")
 
             if not webhook_url:
                 logger.error("Teams webhook URL not configured")
@@ -541,27 +553,36 @@ class AlertService:
                 "themeColor": {
                     AlertSeverity.CRITICAL: "FF0000",
                     AlertSeverity.WARNING: "FFA500",
-                    AlertSeverity.INFO: "0078D4"
+                    AlertSeverity.INFO: "0078D4",
                 }.get(alert.severity, "0078D4"),
-                "sections": [{
-                    "activityTitle": f"🚨 {alert.severity.value.upper()} Alert",
-                    "activitySubtitle": alert.name,
-                    "facts": [
-                        {"name": "Message", "value": alert.message},
-                        {"name": "Source", "value": alert.source},
-                        {"name": "Category", "value": alert.category.value},
-                        {"name": "Time", "value": alert.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}
-                    ],
-                    "text": alert.description
-                }]
+                "sections": [
+                    {
+                        "activityTitle": f"🚨 {alert.severity.value.upper()} Alert",
+                        "activitySubtitle": alert.name,
+                        "facts": [
+                            {"name": "Message", "value": alert.message},
+                            {"name": "Source", "value": alert.source},
+                            {"name": "Category", "value": alert.category.value},
+                            {
+                                "name": "Time",
+                                "value": alert.timestamp.strftime(
+                                    "%Y-%m-%d %H:%M:%S UTC"
+                                ),
+                            },
+                        ],
+                        "text": alert.description,
+                    }
+                ],
             }
 
             if alert.runbook_url:
-                payload["potentialAction"] = [{
-                    "@type": "OpenUri",
-                    "name": "View Runbook",
-                    "targets": [{"os": "default", "uri": alert.runbook_url}]
-                }]
+                payload["potentialAction"] = [
+                    {
+                        "@type": "OpenUri",
+                        "name": "View Runbook",
+                        "targets": [{"os": "default", "uri": alert.runbook_url}],
+                    }
+                ]
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(webhook_url, json=payload)
@@ -586,9 +607,11 @@ class AlertService:
             await asyncio.sleep(rule.escalation_delay * 60)
 
             # Check if alert is still active and not escalated
-            if (alert.id in self.active_alerts and
-                not self.active_alerts[alert.id].escalated and
-                not self.active_alerts[alert.id].resolved):
+            if (
+                alert.id in self.active_alerts
+                and not self.active_alerts[alert.id].escalated
+                and not self.active_alerts[alert.id].resolved
+            ):
 
                 # Mark as escalated
                 self.active_alerts[alert.id].escalated = True
@@ -604,7 +627,9 @@ class AlertService:
         except Exception as e:
             logger.error(f"Failed to escalate alert {alert.id}: {e}")
 
-    async def _send_escalation_notification(self, alert: Alert, channel: NotificationChannel):
+    async def _send_escalation_notification(
+        self, alert: Alert, channel: NotificationChannel
+    ):
         """Send escalation notification."""
         # Create escalated alert with modified message
         escalated_alert = Alert(
@@ -618,7 +643,7 @@ class AlertService:
             source=alert.source,
             labels=alert.labels,
             annotations=alert.annotations,
-            runbook_url=alert.runbook_url
+            runbook_url=alert.runbook_url,
         )
 
         await self._send_via_channel(escalated_alert, channel)
@@ -638,7 +663,7 @@ class AlertService:
                 labels=alert.labels,
                 annotations=alert.annotations,
                 runbook_url=alert.runbook_url,
-                resolved=True
+                resolved=True,
             )
 
             # Send to same channels as original alert
@@ -700,7 +725,7 @@ class AlertService:
         alert: Alert,
         channel: NotificationChannel,
         success: bool,
-        error: str | None = None
+        error: str | None = None,
     ):
         """Record notification attempt in history."""
         record = {
@@ -708,7 +733,7 @@ class AlertService:
             "channel": channel.value,
             "success": success,
             "timestamp": datetime.utcnow().isoformat(),
-            "error": error
+            "error": error,
         }
 
         self.notification_history.append(record)
@@ -735,7 +760,8 @@ class AlertService:
 
         for channel, config in self.channels.items():
             channel_notifications = [
-                record for record in self.notification_history
+                record
+                for record in self.notification_history
                 if record["channel"] == channel.value
             ]
 
@@ -747,8 +773,12 @@ class AlertService:
                 "total_notifications": len(channel_notifications),
                 "successful": successful,
                 "failed": failed,
-                "success_rate": successful / len(channel_notifications) if channel_notifications else 0,
-                "rate_limit": config.rate_limit
+                "success_rate": (
+                    successful / len(channel_notifications)
+                    if channel_notifications
+                    else 0
+                ),
+                "rate_limit": config.rate_limit,
             }
 
         return stats
@@ -757,6 +787,7 @@ class AlertService:
 # ============================================================================
 # Utility Functions
 # ============================================================================
+
 
 def create_alert(
     name: str,
@@ -767,7 +798,7 @@ def create_alert(
     source: str = "ai-pdf-scholar",
     labels: dict[str, str] | None = None,
     annotations: dict[str, str] | None = None,
-    runbook_url: str | None = None
+    runbook_url: str | None = None,
 ) -> Alert:
     """Create a new alert."""
     return Alert(
@@ -781,7 +812,7 @@ def create_alert(
         source=source,
         labels=labels or {},
         annotations=annotations or {},
-        runbook_url=runbook_url
+        runbook_url=runbook_url,
     )
 
 
@@ -790,6 +821,7 @@ def create_alert(
 # ============================================================================
 
 _alert_service_instance: AlertService | None = None
+
 
 def get_alert_service() -> AlertService:
     """Get or create the global alert service instance."""
@@ -823,8 +855,8 @@ if __name__ == "__main__":
                 "from_address": "alerts@ai-pdf-scholar.com",
                 "to_address": "admin@ai-pdf-scholar.com",
                 "smtp_server": "localhost",
-                "smtp_port": 587
-            }
+                "smtp_port": 587,
+            },
         )
 
         # Create test alert
@@ -834,7 +866,7 @@ if __name__ == "__main__":
             category=AlertCategory.SYSTEM,
             message="This is a test alert",
             description="Testing the alert system functionality",
-            labels={"instance": "localhost", "service": "test"}
+            labels={"instance": "localhost", "service": "test"},
         )
 
         # Send alert

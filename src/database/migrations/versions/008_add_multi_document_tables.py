@@ -86,7 +86,7 @@ class AddMultiDocumentTablesMigration(BaseMigration):
             "CREATE INDEX IF NOT EXISTS idx_multi_doc_collections_created ON multi_document_collections(created_at DESC)",
             "CREATE INDEX IF NOT EXISTS idx_multi_doc_indexes_collection ON multi_document_indexes(collection_id)",
             "CREATE INDEX IF NOT EXISTS idx_multi_doc_indexes_hash ON multi_document_indexes(index_hash)",
-            "CREATE INDEX IF NOT EXISTS idx_multi_doc_indexes_created ON multi_document_indexes(created_at DESC)"
+            "CREATE INDEX IF NOT EXISTS idx_multi_doc_indexes_created ON multi_document_indexes(created_at DESC)",
         ]
 
         for index_sql in performance_indexes:
@@ -105,7 +105,7 @@ class AddMultiDocumentTablesMigration(BaseMigration):
             # Drop tables in reverse order (indexes first due to foreign key)
             self.execute_sql("DROP TABLE IF EXISTS multi_document_indexes")
             logger.info("Dropped multi_document_indexes table")
-            
+
             self.execute_sql("DROP TABLE IF EXISTS multi_document_collections")
             logger.info("Dropped multi_document_collections table")
 
@@ -164,9 +164,13 @@ class AddMultiDocumentTablesMigration(BaseMigration):
                 return False
 
             # Verify foreign key constraint exists
-            indexes_info = self.db.fetch_all("PRAGMA foreign_key_list(multi_document_indexes)")
-            fk_found = any(fk['table'] == 'multi_document_collections' for fk in indexes_info)
-            
+            indexes_info = self.db.fetch_all(
+                "PRAGMA foreign_key_list(multi_document_indexes)"
+            )
+            fk_found = any(
+                fk["table"] == "multi_document_collections" for fk in indexes_info
+            )
+
             if not fk_found:
                 logger.warning("Foreign key constraint may not be properly created")
 

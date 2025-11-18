@@ -36,13 +36,17 @@ logger = logging.getLogger(__name__)
 # Configuration Classes
 # ============================================================================
 
+
 @dataclass
 class OptimizationConfig:
     """Configuration for asset optimization."""
+
     # Image optimization
     enable_image_optimization: bool = True
     image_quality: int = 85  # JPEG quality (0-100)
-    image_formats: list[str] = field(default_factory=lambda: ["webp", "avif", "original"])
+    image_formats: list[str] = field(
+        default_factory=lambda: ["webp", "avif", "original"]
+    )
     max_image_width: int = 1920
     max_image_height: int = 1080
 
@@ -77,6 +81,7 @@ class OptimizationConfig:
 @dataclass
 class AssetInfo:
     """Information about an asset file."""
+
     file_path: Path
     original_size: int
     optimized_size: int = 0
@@ -121,6 +126,7 @@ class AssetInfo:
 @dataclass
 class OptimizationStatistics:
     """Statistics for optimization operations."""
+
     total_files: int = 0
     optimized_files: int = 0
     failed_files: int = 0
@@ -144,7 +150,9 @@ class OptimizationStatistics:
             self.bytes_saved = self.original_total_size - self.optimized_total_size
 
         if self.optimized_files > 0:
-            self.avg_processing_time_ms = self.total_processing_time_ms / self.optimized_files
+            self.avg_processing_time_ms = (
+                self.total_processing_time_ms / self.optimized_files
+            )
 
     def get_summary(self) -> dict[str, Any]:
         """Get summary statistics."""
@@ -155,25 +163,37 @@ class OptimizationStatistics:
                 "total": self.total_files,
                 "optimized": self.optimized_files,
                 "failed": self.failed_files,
-                "success_rate": (self.optimized_files / self.total_files * 100) if self.total_files > 0 else 0
+                "success_rate": (
+                    (self.optimized_files / self.total_files * 100)
+                    if self.total_files > 0
+                    else 0
+                ),
             },
             "size_reduction": {
                 "original_mb": round(self.original_total_size / (1024 * 1024), 2),
                 "optimized_mb": round(self.optimized_total_size / (1024 * 1024), 2),
                 "saved_mb": round(self.bytes_saved / (1024 * 1024), 2),
-                "reduction_percent": round((self.bytes_saved / self.original_total_size * 100) if self.original_total_size > 0 else 0, 2)
+                "reduction_percent": round(
+                    (
+                        (self.bytes_saved / self.original_total_size * 100)
+                        if self.original_total_size > 0
+                        else 0
+                    ),
+                    2,
+                ),
             },
             "performance": {
                 "total_time_seconds": round(self.total_processing_time_ms / 1000, 2),
-                "avg_time_ms": round(self.avg_processing_time_ms, 2)
+                "avg_time_ms": round(self.avg_processing_time_ms, 2),
             },
-            "by_type": self.files_by_type
+            "by_type": self.files_by_type,
         }
 
 
 # ============================================================================
 # Asset Optimizers
 # ============================================================================
+
 
 class ImageOptimizer:
     """Optimizer for image assets."""
@@ -183,12 +203,12 @@ class ImageOptimizer:
         self.config = config
 
         # Supported formats
-        self.input_formats = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}
+        self.input_formats = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"}
         self.output_formats = {
-            'webp': 'WEBP',
-            'avif': 'AVIF',
-            'jpeg': 'JPEG',
-            'png': 'PNG'
+            "webp": "WEBP",
+            "avif": "AVIF",
+            "jpeg": "JPEG",
+            "png": "PNG",
         }
 
     async def optimize_image(self, input_path: Path, output_dir: Path) -> AssetInfo:
@@ -198,72 +218,76 @@ class ImageOptimizer:
         try:
             # Get original file info
             original_size = input_path.stat().st_size
-            mime_type = mimetypes.guess_type(str(input_path))[0] or 'application/octet-stream'
+            mime_type = (
+                mimetypes.guess_type(str(input_path))[0] or "application/octet-stream"
+            )
 
             asset_info = AssetInfo(
                 file_path=input_path,
                 original_size=original_size,
                 mime_type=mime_type,
-                hash_original=await self._calculate_file_hash(input_path)
+                hash_original=await self._calculate_file_hash(input_path),
             )
 
             # Open and process image
             with Image.open(input_path) as img:
                 # Convert RGBA to RGB for JPEG
-                if img.mode == 'RGBA' and 'jpeg' in self.config.image_formats:
+                if img.mode == "RGBA" and "jpeg" in self.config.image_formats:
                     # Create white background
-                    background = Image.new('RGB', img.size, (255, 255, 255))
-                    background.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+                    background = Image.new("RGB", img.size, (255, 255, 255))
+                    background.paste(
+                        img, mask=img.split()[-1]
+                    )  # Use alpha channel as mask
                     img = background
 
                 # Resize if needed
-                if (img.width > self.config.max_image_width or
-                    img.height > self.config.max_image_height):
+                if (
+                    img.width > self.config.max_image_width
+                    or img.height > self.config.max_image_height
+                ):
 
                     img.thumbnail(
                         (self.config.max_image_width, self.config.max_image_height),
-                        Image.Resampling.LANCZOS
+                        Image.Resampling.LANCZOS,
                     )
 
                 # Generate optimized versions
                 total_optimized_size = 0
 
                 for format_name in self.config.image_formats:
-                    if format_name == 'original':
+                    if format_name == "original":
                         continue
 
-                    output_path = self._get_output_path(input_path, output_dir, format_name)
+                    output_path = self._get_output_path(
+                        input_path, output_dir, format_name
+                    )
 
                     try:
                         # Save in specified format
-                        if format_name == 'webp':
+                        if format_name == "webp":
                             img.save(
                                 output_path,
-                                'WEBP',
-                                quality=self.config.image_quality,
-                                optimize=True
-                            )
-                        elif format_name == 'avif':
-                            img.save(
-                                output_path,
-                                'AVIF',
-                                quality=self.config.image_quality,
-                                optimize=True
-                            )
-                        elif format_name == 'jpeg':
-                            img.save(
-                                output_path,
-                                'JPEG',
+                                "WEBP",
                                 quality=self.config.image_quality,
                                 optimize=True,
-                                progressive=True
                             )
-                        elif format_name == 'png':
+                        elif format_name == "avif":
                             img.save(
                                 output_path,
-                                'PNG',
-                                optimize=True
+                                "AVIF",
+                                quality=self.config.image_quality,
+                                optimize=True,
                             )
+                        elif format_name == "jpeg":
+                            img.save(
+                                output_path,
+                                "JPEG",
+                                quality=self.config.image_quality,
+                                optimize=True,
+                                progressive=True,
+                            )
+                        elif format_name == "png":
+                            img.save(output_path, "PNG", optimize=True)
 
                         # Record version
                         if output_path.exists():
@@ -272,18 +296,23 @@ class ImageOptimizer:
                             total_optimized_size += version_size
 
                     except Exception as e:
-                        logger.error(f"Error saving {format_name} version of {input_path}: {e}")
+                        logger.error(
+                            f"Error saving {format_name} version of {input_path}: {e}"
+                        )
 
                 # Always include original if requested
-                if 'original' in self.config.image_formats:
-                    original_output = self._get_output_path(input_path, output_dir, 'original')
+                if "original" in self.config.image_formats:
+                    original_output = self._get_output_path(
+                        input_path, output_dir, "original"
+                    )
 
                     # Copy original if preserving structure
                     if not original_output.exists():
                         import shutil
+
                         shutil.copy2(input_path, original_output)
 
-                    asset_info.versions['original'] = original_output
+                    asset_info.versions["original"] = original_output
                     total_optimized_size += original_size
 
                 # Use smallest version for size calculation
@@ -308,24 +337,30 @@ class ImageOptimizer:
                 file_path=input_path,
                 original_size=input_path.stat().st_size,
                 optimized_size=input_path.stat().st_size,
-                processing_time_ms=(time.time() - start_time) * 1000
+                processing_time_ms=(time.time() - start_time) * 1000,
             )
             return asset_info
 
-    def _get_output_path(self, input_path: Path, output_dir: Path, format_name: str) -> Path:
+    def _get_output_path(
+        self, input_path: Path, output_dir: Path, format_name: str
+    ) -> Path:
         """Get output path for optimized image."""
-        if format_name == 'original':
+        if format_name == "original":
             suffix = input_path.suffix
         else:
-            suffix = f'.{format_name}'
+            suffix = f".{format_name}"
 
         filename = f"{input_path.stem}{suffix}"
-        return output_dir / input_path.parent.relative_to(input_path.parent.parent) / filename
+        return (
+            output_dir
+            / input_path.parent.relative_to(input_path.parent.parent)
+            / filename
+        )
 
     async def _calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA256 hash of file."""
         try:
-            async with aiofiles.open(file_path, 'rb') as f:
+            async with aiofiles.open(file_path, "rb") as f:
                 content = await f.read()
                 return hashlib.sha256(content).hexdigest()
         except Exception:
@@ -345,10 +380,10 @@ class CSSOptimizer:
 
         try:
             # Read CSS content
-            async with aiofiles.open(input_path, encoding='utf-8') as f:
+            async with aiofiles.open(input_path, encoding="utf-8") as f:
                 css_content = await f.read()
 
-            original_size = len(css_content.encode('utf-8'))
+            original_size = len(css_content.encode("utf-8"))
 
             # Minify CSS if library is available
             if cssmin and self.config.enable_css_minification:
@@ -357,13 +392,13 @@ class CSSOptimizer:
                 # Basic optimization without external library
                 optimized_content = self._basic_css_optimization(css_content)
 
-            optimized_size = len(optimized_content.encode('utf-8'))
+            optimized_size = len(optimized_content.encode("utf-8"))
 
             # Write optimized CSS
             output_path = self._get_css_output_path(input_path, output_dir)
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            async with aiofiles.open(output_path, 'w', encoding='utf-8') as f:
+            async with aiofiles.open(output_path, "w", encoding="utf-8") as f:
                 await f.write(optimized_content)
 
             # Create asset info
@@ -371,11 +406,11 @@ class CSSOptimizer:
                 file_path=input_path,
                 original_size=original_size,
                 optimized_size=optimized_size,
-                mime_type='text/css',
-                processing_time_ms=(time.time() - start_time) * 1000
+                mime_type="text/css",
+                processing_time_ms=(time.time() - start_time) * 1000,
             )
 
-            asset_info.versions['minified'] = output_path
+            asset_info.versions["minified"] = output_path
             asset_info.calculate_optimization_ratio()
             asset_info.last_optimized = datetime.utcnow()
             asset_info.optimization_count += 1
@@ -388,28 +423,33 @@ class CSSOptimizer:
                 file_path=input_path,
                 original_size=input_path.stat().st_size,
                 optimized_size=input_path.stat().st_size,
-                processing_time_ms=(time.time() - start_time) * 1000
+                processing_time_ms=(time.time() - start_time) * 1000,
             )
 
     def _basic_css_optimization(self, css_content: str) -> str:
         """Basic CSS optimization without external libraries."""
         # Remove comments
         import re
-        css_content = re.sub(r'/\*.*?\*/', '', css_content, flags=re.DOTALL)
+
+        css_content = re.sub(r"/\*.*?\*/", "", css_content, flags=re.DOTALL)
 
         # Remove unnecessary whitespace
-        css_content = re.sub(r'\s+', ' ', css_content)
-        css_content = re.sub(r';\s*}', '}', css_content)
-        css_content = re.sub(r'{\s*', '{', css_content)
-        css_content = re.sub(r'}\s*', '}', css_content)
-        css_content = re.sub(r';\s*', ';', css_content)
+        css_content = re.sub(r"\s+", " ", css_content)
+        css_content = re.sub(r";\s*}", "}", css_content)
+        css_content = re.sub(r"{\s*", "{", css_content)
+        css_content = re.sub(r"}\s*", "}", css_content)
+        css_content = re.sub(r";\s*", ";", css_content)
 
         return css_content.strip()
 
     def _get_css_output_path(self, input_path: Path, output_dir: Path) -> Path:
         """Get output path for optimized CSS."""
         filename = f"{input_path.stem}.min{input_path.suffix}"
-        return output_dir / input_path.parent.relative_to(input_path.parent.parent) / filename
+        return (
+            output_dir
+            / input_path.parent.relative_to(input_path.parent.parent)
+            / filename
+        )
 
 
 class JavaScriptOptimizer:
@@ -425,10 +465,10 @@ class JavaScriptOptimizer:
 
         try:
             # Read JavaScript content
-            async with aiofiles.open(input_path, encoding='utf-8') as f:
+            async with aiofiles.open(input_path, encoding="utf-8") as f:
                 js_content = await f.read()
 
-            original_size = len(js_content.encode('utf-8'))
+            original_size = len(js_content.encode("utf-8"))
 
             # Minify JavaScript if library is available
             if jsmin and self.config.enable_js_minification:
@@ -437,13 +477,13 @@ class JavaScriptOptimizer:
                 # Basic optimization without external library
                 optimized_content = self._basic_js_optimization(js_content)
 
-            optimized_size = len(optimized_content.encode('utf-8'))
+            optimized_size = len(optimized_content.encode("utf-8"))
 
             # Write optimized JavaScript
             output_path = self._get_js_output_path(input_path, output_dir)
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            async with aiofiles.open(output_path, 'w', encoding='utf-8') as f:
+            async with aiofiles.open(output_path, "w", encoding="utf-8") as f:
                 await f.write(optimized_content)
 
             # Create asset info
@@ -451,11 +491,11 @@ class JavaScriptOptimizer:
                 file_path=input_path,
                 original_size=original_size,
                 optimized_size=optimized_size,
-                mime_type='text/javascript',
-                processing_time_ms=(time.time() - start_time) * 1000
+                mime_type="text/javascript",
+                processing_time_ms=(time.time() - start_time) * 1000,
             )
 
-            asset_info.versions['minified'] = output_path
+            asset_info.versions["minified"] = output_path
             asset_info.calculate_optimization_ratio()
             asset_info.last_optimized = datetime.utcnow()
             asset_info.optimization_count += 1
@@ -468,35 +508,41 @@ class JavaScriptOptimizer:
                 file_path=input_path,
                 original_size=input_path.stat().st_size,
                 optimized_size=input_path.stat().st_size,
-                processing_time_ms=(time.time() - start_time) * 1000
+                processing_time_ms=(time.time() - start_time) * 1000,
             )
 
     def _basic_js_optimization(self, js_content: str) -> str:
         """Basic JavaScript optimization without external libraries."""
         # Remove single-line comments (but preserve URLs and regexes)
         import re
-        js_content = re.sub(r'//[^\r\n]*', '', js_content)
+
+        js_content = re.sub(r"//[^\r\n]*", "", js_content)
 
         # Remove multi-line comments
-        js_content = re.sub(r'/\*.*?\*/', '', js_content, flags=re.DOTALL)
+        js_content = re.sub(r"/\*.*?\*/", "", js_content, flags=re.DOTALL)
 
         # Remove unnecessary whitespace
-        js_content = re.sub(r'\s+', ' ', js_content)
-        js_content = re.sub(r'{\s*', '{', js_content)
-        js_content = re.sub(r'}\s*', '}', js_content)
-        js_content = re.sub(r';\s*', ';', js_content)
+        js_content = re.sub(r"\s+", " ", js_content)
+        js_content = re.sub(r"{\s*", "{", js_content)
+        js_content = re.sub(r"}\s*", "}", js_content)
+        js_content = re.sub(r";\s*", ";", js_content)
 
         return js_content.strip()
 
     def _get_js_output_path(self, input_path: Path, output_dir: Path) -> Path:
         """Get output path for optimized JavaScript."""
         filename = f"{input_path.stem}.min{input_path.suffix}"
-        return output_dir / input_path.parent.relative_to(input_path.parent.parent) / filename
+        return (
+            output_dir
+            / input_path.parent.relative_to(input_path.parent.parent)
+            / filename
+        )
 
 
 # ============================================================================
 # Static Asset Optimizer
 # ============================================================================
+
 
 class StaticAssetOptimizer:
     """
@@ -524,13 +570,15 @@ class StaticAssetOptimizer:
         logger.info("Static Asset Optimizer initialized")
 
     async def optimize_directory(
-        self,
-        input_dir: Union[str, Path],
-        output_dir: Union[str, Path] | None = None
+        self, input_dir: Union[str, Path], output_dir: Union[str, Path] | None = None
     ) -> OptimizationStatistics:
         """Optimize all assets in a directory."""
         input_path = Path(input_dir)
-        output_path = Path(output_dir) if output_dir else input_path / self.config.output_directory
+        output_path = (
+            Path(output_dir)
+            if output_dir
+            else input_path / self.config.output_directory
+        )
 
         if not input_path.exists():
             raise ValueError(f"Input directory does not exist: {input_path}")
@@ -571,14 +619,18 @@ class StaticAssetOptimizer:
 
                 # Track by file type
                 file_ext = result.file_path.suffix.lower()
-                self.stats.files_by_type[file_ext] = self.stats.files_by_type.get(file_ext, 0) + 1
+                self.stats.files_by_type[file_ext] = (
+                    self.stats.files_by_type.get(file_ext, 0) + 1
+                )
 
         self.stats.calculate_totals()
 
         # Generate optimization manifest
         await self._generate_manifest(output_path)
 
-        logger.info(f"Asset optimization completed: {self.stats.optimized_files}/{self.stats.total_files} files")
+        logger.info(
+            f"Asset optimization completed: {self.stats.optimized_files}/{self.stats.total_files} files"
+        )
 
         return self.stats
 
@@ -587,24 +639,21 @@ class StaticAssetOptimizer:
         assets = []
 
         # Supported file extensions
-        image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}
-        css_extensions = {'.css'}
-        js_extensions = {'.js'}
+        image_extensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"}
+        css_extensions = {".css"}
+        js_extensions = {".js"}
 
         all_extensions = image_extensions | css_extensions | js_extensions
 
         # Walk through directory
-        for file_path in input_dir.rglob('*'):
+        for file_path in input_dir.rglob("*"):
             if file_path.is_file() and file_path.suffix.lower() in all_extensions:
                 assets.append(file_path)
 
         return assets
 
     async def _optimize_single_asset(
-        self,
-        asset_path: Path,
-        input_dir: Path,
-        output_dir: Path
+        self, asset_path: Path, input_dir: Path, output_dir: Path
     ) -> AssetInfo | None:
         """Optimize a single asset."""
         async with self._semaphore:
@@ -612,21 +661,35 @@ class StaticAssetOptimizer:
                 file_ext = asset_path.suffix.lower()
 
                 # Determine optimizer based on file type
-                if file_ext in {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'}:
+                if file_ext in {
+                    ".jpg",
+                    ".jpeg",
+                    ".png",
+                    ".gif",
+                    ".bmp",
+                    ".tiff",
+                    ".webp",
+                }:
                     if self.config.enable_image_optimization:
-                        asset_info = await self.image_optimizer.optimize_image(asset_path, output_dir)
+                        asset_info = await self.image_optimizer.optimize_image(
+                            asset_path, output_dir
+                        )
                     else:
                         return None
 
-                elif file_ext == '.css':
+                elif file_ext == ".css":
                     if self.config.enable_css_minification:
-                        asset_info = await self.css_optimizer.optimize_css(asset_path, output_dir)
+                        asset_info = await self.css_optimizer.optimize_css(
+                            asset_path, output_dir
+                        )
                     else:
                         return None
 
-                elif file_ext == '.js':
+                elif file_ext == ".js":
                     if self.config.enable_js_minification:
-                        asset_info = await self.js_optimizer.optimize_js(asset_path, output_dir)
+                        asset_info = await self.js_optimizer.optimize_js(
+                            asset_path, output_dir
+                        )
                     else:
                         return None
 
@@ -653,7 +716,7 @@ class StaticAssetOptimizer:
         manifest = {
             "generated_at": datetime.utcnow().isoformat(),
             "statistics": self.stats.get_summary(),
-            "assets": {}
+            "assets": {},
         }
 
         # Add asset information
@@ -676,12 +739,16 @@ class StaticAssetOptimizer:
                     for format_name, path in asset_info.versions.items()
                 },
                 "hash_original": asset_info.hash_original,
-                "last_optimized": asset_info.last_optimized.isoformat() if asset_info.last_optimized else None
+                "last_optimized": (
+                    asset_info.last_optimized.isoformat()
+                    if asset_info.last_optimized
+                    else None
+                ),
             }
 
         # Write manifest
         manifest_path = output_dir / "optimization_manifest.json"
-        async with aiofiles.open(manifest_path, 'w') as f:
+        async with aiofiles.open(manifest_path, "w") as f:
             await f.write(json.dumps(manifest, indent=2))
 
         logger.info(f"Generated optimization manifest: {manifest_path}")
@@ -705,7 +772,7 @@ class StaticAssetOptimizer:
 
             # Generate version hash
             try:
-                async with aiofiles.open(optimized_path, 'rb') as f:
+                async with aiofiles.open(optimized_path, "rb") as f:
                     content = await f.read()
                     version_hash = hashlib.sha256(content).hexdigest()[:8]
             except Exception:
@@ -713,7 +780,7 @@ class StaticAssetOptimizer:
 
             # Create versioned URL
             if self.config.cdn_base_url:
-                base_url = self.config.cdn_base_url.rstrip('/')
+                base_url = self.config.cdn_base_url.rstrip("/")
             else:
                 base_url = ""
 
@@ -723,9 +790,11 @@ class StaticAssetOptimizer:
                 versioned_url = f"{base_url}/{relative_path}?v={version_hash}"
             else:
                 # Add version to filename
-                path_parts = relative_path.split('.')
+                path_parts = relative_path.split(".")
                 if len(path_parts) > 1:
-                    versioned_filename = f"{'.'.join(path_parts[:-1])}.{version_hash}.{path_parts[-1]}"
+                    versioned_filename = (
+                        f"{'.'.join(path_parts[:-1])}.{version_hash}.{path_parts[-1]}"
+                    )
                 else:
                     versioned_filename = f"{relative_path}.{version_hash}"
 
@@ -737,7 +806,7 @@ class StaticAssetOptimizer:
 
         # Write versioned URLs manifest
         versioned_manifest_path = output_dir / "versioned_assets.json"
-        async with aiofiles.open(versioned_manifest_path, 'w') as f:
+        async with aiofiles.open(versioned_manifest_path, "w") as f:
             await f.write(json.dumps(versioned_urls, indent=2))
 
         logger.info(f"Generated {len(versioned_urls)} versioned asset URLs")
@@ -803,16 +872,17 @@ class StaticAssetOptimizer:
                     "optimized_size": asset_info.optimized_size,
                     "optimization_ratio": round(asset_info.optimization_ratio, 2),
                     "processing_time_ms": round(asset_info.processing_time_ms, 2),
-                    "formats_generated": list(asset_info.versions.keys())
+                    "formats_generated": list(asset_info.versions.keys()),
                 }
                 for asset_info in self.optimized_assets.values()
-            ]
+            ],
         }
 
 
 # ============================================================================
 # Command Line Interface
 # ============================================================================
+
 
 async def main():
     """Main function for command line usage."""
@@ -821,15 +891,31 @@ async def main():
     parser = argparse.ArgumentParser(description="Static Asset Optimizer")
     parser.add_argument("input_dir", help="Input directory containing assets")
     parser.add_argument("--output-dir", help="Output directory for optimized assets")
-    parser.add_argument("--image-quality", type=int, default=85, help="Image quality (0-100)")
-    parser.add_argument("--max-image-width", type=int, default=1920, help="Maximum image width")
-    parser.add_argument("--max-image-height", type=int, default=1080, help="Maximum image height")
-    parser.add_argument("--disable-css", action="store_true", help="Disable CSS optimization")
-    parser.add_argument("--disable-js", action="store_true", help="Disable JavaScript optimization")
-    parser.add_argument("--disable-images", action="store_true", help="Disable image optimization")
-    parser.add_argument("--concurrent", type=int, default=4, help="Maximum concurrent operations")
+    parser.add_argument(
+        "--image-quality", type=int, default=85, help="Image quality (0-100)"
+    )
+    parser.add_argument(
+        "--max-image-width", type=int, default=1920, help="Maximum image width"
+    )
+    parser.add_argument(
+        "--max-image-height", type=int, default=1080, help="Maximum image height"
+    )
+    parser.add_argument(
+        "--disable-css", action="store_true", help="Disable CSS optimization"
+    )
+    parser.add_argument(
+        "--disable-js", action="store_true", help="Disable JavaScript optimization"
+    )
+    parser.add_argument(
+        "--disable-images", action="store_true", help="Disable image optimization"
+    )
+    parser.add_argument(
+        "--concurrent", type=int, default=4, help="Maximum concurrent operations"
+    )
     parser.add_argument("--cdn-url", help="CDN base URL for assets")
-    parser.add_argument("--upload-cdn", action="store_true", help="Upload to CDN after optimization")
+    parser.add_argument(
+        "--upload-cdn", action="store_true", help="Upload to CDN after optimization"
+    )
     parser.add_argument("--report", help="Generate optimization report (output file)")
 
     args = parser.parse_args()
@@ -837,7 +923,7 @@ async def main():
     # Setup logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     try:
@@ -851,7 +937,7 @@ async def main():
             max_image_height=args.max_image_height,
             max_concurrent_operations=args.concurrent,
             cdn_base_url=args.cdn_url,
-            enable_cdn_upload=args.upload_cdn
+            enable_cdn_upload=args.upload_cdn,
         )
 
         # Create optimizer
@@ -867,7 +953,9 @@ async def main():
         print(f"Files processed: {summary['files']['total']}")
         print(f"Files optimized: {summary['files']['optimized']}")
         print(f"Success rate: {summary['files']['success_rate']:.1f}%")
-        print(f"Size reduction: {summary['size_reduction']['saved_mb']:.2f}MB ({summary['size_reduction']['reduction_percent']:.1f}%)")
+        print(
+            f"Size reduction: {summary['size_reduction']['saved_mb']:.2f}MB ({summary['size_reduction']['reduction_percent']:.1f}%)"
+        )
         print(f"Processing time: {summary['performance']['total_time_seconds']:.1f}s")
 
         # Generate versioned assets
@@ -887,7 +975,7 @@ async def main():
         # Generate report if requested
         if args.report:
             report = optimizer.get_optimization_report()
-            with open(args.report, 'w') as f:
+            with open(args.report, "w") as f:
                 json.dump(report, f, indent=2)
             print(f"Optimization report saved to {args.report}")
 
@@ -900,4 +988,5 @@ async def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(asyncio.run(main()))

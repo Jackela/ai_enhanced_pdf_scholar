@@ -24,8 +24,10 @@ logger = logging.getLogger(__name__)
 # Cache Telemetry Data Models
 # ============================================================================
 
+
 class CacheLayer(str, Enum):
     """Cache layer types."""
+
     RAG_QUERY = "rag_query"
     VECTOR_INDEX = "vector_index"
     DATABASE = "database"
@@ -36,6 +38,7 @@ class CacheLayer(str, Enum):
 
 class CacheOperation(str, Enum):
     """Cache operation types."""
+
     GET = "get"
     SET = "set"
     DELETE = "delete"
@@ -46,6 +49,7 @@ class CacheOperation(str, Enum):
 
 class CacheStatus(str, Enum):
     """Cache operation status."""
+
     HIT = "hit"
     MISS = "miss"
     ERROR = "error"
@@ -56,6 +60,7 @@ class CacheStatus(str, Enum):
 @dataclass
 class CacheEvent:
     """Individual cache operation event."""
+
     timestamp: datetime
     cache_layer: CacheLayer
     operation: CacheOperation
@@ -71,6 +76,7 @@ class CacheEvent:
 @dataclass
 class CacheLayerMetrics:
     """Metrics for a specific cache layer."""
+
     layer: CacheLayer
     total_operations: int = 0
     hits: int = 0
@@ -111,6 +117,7 @@ class CacheLayerMetrics:
 @dataclass
 class CacheHealthStatus:
     """Overall cache health assessment."""
+
     overall_score: float  # 0-100
     status: str  # healthy, degraded, critical
     issues: list[str] = field(default_factory=list)
@@ -121,6 +128,7 @@ class CacheHealthStatus:
 @dataclass
 class CacheOptimizationRecommendation:
     """Cache optimization recommendation."""
+
     priority: str  # high, medium, low
     category: str  # performance, memory, ttl, patterns
     description: str
@@ -133,6 +141,7 @@ class CacheOptimizationRecommendation:
 # Cache Telemetry Service
 # ============================================================================
 
+
 class CacheTelemetryService:
     """
     Comprehensive cache telemetry and monitoring service.
@@ -142,7 +151,7 @@ class CacheTelemetryService:
         self,
         max_events: int = 10000,
         analysis_window_minutes: int = 60,
-        metrics_retention_hours: int = 24
+        metrics_retention_hours: int = 24,
     ):
         """Initialize cache telemetry service."""
         self.max_events = max_events
@@ -154,13 +163,23 @@ class CacheTelemetryService:
         self.layer_metrics: dict[CacheLayer, CacheLayerMetrics] = {}
 
         # Real-time tracking
-        self.latency_windows: dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=1000))
-        self.throughput_windows: dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=100))
-        self.size_windows: dict[CacheLayer, deque] = defaultdict(lambda: deque(maxlen=1000))
+        self.latency_windows: dict[CacheLayer, deque] = defaultdict(
+            lambda: deque(maxlen=1000)
+        )
+        self.throughput_windows: dict[CacheLayer, deque] = defaultdict(
+            lambda: deque(maxlen=100)
+        )
+        self.size_windows: dict[CacheLayer, deque] = defaultdict(
+            lambda: deque(maxlen=1000)
+        )
 
         # Pattern analysis
-        self.key_patterns: dict[CacheLayer, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        self.hot_keys: dict[CacheLayer, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        self.key_patterns: dict[CacheLayer, dict[str, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
+        self.hot_keys: dict[CacheLayer, dict[str, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
 
         # Performance baselines
         self.baselines: dict[CacheLayer, dict[str, float]] = {}
@@ -184,7 +203,7 @@ class CacheTelemetryService:
         latency_ms: float,
         size_bytes: int = 0,
         ttl_seconds: int | None = None,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Record a cache operation event."""
         event = CacheEvent(
@@ -197,7 +216,7 @@ class CacheTelemetryService:
             size_bytes=size_bytes,
             latency_ms=latency_ms,
             ttl_seconds=ttl_seconds,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.events.append(event)
@@ -209,11 +228,7 @@ class CacheTelemetryService:
         self._update_pattern_tracking(event)
 
     def record_cache_hit(
-        self,
-        cache_layer: CacheLayer,
-        key: str,
-        latency_ms: float,
-        size_bytes: int = 0
+        self, cache_layer: CacheLayer, key: str, latency_ms: float, size_bytes: int = 0
     ) -> None:
         """Record a cache hit event."""
         self.record_cache_event(
@@ -222,14 +237,11 @@ class CacheTelemetryService:
             status=CacheStatus.HIT,
             key=key,
             latency_ms=latency_ms,
-            size_bytes=size_bytes
+            size_bytes=size_bytes,
         )
 
     def record_cache_miss(
-        self,
-        cache_layer: CacheLayer,
-        key: str,
-        latency_ms: float
+        self, cache_layer: CacheLayer, key: str, latency_ms: float
     ) -> None:
         """Record a cache miss event."""
         self.record_cache_event(
@@ -237,7 +249,7 @@ class CacheTelemetryService:
             operation=CacheOperation.GET,
             status=CacheStatus.MISS,
             key=key,
-            latency_ms=latency_ms
+            latency_ms=latency_ms,
         )
 
     def record_cache_set(
@@ -246,7 +258,7 @@ class CacheTelemetryService:
         key: str,
         latency_ms: float,
         size_bytes: int,
-        ttl_seconds: int | None = None
+        ttl_seconds: int | None = None,
     ) -> None:
         """Record a cache set operation."""
         self.record_cache_event(
@@ -256,7 +268,7 @@ class CacheTelemetryService:
             key=key,
             latency_ms=latency_ms,
             size_bytes=size_bytes,
-            ttl_seconds=ttl_seconds
+            ttl_seconds=ttl_seconds,
         )
 
     # ========================================================================
@@ -272,8 +284,10 @@ class CacheTelemetryService:
 
         # Update throughput window (events per second)
         current_minute = event.timestamp.minute
-        if not self.throughput_windows[layer] or \
-           self.throughput_windows[layer][-1][0] != current_minute:
+        if (
+            not self.throughput_windows[layer]
+            or self.throughput_windows[layer][-1][0] != current_minute
+        ):
             self.throughput_windows[layer].append((current_minute, 1))
         else:
             count = self.throughput_windows[layer][-1][1] + 1
@@ -301,16 +315,16 @@ class CacheTelemetryService:
         import re
 
         # Replace numeric IDs
-        pattern = re.sub(r'\d+', '{id}', key)
+        pattern = re.sub(r"\d+", "{id}", key)
 
         # Replace hash-like strings (hex strings > 8 chars)
-        pattern = re.sub(r'[a-f0-9]{8,}', '{hash}', pattern)
+        pattern = re.sub(r"[a-f0-9]{8,}", "{hash}", pattern)
 
         # Replace UUIDs
         pattern = re.sub(
-            r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
-            '{uuid}',
-            pattern
+            r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}",
+            "{uuid}",
+            pattern,
         )
 
         return pattern
@@ -324,7 +338,8 @@ class CacheTelemetryService:
         # Get recent events for this layer
         cutoff_time = datetime.utcnow() - self.analysis_window
         layer_events = [
-            e for e in self.events
+            e
+            for e in self.events
             if e.cache_layer == layer and e.timestamp >= cutoff_time
         ]
 
@@ -352,8 +367,16 @@ class CacheTelemetryService:
             sorted_latencies = sorted(latencies)
             p95_idx = int(len(sorted_latencies) * 0.95)
             p99_idx = int(len(sorted_latencies) * 0.99)
-            p95_latency = sorted_latencies[p95_idx] if p95_idx < len(sorted_latencies) else sorted_latencies[-1]
-            p99_latency = sorted_latencies[p99_idx] if p99_idx < len(sorted_latencies) else sorted_latencies[-1]
+            p95_latency = (
+                sorted_latencies[p95_idx]
+                if p95_idx < len(sorted_latencies)
+                else sorted_latencies[-1]
+            )
+            p99_latency = (
+                sorted_latencies[p99_idx]
+                if p99_idx < len(sorted_latencies)
+                else sorted_latencies[-1]
+            )
         else:
             p95_latency = p99_latency = 0
 
@@ -365,20 +388,30 @@ class CacheTelemetryService:
 
         # Calculate throughput
         time_span_seconds = self.analysis_window.total_seconds()
-        throughput = total_operations / time_span_seconds if time_span_seconds > 0 else 0
+        throughput = (
+            total_operations / time_span_seconds if time_span_seconds > 0 else 0
+        )
 
         # Calculate TTL metrics
         ttl_values = [e.ttl_seconds for e in layer_events if e.ttl_seconds is not None]
         avg_ttl_hours = (mean(ttl_values) / 3600) if ttl_values else 0
 
         # Calculate expired entries
-        expired_entries = sum(1 for e in layer_events if e.status == CacheStatus.EXPIRED)
+        expired_entries = sum(
+            1 for e in layer_events if e.status == CacheStatus.EXPIRED
+        )
 
         # Analyze key patterns
         pattern_counts = self.key_patterns[layer]
         top_patterns = [
-            {"pattern": pattern, "count": count, "percentage": count / total_operations * 100}
-            for pattern, count in sorted(pattern_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            {
+                "pattern": pattern,
+                "count": count,
+                "percentage": count / total_operations * 100,
+            }
+            for pattern, count in sorted(
+                pattern_counts.items(), key=lambda x: x[1], reverse=True
+            )[:10]
         ]
 
         return CacheLayerMetrics(
@@ -401,7 +434,7 @@ class CacheTelemetryService:
             avg_ttl_hours=avg_ttl_hours,
             expired_entries=expired_entries,
             top_key_patterns=top_patterns,
-            last_updated=datetime.utcnow()
+            last_updated=datetime.utcnow(),
         )
 
     def get_all_layer_metrics(self) -> dict[CacheLayer, CacheLayerMetrics]:
@@ -440,12 +473,11 @@ class CacheTelemetryService:
                 CacheLayer.REDIS_L2: 0.25,
                 CacheLayer.DATABASE: 0.2,
                 CacheLayer.VECTOR_INDEX: 0.15,
-                CacheLayer.DOCUMENT_CONTENT: 0.1
+                CacheLayer.DOCUMENT_CONTENT: 0.1,
             }
 
             overall_score = sum(
-                score * weights.get(layer, 0.1)
-                for layer, score in layer_scores.items()
+                score * weights.get(layer, 0.1) for layer, score in layer_scores.items()
             ) / sum(weights.get(layer, 0.1) for layer in layer_scores)
         else:
             overall_score = 0
@@ -463,7 +495,7 @@ class CacheTelemetryService:
             status=status,
             issues=issues,
             recommendations=recommendations,
-            layer_scores=layer_scores
+            layer_scores=layer_scores,
         )
 
     def _calculate_layer_health_score(self, metrics: CacheLayerMetrics) -> float:
@@ -493,8 +525,7 @@ class CacheTelemetryService:
         return max(0, score)
 
     def _analyze_layer_issues(
-        self,
-        metrics: CacheLayerMetrics
+        self, metrics: CacheLayerMetrics
     ) -> tuple[list[str], list[str]]:
         """Analyze issues and generate recommendations for a cache layer."""
         issues = []
@@ -502,25 +533,41 @@ class CacheTelemetryService:
 
         # Hit rate analysis
         if metrics.hit_rate_percent < 50:
-            issues.append(f"{metrics.layer.value}: Low hit rate ({metrics.hit_rate_percent:.1f}%)")
-            recommendations.append(f"Optimize {metrics.layer.value} cache keys and TTL settings")
+            issues.append(
+                f"{metrics.layer.value}: Low hit rate ({metrics.hit_rate_percent:.1f}%)"
+            )
+            recommendations.append(
+                f"Optimize {metrics.layer.value} cache keys and TTL settings"
+            )
 
         # Latency analysis
         if metrics.p95_latency_ms > 100:
-            issues.append(f"{metrics.layer.value}: High P95 latency ({metrics.p95_latency_ms:.1f}ms)")
-            recommendations.append(f"Investigate {metrics.layer.value} cache performance bottlenecks")
+            issues.append(
+                f"{metrics.layer.value}: High P95 latency ({metrics.p95_latency_ms:.1f}ms)"
+            )
+            recommendations.append(
+                f"Investigate {metrics.layer.value} cache performance bottlenecks"
+            )
 
         # Memory usage analysis
         if metrics.total_size_mb > 500:
-            issues.append(f"{metrics.layer.value}: High memory usage ({metrics.total_size_mb:.1f}MB)")
-            recommendations.append(f"Implement more aggressive eviction for {metrics.layer.value}")
+            issues.append(
+                f"{metrics.layer.value}: High memory usage ({metrics.total_size_mb:.1f}MB)"
+            )
+            recommendations.append(
+                f"Implement more aggressive eviction for {metrics.layer.value}"
+            )
 
         # Error rate analysis
         if metrics.total_operations > 0:
             error_rate = (metrics.errors / metrics.total_operations) * 100
             if error_rate > 2:
-                issues.append(f"{metrics.layer.value}: High error rate ({error_rate:.1f}%)")
-                recommendations.append(f"Review error handling in {metrics.layer.value} cache")
+                issues.append(
+                    f"{metrics.layer.value}: High error rate ({error_rate:.1f}%)"
+                )
+                recommendations.append(
+                    f"Review error handling in {metrics.layer.value} cache"
+                )
 
         return issues, recommendations
 
@@ -528,7 +575,9 @@ class CacheTelemetryService:
     # Optimization Recommendations
     # ========================================================================
 
-    def generate_optimization_recommendations(self) -> list[CacheOptimizationRecommendation]:
+    def generate_optimization_recommendations(
+        self,
+    ) -> list[CacheOptimizationRecommendation]:
         """Generate cache optimization recommendations."""
         recommendations = []
         all_metrics = self.get_all_layer_metrics()
@@ -544,55 +593,62 @@ class CacheTelemetryService:
         return recommendations
 
     def _generate_layer_recommendations(
-        self,
-        metrics: CacheLayerMetrics
+        self, metrics: CacheLayerMetrics
     ) -> list[CacheOptimizationRecommendation]:
         """Generate optimization recommendations for a specific cache layer."""
         recommendations = []
 
         # Hit rate optimization
         if metrics.hit_rate_percent < 70:
-            recommendations.append(CacheOptimizationRecommendation(
-                priority="high",
-                category="performance",
-                description=f"Improve {metrics.layer.value} cache hit rate from {metrics.hit_rate_percent:.1f}%",
-                impact_estimate="15-25% performance improvement",
-                implementation_effort="medium",
-                expected_improvement={"hit_rate": 15, "latency_reduction": 20}
-            ))
+            recommendations.append(
+                CacheOptimizationRecommendation(
+                    priority="high",
+                    category="performance",
+                    description=f"Improve {metrics.layer.value} cache hit rate from {metrics.hit_rate_percent:.1f}%",
+                    impact_estimate="15-25% performance improvement",
+                    implementation_effort="medium",
+                    expected_improvement={"hit_rate": 15, "latency_reduction": 20},
+                )
+            )
 
         # Latency optimization
         if metrics.p95_latency_ms > 50:
-            recommendations.append(CacheOptimizationRecommendation(
-                priority="medium",
-                category="performance",
-                description=f"Reduce {metrics.layer.value} cache P95 latency from {metrics.p95_latency_ms:.1f}ms",
-                impact_estimate="10-20% latency reduction",
-                implementation_effort="high",
-                expected_improvement={"latency_reduction": 15}
-            ))
+            recommendations.append(
+                CacheOptimizationRecommendation(
+                    priority="medium",
+                    category="performance",
+                    description=f"Reduce {metrics.layer.value} cache P95 latency from {metrics.p95_latency_ms:.1f}ms",
+                    impact_estimate="10-20% latency reduction",
+                    implementation_effort="high",
+                    expected_improvement={"latency_reduction": 15},
+                )
+            )
 
         # Memory optimization
         if metrics.avg_entry_size_kb > 100:
-            recommendations.append(CacheOptimizationRecommendation(
-                priority="low",
-                category="memory",
-                description=f"Optimize {metrics.layer.value} cache entry size (avg: {metrics.avg_entry_size_kb:.1f}KB)",
-                impact_estimate="20-30% memory savings",
-                implementation_effort="medium",
-                expected_improvement={"memory_savings": 25}
-            ))
+            recommendations.append(
+                CacheOptimizationRecommendation(
+                    priority="low",
+                    category="memory",
+                    description=f"Optimize {metrics.layer.value} cache entry size (avg: {metrics.avg_entry_size_kb:.1f}KB)",
+                    impact_estimate="20-30% memory savings",
+                    implementation_effort="medium",
+                    expected_improvement={"memory_savings": 25},
+                )
+            )
 
         # TTL optimization
         if metrics.expired_entries > metrics.total_operations * 0.1:
-            recommendations.append(CacheOptimizationRecommendation(
-                priority="medium",
-                category="ttl",
-                description=f"Optimize {metrics.layer.value} TTL settings (high expiration rate)",
-                impact_estimate="5-10% hit rate improvement",
-                implementation_effort="low",
-                expected_improvement={"hit_rate": 7, "expired_reduction": 50}
-            ))
+            recommendations.append(
+                CacheOptimizationRecommendation(
+                    priority="medium",
+                    category="ttl",
+                    description=f"Optimize {metrics.layer.value} TTL settings (high expiration rate)",
+                    impact_estimate="5-10% hit rate improvement",
+                    implementation_effort="low",
+                    expected_improvement={"hit_rate": 7, "expired_reduction": 50},
+                )
+            )
 
         return recommendations
 
@@ -601,9 +657,7 @@ class CacheTelemetryService:
     # ========================================================================
 
     def identify_cache_warming_candidates(
-        self,
-        layer: CacheLayer,
-        limit: int = 50
+        self, layer: CacheLayer, limit: int = 50
     ) -> list[dict[str, Any]]:
         """Identify keys that should be pre-warmed in cache."""
         # Analyze hot keys that are frequently missed
@@ -611,7 +665,8 @@ class CacheTelemetryService:
 
         cutoff_time = datetime.utcnow() - timedelta(hours=1)  # Last hour
         recent_events = [
-            e for e in self.events
+            e
+            for e in self.events
             if e.cache_layer == layer and e.timestamp >= cutoff_time
         ]
 
@@ -631,16 +686,20 @@ class CacheTelemetryService:
             if total > 5:  # Minimum activity threshold
                 miss_rate = stats["misses"] / total
                 if 0.3 < miss_rate < 0.8:  # Sweet spot for warming
-                    warming_candidates.append({
-                        "pattern": pattern,
-                        "miss_rate": miss_rate,
-                        "total_requests": total,
-                        "sample_keys": list(set(stats["keys"]))[:5],
-                        "priority": "high" if miss_rate > 0.6 else "medium"
-                    })
+                    warming_candidates.append(
+                        {
+                            "pattern": pattern,
+                            "miss_rate": miss_rate,
+                            "total_requests": total,
+                            "sample_keys": list(set(stats["keys"]))[:5],
+                            "priority": "high" if miss_rate > 0.6 else "medium",
+                        }
+                    )
 
         # Sort by miss rate and total requests
-        warming_candidates.sort(key=lambda x: (x["miss_rate"], x["total_requests"]), reverse=True)
+        warming_candidates.sort(
+            key=lambda x: (x["miss_rate"], x["total_requests"]), reverse=True
+        )
 
         return warming_candidates[:limit]
 
@@ -648,22 +707,21 @@ class CacheTelemetryService:
     # Performance Trending and Analysis
     # ========================================================================
 
-    def analyze_performance_trends(
-        self,
-        hours_back: int = 24
-    ) -> dict[str, Any]:
+    def analyze_performance_trends(self, hours_back: int = 24) -> dict[str, Any]:
         """Analyze performance trends over time."""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
         relevant_events = [e for e in self.events if e.timestamp >= cutoff_time]
 
         # Group events by hour
-        hourly_stats = defaultdict(lambda: {
-            "total_ops": 0,
-            "hits": 0,
-            "misses": 0,
-            "avg_latency": 0,
-            "total_latency": 0
-        })
+        hourly_stats = defaultdict(
+            lambda: {
+                "total_ops": 0,
+                "hits": 0,
+                "misses": 0,
+                "avg_latency": 0,
+                "total_latency": 0,
+            }
+        )
 
         for event in relevant_events:
             hour_key = event.timestamp.replace(minute=0, second=0, microsecond=0)
@@ -684,20 +742,30 @@ class CacheTelemetryService:
                 avg_latency = stats["total_latency"] / stats["total_ops"]
                 hit_rate = (stats["hits"] / stats["total_ops"]) * 100
 
-                trends.append({
-                    "timestamp": hour.isoformat(),
-                    "hit_rate": hit_rate,
-                    "avg_latency_ms": avg_latency,
-                    "total_operations": stats["total_ops"]
-                })
+                trends.append(
+                    {
+                        "timestamp": hour.isoformat(),
+                        "hit_rate": hit_rate,
+                        "avg_latency_ms": avg_latency,
+                        "total_operations": stats["total_ops"],
+                    }
+                )
 
         # Calculate trend direction
         if len(trends) >= 2:
             recent_hit_rates = [t["hit_rate"] for t in trends[-3:]]
             recent_latencies = [t["avg_latency_ms"] for t in trends[-3:]]
 
-            hit_rate_trend = "improving" if recent_hit_rates[-1] > recent_hit_rates[0] else "degrading"
-            latency_trend = "improving" if recent_latencies[-1] < recent_latencies[0] else "degrading"
+            hit_rate_trend = (
+                "improving"
+                if recent_hit_rates[-1] > recent_hit_rates[0]
+                else "degrading"
+            )
+            latency_trend = (
+                "improving"
+                if recent_latencies[-1] < recent_latencies[0]
+                else "degrading"
+            )
         else:
             hit_rate_trend = latency_trend = "stable"
 
@@ -706,7 +774,7 @@ class CacheTelemetryService:
             "hit_rate_trend": hit_rate_trend,
             "latency_trend": latency_trend,
             "analysis_period_hours": hours_back,
-            "total_events_analyzed": len(relevant_events)
+            "total_events_analyzed": len(relevant_events),
         }
 
     # ========================================================================
@@ -714,9 +782,7 @@ class CacheTelemetryService:
     # ========================================================================
 
     def export_telemetry_report(
-        self,
-        output_path: Path | None = None,
-        format: str = "json"
+        self, output_path: Path | None = None, format: str = "json"
     ) -> dict[str, Any]:
         """Export comprehensive telemetry report."""
         # Generate comprehensive report
@@ -730,13 +796,15 @@ class CacheTelemetryService:
                 "generated_at": datetime.utcnow().isoformat(),
                 "analysis_window_minutes": self.analysis_window.total_seconds() / 60,
                 "total_events": len(self.events),
-                "reporting_period": "last_24_hours"
+                "reporting_period": "last_24_hours",
             },
             "cache_layer_metrics": {
                 layer.value: asdict(metrics) for layer, metrics in all_metrics.items()
             },
             "health_assessment": asdict(health_status),
-            "optimization_recommendations": [asdict(rec) for rec in optimization_recommendations],
+            "optimization_recommendations": [
+                asdict(rec) for rec in optimization_recommendations
+            ],
             "performance_trends": performance_trends,
             "cache_warming_analysis": {
                 layer.value: self.identify_cache_warming_candidates(layer, 10)
@@ -745,8 +813,8 @@ class CacheTelemetryService:
             "system_resources": {
                 "memory_usage_mb": psutil.virtual_memory().used / 1024 / 1024,
                 "cpu_percent": psutil.cpu_percent(),
-                "disk_usage_percent": psutil.disk_usage("/").percent
-            }
+                "disk_usage_percent": psutil.disk_usage("/").percent,
+            },
         }
 
         # Export to file if requested
@@ -781,13 +849,15 @@ class CacheTelemetryService:
                 "current_avg_latency_ms": mean(latency_window) if latency_window else 0,
                 "current_p95_latency_ms": (
                     sorted(latency_window)[int(len(latency_window) * 0.95)]
-                    if len(latency_window) > 10 else 0
+                    if len(latency_window) > 10
+                    else 0
                 ),
                 "current_throughput": (
                     sum(count for _, count in throughput_window[-5:])  # Last 5 minutes
-                    if throughput_window else 0
+                    if throughput_window
+                    else 0
                 ),
-                "trend_direction": self._calculate_trend_direction(latency_window)
+                "trend_direction": self._calculate_trend_direction(latency_window),
             }
 
         return {
@@ -799,15 +869,16 @@ class CacheTelemetryService:
                     "avg_latency_ms": metrics.avg_latency_ms,
                     "throughput": metrics.throughput_ops_per_sec,
                     "total_size_mb": metrics.total_size_mb,
-                    "error_count": metrics.errors
+                    "error_count": metrics.errors,
                 }
                 for layer, metrics in current_metrics.items()
             },
             "real_time_stats": real_time_stats,
             "top_issues": health_status.issues[:5],
             "top_recommendations": [
-                rec.description for rec in self.generate_optimization_recommendations()[:3]
-            ]
+                rec.description
+                for rec in self.generate_optimization_recommendations()[:3]
+            ],
         }
 
     def _calculate_trend_direction(self, values: list[float]) -> str:
@@ -824,7 +895,9 @@ class CacheTelemetryService:
         recent_avg = mean(recent_values)
         older_avg = mean(older_values)
 
-        change_percent = ((recent_avg - older_avg) / older_avg) * 100 if older_avg > 0 else 0
+        change_percent = (
+            ((recent_avg - older_avg) / older_avg) * 100 if older_avg > 0 else 0
+        )
 
         if change_percent > 5:
             return "increasing"

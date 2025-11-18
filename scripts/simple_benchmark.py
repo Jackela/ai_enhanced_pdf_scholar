@@ -14,7 +14,9 @@ from datetime import datetime
 from pathlib import Path
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Add project root to path
@@ -28,7 +30,7 @@ class SimpleBenchmark:
     """Simple benchmark suite for core operations"""
 
     def __init__(self):
-        self.db_path = tempfile.mktemp(suffix='.db')
+        self.db_path = tempfile.mktemp(suffix=".db")
         self.db = None
         self.results = {}
 
@@ -55,7 +57,10 @@ class SimpleBenchmark:
             ("count_citations", "SELECT COUNT(*) FROM citations"),
             ("count_vector_indexes", "SELECT COUNT(*) FROM vector_indexes"),
             ("get_all_documents", "SELECT * FROM documents LIMIT 10"),
-            ("get_recent_documents", "SELECT * FROM documents ORDER BY created_at DESC LIMIT 5")
+            (
+                "get_recent_documents",
+                "SELECT * FROM documents ORDER BY created_at DESC LIMIT 5",
+            ),
         ]
 
         for query_name, query_sql in query_tests:
@@ -75,15 +80,21 @@ class SimpleBenchmark:
                 query_times.append(duration_ms)
 
             if query_times:
-                metrics.append({
-                    "operation": query_name,
-                    "run_count": len(query_times),
-                    "min_ms": min(query_times),
-                    "max_ms": max(query_times),
-                    "avg_ms": statistics.mean(query_times),
-                    "median_ms": statistics.median(query_times),
-                    "p95_ms": statistics.quantiles(query_times, n=20)[18] if len(query_times) >= 20 else max(query_times)
-                })
+                metrics.append(
+                    {
+                        "operation": query_name,
+                        "run_count": len(query_times),
+                        "min_ms": min(query_times),
+                        "max_ms": max(query_times),
+                        "avg_ms": statistics.mean(query_times),
+                        "median_ms": statistics.median(query_times),
+                        "p95_ms": (
+                            statistics.quantiles(query_times, n=20)[18]
+                            if len(query_times) >= 20
+                            else max(query_times)
+                        ),
+                    }
+                )
 
         self.results["database_queries"] = metrics
         return metrics
@@ -130,17 +141,26 @@ class SimpleBenchmark:
                 read_times.append(duration_ms)
 
             if read_times:
-                metrics.append({
-                    "operation": f"file_read_{file_type}",
-                    "run_count": len(read_times),
-                    "min_ms": min(read_times),
-                    "max_ms": max(read_times),
-                    "avg_ms": statistics.mean(read_times),
-                    "median_ms": statistics.median(read_times),
-                    "p95_ms": statistics.quantiles(read_times, n=20)[18] if len(read_times) >= 20 else max(read_times),
-                    "file_size_bytes": file_path.stat().st_size,
-                    "throughput_mb_per_sec": (file_path.stat().st_size / 1024 / 1024) / (statistics.mean(read_times) / 1000)
-                })
+                metrics.append(
+                    {
+                        "operation": f"file_read_{file_type}",
+                        "run_count": len(read_times),
+                        "min_ms": min(read_times),
+                        "max_ms": max(read_times),
+                        "avg_ms": statistics.mean(read_times),
+                        "median_ms": statistics.median(read_times),
+                        "p95_ms": (
+                            statistics.quantiles(read_times, n=20)[18]
+                            if len(read_times) >= 20
+                            else max(read_times)
+                        ),
+                        "file_size_bytes": file_path.stat().st_size,
+                        "throughput_mb_per_sec": (
+                            file_path.stat().st_size / 1024 / 1024
+                        )
+                        / (statistics.mean(read_times) / 1000),
+                    }
+                )
 
         # Cleanup test files
         for file_path in test_files.values():
@@ -157,8 +177,10 @@ class SimpleBenchmark:
         # Test data of different sizes
         test_texts = {
             "short_text": "This is a short test document with some basic content. " * 5,
-            "medium_text": "This is a medium-length test document with more content to process. " * 100,
-            "long_text": "This is a long test document with substantial content for processing tests. " * 1000
+            "medium_text": "This is a medium-length test document with more content to process. "
+            * 100,
+            "long_text": "This is a long test document with substantial content for processing tests. "
+            * 1000,
         }
 
         metrics = []
@@ -173,7 +195,7 @@ class SimpleBenchmark:
                 words = text_content.split()
                 word_count = len(words)
                 char_count = len(text_content)
-                sentences = text_content.split('. ')
+                sentences = text_content.split(". ")
                 sentence_count = len(sentences)
 
                 # Basic text cleaning
@@ -184,18 +206,25 @@ class SimpleBenchmark:
                 processing_times.append(duration_ms)
 
             if processing_times:
-                metrics.append({
-                    "operation": f"text_processing_{text_type}",
-                    "run_count": len(processing_times),
-                    "min_ms": min(processing_times),
-                    "max_ms": max(processing_times),
-                    "avg_ms": statistics.mean(processing_times),
-                    "median_ms": statistics.median(processing_times),
-                    "p95_ms": statistics.quantiles(processing_times, n=20)[18] if len(processing_times) >= 20 else max(processing_times),
-                    "text_length_chars": len(text_content),
-                    "word_count": len(text_content.split()),
-                    "throughput_chars_per_sec": len(text_content) / (statistics.mean(processing_times) / 1000)
-                })
+                metrics.append(
+                    {
+                        "operation": f"text_processing_{text_type}",
+                        "run_count": len(processing_times),
+                        "min_ms": min(processing_times),
+                        "max_ms": max(processing_times),
+                        "avg_ms": statistics.mean(processing_times),
+                        "median_ms": statistics.median(processing_times),
+                        "p95_ms": (
+                            statistics.quantiles(processing_times, n=20)[18]
+                            if len(processing_times) >= 20
+                            else max(processing_times)
+                        ),
+                        "text_length_chars": len(text_content),
+                        "word_count": len(text_content.split()),
+                        "throughput_chars_per_sec": len(text_content)
+                        / (statistics.mean(processing_times) / 1000),
+                    }
+                )
 
         self.results["text_processing"] = metrics
         return metrics
@@ -220,11 +249,13 @@ class SimpleBenchmark:
                 "benchmark_version": "1.0.0",
                 "environment": {
                     "python_version": sys.version,
-                    "platform": sys.platform
-                }
+                    "platform": sys.platform,
+                },
             }
 
-            logger.info(f"Benchmark suite completed in {end_time - start_time:.2f} seconds")
+            logger.info(
+                f"Benchmark suite completed in {end_time - start_time:.2f} seconds"
+            )
 
         except Exception as e:
             logger.error(f"Benchmark suite failed: {e}")
@@ -237,9 +268,9 @@ class SimpleBenchmark:
 
     def print_summary(self):
         """Print benchmark summary"""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("SIMPLE PERFORMANCE BENCHMARK SUMMARY")
-        print("="*80)
+        print("=" * 80)
 
         if "error" in self.results:
             print(f"❌ BENCHMARK FAILED: {self.results['error']}")
@@ -277,7 +308,9 @@ class SimpleBenchmark:
                 print(f"   {metric['operation']}:")
                 print(f"     • Average: {metric['avg_ms']:.2f}ms")
                 print(f"     • Text Length: {metric['text_length_chars']:,} chars")
-                print(f"     • Throughput: {metric['throughput_chars_per_sec']:,.0f} chars/s")
+                print(
+                    f"     • Throughput: {metric['throughput_chars_per_sec']:,.0f} chars/s"
+                )
 
         # Performance assessment
         print("\n🎯 PERFORMANCE ASSESSMENT:")
@@ -285,7 +318,7 @@ class SimpleBenchmark:
 
         for category in ["database_queries", "file_operations", "text_processing"]:
             if category in self.results:
-                category_times = [m['avg_ms'] for m in self.results[category]]
+                category_times = [m["avg_ms"] for m in self.results[category]]
                 all_avg_times.extend(category_times)
 
         if all_avg_times:
@@ -301,7 +334,7 @@ class SimpleBenchmark:
 
             print(f"   📈 Overall Average: {overall_avg:.2f}ms")
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
 
     def save_results(self, filename: str = None):
         """Save results to JSON file"""
@@ -310,7 +343,7 @@ class SimpleBenchmark:
             filename = f"simple_benchmark_results_{timestamp}.json"
 
         output_path = Path(filename)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(self.results, f, indent=2, default=str)
 
         logger.info(f"Results saved to: {output_path}")

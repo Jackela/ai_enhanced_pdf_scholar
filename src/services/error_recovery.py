@@ -490,12 +490,16 @@ class RecoveryOrchestrator:
                 "successful_recoveries": self.metrics.successful_recoveries,
                 "failed_recoveries": self.metrics.failed_recoveries,
                 "error_types": self.metrics.error_types,
-                "last_success": self.metrics.last_success_time.isoformat()
-                if self.metrics.last_success_time
-                else None,
-                "last_failure": self.metrics.last_failure_time.isoformat()
-                if self.metrics.last_failure_time
-                else None,
+                "last_success": (
+                    self.metrics.last_success_time.isoformat()
+                    if self.metrics.last_success_time
+                    else None
+                ),
+                "last_failure": (
+                    self.metrics.last_failure_time.isoformat()
+                    if self.metrics.last_failure_time
+                    else None
+                ),
             },
             "retry": {
                 "total_attempts": self.retry.metrics.total_attempts,
@@ -507,9 +511,11 @@ class RecoveryOrchestrator:
                 "state": self.circuit_breaker.get_state().value,
                 "failure_count": self.circuit_breaker.failure_count,
                 "trips": self.circuit_breaker.metrics.circuit_breaker_trips,
-                "last_failure": self.circuit_breaker.last_failure_time.isoformat()
-                if self.circuit_breaker.last_failure_time
-                else None,
+                "last_failure": (
+                    self.circuit_breaker.last_failure_time.isoformat()
+                    if self.circuit_breaker.last_failure_time
+                    else None
+                ),
             },
             "cleanup": {
                 "operations": self.cleanup_manager.metrics.cleanup_operations,

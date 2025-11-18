@@ -310,22 +310,33 @@ class RAGQueryEngine:
             "current_document_id": self.current_document_id,
             "has_loaded_index": self.current_index is not None,
             "current_pdf_path": self.current_pdf_path,
-            "vector_index_info": {
-                "index_id": self.current_vector_index.id
+            "vector_index_info": (
+                {
+                    "index_id": (
+                        self.current_vector_index.id
+                        if self.current_vector_index
+                        else None
+                    ),
+                    "index_path": (
+                        self.current_vector_index.index_path
+                        if self.current_vector_index
+                        else None
+                    ),
+                    "chunk_count": (
+                        self.current_vector_index.chunk_count
+                        if self.current_vector_index
+                        else 0
+                    ),
+                    "created_at": (
+                        self.current_vector_index.created_at.isoformat()
+                        if self.current_vector_index
+                        and self.current_vector_index.created_at
+                        else None
+                    ),
+                }
                 if self.current_vector_index
-                else None,
-                "index_path": self.current_vector_index.index_path
-                if self.current_vector_index
-                else None,
-                "chunk_count": self.current_vector_index.chunk_count
-                if self.current_vector_index
-                else 0,
-                "created_at": self.current_vector_index.created_at.isoformat()
-                if self.current_vector_index and self.current_vector_index.created_at
-                else None,
-            }
-            if self.current_vector_index
-            else None,
+                else None
+            ),
             "test_mode": self.test_mode,
         }
 

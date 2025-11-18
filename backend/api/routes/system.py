@@ -302,9 +302,11 @@ async def get_secrets_health():
             test_results.append({"validation_test": "failed", "error": str(e)})
 
         health_status["validation_service"] = {
-            "status": "healthy"
-            if test_results and test_results[0].get("validation_test") == "passed"
-            else "error",
+            "status": (
+                "healthy"
+                if test_results and test_results[0].get("validation_test") == "passed"
+                else "error"
+            ),
             "test_results": test_results,
         }
 
@@ -403,9 +405,9 @@ async def rotate_secret(secret_name: str):
             data={
                 "secret_name": secret_name,
                 "new_version": new_version,
-                "rotation_time": audit_entries[-1]["timestamp"]
-                if audit_entries
-                else None,
+                "rotation_time": (
+                    audit_entries[-1]["timestamp"] if audit_entries else None
+                ),
                 "status": "completed",
             },
         )
@@ -461,30 +463,30 @@ async def detailed_health_check(
                 "total_bytes": memory.total,
                 "available_bytes": memory.available,
                 "used_percent": memory.percent,
-                "status": "healthy"
-                if memory.percent < 80
-                else "warning"
-                if memory.percent < 90
-                else "critical",
+                "status": (
+                    "healthy"
+                    if memory.percent < 80
+                    else "warning" if memory.percent < 90 else "critical"
+                ),
             },
             "disk": {
                 "total_bytes": disk.total,
                 "free_bytes": disk.free,
                 "used_percent": round(100 * (disk.used / disk.total), 2),
-                "status": "healthy"
-                if disk.free > disk.total * 0.2
-                else "warning"
-                if disk.free > disk.total * 0.1
-                else "critical",
+                "status": (
+                    "healthy"
+                    if disk.free > disk.total * 0.2
+                    else "warning" if disk.free > disk.total * 0.1 else "critical"
+                ),
             },
             "cpu": {
                 "usage_percent": cpu_percent,
                 "core_count": psutil.cpu_count(),
-                "status": "healthy"
-                if cpu_percent < 70
-                else "warning"
-                if cpu_percent < 85
-                else "critical",
+                "status": (
+                    "healthy"
+                    if cpu_percent < 70
+                    else "warning" if cpu_percent < 85 else "critical"
+                ),
             },
         }
 
@@ -753,9 +755,7 @@ async def dependency_health_check():
         overall_status = (
             "healthy"
             if health_score >= 0.8
-            else "degraded"
-            if health_score >= 0.5
-            else "unhealthy"
+            else "degraded" if health_score >= 0.5 else "unhealthy"
         )
 
         return BaseResponse(
@@ -797,9 +797,9 @@ async def performance_health_check():
             "usage_percent": psutil.cpu_percent(interval=1),
             "core_count": cpu_count,
             "frequency_mhz": cpu_freq.current if cpu_freq else None,
-            "load_average": list(psutil.getloadavg())
-            if hasattr(psutil, "getloadavg")
-            else None,
+            "load_average": (
+                list(psutil.getloadavg()) if hasattr(psutil, "getloadavg") else None
+            ),
             "context_switches": psutil.cpu_stats().ctx_switches,
             "interrupts": psutil.cpu_stats().interrupts,
         }
@@ -855,9 +855,11 @@ async def performance_health_check():
             "memory_rss_bytes": process_memory.rss,
             "memory_vms_bytes": process_memory.vms,
             "num_threads": current_process.num_threads(),
-            "num_fds": current_process.num_fds()
-            if hasattr(current_process, "num_fds")
-            else None,
+            "num_fds": (
+                current_process.num_fds()
+                if hasattr(current_process, "num_fds")
+                else None
+            ),
             "create_time": current_process.create_time(),
             "uptime_seconds": time.time() - current_process.create_time(),
         }
@@ -1220,9 +1222,9 @@ async def get_database_metrics():
             data={
                 "current": db_metrics,
                 "history_points": len(db_history),
-                "recent_history": db_history[-10:]
-                if db_history
-                else [],  # Last 10 points
+                "recent_history": (
+                    db_history[-10:] if db_history else []
+                ),  # Last 10 points
                 "timestamp": datetime.now().isoformat(),
             },
         )

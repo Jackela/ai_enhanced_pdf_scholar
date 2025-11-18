@@ -18,9 +18,9 @@ from .environment import Environment, get_current_environment
 from .validation import ConfigValidationError
 
 __all__ = [
-    'ApplicationConfig',
-    'get_application_config',
-    'Environment',
-    'get_current_environment',
-    'ConfigValidationError'
+    "ApplicationConfig",
+    "get_application_config",
+    "Environment",
+    "get_current_environment",
+    "ConfigValidationError",
 ]

@@ -16,22 +16,25 @@ from typing import Any, Generic, TypeVar
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 # ============================================================================
 # Circuit Breaker States and Models
 # ============================================================================
 
+
 class CircuitBreakerState(str, Enum):
     """Circuit breaker states."""
-    CLOSED = "closed"        # Normal operation
-    OPEN = "open"           # Circuit is open, requests fail fast
-    HALF_OPEN = "half_open" # Testing if service has recovered
+
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Circuit is open, requests fail fast
+    HALF_OPEN = "half_open"  # Testing if service has recovered
 
 
 class FailureType(str, Enum):
     """Types of failures that can trigger circuit breaker."""
+
     TIMEOUT = "timeout"
     CONNECTION_ERROR = "connection_error"
     HTTP_ERROR = "http_error"
@@ -43,28 +46,30 @@ class FailureType(str, Enum):
 @dataclass
 class CircuitBreakerConfig:
     """Configuration for circuit breaker."""
-    failure_threshold: int = 5          # Number of failures to open circuit
-    recovery_timeout: float = 60.0      # Seconds before trying half-open
-    expected_recovery_time: float = 30.0 # Expected time for service recovery
-    success_threshold: int = 3           # Successful calls to close circuit from half-open
-    timeout: float = 30.0               # Request timeout in seconds
+
+    failure_threshold: int = 5  # Number of failures to open circuit
+    recovery_timeout: float = 60.0  # Seconds before trying half-open
+    expected_recovery_time: float = 30.0  # Expected time for service recovery
+    success_threshold: int = 3  # Successful calls to close circuit from half-open
+    timeout: float = 30.0  # Request timeout in seconds
 
     # Advanced configuration
-    sliding_window_size: int = 10       # Size of sliding window for failure rate
-    minimum_throughput: int = 3         # Minimum calls before evaluating failure rate
-    failure_rate_threshold: float = 50.0 # Failure rate percentage to open circuit
+    sliding_window_size: int = 10  # Size of sliding window for failure rate
+    minimum_throughput: int = 3  # Minimum calls before evaluating failure rate
+    failure_rate_threshold: float = 50.0  # Failure rate percentage to open circuit
     slow_call_duration_threshold: float = 5.0  # Slow call threshold
-    slow_call_rate_threshold: float = 30.0     # Slow call rate percentage
+    slow_call_rate_threshold: float = 30.0  # Slow call rate percentage
 
     # Exponential backoff
     enable_exponential_backoff: bool = True
     backoff_multiplier: float = 2.0
-    max_backoff_time: float = 300.0     # Maximum backoff time (5 minutes)
+    max_backoff_time: float = 300.0  # Maximum backoff time (5 minutes)
 
 
 @dataclass
 class CallResult:
     """Result of a circuit breaker protected call."""
+
     success: bool
     duration: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
@@ -76,6 +81,7 @@ class CallResult:
 @dataclass
 class CircuitBreakerStats:
     """Statistics for circuit breaker monitoring."""
+
     name: str
     state: CircuitBreakerState
     failure_count: int
@@ -92,8 +98,10 @@ class CircuitBreakerStats:
 # Exceptions
 # ============================================================================
 
+
 class CircuitBreakerError(Exception):
     """Base exception for circuit breaker errors."""
+
     pass
 
 
@@ -103,12 +111,15 @@ class CircuitBreakerOpenError(CircuitBreakerError):
     def __init__(self, circuit_name: str, retry_after: float):
         self.circuit_name = circuit_name
         self.retry_after = retry_after
-        super().__init__(f"Circuit breaker '{circuit_name}' is open. Retry after {retry_after:.1f}s")
+        super().__init__(
+            f"Circuit breaker '{circuit_name}' is open. Retry after {retry_after:.1f}s"
+        )
 
 
 # ============================================================================
 # Circuit Breaker Implementation
 # ============================================================================
+
 
 class CircuitBreaker(Generic[T]):
     """
@@ -119,7 +130,9 @@ class CircuitBreaker(Generic[T]):
         self,
         name: str,
         config: CircuitBreakerConfig | None = None,
-        on_state_change: Callable[[CircuitBreakerState, CircuitBreakerState], None] | None = None
+        on_state_change: (
+            Callable[[CircuitBreakerState, CircuitBreakerState], None] | None
+        ) = None,
     ):
         """Initialize circuit breaker."""
         self.name = name
@@ -180,10 +193,7 @@ class CircuitBreaker(Generic[T]):
         """
         # Check if we can make the call
         if not self._can_execute():
-            raise CircuitBreakerOpenError(
-                self.name,
-                self._get_retry_after_seconds()
-            )
+            raise CircuitBreakerOpenError(self.name, self._get_retry_after_seconds())
 
         # Execute the protected function
         start_time = time.time()
@@ -195,9 +205,7 @@ class CircuitBreaker(Generic[T]):
 
             # Record successful call
             call_result = CallResult(
-                success=True,
-                duration=duration,
-                response_data=result
+                success=True, duration=duration, response_data=result
             )
             self._record_call(call_result)
 
@@ -212,7 +220,7 @@ class CircuitBreaker(Generic[T]):
                 success=False,
                 duration=duration,
                 failure_type=failure_type,
-                error=str(e)
+                error=str(e),
             )
             self._record_call(call_result)
 
@@ -236,10 +244,7 @@ class CircuitBreaker(Generic[T]):
         """
         # Check if we can make the call
         if not self._can_execute():
-            raise CircuitBreakerOpenError(
-                self.name,
-                self._get_retry_after_seconds()
-            )
+            raise CircuitBreakerOpenError(self.name, self._get_retry_after_seconds())
 
         # Execute the protected function with timeout
         start_time = time.time()
@@ -247,16 +252,13 @@ class CircuitBreaker(Generic[T]):
 
         try:
             result = await asyncio.wait_for(
-                func(*args, **kwargs),
-                timeout=self.config.timeout
+                func(*args, **kwargs), timeout=self.config.timeout
             )
             duration = time.time() - start_time
 
             # Record successful call
             call_result = CallResult(
-                success=True,
-                duration=duration,
-                response_data=result
+                success=True, duration=duration, response_data=result
             )
             self._record_call(call_result)
 
@@ -270,7 +272,7 @@ class CircuitBreaker(Generic[T]):
                 success=False,
                 duration=duration,
                 failure_type=FailureType.TIMEOUT,
-                error="Request timeout"
+                error="Request timeout",
             )
             self._record_call(call_result)
 
@@ -285,7 +287,7 @@ class CircuitBreaker(Generic[T]):
                 success=False,
                 duration=duration,
                 failure_type=failure_type,
-                error=str(e)
+                error=str(e),
             )
             self._record_call(call_result)
 
@@ -327,8 +329,10 @@ class CircuitBreaker(Generic[T]):
                 self._consecutive_successes += 1
 
                 # If we're half-open and have enough consecutive successes, close circuit
-                if (self._state == CircuitBreakerState.HALF_OPEN and
-                    self._consecutive_successes >= self.config.success_threshold):
+                if (
+                    self._state == CircuitBreakerState.HALF_OPEN
+                    and self._consecutive_successes >= self.config.success_threshold
+                ):
                     self._transition_to_closed()
             else:
                 self._failure_count += 1
@@ -348,16 +352,17 @@ class CircuitBreaker(Generic[T]):
 
         # Calculate slow call rate
         slow_calls = sum(
-            1 for call in self._recent_calls
+            1
+            for call in self._recent_calls
             if call.duration > self.config.slow_call_duration_threshold
         )
         slow_call_rate = (slow_calls / len(self._recent_calls)) * 100
 
         # Open circuit if thresholds exceeded
         should_open = (
-            failure_rate >= self.config.failure_rate_threshold or
-            slow_call_rate >= self.config.slow_call_rate_threshold or
-            self._failure_count >= self.config.failure_threshold
+            failure_rate >= self.config.failure_rate_threshold
+            or slow_call_rate >= self.config.slow_call_rate_threshold
+            or self._failure_count >= self.config.failure_threshold
         )
 
         if should_open and self._state != CircuitBreakerState.OPEN:
@@ -372,8 +377,9 @@ class CircuitBreaker(Generic[T]):
         # Calculate next retry time with exponential backoff
         if self.config.enable_exponential_backoff:
             backoff_time = min(
-                self.config.recovery_timeout * (self.config.backoff_multiplier ** self._backoff_count),
-                self.config.max_backoff_time
+                self.config.recovery_timeout
+                * (self.config.backoff_multiplier**self._backoff_count),
+                self.config.max_backoff_time,
             )
             self._backoff_count += 1
         else:
@@ -381,7 +387,9 @@ class CircuitBreaker(Generic[T]):
 
         self._next_retry_time = datetime.utcnow() + timedelta(seconds=backoff_time)
 
-        logger.warning(f"Circuit breaker '{self.name}' opened. Retry after {backoff_time:.1f}s")
+        logger.warning(
+            f"Circuit breaker '{self.name}' opened. Retry after {backoff_time:.1f}s"
+        )
 
         if self.on_state_change:
             self.on_state_change(old_state, self._state)
@@ -445,7 +453,8 @@ class CircuitBreaker(Generic[T]):
             total_calls = len(self._recent_calls)
             failures = sum(1 for call in self._recent_calls if not call.success)
             slow_calls = sum(
-                1 for call in self._recent_calls
+                1
+                for call in self._recent_calls
                 if call.duration > self.config.slow_call_duration_threshold
             )
 
@@ -462,7 +471,7 @@ class CircuitBreaker(Generic[T]):
                 slow_call_rate=slow_call_rate,
                 last_state_change=self._last_state_change,
                 next_retry_time=self._next_retry_time,
-                recent_calls=self._recent_calls.copy()
+                recent_calls=self._recent_calls.copy(),
             )
 
     def reset(self):
@@ -488,6 +497,7 @@ class CircuitBreaker(Generic[T]):
 # Circuit Breaker Manager
 # ============================================================================
 
+
 class CircuitBreakerManager:
     """
     Manager for multiple circuit breakers.
@@ -502,9 +512,7 @@ class CircuitBreakerManager:
         logger.info("Circuit breaker manager initialized")
 
     def get_circuit_breaker(
-        self,
-        name: str,
-        config: CircuitBreakerConfig | None = None
+        self, name: str, config: CircuitBreakerConfig | None = None
     ) -> CircuitBreaker:
         """
         Get or create a circuit breaker.
@@ -522,12 +530,14 @@ class CircuitBreakerManager:
                 self._circuit_breakers[name] = CircuitBreaker(
                     name=name,
                     config=circuit_config,
-                    on_state_change=self._on_state_change
+                    on_state_change=self._on_state_change,
                 )
 
             return self._circuit_breakers[name]
 
-    def _on_state_change(self, old_state: CircuitBreakerState, new_state: CircuitBreakerState):
+    def _on_state_change(
+        self, old_state: CircuitBreakerState, new_state: CircuitBreakerState
+    ):
         """Handle circuit breaker state changes."""
         # This could be used for alerting, metrics, etc.
         pass
@@ -535,10 +545,7 @@ class CircuitBreakerManager:
     def get_all_stats(self) -> dict[str, CircuitBreakerStats]:
         """Get statistics for all circuit breakers."""
         with self._lock:
-            return {
-                name: cb.get_stats()
-                for name, cb in self._circuit_breakers.items()
-            }
+            return {name: cb.get_stats() for name, cb in self._circuit_breakers.items()}
 
     def reset_circuit_breaker(self, name: str):
         """Reset a specific circuit breaker."""
@@ -568,10 +575,7 @@ class CircuitBreakerManager:
 _global_manager = CircuitBreakerManager()
 
 
-def circuit_breaker(
-    name: str,
-    config: CircuitBreakerConfig | None = None
-):
+def circuit_breaker(name: str, config: CircuitBreakerConfig | None = None):
     """
     Decorator for circuit breaker protection.
 
@@ -585,18 +589,23 @@ def circuit_breaker(
             # API call logic
             pass
     """
+
     def decorator(func: Callable) -> Callable:
         cb = _global_manager.get_circuit_breaker(name, config)
 
         if asyncio.iscoroutinefunction(func):
+
             @wraps(func)
             async def async_wrapper(*args, **kwargs):
                 return await cb.async_call(func, *args, **kwargs)
+
             return async_wrapper
         else:
+
             @wraps(func)
             def sync_wrapper(*args, **kwargs):
                 return cb.call(func, *args, **kwargs)
+
             return sync_wrapper
 
     return decorator
@@ -606,10 +615,13 @@ def circuit_breaker(
 # Specialized Circuit Breakers
 # ============================================================================
 
+
 class HTTPCircuitBreaker(CircuitBreaker):
     """Specialized circuit breaker for HTTP services."""
 
-    def __init__(self, name: str, base_url: str, config: CircuitBreakerConfig | None = None):
+    def __init__(
+        self, name: str, base_url: str, config: CircuitBreakerConfig | None = None
+    ):
         """Initialize HTTP circuit breaker."""
         super().__init__(name, config)
         self.base_url = base_url
@@ -618,7 +630,7 @@ class HTTPCircuitBreaker(CircuitBreaker):
         """Classify HTTP-specific failures."""
 
         # Check for specific HTTP status codes if available
-        if hasattr(exception, 'status_code'):
+        if hasattr(exception, "status_code"):
             status_code = exception.status_code
             if status_code >= 500:
                 return FailureType.SERVICE_ERROR
@@ -651,6 +663,7 @@ class DatabaseCircuitBreaker(CircuitBreaker):
 # Context Manager
 # ============================================================================
 
+
 class CircuitBreakerContext:
     """Context manager for circuit breaker operations."""
 
@@ -664,7 +677,7 @@ class CircuitBreakerContext:
         if not self.circuit_breaker._can_execute():
             raise CircuitBreakerOpenError(
                 self.circuit_breaker.name,
-                self.circuit_breaker._get_retry_after_seconds()
+                self.circuit_breaker._get_retry_after_seconds(),
             )
 
         self.start_time = time.time()
@@ -687,7 +700,7 @@ class CircuitBreakerContext:
                 success=False,
                 duration=duration,
                 failure_type=failure_type,
-                error=str(exc_val)
+                error=str(exc_val),
             )
 
         self.circuit_breaker._record_call(call_result)
@@ -701,7 +714,9 @@ if __name__ == "__main__":
     import requests
 
     # Example 1: Using decorator
-    @circuit_breaker("external_api", CircuitBreakerConfig(failure_threshold=3, recovery_timeout=30))
+    @circuit_breaker(
+        "external_api", CircuitBreakerConfig(failure_threshold=3, recovery_timeout=30)
+    )
     def call_external_api():
         response = requests.get("https://httpbin.org/delay/1", timeout=5)
         response.raise_for_status()

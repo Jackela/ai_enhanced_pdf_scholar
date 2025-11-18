@@ -51,27 +51,32 @@ Examples:
 
   # Specific test file
   python scripts/test_runner.py --file tests/test_database_connection.py
-        """
+        """,
     )
 
-    parser.add_argument("--quick", action="store_true",
-                       help="Run quick smoke tests only")
-    parser.add_argument("--full", action="store_true",
-                       help="Run full test suite without coverage")
-    parser.add_argument("--unit", action="store_true",
-                       help="Run unit tests only")
-    parser.add_argument("--integration", action="store_true",
-                       help="Run integration tests only")
-    parser.add_argument("--coverage", action="store_true",
-                       help="Run tests with coverage analysis")
-    parser.add_argument("--file", type=str,
-                       help="Run specific test file")
-    parser.add_argument("--debug", action="store_true",
-                       help="Enable debug output")
-    parser.add_argument("--sequential", action="store_true",
-                       help="Run tests sequentially (no parallelization)")
-    parser.add_argument("--maxfail", type=int, default=5,
-                       help="Stop after N failures (default: 5)")
+    parser.add_argument(
+        "--quick", action="store_true", help="Run quick smoke tests only"
+    )
+    parser.add_argument(
+        "--full", action="store_true", help="Run full test suite without coverage"
+    )
+    parser.add_argument("--unit", action="store_true", help="Run unit tests only")
+    parser.add_argument(
+        "--integration", action="store_true", help="Run integration tests only"
+    )
+    parser.add_argument(
+        "--coverage", action="store_true", help="Run tests with coverage analysis"
+    )
+    parser.add_argument("--file", type=str, help="Run specific test file")
+    parser.add_argument("--debug", action="store_true", help="Enable debug output")
+    parser.add_argument(
+        "--sequential",
+        action="store_true",
+        help="Run tests sequentially (no parallelization)",
+    )
+    parser.add_argument(
+        "--maxfail", type=int, default=5, help="Stop after N failures (default: 5)"
+    )
 
     args = parser.parse_args()
 
@@ -95,13 +100,15 @@ Examples:
 
     # Disable coverage by default unless explicitly requested
     if args.coverage:
-        base_cmd.extend([
-            "--cov=src",
-            "--cov-report=html:coverage_html",
-            "--cov-report=term-missing:skip-covered",
-            "--cov-report=xml:coverage.xml",
-            "--cov-fail-under=20"
-        ])
+        base_cmd.extend(
+            [
+                "--cov=src",
+                "--cov-report=html:coverage_html",
+                "--cov-report=term-missing:skip-covered",
+                "--cov-report=xml:coverage.xml",
+                "--cov-fail-under=20",
+            ]
+        )
     else:
         base_cmd.append("--no-cov")
 
@@ -112,7 +119,8 @@ Examples:
         cmd = base_cmd + [
             "tests/unit/test_smoke.py",
             "tests/test_database_connection.py",
-            "-k", "not slow"
+            "-k",
+            "not slow",
         ]
         exit_code = run_command(cmd, "Running quick smoke tests")
 
@@ -138,7 +146,7 @@ Examples:
             "--ignore=tests/services/test_enhanced_rag_service.py",
             "--ignore=tests/services/test_document_library_service.py",
             "--ignore=tests/services/test_rag_cache_service.py",
-            "--ignore=tests/security/test_penetration_testing.py"
+            "--ignore=tests/security/test_penetration_testing.py",
         ]
         exit_code = run_command(cmd, "Running full test suite")
 
@@ -148,7 +156,7 @@ Examples:
             "tests/test_database_connection.py",
             "tests/unit/",
             "tests/repositories/",
-            "--maxfail=10"
+            "--maxfail=10",
         ]
         exit_code = run_command(cmd, "Running basic test suite")
 

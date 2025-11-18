@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 try:
     from ..middleware.rate_limit_monitor import RateLimitMetrics, get_monitor
+
     MONITORING_AVAILABLE = True
 except ImportError:
     MONITORING_AVAILABLE = False
@@ -18,6 +19,7 @@ except ImportError:
 # Response models
 class RateLimitMetricsResponse(BaseModel):
     """Rate limiting metrics response."""
+
     total_requests: int
     successful_requests: int
     rate_limited_requests: int
@@ -31,7 +33,7 @@ class RateLimitMetricsResponse(BaseModel):
     error_rate: float
 
     @classmethod
-    def from_metrics(cls, metrics: 'RateLimitMetrics') -> 'RateLimitMetricsResponse':
+    def from_metrics(cls, metrics: "RateLimitMetrics") -> "RateLimitMetricsResponse":
         """Create response from metrics object."""
         total = metrics.total_requests or 1  # Avoid division by zero
 
@@ -46,12 +48,13 @@ class RateLimitMetricsResponse(BaseModel):
             top_ips=metrics.top_ips,
             rate_limit_effectiveness=metrics.rate_limit_effectiveness,
             success_rate=metrics.successful_requests / total * 100,
-            error_rate=metrics.error_requests / total * 100
+            error_rate=metrics.error_requests / total * 100,
         )
 
 
 class IPAnalysisResponse(BaseModel):
     """IP analysis response."""
+
     client_ip: str
     total_requests: int
     rate_limited_requests: int
@@ -65,6 +68,7 @@ class IPAnalysisResponse(BaseModel):
 
 class EndpointAnalysisResponse(BaseModel):
     """Endpoint analysis response."""
+
     endpoint: str
     total_requests: int
     rate_limited_requests: int
@@ -78,6 +82,7 @@ class EndpointAnalysisResponse(BaseModel):
 
 class SuspiciousIPResponse(BaseModel):
     """Suspicious IP response."""
+
     client_ip: str
     total_requests: int
     rate_limited_requests: int
@@ -110,7 +115,7 @@ if not MONITORING_AVAILABLE:
         return {
             "status": "disabled",
             "message": "Rate limiting monitoring is not available",
-            "monitoring_available": False
+            "monitoring_available": False,
         }
 
 else:
@@ -129,12 +134,14 @@ else:
             "total_events_recorded": len(monitor._events),
             "current_window_requests": metrics.total_requests,
             "current_window_rate_limited": metrics.rate_limited_requests,
-            "effectiveness_percentage": metrics.rate_limit_effectiveness * 100
+            "effectiveness_percentage": metrics.rate_limit_effectiveness * 100,
         }
 
     @router.get("/rate-limit/metrics", response_model=RateLimitMetricsResponse)
     async def get_rate_limit_metrics(
-        window_minutes: int = Query(60, ge=1, le=1440, description="Time window in minutes")
+        window_minutes: int = Query(
+            60, ge=1, le=1440, description="Time window in minutes"
+        )
     ):
         """Get rate limiting metrics for specified time window."""
         monitor = get_monitor()
@@ -145,7 +152,9 @@ else:
     @router.get("/rate-limit/ip/{client_ip}", response_model=IPAnalysisResponse)
     async def get_ip_analysis(
         client_ip: str,
-        window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes")
+        window_minutes: int = Query(
+            60, ge=1, le=1440, description="Analysis window in minutes"
+        ),
     ):
         """Get detailed analysis for a specific IP address."""
         monitor = get_monitor()
@@ -159,7 +168,9 @@ else:
     @router.get("/rate-limit/endpoint", response_model=EndpointAnalysisResponse)
     async def get_endpoint_analysis(
         endpoint: str = Query(..., description="Endpoint path to analyze"),
-        window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes")
+        window_minutes: int = Query(
+            60, ge=1, le=1440, description="Analysis window in minutes"
+        ),
     ):
         """Get detailed analysis for a specific endpoint."""
         monitor = get_monitor()
@@ -172,15 +183,18 @@ else:
 
     @router.get("/rate-limit/suspicious-ips", response_model=list[SuspiciousIPResponse])
     async def get_suspicious_ips(
-        window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes"),
-        min_requests: int = Query(50, ge=10, le=1000, description="Minimum requests to be considered"),
-        limit: int = Query(20, ge=1, le=100, description="Maximum number of results")
+        window_minutes: int = Query(
+            60, ge=1, le=1440, description="Analysis window in minutes"
+        ),
+        min_requests: int = Query(
+            50, ge=10, le=1000, description="Minimum requests to be considered"
+        ),
+        limit: int = Query(20, ge=1, le=100, description="Maximum number of results"),
     ):
         """Get list of suspicious IP addresses based on behavior patterns."""
         monitor = get_monitor()
         suspicious_ips = monitor.get_suspicious_ips(
-            window_minutes=window_minutes,
-            min_requests=min_requests
+            window_minutes=window_minutes, min_requests=min_requests
         )
 
         # Convert to response models and limit results
@@ -192,8 +206,12 @@ else:
 
     @router.get("/rate-limit/top-endpoints")
     async def get_top_endpoints(
-        window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes"),
-        limit: int = Query(10, ge=1, le=50, description="Number of top endpoints to return")
+        window_minutes: int = Query(
+            60, ge=1, le=1440, description="Analysis window in minutes"
+        ),
+        limit: int = Query(
+            10, ge=1, le=50, description="Number of top endpoints to return"
+        ),
     ):
         """Get most frequently accessed endpoints."""
         monitor = get_monitor()
@@ -202,13 +220,15 @@ else:
         return {
             "window_minutes": window_minutes,
             "top_endpoints": metrics.top_endpoints[:limit],
-            "total_unique_endpoints": len(metrics.top_endpoints)
+            "total_unique_endpoints": len(metrics.top_endpoints),
         }
 
     @router.get("/rate-limit/top-ips")
     async def get_top_ips(
-        window_minutes: int = Query(60, ge=1, le=1440, description="Analysis window in minutes"),
-        limit: int = Query(10, ge=1, le=50, description="Number of top IPs to return")
+        window_minutes: int = Query(
+            60, ge=1, le=1440, description="Analysis window in minutes"
+        ),
+        limit: int = Query(10, ge=1, le=50, description="Number of top IPs to return"),
     ):
         """Get most active IP addresses."""
         monitor = get_monitor()
@@ -217,13 +237,15 @@ else:
         return {
             "window_minutes": window_minutes,
             "top_ips": metrics.top_ips[:limit],
-            "total_unique_ips": metrics.unique_ips
+            "total_unique_ips": metrics.unique_ips,
         }
 
     @router.post("/rate-limit/export")
     async def export_rate_limit_data(
-        window_minutes: int | None = Query(None, ge=1, le=10080, description="Export window in minutes"),
-        filename: str = Query("rate_limit_export.json", description="Export filename")
+        window_minutes: int | None = Query(
+            None, ge=1, le=10080, description="Export window in minutes"
+        ),
+        filename: str = Query("rate_limit_export.json", description="Export filename"),
     ):
         """Export rate limiting data to JSON file."""
         monitor = get_monitor()
@@ -233,14 +255,18 @@ else:
             return {
                 "message": f"Rate limiting data exported to {filename}",
                 "filename": filename,
-                "window_minutes": window_minutes
+                "window_minutes": window_minutes,
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}") from e
+            raise HTTPException(
+                status_code=500, detail=f"Export failed: {str(e)}"
+            ) from e
 
     @router.delete("/rate-limit/cleanup")
     async def cleanup_old_events(
-        hours_to_keep: int = Query(24, ge=1, le=168, description="Hours of data to keep")
+        hours_to_keep: int = Query(
+            24, ge=1, le=168, description="Hours of data to keep"
+        )
     ):
         """Clean up old rate limiting events to free memory."""
         monitor = get_monitor()
@@ -254,7 +280,7 @@ else:
             "events_before": old_count,
             "events_after": new_count,
             "events_removed": old_count - new_count,
-            "hours_kept": hours_to_keep
+            "hours_kept": hours_to_keep,
         }
 
     @router.get("/rate-limit/health")
@@ -269,7 +295,9 @@ else:
         # Calculate health indicators
         recent_error_rate = 0
         if metrics_5m.total_requests > 0:
-            recent_error_rate = metrics_5m.error_requests / metrics_5m.total_requests * 100
+            recent_error_rate = (
+                metrics_5m.error_requests / metrics_5m.total_requests * 100
+            )
 
         rate_limiting_active = metrics_5m.rate_limited_requests > 0
         high_load = metrics_5m.total_requests > 1000  # 1000 requests in 5 minutes
@@ -293,14 +321,14 @@ else:
                 "total_requests": metrics_5m.total_requests,
                 "rate_limited": metrics_5m.rate_limited_requests,
                 "errors": metrics_5m.error_requests,
-                "unique_ips": metrics_5m.unique_ips
+                "unique_ips": metrics_5m.unique_ips,
             },
             "metrics_60m": {
                 "total_requests": metrics_60m.total_requests,
                 "rate_limited": metrics_60m.rate_limited_requests,
                 "errors": metrics_60m.error_requests,
-                "unique_ips": metrics_60m.unique_ips
-            }
+                "unique_ips": metrics_60m.unique_ips,
+            },
         }
 
     @router.get("/rate-limit/alerts")
@@ -318,12 +346,12 @@ else:
                     "details": {
                         "client_ip": "192.168.1.100",
                         "rate_limited_percentage": 85.5,
-                        "total_requests": 120
-                    }
+                        "total_requests": 120,
+                    },
                 }
             ],
             "alert_count": 1,
-            "last_24_hours": 3
+            "last_24_hours": 3,
         }
 
 
@@ -339,21 +367,18 @@ async def get_rate_limit_config():
     return {
         "default_limit": {
             "requests": config.default_limit.requests,
-            "window_seconds": config.default_limit.window
+            "window_seconds": config.default_limit.window,
         },
         "global_ip_limit": {
             "requests": config.global_ip_limit.requests,
-            "window_seconds": config.global_ip_limit.window
+            "window_seconds": config.global_ip_limit.window,
         },
         "endpoint_limits": {
-            endpoint: {
-                "requests": rule.requests,
-                "window_seconds": rule.window
-            }
+            endpoint: {"requests": rule.requests, "window_seconds": rule.window}
             for endpoint, rule in config.endpoint_limits.items()
         },
         "redis_enabled": config.redis_url is not None,
         "monitoring_enabled": config.enable_monitoring,
         "bypass_ips": list(config.bypass_ips),
-        "bypass_user_agents": list(config.bypass_user_agents)
+        "bypass_user_agents": list(config.bypass_user_agents),
     }

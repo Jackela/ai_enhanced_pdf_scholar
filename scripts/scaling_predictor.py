@@ -34,24 +34,28 @@ from sklearn.preprocessing import StandardScaler
 # Kubernetes client
 try:
     from kubernetes import client, config
+
     KUBERNETES_AVAILABLE = True
 except ImportError:
     KUBERNETES_AVAILABLE = False
-    warnings.warn("Kubernetes client not available. Install with: pip install kubernetes")
+    warnings.warn(
+        "Kubernetes client not available. Install with: pip install kubernetes"
+    )
 
 # Suppress sklearn warnings for production
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ScalingPrediction:
     """Scaling prediction result"""
+
     timestamp: datetime
     current_replicas: int
     predicted_replicas: int
@@ -61,9 +65,11 @@ class ScalingPrediction:
     cost_impact: float
     urgency: str  # low, medium, high, critical
 
+
 @dataclass
 class ScalingRecommendation:
     """Scaling recommendation for Kubernetes"""
+
     deployment: str
     namespace: str
     current_replicas: int
@@ -72,6 +78,7 @@ class ScalingRecommendation:
     confidence: float
     cost_savings_percent: float
     estimated_response_time_ms: float
+
 
 class PrometheusMetricsCollector:
     """Collect and preprocess metrics from Prometheus"""
@@ -82,29 +89,25 @@ class PrometheusMetricsCollector:
         # Define key metrics for scaling decisions
         self.metrics_queries = {
             # Resource metrics
-            'cpu_usage': 'avg(rate(container_cpu_usage_seconds_total{container="backend"}[5m])) * 100',
-            'memory_usage': 'avg(container_memory_working_set_bytes{container="backend"}) / 1024 / 1024 / 1024',
-            'memory_usage_percent': 'avg(container_memory_working_set_bytes{container="backend"}) / avg(container_spec_memory_limit_bytes{container="backend"}) * 100',
-
+            "cpu_usage": 'avg(rate(container_cpu_usage_seconds_total{container="backend"}[5m])) * 100',
+            "memory_usage": 'avg(container_memory_working_set_bytes{container="backend"}) / 1024 / 1024 / 1024',
+            "memory_usage_percent": 'avg(container_memory_working_set_bytes{container="backend"}) / avg(container_spec_memory_limit_bytes{container="backend"}) * 100',
             # Application metrics
-            'request_rate': 'rate(http_requests_total{job="ai-pdf-scholar-backend"}[5m])',
-            'response_time_p95': 'histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m]))',
-            'response_time_p50': 'histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m]))',
-            'error_rate': 'rate(http_requests_total{job="ai-pdf-scholar-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="ai-pdf-scholar-backend"}[5m]) * 100',
-
+            "request_rate": 'rate(http_requests_total{job="ai-pdf-scholar-backend"}[5m])',
+            "response_time_p95": 'histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m]))',
+            "response_time_p50": 'histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job="ai-pdf-scholar-backend"}[5m]))',
+            "error_rate": 'rate(http_requests_total{job="ai-pdf-scholar-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="ai-pdf-scholar-backend"}[5m]) * 100',
             # RAG-specific metrics
-            'rag_query_rate': 'rate(rag_queries_total[5m])',
-            'rag_response_time_p95': 'histogram_quantile(0.95, rate(rag_query_duration_seconds_bucket[5m]))',
-            'document_processing_queue': 'document_processing_queue_depth',
-
+            "rag_query_rate": "rate(rag_queries_total[5m])",
+            "rag_response_time_p95": "histogram_quantile(0.95, rate(rag_query_duration_seconds_bucket[5m]))",
+            "document_processing_queue": "document_processing_queue_depth",
             # Infrastructure metrics
-            'pod_count': 'count(kube_pod_info{namespace="ai-pdf-scholar", pod=~".*backend.*"})',
-            'node_count': 'count(kube_node_info)',
-            'network_io': 'rate(container_network_receive_bytes_total{container="backend"}[5m]) + rate(container_network_transmit_bytes_total{container="backend"}[5m])',
-
+            "pod_count": 'count(kube_pod_info{namespace="ai-pdf-scholar", pod=~".*backend.*"})',
+            "node_count": "count(kube_node_info)",
+            "network_io": 'rate(container_network_receive_bytes_total{container="backend"}[5m]) + rate(container_network_transmit_bytes_total{container="backend"}[5m])',
             # Cost-related metrics
-            'cpu_cost_per_hour': 'avg(kube_pod_container_resource_requests{resource="cpu", namespace="ai-pdf-scholar"}) * 0.05',  # Estimated cost per CPU hour
-            'memory_cost_per_hour': 'avg(kube_pod_container_resource_requests{resource="memory", namespace="ai-pdf-scholar"}) / 1024 / 1024 / 1024 * 0.01',  # Estimated cost per GB hour
+            "cpu_cost_per_hour": 'avg(kube_pod_container_resource_requests{resource="cpu", namespace="ai-pdf-scholar"}) * 0.05',  # Estimated cost per CPU hour
+            "memory_cost_per_hour": 'avg(kube_pod_container_resource_requests{resource="memory", namespace="ai-pdf-scholar"}) / 1024 / 1024 / 1024 * 0.01',  # Estimated cost per GB hour
         }
 
     async def collect_current_metrics(self) -> dict[str, float]:
@@ -116,8 +119,8 @@ class PrometheusMetricsCollector:
                 result = self.prometheus.custom_query(query)
                 if result and len(result) > 0:
                     # Take the first result's value, handle different result formats
-                    if isinstance(result[0], dict) and 'value' in result[0]:
-                        value = float(result[0]['value'][1])
+                    if isinstance(result[0], dict) and "value" in result[0]:
+                        value = float(result[0]["value"][1])
                     else:
                         value = float(result[0])
                     metrics[metric_name] = value
@@ -142,17 +145,14 @@ class PrometheusMetricsCollector:
         current_time = start_time
         while current_time < end_time:
             metrics = {}
-            metrics['timestamp'] = current_time
+            metrics["timestamp"] = current_time
 
             for metric_name, query in self.metrics_queries.items():
                 try:
-                    result = self.prometheus.custom_query(
-                        query,
-                        time=current_time
-                    )
+                    result = self.prometheus.custom_query(query, time=current_time)
                     if result and len(result) > 0:
-                        if isinstance(result[0], dict) and 'value' in result[0]:
-                            value = float(result[0]['value'][1])
+                        if isinstance(result[0], dict) and "value" in result[0]:
+                            value = float(result[0]["value"][1])
                         else:
                             value = float(result[0])
                         metrics[metric_name] = value
@@ -167,6 +167,7 @@ class PrometheusMetricsCollector:
 
         return pd.DataFrame(all_data)
 
+
 class ScalingPredictor:
     """ML-based scaling predictor"""
 
@@ -176,16 +177,10 @@ class ScalingPredictor:
 
         # Initialize models
         self.load_prediction_model = RandomForestRegressor(
-            n_estimators=100,
-            max_depth=10,
-            random_state=42,
-            n_jobs=-1
+            n_estimators=100, max_depth=10, random_state=42, n_jobs=-1
         )
 
-        self.anomaly_detector = IsolationForest(
-            contamination=0.1,
-            random_state=42
-        )
+        self.anomaly_detector = IsolationForest(contamination=0.1, random_state=42)
 
         self.scaler = StandardScaler()
         self.models_trained = False
@@ -196,38 +191,53 @@ class ScalingPredictor:
     def create_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Create features for ML models"""
         df = df.copy()
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df = df.set_index('timestamp').sort_index()
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df = df.set_index("timestamp").sort_index()
 
         # Time-based features
-        df['hour'] = df.index.hour
-        df['day_of_week'] = df.index.dayofweek
-        df['is_weekend'] = (df.index.dayofweek >= 5).astype(int)
-        df['is_business_hours'] = ((df.index.hour >= 8) & (df.index.hour <= 18)).astype(int)
+        df["hour"] = df.index.hour
+        df["day_of_week"] = df.index.dayofweek
+        df["is_weekend"] = (df.index.dayofweek >= 5).astype(int)
+        df["is_business_hours"] = ((df.index.hour >= 8) & (df.index.hour <= 18)).astype(
+            int
+        )
 
         # Rolling statistics for different time windows
         for window in self.feature_windows:
-            for col in ['cpu_usage', 'memory_usage', 'request_rate', 'response_time_p95']:
+            for col in [
+                "cpu_usage",
+                "memory_usage",
+                "request_rate",
+                "response_time_p95",
+            ]:
                 if col in df.columns:
-                    df[f'{col}_rolling_mean_{window}m'] = df[col].rolling(f'{window}min').mean()
-                    df[f'{col}_rolling_std_{window}m'] = df[col].rolling(f'{window}min').std()
-                    df[f'{col}_rolling_max_{window}m'] = df[col].rolling(f'{window}min').max()
+                    df[f"{col}_rolling_mean_{window}m"] = (
+                        df[col].rolling(f"{window}min").mean()
+                    )
+                    df[f"{col}_rolling_std_{window}m"] = (
+                        df[col].rolling(f"{window}min").std()
+                    )
+                    df[f"{col}_rolling_max_{window}m"] = (
+                        df[col].rolling(f"{window}min").max()
+                    )
 
         # Rate of change features
-        for col in ['cpu_usage', 'memory_usage', 'request_rate']:
+        for col in ["cpu_usage", "memory_usage", "request_rate"]:
             if col in df.columns:
-                df[f'{col}_diff'] = df[col].diff()
-                df[f'{col}_pct_change'] = df[col].pct_change()
+                df[f"{col}_diff"] = df[col].diff()
+                df[f"{col}_pct_change"] = df[col].pct_change()
 
         # Interaction features
-        if 'cpu_usage' in df.columns and 'memory_usage' in df.columns:
-            df['cpu_memory_ratio'] = df['cpu_usage'] / (df['memory_usage'] + 1e-6)
+        if "cpu_usage" in df.columns and "memory_usage" in df.columns:
+            df["cpu_memory_ratio"] = df["cpu_usage"] / (df["memory_usage"] + 1e-6)
 
-        if 'request_rate' in df.columns and 'response_time_p95' in df.columns:
-            df['load_efficiency'] = df['request_rate'] / (df['response_time_p95'] + 1e-6)
+        if "request_rate" in df.columns and "response_time_p95" in df.columns:
+            df["load_efficiency"] = df["request_rate"] / (
+                df["response_time_p95"] + 1e-6
+            )
 
         # Fill NaN values
-        df = df.fillna(method='ffill').fillna(0)
+        df = df.fillna(method="ffill").fillna(0)
 
         return df
 
@@ -240,23 +250,26 @@ class ScalingPredictor:
 
         # Define target variable (replica count needed)
         # This is a simplified heuristic - in production, use actual scaling decisions
-        df['target_replicas'] = np.clip(
+        df["target_replicas"] = np.clip(
             np.ceil(
-                (df['cpu_usage'] / 70) +  # Scale based on CPU target 70%
-                (df['memory_usage_percent'] / 75) +  # Memory target 75%
-                (df['request_rate'] / 50) +  # Request rate per pod
-                (df['response_time_p95'] / 0.2)  # Response time target 200ms
+                (df["cpu_usage"] / 70)  # Scale based on CPU target 70%
+                + (df["memory_usage_percent"] / 75)  # Memory target 75%
+                + (df["request_rate"] / 50)  # Request rate per pod
+                + (df["response_time_p95"] / 0.2)  # Response time target 200ms
             ),
-            2, 20  # Min 2, max 20 replicas
+            2,
+            20,  # Min 2, max 20 replicas
         )
 
         # Select features for training
-        feature_cols = [col for col in df.columns if col not in [
-            'target_replicas', 'pod_count', 'timestamp'
-        ]]
+        feature_cols = [
+            col
+            for col in df.columns
+            if col not in ["target_replicas", "pod_count", "timestamp"]
+        ]
 
         X = df[feature_cols]
-        y = df['target_replicas']
+        y = df["target_replicas"]
 
         # Handle infinite values and NaN
         X = X.replace([np.inf, -np.inf], np.nan).fillna(0)
@@ -289,14 +302,16 @@ class ScalingPredictor:
         self.models_trained = True
         self.feature_columns = feature_cols
 
-    async def predict_scaling(self, current_metrics: dict[str, float]) -> ScalingPrediction:
+    async def predict_scaling(
+        self, current_metrics: dict[str, float]
+    ) -> ScalingPrediction:
         """Predict scaling requirements"""
         if not self.models_trained:
             await self.load_models()
 
         # Convert metrics to DataFrame for feature engineering
         df = pd.DataFrame([current_metrics])
-        df['timestamp'] = datetime.now()
+        df["timestamp"] = datetime.now()
 
         # Create features (this will have NaN for rolling features)
         df_features = self.create_features(df)
@@ -309,7 +324,9 @@ class ScalingPredictor:
         X_scaled = self.scaler.transform(X)
 
         # Make predictions
-        predicted_replicas = int(np.round(self.load_prediction_model.predict(X_scaled)[0]))
+        predicted_replicas = int(
+            np.round(self.load_prediction_model.predict(X_scaled)[0])
+        )
         predicted_replicas = np.clip(predicted_replicas, 2, 20)
 
         # Calculate confidence based on model uncertainty
@@ -322,7 +339,7 @@ class ScalingPredictor:
         is_anomaly = self.anomaly_detector.predict(X_scaled)[0] == -1
 
         # Determine urgency
-        current_replicas = int(current_metrics.get('pod_count', 2))
+        current_replicas = int(current_metrics.get("pod_count", 2))
         replica_change = predicted_replicas - current_replicas
 
         if is_anomaly or abs(replica_change) >= 5:
@@ -362,13 +379,15 @@ class ScalingPredictor:
             reasoning=reasoning,
             metrics_snapshot=current_metrics,
             cost_impact=cost_impact,
-            urgency=urgency
+            urgency=urgency,
         )
 
     async def save_models(self):
         """Save trained models to disk"""
         try:
-            joblib.dump(self.load_prediction_model, self.model_path / "load_predictor.pkl")
+            joblib.dump(
+                self.load_prediction_model, self.model_path / "load_predictor.pkl"
+            )
             joblib.dump(self.anomaly_detector, self.model_path / "anomaly_detector.pkl")
             joblib.dump(self.scaler, self.model_path / "scaler.pkl")
 
@@ -384,8 +403,12 @@ class ScalingPredictor:
         """Load trained models from disk"""
         try:
             if (self.model_path / "load_predictor.pkl").exists():
-                self.load_prediction_model = joblib.load(self.model_path / "load_predictor.pkl")
-                self.anomaly_detector = joblib.load(self.model_path / "anomaly_detector.pkl")
+                self.load_prediction_model = joblib.load(
+                    self.model_path / "load_predictor.pkl"
+                )
+                self.anomaly_detector = joblib.load(
+                    self.model_path / "anomaly_detector.pkl"
+                )
                 self.scaler = joblib.load(self.model_path / "scaler.pkl")
 
                 # Load feature columns
@@ -398,6 +421,7 @@ class ScalingPredictor:
                 logger.warning("No saved models found")
         except Exception as e:
             logger.error(f"Error loading models: {e}")
+
 
 class KubernetesScalingController:
     """Interface with Kubernetes for scaling operations"""
@@ -426,16 +450,16 @@ class KubernetesScalingController:
 
         try:
             deployment_obj = self.apps_v1.read_namespaced_deployment(
-                name=deployment,
-                namespace=namespace
+                name=deployment, namespace=namespace
             )
             return deployment_obj.spec.replicas
         except Exception as e:
             logger.error(f"Error getting replica count: {e}")
             return 2
 
-    async def update_hpa_target(self, hpa_name: str, namespace: str,
-                              min_replicas: int, max_replicas: int) -> bool:
+    async def update_hpa_target(
+        self, hpa_name: str, namespace: str, min_replicas: int, max_replicas: int
+    ) -> bool:
         """Update HPA min/max replicas"""
         if not self.k8s_available:
             logger.warning("Kubernetes not available - cannot update HPA")
@@ -444,8 +468,7 @@ class KubernetesScalingController:
         try:
             # Get current HPA
             hpa = self.autoscaling_v1.read_namespaced_horizontal_pod_autoscaler(
-                name=hpa_name,
-                namespace=namespace
+                name=hpa_name, namespace=namespace
             )
 
             # Update replica bounds
@@ -454,20 +477,21 @@ class KubernetesScalingController:
 
             # Apply update
             self.autoscaling_v1.patch_namespaced_horizontal_pod_autoscaler(
-                name=hpa_name,
-                namespace=namespace,
-                body=hpa
+                name=hpa_name, namespace=namespace, body=hpa
             )
 
-            logger.info(f"Updated HPA {hpa_name}: min={min_replicas}, max={max_replicas}")
+            logger.info(
+                f"Updated HPA {hpa_name}: min={min_replicas}, max={max_replicas}"
+            )
             return True
 
         except Exception as e:
             logger.error(f"Error updating HPA: {e}")
             return False
 
-    async def create_scaling_recommendation(self,
-                                          prediction: ScalingPrediction) -> ScalingRecommendation:
+    async def create_scaling_recommendation(
+        self, prediction: ScalingPrediction
+    ) -> ScalingRecommendation:
         """Convert prediction to Kubernetes scaling recommendation"""
 
         # Determine action
@@ -480,18 +504,28 @@ class KubernetesScalingController:
 
         # Calculate cost savings percentage
         replica_diff = prediction.current_replicas - prediction.predicted_replicas
-        cost_savings_percent = (replica_diff / prediction.current_replicas) * 100 if prediction.current_replicas > 0 else 0
+        cost_savings_percent = (
+            (replica_diff / prediction.current_replicas) * 100
+            if prediction.current_replicas > 0
+            else 0
+        )
 
         # Estimate response time improvement
         # This is a simplified model - in production, use historical correlation data
-        base_response_time = prediction.metrics_snapshot.get('response_time_p95', 0.1) * 1000
+        base_response_time = (
+            prediction.metrics_snapshot.get("response_time_p95", 0.1) * 1000
+        )
 
         if action == "scale_up":
             # Scale-up should improve response time
-            estimated_response_time_ms = base_response_time * (prediction.current_replicas / prediction.predicted_replicas)
+            estimated_response_time_ms = base_response_time * (
+                prediction.current_replicas / prediction.predicted_replicas
+            )
         elif action == "scale_down":
             # Scale-down might increase response time
-            estimated_response_time_ms = base_response_time * (prediction.predicted_replicas / prediction.current_replicas)
+            estimated_response_time_ms = base_response_time * (
+                prediction.predicted_replicas / prediction.current_replicas
+            )
         else:
             estimated_response_time_ms = base_response_time
 
@@ -503,8 +537,9 @@ class KubernetesScalingController:
             action=action,
             confidence=prediction.confidence,
             cost_savings_percent=cost_savings_percent,
-            estimated_response_time_ms=estimated_response_time_ms
+            estimated_response_time_ms=estimated_response_time_ms,
         )
+
 
 class ScalingManager:
     """Main scaling management orchestrator"""
@@ -537,7 +572,9 @@ class ScalingManager:
             if len(historical_data) > 100:  # Need sufficient data
                 await self.predictor.train_models(historical_data)
             else:
-                logger.warning("Insufficient historical data for training. Using default behavior.")
+                logger.warning(
+                    "Insufficient historical data for training. Using default behavior."
+                )
 
         logger.info("Scaling Manager initialized successfully")
 
@@ -551,7 +588,9 @@ class ScalingManager:
             prediction = await self.predictor.predict_scaling(current_metrics)
 
             # Create scaling recommendation
-            recommendation = await self.k8s_controller.create_scaling_recommendation(prediction)
+            recommendation = await self.k8s_controller.create_scaling_recommendation(
+                prediction
+            )
 
             # Store in history
             self.predictions_history.append(prediction)
@@ -571,8 +610,14 @@ class ScalingManager:
             )
 
             # Apply scaling if high confidence and significant change
-            if (recommendation.confidence > 0.8 and
-                abs(recommendation.recommended_replicas - recommendation.current_replicas) >= 2):
+            if (
+                recommendation.confidence > 0.8
+                and abs(
+                    recommendation.recommended_replicas
+                    - recommendation.current_replicas
+                )
+                >= 2
+            ):
 
                 await self.apply_scaling_recommendation(recommendation)
 
@@ -590,7 +635,7 @@ class ScalingManager:
                 hpa_name="ai-pdf-scholar-backend-hpa",
                 namespace=recommendation.namespace,
                 min_replicas=min(2, recommendation.recommended_replicas),
-                max_replicas=max(20, recommendation.recommended_replicas)
+                max_replicas=max(20, recommendation.recommended_replicas),
             )
 
             if hpa_updated:
@@ -629,7 +674,9 @@ class ScalingManager:
                 await self.run_prediction_cycle()
 
                 # Check if models need retraining
-                if datetime.now() - self.last_training > timedelta(seconds=self.training_interval):
+                if datetime.now() - self.last_training > timedelta(
+                    seconds=self.training_interval
+                ):
                     await self.retrain_models()
 
                 # Wait before next cycle
@@ -644,18 +691,27 @@ class ScalingManager:
 
     def get_status(self) -> dict:
         """Get current status and metrics"""
-        recent_predictions = self.predictions_history[-10:] if self.predictions_history else []
-        recent_recommendations = self.recommendations_history[-10:] if self.recommendations_history else []
+        recent_predictions = (
+            self.predictions_history[-10:] if self.predictions_history else []
+        )
+        recent_recommendations = (
+            self.recommendations_history[-10:] if self.recommendations_history else []
+        )
 
         return {
             "status": "active" if self.predictor.models_trained else "initializing",
             "models_trained": self.predictor.models_trained,
-            "last_training": self.last_training.isoformat() if self.last_training != datetime.min else None,
+            "last_training": (
+                self.last_training.isoformat()
+                if self.last_training != datetime.min
+                else None
+            ),
             "total_predictions": len(self.predictions_history),
             "total_recommendations": len(self.recommendations_history),
             "recent_predictions": [asdict(p) for p in recent_predictions],
-            "recent_recommendations": [asdict(r) for r in recent_recommendations]
+            "recent_recommendations": [asdict(r) for r in recent_recommendations],
         }
+
 
 # CLI interface
 async def main():
@@ -663,10 +719,17 @@ async def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="AI-Enhanced Scaling Predictor")
-    parser.add_argument("--prometheus-url", default="http://prometheus:9090",
-                       help="Prometheus server URL")
-    parser.add_argument("--mode", choices=["predict", "train", "continuous"],
-                       default="continuous", help="Operation mode")
+    parser.add_argument(
+        "--prometheus-url",
+        default="http://prometheus:9090",
+        help="Prometheus server URL",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["predict", "train", "continuous"],
+        default="continuous",
+        help="Operation mode",
+    )
     parser.add_argument("--output", help="Output file for predictions")
 
     args = parser.parse_args()
@@ -675,7 +738,9 @@ async def main():
 
     if args.mode == "train":
         logger.info("Training models with historical data...")
-        historical_data = await scaling_manager.metrics_collector.collect_historical_metrics()
+        historical_data = (
+            await scaling_manager.metrics_collector.collect_historical_metrics()
+        )
         await scaling_manager.predictor.train_models(historical_data)
         logger.info("Training completed")
 
@@ -695,6 +760,7 @@ async def main():
     elif args.mode == "continuous":
         logger.info("Starting continuous scaling management...")
         await scaling_manager.run_continuous()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

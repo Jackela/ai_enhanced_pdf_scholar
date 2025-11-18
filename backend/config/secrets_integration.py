@@ -183,9 +183,9 @@ class ProductionSecretsIntegration:
         self.secret_metadata: dict[str, dict[str, Any]] = {}
 
         # Rotation tracking
-        self.rotation_schedule: dict[
-            str, float
-        ] = {}  # secret_key -> next_rotation_time
+        self.rotation_schedule: dict[str, float] = (
+            {}
+        )  # secret_key -> next_rotation_time
         self.rotation_in_progress: set = set()
 
         # Security monitoring
@@ -648,9 +648,11 @@ class ProductionSecretsIntegration:
             "secrets_by_category": secret_counts,
             "rotation_status": rotation_status,
             "access_statistics": access_stats,
-            "vault_health": self.secrets_manager.health_check()
-            if hasattr(self.secrets_manager, "health_check")
-            else {},
+            "vault_health": (
+                self.secrets_manager.health_check()
+                if hasattr(self.secrets_manager, "health_check")
+                else {}
+            ),
             "recent_rotations": len(
                 [
                     r

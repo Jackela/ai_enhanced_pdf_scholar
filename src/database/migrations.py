@@ -942,9 +942,9 @@ if "DatabaseMigrator" not in globals():
                             "table_name": table_name,
                             "row_count": row_count,
                             "estimated_size_bytes": table_size,
-                            "avg_row_size_bytes": table_size / row_count
-                            if row_count > 0
-                            else 0,
+                            "avg_row_size_bytes": (
+                                table_size / row_count if row_count > 0 else 0
+                            ),
                         }
                     )
 
@@ -1594,9 +1594,9 @@ if "DatabaseMigrator" not in globals():
                         "min_time_ms": min_time,
                         "max_time_ms": max_time,
                         "rows_returned": len(results) if "results" in locals() else 0,
-                        "consistency": "high"
-                        if (max_time - min_time) < avg_time * 0.2
-                        else "low",
+                        "consistency": (
+                            "high" if (max_time - min_time) < avg_time * 0.2 else "low"
+                        ),
                     }
 
                     benchmark_results["benchmarks"].append(benchmark_result)
@@ -1621,10 +1621,11 @@ if "DatabaseMigrator" not in globals():
                 benchmark_results["performance_summary"] = {
                     "total_queries_tested": len(benchmark_results["benchmarks"]),
                     "performance_range_ms": f"{fastest['average_time_ms']:.2f} - {slowest['average_time_ms']:.2f}",
-                    "performance_variance": slowest["average_time_ms"]
-                    / fastest["average_time_ms"]
-                    if fastest["average_time_ms"] > 0
-                    else 0,
+                    "performance_variance": (
+                        slowest["average_time_ms"] / fastest["average_time_ms"]
+                        if fastest["average_time_ms"] > 0
+                        else 0
+                    ),
                 }
 
         except Exception as e:
@@ -1742,10 +1743,11 @@ if "DatabaseMigrator" not in globals():
                 "total_indexes": analysis["total_indexes"],
                 "high_impact_indexes": len(analysis["high_impact"]),
                 "potentially_unused_indexes": len(analysis["potentially_unused"]),
-                "index_effectiveness_ratio": len(analysis["high_impact"])
-                / analysis["total_indexes"]
-                if analysis["total_indexes"] > 0
-                else 0,
+                "index_effectiveness_ratio": (
+                    len(analysis["high_impact"]) / analysis["total_indexes"]
+                    if analysis["total_indexes"] > 0
+                    else 0
+                ),
             }
 
         except Exception as e:
@@ -1912,12 +1914,14 @@ if "DatabaseMigrator" not in globals():
         if not default_password:
             # Generate a secure random password if not provided
             alphabet = string.ascii_letters + string.digits + string.punctuation
-            default_password = ''.join(secrets.choice(alphabet) for _ in range(16))
+            default_password = "".join(secrets.choice(alphabet) for _ in range(16))
             logger.warning(
                 "No DEFAULT_ADMIN_PASSWORD environment variable set. "
                 f"Generated temporary password: {default_password}"
             )
-            logger.warning("IMPORTANT: Please change this password immediately after first login!")
+            logger.warning(
+                "IMPORTANT: Please change this password immediately after first login!"
+            )
 
         password_hash = bcrypt.hashpw(
             default_password.encode("utf-8"), bcrypt.gensalt(rounds=12)

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OriginValidationRule:
     """Rule for validating CORS origins."""
+
     pattern: str
     allowed: bool
     reason: str
@@ -30,6 +31,7 @@ class OriginValidationRule:
 @dataclass
 class CORSSecurityPolicy:
     """CORS security policy configuration."""
+
     # Origin validation
     strict_origin_validation: bool = True
     require_https_in_production: bool = True
@@ -80,17 +82,32 @@ class ProductionCORSValidator:
             OriginValidationRule(r"^null$", False, "Null origin not allowed", 2),
             OriginValidationRule(r"^file://", False, "File protocol not allowed", 3),
             OriginValidationRule(r"^data:", False, "Data URIs not allowed", 4),
-
             # Network security rules
-            OriginValidationRule(r"^https?://localhost", False, "Localhost not allowed in production", 10),
-            OriginValidationRule(r"^https?://127\.0\.0\.1", False, "Loopback IP not allowed", 11),
-            OriginValidationRule(r"^https?://0\.0\.0\.0", False, "Unspecified IP not allowed", 12),
-            OriginValidationRule(r"^https?://10\.", False, "Private IP range not allowed", 13),
-            OriginValidationRule(r"^https?://192\.168\.", False, "Private IP range not allowed", 14),
-            OriginValidationRule(r"^https?://172\.(1[6-9]|2[0-9]|3[0-1])\.", False, "Private IP range not allowed", 15),
-
+            OriginValidationRule(
+                r"^https?://localhost", False, "Localhost not allowed in production", 10
+            ),
+            OriginValidationRule(
+                r"^https?://127\.0\.0\.1", False, "Loopback IP not allowed", 11
+            ),
+            OriginValidationRule(
+                r"^https?://0\.0\.0\.0", False, "Unspecified IP not allowed", 12
+            ),
+            OriginValidationRule(
+                r"^https?://10\.", False, "Private IP range not allowed", 13
+            ),
+            OriginValidationRule(
+                r"^https?://192\.168\.", False, "Private IP range not allowed", 14
+            ),
+            OriginValidationRule(
+                r"^https?://172\.(1[6-9]|2[0-9]|3[0-1])\.",
+                False,
+                "Private IP range not allowed",
+                15,
+            ),
             # Protocol security
-            OriginValidationRule(r"^http://[^/]+$", False, "HTTP not allowed in production", 20),
+            OriginValidationRule(
+                r"^http://[^/]+$", False, "HTTP not allowed in production", 20
+            ),
             OriginValidationRule(r"^https://[^/]+$", True, "HTTPS allowed", 1000),
         ]
 
@@ -139,7 +156,7 @@ class ProductionCORSValidator:
             if not parsed.scheme or not parsed.netloc:
                 return False, "Invalid URL structure"
 
-            if parsed.scheme not in ['http', 'https']:
+            if parsed.scheme not in ["http", "https"]:
                 return False, f"Unsupported scheme: {parsed.scheme}"
 
             # Check domain validation
@@ -157,7 +174,7 @@ class ProductionCORSValidator:
                 pattern_valid = self._check_domain_patterns(
                     parsed.netloc,
                     self.security_policy.allowed_domain_patterns,
-                    allow=True
+                    allow=True,
                 )
                 if not pattern_valid:
                     return False, "Domain not in allowed patterns"
@@ -167,7 +184,7 @@ class ProductionCORSValidator:
                 pattern_valid = self._check_domain_patterns(
                     parsed.netloc,
                     self.security_policy.blocked_domain_patterns,
-                    allow=False
+                    allow=False,
                 )
                 if not pattern_valid:
                     return False, "Domain matches blocked pattern"
@@ -181,11 +198,13 @@ class ProductionCORSValidator:
     def _validate_domain(self, netloc: str) -> tuple[bool, str]:
         """Validate domain name."""
         # Extract hostname (remove port if present)
-        hostname = netloc.split(':')[0].lower()
+        hostname = netloc.split(":")[0].lower()
 
         # Check subdomain depth
-        parts = hostname.split('.')
-        if len(parts) > self.security_policy.max_subdomain_depth + 2:  # +2 for domain.tld
+        parts = hostname.split(".")
+        if (
+            len(parts) > self.security_policy.max_subdomain_depth + 2
+        ):  # +2 for domain.tld
             return False, f"Subdomain depth exceeds limit: {len(parts) - 2}"
 
         # Check for valid TLD if required
@@ -195,7 +214,7 @@ class ProductionCORSValidator:
                 return False, f"Invalid or suspicious TLD: {tld}"
 
         # Basic domain format validation
-        domain_pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$'
+        domain_pattern = r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$"
         for part in parts:
             if not re.match(domain_pattern, part):
                 return False, f"Invalid domain part: {part}"
@@ -205,7 +224,7 @@ class ProductionCORSValidator:
     def _validate_ip_address(self, netloc: str) -> tuple[bool, str]:
         """Validate IP address in origin."""
         # Extract IP (remove port if present)
-        ip_str = netloc.split(':')[0]
+        ip_str = netloc.split(":")[0]
 
         try:
             ip = ipaddress.ip_address(ip_str)
@@ -224,7 +243,9 @@ class ProductionCORSValidator:
             # Not an IP address, continue with domain validation
             return True, "Not an IP address"
 
-    def _check_domain_patterns(self, domain: str, patterns: list[str], allow: bool) -> bool:
+    def _check_domain_patterns(
+        self, domain: str, patterns: list[str], allow: bool
+    ) -> bool:
         """Check domain against patterns."""
         for pattern in patterns:
             if re.match(pattern, domain, re.IGNORECASE):
@@ -234,7 +255,7 @@ class ProductionCORSValidator:
     def _is_valid_tld(self, tld: str) -> bool:
         """Check if TLD is valid (simplified check)."""
         # This is a simplified check. In production, you'd want a comprehensive TLD list
-        suspicious_tlds = {'tk', 'ml', 'ga', 'cf', 'top', 'work', 'party'}
+        suspicious_tlds = {"tk", "ml", "ga", "cf", "top", "work", "party"}
         return len(tld) >= 2 and tld.lower() not in suspicious_tlds
 
     def _log_blocked_origin(self, origin: str, reason: str):
@@ -256,8 +277,10 @@ class ProductionCORSValidator:
         ]
 
         # Alert if too many attempts
-        if (len(self.blocked_attempts[origin]) > 10 and
-            self.security_policy.alert_on_blocked_attempts):
+        if (
+            len(self.blocked_attempts[origin]) > 10
+            and self.security_policy.alert_on_blocked_attempts
+        ):
             logger.error(f"High frequency blocked attempts from origin: {origin}")
 
     def get_blocked_statistics(self) -> dict[str, Any]:
@@ -265,10 +288,11 @@ class ProductionCORSValidator:
         return {
             "total_blocked_origins": len(self.blocked_origins),
             "recent_blocked_attempts": {
-                origin: len(attempts) for origin, attempts in self.blocked_attempts.items()
+                origin: len(attempts)
+                for origin, attempts in self.blocked_attempts.items()
                 if attempts
             },
-            "validation_cache_size": len(self.validation_cache)
+            "validation_cache_size": len(self.validation_cache),
         }
 
 
@@ -295,6 +319,7 @@ class ProductionCORSConfig:
             allowed_origins = security_config.allowed_origins
         else:
             import os
+
             origins_str = os.getenv("PROD_CORS_ORIGINS", "")
             allowed_origins = origins_str.split(",") if origins_str else []
 
@@ -321,13 +346,7 @@ class ProductionCORSConfig:
         return {
             "allow_origins": self._validated_origins,
             "allow_credentials": True,
-            "allow_methods": [
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS"
-            ],
+            "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": [
                 "Accept",
                 "Accept-Language",
@@ -336,15 +355,15 @@ class ProductionCORSConfig:
                 "Authorization",
                 "X-Requested-With",
                 "X-CSRF-Token",
-                "X-Request-ID"
+                "X-Request-ID",
             ],
             "expose_headers": [
                 "X-Request-ID",
                 "X-Total-Count",
                 "X-Rate-Limit-Remaining",
-                "X-Rate-Limit-Reset"
+                "X-Rate-Limit-Reset",
             ],
-            "max_age": 3600  # 1 hour
+            "max_age": 3600,  # 1 hour
         }
 
     def validate_request_origin(self, origin: str | None) -> bool:
@@ -422,16 +441,20 @@ class ProductionCORSConfig:
         return {
             "environment": "production",
             "total_allowed_origins": len(self._validated_origins),
-            "https_only": all(origin.startswith("https://") for origin in self._validated_origins),
+            "https_only": all(
+                origin.startswith("https://") for origin in self._validated_origins
+            ),
             "no_wildcards": "*" not in self._validated_origins,
-            "no_localhost": not any("localhost" in origin for origin in self._validated_origins),
+            "no_localhost": not any(
+                "localhost" in origin for origin in self._validated_origins
+            ),
             "validator_stats": self.validator.get_blocked_statistics(),
             "config": {
                 "allow_credentials": self._cors_config["allow_credentials"],
                 "max_age": self._cors_config["max_age"],
                 "methods_count": len(self._cors_config["allow_methods"]),
-                "headers_count": len(self._cors_config["allow_headers"])
-            }
+                "headers_count": len(self._cors_config["allow_headers"]),
+            },
         }
 
     def update_security_policy(self, policy: CORSSecurityPolicy):
@@ -445,8 +468,7 @@ class ProductionCORSConfig:
 
 
 def create_production_cors_middleware(
-    app,
-    production_config: ProductionConfig | None = None
+    app, production_config: ProductionConfig | None = None
 ):
     """
     Create and configure CORS middleware for production.
@@ -464,10 +486,7 @@ def create_production_cors_middleware(
     cors_config = ProductionCORSConfig(production_config)
 
     # Add CORS middleware with production configuration
-    app.add_middleware(
-        CORSMiddleware,
-        **cors_config.get_cors_config()
-    )
+    app.add_middleware(CORSMiddleware, **cors_config.get_cors_config())
 
     logger.info("Production CORS middleware configured")
     logger.info(f"Allowed origins: {len(cors_config._validated_origins)}")
@@ -492,9 +511,9 @@ class CORSSecurityMiddleware:
         if origin and not self.cors_config.validate_request_origin(origin):
             # Block invalid origin
             from fastapi.responses import JSONResponse
+
             return JSONResponse(
-                status_code=403,
-                content={"error": "Origin not allowed by CORS policy"}
+                status_code=403, content={"error": "Origin not allowed by CORS policy"}
             )
 
         # Continue with request processing
@@ -508,6 +527,8 @@ class CORSSecurityMiddleware:
         return response
 
 
-def get_production_cors_config(production_config: ProductionConfig | None = None) -> ProductionCORSConfig:
+def get_production_cors_config(
+    production_config: ProductionConfig | None = None,
+) -> ProductionCORSConfig:
     """Get production CORS configuration instance."""
     return ProductionCORSConfig(production_config)

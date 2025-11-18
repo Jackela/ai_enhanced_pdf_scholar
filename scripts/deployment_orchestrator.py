@@ -22,14 +22,14 @@ from typing import Any
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
 class DeploymentStrategy(Enum):
     """Supported deployment strategies"""
+
     BLUE_GREEN = "blue_green"
     CANARY = "canary"
     ROLLING = "rolling"
@@ -38,6 +38,7 @@ class DeploymentStrategy(Enum):
 
 class Environment(Enum):
     """Target deployment environments"""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -45,6 +46,7 @@ class Environment(Enum):
 
 class DeploymentStatus(Enum):
     """Deployment status states"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     SUCCEEDED = "succeeded"
@@ -56,6 +58,7 @@ class DeploymentStatus(Enum):
 @dataclass
 class DeploymentConfig:
     """Deployment configuration"""
+
     environment: Environment
     strategy: DeploymentStrategy
     version: str
@@ -76,24 +79,25 @@ class DeploymentConfig:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
-            'environment': self.environment.value,
-            'strategy': self.strategy.value,
-            'version': self.version,
-            'branch': self.branch,
-            'commit_sha': self.commit_sha,
-            'canary_percentage': self.canary_percentage,
-            'monitoring_duration': self.monitoring_duration,
-            'rollback_on_failure': self.rollback_on_failure,
-            'health_check_timeout': self.health_check_timeout,
-            'parallel_deployment': self.parallel_deployment,
-            'deployment_slots': self.deployment_slots,
-            'maintenance_mode': self.maintenance_mode
+            "environment": self.environment.value,
+            "strategy": self.strategy.value,
+            "version": self.version,
+            "branch": self.branch,
+            "commit_sha": self.commit_sha,
+            "canary_percentage": self.canary_percentage,
+            "monitoring_duration": self.monitoring_duration,
+            "rollback_on_failure": self.rollback_on_failure,
+            "health_check_timeout": self.health_check_timeout,
+            "parallel_deployment": self.parallel_deployment,
+            "deployment_slots": self.deployment_slots,
+            "maintenance_mode": self.maintenance_mode,
         }
 
 
 @dataclass
 class DeploymentResult:
     """Deployment execution result"""
+
     deployment_id: str
     status: DeploymentStatus
     config: DeploymentConfig
@@ -120,16 +124,16 @@ class DeploymentResult:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
-            'deployment_id': self.deployment_id,
-            'status': self.status.value,
-            'config': self.config.to_dict(),
-            'start_time': self.start_time.isoformat(),
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'duration_seconds': self.duration_seconds,
-            'deployment_url': self.deployment_url,
-            'logs': self.logs,
-            'metrics': self.metrics,
-            'error_message': self.error_message
+            "deployment_id": self.deployment_id,
+            "status": self.status.value,
+            "config": self.config.to_dict(),
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "duration_seconds": self.duration_seconds,
+            "deployment_url": self.deployment_url,
+            "logs": self.logs,
+            "metrics": self.metrics,
+            "error_message": self.error_message,
         }
 
 
@@ -139,13 +143,13 @@ class DeploymentOrchestrator:
     def __init__(self, work_dir: Path = None):
         self.work_dir = work_dir or Path.cwd()
         self.deployments: dict[str, DeploymentResult] = {}
-        self.github_token = os.getenv('GITHUB_TOKEN')
-        self.repository = os.getenv('GITHUB_REPOSITORY', 'ai-enhanced-pdf-scholar')
+        self.github_token = os.getenv("GITHUB_TOKEN")
+        self.repository = os.getenv("GITHUB_REPOSITORY", "ai-enhanced-pdf-scholar")
 
     def generate_deployment_id(self, config: DeploymentConfig) -> str:
         """Generate unique deployment ID"""
-        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
-        short_sha = config.commit_sha[:8] if config.commit_sha else 'unknown'
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        short_sha = config.commit_sha[:8] if config.commit_sha else "unknown"
         return f"{config.environment.value}-{config.strategy.value}-{timestamp}-{short_sha}"
 
     async def deploy(self, config: DeploymentConfig) -> DeploymentResult:
@@ -159,7 +163,7 @@ class DeploymentOrchestrator:
             deployment_id=deployment_id,
             status=DeploymentStatus.PENDING,
             config=config,
-            start_time=datetime.now(timezone.utc)
+            start_time=datetime.now(timezone.utc),
         )
 
         self.deployments[deployment_id] = result
@@ -214,9 +218,9 @@ class DeploymentOrchestrator:
             workflow_file = "deploy-production-canary.yml"  # Use canary for production
 
         workflow_inputs = {
-            'deployment_environment': 'auto',
-            'health_check_timeout': str(config.health_check_timeout),
-            'rollback_on_failure': config.rollback_on_failure
+            "deployment_environment": "auto",
+            "health_check_timeout": str(config.health_check_timeout),
+            "rollback_on_failure": config.rollback_on_failure,
         }
 
         await self._trigger_github_workflow(workflow_file, workflow_inputs, result)
@@ -229,15 +233,13 @@ class DeploymentOrchestrator:
         result.logs.append("Starting canary deployment")
 
         workflow_inputs = {
-            'canary_percentage': str(config.canary_percentage),
-            'monitoring_duration': str(config.monitoring_duration),
-            'promotion_strategy': 'gradual'
+            "canary_percentage": str(config.canary_percentage),
+            "monitoring_duration": str(config.monitoring_duration),
+            "promotion_strategy": "gradual",
         }
 
         await self._trigger_github_workflow(
-            "deploy-production-canary.yml",
-            workflow_inputs,
-            result
+            "deploy-production-canary.yml", workflow_inputs, result
         )
 
     async def _deploy_rolling(self, result: DeploymentResult) -> None:
@@ -279,10 +281,7 @@ class DeploymentOrchestrator:
             raise Exception("Health check failed after immediate deployment")
 
     async def _trigger_github_workflow(
-        self,
-        workflow_file: str,
-        inputs: dict[str, str],
-        result: DeploymentResult
+        self, workflow_file: str, inputs: dict[str, str], result: DeploymentResult
     ) -> None:
         """Trigger GitHub Actions workflow"""
         if not self.github_token:
@@ -293,21 +292,24 @@ class DeploymentOrchestrator:
         try:
             # In production, this would use GitHub API to trigger workflows
             cmd = [
-                'gh', 'workflow', 'run', workflow_file,
-                '--repo', self.repository,
-                '--ref', result.config.branch
+                "gh",
+                "workflow",
+                "run",
+                workflow_file,
+                "--repo",
+                self.repository,
+                "--ref",
+                result.config.branch,
             ]
 
             for key, value in inputs.items():
-                cmd.extend(['-f', f'{key}={value}'])
+                cmd.extend(["-f", f"{key}={value}"])
 
             logger.info(f"🔄 Triggering workflow: {' '.join(cmd)}")
 
             # Execute command
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
 
             stdout, stderr = await process.communicate()
@@ -326,10 +328,7 @@ class DeploymentOrchestrator:
             await self._simulate_workflow_execution(workflow_file, inputs, result)
 
     async def _simulate_workflow_execution(
-        self,
-        workflow_file: str,
-        inputs: dict[str, str],
-        result: DeploymentResult
+        self, workflow_file: str, inputs: dict[str, str], result: DeploymentResult
     ) -> None:
         """Simulate workflow execution for testing"""
         logger.info(f"🧪 Simulating workflow: {workflow_file}")
@@ -341,7 +340,7 @@ class DeploymentOrchestrator:
             "Building artifacts",
             "Deploying application",
             "Running health checks",
-            "Finalizing deployment"
+            "Finalizing deployment",
         ]
 
         for i, step in enumerate(steps):
@@ -357,9 +356,7 @@ class DeploymentOrchestrator:
             result.deployment_url = f"https://{env}.ai-pdf-scholar.com"
 
     async def _monitor_workflow_execution(
-        self,
-        workflow_file: str,
-        result: DeploymentResult
+        self, workflow_file: str, result: DeploymentResult
     ) -> None:
         """Monitor GitHub workflow execution"""
         logger.info("📊 Monitoring workflow execution...")
@@ -399,13 +396,15 @@ class DeploymentOrchestrator:
     def list_deployments(
         self,
         environment: Environment | None = None,
-        status: DeploymentStatus | None = None
+        status: DeploymentStatus | None = None,
     ) -> list[DeploymentResult]:
         """List deployments with optional filtering"""
         deployments = list(self.deployments.values())
 
         if environment:
-            deployments = [d for d in deployments if d.config.environment == environment]
+            deployments = [
+                d for d in deployments if d.config.environment == environment
+            ]
 
         if status:
             deployments = [d for d in deployments if d.status == status]
@@ -421,11 +420,11 @@ class DeploymentOrchestrator:
             file_path = self.work_dir / "deployment_history.json"
 
         history = {
-            'deployments': [d.to_dict() for d in self.deployments.values()],
-            'exported_at': datetime.now(timezone.utc).isoformat()
+            "deployments": [d.to_dict() for d in self.deployments.values()],
+            "exported_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(history, f, indent=2)
 
         logger.info(f"📊 Deployment history saved to {file_path}")
@@ -443,29 +442,39 @@ class DeploymentOrchestrator:
             history = json.load(f)
 
         # Reconstruct deployment objects
-        for deployment_data in history.get('deployments', []):
+        for deployment_data in history.get("deployments", []):
             config = DeploymentConfig(
-                environment=Environment(deployment_data['config']['environment']),
-                strategy=DeploymentStrategy(deployment_data['config']['strategy']),
-                version=deployment_data['config']['version'],
-                branch=deployment_data['config']['branch'],
-                commit_sha=deployment_data['config']['commit_sha'],
-                canary_percentage=deployment_data['config'].get('canary_percentage'),
-                monitoring_duration=deployment_data['config'].get('monitoring_duration'),
-                rollback_on_failure=deployment_data['config'].get('rollback_on_failure', True),
-                health_check_timeout=deployment_data['config'].get('health_check_timeout', 300)
+                environment=Environment(deployment_data["config"]["environment"]),
+                strategy=DeploymentStrategy(deployment_data["config"]["strategy"]),
+                version=deployment_data["config"]["version"],
+                branch=deployment_data["config"]["branch"],
+                commit_sha=deployment_data["config"]["commit_sha"],
+                canary_percentage=deployment_data["config"].get("canary_percentage"),
+                monitoring_duration=deployment_data["config"].get(
+                    "monitoring_duration"
+                ),
+                rollback_on_failure=deployment_data["config"].get(
+                    "rollback_on_failure", True
+                ),
+                health_check_timeout=deployment_data["config"].get(
+                    "health_check_timeout", 300
+                ),
             )
 
             result = DeploymentResult(
-                deployment_id=deployment_data['deployment_id'],
-                status=DeploymentStatus(deployment_data['status']),
+                deployment_id=deployment_data["deployment_id"],
+                status=DeploymentStatus(deployment_data["status"]),
                 config=config,
-                start_time=datetime.fromisoformat(deployment_data['start_time']),
-                end_time=datetime.fromisoformat(deployment_data['end_time']) if deployment_data['end_time'] else None,
-                deployment_url=deployment_data.get('deployment_url'),
-                logs=deployment_data.get('logs', []),
-                metrics=deployment_data.get('metrics', {}),
-                error_message=deployment_data.get('error_message')
+                start_time=datetime.fromisoformat(deployment_data["start_time"]),
+                end_time=(
+                    datetime.fromisoformat(deployment_data["end_time"])
+                    if deployment_data["end_time"]
+                    else None
+                ),
+                deployment_url=deployment_data.get("deployment_url"),
+                logs=deployment_data.get("logs", []),
+                metrics=deployment_data.get("metrics", {}),
+                error_message=deployment_data.get("error_message"),
             )
 
             self.deployments[result.deployment_id] = result
@@ -491,52 +500,88 @@ Examples:
 
   # Get deployment details
   python deployment_orchestrator.py get --deployment-id production-canary-20250119-120000-abc123
-        """
+        """,
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Deploy command
-    deploy_parser = subparsers.add_parser('deploy', help='Execute deployment')
-    deploy_parser.add_argument('--env', '--environment', type=str, required=True,
-                              choices=['development', 'staging', 'production'],
-                              help='Target environment')
-    deploy_parser.add_argument('--strategy', type=str, required=True,
-                              choices=['blue_green', 'canary', 'rolling', 'immediate'],
-                              help='Deployment strategy')
-    deploy_parser.add_argument('--version', type=str, required=True,
-                              help='Version to deploy')
-    deploy_parser.add_argument('--branch', type=str, required=True,
-                              help='Source branch')
-    deploy_parser.add_argument('--sha', '--commit-sha', type=str, required=True,
-                              help='Commit SHA')
-    deploy_parser.add_argument('--canary-percentage', type=int, default=5,
-                              help='Canary traffic percentage (1-50)')
-    deploy_parser.add_argument('--monitoring-duration', type=int, default=30,
-                              help='Monitoring duration in minutes')
-    deploy_parser.add_argument('--no-rollback', action='store_true',
-                              help='Disable automatic rollback on failure')
-    deploy_parser.add_argument('--health-check-timeout', type=int, default=300,
-                              help='Health check timeout in seconds')
+    deploy_parser = subparsers.add_parser("deploy", help="Execute deployment")
+    deploy_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        required=True,
+        choices=["development", "staging", "production"],
+        help="Target environment",
+    )
+    deploy_parser.add_argument(
+        "--strategy",
+        type=str,
+        required=True,
+        choices=["blue_green", "canary", "rolling", "immediate"],
+        help="Deployment strategy",
+    )
+    deploy_parser.add_argument(
+        "--version", type=str, required=True, help="Version to deploy"
+    )
+    deploy_parser.add_argument(
+        "--branch", type=str, required=True, help="Source branch"
+    )
+    deploy_parser.add_argument(
+        "--sha", "--commit-sha", type=str, required=True, help="Commit SHA"
+    )
+    deploy_parser.add_argument(
+        "--canary-percentage",
+        type=int,
+        default=5,
+        help="Canary traffic percentage (1-50)",
+    )
+    deploy_parser.add_argument(
+        "--monitoring-duration",
+        type=int,
+        default=30,
+        help="Monitoring duration in minutes",
+    )
+    deploy_parser.add_argument(
+        "--no-rollback",
+        action="store_true",
+        help="Disable automatic rollback on failure",
+    )
+    deploy_parser.add_argument(
+        "--health-check-timeout",
+        type=int,
+        default=300,
+        help="Health check timeout in seconds",
+    )
 
     # List command
-    list_parser = subparsers.add_parser('list', help='List deployments')
-    list_parser.add_argument('--env', '--environment', type=str,
-                            choices=['development', 'staging', 'production'],
-                            help='Filter by environment')
-    list_parser.add_argument('--status', type=str,
-                            choices=['pending', 'in_progress', 'succeeded', 'failed', 'rolled_back'],
-                            help='Filter by status')
-    list_parser.add_argument('--limit', type=int, default=10,
-                            help='Maximum number of results')
+    list_parser = subparsers.add_parser("list", help="List deployments")
+    list_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        choices=["development", "staging", "production"],
+        help="Filter by environment",
+    )
+    list_parser.add_argument(
+        "--status",
+        type=str,
+        choices=["pending", "in_progress", "succeeded", "failed", "rolled_back"],
+        help="Filter by status",
+    )
+    list_parser.add_argument(
+        "--limit", type=int, default=10, help="Maximum number of results"
+    )
 
     # Get command
-    get_parser = subparsers.add_parser('get', help='Get deployment details')
-    get_parser.add_argument('--deployment-id', type=str, required=True,
-                           help='Deployment ID')
+    get_parser = subparsers.add_parser("get", help="Get deployment details")
+    get_parser.add_argument(
+        "--deployment-id", type=str, required=True, help="Deployment ID"
+    )
 
     # Status command
-    status_parser = subparsers.add_parser('status', help='Show orchestrator status')
+    status_parser = subparsers.add_parser("status", help="Show orchestrator status")
 
     args = parser.parse_args()
 
@@ -549,7 +594,7 @@ Examples:
     orchestrator.load_deployment_history()
 
     try:
-        if args.command == 'deploy':
+        if args.command == "deploy":
             config = DeploymentConfig(
                 environment=Environment(args.env),
                 strategy=DeploymentStrategy(args.strategy),
@@ -559,7 +604,7 @@ Examples:
                 canary_percentage=args.canary_percentage,
                 monitoring_duration=args.monitoring_duration,
                 rollback_on_failure=not args.no_rollback,
-                health_check_timeout=args.health_check_timeout
+                health_check_timeout=args.health_check_timeout,
             )
 
             result = await orchestrator.deploy(config)
@@ -567,18 +612,26 @@ Examples:
             print("🚀 Deployment Result:")
             print(f"  ID: {result.deployment_id}")
             print(f"  Status: {result.status.value}")
-            print(f"  Duration: {result.duration_seconds:.1f}s" if result.duration_seconds else "  Duration: N/A")
-            print(f"  URL: {result.deployment_url}" if result.deployment_url else "  URL: N/A")
+            print(
+                f"  Duration: {result.duration_seconds:.1f}s"
+                if result.duration_seconds
+                else "  Duration: N/A"
+            )
+            print(
+                f"  URL: {result.deployment_url}"
+                if result.deployment_url
+                else "  URL: N/A"
+            )
 
             if result.error_message:
                 print(f"  Error: {result.error_message}")
 
-        elif args.command == 'list':
+        elif args.command == "list":
             env_filter = Environment(args.env) if args.env else None
             status_filter = DeploymentStatus(args.status) if args.status else None
 
             deployments = orchestrator.list_deployments(env_filter, status_filter)
-            deployments = deployments[:args.limit]
+            deployments = deployments[: args.limit]
 
             if not deployments:
                 print("No deployments found")
@@ -588,7 +641,11 @@ Examples:
             print()
 
             for deployment in deployments:
-                duration = f"{deployment.duration_seconds:.1f}s" if deployment.duration_seconds else "N/A"
+                duration = (
+                    f"{deployment.duration_seconds:.1f}s"
+                    if deployment.duration_seconds
+                    else "N/A"
+                )
                 print(f"  🚀 {deployment.deployment_id}")
                 print(f"     Status: {deployment.status.value}")
                 print(f"     Environment: {deployment.config.environment.value}")
@@ -597,7 +654,7 @@ Examples:
                 print(f"     Duration: {duration}")
                 print()
 
-        elif args.command == 'get':
+        elif args.command == "get":
             deployment = orchestrator.get_deployment(args.deployment_id)
 
             if not deployment:
@@ -612,9 +669,21 @@ Examples:
             print(f"  Branch: {deployment.config.branch}")
             print(f"  Commit: {deployment.config.commit_sha}")
             print(f"  Start Time: {deployment.start_time}")
-            print(f"  End Time: {deployment.end_time}" if deployment.end_time else "  End Time: In Progress")
-            print(f"  Duration: {deployment.duration_seconds:.1f}s" if deployment.duration_seconds else "  Duration: N/A")
-            print(f"  URL: {deployment.deployment_url}" if deployment.deployment_url else "  URL: N/A")
+            print(
+                f"  End Time: {deployment.end_time}"
+                if deployment.end_time
+                else "  End Time: In Progress"
+            )
+            print(
+                f"  Duration: {deployment.duration_seconds:.1f}s"
+                if deployment.duration_seconds
+                else "  Duration: N/A"
+            )
+            print(
+                f"  URL: {deployment.deployment_url}"
+                if deployment.deployment_url
+                else "  URL: N/A"
+            )
 
             if deployment.error_message:
                 print(f"  Error: {deployment.error_message}")
@@ -624,26 +693,32 @@ Examples:
                 for log in deployment.logs[-5:]:  # Show last 5 log entries
                     print(f"    - {log}")
 
-        elif args.command == 'status':
+        elif args.command == "status":
             total_deployments = len(orchestrator.deployments)
             recent_deployments = orchestrator.list_deployments()[:5]
 
             print("🎯 Deployment Orchestrator Status")
             print(f"  Total Deployments: {total_deployments}")
             print(f"  Work Directory: {orchestrator.work_dir}")
-            print(f"  GitHub Token: {'✅ Available' if orchestrator.github_token else '❌ Not Available'}")
+            print(
+                f"  GitHub Token: {'✅ Available' if orchestrator.github_token else '❌ Not Available'}"
+            )
             print()
 
             if recent_deployments:
                 print("📊 Recent Activity:")
                 for deployment in recent_deployments:
-                    age_hours = (datetime.now(timezone.utc) - deployment.start_time).total_seconds() / 3600
-                    print(f"  - {deployment.deployment_id} ({deployment.status.value}, {age_hours:.1f}h ago)")
+                    age_hours = (
+                        datetime.now(timezone.utc) - deployment.start_time
+                    ).total_seconds() / 3600
+                    print(
+                        f"  - {deployment.deployment_id} ({deployment.status.value}, {age_hours:.1f}h ago)"
+                    )
 
     finally:
         # Save deployment history
         orchestrator.save_deployment_history()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

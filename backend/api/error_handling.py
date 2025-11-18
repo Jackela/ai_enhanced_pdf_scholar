@@ -465,9 +465,11 @@ class ErrorLogger:
                         "method": "WEBSOCKET",
                         "url": str(request.url),
                         "client_ip": request.client.host if request.client else None,
-                        "user_agent": request.headers.get("user-agent")
-                        if hasattr(request, "headers")
-                        else None,
+                        "user_agent": (
+                            request.headers.get("user-agent")
+                            if hasattr(request, "headers")
+                            else None
+                        ),
                     }
                 )
 

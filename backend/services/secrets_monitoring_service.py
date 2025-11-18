@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 class AlertSeverity(str, Enum):
     """Alert severity levels."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -42,6 +43,7 @@ class AlertSeverity(str, Enum):
 
 class AlertChannel(str, Enum):
     """Alert notification channels."""
+
     EMAIL = "email"
     SLACK = "slack"
     WEBHOOK = "webhook"
@@ -52,6 +54,7 @@ class AlertChannel(str, Enum):
 
 class MonitoringMetric(str, Enum):
     """Monitoring metrics for secrets."""
+
     SECRET_ACCESS_COUNT = "secret_access_count"
     SECRET_ACCESS_FREQUENCY = "secret_access_frequency"
     SECRET_AGE = "secret_age"
@@ -67,6 +70,7 @@ class MonitoringMetric(str, Enum):
 @dataclass
 class AlertRule:
     """Defines an alert rule for secrets monitoring."""
+
     name: str
     description: str
     metric: MonitoringMetric
@@ -82,6 +86,7 @@ class AlertRule:
 @dataclass
 class Alert:
     """Represents a monitoring alert."""
+
     rule_name: str
     severity: AlertSeverity
     message: str
@@ -95,6 +100,7 @@ class Alert:
 @dataclass
 class MetricData:
     """Metric data point."""
+
     metric: MonitoringMetric
     value: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
@@ -104,6 +110,7 @@ class MetricData:
 
 class AlertingConfig(BaseModel):
     """Configuration for alerting system."""
+
     # Email configuration
     smtp_host: str = Field(default="localhost")
     smtp_port: int = Field(default=587)
@@ -140,7 +147,7 @@ class SecretsMonitoringService:
         self,
         secrets_manager: ProductionSecretsManager,
         validation_service: SecretValidationService,
-        config: AlertingConfig | None = None
+        config: AlertingConfig | None = None,
     ):
         """Initialize the monitoring service."""
         self.secrets_manager = secrets_manager
@@ -177,7 +184,7 @@ class SecretsMonitoringService:
                 threshold=0,
                 severity=AlertSeverity.HIGH,
                 channels=[AlertChannel.EMAIL, AlertChannel.SLACK],
-                tags={"category": "compliance", "automation": "rotation"}
+                tags={"category": "compliance", "automation": "rotation"},
             ),
             AlertRule(
                 name="high_secret_access_frequency",
@@ -187,7 +194,7 @@ class SecretsMonitoringService:
                 threshold=100,  # accesses per hour
                 severity=AlertSeverity.MEDIUM,
                 channels=[AlertChannel.SLACK, AlertChannel.WEBHOOK],
-                tags={"category": "security", "type": "anomaly"}
+                tags={"category": "security", "type": "anomaly"},
             ),
             AlertRule(
                 name="validation_failures_spike",
@@ -197,7 +204,7 @@ class SecretsMonitoringService:
                 threshold=5,  # failures in 15 minutes
                 severity=AlertSeverity.HIGH,
                 channels=[AlertChannel.EMAIL, AlertChannel.PAGERDUTY],
-                tags={"category": "security", "type": "validation"}
+                tags={"category": "security", "type": "validation"},
             ),
             AlertRule(
                 name="encryption_health_degraded",
@@ -207,7 +214,7 @@ class SecretsMonitoringService:
                 threshold=0.95,  # 95% health threshold
                 severity=AlertSeverity.CRITICAL,
                 channels=[AlertChannel.EMAIL, AlertChannel.PAGERDUTY, AlertChannel.SMS],
-                tags={"category": "infrastructure", "type": "health"}
+                tags={"category": "infrastructure", "type": "health"},
             ),
             AlertRule(
                 name="backup_failure",
@@ -217,7 +224,7 @@ class SecretsMonitoringService:
                 threshold=0,
                 severity=AlertSeverity.HIGH,
                 channels=[AlertChannel.EMAIL, AlertChannel.SLACK],
-                tags={"category": "backup", "type": "failure"}
+                tags={"category": "backup", "type": "failure"},
             ),
             AlertRule(
                 name="compliance_violation",
@@ -227,7 +234,7 @@ class SecretsMonitoringService:
                 threshold=0.9,  # 90% compliance threshold
                 severity=AlertSeverity.CRITICAL,
                 channels=[AlertChannel.EMAIL, AlertChannel.PAGERDUTY],
-                tags={"category": "compliance", "type": "violation"}
+                tags={"category": "compliance", "type": "violation"},
             ),
             AlertRule(
                 name="anomalous_access_pattern",
@@ -237,7 +244,7 @@ class SecretsMonitoringService:
                 threshold=0.8,  # 80% anomaly score
                 severity=AlertSeverity.HIGH,
                 channels=[AlertChannel.EMAIL, AlertChannel.WEBHOOK],
-                tags={"category": "security", "type": "anomaly"}
+                tags={"category": "security", "type": "anomaly"},
             ),
             AlertRule(
                 name="decryption_failures",
@@ -247,8 +254,8 @@ class SecretsMonitoringService:
                 threshold=3,  # failures in 5 minutes
                 severity=AlertSeverity.CRITICAL,
                 channels=[AlertChannel.PAGERDUTY, AlertChannel.EMAIL],
-                tags={"category": "security", "type": "encryption"}
-            )
+                tags={"category": "security", "type": "encryption"},
+            ),
         ]
 
         for rule in default_rules:
@@ -317,7 +324,9 @@ class SecretsMonitoringService:
             health_status = self.secrets_manager.health_check()
 
             # Encryption health metric
-            encryption_health = 1.0 if health_status.get("overall_status") == "healthy" else 0.0
+            encryption_health = (
+                1.0 if health_status.get("overall_status") == "healthy" else 0.0
+            )
             self._record_metric(MonitoringMetric.ENCRYPTION_HEALTH, encryption_health)
 
             # Get audit trail for recent activities
@@ -326,21 +335,32 @@ class SecretsMonitoringService:
             )
 
             # Access frequency metrics
-            access_operations = [e for e in recent_audit if e.get("operation") == "decrypt"]
+            access_operations = [
+                e for e in recent_audit if e.get("operation") == "decrypt"
+            ]
             access_frequency = len(access_operations)
-            self._record_metric(MonitoringMetric.SECRET_ACCESS_FREQUENCY, access_frequency)
+            self._record_metric(
+                MonitoringMetric.SECRET_ACCESS_FREQUENCY, access_frequency
+            )
 
             # Validation failures
             failed_operations = [e for e in recent_audit if not e.get("success", True)]
             validation_failures = len(failed_operations)
-            self._record_metric(MonitoringMetric.VALIDATION_FAILURES, validation_failures)
+            self._record_metric(
+                MonitoringMetric.VALIDATION_FAILURES, validation_failures
+            )
 
             # Decryption failures
-            decryption_failures = len([
-                e for e in recent_audit
-                if e.get("operation") == "decrypt" and not e.get("success", True)
-            ])
-            self._record_metric(MonitoringMetric.FAILED_DECRYPTIONS, decryption_failures)
+            decryption_failures = len(
+                [
+                    e
+                    for e in recent_audit
+                    if e.get("operation") == "decrypt" and not e.get("success", True)
+                ]
+            )
+            self._record_metric(
+                MonitoringMetric.FAILED_DECRYPTIONS, decryption_failures
+            )
 
             # Check for overdue rotations
             await self._check_rotation_status()
@@ -373,7 +393,7 @@ class SecretsMonitoringService:
                 self._record_metric(
                     MonitoringMetric.SECRET_AGE,
                     age_days,
-                    labels={"secret_name": secret_name}
+                    labels={"secret_name": secret_name},
                 )
 
         except Exception as e:
@@ -387,21 +407,24 @@ class SecretsMonitoringService:
             test_secrets = {
                 "database_password": "SecureDbPassword123!",
                 "jwt_secret": "super_secure_jwt_signing_key_2023",
-                "encryption_key": "encryption_key_with_256_bit_strength_abc123"
+                "encryption_key": "encryption_key_with_256_bit_strength_abc123",
             }
 
-            validation_results = await self.validation_service.validate_environment_secrets(
-                test_secrets, "production"
+            validation_results = (
+                await self.validation_service.validate_environment_secrets(
+                    test_secrets, "production"
+                )
             )
 
             # Calculate overall compliance score
             total_secrets = len(validation_results)
-            compliant_secrets = len([
-                r for r in validation_results.values()
-                if r.overall_status == "pass"
-            ])
+            compliant_secrets = len(
+                [r for r in validation_results.values() if r.overall_status == "pass"]
+            )
 
-            compliance_score = compliant_secrets / total_secrets if total_secrets > 0 else 0.0
+            compliance_score = (
+                compliant_secrets / total_secrets if total_secrets > 0 else 0.0
+            )
             self._record_metric(MonitoringMetric.COMPLIANCE_STATUS, compliance_score)
 
         except Exception as e:
@@ -420,7 +443,9 @@ class SecretsMonitoringService:
                     timestamp_str = entry.get("timestamp", "")
                     if timestamp_str:
                         try:
-                            timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                            timestamp = datetime.fromisoformat(
+                                timestamp_str.replace("Z", "+00:00")
+                            )
                             access_times.append(timestamp.hour)
                         except:
                             continue
@@ -436,14 +461,19 @@ class SecretsMonitoringService:
             # Check for repeated access to same secret
             if access_secrets:
                 from collections import Counter
+
                 secret_counts = Counter(access_secrets)
                 max_access_count = max(secret_counts.values()) if secret_counts else 0
-                high_frequency_ratio = (max_access_count / len(access_secrets)) if access_secrets else 0
+                high_frequency_ratio = (
+                    (max_access_count / len(access_secrets)) if access_secrets else 0
+                )
             else:
                 high_frequency_ratio = 0
 
             # Simple anomaly score (0-1, higher is more anomalous)
-            anomaly_score = min(1.0, (unusual_ratio * 0.5) + (high_frequency_ratio * 0.5))
+            anomaly_score = min(
+                1.0, (unusual_ratio * 0.5) + (high_frequency_ratio * 0.5)
+            )
 
             self._record_metric(MonitoringMetric.ANOMALOUS_ACCESS, anomaly_score)
 
@@ -456,22 +486,18 @@ class SecretsMonitoringService:
         metric: MonitoringMetric,
         value: float,
         labels: dict[str, str] | None = None,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ):
         """Record a metric data point."""
         metric_data = MetricData(
-            metric=metric,
-            value=value,
-            labels=labels or {},
-            metadata=metadata or {}
+            metric=metric, value=value, labels=labels or {}, metadata=metadata or {}
         )
         self.metric_history.append(metric_data)
 
         # Keep only recent metrics (last 24 hours)
         cutoff_time = datetime.utcnow() - timedelta(hours=24)
         self.metric_history = [
-            m for m in self.metric_history
-            if m.timestamp >= cutoff_time
+            m for m in self.metric_history if m.timestamp >= cutoff_time
         ]
 
     async def _evaluate_alert_rules(self):
@@ -490,9 +516,12 @@ class SecretsMonitoringService:
 
                 # Get recent metrics for this rule
                 recent_metrics = [
-                    m for m in self.metric_history
-                    if (m.metric == rule.metric and
-                        m.timestamp >= datetime.utcnow() - timedelta(minutes=15))
+                    m
+                    for m in self.metric_history
+                    if (
+                        m.metric == rule.metric
+                        and m.timestamp >= datetime.utcnow() - timedelta(minutes=15)
+                    )
                 ]
 
                 if not recent_metrics:
@@ -512,7 +541,9 @@ class SecretsMonitoringService:
             except Exception as e:
                 logger.error(f"Error evaluating alert rule {rule_name}: {e}")
 
-    def _evaluate_condition(self, value: float, condition: str, threshold: float) -> bool:
+    def _evaluate_condition(
+        self, value: float, condition: str, threshold: float
+    ) -> bool:
         """Evaluate alert condition."""
         try:
             # Replace placeholders in condition
@@ -538,8 +569,8 @@ class SecretsMonitoringService:
                 "condition": rule.condition,
                 "labels": metric.labels,
                 "metadata": metric.metadata,
-                "rule_tags": rule.tags
-            }
+                "rule_tags": rule.tags,
+            },
         )
 
         # Check for rate limiting
@@ -579,7 +610,9 @@ class SecretsMonitoringService:
         self.alert_counts[rule_name].append(now)
         return True
 
-    async def _send_alert_notifications(self, alert: Alert, channels: list[AlertChannel]):
+    async def _send_alert_notifications(
+        self, alert: Alert, channels: list[AlertChannel]
+    ):
         """Send alert notifications to configured channels."""
         notification_tasks = []
 
@@ -616,9 +649,11 @@ class SecretsMonitoringService:
                 return
 
             msg = MimeMultipart()
-            msg['From'] = self.config.from_email
-            msg['To'] = "admin@ai-pdf-scholar.com"  # Should be configurable
-            msg['Subject'] = f"[{alert.severity.upper()}] Secrets Alert: {alert.rule_name}"
+            msg["From"] = self.config.from_email
+            msg["To"] = "admin@ai-pdf-scholar.com"  # Should be configurable
+            msg["Subject"] = (
+                f"[{alert.severity.upper()}] Secrets Alert: {alert.rule_name}"
+            )
 
             body = f"""
             Alert Details:
@@ -635,7 +670,7 @@ class SecretsMonitoringService:
             This is an automated alert from the AI PDF Scholar secrets monitoring system.
             """
 
-            msg.attach(MimeText(body, 'plain'))
+            msg.attach(MimeText(body, "plain"))
 
             server = smtplib.SMTP(self.config.smtp_host, self.config.smtp_port)
             if self.config.smtp_use_tls:
@@ -662,7 +697,7 @@ class SecretsMonitoringService:
                 AlertSeverity.HIGH: "#FF8800",
                 AlertSeverity.MEDIUM: "#FFAA00",
                 AlertSeverity.LOW: "#00AA00",
-                AlertSeverity.INFO: "#0088AA"
+                AlertSeverity.INFO: "#0088AA",
             }
 
             payload = {
@@ -678,30 +713,32 @@ class SecretsMonitoringService:
                             {
                                 "title": "Severity",
                                 "value": alert.severity.upper(),
-                                "short": True
+                                "short": True,
                             },
                             {
                                 "title": "Alert ID",
                                 "value": alert.alert_id,
-                                "short": True
+                                "short": True,
                             },
                             {
                                 "title": "Time",
-                                "value": alert.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                                "short": True
-                            }
+                                "value": alert.timestamp.strftime(
+                                    "%Y-%m-%d %H:%M:%S UTC"
+                                ),
+                                "short": True,
+                            },
                         ],
                         "footer": "AI PDF Scholar Secrets Monitor",
-                        "ts": int(alert.timestamp.timestamp())
+                        "ts": int(alert.timestamp.timestamp()),
                     }
-                ]
+                ],
             }
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     self.config.slack_webhook_url,
                     json=payload,
-                    timeout=self.config.webhook_timeout
+                    timeout=self.config.webhook_timeout,
                 )
                 response.raise_for_status()
 
@@ -723,7 +760,7 @@ class SecretsMonitoringService:
                 "message": alert.message,
                 "timestamp": alert.timestamp.isoformat(),
                 "details": alert.details,
-                "source": "ai-pdf-scholar-secrets-monitor"
+                "source": "ai-pdf-scholar-secrets-monitor",
             }
 
             async with httpx.AsyncClient() as client:
@@ -732,12 +769,16 @@ class SecretsMonitoringService:
                         response = await client.post(
                             webhook_url,
                             json=payload,
-                            timeout=self.config.webhook_timeout
+                            timeout=self.config.webhook_timeout,
                         )
                         response.raise_for_status()
-                        logger.info(f"Sent webhook alert to {webhook_url}: {alert.alert_id}")
+                        logger.info(
+                            f"Sent webhook alert to {webhook_url}: {alert.alert_id}"
+                        )
                     except Exception as e:
-                        logger.error(f"Failed to send webhook alert to {webhook_url}: {e}")
+                        logger.error(
+                            f"Failed to send webhook alert to {webhook_url}: {e}"
+                        )
 
         except Exception as e:
             logger.error(f"Failed to send webhook alerts: {e}")
@@ -759,15 +800,15 @@ class SecretsMonitoringService:
                     "component": "secrets-management",
                     "group": "security",
                     "class": "secrets",
-                    "custom_details": alert.details
-                }
+                    "custom_details": alert.details,
+                },
             }
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     "https://events.pagerduty.com/v2/enqueue",
                     json=payload,
-                    timeout=self.config.webhook_timeout
+                    timeout=self.config.webhook_timeout,
                 )
                 response.raise_for_status()
 
@@ -797,9 +838,12 @@ class SecretsMonitoringService:
 
             # Get recent metrics
             recent_metrics = [
-                m for m in self.metric_history
-                if (m.metric.value == alert.details.get("metric") and
-                    m.timestamp >= datetime.utcnow() - timedelta(minutes=5))
+                m
+                for m in self.metric_history
+                if (
+                    m.metric.value == alert.details.get("metric")
+                    and m.timestamp >= datetime.utcnow() - timedelta(minutes=5)
+                )
             ]
 
             if recent_metrics:
@@ -830,7 +874,9 @@ class SecretsMonitoringService:
             logger.info(f"Cleaned up {old_count - new_count} old metrics")
 
         # Clean up old alerts
-        alert_cutoff = datetime.utcnow() - timedelta(days=self.config.alert_retention_days)
+        alert_cutoff = datetime.utcnow() - timedelta(
+            days=self.config.alert_retention_days
+        )
         old_alert_count = len(self.alert_history)
         self.alert_history = [
             a for a in self.alert_history if a.timestamp >= alert_cutoff
@@ -861,7 +907,7 @@ class SecretsMonitoringService:
         self,
         start_time: datetime | None = None,
         end_time: datetime | None = None,
-        severity: AlertSeverity | None = None
+        severity: AlertSeverity | None = None,
     ) -> list[Alert]:
         """Get alert history with optional filtering."""
         alerts = self.alert_history
@@ -881,7 +927,7 @@ class SecretsMonitoringService:
         self,
         metric: MonitoringMetric | None = None,
         start_time: datetime | None = None,
-        end_time: datetime | None = None
+        end_time: datetime | None = None,
     ) -> list[MetricData]:
         """Get metric history with optional filtering."""
         metrics = self.metric_history
@@ -900,7 +946,8 @@ class SecretsMonitoringService:
     def get_monitoring_status(self) -> dict[str, Any]:
         """Get overall monitoring status."""
         return {
-            "monitoring_active": self.monitoring_task and not self.monitoring_task.done(),
+            "monitoring_active": self.monitoring_task
+            and not self.monitoring_task.done(),
             "cleanup_active": self.cleanup_task and not self.cleanup_task.done(),
             "alert_rules_count": len(self.alert_rules),
             "active_alerts_count": len(self.active_alerts),
@@ -909,5 +956,9 @@ class SecretsMonitoringService:
             "last_collection_time": max(
                 [m.timestamp for m in self.metric_history], default=None
             ),
-            "uptime": (datetime.utcnow() - datetime.utcnow()).total_seconds() if self.monitoring_task else 0
+            "uptime": (
+                (datetime.utcnow() - datetime.utcnow()).total_seconds()
+                if self.monitoring_task
+                else 0
+            ),
         }

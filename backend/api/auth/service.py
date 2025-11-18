@@ -108,9 +108,11 @@ class AuthenticationService:
                 role=UserRole.USER.value,
                 is_active=True,
                 is_verified=auto_verify,
-                account_status=AccountStatus.ACTIVE.value
-                if auto_verify
-                else AccountStatus.PENDING_VERIFICATION.value,
+                account_status=(
+                    AccountStatus.ACTIVE.value
+                    if auto_verify
+                    else AccountStatus.PENDING_VERIFICATION.value
+                ),
                 password_changed_at=datetime.utcnow(),
                 email_verified_at=datetime.utcnow() if auto_verify else None,
             )

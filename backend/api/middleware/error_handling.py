@@ -276,9 +276,9 @@ class ErrorMetricsCollector:
             "uptime_seconds": uptime,
             "total_errors": sum(self.error_counts.values()),
             "error_breakdown": self.error_counts,
-            "error_rate_per_hour": sum(self.error_counts.values()) / (uptime / 3600)
-            if uptime > 0
-            else 0,
+            "error_rate_per_hour": (
+                sum(self.error_counts.values()) / (uptime / 3600) if uptime > 0 else 0
+            ),
         }
 
     def reset_metrics(self) -> None:

@@ -31,15 +31,15 @@ class PasswordHasher:
             Hashed password string
         """
         # Bcrypt has a maximum password length of 72 bytes
-        if len(password.encode('utf-8')) > cls.MAX_PASSWORD_LENGTH:
+        if len(password.encode("utf-8")) > cls.MAX_PASSWORD_LENGTH:
             # Hash long passwords with SHA256 first
-            password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+            password = hashlib.sha256(password.encode("utf-8")).hexdigest()
 
         # Generate salt and hash password
         salt = bcrypt.gensalt(rounds=cls.DEFAULT_ROUNDS)
-        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
 
-        return hashed.decode('utf-8')
+        return hashed.decode("utf-8")
 
     @classmethod
     def verify_password(cls, plain_password: str, hashed_password: str) -> bool:
@@ -55,13 +55,14 @@ class PasswordHasher:
         """
         try:
             # Handle long passwords same as in hash_password
-            if len(plain_password.encode('utf-8')) > cls.MAX_PASSWORD_LENGTH:
-                plain_password = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
+            if len(plain_password.encode("utf-8")) > cls.MAX_PASSWORD_LENGTH:
+                plain_password = hashlib.sha256(
+                    plain_password.encode("utf-8")
+                ).hexdigest()
 
             # Verify password
             return bcrypt.checkpw(
-                plain_password.encode('utf-8'),
-                hashed_password.encode('utf-8')
+                plain_password.encode("utf-8"), hashed_password.encode("utf-8")
             )
         except Exception:
             # Invalid hash format or other error
@@ -81,8 +82,8 @@ class PasswordHasher:
         """
         try:
             # Extract the cost factor from the hash
-            hash_info = hashed_password.encode('utf-8')
-            current_rounds = int(hash_info.split(b'$')[2])
+            hash_info = hashed_password.encode("utf-8")
+            current_rounds = int(hash_info.split(b"$")[2])
             return current_rounds != rounds
         except Exception:
             return True
@@ -109,16 +110,41 @@ class PasswordPolicy:
 
     # Common passwords to block
     COMMON_PASSWORDS = {
-        "password", "123456", "password123", "12345678", "qwerty",
-        "abc123", "monkey", "1234567", "letmein", "trustno1",
-        "dragon", "baseball", "111111", "iloveyou", "master",
-        "sunshine", "ashley", "bailey", "passw0rd", "shadow",
-        "123123", "654321", "superman", "qazwsx", "michael",
-        "football", "password1", "welcome", "admin"
+        "password",
+        "123456",
+        "password123",
+        "12345678",
+        "qwerty",
+        "abc123",
+        "monkey",
+        "1234567",
+        "letmein",
+        "trustno1",
+        "dragon",
+        "baseball",
+        "111111",
+        "iloveyou",
+        "master",
+        "sunshine",
+        "ashley",
+        "bailey",
+        "passw0rd",
+        "shadow",
+        "123123",
+        "654321",
+        "superman",
+        "qazwsx",
+        "michael",
+        "football",
+        "password1",
+        "welcome",
+        "admin",
     }
 
     @classmethod
-    def validate_password_strength(cls, password: str, username: str | None = None) -> tuple[bool, list[str]]:
+    def validate_password_strength(
+        cls, password: str, username: str | None = None
+    ) -> tuple[bool, list[str]]:
         """
         Validate password against security policy.
 
@@ -136,7 +162,9 @@ class PasswordPolicy:
             errors.append(f"Password must be at least {cls.MIN_LENGTH} characters long")
 
         if len(password) > cls.MAX_LENGTH:
-            errors.append(f"Password must be no more than {cls.MAX_LENGTH} characters long")
+            errors.append(
+                f"Password must be no more than {cls.MAX_LENGTH} characters long"
+            )
 
         # Character requirements
         if cls.REQUIRE_UPPERCASE and not any(c.isupper() for c in password):
@@ -149,7 +177,9 @@ class PasswordPolicy:
             errors.append("Password must contain at least one digit")
 
         if cls.REQUIRE_SPECIAL and not any(c in cls.SPECIAL_CHARS for c in password):
-            errors.append(f"Password must contain at least one special character: {cls.SPECIAL_CHARS}")
+            errors.append(
+                f"Password must contain at least one special character: {cls.SPECIAL_CHARS}"
+            )
 
         # Common password check
         if password.lower() in cls.COMMON_PASSWORDS:
@@ -215,17 +245,17 @@ class PasswordPolicy:
             "0123456789",
             "qwertyuiop",
             "asdfghjkl",
-            "zxcvbnm"
+            "zxcvbnm",
         ]
 
         password_lower = password.lower()
 
         for seq in sequences:
             for i in range(len(seq) - max_sequential + 1):
-                if seq[i:i + max_sequential + 1] in password_lower:
+                if seq[i : i + max_sequential + 1] in password_lower:
                     return True
                 # Check reverse
-                if seq[i:i + max_sequential + 1][::-1] in password_lower:
+                if seq[i : i + max_sequential + 1][::-1] in password_lower:
                     return True
 
         return False
@@ -257,7 +287,9 @@ class PasswordPolicy:
         return False
 
     @classmethod
-    def check_password_history(cls, new_password: str, password_history: list[str]) -> bool:
+    def check_password_history(
+        cls, new_password: str, password_history: list[str]
+    ) -> bool:
         """
         Check if password was recently used.
 
@@ -268,7 +300,7 @@ class PasswordPolicy:
         Returns:
             True if password is acceptable (not in history)
         """
-        for old_hash in password_history[-cls.PASSWORD_HISTORY_COUNT:]:
+        for old_hash in password_history[-cls.PASSWORD_HISTORY_COUNT :]:
             if PasswordHasher.verify_password(new_password, old_hash):
                 return False
         return True
@@ -292,8 +324,13 @@ class PasswordPolicy:
 
         # Check minimum age
         if age_days < cls.PASSWORD_MIN_AGE_DAYS:
-            hours_remaining = (cls.PASSWORD_MIN_AGE_DAYS * 24) - ((now - last_changed).total_seconds() / 3600)
-            return False, f"Password cannot be changed for another {hours_remaining:.1f} hours"
+            hours_remaining = (cls.PASSWORD_MIN_AGE_DAYS * 24) - (
+                (now - last_changed).total_seconds() / 3600
+            )
+            return (
+                False,
+                f"Password cannot be changed for another {hours_remaining:.1f} hours",
+            )
 
         # Check maximum age
         if age_days > cls.PASSWORD_MAX_AGE_DAYS:
@@ -343,7 +380,7 @@ class PasswordPolicy:
         # Shuffle to avoid predictable patterns
         secrets.SystemRandom().shuffle(password)
 
-        return ''.join(password)
+        return "".join(password)
 
 
 class AccountLockoutPolicy:

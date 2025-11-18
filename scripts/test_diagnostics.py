@@ -39,7 +39,7 @@ class TestDiagnostics:
             self.tests_dir / "unit",
             self.tests_dir / "integration",
             self.tests_dir / "repositories",
-            self.tests_dir / "services"
+            self.tests_dir / "services",
         ]
 
         for test_dir in test_subdirs:
@@ -47,7 +47,9 @@ class TestDiagnostics:
                 init_file = test_dir / "__init__.py"
                 if not init_file.exists():
                     self.issues_found.append(f"Missing {init_file}")
-                    self.recommendations.append(f"Create {init_file} with empty content")
+                    self.recommendations.append(
+                        f"Create {init_file} with empty content"
+                    )
                 else:
                     print(f"✅ {init_file} exists")
 
@@ -63,14 +65,18 @@ class TestDiagnostics:
             print("✅ pytest.ini exists")
 
             # Check content
-            with open(pytest_ini, encoding='utf-8') as f:
+            with open(pytest_ini, encoding="utf-8") as f:
                 content = f.read()
 
                 if "testpaths" not in content:
-                    self.issues_found.append("pytest.ini missing 'testpaths' configuration")
+                    self.issues_found.append(
+                        "pytest.ini missing 'testpaths' configuration"
+                    )
 
                 if "python_files" not in content:
-                    self.issues_found.append("pytest.ini missing 'python_files' configuration")
+                    self.issues_found.append(
+                        "pytest.ini missing 'python_files' configuration"
+                    )
 
                 print("✅ pytest.ini contains required configurations")
 
@@ -81,10 +87,13 @@ class TestDiagnostics:
         # Check if src is in Python path
         try:
             import src
+
             print("✅ src package is importable")
         except ImportError as e:
             self.issues_found.append(f"Cannot import src package: {e}")
-            self.recommendations.append("Add src to Python path or install in development mode")
+            self.recommendations.append(
+                "Add src to Python path or install in development mode"
+            )
 
     def check_test_discovery(self):
         """Check pytest test discovery."""
@@ -96,12 +105,14 @@ class TestDiagnostics:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
 
             if result.returncode == 0:
-                lines = result.stdout.strip().split('\n')
-                test_count = len([line for line in lines if line.endswith(' PASSED') or '::' in line])
+                lines = result.stdout.strip().split("\n")
+                test_count = len(
+                    [line for line in lines if line.endswith(" PASSED") or "::" in line]
+                )
                 print(f"✅ Discovered {test_count} tests")
 
                 if test_count == 0:
@@ -120,8 +131,12 @@ class TestDiagnostics:
         print("\n🔍 Checking test dependencies...")
 
         required_packages = [
-            "pytest", "pytest-cov", "pytest-xdist", "pytest-asyncio",
-            "pytest-mock", "pytest-benchmark"
+            "pytest",
+            "pytest-cov",
+            "pytest-xdist",
+            "pytest-asyncio",
+            "pytest-mock",
+            "pytest-benchmark",
         ]
 
         for package in required_packages:
@@ -160,11 +175,19 @@ class TestDiagnostics:
 
         try:
             result = subprocess.run(
-                ["python", "-m", "pytest", "tests/test_database_connection.py", "-v", "--no-cov", "--maxfail=1"],
+                [
+                    "python",
+                    "-m",
+                    "pytest",
+                    "tests/test_database_connection.py",
+                    "-v",
+                    "--no-cov",
+                    "--maxfail=1",
+                ],
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
             )
 
             if result.returncode == 0:
@@ -183,9 +206,9 @@ class TestDiagnostics:
             print("\n✅ All diagnostics passed! Your test setup looks good.")
             return
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🔧 ISSUES FOUND AND RECOMMENDATIONS")
-        print("="*60)
+        print("=" * 60)
 
         if self.issues_found:
             print("\n❌ Issues Found:")
@@ -199,13 +222,17 @@ class TestDiagnostics:
 
         print("\n🚀 Quick Fix Commands:")
         print("  # Create missing __init__.py files")
-        print("  touch tests/__init__.py tests/unit/__init__.py tests/integration/__init__.py")
+        print(
+            "  touch tests/__init__.py tests/unit/__init__.py tests/integration/__init__.py"
+        )
         print("")
         print("  # Run tests without coverage for faster execution")
         print("  python scripts/test_runner.py --quick")
         print("")
         print("  # Run specific test file")
-        print("  python scripts/test_runner.py --file tests/test_database_connection.py")
+        print(
+            "  python scripts/test_runner.py --file tests/test_database_connection.py"
+        )
         print("")
         print("  # Install missing dependencies")
         print("  pip install pytest pytest-cov pytest-xdist pytest-asyncio pytest-mock")
@@ -213,7 +240,7 @@ class TestDiagnostics:
     def run_full_diagnostics(self):
         """Run all diagnostic checks."""
         print("🏥 AI Enhanced PDF Scholar - Test Diagnostics")
-        print("="*60)
+        print("=" * 60)
 
         self.check_directory_structure()
         self.check_pytest_config()
@@ -232,8 +259,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Diagnose pytest configuration and test discovery issues"
     )
-    parser.add_argument("--fix", action="store_true",
-                       help="Attempt to auto-fix common issues")
+    parser.add_argument(
+        "--fix", action="store_true", help="Attempt to auto-fix common issues"
+    )
 
     args = parser.parse_args()
 
@@ -250,7 +278,7 @@ def main():
             diagnostics.tests_dir / "unit" / "__init__.py",
             diagnostics.tests_dir / "integration" / "__init__.py",
             diagnostics.tests_dir / "repositories" / "__init__.py",
-            diagnostics.tests_dir / "services" / "__init__.py"
+            diagnostics.tests_dir / "services" / "__init__.py",
         ]
 
         for init_file in init_files:

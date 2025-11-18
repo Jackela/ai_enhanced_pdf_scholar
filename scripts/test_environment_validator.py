@@ -25,6 +25,7 @@ sys.path.insert(0, str(project_root))
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
+
 class TestEnvironmentValidator:
     """Comprehensive test environment validator."""
 
@@ -60,7 +61,7 @@ class TestEnvironmentValidator:
                 "overall_health": self.overall_health,
                 "results": self.results,
                 "issues": self.issues,
-                "ready_for_testing": self.overall_health >= 95
+                "ready_for_testing": self.overall_health >= 95,
             }
 
         except Exception as e:
@@ -70,7 +71,7 @@ class TestEnvironmentValidator:
                 "overall_health": 0,
                 "results": self.results,
                 "issues": [f"Critical validation error: {e}"],
-                "ready_for_testing": False
+                "ready_for_testing": False,
             }
 
     def _validate_python_environment(self):
@@ -85,21 +86,25 @@ class TestEnvironmentValidator:
                 self.results["python_environment"]["status"] = "error"
                 self.results["python_environment"]["details"] = {
                     "version": python_version,
-                    "error": "Python 3.8+ required"
+                    "error": "Python 3.8+ required",
                 }
-                self.issues.append(f"Python version {python_version} too old (3.8+ required)")
+                self.issues.append(
+                    f"Python version {python_version} too old (3.8+ required)"
+                )
                 print(f"❌ Python version: {python_version} (too old)")
                 return
 
             # Check virtual environment
-            in_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+            in_venv = hasattr(sys, "real_prefix") or (
+                hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
+            )
 
             self.results["python_environment"]["status"] = "ok"
             self.results["python_environment"]["details"] = {
                 "version": python_version,
                 "in_virtual_env": in_venv,
                 "executable": sys.executable,
-                "platform": sys.platform
+                "platform": sys.platform,
             }
 
             print(f"✅ Python version: {python_version}")
@@ -129,7 +134,7 @@ class TestEnvironmentValidator:
             try:
                 if import_name:
                     module = importlib.import_module(import_name)
-                    version = getattr(module, '__version__', 'unknown')
+                    version = getattr(module, "__version__", "unknown")
                 else:
                     # For standard library modules
                     importlib.import_module(package_name)
@@ -146,12 +151,14 @@ class TestEnvironmentValidator:
             self.results["test_dependencies"]["status"] = "error"
             self.results["test_dependencies"]["details"] = {
                 "missing": missing_packages,
-                "installed": installed_packages
+                "installed": installed_packages,
             }
             self.issues.append(f"Missing test dependencies: {missing_packages}")
         else:
             self.results["test_dependencies"]["status"] = "ok"
-            self.results["test_dependencies"]["details"] = {"installed": installed_packages}
+            self.results["test_dependencies"]["details"] = {
+                "installed": installed_packages
+            }
 
     def _validate_import_system(self):
         """Validate project import system."""
@@ -181,7 +188,7 @@ class TestEnvironmentValidator:
             self.results["import_system"]["status"] = "error"
             self.results["import_system"]["details"] = {
                 "failed": failed_imports,
-                "status": import_status
+                "status": import_status,
             }
             self.issues.append(f"Failed imports: {failed_imports}")
         else:
@@ -196,7 +203,7 @@ class TestEnvironmentValidator:
             from src.database.connection import DatabaseConnection
 
             # Test with temporary database
-            with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
+            with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
                 temp_path = temp_db.name
 
             try:
@@ -204,9 +211,13 @@ class TestEnvironmentValidator:
                 db = DatabaseConnection(temp_path)
 
                 # Test basic operations
-                db.execute("CREATE TABLE test_table (id INTEGER PRIMARY KEY, name TEXT)")
+                db.execute(
+                    "CREATE TABLE test_table (id INTEGER PRIMARY KEY, name TEXT)"
+                )
                 db.execute("INSERT INTO test_table (name) VALUES (?)", ("test",))
-                result = db.fetch_one("SELECT name FROM test_table WHERE name = ?", ("test",))
+                result = db.fetch_one(
+                    "SELECT name FROM test_table WHERE name = ?", ("test",)
+                )
 
                 if result and result["name"] == "test":
                     print("✅ Database connection: Working")
@@ -216,7 +227,7 @@ class TestEnvironmentValidator:
                     self.results["database_system"]["details"] = {
                         "connection": "ok",
                         "basic_operations": "ok",
-                        "temp_db_path": temp_path
+                        "temp_db_path": temp_path,
                     }
                 else:
                     raise Exception("Database query failed")
@@ -247,7 +258,7 @@ class TestEnvironmentValidator:
             from src.database.migrations.runner import MigrationRunner
 
             # Test with temporary database
-            with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as temp_db:
+            with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
                 temp_path = temp_db.name
 
             try:
@@ -258,23 +269,31 @@ class TestEnvironmentValidator:
                 available_versions = migration_manager.get_available_versions()
 
                 if len(available_versions) < 7:
-                    raise Exception(f"Expected 7+ migrations, found {len(available_versions)}")
+                    raise Exception(
+                        f"Expected 7+ migrations, found {len(available_versions)}"
+                    )
 
-                print(f"✅ Migration discovery: {len(available_versions)} migrations found")
+                print(
+                    f"✅ Migration discovery: {len(available_versions)} migrations found"
+                )
 
                 # Test migration execution
                 migration_runner = MigrationRunner(migration_manager)
                 result = migration_runner.migrate_to_latest()
 
                 if not result.get("success", False):
-                    raise Exception(f"Migration failed: {result.get('error', 'Unknown error')}")
+                    raise Exception(
+                        f"Migration failed: {result.get('error', 'Unknown error')}"
+                    )
 
                 print("✅ Migration execution: Working")
 
                 # Test schema validation
                 schema_validation = migration_runner.validate_schema()
                 if not schema_validation.get("valid", False):
-                    print(f"⚠️  Schema validation issues: {schema_validation.get('issues', [])}")
+                    print(
+                        f"⚠️  Schema validation issues: {schema_validation.get('issues', [])}"
+                    )
                 else:
                     print("✅ Schema validation: Passed")
 
@@ -282,7 +301,7 @@ class TestEnvironmentValidator:
                 self.results["migration_system"]["details"] = {
                     "migrations_found": len(available_versions),
                     "execution": "ok",
-                    "validation": schema_validation.get("valid", False)
+                    "validation": schema_validation.get("valid", False),
                 }
 
                 # Cleanup
@@ -341,7 +360,7 @@ class TestEnvironmentValidator:
             self.results["mock_framework"]["details"] = {
                 "basic_mocks": "ok",
                 "mock_factory": "ok",
-                "document_mocks": "ok"
+                "document_mocks": "ok",
             }
 
         except Exception as e:
@@ -353,7 +372,9 @@ class TestEnvironmentValidator:
     def _calculate_overall_health(self):
         """Calculate overall health percentage."""
         total_checks = len(self.results)
-        passed_checks = sum(1 for result in self.results.values() if result["status"] == "ok")
+        passed_checks = sum(
+            1 for result in self.results.values() if result["status"] == "ok"
+        )
 
         self.overall_health = int((passed_checks / total_checks) * 100)
 
@@ -384,6 +405,7 @@ class TestEnvironmentValidator:
 
         print("\n" + "=" * 60)
 
+
 def main():
     """Main entry point."""
     validator = TestEnvironmentValidator()
@@ -392,6 +414,7 @@ def main():
     # Exit with appropriate code
     exit_code = 0 if results["ready_for_testing"] else 1
     sys.exit(exit_code)
+
 
 if __name__ == "__main__":
     main()

@@ -62,14 +62,12 @@ class AuthenticationMigration:
                 CHECK (account_status IN ('active', 'inactive', 'locked', 'suspended', 'pending_verification'))
             )
             """,
-
             # Create indexes for users table
             "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
             "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
             "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
             "CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active)",
             "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)",
-
             # Refresh tokens table
             """
             CREATE TABLE IF NOT EXISTS refresh_tokens (
@@ -86,14 +84,12 @@ class AuthenticationMigration:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
             """,
-
             # Create indexes for refresh_tokens table
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_jti ON refresh_tokens(token_jti)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_family ON refresh_tokens(token_family)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_revoked_at ON refresh_tokens(revoked_at)",
-
             # Password history table (for future use)
             """
             CREATE TABLE IF NOT EXISTS password_history (
@@ -105,11 +101,9 @@ class AuthenticationMigration:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
             """,
-
             # Create index for password_history
             "CREATE INDEX IF NOT EXISTS idx_password_history_user_id ON password_history(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_password_history_created_at ON password_history(created_at)",
-
             # Login attempts table (for audit logging)
             """
             CREATE TABLE IF NOT EXISTS login_attempts (
@@ -122,13 +116,11 @@ class AuthenticationMigration:
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             )
             """,
-
             # Create indexes for login_attempts
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_username ON login_attempts(username)",
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_address ON login_attempts(ip_address)",
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_timestamp ON login_attempts(timestamp)",
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_success ON login_attempts(success)",
-
             # User sessions table (for tracking active sessions)
             """
             CREATE TABLE IF NOT EXISTS user_sessions (
@@ -144,7 +136,6 @@ class AuthenticationMigration:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
             """,
-
             # Create indexes for user_sessions
             "CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_user_sessions_session_id ON user_sessions(session_id)",
@@ -200,7 +191,7 @@ class AuthenticationMigration:
                 "login_attempts",
                 "password_history",
                 "refresh_tokens",
-                "users"
+                "users",
             ]
 
             for table in tables:

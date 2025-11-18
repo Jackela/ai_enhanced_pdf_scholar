@@ -585,9 +585,9 @@ class PostgreSQLWALBackup:
                 "file_size": segment.file_size,
                 "checksum": segment.checksum,
                 "created_at": segment.created_at.isoformat(),
-                "archived_at": segment.archived_at.isoformat()
-                if segment.archived_at
-                else None,
+                "archived_at": (
+                    segment.archived_at.isoformat() if segment.archived_at else None
+                ),
                 "backup_status": segment.backup_status.value,
                 "metadata": segment.metadata,
             }

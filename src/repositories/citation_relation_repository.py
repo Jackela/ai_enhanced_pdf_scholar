@@ -227,8 +227,12 @@ class CitationRelationRepository(
             """
             results = self.db.fetch_all(sql, tuple(relation_ids))
 
-            relations = [CitationRelationModel.from_database_row(row) for row in results]
-            logger.debug(f"Found {len(relations)} relations from {len(relation_ids)} IDs")
+            relations = [
+                CitationRelationModel.from_database_row(row) for row in results
+            ]
+            logger.debug(
+                f"Found {len(relations)} relations from {len(relation_ids)} IDs"
+            )
 
             return relations
 

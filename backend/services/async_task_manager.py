@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class TaskPriority(Enum):
     """Task priority levels for queue management."""
+
     LOW = 1
     NORMAL = 2
     HIGH = 3
@@ -28,6 +29,7 @@ class TaskPriority(Enum):
 
 class TaskCategory(Enum):
     """Categories of background tasks."""
+
     RAG_QUERY = "rag_query"
     INDEX_BUILD = "index_build"
     DOCUMENT_PROCESSING = "document_processing"
@@ -38,6 +40,7 @@ class TaskCategory(Enum):
 @dataclass
 class MemoryStats:
     """Memory usage statistics."""
+
     used_mb: float
     available_mb: float
     percentage: float
@@ -48,6 +51,7 @@ class MemoryStats:
 @dataclass
 class TaskMetrics:
     """Task execution metrics."""
+
     start_time: datetime
     end_time: datetime | None = None
     memory_peak_mb: float = 0.0
@@ -66,6 +70,7 @@ class TaskMetrics:
 @dataclass
 class AsyncTask:
     """Background task with memory management."""
+
     task_id: str
     category: TaskCategory
     priority: TaskPriority
@@ -99,7 +104,9 @@ class AsyncTask:
 class MemoryMonitor:
     """System memory monitoring for task management."""
 
-    def __init__(self, critical_threshold: float = 85.0, warning_threshold: float = 75.0):
+    def __init__(
+        self, critical_threshold: float = 85.0, warning_threshold: float = 75.0
+    ):
         self.critical_threshold = critical_threshold
         self.warning_threshold = warning_threshold
         self._last_check = datetime.now()
@@ -120,7 +127,7 @@ class MemoryMonitor:
                 available_mb=available_mb,
                 percentage=memory.percent,
                 swap_used_mb=swap_used_mb,
-                is_critical=memory.percent >= self.critical_threshold
+                is_critical=memory.percent >= self.critical_threshold,
             )
 
             return stats
@@ -152,7 +159,7 @@ class AsyncTaskManager:
         max_concurrent_tasks: int = 5,
         max_queue_size: int = 100,
         memory_limit_mb: float | None = None,
-        enable_memory_monitoring: bool = True
+        enable_memory_monitoring: bool = True,
     ):
         self.max_concurrent_tasks = max_concurrent_tasks
         self.max_queue_size = max_queue_size
@@ -160,13 +167,17 @@ class AsyncTaskManager:
 
         # Task tracking
         self.active_tasks: dict[str, AsyncTask] = {}
-        self.task_queue: asyncio.PriorityQueue = asyncio.PriorityQueue(maxsize=max_queue_size)
+        self.task_queue: asyncio.PriorityQueue = asyncio.PriorityQueue(
+            maxsize=max_queue_size
+        )
         self.completed_tasks: dict[str, AsyncTask] = {}
         self.task_counter = 0
 
         # Memory management
         self.memory_monitor = MemoryMonitor() if enable_memory_monitoring else None
-        self.thread_pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix="async_task_")
+        self.thread_pool = ThreadPoolExecutor(
+            max_workers=3, thread_name_prefix="async_task_"
+        )
 
         # Background processing
         self._processor_task: asyncio.Task | None = None
@@ -217,13 +228,15 @@ class AsyncTaskManager:
         memory_limit_mb: float | None = None,
         timeout_seconds: float | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Submit a new background task."""
 
         # Check memory pressure
         if self.memory_monitor and self.memory_monitor.is_memory_critical():
-            raise RuntimeError("Cannot submit task: System memory is at critical levels")
+            raise RuntimeError(
+                "Cannot submit task: System memory is at critical levels"
+            )
 
         # Generate task ID
         self.task_counter += 1
@@ -238,17 +251,22 @@ class AsyncTaskManager:
             args=args,
             kwargs=kwargs,
             memory_limit_mb=memory_limit_mb or self.memory_limit_mb,
-            timeout_seconds=timeout_seconds
+            timeout_seconds=timeout_seconds,
         )
 
         # Add to queue with priority (lower number = higher priority)
         try:
-            priority_value = (4 - priority.value, time.time())  # Higher priority = lower number
+            priority_value = (
+                4 - priority.value,
+                time.time(),
+            )  # Higher priority = lower number
             await self.task_queue.put((priority_value, task))
             logger.debug(f"Submitted task {task_id} with priority {priority.name}")
             return task_id
         except asyncio.QueueFull as e:
-            raise RuntimeError(f"Task queue is full ({self.max_queue_size} tasks)") from e
+            raise RuntimeError(
+                f"Task queue is full ({self.max_queue_size} tasks)"
+            ) from e
 
     async def cancel_task(self, task_id: str) -> bool:
         """Cancel a running or queued task."""
@@ -288,7 +306,9 @@ class AsyncTaskManager:
                 "category": task.category.value,
                 "priority": task.priority.name,
                 "started_at": task.started_at.isoformat() if task.started_at else None,
-                "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                "completed_at": (
+                    task.completed_at.isoformat() if task.completed_at else None
+                ),
                 "duration_ms": task.metrics.duration_ms,
                 "memory_peak_mb": task.metrics.memory_peak_mb,
                 "error": str(task.error) if task.error else None,
@@ -298,7 +318,9 @@ class AsyncTaskManager:
 
     def get_stats(self) -> dict[str, Any]:
         """Get task manager statistics."""
-        memory_stats = self.memory_monitor.get_memory_stats() if self.memory_monitor else None
+        memory_stats = (
+            self.memory_monitor.get_memory_stats() if self.memory_monitor else None
+        )
 
         uptime_seconds = (datetime.now() - self._stats_start_time).total_seconds()
 
@@ -311,12 +333,16 @@ class AsyncTaskManager:
             "total_errors": self._total_errors,
             "max_concurrent": self.max_concurrent_tasks,
             "max_queue_size": self.max_queue_size,
-            "memory_stats": {
-                "used_mb": memory_stats.used_mb,
-                "available_mb": memory_stats.available_mb,
-                "percentage": memory_stats.percentage,
-                "is_critical": memory_stats.is_critical
-            } if memory_stats else None,
+            "memory_stats": (
+                {
+                    "used_mb": memory_stats.used_mb,
+                    "available_mb": memory_stats.available_mb,
+                    "percentage": memory_stats.percentage,
+                    "is_critical": memory_stats.is_critical,
+                }
+                if memory_stats
+                else None
+            ),
             "active_task_details": [
                 {
                     "task_id": task.task_id,
@@ -325,7 +351,7 @@ class AsyncTaskManager:
                     "memory_peak_mb": task.metrics.memory_peak_mb,
                 }
                 for task in self.active_tasks.values()
-            ]
+            ],
         }
 
     async def _process_tasks(self):
@@ -353,9 +379,7 @@ class AsyncTaskManager:
                     task.metrics.start_time = task.started_at
 
                     # Create asyncio task
-                    task.asyncio_task = asyncio.create_task(
-                        self._execute_task(task)
-                    )
+                    task.asyncio_task = asyncio.create_task(self._execute_task(task))
 
                     # Track active task
                     self.active_tasks[task.task_id] = task
@@ -382,9 +406,9 @@ class AsyncTaskManager:
                     [
                         asyncio.create_task(task.handler(*task.args, **task.kwargs)),
                         timeout_task,
-                        cancel_task
+                        cancel_task,
                     ],
-                    return_when=asyncio.FIRST_COMPLETED
+                    return_when=asyncio.FIRST_COMPLETED,
                 )
 
                 # Cancel pending tasks
@@ -394,7 +418,9 @@ class AsyncTaskManager:
                 # Check what completed first
                 completed_task = list(done)[0]
                 if completed_task == timeout_task:
-                    raise asyncio.TimeoutError(f"Task {task.task_id} timed out after {task.timeout_seconds}s")
+                    raise asyncio.TimeoutError(
+                        f"Task {task.task_id} timed out after {task.timeout_seconds}s"
+                    )
                 elif completed_task == cancel_task:
                     raise asyncio.CancelledError(f"Task {task.task_id} was cancelled")
                 else:
@@ -438,7 +464,8 @@ class AsyncTaskManager:
 
                 cutoff_time = datetime.now() - timedelta(minutes=10)
                 tasks_to_remove = [
-                    task_id for task_id, task in self.completed_tasks.items()
+                    task_id
+                    for task_id, task in self.completed_tasks.items()
                     if task.completed_at and task.completed_at < cutoff_time
                 ]
 

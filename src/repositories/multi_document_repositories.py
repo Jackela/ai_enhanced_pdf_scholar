@@ -33,7 +33,8 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS multi_document_collections (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT NOT NULL,
@@ -43,27 +44,37 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
                         created_at TEXT NOT NULL,
                         updated_at TEXT NOT NULL
                     )
-                """)
+                """
+                )
                 conn.commit()
         except Exception as e:
             logger.error(f"Failed to create collections table: {e}")
             raise
 
-    def create(self, entity: MultiDocumentCollectionModel) -> MultiDocumentCollectionModel:
+    def create(
+        self, entity: MultiDocumentCollectionModel
+    ) -> MultiDocumentCollectionModel:
         """Create a new collection."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 data = entity.to_database_dict()
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO multi_document_collections 
                     (name, description, document_ids, document_count, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    data["name"], data["description"], data["document_ids"],
-                    data["document_count"], data["created_at"], data["updated_at"]
-                ))
+                """,
+                    (
+                        data["name"],
+                        data["description"],
+                        data["document_ids"],
+                        data["document_count"],
+                        data["created_at"],
+                        data["updated_at"],
+                    ),
+                )
 
                 entity.id = cursor.lastrowid
                 conn.commit()
@@ -77,10 +88,13 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
                     FROM multi_document_collections WHERE id = ?
-                """, (entity_id,))
+                """,
+                    (entity_id,),
+                )
 
                 row = cursor.fetchone()
                 if row:
@@ -99,32 +113,47 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 placeholders = ",".join("?" * len(entity_ids))
-                cursor.execute(f"""
+                cursor.execute(
+                    f"""
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
                     FROM multi_document_collections WHERE id IN ({placeholders})
-                """, entity_ids)
+                """,
+                    entity_ids,
+                )
 
                 rows = cursor.fetchall()
-                return [MultiDocumentCollectionModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    MultiDocumentCollectionModel.from_database_row(dict(row))
+                    for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to get collections {entity_ids}: {e}")
             raise
 
-    def update(self, entity: MultiDocumentCollectionModel) -> MultiDocumentCollectionModel:
+    def update(
+        self, entity: MultiDocumentCollectionModel
+    ) -> MultiDocumentCollectionModel:
         """Update an existing collection."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 data = entity.to_database_dict()
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     UPDATE multi_document_collections 
                     SET name = ?, description = ?, document_ids = ?, document_count = ?, updated_at = ?
                     WHERE id = ?
-                """, (
-                    data["name"], data["description"], data["document_ids"],
-                    data["document_count"], data["updated_at"], entity.id
-                ))
+                """,
+                    (
+                        data["name"],
+                        data["description"],
+                        data["document_ids"],
+                        data["document_count"],
+                        data["updated_at"],
+                        entity.id,
+                    ),
+                )
 
                 conn.commit()
                 return entity
@@ -137,27 +166,37 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("DELETE FROM multi_document_collections WHERE id = ?", (entity_id,))
+                cursor.execute(
+                    "DELETE FROM multi_document_collections WHERE id = ?", (entity_id,)
+                )
                 conn.commit()
                 return cursor.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to delete collection {entity_id}: {e}")
             raise
 
-    def get_all(self, limit: int = 50, offset: int = 0) -> list[MultiDocumentCollectionModel]:
+    def get_all(
+        self, limit: int = 50, offset: int = 0
+    ) -> list[MultiDocumentCollectionModel]:
         """Get all collections with pagination."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
                     FROM multi_document_collections 
                     ORDER BY created_at DESC
                     LIMIT ? OFFSET ?
-                """, (limit, offset))
+                """,
+                    (limit, offset),
+                )
 
                 rows = cursor.fetchall()
-                return [MultiDocumentCollectionModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    MultiDocumentCollectionModel.from_database_row(dict(row))
+                    for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to get all collections: {e}")
             raise
@@ -167,10 +206,13 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
                     FROM multi_document_collections WHERE name = ?
-                """, (name,))
+                """,
+                    (name,),
+                )
 
                 row = cursor.fetchone()
                 if row:
@@ -186,40 +228,54 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 search_pattern = f"%{query}%"
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
                     FROM multi_document_collections 
                     WHERE name LIKE ? OR description LIKE ?
                     ORDER BY created_at DESC
                     LIMIT ?
-                """, (search_pattern, search_pattern, limit))
+                """,
+                    (search_pattern, search_pattern, limit),
+                )
 
                 rows = cursor.fetchall()
-                return [MultiDocumentCollectionModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    MultiDocumentCollectionModel.from_database_row(dict(row))
+                    for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to search collections: {e}")
             raise
 
-    def get_collections_containing_document(self, document_id: int) -> list[MultiDocumentCollectionModel]:
+    def get_collections_containing_document(
+        self, document_id: int
+    ) -> list[MultiDocumentCollectionModel]:
         """Get all collections that contain a specific document."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
                     FROM multi_document_collections
-                """)
+                """
+                )
 
                 rows = cursor.fetchall()
                 collections = []
                 for row in rows:
-                    collection = MultiDocumentCollectionModel.from_database_row(dict(row))
+                    collection = MultiDocumentCollectionModel.from_database_row(
+                        dict(row)
+                    )
                     if document_id in collection.document_ids:
                         collections.append(collection)
 
                 return collections
         except Exception as e:
-            logger.error(f"Failed to get collections containing document {document_id}: {e}")
+            logger.error(
+                f"Failed to get collections containing document {document_id}: {e}"
+            )
             raise
 
     def count(self) -> int:
@@ -246,7 +302,8 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS multi_document_indexes (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         collection_id INTEGER NOT NULL,
@@ -258,7 +315,8 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                         metadata TEXT,  -- JSON
                         FOREIGN KEY (collection_id) REFERENCES multi_document_collections (id)
                     )
-                """)
+                """
+                )
                 conn.commit()
         except Exception as e:
             logger.error(f"Failed to create indexes table: {e}")
@@ -271,14 +329,22 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 cursor = conn.cursor()
                 data = entity.to_database_dict()
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO multi_document_indexes 
                     (collection_id, index_path, index_hash, embedding_model, chunk_count, created_at, metadata)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    data["collection_id"], data["index_path"], data["index_hash"],
-                    data["embedding_model"], data["chunk_count"], data["created_at"], data["metadata"]
-                ))
+                """,
+                    (
+                        data["collection_id"],
+                        data["index_path"],
+                        data["index_hash"],
+                        data["embedding_model"],
+                        data["chunk_count"],
+                        data["created_at"],
+                        data["metadata"],
+                    ),
+                )
 
                 entity.id = cursor.lastrowid
                 conn.commit()
@@ -292,11 +358,14 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, index_path, index_hash, embedding_model, 
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE id = ?
-                """, (entity_id,))
+                """,
+                    (entity_id,),
+                )
 
                 row = cursor.fetchone()
                 if row:
@@ -315,14 +384,19 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 placeholders = ",".join("?" * len(entity_ids))
-                cursor.execute(f"""
+                cursor.execute(
+                    f"""
                     SELECT id, collection_id, index_path, index_hash, embedding_model, 
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE id IN ({placeholders})
-                """, entity_ids)
+                """,
+                    entity_ids,
+                )
 
                 rows = cursor.fetchall()
-                return [MultiDocumentIndexModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    MultiDocumentIndexModel.from_database_row(dict(row)) for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to get indexes {entity_ids}: {e}")
             raise
@@ -334,15 +408,23 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                 cursor = conn.cursor()
                 data = entity.to_database_dict()
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     UPDATE multi_document_indexes 
                     SET collection_id = ?, index_path = ?, index_hash = ?, embedding_model = ?,
                         chunk_count = ?, metadata = ?
                     WHERE id = ?
-                """, (
-                    data["collection_id"], data["index_path"], data["index_hash"],
-                    data["embedding_model"], data["chunk_count"], data["metadata"], entity.id
-                ))
+                """,
+                    (
+                        data["collection_id"],
+                        data["index_path"],
+                        data["index_hash"],
+                        data["embedding_model"],
+                        data["chunk_count"],
+                        data["metadata"],
+                        entity.id,
+                    ),
+                )
 
                 conn.commit()
                 return entity
@@ -355,23 +437,30 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("DELETE FROM multi_document_indexes WHERE id = ?", (entity_id,))
+                cursor.execute(
+                    "DELETE FROM multi_document_indexes WHERE id = ?", (entity_id,)
+                )
                 conn.commit()
                 return cursor.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to delete index {entity_id}: {e}")
             raise
 
-    def get_by_collection_id(self, collection_id: int) -> MultiDocumentIndexModel | None:
+    def get_by_collection_id(
+        self, collection_id: int
+    ) -> MultiDocumentIndexModel | None:
         """Get index by collection ID."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, index_path, index_hash, embedding_model, 
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE collection_id = ?
-                """, (collection_id,))
+                """,
+                    (collection_id,),
+                )
 
                 row = cursor.fetchone()
                 if row:
@@ -386,11 +475,14 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, index_path, index_hash, embedding_model, 
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE index_hash = ?
-                """, (index_hash,))
+                """,
+                    (index_hash,),
+                )
 
                 row = cursor.fetchone()
                 if row:
@@ -405,16 +497,20 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT i.id, i.collection_id, i.index_path, i.index_hash, i.embedding_model, 
                            i.chunk_count, i.created_at, i.metadata
                     FROM multi_document_indexes i
                     LEFT JOIN multi_document_collections c ON i.collection_id = c.id
                     WHERE c.id IS NULL
-                """)
+                """
+                )
 
                 rows = cursor.fetchall()
-                return [MultiDocumentIndexModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    MultiDocumentIndexModel.from_database_row(dict(row)) for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to get orphaned indexes: {e}")
             raise
@@ -424,12 +520,14 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     DELETE FROM multi_document_indexes 
                     WHERE collection_id NOT IN (
                         SELECT id FROM multi_document_collections
                     )
-                """)
+                """
+                )
                 conn.commit()
                 return cursor.rowcount
         except Exception as e:
@@ -449,7 +547,8 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS cross_document_queries (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         collection_id INTEGER NOT NULL,
@@ -467,7 +566,8 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                         completed_at TEXT,
                         FOREIGN KEY (collection_id) REFERENCES multi_document_collections (id)
                     )
-                """)
+                """
+                )
                 conn.commit()
         except Exception as e:
             logger.error(f"Failed to create queries table: {e}")
@@ -480,19 +580,30 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                 cursor = conn.cursor()
                 data = entity.to_database_dict()
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO cross_document_queries 
                     (collection_id, query_text, user_id, response_text, confidence_score,
                      sources, cross_references, status, error_message, processing_time_ms,
                      tokens_used, created_at, completed_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    data["collection_id"], data["query_text"], data["user_id"],
-                    data["response_text"], data["confidence_score"], data["sources"],
-                    data["cross_references"], data["status"], data["error_message"],
-                    data["processing_time_ms"], data["tokens_used"], data["created_at"],
-                    data["completed_at"]
-                ))
+                """,
+                    (
+                        data["collection_id"],
+                        data["query_text"],
+                        data["user_id"],
+                        data["response_text"],
+                        data["confidence_score"],
+                        data["sources"],
+                        data["cross_references"],
+                        data["status"],
+                        data["error_message"],
+                        data["processing_time_ms"],
+                        data["tokens_used"],
+                        data["created_at"],
+                        data["completed_at"],
+                    ),
+                )
 
                 entity.id = cursor.lastrowid
                 conn.commit()
@@ -506,12 +617,15 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
                     FROM cross_document_queries WHERE id = ?
-                """, (entity_id,))
+                """,
+                    (entity_id,),
+                )
 
                 row = cursor.fetchone()
                 if row:
@@ -530,15 +644,20 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
                 placeholders = ",".join("?" * len(entity_ids))
-                cursor.execute(f"""
+                cursor.execute(
+                    f"""
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
                     FROM cross_document_queries WHERE id IN ({placeholders})
-                """, entity_ids)
+                """,
+                    entity_ids,
+                )
 
                 rows = cursor.fetchall()
-                return [CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to get queries {entity_ids}: {e}")
             raise
@@ -550,19 +669,30 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                 cursor = conn.cursor()
                 data = entity.to_database_dict()
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     UPDATE cross_document_queries 
                     SET collection_id = ?, query_text = ?, user_id = ?, response_text = ?,
                         confidence_score = ?, sources = ?, cross_references = ?, status = ?,
                         error_message = ?, processing_time_ms = ?, tokens_used = ?, completed_at = ?
                     WHERE id = ?
-                """, (
-                    data["collection_id"], data["query_text"], data["user_id"],
-                    data["response_text"], data["confidence_score"], data["sources"],
-                    data["cross_references"], data["status"], data["error_message"],
-                    data["processing_time_ms"], data["tokens_used"], data["completed_at"],
-                    entity.id
-                ))
+                """,
+                    (
+                        data["collection_id"],
+                        data["query_text"],
+                        data["user_id"],
+                        data["response_text"],
+                        data["confidence_score"],
+                        data["sources"],
+                        data["cross_references"],
+                        data["status"],
+                        data["error_message"],
+                        data["processing_time_ms"],
+                        data["tokens_used"],
+                        data["completed_at"],
+                        entity.id,
+                    ),
+                )
 
                 conn.commit()
                 return entity
@@ -575,19 +705,24 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("DELETE FROM cross_document_queries WHERE id = ?", (entity_id,))
+                cursor.execute(
+                    "DELETE FROM cross_document_queries WHERE id = ?", (entity_id,)
+                )
                 conn.commit()
                 return cursor.rowcount > 0
         except Exception as e:
             logger.error(f"Failed to delete query {entity_id}: {e}")
             raise
 
-    def find_by_collection_id(self, collection_id: int, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def find_by_collection_id(
+        self, collection_id: int, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Find queries by collection ID."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
@@ -595,20 +730,27 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     WHERE collection_id = ?
                     ORDER BY created_at DESC
                     LIMIT ?
-                """, (collection_id, limit))
+                """,
+                    (collection_id, limit),
+                )
 
                 rows = cursor.fetchall()
-                return [CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to find queries for collection {collection_id}: {e}")
             raise
 
-    def find_by_user_id(self, user_id: str, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def find_by_user_id(
+        self, user_id: str, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Find queries by user ID."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
@@ -616,20 +758,27 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     WHERE user_id = ?
                     ORDER BY created_at DESC
                     LIMIT ?
-                """, (user_id, limit))
+                """,
+                    (user_id, limit),
+                )
 
                 rows = cursor.fetchall()
-                return [CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to find queries for user {user_id}: {e}")
             raise
 
-    def find_by_status(self, status: str, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def find_by_status(
+        self, status: str, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Find queries by status."""
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
@@ -637,22 +786,29 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     WHERE status = ?
                     ORDER BY created_at DESC
                     LIMIT ?
-                """, (status, limit))
+                """,
+                    (status, limit),
+                )
 
                 rows = cursor.fetchall()
-                return [CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to find queries by status {status}: {e}")
             raise
 
-    def get_recent_queries(self, days: int = 7, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def get_recent_queries(
+        self, days: int = 7, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Get recent queries within specified days."""
         try:
             cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
 
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT id, collection_id, query_text, user_id, response_text, confidence_score,
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
@@ -660,10 +816,14 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                     WHERE created_at >= ?
                     ORDER BY created_at DESC
                     LIMIT ?
-                """, (cutoff_date, limit))
+                """,
+                    (cutoff_date, limit),
+                )
 
                 rows = cursor.fetchall()
-                return [CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows]
+                return [
+                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                ]
         except Exception as e:
             logger.error(f"Failed to get recent queries: {e}")
             raise
@@ -675,7 +835,8 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                 cursor = conn.cursor()
 
                 # Basic statistics
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT 
                         COUNT(*) as total_queries,
                         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_queries,
@@ -683,7 +844,8 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                         AVG(CASE WHEN processing_time_ms IS NOT NULL THEN processing_time_ms END) as avg_processing_time,
                         AVG(CASE WHEN confidence_score IS NOT NULL THEN confidence_score END) as avg_confidence
                     FROM cross_document_queries
-                """)
+                """
+                )
 
                 stats = dict(cursor.fetchone())
                 return stats
@@ -698,10 +860,13 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     DELETE FROM cross_document_queries 
                     WHERE created_at < ?
-                """, (cutoff_date,))
+                """,
+                    (cutoff_date,),
+                )
                 conn.commit()
                 return cursor.rowcount
         except Exception as e:

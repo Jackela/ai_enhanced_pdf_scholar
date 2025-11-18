@@ -80,7 +80,7 @@ class BaseRepository(ABC, Generic[T]):
         Returns:
             True if valid, False otherwise
         """
-        return bool(re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table_name))
+        return bool(re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", table_name))
 
     def find_by_id(self, id: int) -> T | None:
         """
@@ -171,13 +171,13 @@ class BaseRepository(ABC, Generic[T]):
 
             # Try using INSERT ... RETURNING first (SQLite 3.35+)
             try:
-                query = (
-                    f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders}) RETURNING id"
-                )
+                query = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders}) RETURNING id"
                 cursor = self.db.execute(query, tuple(values))
                 result = cursor.fetchone()
                 if result is None:
-                    raise RuntimeError(f"No result from INSERT RETURNING for {table_name}")
+                    raise RuntimeError(
+                        f"No result from INSERT RETURNING for {table_name}"
+                    )
                 new_id = result[0]
             except Exception:
                 # Fallback to traditional INSERT + last_insert_rowid()
@@ -289,7 +289,7 @@ class BaseRepository(ABC, Generic[T]):
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
             # Validate field name to prevent SQL injection
-            if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', field):
+            if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", field):
                 raise ValueError(f"Invalid field name: {field}")
             query = f"SELECT * FROM {table_name} WHERE {field} = ?"
             rows = self.db.fetch_all(query, (value,))

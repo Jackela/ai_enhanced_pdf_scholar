@@ -26,8 +26,10 @@ logger = logging.getLogger(__name__)
 # Health Check Models
 # ============================================================================
 
+
 class HealthStatus(str, Enum):
     """Health status levels."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -36,15 +38,17 @@ class HealthStatus(str, Enum):
 
 class CheckSeverity(str, Enum):
     """Severity levels for health checks."""
+
     CRITICAL = "critical"  # Service cannot function
-    MAJOR = "major"       # Service degraded but functional
-    MINOR = "minor"       # Warning, service fully functional
-    INFO = "info"         # Informational only
+    MAJOR = "major"  # Service degraded but functional
+    MINOR = "minor"  # Warning, service fully functional
+    INFO = "info"  # Informational only
 
 
 @dataclass
 class HealthCheckResult:
     """Result of a health check."""
+
     name: str
     status: HealthStatus
     severity: CheckSeverity
@@ -62,13 +66,14 @@ class HealthCheckResult:
             "message": self.message,
             "details": self.details,
             "duration_ms": round(self.duration_ms, 2),
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
 @dataclass
 class SystemHealth:
     """Overall system health summary."""
+
     status: HealthStatus
     checks: list[HealthCheckResult]
     summary: dict[str, Any]
@@ -82,13 +87,14 @@ class SystemHealth:
             "uptime_seconds": self.uptime,
             "timestamp": self.timestamp.isoformat(),
             "summary": self.summary,
-            "checks": [check.to_dict() for check in self.checks]
+            "checks": [check.to_dict() for check in self.checks],
         }
 
 
 # ============================================================================
 # Health Check Service
 # ============================================================================
+
 
 class HealthCheckService:
     """
@@ -98,7 +104,7 @@ class HealthCheckService:
     def __init__(
         self,
         postgres_config: PostgreSQLConfig | None = None,
-        redis_service: RedisCacheService | None = None
+        redis_service: RedisCacheService | None = None,
     ):
         """Initialize health check service."""
         self.postgres_config = postgres_config or PostgreSQLConfig()
@@ -128,49 +134,49 @@ class HealthCheckService:
             name="database",
             check_func=self._check_database,
             severity=CheckSeverity.CRITICAL,
-            timeout=5.0
+            timeout=5.0,
         )
 
         self.register_check(
             name="redis_cache",
             check_func=self._check_redis,
             severity=CheckSeverity.MAJOR,
-            timeout=3.0
+            timeout=3.0,
         )
 
         self.register_check(
             name="memory",
             check_func=self._check_memory,
             severity=CheckSeverity.MAJOR,
-            timeout=1.0
+            timeout=1.0,
         )
 
         self.register_check(
             name="disk_space",
             check_func=self._check_disk_space,
             severity=CheckSeverity.MAJOR,
-            timeout=1.0
+            timeout=1.0,
         )
 
         self.register_check(
             name="cpu",
             check_func=self._check_cpu,
             severity=CheckSeverity.MINOR,
-            timeout=2.0
+            timeout=2.0,
         )
 
         self.register_check(
             name="network",
             check_func=self._check_network,
             severity=CheckSeverity.MINOR,
-            timeout=3.0
+            timeout=3.0,
         )
 
         self.register_check(
             name="external_services",
             check_func=self._check_external_services,
             severity=CheckSeverity.MAJOR,
-            timeout=10.0
+            timeout=10.0,
         )
 
     def register_check(
@@ -179,7 +185,7 @@ class HealthCheckService:
         check_func: callable,
         severity: CheckSeverity = CheckSeverity.MAJOR,
         timeout: float = 5.0,
-        enabled: bool = True
+        enabled: bool = True,
     ):
         """Register a health check."""
         self.health_checks[name] = {
@@ -189,7 +195,7 @@ class HealthCheckService:
             "enabled": enabled,
             "last_result": None,
             "failure_count": 0,
-            "last_failure": None
+            "last_failure": None,
         }
 
         logger.info(f"Registered health check: {name}")
@@ -211,9 +217,7 @@ class HealthCheckService:
             self.health_checks[name]["enabled"] = False
 
     async def check_health(
-        self,
-        include_details: bool = True,
-        check_names: list[str] | None = None
+        self, include_details: bool = True, check_names: list[str] | None = None
     ) -> SystemHealth:
         """
         Perform comprehensive health check.
@@ -231,16 +235,15 @@ class HealthCheckService:
         # Determine which checks to run
         checks_to_run = check_names or list(self.health_checks.keys())
         enabled_checks = {
-            name: check for name, check in self.health_checks.items()
+            name: check
+            for name, check in self.health_checks.items()
             if check["enabled"] and name in checks_to_run
         }
 
         # Run health checks concurrently
         tasks = []
         for name, check_config in enabled_checks.items():
-            task = asyncio.create_task(
-                self._run_single_check(name, check_config)
-            )
+            task = asyncio.create_task(self._run_single_check(name, check_config))
             tasks.append(task)
 
         # Wait for all checks to complete
@@ -259,7 +262,7 @@ class HealthCheckService:
                         message=f"Health check failed: {str(result)}",
                         details={"error": str(result)},
                         duration_ms=(time.time() - start_time) * 1000,
-                        timestamp=datetime.utcnow()
+                        timestamp=datetime.utcnow(),
                     )
                     valid_results.append(error_result)
                 else:
@@ -282,7 +285,7 @@ class HealthCheckService:
             checks=results if include_details else [],
             summary=summary,
             uptime=uptime,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
 
         # Store in history for trend analysis
@@ -291,9 +294,7 @@ class HealthCheckService:
         return system_health
 
     async def _run_single_check(
-        self,
-        name: str,
-        check_config: dict[str, Any]
+        self, name: str, check_config: dict[str, Any]
     ) -> HealthCheckResult:
         """Run a single health check with timeout."""
         start_time = time.time()
@@ -302,7 +303,7 @@ class HealthCheckService:
             # Run check with timeout
             result = await asyncio.wait_for(
                 self._execute_check(check_config["func"]),
-                timeout=check_config["timeout"]
+                timeout=check_config["timeout"],
             )
 
             # Reset failure count on success
@@ -329,7 +330,7 @@ class HealthCheckService:
                 message=f"Health check timed out after {check_config['timeout']}s",
                 details={"timeout": check_config["timeout"]},
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -344,7 +345,7 @@ class HealthCheckService:
                 message=f"Health check failed: {str(e)}",
                 details={"error": str(e), "error_type": type(e).__name__},
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     async def _execute_check(self, check_func: callable) -> HealthCheckResult:
@@ -353,9 +354,7 @@ class HealthCheckService:
             return await check_func()
         else:
             # Run synchronous function in thread pool
-            return await asyncio.get_event_loop().run_in_executor(
-                None, check_func
-            )
+            return await asyncio.get_event_loop().run_in_executor(None, check_func)
 
     # ========================================================================
     # Individual Health Checks
@@ -370,7 +369,7 @@ class HealthCheckService:
             engine = create_engine(
                 self.postgres_config.get_connection_url(),
                 pool_timeout=2,
-                pool_recycle=300
+                pool_recycle=300,
             )
 
             # Test connection and query
@@ -390,9 +389,11 @@ class HealthCheckService:
 
                 # Check database size
                 size_result = conn.execute(
-                    text("""
+                    text(
+                        """
                     SELECT pg_size_pretty(pg_database_size(current_database()))
-                    """)
+                    """
+                    )
                 ).fetchone()
                 db_size = size_result[0] if size_result else "unknown"
 
@@ -415,10 +416,10 @@ class HealthCheckService:
                     "response_time_ms": round(duration_ms, 2),
                     "active_connections": active_connections,
                     "database_size": db_size,
-                    "version": version.split()[0:2]  # Simplified version info
+                    "version": version.split()[0:2],  # Simplified version info
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -432,10 +433,10 @@ class HealthCheckService:
                 details={
                     "error": str(e),
                     "error_type": type(e).__name__,
-                    "response_time_ms": round(duration_ms, 2)
+                    "response_time_ms": round(duration_ms, 2),
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     async def _check_redis(self) -> HealthCheckResult:
@@ -450,7 +451,7 @@ class HealthCheckService:
                 message="Redis service not configured",
                 details={},
                 duration_ms=0,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         try:
@@ -497,10 +498,10 @@ class HealthCheckService:
                     "hit_rate": hit_rate,
                     "total_hits": stats.get("hits", 0),
                     "total_misses": stats.get("misses", 0),
-                    "redis_info": stats.get("redis", {})
+                    "redis_info": stats.get("redis", {}),
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -514,10 +515,10 @@ class HealthCheckService:
                 details={
                     "error": str(e),
                     "error_type": type(e).__name__,
-                    "response_time_ms": round(duration_ms, 2)
+                    "response_time_ms": round(duration_ms, 2),
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     async def _check_memory(self) -> HealthCheckResult:
@@ -555,10 +556,12 @@ class HealthCheckService:
                     "memory_total_gb": round(memory.total / (1024**3), 2),
                     "memory_available_gb": round(memory.available / (1024**3), 2),
                     "swap_percent": round(swap_percent, 1),
-                    "swap_total_gb": round(swap.total / (1024**3), 2) if swap.total > 0 else 0
+                    "swap_total_gb": (
+                        round(swap.total / (1024**3), 2) if swap.total > 0 else 0
+                    ),
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -571,7 +574,7 @@ class HealthCheckService:
                 message=f"Memory check failed: {str(e)}",
                 details={"error": str(e)},
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     async def _check_disk_space(self) -> HealthCheckResult:
@@ -580,7 +583,7 @@ class HealthCheckService:
 
         try:
             # Check root filesystem
-            disk_usage = psutil.disk_usage('/')
+            disk_usage = psutil.disk_usage("/")
             usage_percent = (disk_usage.used / disk_usage.total) * 100
 
             # Check additional mount points if they exist
@@ -588,14 +591,16 @@ class HealthCheckService:
             try:
                 partitions = psutil.disk_partitions()
                 for partition in partitions:
-                    if partition.mountpoint != '/':
+                    if partition.mountpoint != "/":
                         try:
                             partition_usage = psutil.disk_usage(partition.mountpoint)
-                            partition_percent = (partition_usage.used / partition_usage.total) * 100
+                            partition_percent = (
+                                partition_usage.used / partition_usage.total
+                            ) * 100
                             additional_disks[partition.mountpoint] = {
                                 "usage_percent": round(partition_percent, 1),
                                 "total_gb": round(partition_usage.total / (1024**3), 2),
-                                "free_gb": round(partition_usage.free / (1024**3), 2)
+                                "free_gb": round(partition_usage.free / (1024**3), 2),
                             }
                         except (OSError, PermissionError):
                             continue
@@ -624,10 +629,10 @@ class HealthCheckService:
                     "root_usage_percent": round(usage_percent, 1),
                     "root_total_gb": round(disk_usage.total / (1024**3), 2),
                     "root_free_gb": round(disk_usage.free / (1024**3), 2),
-                    "additional_disks": additional_disks
+                    "additional_disks": additional_disks,
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -640,7 +645,7 @@ class HealthCheckService:
                 message=f"Disk check failed: {str(e)}",
                 details={"error": str(e)},
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     async def _check_cpu(self) -> HealthCheckResult:
@@ -651,7 +656,9 @@ class HealthCheckService:
             # Get CPU usage over 1 second interval
             cpu_percent = psutil.cpu_percent(interval=1)
             cpu_count = psutil.cpu_count()
-            load_avg = psutil.getloadavg() if hasattr(psutil, 'getloadavg') else (0, 0, 0)
+            load_avg = (
+                psutil.getloadavg() if hasattr(psutil, "getloadavg") else (0, 0, 0)
+            )
 
             # Determine status
             if cpu_percent > 95:
@@ -676,10 +683,10 @@ class HealthCheckService:
                     "cpu_count": cpu_count,
                     "load_average_1m": round(load_avg[0], 2),
                     "load_average_5m": round(load_avg[1], 2),
-                    "load_average_15m": round(load_avg[2], 2)
+                    "load_average_15m": round(load_avg[2], 2),
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -692,7 +699,7 @@ class HealthCheckService:
                 message=f"CPU check failed: {str(e)}",
                 details={"error": str(e)},
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     async def _check_network(self) -> HealthCheckResult:
@@ -720,10 +727,10 @@ class HealthCheckService:
                     "bytes_recv": net_io.bytes_recv,
                     "packets_sent": net_io.packets_sent,
                     "packets_recv": net_io.packets_recv,
-                    "dns_resolution_ms": round(duration_ms, 2)
+                    "dns_resolution_ms": round(duration_ms, 2),
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -736,7 +743,7 @@ class HealthCheckService:
                 message=f"Network check failed: {str(e)}",
                 details={"error": str(e)},
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     async def _check_external_services(self) -> HealthCheckResult:
@@ -756,30 +763,40 @@ class HealthCheckService:
                         async with session.get(
                             "https://generativelanguage.googleapis.com/v1/models",
                             params={"key": google_api_key},
-                            timeout=aiohttp.ClientTimeout(total=5)
+                            timeout=aiohttp.ClientTimeout(total=5),
                         ) as response:
                             if response.status == 200:
-                                external_services.append({
-                                    "service": "google_gemini",
-                                    "status": "healthy",
-                                    "response_code": response.status
-                                })
+                                external_services.append(
+                                    {
+                                        "service": "google_gemini",
+                                        "status": "healthy",
+                                        "response_code": response.status,
+                                    }
+                                )
                             else:
-                                external_services.append({
-                                    "service": "google_gemini",
-                                    "status": "degraded",
-                                    "response_code": response.status
-                                })
+                                external_services.append(
+                                    {
+                                        "service": "google_gemini",
+                                        "status": "degraded",
+                                        "response_code": response.status,
+                                    }
+                                )
                 except Exception as e:
-                    external_services.append({
-                        "service": "google_gemini",
-                        "status": "unhealthy",
-                        "error": str(e)
-                    })
+                    external_services.append(
+                        {
+                            "service": "google_gemini",
+                            "status": "unhealthy",
+                            "error": str(e),
+                        }
+                    )
 
             # Determine overall status
-            unhealthy_count = sum(1 for svc in external_services if svc.get("status") == "unhealthy")
-            degraded_count = sum(1 for svc in external_services if svc.get("status") == "degraded")
+            unhealthy_count = sum(
+                1 for svc in external_services if svc.get("status") == "unhealthy"
+            )
+            degraded_count = sum(
+                1 for svc in external_services if svc.get("status") == "degraded"
+            )
 
             if unhealthy_count > 0:
                 status = HealthStatus.DEGRADED
@@ -802,10 +819,10 @@ class HealthCheckService:
                     "services": external_services,
                     "total_services": len(external_services),
                     "unhealthy_count": unhealthy_count,
-                    "degraded_count": degraded_count
+                    "degraded_count": degraded_count,
                 },
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
         except Exception as e:
@@ -818,26 +835,31 @@ class HealthCheckService:
                 message=f"External services check failed: {str(e)}",
                 details={"error": str(e)},
                 duration_ms=duration_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
 
     # ========================================================================
     # Health Status Analysis
     # ========================================================================
 
-    def _calculate_overall_status(self, results: list[HealthCheckResult]) -> HealthStatus:
+    def _calculate_overall_status(
+        self, results: list[HealthCheckResult]
+    ) -> HealthStatus:
         """Calculate overall system health status."""
         if not results:
             return HealthStatus.UNKNOWN
 
         # Count statuses by severity
         critical_unhealthy = sum(
-            1 for r in results
-            if r.severity == CheckSeverity.CRITICAL and r.status == HealthStatus.UNHEALTHY
+            1
+            for r in results
+            if r.severity == CheckSeverity.CRITICAL
+            and r.status == HealthStatus.UNHEALTHY
         )
 
         major_unhealthy = sum(
-            1 for r in results
+            1
+            for r in results
             if r.severity == CheckSeverity.MAJOR and r.status == HealthStatus.UNHEALTHY
         )
 
@@ -861,29 +883,37 @@ class HealthCheckService:
         total_duration = 0
 
         for result in results:
-            status_counts[result.status.value] = status_counts.get(result.status.value, 0) + 1
-            severity_counts[result.severity.value] = severity_counts.get(result.severity.value, 0) + 1
+            status_counts[result.status.value] = (
+                status_counts.get(result.status.value, 0) + 1
+            )
+            severity_counts[result.severity.value] = (
+                severity_counts.get(result.severity.value, 0) + 1
+            )
             total_duration += result.duration_ms
 
         return {
             "total_checks": len(results),
             "status_counts": status_counts,
             "severity_counts": severity_counts,
-            "average_duration_ms": round(total_duration / len(results), 2) if results else 0,
-            "total_duration_ms": round(total_duration, 2)
+            "average_duration_ms": (
+                round(total_duration / len(results), 2) if results else 0
+            ),
+            "total_duration_ms": round(total_duration, 2),
         }
 
     def _store_health_history(self, system_health: SystemHealth):
         """Store health check result in history."""
-        self.health_history.append({
-            "timestamp": system_health.timestamp,
-            "status": system_health.status.value,
-            "summary": system_health.summary
-        })
+        self.health_history.append(
+            {
+                "timestamp": system_health.timestamp,
+                "status": system_health.status.value,
+                "summary": system_health.summary,
+            }
+        )
 
         # Trim history if too large
         if len(self.health_history) > self.max_history_size:
-            self.health_history = self.health_history[-self.max_history_size:]
+            self.health_history = self.health_history[-self.max_history_size :]
 
     # ========================================================================
     # Public Health Check Methods
@@ -898,18 +928,18 @@ class HealthCheckService:
         """Kubernetes liveness probe endpoint."""
         # Only check critical services for liveness
         critical_checks = [
-            name for name, config in self.health_checks.items()
+            name
+            for name, config in self.health_checks.items()
             if config["severity"] == CheckSeverity.CRITICAL and config["enabled"]
         ]
 
         health = await self.check_health(
-            include_details=False,
-            check_names=critical_checks
+            include_details=False, check_names=critical_checks
         )
 
         return {
             "status": health.status.value,
-            "timestamp": health.timestamp.isoformat()
+            "timestamp": health.timestamp.isoformat(),
         }
 
     async def get_readiness_probe(self) -> dict[str, Any]:
@@ -922,7 +952,7 @@ class HealthCheckService:
         return {
             "ready": ready,
             "status": health.status.value,
-            "timestamp": health.timestamp.isoformat()
+            "timestamp": health.timestamp.isoformat(),
         }
 
     def get_health_history(self, limit: int = 50) -> list[dict[str, Any]]:
@@ -941,16 +971,21 @@ class HealthCheckService:
             "severity": check_config["severity"].value,
             "timeout": check_config["timeout"],
             "failure_count": check_config["failure_count"],
-            "last_failure": check_config["last_failure"].isoformat() if check_config["last_failure"] else None,
-            "last_result": check_config["last_result"].to_dict() if check_config["last_result"] else None
+            "last_failure": (
+                check_config["last_failure"].isoformat()
+                if check_config["last_failure"]
+                else None
+            ),
+            "last_result": (
+                check_config["last_result"].to_dict()
+                if check_config["last_result"]
+                else None
+            ),
         }
 
     def get_all_checks_status(self) -> dict[str, Any]:
         """Get status of all registered health checks."""
-        return {
-            name: self.get_check_status(name)
-            for name in self.health_checks.keys()
-        }
+        return {name: self.get_check_status(name) for name in self.health_checks.keys()}
 
 
 if __name__ == "__main__":

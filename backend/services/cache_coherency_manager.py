@@ -26,42 +26,47 @@ logger = logging.getLogger(__name__)
 # Coherency Configuration
 # ============================================================================
 
+
 class CoherencyProtocol(str, Enum):
     """Cache coherency protocols."""
-    WRITE_THROUGH = "write_through"    # Write to all levels synchronously
-    WRITE_BEHIND = "write_behind"      # Write to higher levels asynchronously
-    WRITE_BACK = "write_back"          # Write only when evicted or expired
-    INVALIDATE = "invalidate"          # Invalidate other levels on write
-    BROADCAST = "broadcast"            # Broadcast all changes
+
+    WRITE_THROUGH = "write_through"  # Write to all levels synchronously
+    WRITE_BEHIND = "write_behind"  # Write to higher levels asynchronously
+    WRITE_BACK = "write_back"  # Write only when evicted or expired
+    INVALIDATE = "invalidate"  # Invalidate other levels on write
+    BROADCAST = "broadcast"  # Broadcast all changes
 
 
 class ConsistencyLevel(str, Enum):
     """Data consistency levels."""
-    EVENTUAL = "eventual"              # Eventually consistent
-    STRONG = "strong"                  # Strong consistency
-    WEAK = "weak"                     # Weak consistency
-    CAUSAL = "causal"                 # Causal consistency
+
+    EVENTUAL = "eventual"  # Eventually consistent
+    STRONG = "strong"  # Strong consistency
+    WEAK = "weak"  # Weak consistency
+    CAUSAL = "causal"  # Causal consistency
 
 
 class InvalidationStrategy(str, Enum):
     """Cache invalidation strategies."""
-    IMMEDIATE = "immediate"            # Invalidate immediately
-    LAZY = "lazy"                     # Invalidate on next access
-    TTL_BASED = "ttl_based"           # Invalidate based on TTL
-    VERSION_BASED = "version_based"    # Version-based invalidation
+
+    IMMEDIATE = "immediate"  # Invalidate immediately
+    LAZY = "lazy"  # Invalidate on next access
+    TTL_BASED = "ttl_based"  # Invalidate based on TTL
+    VERSION_BASED = "version_based"  # Version-based invalidation
 
 
 @dataclass
 class CoherencyConfig:
     """Configuration for cache coherency management."""
+
     # Coherency protocol
     protocol: CoherencyProtocol = CoherencyProtocol.WRITE_THROUGH
     consistency_level: ConsistencyLevel = ConsistencyLevel.EVENTUAL
     invalidation_strategy: InvalidationStrategy = InvalidationStrategy.IMMEDIATE
 
     # Timing configuration
-    max_write_delay_ms: int = 100      # Maximum delay for write-behind
-    invalidation_batch_size: int = 50   # Batch size for invalidations
+    max_write_delay_ms: int = 100  # Maximum delay for write-behind
+    invalidation_batch_size: int = 50  # Batch size for invalidations
     coherency_check_interval_seconds: int = 300  # 5 minutes
 
     # Versioning
@@ -79,12 +84,13 @@ class CoherencyConfig:
 @dataclass
 class CacheEntryVersion:
     """Version information for cache entries."""
+
     version: int
     timestamp: datetime
     source_level: str  # Which cache level this version came from
-    checksum: str      # Data integrity checksum
+    checksum: str  # Data integrity checksum
 
-    def is_newer_than(self, other: 'CacheEntryVersion') -> bool:
+    def is_newer_than(self, other: "CacheEntryVersion") -> bool:
         """Check if this version is newer than another."""
         if self.version != other.version:
             return self.version > other.version
@@ -94,6 +100,7 @@ class CacheEntryVersion:
 @dataclass
 class CoherencyEvent:
     """Cache coherency event for tracking."""
+
     event_type: str  # write, read, invalidate, sync
     key: str
     cache_level: str
@@ -108,6 +115,7 @@ class CoherencyEvent:
 # Cache Level Wrapper
 # ============================================================================
 
+
 class CacheLevelWrapper:
     """Wrapper for cache levels with coherency support."""
 
@@ -115,7 +123,7 @@ class CacheLevelWrapper:
         self,
         cache: Union[L1MemoryCache, L2RedisCache, L3CDNCache],
         level_name: str,
-        coherency_manager: 'CacheCoherencyManager'
+        coherency_manager: "CacheCoherencyManager",
     ):
         """Initialize cache level wrapper."""
         self.cache = cache
@@ -127,7 +135,9 @@ class CacheLevelWrapper:
         self.supports_ttl = True
         self.supports_versioning = True
 
-    async def get(self, key: str, default: Any = None) -> tuple[Any, CacheEntryVersion | None]:
+    async def get(
+        self, key: str, default: Any = None
+    ) -> tuple[Any, CacheEntryVersion | None]:
         """Get value with version information."""
         try:
             # L1 Memory Cache
@@ -139,7 +149,7 @@ class CacheLevelWrapper:
                         version=1,  # L1 doesn't track versions
                         timestamp=datetime.utcnow(),
                         source_level=self.level_name,
-                        checksum=self._calculate_checksum(value)
+                        checksum=self._calculate_checksum(value),
                     )
                     return value, version
                 return default, None
@@ -152,7 +162,7 @@ class CacheLevelWrapper:
                         version=1,  # Simplified for demo
                         timestamp=datetime.utcnow(),
                         source_level=self.level_name,
-                        checksum=self._calculate_checksum(value)
+                        checksum=self._calculate_checksum(value),
                     )
                     return value, version
                 return default, None
@@ -173,7 +183,7 @@ class CacheLevelWrapper:
         key: str,
         value: Any,
         ttl_seconds: int | None = None,
-        version: CacheEntryVersion | None = None
+        version: CacheEntryVersion | None = None,
     ) -> bool:
         """Set value with version information."""
         try:
@@ -183,7 +193,7 @@ class CacheLevelWrapper:
                     version=int(time.time()),
                     timestamp=datetime.utcnow(),
                     source_level=self.level_name,
-                    checksum=self._calculate_checksum(value)
+                    checksum=self._calculate_checksum(value),
                 )
 
             # L1 Memory Cache
@@ -205,10 +215,7 @@ class CacheLevelWrapper:
                     content_type = ContentType.DYNAMIC
 
                 cdn_url = await self.cache.cache_content(
-                    f"https://cache/{key}",
-                    content_data,
-                    content_type,
-                    ttl_seconds
+                    f"https://cache/{key}", content_data, content_type, ttl_seconds
                 )
                 success = cdn_url != f"https://cache/{key}"
 
@@ -225,7 +232,7 @@ class CacheLevelWrapper:
                         timestamp=datetime.utcnow(),
                         version=version,
                         data_size=len(str(value)),
-                        success=True
+                        success=True,
                     )
                 )
 
@@ -261,7 +268,7 @@ class CacheLevelWrapper:
                         key=key,
                         cache_level=self.level_name,
                         timestamp=datetime.utcnow(),
-                        success=True
+                        success=True,
                     )
                 )
 
@@ -288,7 +295,11 @@ class CacheLevelWrapper:
     def _calculate_checksum(self, value: Any) -> str:
         """Calculate checksum for data integrity."""
         try:
-            data_str = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else str(value)
+            data_str = (
+                json.dumps(value, sort_keys=True)
+                if isinstance(value, (dict, list))
+                else str(value)
+            )
             return hashlib.sha256(data_str.encode()).hexdigest()
         except Exception:
             return ""
@@ -297,6 +308,7 @@ class CacheLevelWrapper:
 # ============================================================================
 # Cache Coherency Manager
 # ============================================================================
+
 
 class CacheCoherencyManager:
     """
@@ -308,7 +320,7 @@ class CacheCoherencyManager:
         l1_cache: L1MemoryCache | None = None,
         l2_cache: L2RedisCache | None = None,
         l3_cache: L3CDNCache | None = None,
-        config: CoherencyConfig | None = None
+        config: CoherencyConfig | None = None,
     ):
         """Initialize cache coherency manager."""
         self.config = config or CoherencyConfig()
@@ -335,14 +347,16 @@ class CacheCoherencyManager:
             "write_behind_operations": 0,
             "invalidations": 0,
             "version_conflicts": 0,
-            "sync_operations": 0
+            "sync_operations": 0,
         }
 
         # Background tasks
         self.background_tasks: list[asyncio.Task] = []
         self.is_running = False
 
-        logger.info(f"Cache Coherency Manager initialized with {len(self.cache_levels)} levels")
+        logger.info(
+            f"Cache Coherency Manager initialized with {len(self.cache_levels)} levels"
+        )
 
     # ========================================================================
     # Core Coherency Operations
@@ -367,7 +381,7 @@ class CacheCoherencyManager:
                                 cache_level=level_name,
                                 timestamp=datetime.utcnow(),
                                 version=version,
-                                success=True
+                                success=True,
                             )
                         )
 
@@ -375,7 +389,9 @@ class CacheCoherencyManager:
                         self.entry_versions[key][level_name] = version
 
                         # Promote to higher cache levels if configured
-                        await self._promote_to_higher_levels(key, value, version, level_name)
+                        await self._promote_to_higher_levels(
+                            key, value, version, level_name
+                        )
 
                         return value
 
@@ -391,7 +407,7 @@ class CacheCoherencyManager:
         key: str,
         value: Any,
         ttl_seconds: int | None = None,
-        tags: list[str] | None = None
+        tags: list[str] | None = None,
     ) -> bool:
         """Set value with coherency management."""
 
@@ -401,7 +417,7 @@ class CacheCoherencyManager:
                 version=int(time.time() * 1000),  # Timestamp-based version
                 timestamp=datetime.utcnow(),
                 source_level="coherency_manager",
-                checksum=self._calculate_checksum(value)
+                checksum=self._calculate_checksum(value),
             )
 
             # Apply coherency protocol
@@ -412,7 +428,9 @@ class CacheCoherencyManager:
                 return await self._write_behind(key, value, ttl_seconds, new_version)
 
             elif self.config.protocol == CoherencyProtocol.INVALIDATE:
-                return await self._write_with_invalidation(key, value, ttl_seconds, new_version)
+                return await self._write_with_invalidation(
+                    key, value, ttl_seconds, new_version
+                )
 
             elif self.config.protocol == CoherencyProtocol.BROADCAST:
                 return await self._broadcast_write(key, value, ttl_seconds, new_version)
@@ -445,7 +463,7 @@ class CacheCoherencyManager:
                     key=key,
                     cache_level="all",
                     timestamp=datetime.utcnow(),
-                    success=success_count > 0
+                    success=success_count > 0,
                 )
             )
 
@@ -462,11 +480,7 @@ class CacheCoherencyManager:
     # ========================================================================
 
     async def _write_through(
-        self,
-        key: str,
-        value: Any,
-        ttl_seconds: int | None,
-        version: CacheEntryVersion
+        self, key: str, value: Any, ttl_seconds: int | None, version: CacheEntryVersion
     ) -> bool:
         """Write-through coherency protocol."""
         success_count = 0
@@ -486,50 +500,48 @@ class CacheCoherencyManager:
         return success_count > 0
 
     async def _write_behind(
-        self,
-        key: str,
-        value: Any,
-        ttl_seconds: int | None,
-        version: CacheEntryVersion
+        self, key: str, value: Any, ttl_seconds: int | None, version: CacheEntryVersion
     ) -> bool:
         """Write-behind coherency protocol."""
         # Write to L1 (fastest) immediately
         l1_success = False
         if "L1" in self.cache_levels:
-            l1_success = await self.cache_levels["L1"].set(key, value, ttl_seconds, version)
+            l1_success = await self.cache_levels["L1"].set(
+                key, value, ttl_seconds, version
+            )
             if l1_success:
                 self.entry_versions[key]["L1"] = version
 
         # Queue writes for other levels
         for level_name in ["L2", "L3"]:
             if level_name in self.cache_levels:
-                self.invalidation_queue.append({
-                    "operation": "set",
-                    "key": key,
-                    "value": value,
-                    "ttl_seconds": ttl_seconds,
-                    "version": version,
-                    "level_name": level_name,
-                    "timestamp": datetime.utcnow()
-                })
+                self.invalidation_queue.append(
+                    {
+                        "operation": "set",
+                        "key": key,
+                        "value": value,
+                        "ttl_seconds": ttl_seconds,
+                        "version": version,
+                        "level_name": level_name,
+                        "timestamp": datetime.utcnow(),
+                    }
+                )
 
         self.stats["write_behind_operations"] += 1
 
         return l1_success
 
     async def _write_with_invalidation(
-        self,
-        key: str,
-        value: Any,
-        ttl_seconds: int | None,
-        version: CacheEntryVersion
+        self, key: str, value: Any, ttl_seconds: int | None, version: CacheEntryVersion
     ) -> bool:
         """Write with invalidation protocol."""
         # Write to primary cache level (L1 if available, otherwise L2)
         primary_level = "L1" if "L1" in self.cache_levels else "L2"
 
         if primary_level in self.cache_levels:
-            success = await self.cache_levels[primary_level].set(key, value, ttl_seconds, version)
+            success = await self.cache_levels[primary_level].set(
+                key, value, ttl_seconds, version
+            )
 
             if success:
                 self.entry_versions[key][primary_level] = version
@@ -547,11 +559,7 @@ class CacheCoherencyManager:
         return False
 
     async def _broadcast_write(
-        self,
-        key: str,
-        value: Any,
-        ttl_seconds: int | None,
-        version: CacheEntryVersion
+        self, key: str, value: Any, ttl_seconds: int | None, version: CacheEntryVersion
     ) -> bool:
         """Broadcast write protocol."""
         # Similar to write-through but with better error handling
@@ -570,7 +578,7 @@ class CacheCoherencyManager:
             # Wait with timeout
             await asyncio.wait_for(
                 asyncio.gather(*[task for _, task in tasks], return_exceptions=True),
-                timeout=self.config.max_write_delay_ms / 1000
+                timeout=self.config.max_write_delay_ms / 1000,
             )
 
             # Check results
@@ -593,7 +601,7 @@ class CacheCoherencyManager:
         key: str,
         value: Any,
         ttl_seconds: int | None,
-        version: CacheEntryVersion
+        version: CacheEntryVersion,
     ) -> bool:
         """Safely write to cache level with error handling."""
         try:
@@ -607,11 +615,7 @@ class CacheCoherencyManager:
     # ========================================================================
 
     async def _promote_to_higher_levels(
-        self,
-        key: str,
-        value: Any,
-        version: CacheEntryVersion,
-        source_level: str
+        self, key: str, value: Any, version: CacheEntryVersion, source_level: str
     ):
         """Promote cache entry to higher levels."""
         # Determine promotion targets
@@ -637,7 +641,9 @@ class CacheCoherencyManager:
                 await level.set(key, value, ttl_seconds=None, version=version)
                 self.entry_versions[key][target_level] = version
 
-                logger.debug(f"Promoted key {key} from {source_level} to {target_level}")
+                logger.debug(
+                    f"Promoted key {key} from {source_level} to {target_level}"
+                )
 
             except Exception as e:
                 logger.error(f"Error promoting key {key} to {target_level}: {e}")
@@ -653,7 +659,7 @@ class CacheCoherencyManager:
             "consistent": True,
             "versions": {},
             "conflicts": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Get versions from all levels
@@ -666,7 +672,7 @@ class CacheCoherencyManager:
                     versions[level_name] = {
                         "version": version.version,
                         "timestamp": version.timestamp.isoformat(),
-                        "checksum": version.checksum
+                        "checksum": version.checksum,
                     }
             except Exception as e:
                 logger.error(f"Error checking coherency for {level_name}: {e}")
@@ -690,14 +696,14 @@ class CacheCoherencyManager:
 
         # Generate recommendations
         if not coherency_info["consistent"]:
-            coherency_info["recommendations"] = await self._generate_coherency_recommendations(key, versions)
+            coherency_info["recommendations"] = (
+                await self._generate_coherency_recommendations(key, versions)
+            )
 
         return coherency_info
 
     async def _generate_coherency_recommendations(
-        self,
-        key: str,
-        versions: dict[str, dict[str, Any]]
+        self, key: str, versions: dict[str, dict[str, Any]]
     ) -> list[str]:
         """Generate recommendations for resolving coherency issues."""
         recommendations = []
@@ -707,8 +713,7 @@ class CacheCoherencyManager:
 
         # Find the most recent version
         latest_level = max(
-            versions.keys(),
-            key=lambda level: versions[level]["version"]
+            versions.keys(), key=lambda level: versions[level]["version"]
         )
 
         recommendations.append(f"Sync all levels to version from {latest_level}")
@@ -719,7 +724,9 @@ class CacheCoherencyManager:
         missing_levels = expected_levels - present_levels
 
         if missing_levels:
-            recommendations.append(f"Populate missing cache levels: {', '.join(missing_levels)}")
+            recommendations.append(
+                f"Populate missing cache levels: {', '.join(missing_levels)}"
+            )
 
         return recommendations
 
@@ -752,7 +759,9 @@ class CacheCoherencyManager:
         for level_name, level in self.cache_levels.items():
             try:
                 value, version = await level.get(key)
-                if version and (latest_version is None or version.is_newer_than(latest_version)):
+                if version and (
+                    latest_version is None or version.is_newer_than(latest_version)
+                ):
                     latest_version = version
                     latest_value = value
             except Exception as e:
@@ -775,12 +784,7 @@ class CacheCoherencyManager:
         # Placeholder for custom resolution logic
         return await self._resolve_last_write_wins(key)
 
-    async def _sync_all_levels(
-        self,
-        key: str,
-        value: Any,
-        version: CacheEntryVersion
-    ):
+    async def _sync_all_levels(self, key: str, value: Any, version: CacheEntryVersion):
         """Sync all cache levels to a specific version."""
         for level_name, level in self.cache_levels.items():
             try:
@@ -806,7 +810,7 @@ class CacheCoherencyManager:
         self.background_tasks = [
             asyncio.create_task(self._process_write_behind_queue()),
             asyncio.create_task(self._periodic_coherency_check()),
-            asyncio.create_task(self._cleanup_expired_versions())
+            asyncio.create_task(self._cleanup_expired_versions()),
         ]
 
         logger.info("Started cache coherency background processing")
@@ -853,11 +857,13 @@ class CacheCoherencyManager:
                                     operation["key"],
                                     operation["value"],
                                     operation["ttl_seconds"],
-                                    operation["version"]
+                                    operation["version"],
                                 )
 
                                 # Update version tracking
-                                self.entry_versions[operation["key"]][level_name] = operation["version"]
+                                self.entry_versions[operation["key"]][level_name] = (
+                                    operation["version"]
+                                )
 
                     except Exception as e:
                         logger.error(f"Error in write-behind operation: {e}")
@@ -877,7 +883,9 @@ class CacheCoherencyManager:
                 await asyncio.sleep(self.config.coherency_check_interval_seconds)
 
                 # Check coherency for a sample of keys
-                keys_to_check = list(self.entry_versions.keys())[:100]  # Sample of 100 keys
+                keys_to_check = list(self.entry_versions.keys())[
+                    :100
+                ]  # Sample of 100 keys
 
                 violations = 0
 
@@ -888,16 +896,23 @@ class CacheCoherencyManager:
                         violations += 1
 
                         if self.config.log_coherency_violations:
-                            logger.warning(f"Coherency violation detected for key {key}: {coherency_info['conflicts']}")
+                            logger.warning(
+                                f"Coherency violation detected for key {key}: {coherency_info['conflicts']}"
+                            )
 
                         # Auto-resolve if configured
-                        if self.config.invalidation_strategy == InvalidationStrategy.IMMEDIATE:
+                        if (
+                            self.config.invalidation_strategy
+                            == InvalidationStrategy.IMMEDIATE
+                        ):
                             await self.resolve_conflicts(key)
 
                 self.stats["coherency_violations"] += violations
 
                 if violations > 0:
-                    logger.info(f"Coherency check completed: {violations}/{len(keys_to_check)} violations detected")
+                    logger.info(
+                        f"Coherency check completed: {violations}/{len(keys_to_check)} violations detected"
+                    )
 
             except asyncio.CancelledError:
                 break
@@ -921,7 +936,10 @@ class CacheCoherencyManager:
 
                 # Remove expired versions
                 for key, level_name in expired_keys:
-                    if key in self.entry_versions and level_name in self.entry_versions[key]:
+                    if (
+                        key in self.entry_versions
+                        and level_name in self.entry_versions[key]
+                    ):
                         del self.entry_versions[key][level_name]
 
                         # Remove key entry if no levels left
@@ -929,7 +947,9 @@ class CacheCoherencyManager:
                             del self.entry_versions[key]
 
                 if expired_keys:
-                    logger.debug(f"Cleaned up {len(expired_keys)} expired version entries")
+                    logger.debug(
+                        f"Cleaned up {len(expired_keys)} expired version entries"
+                    )
 
             except asyncio.CancelledError:
                 break
@@ -947,7 +967,9 @@ class CacheCoherencyManager:
         if self.config.enable_coherency_monitoring:
             # Log significant events
             if event.event_type in ["write", "invalidate"]:
-                logger.debug(f"Coherency event: {event.event_type} for key {event.key} in {event.cache_level}")
+                logger.debug(
+                    f"Coherency event: {event.event_type} for key {event.key} in {event.cache_level}"
+                )
 
     def get_coherency_stats(self) -> dict[str, Any]:
         """Get coherency statistics."""
@@ -960,8 +982,8 @@ class CacheCoherencyManager:
             "config": {
                 "protocol": self.config.protocol.value,
                 "consistency_level": self.config.consistency_level.value,
-                "invalidation_strategy": self.config.invalidation_strategy.value
-            }
+                "invalidation_strategy": self.config.invalidation_strategy.value,
+            },
         }
 
     def get_coherency_health(self) -> dict[str, Any]:
@@ -983,8 +1005,10 @@ class CacheCoherencyManager:
             "status": health_status,
             "violation_rate_percent": round(violation_rate, 2),
             "total_violations": violations,
-            "queue_health": "healthy" if len(self.invalidation_queue) < 1000 else "overloaded",
-            "recommendations": self._get_health_recommendations(violation_rate)
+            "queue_health": (
+                "healthy" if len(self.invalidation_queue) < 1000 else "overloaded"
+            ),
+            "recommendations": self._get_health_recommendations(violation_rate),
         }
 
     def _get_health_recommendations(self, violation_rate: float) -> list[str]:
@@ -992,19 +1016,29 @@ class CacheCoherencyManager:
         recommendations = []
 
         if violation_rate > 10:
-            recommendations.append("Critical coherency violations detected. Consider stronger consistency level.")
+            recommendations.append(
+                "Critical coherency violations detected. Consider stronger consistency level."
+            )
         elif violation_rate > 5:
-            recommendations.append("High coherency violations. Review cache invalidation strategy.")
+            recommendations.append(
+                "High coherency violations. Review cache invalidation strategy."
+            )
 
         if len(self.invalidation_queue) > 1000:
-            recommendations.append("Write-behind queue is overloaded. Consider increasing batch size or processing frequency.")
+            recommendations.append(
+                "Write-behind queue is overloaded. Consider increasing batch size or processing frequency."
+            )
 
         return recommendations
 
     def _calculate_checksum(self, value: Any) -> str:
         """Calculate checksum for data integrity."""
         try:
-            data_str = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else str(value)
+            data_str = (
+                json.dumps(value, sort_keys=True)
+                if isinstance(value, (dict, list))
+                else str(value)
+            )
             return hashlib.sha256(data_str.encode()).hexdigest()
         except Exception:
             return ""
@@ -1025,6 +1059,7 @@ class CacheCoherencyManager:
 
 # Example usage
 if __name__ == "__main__":
+
     async def main():
         from .l1_memory_cache import create_l1_cache
         from .l2_redis_cache import L2RedisCache
@@ -1038,19 +1073,19 @@ if __name__ == "__main__":
         # Create coherency manager
         coherency_config = CoherencyConfig(
             protocol=CoherencyProtocol.WRITE_THROUGH,
-            consistency_level=ConsistencyLevel.STRONG
+            consistency_level=ConsistencyLevel.STRONG,
         )
 
         coherency_manager = CacheCoherencyManager(
-            l1_cache=l1_cache,
-            l2_cache=l2_cache,
-            config=coherency_config
+            l1_cache=l1_cache, l2_cache=l2_cache, config=coherency_config
         )
 
         async with coherency_manager:
             # Set values with coherency
             await coherency_manager.set("user:123", {"name": "John", "age": 30})
-            await coherency_manager.set("document:456", {"title": "Test Doc", "size": 1024})
+            await coherency_manager.set(
+                "document:456", {"title": "Test Doc", "size": 1024}
+            )
 
             # Get values
             user = await coherency_manager.get("user:123")

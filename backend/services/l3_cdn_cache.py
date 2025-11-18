@@ -18,6 +18,7 @@ import aiohttp
 try:
     import boto3
     from botocore.exceptions import ClientError, NoCredentialsError
+
     BOTO3_AVAILABLE = True
 except ImportError:
     boto3 = None
@@ -32,8 +33,10 @@ logger = logging.getLogger(__name__)
 # CDN Configuration
 # ============================================================================
 
+
 class CDNProvider(str, Enum):
     """Supported CDN providers."""
+
     CLOUDFRONT = "cloudfront"
     CLOUDFLARE = "cloudflare"
     FASTLY = "fastly"
@@ -43,6 +46,7 @@ class CDNProvider(str, Enum):
 
 class ContentType(str, Enum):
     """Content types for CDN caching."""
+
     STATIC_ASSETS = "static"  # CSS, JS, images
     API_RESPONSES = "api"  # JSON API responses
     DOCUMENTS = "documents"  # PDF, document files
@@ -53,6 +57,7 @@ class ContentType(str, Enum):
 @dataclass
 class CDNConfig:
     """Configuration for L3 CDN cache."""
+
     provider: CDNProvider = CDNProvider.CLOUDFRONT
 
     # CDN settings
@@ -71,18 +76,25 @@ class CDNConfig:
     min_ttl_seconds: int = 300  # 5 minutes
 
     # Content type specific TTLs
-    content_ttls: dict[ContentType, int] = field(default_factory=lambda: {
-        ContentType.STATIC_ASSETS: 2592000,  # 30 days
-        ContentType.API_RESPONSES: 3600,     # 1 hour
-        ContentType.DOCUMENTS: 86400,        # 24 hours
-        ContentType.MEDIA: 604800,           # 7 days
-        ContentType.DYNAMIC: 300             # 5 minutes
-    })
+    content_ttls: dict[ContentType, int] = field(
+        default_factory=lambda: {
+            ContentType.STATIC_ASSETS: 2592000,  # 30 days
+            ContentType.API_RESPONSES: 3600,  # 1 hour
+            ContentType.DOCUMENTS: 86400,  # 24 hours
+            ContentType.MEDIA: 604800,  # 7 days
+            ContentType.DYNAMIC: 300,  # 5 minutes
+        }
+    )
 
     # Edge locations and routing
-    edge_locations: list[str] = field(default_factory=lambda: [
-        "us-east-1", "us-west-1", "eu-west-1", "ap-southeast-1"
-    ])
+    edge_locations: list[str] = field(
+        default_factory=lambda: [
+            "us-east-1",
+            "us-west-1",
+            "eu-west-1",
+            "ap-southeast-1",
+        ]
+    )
 
     # Performance settings
     enable_compression: bool = True
@@ -95,7 +107,9 @@ class CDNConfig:
 
     # Cache behaviors
     query_string_caching: bool = False  # Cache based on query strings
-    header_caching: list[str] = field(default_factory=lambda: ["Accept", "Accept-Language"])
+    header_caching: list[str] = field(
+        default_factory=lambda: ["Accept", "Accept-Language"]
+    )
 
     # Monitoring
     enable_real_user_monitoring: bool = True
@@ -105,6 +119,7 @@ class CDNConfig:
 @dataclass
 class CDNCacheEntry:
     """CDN cache entry metadata."""
+
     url: str
     content_type: ContentType
     size_bytes: int
@@ -129,9 +144,11 @@ class CDNCacheEntry:
 # CDN Statistics and Analytics
 # ============================================================================
 
+
 @dataclass
 class CDNStatistics:
     """CDN performance statistics."""
+
     total_requests: int = 0
     cache_hits: int = 0
     cache_misses: int = 0
@@ -167,6 +184,7 @@ class CDNStatistics:
 # ============================================================================
 # L3 CDN Cache Service
 # ============================================================================
+
 
 class L3CDNCache:
     """
@@ -221,10 +239,10 @@ class L3CDNCache:
             session = boto3.Session(
                 aws_access_key_id=self.config.aws_access_key_id,
                 aws_secret_access_key=self.config.aws_secret_access_key,
-                region_name=self.config.aws_region
+                region_name=self.config.aws_region,
             )
 
-            self._cdn_client = session.client('cloudfront')
+            self._cdn_client = session.client("cloudfront")
             logger.info("CloudFront client initialized")
 
         except (NoCredentialsError, ClientError) as e:
@@ -248,7 +266,7 @@ class L3CDNCache:
         self,
         original_url: str,
         content_type: ContentType = ContentType.API_RESPONSES,
-        query_params: dict[str, Any] | None = None
+        query_params: dict[str, Any] | None = None,
     ) -> str:
         """Get CDN-cached URL for content."""
         # Generate CDN URL
@@ -272,7 +290,7 @@ class L3CDNCache:
         content_data: bytes,
         content_type: ContentType = ContentType.API_RESPONSES,
         ttl_seconds: int | None = None,
-        headers: dict[str, str] | None = None
+        headers: dict[str, str] | None = None,
     ) -> str:
         """Cache content directly to CDN."""
         start_time = time.time()
@@ -284,17 +302,12 @@ class L3CDNCache:
             # Determine TTL
             if ttl_seconds is None:
                 ttl_seconds = self.config.content_ttls.get(
-                    content_type,
-                    self.config.default_ttl_seconds
+                    content_type, self.config.default_ttl_seconds
                 )
 
             # Upload to CDN
             success = await self._upload_to_cdn(
-                cdn_url,
-                content_data,
-                content_type,
-                ttl_seconds,
-                headers
+                cdn_url, content_data, content_type, ttl_seconds, headers
             )
 
             if success:
@@ -305,7 +318,7 @@ class L3CDNCache:
                     size_bytes=len(content_data),
                     created_at=datetime.utcnow(),
                     expires_at=datetime.utcnow() + timedelta(seconds=ttl_seconds),
-                    compression_enabled=self.config.enable_compression
+                    compression_enabled=self.config.enable_compression,
                 )
 
                 self.cached_urls[cdn_url] = entry
@@ -331,9 +344,7 @@ class L3CDNCache:
             return content_url
 
     async def invalidate_cache(
-        self,
-        urls: Union[str, list[str]],
-        wait_for_completion: bool = False
+        self, urls: Union[str, list[str]], wait_for_completion: bool = False
     ) -> bool:
         """Invalidate cached content on CDN."""
         if isinstance(urls, str):
@@ -349,7 +360,9 @@ class L3CDNCache:
                     cdn_urls.append(self._generate_cdn_url(url))
 
             # Perform invalidation based on provider
-            success = await self._perform_cdn_invalidation(cdn_urls, wait_for_completion)
+            success = await self._perform_cdn_invalidation(
+                cdn_urls, wait_for_completion
+            )
 
             if success:
                 # Remove from local tracking
@@ -369,7 +382,7 @@ class L3CDNCache:
         self,
         urls: list[str],
         content_type: ContentType = ContentType.API_RESPONSES,
-        priority: str = "normal"
+        priority: str = "normal",
     ) -> dict[str, bool]:
         """Prefetch content to CDN edge locations."""
         results = {}
@@ -407,7 +420,7 @@ class L3CDNCache:
         content_data: bytes,
         content_type: ContentType,
         ttl_seconds: int,
-        headers: dict[str, str] | None
+        headers: dict[str, str] | None,
     ) -> bool:
         """Upload content to CDN."""
         if self.config.provider == CDNProvider.CLOUDFRONT:
@@ -426,7 +439,7 @@ class L3CDNCache:
         content_data: bytes,
         content_type: ContentType,
         ttl_seconds: int,
-        headers: dict[str, str] | None
+        headers: dict[str, str] | None,
     ) -> bool:
         """Upload content to AWS CloudFront via S3."""
         try:
@@ -437,7 +450,7 @@ class L3CDNCache:
                 return False
 
             # Extract path from CDN URL
-            path = urlparse(cdn_url).path.lstrip('/')
+            path = urlparse(cdn_url).path.lstrip("/")
 
             # Upload to S3 (CloudFront origin)
             if not BOTO3_AVAILABLE:
@@ -445,31 +458,27 @@ class L3CDNCache:
                 return False
 
             s3_client = boto3.client(
-                's3',
+                "s3",
                 aws_access_key_id=self.config.aws_access_key_id,
                 aws_secret_access_key=self.config.aws_secret_access_key,
-                region_name=self.config.aws_region
+                region_name=self.config.aws_region,
             )
 
             # Determine S3 bucket from origin domain
-            bucket_name = self.config.origin_domain.split('.')[0]  # Simplified
+            bucket_name = self.config.origin_domain.split(".")[0]  # Simplified
 
             # Prepare S3 upload parameters
             upload_params = {
-                'Body': content_data,
-                'ContentType': self._get_mime_type(content_type),
-                'CacheControl': f'max-age={ttl_seconds}',
+                "Body": content_data,
+                "ContentType": self._get_mime_type(content_type),
+                "CacheControl": f"max-age={ttl_seconds}",
             }
 
             if headers:
                 upload_params.update(headers)
 
             # Upload to S3
-            s3_client.put_object(
-                Bucket=bucket_name,
-                Key=path,
-                **upload_params
-            )
+            s3_client.put_object(Bucket=bucket_name, Key=path, **upload_params)
 
             logger.debug(f"Uploaded content to S3 for CloudFront: {path}")
             return True
@@ -484,7 +493,7 @@ class L3CDNCache:
         content_data: bytes,
         content_type: ContentType,
         ttl_seconds: int,
-        headers: dict[str, str] | None
+        headers: dict[str, str] | None,
     ) -> bool:
         """Upload content via HTTP (generic CDN)."""
         try:
@@ -492,17 +501,15 @@ class L3CDNCache:
                 self._http_session = aiohttp.ClientSession()
 
             upload_headers = {
-                'Content-Type': self._get_mime_type(content_type),
-                'Cache-Control': f'max-age={ttl_seconds}',
+                "Content-Type": self._get_mime_type(content_type),
+                "Cache-Control": f"max-age={ttl_seconds}",
             }
 
             if headers:
                 upload_headers.update(headers)
 
             async with self._http_session.put(
-                cdn_url,
-                data=content_data,
-                headers=upload_headers
+                cdn_url, data=content_data, headers=upload_headers
             ) as response:
                 return response.status in (200, 201, 204)
 
@@ -511,9 +518,7 @@ class L3CDNCache:
             return False
 
     async def _perform_cdn_invalidation(
-        self,
-        urls: list[str],
-        wait_for_completion: bool
+        self, urls: list[str], wait_for_completion: bool
     ) -> bool:
         """Perform CDN invalidation based on provider."""
         if self.config.provider == CDNProvider.CLOUDFRONT:
@@ -522,9 +527,7 @@ class L3CDNCache:
             return await self._invalidate_generic(urls, wait_for_completion)
 
     async def _invalidate_cloudfront(
-        self,
-        urls: list[str],
-        wait_for_completion: bool
+        self, urls: list[str], wait_for_completion: bool
     ) -> bool:
         """Invalidate CloudFront cache."""
         try:
@@ -535,23 +538,20 @@ class L3CDNCache:
             paths = []
             for url in urls:
                 path = urlparse(url).path
-                if not path.startswith('/'):
-                    path = '/' + path
+                if not path.startswith("/"):
+                    path = "/" + path
                 paths.append(path)
 
             # Create invalidation
             response = self._cdn_client.create_invalidation(
                 DistributionId=self.config.distribution_id,
                 InvalidationBatch={
-                    'Paths': {
-                        'Quantity': len(paths),
-                        'Items': paths
-                    },
-                    'CallerReference': str(int(time.time()))
-                }
+                    "Paths": {"Quantity": len(paths), "Items": paths},
+                    "CallerReference": str(int(time.time())),
+                },
             )
 
-            invalidation_id = response['Invalidation']['Id']
+            invalidation_id = response["Invalidation"]["Id"]
 
             # Wait for completion if requested
             if wait_for_completion:
@@ -572,13 +572,12 @@ class L3CDNCache:
         while time.time() - start_time < max_wait_time:
             try:
                 response = self._cdn_client.get_invalidation(
-                    DistributionId=self.config.distribution_id,
-                    Id=invalidation_id
+                    DistributionId=self.config.distribution_id, Id=invalidation_id
                 )
 
-                status = response['Invalidation']['Status']
+                status = response["Invalidation"]["Status"]
 
-                if status == 'Completed':
+                if status == "Completed":
                     logger.info(f"CloudFront invalidation {invalidation_id} completed")
                     return
 
@@ -589,9 +588,13 @@ class L3CDNCache:
                 logger.error(f"Error checking invalidation status: {e}")
                 break
 
-        logger.warning(f"CloudFront invalidation {invalidation_id} did not complete in time")
+        logger.warning(
+            f"CloudFront invalidation {invalidation_id} did not complete in time"
+        )
 
-    async def _invalidate_generic(self, urls: list[str], wait_for_completion: bool) -> bool:
+    async def _invalidate_generic(
+        self, urls: list[str], wait_for_completion: bool
+    ) -> bool:
         """Generic CDN invalidation via HTTP."""
         # This would depend on the specific CDN API
         logger.info(f"Generic CDN invalidation for {len(urls)} URLs")
@@ -630,9 +633,7 @@ class L3CDNCache:
                 logger.error(f"Error warming edge location {edge_location}: {e}")
 
     def _generate_cdn_url(
-        self,
-        original_url: str,
-        query_params: dict[str, Any] | None = None
+        self, original_url: str, query_params: dict[str, Any] | None = None
     ) -> str:
         """Generate CDN URL from original URL."""
         # Parse original URL
@@ -657,7 +658,7 @@ class L3CDNCache:
             ContentType.API_RESPONSES: "application/json",
             ContentType.DOCUMENTS: "application/pdf",
             ContentType.MEDIA: "video/mp4",
-            ContentType.DYNAMIC: "text/html"
+            ContentType.DYNAMIC: "text/html",
         }
 
         return mime_types.get(content_type, "application/octet-stream")
@@ -672,7 +673,7 @@ class L3CDNCache:
             "timestamp": datetime.utcnow().isoformat(),
             "url": url,
             "access_type": access_type,
-            "edge_location": "unknown"  # Would be determined from request
+            "edge_location": "unknown",  # Would be determined from request
         }
 
         self.cache_access_log.append(access_record)
@@ -704,10 +705,10 @@ class L3CDNCache:
                 return {}
 
             cloudwatch = boto3.client(
-                'cloudwatch',
+                "cloudwatch",
                 aws_access_key_id=self.config.aws_access_key_id,
                 aws_secret_access_key=self.config.aws_secret_access_key,
-                region_name='us-east-1'  # CloudFront metrics are in us-east-1
+                region_name="us-east-1",  # CloudFront metrics are in us-east-1
             )
 
             end_time = datetime.utcnow()
@@ -717,36 +718,38 @@ class L3CDNCache:
             metrics = {}
 
             metric_names = [
-                'Requests',
-                'BytesDownloaded',
-                'CacheHitRate',
-                'ErrorRate',
-                'OriginLatency'
+                "Requests",
+                "BytesDownloaded",
+                "CacheHitRate",
+                "ErrorRate",
+                "OriginLatency",
             ]
 
             for metric_name in metric_names:
                 try:
                     response = cloudwatch.get_metric_statistics(
-                        Namespace='AWS/CloudFront',
+                        Namespace="AWS/CloudFront",
                         MetricName=metric_name,
                         Dimensions=[
                             {
-                                'Name': 'DistributionId',
-                                'Value': self.config.distribution_id
+                                "Name": "DistributionId",
+                                "Value": self.config.distribution_id,
                             }
                         ],
                         StartTime=start_time,
                         EndTime=end_time,
                         Period=3600,  # 1 hour
-                        Statistics=['Sum', 'Average']
+                        Statistics=["Sum", "Average"],
                     )
 
-                    if response['Datapoints']:
-                        latest = max(response['Datapoints'], key=lambda x: x['Timestamp'])
-                        if 'Sum' in latest:
-                            metrics[metric_name] = latest['Sum']
+                    if response["Datapoints"]:
+                        latest = max(
+                            response["Datapoints"], key=lambda x: x["Timestamp"]
+                        )
+                        if "Sum" in latest:
+                            metrics[metric_name] = latest["Sum"]
                         else:
-                            metrics[metric_name] = latest['Average']
+                            metrics[metric_name] = latest["Average"]
 
                 except Exception as e:
                     logger.error(f"Error getting metric {metric_name}: {e}")
@@ -755,7 +758,7 @@ class L3CDNCache:
                 "provider": "cloudfront",
                 "distribution_id": self.config.distribution_id,
                 "metrics": metrics,
-                "time_period": "24_hours"
+                "time_period": "24_hours",
             }
 
         except Exception as e:
@@ -787,7 +790,11 @@ class L3CDNCache:
                 "avg_ms": sum(times) / len(times),
                 "min_ms": min(times),
                 "max_ms": max(times),
-                "p95_ms": sorted(times)[int(len(times) * 0.95)] if len(times) > 20 else max(times)
+                "p95_ms": (
+                    sorted(times)[int(len(times) * 0.95)]
+                    if len(times) > 20
+                    else max(times)
+                ),
             }
 
         return {
@@ -798,20 +805,23 @@ class L3CDNCache:
             "response_time_stats": response_time_stats,
             "access_patterns": {
                 "by_type": dict(access_by_type),
-                "by_hour": dict(access_by_hour)
+                "by_hour": dict(access_by_hour),
             },
             "content_distribution": {
                 content_type.value: sum(
-                    1 for entry in self.cached_urls.values()
+                    1
+                    for entry in self.cached_urls.values()
                     if entry.content_type == content_type
                 )
                 for content_type in ContentType
-            }
+            },
         }
 
     def get_cache_status(self) -> dict[str, Any]:
         """Get current cache status."""
-        expired_count = sum(1 for entry in self.cached_urls.values() if entry.is_expired())
+        expired_count = sum(
+            1 for entry in self.cached_urls.values() if entry.is_expired()
+        )
 
         return {
             "total_cached_urls": len(self.cached_urls),
@@ -819,12 +829,13 @@ class L3CDNCache:
             "active_urls": len(self.cached_urls) - expired_count,
             "total_cache_size_mb": sum(
                 entry.size_bytes for entry in self.cached_urls.values()
-            ) / (1024 * 1024),
+            )
+            / (1024 * 1024),
             "provider": self.config.provider.value,
             "domain": self.config.domain_name,
             "edge_locations": len(self.config.edge_locations),
             "compression_enabled": self.config.enable_compression,
-            "ssl_enabled": self.config.enable_ssl
+            "ssl_enabled": self.config.enable_ssl,
         }
 
     # ========================================================================
@@ -834,8 +845,7 @@ class L3CDNCache:
     async def cleanup_expired_entries(self):
         """Clean up expired cache entries."""
         expired_urls = [
-            url for url, entry in self.cached_urls.items()
-            if entry.is_expired()
+            url for url, entry in self.cached_urls.items() if entry.is_expired()
         ]
 
         for url in expired_urls:
@@ -868,18 +878,19 @@ class L3CDNCache:
 # CDN Cache Factory
 # ============================================================================
 
+
 def create_cdn_cache(
     provider: CDNProvider = CDNProvider.CLOUDFRONT,
     domain_name: str = "",
     distribution_id: str = "",
-    **kwargs
+    **kwargs,
 ) -> L3CDNCache:
     """Create CDN cache with specified configuration."""
     config = CDNConfig(
         provider=provider,
         domain_name=domain_name,
         distribution_id=distribution_id,
-        **kwargs
+        **kwargs,
     )
 
     return L3CDNCache(config)
@@ -887,13 +898,14 @@ def create_cdn_cache(
 
 # Example usage
 if __name__ == "__main__":
+
     async def main():
         # Create CDN cache
         cdn_config = CDNConfig(
             provider=CDNProvider.CLOUDFRONT,
             domain_name="example.cloudfront.net",
             distribution_id="E1234567890ABC",
-            origin_domain="api.example.com"
+            origin_domain="api.example.com",
         )
 
         cdn_cache = L3CDNCache(cdn_config)
@@ -906,15 +918,14 @@ if __name__ == "__main__":
                 "https://api.example.com/hello",
                 content_data,
                 ContentType.API_RESPONSES,
-                ttl_seconds=3600
+                ttl_seconds=3600,
             )
 
             print(f"Content cached at: {cdn_url}")
 
             # Get cached URL for future requests
             cached_url = await cdn_cache.get_cached_url(
-                "https://api.example.com/hello",
-                ContentType.API_RESPONSES
+                "https://api.example.com/hello", ContentType.API_RESPONSES
             )
 
             print(f"Cached URL: {cached_url}")
@@ -922,12 +933,11 @@ if __name__ == "__main__":
             # Prefetch multiple URLs
             urls_to_prefetch = [
                 "https://api.example.com/users",
-                "https://api.example.com/documents"
+                "https://api.example.com/documents",
             ]
 
             prefetch_results = await cdn_cache.prefetch_content(
-                urls_to_prefetch,
-                ContentType.API_RESPONSES
+                urls_to_prefetch, ContentType.API_RESPONSES
             )
 
             print(f"Prefetch results: {prefetch_results}")

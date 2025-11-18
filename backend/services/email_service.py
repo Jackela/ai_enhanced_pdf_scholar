@@ -36,7 +36,9 @@ class EmailConfig:
                     self.smtp_host = smtp_secrets.get("host", self.smtp_host)
                     self.smtp_port = smtp_secrets.get("port", self.smtp_port)
                     self.smtp_user = smtp_secrets.get("user", self.smtp_user)
-                    self.smtp_password = smtp_secrets.get("password", self.smtp_password)
+                    self.smtp_password = smtp_secrets.get(
+                        "password", self.smtp_password
+                    )
         except Exception as e:
             logger.warning(f"Could not load email secrets: {e}")
 
@@ -59,7 +61,7 @@ class EmailTemplate:
         return EmailTemplate(
             subject=self.subject.format(**kwargs),
             html_body=self.html_body.format(**kwargs),
-            text_body=self.text_body.format(**kwargs)
+            text_body=self.text_body.format(**kwargs),
         )
 
 
@@ -109,7 +111,7 @@ class EmailService:
 
                 Best regards,
                 The {app_name} Team
-                """
+                """,
             ),
             "password_reset": EmailTemplate(
                 subject="Password Reset Request - {app_name}",
@@ -145,7 +147,7 @@ class EmailService:
 
                 Best regards,
                 The {app_name} Team
-                """
+                """,
             ),
             "welcome": EmailTemplate(
                 subject="Welcome to {app_name}!",
@@ -176,8 +178,8 @@ class EmailService:
 
                 Best regards,
                 The {app_name} Team
-                """
-            )
+                """,
+            ),
         }
 
     def send_verification_email(
@@ -185,7 +187,7 @@ class EmailService:
         email: str,
         username: str,
         verification_token: str,
-        base_url: str = "http://localhost:3000"
+        base_url: str = "http://localhost:3000",
     ) -> bool:
         """
         Send email verification email.
@@ -205,14 +207,14 @@ class EmailService:
             app_name="AI Enhanced PDF Scholar",
             username=username,
             verification_url=verification_url,
-            expiry_hours=24
+            expiry_hours=24,
         )
 
         return self._send_email(
             to_email=email,
             subject=template.subject,
             html_body=template.html_body,
-            text_body=template.text_body
+            text_body=template.text_body,
         )
 
     def send_password_reset_email(
@@ -220,7 +222,7 @@ class EmailService:
         email: str,
         username: str,
         reset_token: str,
-        base_url: str = "http://localhost:3000"
+        base_url: str = "http://localhost:3000",
     ) -> bool:
         """
         Send password reset email.
@@ -240,14 +242,14 @@ class EmailService:
             app_name="AI Enhanced PDF Scholar",
             username=username,
             reset_url=reset_url,
-            expiry_hours=2
+            expiry_hours=2,
         )
 
         return self._send_email(
             to_email=email,
             subject=template.subject,
             html_body=template.html_body,
-            text_body=template.text_body
+            text_body=template.text_body,
         )
 
     def send_welcome_email(self, email: str, username: str) -> bool:
@@ -262,23 +264,18 @@ class EmailService:
             True if sent successfully, False otherwise
         """
         template = self.templates["welcome"].render(
-            app_name="AI Enhanced PDF Scholar",
-            username=username
+            app_name="AI Enhanced PDF Scholar", username=username
         )
 
         return self._send_email(
             to_email=email,
             subject=template.subject,
             html_body=template.html_body,
-            text_body=template.text_body
+            text_body=template.text_body,
         )
 
     def _send_email(
-        self,
-        to_email: str,
-        subject: str,
-        html_body: str,
-        text_body: str
+        self, to_email: str, subject: str, html_body: str, text_body: str
     ) -> bool:
         """
         Send email via SMTP.

@@ -13,13 +13,14 @@ logger = logging.getLogger(__name__)
 
 class Environment(str, Enum):
     """Application environment types with validation."""
+
     DEVELOPMENT = "development"
     TESTING = "testing"
     STAGING = "staging"
     PRODUCTION = "production"
 
     @classmethod
-    def from_string(cls, env_str: str) -> 'Environment':
+    def from_string(cls, env_str: str) -> "Environment":
         """Convert string to Environment enum with validation."""
         if not env_str:
             return cls.DEVELOPMENT
@@ -85,7 +86,9 @@ def get_current_environment() -> Environment:
         return Environment.TESTING
 
     # Special case: CI environments
-    if any(os.getenv(ci_var) for ci_var in ["CI", "CONTINUOUS_INTEGRATION", "BUILD_ID"]):
+    if any(
+        os.getenv(ci_var) for ci_var in ["CI", "CONTINUOUS_INTEGRATION", "BUILD_ID"]
+    ):
         logger.debug("Environment detected from CI variables: testing")
         return Environment.TESTING
 
@@ -118,13 +121,17 @@ def validate_environment_consistency() -> str | None:
 
         for indicator in dev_indicators:
             if indicator in cors_origins.lower():
-                issues.append(f"CORS origins contain development indicator '{indicator}' in production")
+                issues.append(
+                    f"CORS origins contain development indicator '{indicator}' in production"
+                )
 
     # Development environment checks
     elif current_env.is_development():
         # Warn about missing development tools
         if not os.getenv("DEBUG"):
-            issues.append("DEBUG not set in development environment (consider setting for better debugging)")
+            issues.append(
+                "DEBUG not set in development environment (consider setting for better debugging)"
+            )
 
     if issues:
         return "; ".join(issues)

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class AlertSeverity(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -26,6 +27,7 @@ class AlertSeverity(Enum):
 
 class AlertStatus(Enum):
     """Alert status."""
+
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -34,6 +36,7 @@ class AlertStatus(Enum):
 @dataclass
 class Alert:
     """Alert data structure."""
+
     alert_id: str
     alert_type: str
     severity: AlertSeverity
@@ -53,6 +56,7 @@ class Alert:
 @dataclass
 class AlertRule:
     """Alert rule configuration."""
+
     rule_id: str
     name: str
     description: str
@@ -93,7 +97,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=80.0,
                 severity=AlertSeverity.WARNING,
-                cooldown_minutes=5
+                cooldown_minutes=5,
             ),
             AlertRule(
                 rule_id="cpu_critical",
@@ -103,7 +107,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=90.0,
                 severity=AlertSeverity.CRITICAL,
-                cooldown_minutes=2
+                cooldown_minutes=2,
             ),
             AlertRule(
                 rule_id="memory_high",
@@ -113,7 +117,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=85.0,
                 severity=AlertSeverity.WARNING,
-                cooldown_minutes=5
+                cooldown_minutes=5,
             ),
             AlertRule(
                 rule_id="memory_critical",
@@ -123,7 +127,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=95.0,
                 severity=AlertSeverity.CRITICAL,
-                cooldown_minutes=1
+                cooldown_minutes=1,
             ),
             AlertRule(
                 rule_id="disk_high",
@@ -133,7 +137,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=90.0,
                 severity=AlertSeverity.WARNING,
-                cooldown_minutes=10
+                cooldown_minutes=10,
             ),
             AlertRule(
                 rule_id="api_slow",
@@ -143,7 +147,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=1000.0,
                 severity=AlertSeverity.WARNING,
-                cooldown_minutes=3
+                cooldown_minutes=3,
             ),
             AlertRule(
                 rule_id="api_errors",
@@ -153,7 +157,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=5.0,
                 severity=AlertSeverity.ERROR,
-                cooldown_minutes=5
+                cooldown_minutes=5,
             ),
             AlertRule(
                 rule_id="websocket_tasks_high",
@@ -163,7 +167,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=10.0,
                 severity=AlertSeverity.WARNING,
-                cooldown_minutes=3
+                cooldown_minutes=3,
             ),
             AlertRule(
                 rule_id="database_slow",
@@ -173,7 +177,7 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=500.0,
                 severity=AlertSeverity.WARNING,
-                cooldown_minutes=5
+                cooldown_minutes=5,
             ),
             AlertRule(
                 rule_id="connection_leaks",
@@ -183,8 +187,8 @@ class SimpleAlertingService:
                 condition=">",
                 threshold_value=0.0,
                 severity=AlertSeverity.ERROR,
-                cooldown_minutes=10
-            )
+                cooldown_minutes=10,
+            ),
         ]
 
         for rule in default_rules:
@@ -262,12 +266,16 @@ class SimpleAlertingService:
                         continue
 
                 # Extract metric value from nested data
-                metric_value = self._extract_metric_value(metrics_data, rule.metric_name)
+                metric_value = self._extract_metric_value(
+                    metrics_data, rule.metric_name
+                )
                 if metric_value is None:
                     continue
 
                 # Evaluate condition
-                if self._evaluate_condition(metric_value, rule.condition, rule.threshold_value):
+                if self._evaluate_condition(
+                    metric_value, rule.condition, rule.threshold_value
+                ):
                     alert = self._create_alert(rule, metric_value)
                     self._trigger_alert(alert)
                     self.rule_cooldowns[rule.rule_id] = current_time
@@ -275,7 +283,9 @@ class SimpleAlertingService:
         except Exception as e:
             logger.error(f"Error evaluating metrics: {e}")
 
-    def _extract_metric_value(self, metrics_data: dict[str, Any], metric_name: str) -> float | None:
+    def _extract_metric_value(
+        self, metrics_data: dict[str, Any], metric_name: str
+    ) -> float | None:
         """Extract metric value from nested metrics data structure."""
         try:
             # Direct lookup
@@ -292,7 +302,9 @@ class SimpleAlertingService:
         except (ValueError, TypeError):
             return None
 
-    def _evaluate_condition(self, value: float, condition: str, threshold: float) -> bool:
+    def _evaluate_condition(
+        self, value: float, condition: str, threshold: float
+    ) -> bool:
         """Evaluate alert condition."""
         try:
             if condition == ">":
@@ -328,10 +340,7 @@ class SimpleAlertingService:
             timestamp=datetime.now(),
             value=metric_value,
             threshold=rule.threshold_value,
-            metadata={
-                "rule_id": rule.rule_id,
-                "condition": rule.condition
-            }
+            metadata={"rule_id": rule.rule_id, "condition": rule.condition},
         )
 
     def _trigger_alert(self, alert: Alert):
@@ -347,7 +356,9 @@ class SimpleAlertingService:
             if len(self.alert_history) > 1000:
                 self.alert_history = self.alert_history[-500:]
 
-            logger.warning(f"ALERT: {alert.title} - {alert.message} (value: {alert.value}, threshold: {alert.threshold})")
+            logger.warning(
+                f"ALERT: {alert.title} - {alert.message} (value: {alert.value}, threshold: {alert.threshold})"
+            )
 
             # Notify callbacks
             for callback in self.alert_callbacks:
@@ -401,8 +412,7 @@ class SimpleAlertingService:
         try:
             cutoff_time = datetime.now() - timedelta(hours=hours_back)
             return [
-                alert for alert in self.alert_history
-                if alert.timestamp >= cutoff_time
+                alert for alert in self.alert_history if alert.timestamp >= cutoff_time
             ]
         except Exception as e:
             logger.error(f"Error getting alert history: {e}")
@@ -417,7 +427,7 @@ class SimpleAlertingService:
                 AlertSeverity.INFO.value: 0,
                 AlertSeverity.WARNING.value: 0,
                 AlertSeverity.ERROR.value: 0,
-                AlertSeverity.CRITICAL.value: 0
+                AlertSeverity.CRITICAL.value: 0,
             }
 
             for alert in recent_alerts:
@@ -429,15 +439,14 @@ class SimpleAlertingService:
                 "enabled_rules": len([r for r in self.rules.values() if r.enabled]),
                 "alerts_last_24h": len(recent_alerts),
                 "severity_breakdown": severity_counts,
-                "most_recent_alert": recent_alerts[-1].timestamp.isoformat() if recent_alerts else None
+                "most_recent_alert": (
+                    recent_alerts[-1].timestamp.isoformat() if recent_alerts else None
+                ),
             }
 
         except Exception as e:
             logger.error(f"Error getting alert statistics: {e}")
-            return {
-                "active_alerts": len(self.active_alerts),
-                "error": str(e)
-            }
+            return {"active_alerts": len(self.active_alerts), "error": str(e)}
 
     def clear_all_alerts(self) -> int:
         """Clear all active alerts and return count cleared."""

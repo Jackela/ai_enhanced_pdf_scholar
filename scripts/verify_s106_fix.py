@@ -14,7 +14,7 @@ def check_file_for_hardcoded_passwords(file_path):
     """Check a Python file for hardcoded passwords."""
     violations = []
 
-    with open(file_path, encoding='utf-8') as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
 
     # Parse the AST
@@ -31,17 +31,32 @@ def check_file_for_hardcoded_passwords(file_path):
                 if isinstance(target, ast.Name):
                     var_name = target.id.lower()
                     # Check if variable name contains password-related keywords
-                    if any(pwd in var_name for pwd in ['password', 'passwd', 'pwd', 'secret']):
+                    if any(
+                        pwd in var_name
+                        for pwd in ["password", "passwd", "pwd", "secret"]
+                    ):
                         # Check if the value is a hardcoded string literal
-                        if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                        if isinstance(node.value, ast.Constant) and isinstance(
+                            node.value.value, str
+                        ):
                             # Exclude empty strings and environment variable references
                             value = node.value.value
-                            if value and not value.startswith('$') and not value.startswith('os.'):
-                                violations.append({
-                                    'line': node.lineno,
-                                    'variable': target.id,
-                                    'value': value[:20] + '...' if len(value) > 20 else value
-                                })
+                            if (
+                                value
+                                and not value.startswith("$")
+                                and not value.startswith("os.")
+                            ):
+                                violations.append(
+                                    {
+                                        "line": node.lineno,
+                                        "variable": target.id,
+                                        "value": (
+                                            value[:20] + "..."
+                                            if len(value) > 20
+                                            else value
+                                        ),
+                                    }
+                                )
 
     return violations
 
@@ -53,7 +68,7 @@ def main():
     # Files to check
     files_to_check = [
         Path("src/database/migrations.py"),
-        Path("src/database/migrations/versions/006_add_authentication_tables.py")
+        Path("src/database/migrations/versions/006_add_authentication_tables.py"),
     ]
 
     total_violations = 0
@@ -83,21 +98,23 @@ def main():
         if not file_path.exists():
             continue
 
-        with open(file_path, encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         if 'os.getenv("DEFAULT_ADMIN_PASSWORD")' in content:
             print(f"  ✅ {file_path.name}: Using os.getenv('DEFAULT_ADMIN_PASSWORD')")
-        elif 'os.environ' in content and 'DEFAULT_ADMIN_PASSWORD' in content:
+        elif "os.environ" in content and "DEFAULT_ADMIN_PASSWORD" in content:
             print(f"  ✅ {file_path.name}: Using os.environ for DEFAULT_ADMIN_PASSWORD")
         else:
-            print(f"  ⚠️ {file_path.name}: Not using environment variables for admin password")
+            print(
+                f"  ⚠️ {file_path.name}: Not using environment variables for admin password"
+            )
 
     # Check .env.example
     env_example = Path(".env.example")
     if env_example.exists():
-        with open(env_example, encoding='utf-8') as f:
-            if 'DEFAULT_ADMIN_PASSWORD' in f.read():
+        with open(env_example, encoding="utf-8") as f:
+            if "DEFAULT_ADMIN_PASSWORD" in f.read():
                 print("  ✅ .env.example: Contains DEFAULT_ADMIN_PASSWORD template")
 
     print(f"\n{'='*60}")

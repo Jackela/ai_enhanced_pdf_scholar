@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProductionServices:
     """Container for all production services."""
+
     production_config: ProductionConfig
     secrets_integration: ProductionSecretsIntegration
     database_manager: ProductionDatabaseManager
@@ -78,70 +79,70 @@ class ProductionEnvironmentManager:
             await self._initialization_step(
                 "production_config",
                 "Loading production configuration",
-                self._initialize_production_config
+                self._initialize_production_config,
             )
 
             # Step 2: Initialize secrets management (Agent A1 integration)
             await self._initialization_step(
                 "secrets_integration",
                 "Initializing secrets management (Agent A1)",
-                self._initialize_secrets_integration
+                self._initialize_secrets_integration,
             )
 
             # Step 3: Initialize database with production configuration
             await self._initialization_step(
                 "database_manager",
                 "Initializing production database",
-                self._initialize_database_manager
+                self._initialize_database_manager,
             )
 
             # Step 4: Initialize Redis cluster
             await self._initialization_step(
                 "redis_manager",
                 "Initializing Redis cluster",
-                self._initialize_redis_manager
+                self._initialize_redis_manager,
             )
 
             # Step 5: Initialize metrics and alerting (Agent A2 integration)
             await self._initialization_step(
                 "metrics_and_alerting",
                 "Initializing metrics and alerting (Agent A2)",
-                self._initialize_metrics_and_alerting
+                self._initialize_metrics_and_alerting,
             )
 
             # Step 6: Initialize security components
             await self._initialization_step(
                 "security_components",
                 "Initializing security components",
-                self._initialize_security_components
+                self._initialize_security_components,
             )
 
             # Step 7: Initialize monitoring service
             await self._initialization_step(
                 "monitoring_service",
                 "Initializing production monitoring",
-                self._initialize_monitoring_service
+                self._initialize_monitoring_service,
             )
 
             # Step 8: Start all monitoring and background tasks
             await self._initialization_step(
                 "background_tasks",
                 "Starting background monitoring tasks",
-                self._start_background_tasks
+                self._start_background_tasks,
             )
 
             # Step 9: Perform health checks
             await self._initialization_step(
                 "health_checks",
                 "Running initial health checks",
-                self._run_initial_health_checks
+                self._run_initial_health_checks,
             )
 
             # Step 10: Register shutdown handlers
             await self._initialization_step(
                 "shutdown_handlers",
                 "Registering shutdown handlers",
-                self._register_shutdown_handlers
+                self._register_shutdown_handlers,
             )
 
             # Initialization complete
@@ -150,11 +151,15 @@ class ProductionEnvironmentManager:
 
             logger.info("=== Production Environment Initialized Successfully ===")
             logger.info(f"Total initialization time: {total_time:.2f} seconds")
-            logger.info(f"Initialization steps completed: {len(self.initialization_steps)}")
+            logger.info(
+                f"Initialization steps completed: {len(self.initialization_steps)}"
+            )
 
             # Record initialization metrics
             if self.services.metrics_service:
-                self.services.metrics_service.record_user_activity("system", "production_startup")
+                self.services.metrics_service.record_user_activity(
+                    "system", "production_startup"
+                )
                 self.services.metrics_service.update_health_status("healthy")
 
             return self.services
@@ -169,10 +174,7 @@ class ProductionEnvironmentManager:
             raise
 
     async def _initialization_step(
-        self,
-        step_name: str,
-        description: str,
-        step_function
+        self, step_name: str, description: str, step_function
     ):
         """Execute an initialization step with monitoring."""
         step_start = time.time()
@@ -187,7 +189,7 @@ class ProductionEnvironmentManager:
                 "description": description,
                 "duration_seconds": step_duration,
                 "success": True,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
             self.initialization_steps.append(step_record)
@@ -204,7 +206,7 @@ class ProductionEnvironmentManager:
                 "duration_seconds": step_duration,
                 "success": False,
                 "error": str(e),
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
             self.initialization_steps.append(step_record)
@@ -229,7 +231,7 @@ class ProductionEnvironmentManager:
                 monitoring_service=None,
                 security_headers=None,
                 ip_whitelist=None,
-                request_signing=None
+                request_signing=None,
             )
         else:
             self.services.production_config = production_config
@@ -265,7 +267,7 @@ class ProductionEnvironmentManager:
         redis_manager = create_redis_cluster_manager(
             nodes=redis_config["cluster_nodes"],
             backend_type="cluster" if redis_config["cluster_enabled"] else "standalone",
-            max_connections=redis_config["connection_pool_kwargs"]["max_connections"]
+            max_connections=redis_config["connection_pool_kwargs"]["max_connections"],
         )
 
         await redis_manager.initialize()
@@ -278,9 +280,7 @@ class ProductionEnvironmentManager:
 
         # Initialize metrics service
         metrics_service = MetricsService(
-            app_name="ai_pdf_scholar",
-            version="2.1.0",
-            enable_push_gateway=True
+            app_name="ai_pdf_scholar", version="2.1.0", enable_push_gateway=True
         )
 
         # Initialize alerting service
@@ -304,21 +304,19 @@ class ProductionEnvironmentManager:
 
         # Initialize security headers
         security_headers = create_production_security_headers(
-            self.services.production_config,
-            self.services.metrics_service
+            self.services.production_config, self.services.metrics_service
         )
 
         # Initialize IP whitelist
         ip_whitelist = create_production_ip_whitelist(
-            self.services.production_config,
-            self.services.metrics_service
+            self.services.production_config, self.services.metrics_service
         )
 
         # Initialize request signing
         request_signing = create_production_request_signing(
             self.services.secrets_integration.secrets_manager,
             self.services.production_config,
-            self.services.metrics_service
+            self.services.metrics_service,
         )
 
         self.services.security_headers = security_headers
@@ -337,7 +335,7 @@ class ProductionEnvironmentManager:
             alerting_service=self.services.alerting_service,
             secrets_integration=self.services.secrets_integration,
             database_manager=self.services.database_manager,
-            redis_manager=self.services.redis_manager
+            redis_manager=self.services.redis_manager,
         )
 
         self.services.monitoring_service = monitoring_service
@@ -358,12 +356,15 @@ class ProductionEnvironmentManager:
             raise RuntimeError(f"Critical health check failures: {critical_issues}")
 
         if health_status["status"] == "degraded":
-            logger.warning(f"System started in degraded state: {health_status.get('non_critical_issues', [])}")
+            logger.warning(
+                f"System started in degraded state: {health_status.get('non_critical_issues', [])}"
+            )
 
         logger.info(f"Initial health check passed: {health_status['status']}")
 
     async def _register_shutdown_handlers(self):
         """Register graceful shutdown handlers."""
+
         def signal_handler(signum, frame):
             logger.info(f"Received signal {signum}, initiating graceful shutdown")
             asyncio.create_task(self.shutdown_production_environment())
@@ -395,7 +396,9 @@ class ProductionEnvironmentManager:
             await self._cleanup_services()
 
             shutdown_time = time.time() - shutdown_start
-            logger.info(f"=== Production Environment Shutdown Completed ({shutdown_time:.2f}s) ===")
+            logger.info(
+                f"=== Production Environment Shutdown Completed ({shutdown_time:.2f}s) ==="
+            )
 
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
@@ -442,21 +445,49 @@ class ProductionEnvironmentManager:
 
     def get_initialization_report(self) -> dict[str, Any]:
         """Get detailed initialization report."""
-        total_time = time.time() - self.startup_start_time if hasattr(self, 'startup_start_time') else 0
+        total_time = (
+            time.time() - self.startup_start_time
+            if hasattr(self, "startup_start_time")
+            else 0
+        )
 
         return {
             "initialization_complete": self.initialization_complete,
             "total_initialization_time": total_time,
             "steps": self.initialization_steps,
-            "failed_steps": [step for step in self.initialization_steps if not step["success"]],
+            "failed_steps": [
+                step for step in self.initialization_steps if not step["success"]
+            ],
             "services_initialized": {
-                "production_config": self.services.production_config is not None if self.services else False,
-                "secrets_integration": self.services.secrets_integration is not None if self.services else False,
-                "database_manager": self.services.database_manager is not None if self.services else False,
-                "redis_manager": self.services.redis_manager is not None if self.services else False,
-                "metrics_service": self.services.metrics_service is not None if self.services else False,
-                "monitoring_service": self.services.monitoring_service is not None if self.services else False
-            }
+                "production_config": (
+                    self.services.production_config is not None
+                    if self.services
+                    else False
+                ),
+                "secrets_integration": (
+                    self.services.secrets_integration is not None
+                    if self.services
+                    else False
+                ),
+                "database_manager": (
+                    self.services.database_manager is not None
+                    if self.services
+                    else False
+                ),
+                "redis_manager": (
+                    self.services.redis_manager is not None if self.services else False
+                ),
+                "metrics_service": (
+                    self.services.metrics_service is not None
+                    if self.services
+                    else False
+                ),
+                "monitoring_service": (
+                    self.services.monitoring_service is not None
+                    if self.services
+                    else False
+                ),
+            },
         }
 
 
@@ -520,7 +551,7 @@ def setup_production_app(app):
     @app.get("/health/production")
     async def production_health():
         """Get production environment health status."""
-        if hasattr(app.state, 'production_services'):
+        if hasattr(app.state, "production_services"):
             services = app.state.production_services
             if services and services.monitoring_service:
                 return services.monitoring_service.get_overall_health()

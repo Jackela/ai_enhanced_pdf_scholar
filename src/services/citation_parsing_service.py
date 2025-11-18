@@ -122,14 +122,18 @@ class CitationParsingService:
                 citation = {
                     "raw_text": ref_data.get("raw_ref", ""),
                     "authors": self._extract_refextract_authors(ref_data),
-                    "title": ref_data.get("title", {}).get("title")
-                    if ref_data.get("title")
-                    else None,
+                    "title": (
+                        ref_data.get("title", {}).get("title")
+                        if ref_data.get("title")
+                        else None
+                    ),
                     "publication_year": self._extract_refextract_year(ref_data),
                     "journal_or_venue": self._extract_refextract_journal(ref_data),
-                    "doi": ref_data.get("doi", {}).get("value")
-                    if ref_data.get("doi")
-                    else None,
+                    "doi": (
+                        ref_data.get("doi", {}).get("value")
+                        if ref_data.get("doi")
+                        else None
+                    ),
                     "citation_type": self._classify_refextract_type(ref_data),
                     "confidence_score": 0.85,  # refextract typically has high confidence
                 }

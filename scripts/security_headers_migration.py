@@ -18,12 +18,15 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
 class MigrationPhase(str, Enum):
     """Security headers migration phases."""
+
     PHASE_1_MONITORING = "phase_1_monitoring"
     PHASE_2_REPORT_ONLY = "phase_2_report_only"
     PHASE_3_ENFORCE_BASIC = "phase_3_enforce_basic"
@@ -46,7 +49,9 @@ class SecurityHeadersMigration:
         if self.config_file.exists():
             with open(self.config_file) as f:
                 data = json.load(f)
-                return MigrationPhase(data.get("current_phase", MigrationPhase.PHASE_1_MONITORING))
+                return MigrationPhase(
+                    data.get("current_phase", MigrationPhase.PHASE_1_MONITORING)
+                )
         return MigrationPhase.PHASE_1_MONITORING
 
     def _save_current_phase(self, phase: MigrationPhase) -> None:
@@ -56,7 +61,7 @@ class SecurityHeadersMigration:
             "updated_at": datetime.utcnow().isoformat(),
             "environment": self.environment,
         }
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, "w") as f:
             json.dump(data, f, indent=2)
 
     def get_phase_config(self, phase: MigrationPhase | None = None) -> dict[str, any]:
@@ -71,7 +76,6 @@ class SecurityHeadersMigration:
                 "PERMISSIONS_POLICY_ENABLED": "false",
                 "description": "Monitoring only - minimal security headers",
             },
-
             MigrationPhase.PHASE_2_REPORT_ONLY: {
                 "CSP_ENABLED": "true",
                 "CSP_REPORT_ONLY": "true",
@@ -80,7 +84,6 @@ class SecurityHeadersMigration:
                 "PERMISSIONS_POLICY_ENABLED": "true",
                 "description": "CSP in Report-Only mode, short HSTS",
             },
-
             MigrationPhase.PHASE_3_ENFORCE_BASIC: {
                 "CSP_ENABLED": "true",
                 "CSP_REPORT_ONLY": "false",
@@ -90,7 +93,6 @@ class SecurityHeadersMigration:
                 "PERMISSIONS_POLICY_ENABLED": "true",
                 "description": "Basic CSP enforcement, 1-day HSTS",
             },
-
             MigrationPhase.PHASE_4_ENFORCE_STRICT: {
                 "CSP_ENABLED": "true",
                 "CSP_REPORT_ONLY": "false",
@@ -102,7 +104,6 @@ class SecurityHeadersMigration:
                 "EXPECT_CT_ENABLED": "true",
                 "description": "Strict CSP enforcement, 30-day HSTS",
             },
-
             MigrationPhase.PHASE_5_PRODUCTION_READY: {
                 "CSP_ENABLED": "true",
                 "CSP_REPORT_ONLY": "false",
@@ -125,7 +126,9 @@ class SecurityHeadersMigration:
 
         return configs[phase]
 
-    def validate_phase_requirements(self, phase: MigrationPhase) -> tuple[bool, list[str]]:
+    def validate_phase_requirements(
+        self, phase: MigrationPhase
+    ) -> tuple[bool, list[str]]:
         """Validate requirements for moving to a specific phase."""
         issues = []
 
@@ -138,7 +141,9 @@ class SecurityHeadersMigration:
             # Check CSP violations
             violations = self._get_csp_violations_count()
             if violations > 100:
-                issues.append(f"High CSP violation count: {violations}. Review and fix before enforcing.")
+                issues.append(
+                    f"High CSP violation count: {violations}. Review and fix before enforcing."
+                )
 
         elif phase == MigrationPhase.PHASE_4_ENFORCE_STRICT:
             # Check HTTPS configuration
@@ -167,7 +172,9 @@ class SecurityHeadersMigration:
 
         with open(self.config_file) as f:
             data = json.load(f)
-            updated_at = datetime.fromisoformat(data.get("updated_at", datetime.utcnow().isoformat()))
+            updated_at = datetime.fromisoformat(
+                data.get("updated_at", datetime.utcnow().isoformat())
+            )
             return (datetime.utcnow() - updated_at).days >= days
 
     def _get_csp_violations_count(self) -> int:
@@ -220,7 +227,10 @@ class SecurityHeadersMigration:
         # Validate requirements
         valid, issues = self.validate_phase_requirements(next_phase)
         if not valid:
-            return False, f"Cannot advance to {next_phase.value}. Issues: {', '.join(issues)}"
+            return (
+                False,
+                f"Cannot advance to {next_phase.value}. Issues: {', '.join(issues)}",
+            )
 
         # Update phase
         self.current_phase = next_phase
@@ -268,7 +278,7 @@ class SecurityHeadersMigration:
             if key != "description":
                 lines.append(f"{key}={value}")
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             f.write("\n".join(lines))
 
         logger.info(f"Generated environment file: {output_file}")
@@ -331,7 +341,9 @@ class SecurityHeadersMigration:
         ]
 
         for i, phase in enumerate(phases, 1):
-            marker = "✓" if phases.index(self.current_phase) >= phases.index(phase) else "○"
+            marker = (
+                "✓" if phases.index(self.current_phase) >= phases.index(phase) else "○"
+            )
             print(f"  {marker} Phase {i}: {phase.value}")
 
         print(f"{'='*60}\n")
@@ -368,11 +380,11 @@ echo "⚠️  Remember to restart the application for changes to take effect"
 """
 
         rollback_file = Path("rollback_security_headers.sh")
-        with open(rollback_file, 'w') as f:
+        with open(rollback_file, "w") as f:
             f.write(script_content)
 
         # Make executable on Unix-like systems
-        if os.name != 'nt':
+        if os.name != "nt":
             os.chmod(rollback_file, 0o755)
 
         logger.info(f"Generated rollback script: {rollback_file}")
@@ -383,7 +395,14 @@ def main():
     parser = argparse.ArgumentParser(description="Security Headers Migration Tool")
     parser.add_argument(
         "command",
-        choices=["status", "advance", "rollback", "generate-env", "test", "generate-rollback"],
+        choices=[
+            "status",
+            "advance",
+            "rollback",
+            "generate-env",
+            "test",
+            "generate-rollback",
+        ],
         help="Command to execute",
     )
     parser.add_argument(

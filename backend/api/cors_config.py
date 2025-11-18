@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class Environment(str, Enum):
     """Application environment types."""
+
     DEVELOPMENT = "development"
     TESTING = "testing"
     STAGING = "staging"
@@ -65,14 +66,22 @@ class CORSConfig:
         # Parse origins from environment or use safe defaults
         origins_str = os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:3000,http://localhost:8000,http://127.0.0.1:3000,http://127.0.0.1:8000"
+            "http://localhost:3000,http://localhost:8000,http://127.0.0.1:3000,http://127.0.0.1:8000",
         )
         origins = self._parse_origins(origins_str)
 
         return {
             "allow_origins": origins,
             "allow_credentials": True,
-            "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+            "allow_methods": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "OPTIONS",
+                "HEAD",
+                "PATCH",
+            ],
             "allow_headers": [
                 "Accept",
                 "Accept-Language",
@@ -89,7 +98,9 @@ class CORSConfig:
     def _get_testing_config(self) -> dict[str, Any]:
         """Get CORS configuration for testing environment."""
         # Testing should be restrictive but allow test origins
-        origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+        origins_str = os.getenv(
+            "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+        )
         origins = self._parse_origins(origins_str)
 
         return {
@@ -138,12 +149,20 @@ class CORSConfig:
 
         if not origins:
             logger.error("CORS_ORIGINS must be explicitly set in production")
-            raise ValueError("CORS_ORIGINS environment variable is required in production")
+            raise ValueError(
+                "CORS_ORIGINS environment variable is required in production"
+            )
 
         return {
             "allow_origins": origins,
             "allow_credentials": True,
-            "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Minimal necessary methods
+            "allow_methods": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "OPTIONS",
+            ],  # Minimal necessary methods
             "allow_headers": [
                 "Accept",
                 "Content-Type",
@@ -191,19 +210,27 @@ class CORSConfig:
         localhost_patterns = ["localhost", "127.0.0.1"]
         for origin in origins:
             if any(pattern in origin.lower() for pattern in localhost_patterns):
-                security_issues.append(f"Localhost origin '{origin}' should not be used in production")
+                security_issues.append(
+                    f"Localhost origin '{origin}' should not be used in production"
+                )
 
         # Must have at least one origin
         if not origins:
-            security_issues.append("At least one origin must be configured in production")
+            security_issues.append(
+                "At least one origin must be configured in production"
+            )
 
         # All origins should use HTTPS in production
         for origin in origins:
             if origin.startswith("http://") and not origin.startswith("https://"):
-                security_issues.append(f"Origin '{origin}' should use HTTPS in production")
+                security_issues.append(
+                    f"Origin '{origin}' should use HTTPS in production"
+                )
 
         if security_issues:
-            error_msg = "CORS security validation failed:\n" + "\n".join(f"- {issue}" for issue in security_issues)
+            error_msg = "CORS security validation failed:\n" + "\n".join(
+                f"- {issue}" for issue in security_issues
+            )
             logger.error(error_msg)
             raise ValueError(error_msg)
 
@@ -269,6 +296,8 @@ def get_safe_cors_origins() -> list[str]:
     valid_origins = [origin for origin in origins if validate_origin_format(origin)]
 
     if len(valid_origins) != len(origins):
-        logger.warning(f"Filtered out {len(origins) - len(valid_origins)} invalid CORS origins")
+        logger.warning(
+            f"Filtered out {len(origins) - len(valid_origins)} invalid CORS origins"
+        )
 
     return valid_origins

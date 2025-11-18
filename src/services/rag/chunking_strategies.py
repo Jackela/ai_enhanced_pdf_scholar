@@ -434,9 +434,9 @@ class CitationAwareChunking(ChunkingStrategy):
             "metadata": {
                 "type": "citation_aware",
                 "size": len(text),
-                "citation_density": len(citations) / len(text.split())
-                if text.split()
-                else 0,
+                "citation_density": (
+                    len(citations) / len(text.split()) if text.split() else 0
+                ),
             },
         }
 

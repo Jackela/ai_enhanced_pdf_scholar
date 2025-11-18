@@ -35,6 +35,7 @@ active_subscriptions: dict[str, set[MetricType]] = {}
 
 class MetricsSubscriptionRequest(BaseModel):
     """Request model for metrics subscription."""
+
     action: str = Field(..., regex="^(subscribe|unsubscribe)$")
     metric_types: list[str] = Field(default_factory=list)
     update_interval: float | None = Field(1.0, ge=0.1, le=60.0)  # seconds
@@ -63,13 +64,15 @@ class MetricsWebSocketHandler:
                 metrics_collector.subscribe_to_metrics(self._on_metrics_update)
 
             # Send initial welcome message
-            await self.send_message({
-                "type": "connected",
-                "client_id": self.client_id,
-                "message": "Connected to real-time metrics stream",
-                "timestamp": datetime.now().isoformat(),
-                "available_metrics": [metric.value for metric in MetricType]
-            })
+            await self.send_message(
+                {
+                    "type": "connected",
+                    "client_id": self.client_id,
+                    "message": "Connected to real-time metrics stream",
+                    "timestamp": datetime.now().isoformat(),
+                    "available_metrics": [metric.value for metric in MetricType],
+                }
+            )
 
             # Start listening for client messages
             while True:
@@ -102,7 +105,9 @@ class MetricsWebSocketHandler:
             elif message_type == "get_current":
                 await self.handle_current_metrics_request()
             elif message_type == "ping":
-                await self.send_message({"type": "pong", "timestamp": datetime.now().isoformat()})
+                await self.send_message(
+                    {"type": "pong", "timestamp": datetime.now().isoformat()}
+                )
             else:
                 await self.send_error(f"Unknown message type: {message_type}")
 
@@ -140,14 +145,18 @@ class MetricsWebSocketHandler:
                 self.streaming_task.cancel()
                 self.streaming_task = None
 
-            await self.send_message({
-                "type": "subscription_updated",
-                "subscribed_metrics": [m.value for m in self.subscriptions],
-                "update_interval": self.update_interval,
-                "timestamp": datetime.now().isoformat()
-            })
+            await self.send_message(
+                {
+                    "type": "subscription_updated",
+                    "subscribed_metrics": [m.value for m in self.subscriptions],
+                    "update_interval": self.update_interval,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
-            logger.info(f"Client {self.client_id} subscribed to {len(self.subscriptions)} metrics")
+            logger.info(
+                f"Client {self.client_id} subscribed to {len(self.subscriptions)} metrics"
+            )
 
         except Exception as e:
             logger.error(f"Error handling subscription: {e}")
@@ -179,13 +188,17 @@ class MetricsWebSocketHandler:
                 self.streaming_task.cancel()
                 self.streaming_task = None
 
-            await self.send_message({
-                "type": "unsubscription_updated",
-                "remaining_subscriptions": [m.value for m in self.subscriptions],
-                "timestamp": datetime.now().isoformat()
-            })
+            await self.send_message(
+                {
+                    "type": "unsubscription_updated",
+                    "remaining_subscriptions": [m.value for m in self.subscriptions],
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
-            logger.info(f"Client {self.client_id} unsubscribed, {len(self.subscriptions)} remaining")
+            logger.info(
+                f"Client {self.client_id} unsubscribed, {len(self.subscriptions)} remaining"
+            )
 
         except Exception as e:
             logger.error(f"Error handling unsubscription: {e}")
@@ -211,12 +224,14 @@ class MetricsWebSocketHandler:
             else:
                 filtered_metrics = current_metrics
 
-            await self.send_message({
-                "type": "current_metrics",
-                "metrics": filtered_metrics,
-                "health_summary": health_summary,
-                "timestamp": datetime.now().isoformat()
-            })
+            await self.send_message(
+                {
+                    "type": "current_metrics",
+                    "metrics": filtered_metrics,
+                    "health_summary": health_summary,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         except Exception as e:
             logger.error(f"Error handling current metrics request: {e}")
@@ -237,15 +252,19 @@ class MetricsWebSocketHandler:
                 filtered_metrics = {}
                 for metric_type in self.subscriptions:
                     if metric_type.value in current_metrics:
-                        filtered_metrics[metric_type.value] = current_metrics[metric_type.value]
+                        filtered_metrics[metric_type.value] = current_metrics[
+                            metric_type.value
+                        ]
 
                 # Send update if we have data
                 if filtered_metrics:
-                    await self.send_message({
-                        "type": "metrics_update",
-                        "metrics": filtered_metrics,
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    await self.send_message(
+                        {
+                            "type": "metrics_update",
+                            "metrics": filtered_metrics,
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
                     self.last_update = datetime.now()
 
                 await asyncio.sleep(self.update_interval)
@@ -255,7 +274,9 @@ class MetricsWebSocketHandler:
         except Exception as e:
             logger.error(f"Error in metrics streaming for client {self.client_id}: {e}")
 
-    async def _on_metrics_update(self, metrics_update: dict[MetricType, dict[str, Any]]):
+    async def _on_metrics_update(
+        self, metrics_update: dict[MetricType, dict[str, Any]]
+    ):
         """Handle metrics update from collector."""
         try:
             # Only process if we have active subscriptions
@@ -270,11 +291,13 @@ class MetricsWebSocketHandler:
 
             # Send update if relevant
             if filtered_update:
-                await self.send_message({
-                    "type": "live_metrics_update",
-                    "metrics": filtered_update,
-                    "timestamp": datetime.now().isoformat()
-                })
+                await self.send_message(
+                    {
+                        "type": "live_metrics_update",
+                        "metrics": filtered_update,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
 
         except Exception as e:
             logger.error(f"Error handling metrics update: {e}")
@@ -290,11 +313,13 @@ class MetricsWebSocketHandler:
     async def send_error(self, error_message: str):
         """Send error message to client."""
         try:
-            await self.send_message({
-                "type": "error",
-                "error": error_message,
-                "timestamp": datetime.now().isoformat()
-            })
+            await self.send_message(
+                {
+                    "type": "error",
+                    "error": error_message,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
         except Exception as e:
             logger.error(f"Failed to send error message: {e}")
 
@@ -316,7 +341,9 @@ class MetricsWebSocketHandler:
             # Remove from global tracking
             active_subscriptions.pop(self.client_id, None)
 
-            logger.debug(f"Cleaned up metrics WebSocket handler for client {self.client_id}")
+            logger.debug(
+                f"Cleaned up metrics WebSocket handler for client {self.client_id}"
+            )
 
         except Exception as e:
             logger.error(f"Error during cleanup for client {self.client_id}: {e}")
@@ -362,29 +389,37 @@ async def system_health_websocket(websocket: WebSocket, client_id: str):
                 if MetricType.SYSTEM.value in current_metrics:
                     sys_data = current_metrics[MetricType.SYSTEM.value]
 
-                    if sys_data.get('cpu_percent', 0) > 90:
-                        alerts.append({
-                            "type": "cpu",
-                            "severity": "critical",
-                            "message": f"CPU usage at {sys_data['cpu_percent']:.1f}%",
-                            "value": sys_data['cpu_percent']
-                        })
+                    if sys_data.get("cpu_percent", 0) > 90:
+                        alerts.append(
+                            {
+                                "type": "cpu",
+                                "severity": "critical",
+                                "message": f"CPU usage at {sys_data['cpu_percent']:.1f}%",
+                                "value": sys_data["cpu_percent"],
+                            }
+                        )
 
-                    if sys_data.get('memory_percent', 0) > 90:
-                        alerts.append({
-                            "type": "memory",
-                            "severity": "critical",
-                            "message": f"Memory usage at {sys_data['memory_percent']:.1f}%",
-                            "value": sys_data['memory_percent']
-                        })
+                    if sys_data.get("memory_percent", 0) > 90:
+                        alerts.append(
+                            {
+                                "type": "memory",
+                                "severity": "critical",
+                                "message": f"Memory usage at {sys_data['memory_percent']:.1f}%",
+                                "value": sys_data["memory_percent"],
+                            }
+                        )
 
                 # Send health update
-                await websocket.send_text(json.dumps({
-                    "type": "health_update",
-                    "health_summary": health_summary,
-                    "alerts": alerts,
-                    "timestamp": datetime.now().isoformat()
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "health_update",
+                            "health_summary": health_summary,
+                            "alerts": alerts,
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
+                )
 
                 # Update every 5 seconds for health monitoring
                 await asyncio.sleep(5)
@@ -409,7 +444,7 @@ async def get_websocket_stats():
             "total_connections": len(active_subscriptions),
             "connections_by_metrics": {},
             "most_popular_metrics": {},
-            "total_subscriptions": 0
+            "total_subscriptions": 0,
         }
 
         # Count subscriptions by metric type
@@ -419,22 +454,22 @@ async def get_websocket_stats():
             for metric in subscriptions:
                 metric_counts[metric.value] = metric_counts.get(metric.value, 0) + 1
 
-        stats["most_popular_metrics"] = dict(sorted(
-            metric_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        ))
+        stats["most_popular_metrics"] = dict(
+            sorted(metric_counts.items(), key=lambda x: x[1], reverse=True)
+        )
 
         # Connections by metric count
         for client_id, subscriptions in active_subscriptions.items():
             count = len(subscriptions)
-            stats["connections_by_metrics"][count] = stats["connections_by_metrics"].get(count, 0) + 1
+            stats["connections_by_metrics"][count] = (
+                stats["connections_by_metrics"].get(count, 0) + 1
+            )
 
         return {
             "status": "success",
             "message": "WebSocket statistics retrieved",
             "data": stats,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except Exception as e:
@@ -442,13 +477,12 @@ async def get_websocket_stats():
         return {
             "status": "error",
             "message": f"Failed to get WebSocket stats: {e}",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
 
 def initialize_metrics_websocket(
-    collector_instance: RealTimeMetricsCollector,
-    ws_manager: WebSocketManager
+    collector_instance: RealTimeMetricsCollector, ws_manager: WebSocketManager
 ):
     """Initialize metrics WebSocket services."""
     global metrics_collector, websocket_manager

@@ -497,11 +497,11 @@ class CitationService:
                 "pattern_count": len(edges),
                 "relation_types": relation_types,
                 "confidence_distribution": confidence_distribution,
-                "dominant_relation_type": max(
-                    relation_types.items(), key=lambda x: x[1]
-                )[0]
-                if relation_types
-                else "none",
+                "dominant_relation_type": (
+                    max(relation_types.items(), key=lambda x: x[1])[0]
+                    if relation_types
+                    else "none"
+                ),
             }
 
         except Exception as e:
@@ -589,10 +589,11 @@ class CitationService:
                     {"node_id": node_id, "centrality": centrality}
                     for node_id, centrality in most_central
                 ],
-                "avg_centrality": sum(degree_centrality.values())
-                / len(degree_centrality)
-                if degree_centrality
-                else 0.0,
+                "avg_centrality": (
+                    sum(degree_centrality.values()) / len(degree_centrality)
+                    if degree_centrality
+                    else 0.0
+                ),
             }
 
         except Exception as e:

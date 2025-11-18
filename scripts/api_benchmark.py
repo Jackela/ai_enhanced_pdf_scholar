@@ -13,7 +13,9 @@ from datetime import datetime
 from pathlib import Path
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 try:
@@ -29,7 +31,7 @@ class APIBenchmark:
     """Benchmark suite for API endpoint performance"""
 
     def __init__(self, base_url: str = "http://localhost:8000"):
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.results = {}
         self.client = None
 
@@ -37,7 +39,7 @@ class APIBenchmark:
         """Setup HTTP client"""
         self.client = httpx.AsyncClient(
             timeout=30.0,
-            limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)
+            limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
         )
 
     async def cleanup(self):
@@ -45,8 +47,9 @@ class APIBenchmark:
         if self.client:
             await self.client.aclose()
 
-    async def benchmark_endpoint(self, method: str, endpoint: str, runs: int = 50,
-                                payload: dict | None = None) -> dict:
+    async def benchmark_endpoint(
+        self, method: str, endpoint: str, runs: int = 50, payload: dict | None = None
+    ) -> dict:
         """Benchmark a single API endpoint"""
         logger.info(f"Benchmarking {method} {endpoint} with {runs} runs")
 
@@ -61,9 +64,13 @@ class APIBenchmark:
                 if method.upper() == "GET":
                     response = await self.client.get(f"{self.base_url}{endpoint}")
                 elif method.upper() == "POST":
-                    response = await self.client.post(f"{self.base_url}{endpoint}", json=payload)
+                    response = await self.client.post(
+                        f"{self.base_url}{endpoint}", json=payload
+                    )
                 elif method.upper() == "PUT":
-                    response = await self.client.put(f"{self.base_url}{endpoint}", json=payload)
+                    response = await self.client.put(
+                        f"{self.base_url}{endpoint}", json=payload
+                    )
                 elif method.upper() == "DELETE":
                     response = await self.client.delete(f"{self.base_url}{endpoint}")
                 else:
@@ -85,7 +92,7 @@ class APIBenchmark:
         if not response_times:
             return {
                 "error": f"All requests failed. Errors: {errors[:5]}",
-                "total_errors": len(errors)
+                "total_errors": len(errors),
             }
 
         # Calculate statistics
@@ -108,12 +115,24 @@ class APIBenchmark:
                 "max": max(response_times),
                 "mean": statistics.mean(response_times),
                 "median": statistics.median(response_times),
-                "p95": statistics.quantiles(response_times, n=20)[18] if len(response_times) >= 20 else max(response_times),
-                "p99": statistics.quantiles(response_times, n=100)[98] if len(response_times) >= 100 else max(response_times)
+                "p95": (
+                    statistics.quantiles(response_times, n=20)[18]
+                    if len(response_times) >= 20
+                    else max(response_times)
+                ),
+                "p99": (
+                    statistics.quantiles(response_times, n=100)[98]
+                    if len(response_times) >= 100
+                    else max(response_times)
+                ),
             },
             "status_code_distribution": status_distribution,
-            "throughput_rps": len(response_times) / (sum(response_times) / 1000) if response_times else 0,
-            "errors": errors[:10]  # Keep first 10 errors for analysis
+            "throughput_rps": (
+                len(response_times) / (sum(response_times) / 1000)
+                if response_times
+                else 0
+            ),
+            "errors": errors[:10],  # Keep first 10 errors for analysis
         }
 
     async def benchmark_system_endpoints(self) -> dict:
@@ -132,7 +151,9 @@ class APIBenchmark:
         for method, endpoint in endpoints:
             try:
                 result = await self.benchmark_endpoint(method, endpoint, runs=30)
-                results[f"{method}_{endpoint.replace('/', '_').replace('__', '_')}"] = result
+                results[f"{method}_{endpoint.replace('/', '_').replace('__', '_')}"] = (
+                    result
+                )
             except Exception as e:
                 logger.error(f"Failed to benchmark {method} {endpoint}: {e}")
                 results[f"{method}_{endpoint.replace('/', '_').replace('__', '_')}"] = {
@@ -159,7 +180,7 @@ class APIBenchmark:
             try:
                 result = await self.benchmark_endpoint(method, endpoint, runs=30)
                 endpoint_key = f"{method}_{endpoint.split('?')[0].replace('/', '_').replace('__', '_')}"
-                if '?' in endpoint:
+                if "?" in endpoint:
                     endpoint_key += "_with_params"
                 results[endpoint_key] = result
             except Exception as e:
@@ -186,9 +207,7 @@ class APIBenchmark:
         for i, query_payload in enumerate(queries):
             try:
                 result = await self.benchmark_endpoint(
-                    "POST", "/api/rag/query",
-                    runs=20,
-                    payload=query_payload
+                    "POST", "/api/rag/query", runs=20, payload=query_payload
                 )
                 results[f"POST_rag_query_{i+1}"] = result
             except Exception as e:
@@ -210,7 +229,9 @@ class APIBenchmark:
         for method, endpoint in endpoints:
             try:
                 result = await self.benchmark_endpoint(method, endpoint, runs=20)
-                results[f"{method}_{endpoint.replace('/', '_').replace('__', '_')}"] = result
+                results[f"{method}_{endpoint.replace('/', '_').replace('__', '_')}"] = (
+                    result
+                )
             except Exception as e:
                 logger.error(f"Failed to benchmark {method} {endpoint}: {e}")
                 results[f"{method}_{endpoint.replace('/', '_').replace('__', '_')}"] = {
@@ -230,7 +251,9 @@ class APIBenchmark:
             # Test server availability first
             try:
                 response = await self.client.get(f"{self.base_url}/health", timeout=5.0)
-                logger.info(f"Server available - Health check status: {response.status_code}")
+                logger.info(
+                    f"Server available - Health check status: {response.status_code}"
+                )
             except Exception as e:
                 logger.warning(f"Server may not be available: {e}")
                 logger.info("Continuing with benchmarks - some may fail")
@@ -249,15 +272,17 @@ class APIBenchmark:
                     "timestamp": datetime.now().isoformat(),
                     "base_url": self.base_url,
                     "total_duration_seconds": end_time - start_time,
-                    "benchmark_version": "1.0.0"
+                    "benchmark_version": "1.0.0",
                 },
                 "system_endpoints": system_results,
                 "document_endpoints": document_results,
                 "rag_endpoints": rag_results,
-                "settings_endpoints": settings_results
+                "settings_endpoints": settings_results,
             }
 
-            logger.info(f"API benchmark suite completed in {end_time - start_time:.2f} seconds")
+            logger.info(
+                f"API benchmark suite completed in {end_time - start_time:.2f} seconds"
+            )
 
         except Exception as e:
             logger.error(f"API benchmark suite failed: {e}")
@@ -270,9 +295,9 @@ class APIBenchmark:
 
     def print_summary(self):
         """Print comprehensive benchmark summary"""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("API PERFORMANCE BENCHMARK SUMMARY")
-        print("="*80)
+        print("=" * 80)
 
         if "error" in self.results:
             print(f"❌ BENCHMARK FAILED: {self.results['error']}")
@@ -286,7 +311,12 @@ class APIBenchmark:
             print(f"📅 Timestamp: {metadata['timestamp']}")
 
         # Performance summary by category
-        categories = ["system_endpoints", "document_endpoints", "rag_endpoints", "settings_endpoints"]
+        categories = [
+            "system_endpoints",
+            "document_endpoints",
+            "rag_endpoints",
+            "settings_endpoints",
+        ]
 
         for category in categories:
             if category not in self.results:
@@ -313,19 +343,27 @@ class APIBenchmark:
                 mean_time = rt.get("mean", 0)
                 all_response_times.append(mean_time)
 
-                status = "✅" if success_rate >= 95 and mean_time < 100 else "⚠️" if success_rate >= 80 else "❌"
+                status = (
+                    "✅"
+                    if success_rate >= 95 and mean_time < 100
+                    else "⚠️" if success_rate >= 80 else "❌"
+                )
 
                 print(f"   {status} {endpoint}:")
                 print(f"      • Mean: {mean_time:.2f}ms")
                 print(f"      • P95: {rt.get('p95', 0):.2f}ms")
                 print(f"      • Success: {success_rate:.1f}%")
-                print(f"      • Throughput: {result.get('throughput_rps', 0):.1f} req/s")
+                print(
+                    f"      • Throughput: {result.get('throughput_rps', 0):.1f} req/s"
+                )
 
             # Category summary
             if all_response_times:
                 category_avg = statistics.mean(all_response_times)
                 print(f"   📈 Category Average: {category_avg:.2f}ms")
-                print(f"   ✅ Successful Endpoints: {successful_endpoints}/{total_endpoints}")
+                print(
+                    f"   ✅ Successful Endpoints: {successful_endpoints}/{total_endpoints}"
+                )
 
         # Overall performance assessment
         print("\n🎯 OVERALL ASSESSMENT:")
@@ -362,7 +400,7 @@ class APIBenchmark:
             print(f"   🎯 Average Success Rate: {overall_success_rate:.1f}%")
             print(f"   🚀 Total Endpoints Tested: {len(all_times)}")
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
 
     def save_results(self, filename: str = None):
         """Save results to JSON file"""
@@ -371,7 +409,7 @@ class APIBenchmark:
             filename = f"api_benchmark_results_{timestamp}.json"
 
         output_path = Path(filename)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(self.results, f, indent=2, default=str)
 
         logger.info(f"Results saved to: {output_path}")
@@ -383,7 +421,9 @@ async def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="API Performance Benchmark")
-    parser.add_argument("--url", default="http://localhost:8000", help="Base URL to test")
+    parser.add_argument(
+        "--url", default="http://localhost:8000", help="Base URL to test"
+    )
     parser.add_argument("--save", action="store_true", help="Save results to JSON file")
     parser.add_argument("--output", help="Output filename for results")
 

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DatabasePoolConfig:
     """Production database connection pooling configuration."""
+
     max_connections: int = 50
     min_connections: int = 10
     connection_timeout: int = 30
@@ -42,6 +43,7 @@ class DatabasePoolConfig:
 @dataclass
 class CacheClusterConfig:
     """Production Redis cluster configuration."""
+
     cluster_nodes: list[str] = field(default_factory=lambda: ["redis://localhost:6379"])
     enable_cluster: bool = False
 
@@ -62,7 +64,7 @@ class CacheClusterConfig:
 
     # Cache policies
     default_ttl: int = 3600  # 1 hour
-    max_ttl: int = 86400    # 24 hours
+    max_ttl: int = 86400  # 24 hours
     compression_threshold: int = 1024  # Compress values > 1KB
 
     # Performance tuning
@@ -74,29 +76,34 @@ class CacheClusterConfig:
 @dataclass
 class SecurityHardeningConfig:
     """Production security hardening configuration."""
+
     # Content Security Policy
     enable_csp: bool = True
-    csp_policy: dict[str, list[str]] = field(default_factory=lambda: {
-        "default-src": ["'self'"],
-        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:", "https:"],
-        "connect-src": ["'self'", "https://api.google.com"],
-        "font-src": ["'self'"],
-        "object-src": ["'none'"],
-        "media-src": ["'self'"],
-        "frame-src": ["'none'"]
-    })
+    csp_policy: dict[str, list[str]] = field(
+        default_factory=lambda: {
+            "default-src": ["'self'"],
+            "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            "style-src": ["'self'", "'unsafe-inline'"],
+            "img-src": ["'self'", "data:", "https:"],
+            "connect-src": ["'self'", "https://api.google.com"],
+            "font-src": ["'self'"],
+            "object-src": ["'none'"],
+            "media-src": ["'self'"],
+            "frame-src": ["'none'"],
+        }
+    )
 
     # HTTP Security Headers
-    security_headers: dict[str, str] = field(default_factory=lambda: {
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "X-XSS-Protection": "1; mode=block",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"
-    })
+    security_headers: dict[str, str] = field(
+        default_factory=lambda: {
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "X-XSS-Protection": "1; mode=block",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+        }
+    )
 
     # IP Filtering
     enable_ip_whitelist: bool = True
@@ -111,12 +118,14 @@ class SecurityHardeningConfig:
     hmac_algorithm: str = "sha256"
 
     # Rate limiting hardening
-    strict_rate_limits: dict[str, dict[str, int]] = field(default_factory=lambda: {
-        "/api/auth/login": {"requests": 5, "window": 300},
-        "/api/documents/upload": {"requests": 10, "window": 3600},
-        "/api/rag/query": {"requests": 100, "window": 3600},
-        "global": {"requests": 1000, "window": 3600}
-    })
+    strict_rate_limits: dict[str, dict[str, int]] = field(
+        default_factory=lambda: {
+            "/api/auth/login": {"requests": 5, "window": 300},
+            "/api/documents/upload": {"requests": 10, "window": 3600},
+            "/api/rag/query": {"requests": 100, "window": 3600},
+            "global": {"requests": 1000, "window": 3600},
+        }
+    )
 
     # CORS hardening
     strict_cors: bool = True
@@ -127,6 +136,7 @@ class SecurityHardeningConfig:
 @dataclass
 class PerformanceConfig:
     """Production performance optimization configuration."""
+
     # Async/Await optimization
     max_workers: int = 4
     worker_connections: int = 1000
@@ -165,6 +175,7 @@ class PerformanceConfig:
 @dataclass
 class MonitoringIntegrationConfig:
     """Integration with monitoring and alerting systems."""
+
     # Prometheus metrics
     enable_prometheus: bool = True
     metrics_port: int = 9090
@@ -173,11 +184,9 @@ class MonitoringIntegrationConfig:
     # Health checks
     health_check_interval: int = 30
     health_check_timeout: int = 5
-    health_check_endpoints: list[str] = field(default_factory=lambda: [
-        "/health",
-        "/health/ready",
-        "/health/live"
-    ])
+    health_check_endpoints: list[str] = field(
+        default_factory=lambda: ["/health", "/health/ready", "/health/live"]
+    )
 
     # Logging integration
     structured_logging: bool = True
@@ -186,14 +195,16 @@ class MonitoringIntegrationConfig:
     log_retention_days: int = 90
 
     # Alerting thresholds
-    alert_thresholds: dict[str, Union[int, float]] = field(default_factory=lambda: {
-        "error_rate_percent": 5.0,
-        "response_time_p95_seconds": 2.0,
-        "memory_usage_percent": 80.0,
-        "cpu_usage_percent": 80.0,
-        "disk_usage_percent": 85.0,
-        "connection_pool_usage_percent": 90.0
-    })
+    alert_thresholds: dict[str, Union[int, float]] = field(
+        default_factory=lambda: {
+            "error_rate_percent": 5.0,
+            "response_time_p95_seconds": 2.0,
+            "memory_usage_percent": 80.0,
+            "cpu_usage_percent": 80.0,
+            "disk_usage_percent": 85.0,
+            "connection_pool_usage_percent": 90.0,
+        }
+    )
 
     # Tracing
     enable_tracing: bool = True
@@ -210,7 +221,7 @@ class ProductionConfig:
     def __init__(
         self,
         secrets_manager: ProductionSecretsManager | None = None,
-        metrics_service: MetricsService | None = None
+        metrics_service: MetricsService | None = None,
     ):
         """Initialize production configuration."""
         self.secrets_manager = secrets_manager
@@ -242,44 +253,70 @@ class ProductionConfig:
             idle_timeout=int(os.getenv("DB_IDLE_TIMEOUT", "3600")),
             pool_size=int(os.getenv("DB_POOL_SIZE", "20")),
             max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "30")),
-            enable_read_write_split=os.getenv("DB_ENABLE_READ_WRITE_SPLIT", "false").lower() == "true",
-            read_replica_urls=os.getenv("DB_READ_REPLICA_URLS", "").split(",") if os.getenv("DB_READ_REPLICA_URLS") else [],
-            echo=os.getenv("DB_ECHO", "false").lower() == "true"
+            enable_read_write_split=os.getenv(
+                "DB_ENABLE_READ_WRITE_SPLIT", "false"
+            ).lower()
+            == "true",
+            read_replica_urls=(
+                os.getenv("DB_READ_REPLICA_URLS", "").split(",")
+                if os.getenv("DB_READ_REPLICA_URLS")
+                else []
+            ),
+            echo=os.getenv("DB_ECHO", "false").lower() == "true",
         )
 
     def _load_cache_config(self) -> CacheClusterConfig:
         """Load Redis cluster configuration."""
-        cluster_nodes = os.getenv("REDIS_CLUSTER_NODES", "redis://localhost:6379").split(",")
+        cluster_nodes = os.getenv(
+            "REDIS_CLUSTER_NODES", "redis://localhost:6379"
+        ).split(",")
 
         return CacheClusterConfig(
             cluster_nodes=cluster_nodes,
             enable_cluster=len(cluster_nodes) > 1,
-            connection_pool_max_connections=int(os.getenv("REDIS_POOL_MAX_CONNECTIONS", "50")),
+            connection_pool_max_connections=int(
+                os.getenv("REDIS_POOL_MAX_CONNECTIONS", "50")
+            ),
             connection_timeout=float(os.getenv("REDIS_CONNECTION_TIMEOUT", "2.0")),
             socket_timeout=float(os.getenv("REDIS_SOCKET_TIMEOUT", "2.0")),
-            enable_sentinel=os.getenv("REDIS_ENABLE_SENTINEL", "false").lower() == "true",
+            enable_sentinel=os.getenv("REDIS_ENABLE_SENTINEL", "false").lower()
+            == "true",
             sentinel_service=os.getenv("REDIS_SENTINEL_SERVICE", "mymaster"),
-            sentinel_nodes=os.getenv("REDIS_SENTINEL_NODES", "").split(",") if os.getenv("REDIS_SENTINEL_NODES") else [],
+            sentinel_nodes=(
+                os.getenv("REDIS_SENTINEL_NODES", "").split(",")
+                if os.getenv("REDIS_SENTINEL_NODES")
+                else []
+            ),
             max_memory=os.getenv("REDIS_MAX_MEMORY", "2gb"),
             max_memory_policy=os.getenv("REDIS_MAX_MEMORY_POLICY", "allkeys-lru"),
             default_ttl=int(os.getenv("REDIS_DEFAULT_TTL", "3600")),
             compression_threshold=int(os.getenv("REDIS_COMPRESSION_THRESHOLD", "1024")),
-            key_prefix=os.getenv("REDIS_KEY_PREFIX", "ai_pdf_scholar:prod:")
+            key_prefix=os.getenv("REDIS_KEY_PREFIX", "ai_pdf_scholar:prod:"),
         )
 
     def _load_security_config(self) -> SecurityHardeningConfig:
         """Load security hardening configuration."""
-        allowed_origins = os.getenv("PROD_CORS_ORIGINS", "").split(",") if os.getenv("PROD_CORS_ORIGINS") else []
-        allowed_ip_ranges = os.getenv("ALLOWED_IP_RANGES", "").split(",") if os.getenv("ALLOWED_IP_RANGES") else []
+        allowed_origins = (
+            os.getenv("PROD_CORS_ORIGINS", "").split(",")
+            if os.getenv("PROD_CORS_ORIGINS")
+            else []
+        )
+        allowed_ip_ranges = (
+            os.getenv("ALLOWED_IP_RANGES", "").split(",")
+            if os.getenv("ALLOWED_IP_RANGES")
+            else []
+        )
 
         return SecurityHardeningConfig(
             enable_csp=os.getenv("ENABLE_CSP", "true").lower() == "true",
-            enable_ip_whitelist=os.getenv("ENABLE_IP_WHITELIST", "true").lower() == "true",
+            enable_ip_whitelist=os.getenv("ENABLE_IP_WHITELIST", "true").lower()
+            == "true",
             allowed_ip_ranges=allowed_ip_ranges,
-            enable_request_signing=os.getenv("ENABLE_REQUEST_SIGNING", "true").lower() == "true",
+            enable_request_signing=os.getenv("ENABLE_REQUEST_SIGNING", "true").lower()
+            == "true",
             signature_ttl=int(os.getenv("REQUEST_SIGNATURE_TTL", "300")),
             strict_cors=os.getenv("STRICT_CORS", "true").lower() == "true",
-            allowed_origins=allowed_origins
+            allowed_origins=allowed_origins,
         )
 
     def _load_performance_config(self) -> PerformanceConfig:
@@ -288,14 +325,17 @@ class ProductionConfig:
             max_workers=int(os.getenv("MAX_WORKERS", "4")),
             worker_connections=int(os.getenv("WORKER_CONNECTIONS", "1000")),
             max_memory_mb=int(os.getenv("MAX_MEMORY_MB", "2048")),
-            max_concurrent_connections=int(os.getenv("MAX_CONCURRENT_CONNECTIONS", "1000")),
+            max_concurrent_connections=int(
+                os.getenv("MAX_CONCURRENT_CONNECTIONS", "1000")
+            ),
             connection_limit_per_ip=int(os.getenv("CONNECTION_LIMIT_PER_IP", "10")),
             slow_request_threshold=float(os.getenv("SLOW_REQUEST_THRESHOLD", "5.0")),
             max_file_size_mb=int(os.getenv("MAX_FILE_SIZE_MB", "100")),
             max_upload_files=int(os.getenv("MAX_UPLOAD_FILES", "10")),
-            enable_response_caching=os.getenv("ENABLE_RESPONSE_CACHING", "true").lower() == "true",
+            enable_response_caching=os.getenv("ENABLE_RESPONSE_CACHING", "true").lower()
+            == "true",
             enable_gzip_compression=os.getenv("ENABLE_GZIP", "true").lower() == "true",
-            query_timeout=int(os.getenv("QUERY_TIMEOUT", "30"))
+            query_timeout=int(os.getenv("QUERY_TIMEOUT", "30")),
         )
 
     def _load_monitoring_config(self) -> MonitoringIntegrationConfig:
@@ -304,13 +344,14 @@ class ProductionConfig:
             enable_prometheus=os.getenv("ENABLE_PROMETHEUS", "true").lower() == "true",
             metrics_port=int(os.getenv("METRICS_PORT", "9090")),
             health_check_interval=int(os.getenv("HEALTH_CHECK_INTERVAL", "30")),
-            structured_logging=os.getenv("STRUCTURED_LOGGING", "true").lower() == "true",
+            structured_logging=os.getenv("STRUCTURED_LOGGING", "true").lower()
+            == "true",
             log_level=os.getenv("PROD_LOG_LEVEL", "INFO"),
             enable_audit_logs=os.getenv("ENABLE_AUDIT_LOGS", "true").lower() == "true",
             log_retention_days=int(os.getenv("LOG_RETENTION_DAYS", "90")),
             enable_tracing=os.getenv("ENABLE_TRACING", "true").lower() == "true",
             tracing_sample_rate=float(os.getenv("TRACING_SAMPLE_RATE", "0.1")),
-            jaeger_endpoint=os.getenv("JAEGER_ENDPOINT")
+            jaeger_endpoint=os.getenv("JAEGER_ENDPOINT"),
         )
 
     def _validate_configuration(self):
@@ -319,7 +360,9 @@ class ProductionConfig:
 
         # Validate database configuration
         if self.database.max_connections < 10:
-            issues.append("Database max_connections should be at least 10 in production")
+            issues.append(
+                "Database max_connections should be at least 10 in production"
+            )
 
         if self.database.connection_timeout < 30:
             issues.append("Database connection_timeout should be at least 30 seconds")
@@ -330,7 +373,9 @@ class ProductionConfig:
 
         # Validate security configuration
         if self.security.strict_cors and not self.security.allowed_origins:
-            issues.append("CORS allowed_origins must be configured when strict_cors is enabled")
+            issues.append(
+                "CORS allowed_origins must be configured when strict_cors is enabled"
+            )
 
         if self.security.enable_ip_whitelist and not self.security.allowed_ip_ranges:
             issues.append("IP whitelist ranges must be configured when enabled")
@@ -347,7 +392,9 @@ class ProductionConfig:
             logger.warning(f"Production config validation: {issue}")
 
         if issues and self.base_config.environment.is_production():
-            logger.error(f"Production configuration has {len(issues)} validation issues")
+            logger.error(
+                f"Production configuration has {len(issues)} validation issues"
+            )
 
     def get_database_url(self) -> str:
         """Get database URL with production optimizations."""
@@ -359,7 +406,7 @@ class ProductionConfig:
             f"max_overflow={self.database.max_overflow}",
             f"pool_timeout={self.database.connection_timeout}",
             f"pool_recycle={self.database.pool_recycle}",
-            f"pool_pre_ping={'true' if self.database.pool_pre_ping else 'false'}"
+            f"pool_pre_ping={'true' if self.database.pool_pre_ping else 'false'}",
         ]
 
         separator = "&" if "?" in base_url else "?"
@@ -373,7 +420,7 @@ class ProductionConfig:
                 "max_connections": self.cache.connection_pool_max_connections,
                 "connection_timeout": self.cache.connection_timeout,
                 "socket_timeout": self.cache.socket_timeout,
-                "socket_keepalive": self.cache.socket_keepalive
+                "socket_keepalive": self.cache.socket_keepalive,
             },
             "cluster_enabled": self.cache.enable_cluster,
             "sentinel_enabled": self.cache.enable_sentinel,
@@ -381,7 +428,7 @@ class ProductionConfig:
             "sentinel_nodes": self.cache.sentinel_nodes,
             "default_ttl": self.cache.default_ttl,
             "compression_threshold": self.cache.compression_threshold,
-            "key_prefix": self.cache.key_prefix
+            "key_prefix": self.cache.key_prefix,
         }
 
     def get_security_middleware_config(self) -> dict[str, Any]:
@@ -389,25 +436,25 @@ class ProductionConfig:
         return {
             "csp": {
                 "enabled": self.security.enable_csp,
-                "policy": self.security.csp_policy
+                "policy": self.security.csp_policy,
             },
             "headers": self.security.security_headers,
             "ip_whitelist": {
                 "enabled": self.security.enable_ip_whitelist,
                 "allowed_ranges": self.security.allowed_ip_ranges,
-                "blocked_ranges": self.security.blocked_ip_ranges
+                "blocked_ranges": self.security.blocked_ip_ranges,
             },
             "request_signing": {
                 "enabled": self.security.enable_request_signing,
                 "ttl": self.security.signature_ttl,
-                "algorithm": self.security.hmac_algorithm
+                "algorithm": self.security.hmac_algorithm,
             },
             "cors": {
                 "strict": self.security.strict_cors,
                 "allowed_origins": self.security.allowed_origins,
-                "max_age": self.security.max_age
+                "max_age": self.security.max_age,
             },
-            "rate_limits": self.security.strict_rate_limits
+            "rate_limits": self.security.strict_rate_limits,
         }
 
     def get_performance_config(self) -> dict[str, Any]:
@@ -417,27 +464,27 @@ class ProductionConfig:
             "connections": self.performance.worker_connections,
             "memory": {
                 "max_mb": self.performance.max_memory_mb,
-                "gc_threshold": self.performance.gc_threshold
+                "gc_threshold": self.performance.gc_threshold,
             },
             "limits": {
                 "max_connections": self.performance.max_concurrent_connections,
                 "per_ip_limit": self.performance.connection_limit_per_ip,
                 "slow_request_threshold": self.performance.slow_request_threshold,
                 "max_file_size_mb": self.performance.max_file_size_mb,
-                "max_upload_files": self.performance.max_upload_files
+                "max_upload_files": self.performance.max_upload_files,
             },
             "caching": {
                 "response_caching": self.performance.enable_response_caching,
                 "response_ttl": self.performance.response_cache_ttl,
                 "etag_caching": self.performance.enable_etag_caching,
                 "gzip_compression": self.performance.enable_gzip_compression,
-                "gzip_min_size": self.performance.gzip_min_size
+                "gzip_min_size": self.performance.gzip_min_size,
             },
             "database": {
                 "query_timeout": self.performance.query_timeout,
                 "query_caching": self.performance.enable_query_caching,
-                "query_cache_ttl": self.performance.query_cache_ttl
-            }
+                "query_cache_ttl": self.performance.query_cache_ttl,
+            },
         }
 
     def get_monitoring_config(self) -> dict[str, Any]:
@@ -446,27 +493,25 @@ class ProductionConfig:
             "prometheus": {
                 "enabled": self.monitoring.enable_prometheus,
                 "port": self.monitoring.metrics_port,
-                "endpoint": self.monitoring.metrics_endpoint
+                "endpoint": self.monitoring.metrics_endpoint,
             },
             "health_checks": {
                 "interval": self.monitoring.health_check_interval,
                 "timeout": self.monitoring.health_check_timeout,
-                "endpoints": self.monitoring.health_check_endpoints
+                "endpoints": self.monitoring.health_check_endpoints,
             },
             "logging": {
                 "structured": self.monitoring.structured_logging,
                 "level": self.monitoring.log_level,
                 "audit_enabled": self.monitoring.enable_audit_logs,
-                "retention_days": self.monitoring.log_retention_days
+                "retention_days": self.monitoring.log_retention_days,
             },
-            "alerting": {
-                "thresholds": self.monitoring.alert_thresholds
-            },
+            "alerting": {"thresholds": self.monitoring.alert_thresholds},
             "tracing": {
                 "enabled": self.monitoring.enable_tracing,
                 "sample_rate": self.monitoring.tracing_sample_rate,
-                "jaeger_endpoint": self.monitoring.jaeger_endpoint
-            }
+                "jaeger_endpoint": self.monitoring.jaeger_endpoint,
+            },
         }
 
     def integrate_with_secrets(self, secrets_manager: ProductionSecretsManager):
@@ -509,27 +554,37 @@ class ProductionConfig:
             "limit_request_field_size": 8190,
             "access_log_format": '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s',
             "capture_output": True,
-            "enable_stdio_inheritance": True
+            "enable_stdio_inheritance": True,
         }
 
     def health_check(self) -> dict[str, Any]:
         """Perform production configuration health check."""
         health = {
             "status": "healthy",
-            "timestamp": logger.handlers[0].formatter.converter(None, None)[0] if logger.handlers else "unknown",
+            "timestamp": (
+                logger.handlers[0].formatter.converter(None, None)[0]
+                if logger.handlers
+                else "unknown"
+            ),
             "components": {
                 "database": self._check_database_config(),
                 "cache": self._check_cache_config(),
                 "security": self._check_security_config(),
                 "performance": self._check_performance_config(),
-                "monitoring": self._check_monitoring_config()
-            }
+                "monitoring": self._check_monitoring_config(),
+            },
         }
 
         # Update overall status
-        failed_components = [name for name, status in health["components"].items() if status["status"] != "healthy"]
+        failed_components = [
+            name
+            for name, status in health["components"].items()
+            if status["status"] != "healthy"
+        ]
         if failed_components:
-            health["status"] = "degraded" if len(failed_components) <= 2 else "unhealthy"
+            health["status"] = (
+                "degraded" if len(failed_components) <= 2 else "unhealthy"
+            )
             health["failed_components"] = failed_components
 
         return health
@@ -538,20 +593,35 @@ class ProductionConfig:
         """Check database configuration health."""
         try:
             # Validate database configuration
-            if self.database.max_connections >= 10 and self.database.connection_timeout >= 30:
-                return {"status": "healthy", "max_connections": self.database.max_connections}
+            if (
+                self.database.max_connections >= 10
+                and self.database.connection_timeout >= 30
+            ):
+                return {
+                    "status": "healthy",
+                    "max_connections": self.database.max_connections,
+                }
             else:
-                return {"status": "warning", "message": "Database configuration suboptimal"}
+                return {
+                    "status": "warning",
+                    "message": "Database configuration suboptimal",
+                }
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
 
     def _check_cache_config(self) -> dict[str, Any]:
         """Check cache configuration health."""
         try:
-            if self.cache.cluster_nodes and self.cache.connection_pool_max_connections >= 10:
+            if (
+                self.cache.cluster_nodes
+                and self.cache.connection_pool_max_connections >= 10
+            ):
                 return {"status": "healthy", "nodes": len(self.cache.cluster_nodes)}
             else:
-                return {"status": "warning", "message": "Cache configuration needs review"}
+                return {
+                    "status": "warning",
+                    "message": "Cache configuration needs review",
+                }
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
 
@@ -562,38 +632,54 @@ class ProductionConfig:
                 "csp_enabled": self.security.enable_csp,
                 "ip_whitelist": self.security.enable_ip_whitelist,
                 "request_signing": self.security.enable_request_signing,
-                "strict_cors": self.security.strict_cors
+                "strict_cors": self.security.strict_cors,
             }
 
             enabled_count = sum(1 for enabled in checks.values() if enabled)
             if enabled_count >= 3:
                 return {"status": "healthy", "enabled_features": enabled_count}
             else:
-                return {"status": "warning", "message": "Security features should be enabled"}
+                return {
+                    "status": "warning",
+                    "message": "Security features should be enabled",
+                }
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
 
     def _check_performance_config(self) -> dict[str, Any]:
         """Check performance configuration health."""
         try:
-            if (self.performance.max_memory_mb >= 1024 and
-                self.performance.max_workers >= 2 and
-                self.performance.enable_gzip_compression):
-                return {"status": "healthy", "memory_mb": self.performance.max_memory_mb}
+            if (
+                self.performance.max_memory_mb >= 1024
+                and self.performance.max_workers >= 2
+                and self.performance.enable_gzip_compression
+            ):
+                return {
+                    "status": "healthy",
+                    "memory_mb": self.performance.max_memory_mb,
+                }
             else:
-                return {"status": "warning", "message": "Performance settings need optimization"}
+                return {
+                    "status": "warning",
+                    "message": "Performance settings need optimization",
+                }
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
 
     def _check_monitoring_config(self) -> dict[str, Any]:
         """Check monitoring configuration health."""
         try:
-            if (self.monitoring.enable_prometheus and
-                self.monitoring.enable_audit_logs and
-                self.monitoring.structured_logging):
+            if (
+                self.monitoring.enable_prometheus
+                and self.monitoring.enable_audit_logs
+                and self.monitoring.structured_logging
+            ):
                 return {"status": "healthy", "features": "all_enabled"}
             else:
-                return {"status": "warning", "message": "Monitoring features should be enabled"}
+                return {
+                    "status": "warning",
+                    "message": "Monitoring features should be enabled",
+                }
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}
 
@@ -614,5 +700,5 @@ def create_production_environment() -> dict[str, Any]:
         "security": prod_config.get_security_middleware_config(),
         "performance": prod_config.get_performance_config(),
         "monitoring": prod_config.get_monitoring_config(),
-        "gunicorn": prod_config.get_gunicorn_config()
+        "gunicorn": prod_config.get_gunicorn_config(),
     }

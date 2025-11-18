@@ -248,7 +248,8 @@ class ShardingManager:
         """Initialize metadata tables for shard management."""
         try:
             # Shards table
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shards (
                     shard_id TEXT PRIMARY KEY,
                     connection_string TEXT NOT NULL,
@@ -262,20 +263,24 @@ class ShardingManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Shard directory table for directory-based sharding
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shard_directory (
                     key_value TEXT PRIMARY KEY,
                     shard_id TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (shard_id) REFERENCES shards(shard_id)
                 )
-            """)
+            """
+            )
 
             # Migration tracking table
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shard_migrations (
                     migration_id TEXT PRIMARY KEY,
                     source_shard TEXT NOT NULL,
@@ -287,10 +292,12 @@ class ShardingManager:
                     completed_at TIMESTAMP,
                     error_message TEXT
                 )
-            """)
+            """
+            )
 
             # Shard statistics table
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shard_statistics (
                     shard_id TEXT NOT NULL,
                     metric_name TEXT NOT NULL,
@@ -298,7 +305,8 @@ class ShardingManager:
                     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     PRIMARY KEY (shard_id, metric_name, recorded_at)
                 )
-            """)
+            """
+            )
 
             logger.info("Sharding metadata tables initialized")
 

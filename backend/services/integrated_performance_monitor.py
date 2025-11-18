@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 # Integrated Performance Monitor
 # ============================================================================
 
+
 class IntegratedPerformanceMonitor:
     """
     Central orchestrator for all performance monitoring capabilities.
@@ -40,7 +41,7 @@ class IntegratedPerformanceMonitor:
         self,
         redis_cache: RedisCacheService,
         rag_cache: RAGCacheService,
-        config_path: Path | None = None
+        config_path: Path | None = None,
     ):
         """Initialize integrated performance monitor."""
         self.config_path = config_path or Path("performance_config.json")
@@ -49,8 +50,7 @@ class IntegratedPerformanceMonitor:
         self.metrics_service = MetricsService()
         self.cache_telemetry = CacheTelemetryService()
         self.apm_service = APMService(
-            cache_telemetry=self.cache_telemetry,
-            metrics_service=self.metrics_service
+            cache_telemetry=self.cache_telemetry, metrics_service=self.metrics_service
         )
 
         # Initialize cache services
@@ -61,19 +61,19 @@ class IntegratedPerformanceMonitor:
         self.alerting_service = PerformanceAlertingService(
             apm_service=self.apm_service,
             cache_telemetry=self.cache_telemetry,
-            config_path=self.config_path.parent / "alert_config.json"
+            config_path=self.config_path.parent / "alert_config.json",
         )
 
         self.cache_optimization = CacheOptimizationService(
             cache_telemetry=self.cache_telemetry,
             redis_cache=self.redis_cache,
-            rag_cache=self.rag_cache
+            rag_cache=self.rag_cache,
         )
 
         self.dashboard_service = PerformanceDashboardService(
             apm_service=self.apm_service,
             cache_telemetry=self.cache_telemetry,
-            metrics_service=self.metrics_service
+            metrics_service=self.metrics_service,
         )
 
         # Service state
@@ -173,48 +173,47 @@ class IntegratedPerformanceMonitor:
 
             # Check cache health
             cache_health = self.cache_telemetry.assess_cache_health()
-            health_scores['cache'] = cache_health.overall_score
+            health_scores["cache"] = cache_health.overall_score
 
             # Check APM health (based on recent performance)
             if self.amp.performance_snapshots:
                 latest_snapshot = self.amp.performance_snapshots[-1]
                 apm_score = self._calculate_apm_health_score(latest_snapshot)
-                health_scores['apm'] = apm_score
+                health_scores["apm"] = apm_score
             else:
-                health_scores['apm'] = 50  # Neutral score if no data
+                health_scores["apm"] = 50  # Neutral score if no data
 
             # Check alerting service health
             alert_stats = self.alerting_service.get_alert_statistics()
             alerting_score = self._calculate_alerting_health_score(alert_stats)
-            health_scores['alerting'] = alerting_score
+            health_scores["alerting"] = alerting_score
 
             # Check optimization service health
             optimization_summary = self.cache_optimization.get_optimization_summary()
-            optimization_score = self._calculate_optimization_health_score(optimization_summary)
-            health_scores['optimization'] = optimization_score
+            optimization_score = self._calculate_optimization_health_score(
+                optimization_summary
+            )
+            health_scores["optimization"] = optimization_score
 
             # Calculate overall health score
-            weights = {
-                'cache': 0.3,
-                'apm': 0.3,
-                'alerting': 0.2,
-                'optimization': 0.2
-            }
+            weights = {"cache": 0.3, "apm": 0.3, "alerting": 0.2, "optimization": 0.2}
 
             self.system_health_score = sum(
-                score * weights[component]
-                for component, score in health_scores.items()
+                score * weights[component] for component, score in health_scores.items()
             )
 
             self.last_health_check = datetime.utcnow()
 
             # Update metrics service with health score
             self.metrics_service.update_health_status(
-                "healthy" if self.system_health_score > 80 else
-                "degraded" if self.system_health_score > 60 else "unhealthy"
+                "healthy"
+                if self.system_health_score > 80
+                else "degraded" if self.system_health_score > 60 else "unhealthy"
             )
 
-            logger.debug(f"System health check completed: {self.system_health_score:.1f}")
+            logger.debug(
+                f"System health check completed: {self.system_health_score:.1f}"
+            )
 
         except Exception as e:
             logger.error(f"Error performing health check: {e}")
@@ -243,18 +242,18 @@ class IntegratedPerformanceMonitor:
 
     def _calculate_alerting_health_score(self, alert_stats) -> float:
         """Calculate alerting service health score."""
-        if not alert_stats.get('system_health', {}).get('monitoring_active'):
+        if not alert_stats.get("system_health", {}).get("monitoring_active"):
             return 0  # Alerting not active
 
         score = 100.0
 
         # Too many active alerts is bad
-        active_alerts = alert_stats.get('active_alerts_count', 0)
+        active_alerts = alert_stats.get("active_alerts_count", 0)
         if active_alerts > 5:
             score -= min(30, (active_alerts - 5) * 5)
 
         # Recent spike in alerts is concerning
-        recent_events = alert_stats.get('last_24h_events', 0)
+        recent_events = alert_stats.get("last_24h_events", 0)
         if recent_events > 20:
             score -= min(20, (recent_events - 20) / 2)
 
@@ -265,17 +264,17 @@ class IntegratedPerformanceMonitor:
         score = 100.0
 
         # Good pattern identification is positive
-        patterns = optimization_summary.get('patterns_identified', 0)
+        patterns = optimization_summary.get("patterns_identified", 0)
         if patterns < 5:
             score -= 20  # Not enough pattern data
 
         # High number of recommendations indicates issues
-        recommendations = optimization_summary.get('recommendations', 0)
+        recommendations = optimization_summary.get("recommendations", 0)
         if recommendations > 10:
             score -= min(30, recommendations * 2)
 
         # Active warming jobs indicate proactive optimization
-        active_jobs = optimization_summary.get('active_warming_jobs', 0)
+        active_jobs = optimization_summary.get("active_warming_jobs", 0)
         if active_jobs > 0:
             score += min(10, active_jobs * 2)
 
@@ -291,17 +290,22 @@ class IntegratedPerformanceMonitor:
             "timestamp": datetime.utcnow().isoformat(),
             "system_health": {
                 "overall_score": self.system_health_score,
-                "last_check": self.last_health_check.isoformat() if self.last_health_check else None,
+                "last_check": (
+                    self.last_health_check.isoformat()
+                    if self.last_health_check
+                    else None
+                ),
                 "status": (
-                    "healthy" if self.system_health_score > 80 else
-                    "degraded" if self.system_health_score > 60 else "critical"
-                )
+                    "healthy"
+                    if self.system_health_score > 80
+                    else "degraded" if self.system_health_score > 60 else "critical"
+                ),
             },
             "apm_summary": self.amp.get_performance_summary(),
             "cache_telemetry": self.cache_telemetry.export_telemetry_report(),
             "alert_statistics": self.alerting_service.get_alert_statistics(),
             "optimization_summary": self.cache_optimization.get_optimization_summary(),
-            "dashboard_data": self.dashboard_service.get_api_metrics()
+            "dashboard_data": self.dashboard_service.get_api_metrics(),
         }
 
     def get_real_time_metrics(self) -> dict[str, Any]:
@@ -313,23 +317,31 @@ class IntegratedPerformanceMonitor:
             "apm_metrics": {
                 "active_traces": len(self.amp.traces),
                 "active_spans": len(self.amp.active_spans),
-                "recent_errors": len([
-                    trace for trace in list(self.amp.traces)[-100:]
-                    if trace.has_errors
-                ])
+                "recent_errors": len(
+                    [
+                        trace
+                        for trace in list(self.amp.traces)[-100:]
+                        if trace.has_errors
+                    ]
+                ),
             },
             "alert_metrics": {
                 "active_alerts": len(self.alerting_service.active_alerts),
-                "recent_alerts": len([
-                    event for event in self.alerting_service.alert_history[-50:]
-                    if (datetime.utcnow() - event.timestamp).total_seconds() < 3600
-                ])
+                "recent_alerts": len(
+                    [
+                        event
+                        for event in self.alerting_service.alert_history[-50:]
+                        if (datetime.utcnow() - event.timestamp).total_seconds() < 3600
+                    ]
+                ),
             },
             "optimization_metrics": {
                 "warming_candidates": len(self.cache_optimization.warming_candidates),
                 "active_jobs": len(self.cache_optimization.active_jobs),
-                "recommendations": len(self.cache_optimization.optimization_recommendations)
-            }
+                "recommendations": len(
+                    self.cache_optimization.optimization_recommendations
+                ),
+            },
         }
 
     # ========================================================================
@@ -354,6 +366,7 @@ class IntegratedPerformanceMonitor:
                             from backend.services.performance_alerting_service import (
                                 AlertRule,
                             )
+
                             rule = AlertRule(**rule_data)
                             self.alerting_service.add_alert_rule(rule)
 
@@ -368,10 +381,14 @@ class IntegratedPerformanceMonitor:
 
                 # Update thresholds
                 if "min_pattern_frequency" in opt_config:
-                    self.cache_optimization.min_pattern_frequency = opt_config["min_pattern_frequency"]
+                    self.cache_optimization.min_pattern_frequency = opt_config[
+                        "min_pattern_frequency"
+                    ]
 
                 if "warming_batch_size" in opt_config:
-                    self.cache_optimization.warming_batch_size = opt_config["warming_batch_size"]
+                    self.cache_optimization.warming_batch_size = opt_config[
+                        "warming_batch_size"
+                    ]
 
             # Update cache telemetry configuration
             if "telemetry" in config:
@@ -394,7 +411,7 @@ class IntegratedPerformanceMonitor:
     def _save_configuration(self, config: dict[str, Any]):
         """Save configuration to file."""
         try:
-            with open(self.config_path, 'w') as f:
+            with open(self.config_path, "w") as f:
                 json.dump(config, f, indent=2, default=str)
         except Exception as e:
             logger.error(f"Error saving configuration: {e}")
@@ -412,17 +429,23 @@ class IntegratedPerformanceMonitor:
             cache_report = self.cache_telemetry.export_telemetry_report()
             results["cache_analysis"] = {
                 "status": "completed",
-                "total_events": cache_report.get("report_metadata", {}).get("total_events", 0),
+                "total_events": cache_report.get("report_metadata", {}).get(
+                    "total_events", 0
+                ),
                 "layers_analyzed": len(cache_report.get("cache_layer_metrics", {})),
-                "recommendations": len(cache_report.get("optimization_recommendations", []))
+                "recommendations": len(
+                    cache_report.get("optimization_recommendations", [])
+                ),
             }
 
             # Trigger APM analysis
             apm_summary = self.amp.get_performance_summary()
             results["apm_analysis"] = {
                 "status": "completed",
-                "total_traces": apm_summary.get("system_health", {}).get("total_traces", 0),
-                "active_alerts": len(apm_summary.get("active_alerts", []))
+                "total_traces": apm_summary.get("system_health", {}).get(
+                    "total_traces", 0
+                ),
+                "active_alerts": len(apm_summary.get("active_alerts", [])),
             }
 
             # Trigger optimization analysis
@@ -433,9 +456,11 @@ class IntegratedPerformanceMonitor:
             alert_stats = self.alerting_service.get_alert_statistics()
             results["alerting_analysis"] = {
                 "status": "completed",
-                "monitoring_active": alert_stats.get("system_health", {}).get("monitoring_active", False),
+                "monitoring_active": alert_stats.get("system_health", {}).get(
+                    "monitoring_active", False
+                ),
                 "total_rules": alert_stats.get("total_rules", 0),
-                "active_alerts": alert_stats.get("active_alerts_count", 0)
+                "active_alerts": alert_stats.get("active_alerts_count", 0),
             }
 
             # Update overall health
@@ -443,16 +468,21 @@ class IntegratedPerformanceMonitor:
             results["system_health"] = {
                 "score": self.system_health_score,
                 "status": (
-                    "healthy" if self.system_health_score > 80 else
-                    "degraded" if self.system_health_score > 60 else "critical"
+                    "healthy"
+                    if self.system_health_score > 80
+                    else "degraded" if self.system_health_score > 60 else "critical"
                 ),
-                "last_check": self.last_health_check.isoformat() if self.last_health_check else None
+                "last_check": (
+                    self.last_health_check.isoformat()
+                    if self.last_health_check
+                    else None
+                ),
             }
 
             return {
                 "status": "completed",
                 "timestamp": datetime.utcnow().isoformat(),
-                "results": results
+                "results": results,
             }
 
         except Exception as e:
@@ -460,7 +490,7 @@ class IntegratedPerformanceMonitor:
             return {
                 "status": "error",
                 "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
+                "error": str(e),
             }
 
     async def emergency_optimization(self) -> dict[str, Any]:
@@ -472,14 +502,19 @@ class IntegratedPerformanceMonitor:
             await self._perform_health_check()
 
             if self.system_health_score < 60:  # Critical threshold
-                logger.warning("Emergency optimization triggered due to low health score")
+                logger.warning(
+                    "Emergency optimization triggered due to low health score"
+                )
 
                 # Emergency cache optimization
-                emergency_candidates = self.cache_optimization.get_warming_candidates(limit=20)
+                emergency_candidates = self.cache_optimization.get_warming_candidates(
+                    limit=20
+                )
                 if emergency_candidates:
                     # Schedule high-priority warming
                     high_priority_keys = [
-                        c["key"] for c in emergency_candidates[:10]
+                        c["key"]
+                        for c in emergency_candidates[:10]
                         if c["priority"] in ["critical", "high"]
                     ]
 
@@ -487,17 +522,21 @@ class IntegratedPerformanceMonitor:
                         job_id = self.cache_optimization.schedule_warming_job(
                             cache_layer=CacheLayer.RAG_QUERY,  # Focus on most critical layer
                             keys=high_priority_keys,
-                            priority=WarmingPriority.CRITICAL
+                            priority=WarmingPriority.CRITICAL,
                         )
                         results["emergency_warming_job"] = job_id
 
                 # Clear low-priority alerts to reduce noise
                 alert_stats = self.alerting_service.get_alert_statistics()
                 if alert_stats.get("active_alerts_count", 0) > 10:
-                    results["alert_cleanup"] = "Initiated cleanup of low-priority alerts"
+                    results["alert_cleanup"] = (
+                        "Initiated cleanup of low-priority alerts"
+                    )
 
                 # Force cache cleanup
-                optimization_summary = self.cache_optimization.get_optimization_summary()
+                optimization_summary = (
+                    self.cache_optimization.get_optimization_summary()
+                )
                 results["optimization_triggered"] = optimization_summary
 
                 results["status"] = "emergency_procedures_activated"
@@ -523,33 +562,37 @@ class IntegratedPerformanceMonitor:
             "services": {
                 "metrics_service": {
                     "active": True,  # Metrics service doesn't have explicit status
-                    "port": 9090
+                    "port": 9090,
                 },
                 "cache_telemetry": {
                     "active": True,
                     "total_events": len(self.cache_telemetry.events),
-                    "layers_monitored": len(CacheLayer)
+                    "layers_monitored": len(CacheLayer),
                 },
                 "apm_service": {
                     "active": True,
                     "total_traces": len(self.amp.traces),
-                    "active_spans": len(self.amp.active_spans)
+                    "active_spans": len(self.amp.active_spans),
                 },
                 "alerting_service": {
                     "active": self.alerting_service._running,
                     "total_rules": len(self.alerting_service.alert_rules),
-                    "active_alerts": len(self.alerting_service.active_alerts)
+                    "active_alerts": len(self.alerting_service.active_alerts),
                 },
                 "cache_optimization": {
                     "active": self.cache_optimization._running,
                     "patterns_identified": len(self.cache_optimization.access_patterns),
-                    "warming_candidates": len(self.cache_optimization.warming_candidates)
+                    "warming_candidates": len(
+                        self.cache_optimization.warming_candidates
+                    ),
                 },
                 "dashboard_service": {
                     "active": self.dashboard_service._running,
-                    "websocket_connections": len(self.dashboard_service.connection_manager.active_connections)
-                }
-            }
+                    "websocket_connections": len(
+                        self.dashboard_service.connection_manager.active_connections
+                    ),
+                },
+            },
         }
 
     def get_performance_trends(self, hours_back: int = 24) -> dict[str, Any]:
@@ -568,7 +611,7 @@ class IntegratedPerformanceMonitor:
                 "apm_trends": apm_trends,
                 "cache_trends": cache_trends,
                 "health_score_trend": self._calculate_health_score_trend(hours_back),
-                "summary": self._generate_trend_summary(apm_trends, cache_trends)
+                "summary": self._generate_trend_summary(apm_trends, cache_trends),
             }
 
         except Exception as e:

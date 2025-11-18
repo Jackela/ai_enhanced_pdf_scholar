@@ -22,8 +22,10 @@ logger = logging.getLogger(__name__)
 # Cache Policies and Configuration
 # ============================================================================
 
+
 class EvictionPolicy(str, Enum):
     """Cache eviction policies."""
+
     LRU = "lru"  # Least Recently Used
     LFU = "lfu"  # Least Frequently Used
     FIFO = "fifo"  # First In, First Out
@@ -36,6 +38,7 @@ class EvictionPolicy(str, Enum):
 
 class CacheLevel(str, Enum):
     """Cache levels for different data types."""
+
     HOT = "hot"  # Frequently accessed data
     WARM = "warm"  # Moderately accessed data
     COLD = "cold"  # Rarely accessed data
@@ -44,6 +47,7 @@ class CacheLevel(str, Enum):
 @dataclass
 class CacheEntry:
     """Cache entry with metadata."""
+
     key: str
     value: Any
     created_at: datetime
@@ -97,7 +101,9 @@ class CacheEntry:
                 return self.calculate_score(EvictionPolicy.LRU)
 
             # Calculate access frequency (accesses per hour)
-            time_span = (self.last_access_times[-1] - self.last_access_times[0]).total_seconds()
+            time_span = (
+                self.last_access_times[-1] - self.last_access_times[0]
+            ).total_seconds()
             frequency = len(self.last_access_times) / max(time_span / 3600, 0.1)
 
             # Combine frequency and recency
@@ -112,6 +118,7 @@ class CacheEntry:
 @dataclass
 class CacheConfig:
     """Configuration for L1 memory cache."""
+
     max_size_mb: float = 100.0  # Maximum cache size in MB
     max_entries: int = 10000  # Maximum number of entries
     default_ttl_seconds: int = 3600  # Default TTL (1 hour)
@@ -127,20 +134,24 @@ class CacheConfig:
     cleanup_interval_seconds: int = 60  # Background cleanup interval
 
     # Level-specific settings
-    level_configs: dict[CacheLevel, dict[str, Any]] = field(default_factory=lambda: {
-        CacheLevel.HOT: {"max_size_mb": 30.0, "ttl_seconds": 1800},  # 30MB, 30min
-        CacheLevel.WARM: {"max_size_mb": 50.0, "ttl_seconds": 3600},  # 50MB, 1hour
-        CacheLevel.COLD: {"max_size_mb": 20.0, "ttl_seconds": 7200}   # 20MB, 2hours
-    })
+    level_configs: dict[CacheLevel, dict[str, Any]] = field(
+        default_factory=lambda: {
+            CacheLevel.HOT: {"max_size_mb": 30.0, "ttl_seconds": 1800},  # 30MB, 30min
+            CacheLevel.WARM: {"max_size_mb": 50.0, "ttl_seconds": 3600},  # 50MB, 1hour
+            CacheLevel.COLD: {"max_size_mb": 20.0, "ttl_seconds": 7200},  # 20MB, 2hours
+        }
+    )
 
 
 # ============================================================================
 # Cache Statistics and Monitoring
 # ============================================================================
 
+
 @dataclass
 class CacheStatistics:
     """Cache performance statistics."""
+
     hits: int = 0
     misses: int = 0
     sets: int = 0
@@ -157,10 +168,12 @@ class CacheStatistics:
     hit_rate_percent: float = 0.0
 
     # Level statistics
-    level_stats: dict[CacheLevel, dict[str, int]] = field(default_factory=lambda: {
-        level: {"hits": 0, "misses": 0, "entries": 0, "size_bytes": 0}
-        for level in CacheLevel
-    })
+    level_stats: dict[CacheLevel, dict[str, int]] = field(
+        default_factory=lambda: {
+            level: {"hits": 0, "misses": 0, "entries": 0, "size_bytes": 0}
+            for level in CacheLevel
+        }
+    )
 
     def calculate_hit_rate(self):
         """Calculate hit rate percentage."""
@@ -177,19 +190,25 @@ class CacheStatistics:
             "current_entries": self.current_entries,
             "current_size_mb": round(self.current_size_bytes / (1024 * 1024), 2),
             "memory_utilization_percent": round(
-                (self.current_size_bytes / self.max_size_bytes * 100) if self.max_size_bytes > 0 else 0, 2
+                (
+                    (self.current_size_bytes / self.max_size_bytes * 100)
+                    if self.max_size_bytes > 0
+                    else 0
+                ),
+                2,
             ),
             "eviction_count": self.evictions,
             "level_distribution": {
                 level.value: stats["entries"]
                 for level, stats in self.level_stats.items()
-            }
+            },
         }
 
 
 # ============================================================================
 # L1 Memory Cache Service
 # ============================================================================
+
 
 class L1MemoryCache:
     """
@@ -222,7 +241,9 @@ class L1MemoryCache:
         # Performance tracking
         self._access_times: deque = deque(maxlen=1000)
 
-        logger.info(f"L1 Memory Cache initialized with {self.config.max_size_mb}MB capacity")
+        logger.info(
+            f"L1 Memory Cache initialized with {self.config.max_size_mb}MB capacity"
+        )
 
     # ========================================================================
     # Core Cache Operations
@@ -275,14 +296,16 @@ class L1MemoryCache:
 
             # Update average access time
             if self._access_times:
-                self.stats.avg_access_time_ms = sum(self._access_times) / len(self._access_times)
+                self.stats.avg_access_time_ms = sum(self._access_times) / len(
+                    self._access_times
+                )
 
     def set(
         self,
         key: str,
         value: Any,
         ttl_seconds: int | None = None,
-        level: CacheLevel | None = None
+        level: CacheLevel | None = None,
     ) -> bool:
         """Set value in cache."""
         try:
@@ -307,7 +330,7 @@ class L1MemoryCache:
                     accessed_at=datetime.utcnow(),
                     size_bytes=size_bytes,
                     ttl_seconds=ttl_seconds or self.config.default_ttl_seconds,
-                    level=level
+                    level=level,
                 )
                 entry.update_access()
 
@@ -376,7 +399,9 @@ class L1MemoryCache:
         else:  # >= 10KB - cold cache
             return CacheLevel.COLD
 
-    def _consider_promotion(self, key: str, entry: CacheEntry, current_level: CacheLevel):
+    def _consider_promotion(
+        self, key: str, entry: CacheEntry, current_level: CacheLevel
+    ):
         """Consider promoting entry to a higher cache level."""
         # Only promote if access count is high enough
         if entry.access_count < 3:
@@ -384,17 +409,23 @@ class L1MemoryCache:
 
         # Calculate access frequency (accesses per hour)
         if len(entry.last_access_times) >= 2:
-            time_span = (entry.last_access_times[-1] - entry.last_access_times[0]).total_seconds()
+            time_span = (
+                entry.last_access_times[-1] - entry.last_access_times[0]
+            ).total_seconds()
             frequency = len(entry.last_access_times) / max(time_span / 3600, 0.1)
 
             # Promotion criteria
             promote = False
             target_level = current_level
 
-            if current_level == CacheLevel.COLD and frequency > 2:  # 2+ accesses per hour
+            if (
+                current_level == CacheLevel.COLD and frequency > 2
+            ):  # 2+ accesses per hour
                 target_level = CacheLevel.WARM
                 promote = True
-            elif current_level == CacheLevel.WARM and frequency > 10:  # 10+ accesses per hour
+            elif (
+                current_level == CacheLevel.WARM and frequency > 10
+            ):  # 10+ accesses per hour
                 target_level = CacheLevel.HOT
                 promote = True
 
@@ -457,14 +488,22 @@ class L1MemoryCache:
                 all_entries.append((score, key, entry, level))
 
         # Sort by eviction score (lowest first for LRU-style policies)
-        if self.config.eviction_policy in [EvictionPolicy.LRU, EvictionPolicy.SIZE_AWARE]:
+        if self.config.eviction_policy in [
+            EvictionPolicy.LRU,
+            EvictionPolicy.SIZE_AWARE,
+        ]:
             all_entries.sort(key=lambda x: x[0])  # Ascending (lowest score first)
         else:
-            all_entries.sort(key=lambda x: x[0], reverse=True)  # Descending (highest score first)
+            all_entries.sort(
+                key=lambda x: x[0], reverse=True
+            )  # Descending (highest score first)
 
         # Evict entries until we have enough space
         for score, key, entry, level in all_entries:
-            if freed_bytes >= required_bytes and evicted_count >= self.config.cleanup_batch_size:
+            if (
+                freed_bytes >= required_bytes
+                and evicted_count >= self.config.cleanup_batch_size
+            ):
                 break
 
             # Skip if entry was already removed
@@ -494,7 +533,10 @@ class L1MemoryCache:
             entries.append((score, key, entry))
 
         # Sort by eviction score
-        if self.config.eviction_policy in [EvictionPolicy.LRU, EvictionPolicy.SIZE_AWARE]:
+        if self.config.eviction_policy in [
+            EvictionPolicy.LRU,
+            EvictionPolicy.SIZE_AWARE,
+        ]:
             entries.sort(key=lambda x: x[0])
         else:
             entries.sort(key=lambda x: x[0], reverse=True)
@@ -581,7 +623,9 @@ class L1MemoryCache:
             self._cleanup_expired_entries()
 
             # Check memory pressure
-            memory_usage_ratio = self.stats.current_size_bytes / self.stats.max_size_bytes
+            memory_usage_ratio = (
+                self.stats.current_size_bytes / self.stats.max_size_bytes
+            )
 
             if memory_usage_ratio > self.config.aggressive_cleanup_threshold:
                 # Aggressive cleanup
@@ -618,11 +662,12 @@ class L1MemoryCache:
         """Estimate memory size of a value."""
         try:
             import sys
+
             return sys.getsizeof(value)
         except:
             # Fallback estimation
             if isinstance(value, str):
-                return len(value.encode('utf-8'))
+                return len(value.encode("utf-8"))
             elif isinstance(value, (dict, list)):
                 return len(str(value)) * 4  # Rough estimate
             else:
@@ -647,27 +692,34 @@ class L1MemoryCache:
             process = psutil.Process()
             memory_info = process.memory_info()
 
-            stats.update({
-                "process_memory_mb": memory_info.rss / (1024 * 1024),
-                "cache_overhead_percent": (
-                    (memory_info.rss - self.stats.current_size_bytes) /
-                    memory_info.rss * 100 if memory_info.rss > 0 else 0
-                ),
-                "entries_by_level": {
-                    level.value: len(storage)
-                    for level, storage in self.storage.items()
-                },
-                "average_entry_size_kb": (
-                    self.stats.current_size_bytes / (self.stats.current_entries * 1024)
-                    if self.stats.current_entries > 0 else 0
-                ),
-                "eviction_policy": self.config.eviction_policy.value,
-                "config": {
-                    "max_size_mb": self.config.max_size_mb,
-                    "max_entries": self.config.max_entries,
-                    "default_ttl_seconds": self.config.default_ttl_seconds
+            stats.update(
+                {
+                    "process_memory_mb": memory_info.rss / (1024 * 1024),
+                    "cache_overhead_percent": (
+                        (memory_info.rss - self.stats.current_size_bytes)
+                        / memory_info.rss
+                        * 100
+                        if memory_info.rss > 0
+                        else 0
+                    ),
+                    "entries_by_level": {
+                        level.value: len(storage)
+                        for level, storage in self.storage.items()
+                    },
+                    "average_entry_size_kb": (
+                        self.stats.current_size_bytes
+                        / (self.stats.current_entries * 1024)
+                        if self.stats.current_entries > 0
+                        else 0
+                    ),
+                    "eviction_policy": self.config.eviction_policy.value,
+                    "config": {
+                        "max_size_mb": self.config.max_size_mb,
+                        "max_entries": self.config.max_entries,
+                        "default_ttl_seconds": self.config.default_ttl_seconds,
+                    },
                 }
-            })
+            )
 
             return stats
 
@@ -699,7 +751,7 @@ class L1MemoryCache:
                 "utilization_percent": (
                     self.stats.current_size_bytes / self.stats.max_size_bytes * 100
                 ),
-                "levels": {}
+                "levels": {},
             }
 
             for level in CacheLevel:
@@ -711,8 +763,10 @@ class L1MemoryCache:
                 memory_info["levels"][level.value] = {
                     "size_mb": level_size / (1024 * 1024),
                     "entries": level_entries,
-                    "utilization_percent": (level_size / level_max_size * 100) if level_max_size > 0 else 0,
-                    "max_size_mb": level_config["max_size_mb"]
+                    "utilization_percent": (
+                        (level_size / level_max_size * 100) if level_max_size > 0 else 0
+                    ),
+                    "max_size_mb": level_config["max_size_mb"],
                 }
 
             return memory_info
@@ -735,16 +789,17 @@ class L1MemoryCache:
 # Cache Factory
 # ============================================================================
 
+
 def create_l1_cache(
     max_size_mb: float = 100.0,
     eviction_policy: EvictionPolicy = EvictionPolicy.ADAPTIVE,
-    enable_background_cleanup: bool = True
+    enable_background_cleanup: bool = True,
 ) -> L1MemoryCache:
     """Create L1 memory cache with specified configuration."""
     config = CacheConfig(
         max_size_mb=max_size_mb,
         eviction_policy=eviction_policy,
-        enable_background_cleanup=enable_background_cleanup
+        enable_background_cleanup=enable_background_cleanup,
     )
 
     return L1MemoryCache(config)
@@ -752,6 +807,7 @@ def create_l1_cache(
 
 # Example usage
 if __name__ == "__main__":
+
     async def main():
         # Create cache
         cache = create_l1_cache(max_size_mb=50.0)

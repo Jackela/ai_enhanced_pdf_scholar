@@ -14,12 +14,15 @@ from pathlib import Path
 from typing import Any
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 try:
     # Add parent directory to path
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
     from src.database.connection import DatabaseConnection
@@ -114,20 +117,26 @@ class DatabasePerformanceBenchmark:
                 created_at=None,  # Will be set by database
                 updated_at=None,
                 last_accessed=None if i % 3 == 0 else None,  # Some have access times
-                metadata={"test": True, "category": f"category_{i % 5}"}
+                metadata={"test": True, "category": f"category_{i % 5}"},
             )
             created_doc = self.doc_repo.create(doc)
             sample_documents.append(created_doc)
 
         # Sample citations
-        for i, doc in enumerate(sample_documents[:50]):  # Only first 50 docs have citations
+        for i, doc in enumerate(
+            sample_documents[:50]
+        ):  # Only first 50 docs have citations
             citation_count = 1 + (i % 3)  # 1-3 citations per document
             for j in range(citation_count):
                 citation = CitationModel(
                     id=None,
                     document_id=doc.id,
                     raw_text=f"Sample citation {j+1} for document {doc.id}",
-                    authors=f"Author {j+1}, Author {j+2}" if j % 2 == 0 else f"Single Author {j+1}",
+                    authors=(
+                        f"Author {j+1}, Author {j+2}"
+                        if j % 2 == 0
+                        else f"Single Author {j+1}"
+                    ),
                     title=f"Citation Title {j+1}",
                     publication_year=2020 + (j % 4),
                     journal_or_venue=f"Journal {j+1}",
@@ -138,7 +147,9 @@ class DatabasePerformanceBenchmark:
                 self.citation_repo.create(citation)
 
         # Sample vector indexes
-        for i, doc in enumerate(sample_documents[:30]):  # Only first 30 docs have vector indexes
+        for i, doc in enumerate(
+            sample_documents[:30]
+        ):  # Only first 30 docs have vector indexes
             vector_index = VectorIndexModel(
                 id=None,
                 document_id=doc.id,
@@ -148,7 +159,9 @@ class DatabasePerformanceBenchmark:
             )
             self.vector_repo.create(vector_index)
 
-        logger.info(f"Created sample data: {len(sample_documents)} documents, citations, and vector indexes")
+        logger.info(
+            f"Created sample data: {len(sample_documents)} documents, citations, and vector indexes"
+        )
 
     def run_query_performance_tests(self) -> dict[str, Any]:
         """Run comprehensive query performance tests."""
@@ -157,25 +170,65 @@ class DatabasePerformanceBenchmark:
         test_queries = [
             # Basic document queries
             ("simple_count", "SELECT COUNT(*) FROM documents", ()),
-            ("recent_documents", "SELECT * FROM documents ORDER BY created_at DESC LIMIT 10", ()),
-            ("large_documents", "SELECT * FROM documents WHERE file_size > ? ORDER BY file_size DESC LIMIT 10", (50000,)),
-
+            (
+                "recent_documents",
+                "SELECT * FROM documents ORDER BY created_at DESC LIMIT 10",
+                (),
+            ),
+            (
+                "large_documents",
+                "SELECT * FROM documents WHERE file_size > ? ORDER BY file_size DESC LIMIT 10",
+                (50000,),
+            ),
             # Search queries
-            ("title_search", "SELECT * FROM documents WHERE title LIKE ? ORDER BY title LIMIT 10", ("%Test%",)),
-            ("content_hash_lookup", "SELECT * FROM documents WHERE content_hash = ?", ("content_hash_000000000000000000000002",)),
-            ("file_hash_lookup", "SELECT * FROM documents WHERE file_hash = ?", ("hash_000000000000000000000005",)),
-
+            (
+                "title_search",
+                "SELECT * FROM documents WHERE title LIKE ? ORDER BY title LIMIT 10",
+                ("%Test%",),
+            ),
+            (
+                "content_hash_lookup",
+                "SELECT * FROM documents WHERE content_hash = ?",
+                ("content_hash_000000000000000000000002",),
+            ),
+            (
+                "file_hash_lookup",
+                "SELECT * FROM documents WHERE file_hash = ?",
+                ("hash_000000000000000000000005",),
+            ),
             # Join queries
-            ("document_citations", "SELECT d.*, COUNT(c.id) as citation_count FROM documents d LEFT JOIN citations c ON d.id = c.document_id GROUP BY d.id ORDER BY citation_count DESC LIMIT 10", ()),
-            ("document_with_indexes", "SELECT d.*, vi.chunk_count FROM documents d JOIN vector_indexes vi ON d.id = vi.document_id ORDER BY vi.chunk_count DESC LIMIT 10", ()),
-
+            (
+                "document_citations",
+                "SELECT d.*, COUNT(c.id) as citation_count FROM documents d LEFT JOIN citations c ON d.id = c.document_id GROUP BY d.id ORDER BY citation_count DESC LIMIT 10",
+                (),
+            ),
+            (
+                "document_with_indexes",
+                "SELECT d.*, vi.chunk_count FROM documents d JOIN vector_indexes vi ON d.id = vi.document_id ORDER BY vi.chunk_count DESC LIMIT 10",
+                (),
+            ),
             # Complex analytical queries
-            ("citation_analysis", "SELECT c.publication_year, COUNT(*) as count, AVG(c.confidence_score) as avg_confidence FROM citations c WHERE c.confidence_score >= ? GROUP BY c.publication_year ORDER BY c.publication_year DESC", (0.8,)),
-            ("document_size_stats", "SELECT AVG(file_size) as avg_size, MIN(file_size) as min_size, MAX(file_size) as max_size, COUNT(*) as count FROM documents", ()),
-
+            (
+                "citation_analysis",
+                "SELECT c.publication_year, COUNT(*) as count, AVG(c.confidence_score) as avg_confidence FROM citations c WHERE c.confidence_score >= ? GROUP BY c.publication_year ORDER BY c.publication_year DESC",
+                (0.8,),
+            ),
+            (
+                "document_size_stats",
+                "SELECT AVG(file_size) as avg_size, MIN(file_size) as min_size, MAX(file_size) as max_size, COUNT(*) as count FROM documents",
+                (),
+            ),
             # Date range queries
-            ("recent_activity", "SELECT * FROM documents WHERE created_at >= datetime('now', '-7 days') ORDER BY created_at DESC", ()),
-            ("access_analytics", "SELECT * FROM documents WHERE last_accessed IS NOT NULL ORDER BY last_accessed DESC LIMIT 20", ()),
+            (
+                "recent_activity",
+                "SELECT * FROM documents WHERE created_at >= datetime('now', '-7 days') ORDER BY created_at DESC",
+                (),
+            ),
+            (
+                "access_analytics",
+                "SELECT * FROM documents WHERE last_accessed IS NOT NULL ORDER BY last_accessed DESC LIMIT 20",
+                (),
+            ),
         ]
 
         # Benchmark queries
@@ -184,17 +237,29 @@ class DatabasePerformanceBenchmark:
         # Add detailed analysis for key queries
         detailed_analyses = {}
         key_queries = [
-            ("title_search", "SELECT * FROM documents WHERE title LIKE ? ORDER BY title LIMIT 10", ("%Test%",)),
-            ("document_citations", "SELECT d.*, COUNT(c.id) as citation_count FROM documents d LEFT JOIN citations c ON d.id = c.document_id GROUP BY d.id ORDER BY citation_count DESC LIMIT 10", ()),
+            (
+                "title_search",
+                "SELECT * FROM documents WHERE title LIKE ? ORDER BY title LIMIT 10",
+                ("%Test%",),
+            ),
+            (
+                "document_citations",
+                "SELECT d.*, COUNT(c.id) as citation_count FROM documents d LEFT JOIN citations c ON d.id = c.document_id GROUP BY d.id ORDER BY citation_count DESC LIMIT 10",
+                (),
+            ),
         ]
 
         for query_name, query_sql, params in key_queries:
-            detailed_analyses[query_name] = self.migrator.get_advanced_query_analysis(query_sql, params)
+            detailed_analyses[query_name] = self.migrator.get_advanced_query_analysis(
+                query_sql, params
+            )
 
         benchmark_results["detailed_analyses"] = detailed_analyses
 
         self.benchmark_results["performance_tests"] = benchmark_results
-        logger.info(f"Query performance tests completed. Fastest: {benchmark_results.get('fastest_query', 'unknown')}, Slowest: {benchmark_results.get('slowest_query', 'unknown')}")
+        logger.info(
+            f"Query performance tests completed. Fastest: {benchmark_results.get('fastest_query', 'unknown')}, Slowest: {benchmark_results.get('slowest_query', 'unknown')}"
+        )
 
         return benchmark_results
 
@@ -275,32 +340,54 @@ class DatabasePerformanceBenchmark:
                 "expected_index": test["expected_index"],
                 "index_used": index_used,
                 "execution_plan": execution_plan,
-                "performance_rating": "excellent" if execution_time < 1 and index_used else
-                                   "good" if execution_time < 10 and index_used else
-                                   "poor" if not index_used else "fair"
+                "performance_rating": (
+                    "excellent"
+                    if execution_time < 1 and index_used
+                    else (
+                        "good"
+                        if execution_time < 10 and index_used
+                        else "poor" if not index_used else "fair"
+                    )
+                ),
             }
 
             impact_results.append(impact_result)
-            logger.debug(f"Index impact test '{test['test_name']}': {execution_time:.2f}ms, index used: {index_used}")
+            logger.debug(
+                f"Index impact test '{test['test_name']}': {execution_time:.2f}ms, index used: {index_used}"
+            )
 
         return {
             "impact_tests": impact_results,
-            "overall_index_health": self._calculate_overall_index_health(impact_results),
+            "overall_index_health": self._calculate_overall_index_health(
+                impact_results
+            ),
         }
 
-    def _calculate_overall_index_health(self, impact_results: list[dict[str, Any]]) -> dict[str, Any]:
+    def _calculate_overall_index_health(
+        self, impact_results: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Calculate overall index health based on impact test results."""
         total_tests = len(impact_results)
         if total_tests == 0:
             return {"score": 0, "rating": "unknown"}
 
-        excellent_count = sum(1 for test in impact_results if test["performance_rating"] == "excellent")
-        good_count = sum(1 for test in impact_results if test["performance_rating"] == "good")
-        fair_count = sum(1 for test in impact_results if test["performance_rating"] == "fair")
-        poor_count = sum(1 for test in impact_results if test["performance_rating"] == "poor")
+        excellent_count = sum(
+            1 for test in impact_results if test["performance_rating"] == "excellent"
+        )
+        good_count = sum(
+            1 for test in impact_results if test["performance_rating"] == "good"
+        )
+        fair_count = sum(
+            1 for test in impact_results if test["performance_rating"] == "fair"
+        )
+        poor_count = sum(
+            1 for test in impact_results if test["performance_rating"] == "poor"
+        )
 
         # Calculate weighted score
-        score = (excellent_count * 4 + good_count * 3 + fair_count * 2 + poor_count * 1) / (total_tests * 4)
+        score = (
+            excellent_count * 4 + good_count * 3 + fair_count * 2 + poor_count * 1
+        ) / (total_tests * 4)
 
         if score >= 0.9:
             rating = "excellent"
@@ -342,14 +429,21 @@ class DatabasePerformanceBenchmark:
         # Re-measure key metrics
         try:
             # Table row counts
-            for table in ['documents', 'vector_indexes', 'citations']:
-                count_result = self.db.fetch_one(f"SELECT COUNT(*) as count FROM {table}")
-                current_measurements[f"table_row_count_{table}"] = count_result['count'] if count_result else 0
+            for table in ["documents", "vector_indexes", "citations"]:
+                count_result = self.db.fetch_one(
+                    f"SELECT COUNT(*) as count FROM {table}"
+                )
+                current_measurements[f"table_row_count_{table}"] = (
+                    count_result["count"] if count_result else 0
+                )
 
             # Sample query timings
             sample_queries = [
                 ("simple_count_documents", "SELECT COUNT(*) FROM documents"),
-                ("recent_documents_query", "SELECT * FROM documents ORDER BY created_at DESC LIMIT 10"),
+                (
+                    "recent_documents_query",
+                    "SELECT * FROM documents ORDER BY created_at DESC LIMIT 10",
+                ),
             ]
 
             for query_name, query in sample_queries:
@@ -392,13 +486,17 @@ class DatabasePerformanceBenchmark:
 
                     regression_results["baseline_comparison"][metric_name] = comparison
             else:
-                regression_results["new_metrics"].append({
-                    "metric": metric_name,
-                    "current": current_value,
-                })
+                regression_results["new_metrics"].append(
+                    {
+                        "metric": metric_name,
+                        "current": current_value,
+                    }
+                )
 
         self.benchmark_results["baseline_comparisons"] = regression_results
-        logger.info(f"Regression tests completed. Found {len(regression_results['regressions_detected'])} regressions, {len(regression_results['improvements_detected'])} improvements")
+        logger.info(
+            f"Regression tests completed. Found {len(regression_results['regressions_detected'])} regressions, {len(regression_results['improvements_detected'])} improvements"
+        )
 
         return regression_results
 
@@ -414,11 +512,17 @@ class DatabasePerformanceBenchmark:
 
             # Check for slow queries
             if "benchmarks" in perf_results:
-                slow_queries = [b for b in perf_results["benchmarks"] if b["average_time_ms"] > 50]
+                slow_queries = [
+                    b for b in perf_results["benchmarks"] if b["average_time_ms"] > 50
+                ]
                 if slow_queries:
-                    recommendations.append(f"Found {len(slow_queries)} queries taking >50ms. Consider optimization.")
+                    recommendations.append(
+                        f"Found {len(slow_queries)} queries taking >50ms. Consider optimization."
+                    )
                     for query in slow_queries[:3]:  # Show top 3 slowest
-                        recommendations.append(f"  - {query['query_name']}: {query['average_time_ms']:.2f}ms")
+                        recommendations.append(
+                            f"  - {query['query_name']}: {query['average_time_ms']:.2f}ms"
+                        )
 
         # Analyze index effectiveness
         if "index_analysis" in self.benchmark_results:
@@ -428,35 +532,54 @@ class DatabasePerformanceBenchmark:
                 effectiveness = index_analysis["effectiveness_analysis"]
 
                 # Check index effectiveness ratio
-                if "summary" in effectiveness and effectiveness["summary"].get("index_effectiveness_ratio", 0) < 0.6:
-                    recommendations.append("Index effectiveness is below optimal. Consider adding more targeted indexes.")
+                if (
+                    "summary" in effectiveness
+                    and effectiveness["summary"].get("index_effectiveness_ratio", 0)
+                    < 0.6
+                ):
+                    recommendations.append(
+                        "Index effectiveness is below optimal. Consider adding more targeted indexes."
+                    )
 
                 # Check for potentially unused indexes
                 if effectiveness.get("potentially_unused"):
-                    recommendations.append(f"Monitor {len(effectiveness['potentially_unused'])} potentially unused indexes for removal.")
+                    recommendations.append(
+                        f"Monitor {len(effectiveness['potentially_unused'])} potentially unused indexes for removal."
+                    )
 
         # Check performance impact
-        if "index_analysis" in self.benchmark_results and "performance_impact" in self.benchmark_results["index_analysis"]:
+        if (
+            "index_analysis" in self.benchmark_results
+            and "performance_impact" in self.benchmark_results["index_analysis"]
+        ):
             impact = self.benchmark_results["index_analysis"]["performance_impact"]
 
             if "overall_index_health" in impact:
                 health = impact["overall_index_health"]
                 if health["score"] < 0.7:
-                    recommendations.append(f"Index performance health is {health['rating']} ({health['score']:.2f}). Review index usage.")
+                    recommendations.append(
+                        f"Index performance health is {health['rating']} ({health['score']:.2f}). Review index usage."
+                    )
 
         # Check for regressions
         if "baseline_comparisons" in self.benchmark_results:
-            regressions = self.benchmark_results["baseline_comparisons"]["regressions_detected"]
+            regressions = self.benchmark_results["baseline_comparisons"][
+                "regressions_detected"
+            ]
             if regressions:
-                recommendations.append(f"Detected {len(regressions)} performance regressions. Investigate recent changes.")
+                recommendations.append(
+                    f"Detected {len(regressions)} performance regressions. Investigate recent changes."
+                )
 
         # General recommendations
-        recommendations.extend([
-            "Run VACUUM periodically to reclaim space and optimize file layout",
-            "Monitor query performance in production and update indexes as needed",
-            "Consider archiving old data if tables grow beyond 100K rows",
-            "Regular ANALYZE execution helps maintain optimal query plans",
-        ])
+        recommendations.extend(
+            [
+                "Run VACUUM periodically to reclaim space and optimize file layout",
+                "Monitor query performance in production and update indexes as needed",
+                "Consider archiving old data if tables grow beyond 100K rows",
+                "Regular ANALYZE execution helps maintain optimal query plans",
+            ]
+        )
 
         self.benchmark_results["optimization_recommendations"] = recommendations
         logger.info(f"Generated {len(recommendations)} optimization recommendations")
@@ -479,9 +602,19 @@ class DatabasePerformanceBenchmark:
 
             # Add summary information
             self.benchmark_results["summary"] = {
-                "total_tests_run": len(self.benchmark_results.get("performance_tests", {}).get("benchmarks", [])),
-                "total_indexes_analyzed": len(self.benchmark_results.get("index_analysis", {}).get("usage_statistics", [])),
-                "recommendations_generated": len(self.benchmark_results.get("optimization_recommendations", [])),
+                "total_tests_run": len(
+                    self.benchmark_results.get("performance_tests", {}).get(
+                        "benchmarks", []
+                    )
+                ),
+                "total_indexes_analyzed": len(
+                    self.benchmark_results.get("index_analysis", {}).get(
+                        "usage_statistics", []
+                    )
+                ),
+                "recommendations_generated": len(
+                    self.benchmark_results.get("optimization_recommendations", [])
+                ),
                 "overall_performance_score": self._calculate_overall_performance_score(),
             }
 
@@ -510,14 +643,22 @@ class DatabasePerformanceBenchmark:
         # Index health component
         if "index_analysis" in self.benchmark_results:
             index_data = self.benchmark_results["index_analysis"]
-            if "performance_impact" in index_data and "overall_index_health" in index_data["performance_impact"]:
-                health_score = index_data["performance_impact"]["overall_index_health"]["score"] * 100
+            if (
+                "performance_impact" in index_data
+                and "overall_index_health" in index_data["performance_impact"]
+            ):
+                health_score = (
+                    index_data["performance_impact"]["overall_index_health"]["score"]
+                    * 100
+                )
                 score_components.append(health_score)
 
         # Regression component (penalize regressions)
         regression_penalty = 0
         if "baseline_comparisons" in self.benchmark_results:
-            regressions = len(self.benchmark_results["baseline_comparisons"]["regressions_detected"])
+            regressions = len(
+                self.benchmark_results["baseline_comparisons"]["regressions_detected"]
+            )
             regression_penalty = regressions * 10  # 10 points per regression
 
         # Calculate final score
@@ -532,7 +673,7 @@ class DatabasePerformanceBenchmark:
     def save_results(self, output_file: str):
         """Save benchmark results to JSON file."""
         try:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(self.benchmark_results, f, indent=2, default=str)
             logger.info(f"Benchmark results saved to {output_file}")
         except Exception as e:
@@ -541,19 +682,23 @@ class DatabasePerformanceBenchmark:
 
     def print_summary(self):
         """Print a summary of benchmark results."""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("DATABASE PERFORMANCE BENCHMARK SUMMARY")
-        print("="*80)
+        print("=" * 80)
 
         # Basic info
         print(f"Database: {self.benchmark_results['database_path']}")
         print(f"Schema Version: {self.benchmark_results['schema_version']}")
-        print(f"Benchmark Time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.benchmark_results['test_timestamp']))}")
+        print(
+            f"Benchmark Time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.benchmark_results['test_timestamp']))}"
+        )
 
         # Summary stats
         if "summary" in self.benchmark_results:
             summary = self.benchmark_results["summary"]
-            print(f"\nOverall Performance Score: {summary.get('overall_performance_score', 'N/A')}/100")
+            print(
+                f"\nOverall Performance Score: {summary.get('overall_performance_score', 'N/A')}/100"
+            )
             print(f"Tests Run: {summary.get('total_tests_run', 0)}")
             print(f"Indexes Analyzed: {summary.get('total_indexes_analyzed', 0)}")
             print(f"Recommendations: {summary.get('recommendations_generated', 0)}")
@@ -569,9 +714,14 @@ class DatabasePerformanceBenchmark:
         # Index health
         if "index_analysis" in self.benchmark_results:
             index_data = self.benchmark_results["index_analysis"]
-            if "performance_impact" in index_data and "overall_index_health" in index_data["performance_impact"]:
+            if (
+                "performance_impact" in index_data
+                and "overall_index_health" in index_data["performance_impact"]
+            ):
                 health = index_data["performance_impact"]["overall_index_health"]
-                print(f"\nIndex Health: {health['rating'].upper()} ({health['score']:.2f})")
+                print(
+                    f"\nIndex Health: {health['rating'].upper()} ({health['score']:.2f})"
+                )
 
         # Key recommendations
         if "optimization_recommendations" in self.benchmark_results:
@@ -580,12 +730,12 @@ class DatabasePerformanceBenchmark:
             for i, rec in enumerate(recommendations[:5], 1):
                 print(f"  {i}. {rec}")
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
 
     def cleanup(self):
         """Cleanup resources."""
         try:
-            if hasattr(self, 'db'):
+            if hasattr(self, "db"):
                 self.db.close_all_connections()
 
             if self.cleanup_db and Path(self.db_path).exists():
@@ -605,10 +755,14 @@ class DatabasePerformanceBenchmark:
 def main():
     """Main function for command-line interface."""
     parser = argparse.ArgumentParser(description="Database Performance Benchmark Tool")
-    parser.add_argument("--db-path", help="Path to database file (creates temporary if not specified)")
+    parser.add_argument(
+        "--db-path", help="Path to database file (creates temporary if not specified)"
+    )
     parser.add_argument("--output", "-o", help="Output file for results (JSON format)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
-    parser.add_argument("--quick", action="store_true", help="Run only essential tests (faster)")
+    parser.add_argument(
+        "--quick", action="store_true", help="Run only essential tests (faster)"
+    )
 
     args = parser.parse_args()
 

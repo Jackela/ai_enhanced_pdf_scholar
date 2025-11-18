@@ -27,8 +27,10 @@ logger = logging.getLogger(__name__)
 # L2 Cache Configuration
 # ============================================================================
 
+
 class DistributionStrategy(str, Enum):
     """Data distribution strategies for L2 cache."""
+
     HASH_RING = "hash_ring"  # Consistent hashing
     SHARDED = "sharded"  # Range-based sharding
     REPLICATED = "replicated"  # Full replication
@@ -37,6 +39,7 @@ class DistributionStrategy(str, Enum):
 
 class CompressionLevel(str, Enum):
     """Data compression levels."""
+
     NONE = "none"
     LOW = "low"
     MEDIUM = "medium"
@@ -46,6 +49,7 @@ class CompressionLevel(str, Enum):
 @dataclass
 class L2CacheConfig:
     """Configuration for L2 Redis cache."""
+
     # Distribution
     distribution_strategy: DistributionStrategy = DistributionStrategy.HASH_RING
     replication_factor: int = 2
@@ -82,6 +86,7 @@ class L2CacheConfig:
 @dataclass
 class L2CacheEntry:
     """L2 cache entry with metadata."""
+
     key: str
     value: Any
     created_at: datetime
@@ -104,19 +109,18 @@ class L2CacheEntry:
             "hit_count": self.hit_count,
             "is_compressed": self.is_compressed,
             "compression_ratio": self.compression_ratio,
-            "node_affinity": self.node_affinity
+            "node_affinity": self.node_affinity,
         }
 
         # Serialize value and metadata
-        data = {
-            "metadata": metadata,
-            "value": self.value
-        }
+        data = {"metadata": metadata, "value": self.value}
 
         return pickle.dumps(data)
 
     @classmethod
-    def from_redis_value(cls, key: str, redis_data: bytes, ttl_seconds: int) -> 'L2CacheEntry':
+    def from_redis_value(
+        cls, key: str, redis_data: bytes, ttl_seconds: int
+    ) -> "L2CacheEntry":
         """Create entry from Redis data."""
         try:
             data = pickle.loads(redis_data)
@@ -125,15 +129,19 @@ class L2CacheEntry:
             return cls(
                 key=key,
                 value=data["value"],
-                created_at=datetime.fromisoformat(metadata.get("created_at", datetime.utcnow().isoformat())),
-                accessed_at=datetime.fromisoformat(metadata.get("accessed_at", datetime.utcnow().isoformat())),
+                created_at=datetime.fromisoformat(
+                    metadata.get("created_at", datetime.utcnow().isoformat())
+                ),
+                accessed_at=datetime.fromisoformat(
+                    metadata.get("accessed_at", datetime.utcnow().isoformat())
+                ),
                 access_count=metadata.get("access_count", 0),
                 size_bytes=metadata.get("size_bytes", 0),
                 ttl_seconds=ttl_seconds,
                 is_compressed=metadata.get("is_compressed", False),
                 compression_ratio=metadata.get("compression_ratio", 1.0),
                 hit_count=metadata.get("hit_count", 0),
-                node_affinity=metadata.get("node_affinity")
+                node_affinity=metadata.get("node_affinity"),
             )
         except Exception as e:
             logger.error(f"Error deserializing cache entry for key {key}: {e}")
@@ -142,13 +150,14 @@ class L2CacheEntry:
                 key=key,
                 value=None,
                 created_at=datetime.utcnow(),
-                accessed_at=datetime.utcnow()
+                accessed_at=datetime.utcnow(),
             )
 
 
 # ============================================================================
 # L2 Redis Cache Service
 # ============================================================================
+
 
 class L2RedisCache:
     """
@@ -160,7 +169,7 @@ class L2RedisCache:
         redis_cache: RedisCacheService,
         cluster_manager: RedisClusterManager | None = None,
         l1_cache: L1MemoryCache | None = None,
-        config: L2CacheConfig | None = None
+        config: L2CacheConfig | None = None,
     ):
         """Initialize L2 Redis cache."""
         self.redis_cache = redis_cache
@@ -178,7 +187,7 @@ class L2RedisCache:
             "compressions": 0,
             "decompressions": 0,
             "distribution_operations": 0,
-            "write_behind_operations": 0
+            "write_behind_operations": 0,
         }
 
         # Write-behind queue
@@ -197,7 +206,7 @@ class L2RedisCache:
         self.operation_times: dict[str, deque] = {
             "get": deque(maxlen=100),
             "set": deque(maxlen=100),
-            "delete": deque(maxlen=100)
+            "delete": deque(maxlen=100),
         }
 
         logger.info("L2 Redis Cache initialized")
@@ -239,8 +248,10 @@ class L2RedisCache:
             self.key_hit_counts[key] += 1
 
             # Consider promotion to hot data
-            if (self.key_hit_counts[key] >= self.config.promote_after_hits and
-                key not in self.hot_keys):
+            if (
+                self.key_hit_counts[key] >= self.config.promote_after_hits
+                and key not in self.hot_keys
+            ):
                 await self._promote_to_hot(key, entry)
 
             # Update entry in Redis (write-behind)
@@ -259,7 +270,9 @@ class L2RedisCache:
                 else:
                     l1_level = CacheLevel.COLD
 
-                self.l1_cache.set(key, entry.value, ttl_seconds=entry.ttl_seconds, level=l1_level)
+                self.l1_cache.set(
+                    key, entry.value, ttl_seconds=entry.ttl_seconds, level=l1_level
+                )
 
             self.stats["hits"] += 1
             operation_time = (time.time() - start_time) * 1000
@@ -280,7 +293,7 @@ class L2RedisCache:
         key: str,
         value: Any,
         ttl_seconds: int | None = None,
-        compress: bool | None = None
+        compress: bool | None = None,
     ) -> bool:
         """Set value in L2 cache."""
         start_time = time.time()
@@ -293,23 +306,28 @@ class L2RedisCache:
                 created_at=datetime.utcnow(),
                 accessed_at=datetime.utcnow(),
                 ttl_seconds=ttl_seconds or self.config.default_ttl_seconds,
-                size_bytes=len(str(value))  # Rough estimate
+                size_bytes=len(str(value)),  # Rough estimate
             )
 
             # Apply TTL jitter to prevent thundering herd
             if self.config.ttl_jitter_percent > 0:
                 jitter = entry.ttl_seconds * (self.config.ttl_jitter_percent / 100)
                 import random
+
                 entry.ttl_seconds += random.randint(-int(jitter), int(jitter))
 
             # Handle hot data TTL extension
             if key in self.hot_keys:
-                entry.ttl_seconds = int(entry.ttl_seconds * self.config.hot_data_ttl_multiplier)
+                entry.ttl_seconds = int(
+                    entry.ttl_seconds * self.config.hot_data_ttl_multiplier
+                )
 
             # Compression decision
             if compress is None:
-                compress = (entry.size_bytes >= self.config.compression_threshold_bytes and
-                           self.config.compression_level != CompressionLevel.NONE)
+                compress = (
+                    entry.size_bytes >= self.config.compression_threshold_bytes
+                    and self.config.compression_level != CompressionLevel.NONE
+                )
 
             if compress:
                 entry = await self._compress_entry(entry)
@@ -332,7 +350,9 @@ class L2RedisCache:
                     else:
                         l1_level = CacheLevel.WARM
 
-                    self.l1_cache.set(key, entry.value, ttl_seconds=entry.ttl_seconds, level=l1_level)
+                    self.l1_cache.set(
+                        key, entry.value, ttl_seconds=entry.ttl_seconds, level=l1_level
+                    )
 
                 self.stats["sets"] += 1
                 operation_time = (time.time() - start_time) * 1000
@@ -399,7 +419,7 @@ class L2RedisCache:
 
         # Split into batches
         for i in range(0, len(keys), self.config.batch_size):
-            batch_keys = keys[i:i + self.config.batch_size]
+            batch_keys = keys[i : i + self.config.batch_size]
 
             # Check L1 cache first
             l1_results = {}
@@ -431,7 +451,9 @@ class L2RedisCache:
 
                             # Store in L1 cache
                             if self.l1_cache:
-                                self.l1_cache.set(key, entry.value, ttl_seconds=entry.ttl_seconds)
+                                self.l1_cache.set(
+                                    key, entry.value, ttl_seconds=entry.ttl_seconds
+                                )
                         except Exception as e:
                             logger.error(f"Error deserializing key {key}: {e}")
 
@@ -451,7 +473,7 @@ class L2RedisCache:
         # Split into batches
         items = list(data.items())
         for i in range(0, len(items), self.config.batch_size):
-            batch_items = items[i:i + self.config.batch_size]
+            batch_items = items[i : i + self.config.batch_size]
 
             # Prepare Redis data
             redis_data = {}
@@ -463,12 +485,14 @@ class L2RedisCache:
                     created_at=datetime.utcnow(),
                     accessed_at=datetime.utcnow(),
                     ttl_seconds=ttl_seconds or self.config.default_ttl_seconds,
-                    size_bytes=len(str(value))
+                    size_bytes=len(str(value)),
                 )
 
                 # Compression if needed
-                if (entry.size_bytes >= self.config.compression_threshold_bytes and
-                    self.config.compression_level != CompressionLevel.NONE):
+                if (
+                    entry.size_bytes >= self.config.compression_threshold_bytes
+                    and self.config.compression_level != CompressionLevel.NONE
+                ):
                     entry = await self._compress_entry(entry)
 
                 redis_data[key] = entry.to_redis_value()
@@ -523,6 +547,7 @@ class L2RedisCache:
 
         try:
             import zlib
+
             decompressed_data = zlib.decompress(entry.value)
             value = pickle.loads(decompressed_data)
 
@@ -584,7 +609,9 @@ class L2RedisCache:
         """Update entry metadata in Redis."""
         try:
             redis_data = entry.to_redis_value()
-            self.redis_cache.set(key, redis_data, ttl=entry.ttl_seconds, xx=True)  # Only update if exists
+            self.redis_cache.set(
+                key, redis_data, ttl=entry.ttl_seconds, xx=True
+            )  # Only update if exists
         except Exception as e:
             logger.error(f"Error updating metadata for key {key}: {e}")
 
@@ -639,7 +666,9 @@ class L2RedisCache:
         batch = []
 
         # Collect batch
-        for _ in range(min(self.config.write_behind_batch_size, len(self.write_behind_queue))):
+        for _ in range(
+            min(self.config.write_behind_batch_size, len(self.write_behind_queue))
+        ):
             if self.write_behind_queue:
                 batch.append(self.write_behind_queue.popleft())
 
@@ -676,14 +705,16 @@ class L2RedisCache:
             "key": key,
             "operation": operation,
             "duration_ms": duration * 1000,
-            "is_slow": (duration * 1000) > self.config.log_slow_operations_ms
+            "is_slow": (duration * 1000) > self.config.log_slow_operations_ms,
         }
 
         self.access_log.append(access_record)
 
         # Log slow operations
         if access_record["is_slow"]:
-            logger.warning(f"Slow L2 cache operation: {operation} for key {key} took {access_record['duration_ms']:.1f}ms")
+            logger.warning(
+                f"Slow L2 cache operation: {operation} for key {key} took {access_record['duration_ms']:.1f}ms"
+            )
 
     # ========================================================================
     # Statistics and Health
@@ -692,12 +723,16 @@ class L2RedisCache:
     def get_stats(self) -> dict[str, Any]:
         """Get L2 cache statistics."""
         total_operations = self.stats["hits"] + self.stats["misses"]
-        hit_rate = (self.stats["hits"] / total_operations * 100) if total_operations > 0 else 0
+        hit_rate = (
+            (self.stats["hits"] / total_operations * 100) if total_operations > 0 else 0
+        )
 
         # Calculate average operation times
         avg_times = {}
         for operation, times in self.operation_times.items():
-            avg_times[f"avg_{operation}_time_ms"] = sum(times) / len(times) if times else 0
+            avg_times[f"avg_{operation}_time_ms"] = (
+                sum(times) / len(times) if times else 0
+            )
 
         stats = {
             "hit_rate_percent": round(hit_rate, 2),
@@ -706,7 +741,7 @@ class L2RedisCache:
             "write_behind_queue_size": len(self.write_behind_queue),
             "compression_ratio_avg": self._calculate_avg_compression_ratio(),
             **self.stats,
-            **avg_times
+            **avg_times,
         }
 
         return stats
@@ -716,11 +751,11 @@ class L2RedisCache:
         return {
             "hot_keys_count": len(self.hot_keys),
             "top_keys_by_hits": sorted(
-                self.key_hit_counts.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:20],  # Top 20 keys
-            "hot_keys_list": list(self.hot_keys)[:50]  # First 50 hot keys
+                self.key_hit_counts.items(), key=lambda x: x[1], reverse=True
+            )[
+                :20
+            ],  # Top 20 keys
+            "hot_keys_list": list(self.hot_keys)[:50],  # First 50 hot keys
         }
 
     def get_performance_metrics(self) -> dict[str, Any]:
@@ -729,9 +764,10 @@ class L2RedisCache:
             "operation_times": {},
             "access_patterns": self._analyze_access_patterns(),
             "slow_operations": [
-                record for record in self.access_log
-                if record["is_slow"]
-            ][-10:]  # Last 10 slow operations
+                record for record in self.access_log if record["is_slow"]
+            ][
+                -10:
+            ],  # Last 10 slow operations
         }
 
         # Operation time statistics
@@ -741,8 +777,12 @@ class L2RedisCache:
                     "avg_ms": sum(times) / len(times),
                     "min_ms": min(times),
                     "max_ms": max(times),
-                    "p95_ms": sorted(times)[int(len(times) * 0.95)] if len(times) > 20 else max(times),
-                    "count": len(times)
+                    "p95_ms": (
+                        sorted(times)[int(len(times) * 0.95)]
+                        if len(times) > 20
+                        else max(times)
+                    ),
+                    "count": len(times),
                 }
 
         return metrics
@@ -774,7 +814,7 @@ class L2RedisCache:
         return {
             "operation_distribution": dict(operation_counts),
             "hourly_access_distribution": dict(hourly_distribution),
-            "total_logged_accesses": len(recent_accesses)
+            "total_logged_accesses": len(recent_accesses),
         }
 
     # ========================================================================
@@ -793,6 +833,7 @@ class L2RedisCache:
 
 # Example usage
 if __name__ == "__main__":
+
     async def main():
         from .l1_memory_cache import create_l1_cache
         from .redis_cache_service import RedisCacheService, RedisConfig

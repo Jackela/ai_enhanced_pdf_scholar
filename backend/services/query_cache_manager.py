@@ -165,7 +165,8 @@ class IntelligentQueryCacheManager:
         """Initialize cache infrastructure including persistent storage if needed."""
         try:
             # Create cache monitoring table
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS query_cache_stats (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     query_hash TEXT NOT NULL,
@@ -176,17 +177,22 @@ class IntelligentQueryCacheManager:
                     avg_response_time_ms REAL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_cache_stats_hash
                 ON query_cache_stats(query_hash)
-            """)
+            """
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_cache_stats_last_access
                 ON query_cache_stats(last_access DESC)
-            """)
+            """
+            )
 
             logger.info("Query cache infrastructure initialized")
 
@@ -327,9 +333,9 @@ class IntelligentQueryCacheManager:
             entry = CacheEntry(
                 query_hash=cache_key,
                 query_text=query,
-                parameters_hash=self._generate_cache_key("", parameters)
-                if parameters
-                else "",
+                parameters_hash=(
+                    self._generate_cache_key("", parameters) if parameters else ""
+                ),
                 result_data=compressed_data,
                 created_at=datetime.now(),
                 last_accessed=datetime.now(),

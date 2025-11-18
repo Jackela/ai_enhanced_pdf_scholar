@@ -114,9 +114,7 @@ class IRAGFileManager(ABC):
     """Interface for RAG file management operations."""
 
     @abstractmethod
-    async def cleanup_temp_files(
-        self, document_id: int | None = None, **kwargs
-    ) -> int:
+    async def cleanup_temp_files(self, document_id: int | None = None, **kwargs) -> int:
         """Clean up temporary files."""
         pass
 

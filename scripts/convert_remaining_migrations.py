@@ -793,8 +793,16 @@ def main():
 
     # Create migration files
     migrations = [
-        (4, "004_performance_optimization.py", create_migration_004_performance_optimization),
-        (5, "005_advanced_performance_analysis.py", create_migration_005_advanced_performance),
+        (
+            4,
+            "004_performance_optimization.py",
+            create_migration_004_performance_optimization,
+        ),
+        (
+            5,
+            "005_advanced_performance_analysis.py",
+            create_migration_005_advanced_performance,
+        ),
         (7, "007_add_tags_column.py", create_migration_007_add_tags_column),
     ]
 
@@ -809,7 +817,7 @@ def main():
 
         try:
             content = creator_func()
-            file_path.write_text(content, encoding='utf-8')
+            file_path.write_text(content, encoding="utf-8")
             logger.info(f"Successfully created {filename}")
         except Exception as e:
             logger.error(f"Failed to create {filename}: {e}")
@@ -818,7 +826,8 @@ def main():
     logger.info(f"Created migration files in: {versions_dir}")
 
     # Provide usage instructions
-    print("""
+    print(
+        """
 Migration Conversion Complete!
 
 Next Steps:
@@ -844,7 +853,8 @@ Next Steps:
 5. Refer to src/database/migrations/README.md for full documentation
 
 The old migrations.py file is now a compatibility layer that uses the modular system.
-""")
+"""
+    )
 
 
 if __name__ == "__main__":

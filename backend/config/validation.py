@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class ConfigValidationError(Exception):
     """Exception raised when configuration validation fails."""
 
-    def __init__(self, message: str, field: str | None = None, issues: list[str] | None = None):
+    def __init__(
+        self, message: str, field: str | None = None, issues: list[str] | None = None
+    ):
         super().__init__(message)
         self.field = field
         self.issues = issues or []
@@ -43,7 +45,7 @@ class ConfigValidator:
             parsed = urlparse(url)
 
             # Check scheme
-            allowed_schemes = schemes or ['http', 'https']
+            allowed_schemes = schemes or ["http", "https"]
             if parsed.scheme.lower() not in allowed_schemes:
                 return False
 
@@ -94,7 +96,7 @@ class ConfigValidator:
         if not redis_url:
             return False
 
-        return ConfigValidator.validate_url(redis_url, schemes=['redis', 'rediss'])
+        return ConfigValidator.validate_url(redis_url, schemes=["redis", "rediss"])
 
     @staticmethod
     def validate_port(port: Union[int, str]) -> bool:
@@ -176,8 +178,13 @@ class ConfigValidator:
 
         # Check for common weak patterns
         weak_patterns = [
-            "password", "secret", "key", "token",
-            "123456", "abcdef", "default"
+            "password",
+            "secret",
+            "key",
+            "token",
+            "123456",
+            "abcdef",
+            "default",
         ]
 
         secret_lower = secret.lower()
@@ -217,8 +224,13 @@ class ConfigValidator:
 
         # Check for placeholder values
         placeholder_patterns = [
-            "your_api_key", "placeholder", "example", "test_key",
-            "fake_key", "dummy", "sample"
+            "your_api_key",
+            "placeholder",
+            "example",
+            "test_key",
+            "fake_key",
+            "dummy",
+            "sample",
         ]
 
         api_key_lower = api_key.lower()
@@ -233,7 +245,9 @@ class SecurityValidator:
     """Security-focused configuration validation."""
 
     @staticmethod
-    def validate_production_security(config: dict[str, Any], environment: str) -> list[str]:
+    def validate_production_security(
+        config: dict[str, Any], environment: str
+    ) -> list[str]:
         """
         Validate production security settings.
 
@@ -301,8 +315,13 @@ class SecurityValidator:
 
         # Check for hardcoded secrets in config
         sensitive_keys = [
-            "secret_key", "api_key", "password", "token",
-            "private_key", "credential", "auth"
+            "secret_key",
+            "api_key",
+            "password",
+            "token",
+            "private_key",
+            "credential",
+            "auth",
         ]
 
         def check_dict_for_secrets(d: dict[str, Any], path: str = "") -> None:
@@ -313,10 +332,14 @@ class SecurityValidator:
                 if any(sensitive in key.lower() for sensitive in sensitive_keys):
                     if isinstance(value, str):
                         # Check if value looks like a hardcoded secret
-                        if (len(value) > 10 and
-                            not value.startswith("${") and  # Environment variable
-                            not value.startswith("$(")):   # Command substitution
-                            issues.append(f"Potential hardcoded secret at {current_path}")
+                        if (
+                            len(value) > 10
+                            and not value.startswith("${")  # Environment variable
+                            and not value.startswith("$(")
+                        ):  # Command substitution
+                            issues.append(
+                                f"Potential hardcoded secret at {current_path}"
+                            )
 
                 # Recursively check nested dictionaries
                 elif isinstance(value, dict):

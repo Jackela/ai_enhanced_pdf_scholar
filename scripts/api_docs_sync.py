@@ -36,7 +36,7 @@ class APIDocumentationSync:
             "api_reference": self.docs_dir / "complete-api-reference.md",
             "openapi_spec": self.docs_dir / "openapi.json",
             "sdk_docs": self.docs_dir / "sdk-documentation.md",
-            "changelog": self.docs_dir / "api-changelog.md"
+            "changelog": self.docs_dir / "api-changelog.md",
         }
 
         # Tracked changes
@@ -45,7 +45,7 @@ class APIDocumentationSync:
             "modified_endpoints": [],
             "deprecated_endpoints": [],
             "schema_changes": [],
-            "breaking_changes": []
+            "breaking_changes": [],
         }
 
         print("🔄 API Documentation Sync initialized")
@@ -65,11 +65,13 @@ class APIDocumentationSync:
 
         for route_file in route_files:
             try:
-                with open(route_file, encoding='utf-8') as f:
+                with open(route_file, encoding="utf-8") as f:
                     content = f.read()
                     tree = ast.parse(content)
 
-                    file_endpoints = self._parse_fastapi_routes(tree, route_file, content)
+                    file_endpoints = self._parse_fastapi_routes(
+                        tree, route_file, content
+                    )
                     endpoints.update(file_endpoints)
 
             except Exception as e:
@@ -77,10 +79,12 @@ class APIDocumentationSync:
 
         return endpoints
 
-    def _parse_fastapi_routes(self, tree: ast.AST, file_path: Path, content: str) -> dict[str, Any]:
+    def _parse_fastapi_routes(
+        self, tree: ast.AST, file_path: Path, content: str
+    ) -> dict[str, Any]:
         """Parse FastAPI route definitions from AST."""
         endpoints = {}
-        lines = content.split('\n')
+        lines = content.split("\n")
 
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
@@ -88,26 +92,34 @@ class APIDocumentationSync:
                 for decorator in node.decorator_list:
                     endpoint_info = self._extract_endpoint_info(decorator, node, lines)
                     if endpoint_info:
-                        endpoint_key = f"{endpoint_info['method']}:{endpoint_info['path']}"
-                        endpoint_info.update({
-                            'file': str(file_path.relative_to(self.project_root)),
-                            'line_number': node.lineno,
-                            'function_name': node.name,
-                            'docstring': ast.get_docstring(node),
-                            'parameters': self._extract_function_parameters(node),
-                            'return_annotation': self._get_annotation_string(node.returns)
-                        })
+                        endpoint_key = (
+                            f"{endpoint_info['method']}:{endpoint_info['path']}"
+                        )
+                        endpoint_info.update(
+                            {
+                                "file": str(file_path.relative_to(self.project_root)),
+                                "line_number": node.lineno,
+                                "function_name": node.name,
+                                "docstring": ast.get_docstring(node),
+                                "parameters": self._extract_function_parameters(node),
+                                "return_annotation": self._get_annotation_string(
+                                    node.returns
+                                ),
+                            }
+                        )
                         endpoints[endpoint_key] = endpoint_info
 
         return endpoints
 
-    def _extract_endpoint_info(self, decorator: ast.AST, func_node: ast.FunctionDef, lines: list[str]) -> dict[str, Any] | None:
+    def _extract_endpoint_info(
+        self, decorator: ast.AST, func_node: ast.FunctionDef, lines: list[str]
+    ) -> dict[str, Any] | None:
         """Extract endpoint information from FastAPI decorators."""
         if not isinstance(decorator, ast.Call):
             return None
 
         # Check for common FastAPI HTTP methods
-        http_methods = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options']
+        http_methods = ["get", "post", "put", "delete", "patch", "head", "options"]
 
         method = None
         path = None
@@ -136,35 +148,33 @@ class APIDocumentationSync:
         # Extract additional metadata from decorator keywords
         metadata = {}
         for keyword in decorator.keywords:
-            if keyword.arg == 'response_model':
-                metadata['response_model'] = self._get_annotation_string(keyword.value)
-            elif keyword.arg == 'status_code':
+            if keyword.arg == "response_model":
+                metadata["response_model"] = self._get_annotation_string(keyword.value)
+            elif keyword.arg == "status_code":
                 if isinstance(keyword.value, ast.Constant):
-                    metadata['status_code'] = keyword.value.value
-            elif keyword.arg == 'tags':
-                metadata['tags'] = self._extract_list_values(keyword.value)
-            elif keyword.arg == 'summary':
+                    metadata["status_code"] = keyword.value.value
+            elif keyword.arg == "tags":
+                metadata["tags"] = self._extract_list_values(keyword.value)
+            elif keyword.arg == "summary":
                 if isinstance(keyword.value, ast.Constant):
-                    metadata['summary'] = keyword.value.value
-            elif keyword.arg == 'description':
+                    metadata["summary"] = keyword.value.value
+            elif keyword.arg == "description":
                 if isinstance(keyword.value, ast.Constant):
-                    metadata['description'] = keyword.value.value
+                    metadata["description"] = keyword.value.value
 
-        return {
-            'method': method,
-            'path': path,
-            'metadata': metadata
-        }
+        return {"method": method, "path": path, "metadata": metadata}
 
-    def _extract_function_parameters(self, func_node: ast.FunctionDef) -> list[dict[str, Any]]:
+    def _extract_function_parameters(
+        self, func_node: ast.FunctionDef
+    ) -> list[dict[str, Any]]:
         """Extract function parameter information."""
         parameters = []
 
         for arg in func_node.args.args:
             param_info = {
-                'name': arg.arg,
-                'annotation': self._get_annotation_string(arg.annotation),
-                'default': None
+                "name": arg.arg,
+                "annotation": self._get_annotation_string(arg.annotation),
+                "default": None,
             }
             parameters.append(param_info)
 
@@ -176,7 +186,9 @@ class APIDocumentationSync:
             for i, default in enumerate(defaults):
                 param_index = offset + i
                 if param_index < len(parameters):
-                    parameters[param_index]['default'] = self._get_default_value(default)
+                    parameters[param_index]["default"] = self._get_default_value(
+                        default
+                    )
 
         return parameters
 
@@ -191,13 +203,19 @@ class APIDocumentationSync:
             elif isinstance(annotation, ast.Constant):
                 return str(annotation.value)
             elif isinstance(annotation, ast.Attribute):
-                return f"{self._get_annotation_string(annotation.value)}.{annotation.attr}"
+                return (
+                    f"{self._get_annotation_string(annotation.value)}.{annotation.attr}"
+                )
             elif isinstance(annotation, ast.Subscript):
                 value = self._get_annotation_string(annotation.value)
                 slice_val = self._get_annotation_string(annotation.slice)
                 return f"{value}[{slice_val}]"
             else:
-                return ast.unparse(annotation) if hasattr(ast, 'unparse') else str(annotation)
+                return (
+                    ast.unparse(annotation)
+                    if hasattr(ast, "unparse")
+                    else str(annotation)
+                )
         except:
             return str(type(annotation).__name__)
 
@@ -231,7 +249,9 @@ class APIDocumentationSync:
             print(f"⚠️  Cannot connect to API server: {e}")
             return None
 
-    def compare_endpoints(self, code_endpoints: dict[str, Any], live_spec: dict[str, Any] | None) -> None:
+    def compare_endpoints(
+        self, code_endpoints: dict[str, Any], live_spec: dict[str, Any] | None
+    ) -> None:
         """Compare endpoints from code analysis with live API specification."""
         if not live_spec:
             print("⚠️  Skipping live API comparison (server not available)")
@@ -239,15 +259,23 @@ class APIDocumentationSync:
 
         # Extract endpoints from OpenAPI spec
         live_endpoints = {}
-        if 'paths' in live_spec:
-            for path, methods in live_spec['paths'].items():
+        if "paths" in live_spec:
+            for path, methods in live_spec["paths"].items():
                 for method, spec in methods.items():
-                    if method.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']:
+                    if method.upper() in [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "PATCH",
+                        "HEAD",
+                        "OPTIONS",
+                    ]:
                         endpoint_key = f"{method.upper()}:{path}"
                         live_endpoints[endpoint_key] = {
-                            'method': method.upper(),
-                            'path': path,
-                            'spec': spec
+                            "method": method.upper(),
+                            "path": path,
+                            "spec": spec,
                         }
 
         # Find differences
@@ -257,18 +285,16 @@ class APIDocumentationSync:
         # New endpoints (in code but not in live spec)
         new_endpoints = code_keys - live_keys
         for endpoint_key in new_endpoints:
-            self.changes['new_endpoints'].append({
-                'endpoint': endpoint_key,
-                'details': code_endpoints[endpoint_key]
-            })
+            self.changes["new_endpoints"].append(
+                {"endpoint": endpoint_key, "details": code_endpoints[endpoint_key]}
+            )
 
         # Deprecated endpoints (in live spec but not in code)
         deprecated_endpoints = live_keys - code_keys
         for endpoint_key in deprecated_endpoints:
-            self.changes['deprecated_endpoints'].append({
-                'endpoint': endpoint_key,
-                'details': live_endpoints[endpoint_key]
-            })
+            self.changes["deprecated_endpoints"].append(
+                {"endpoint": endpoint_key, "details": live_endpoints[endpoint_key]}
+            )
 
         # Modified endpoints (in both, but potentially different)
         common_endpoints = code_keys & live_keys
@@ -278,33 +304,37 @@ class APIDocumentationSync:
 
             # Compare basic properties
             if self._endpoints_differ(code_endpoint, live_endpoint):
-                self.changes['modified_endpoints'].append({
-                    'endpoint': endpoint_key,
-                    'code_version': code_endpoint,
-                    'live_version': live_endpoint
-                })
+                self.changes["modified_endpoints"].append(
+                    {
+                        "endpoint": endpoint_key,
+                        "code_version": code_endpoint,
+                        "live_version": live_endpoint,
+                    }
+                )
 
-    def _endpoints_differ(self, code_endpoint: dict[str, Any], live_endpoint: dict[str, Any]) -> bool:
+    def _endpoints_differ(
+        self, code_endpoint: dict[str, Any], live_endpoint: dict[str, Any]
+    ) -> bool:
         """Check if code and live endpoints differ significantly."""
         # This is a simplified comparison - you might want to make it more sophisticated
-        code_summary = code_endpoint.get('metadata', {}).get('summary', '')
-        live_summary = live_endpoint.get('spec', {}).get('summary', '')
+        code_summary = code_endpoint.get("metadata", {}).get("summary", "")
+        live_summary = live_endpoint.get("spec", {}).get("summary", "")
 
-        code_description = code_endpoint.get('docstring', '')
-        live_description = live_endpoint.get('spec', {}).get('description', '')
+        code_description = code_endpoint.get("docstring", "")
+        live_description = live_endpoint.get("spec", {}).get("description", "")
 
         return code_summary != live_summary or code_description != live_description
 
     def update_api_reference_doc(self, endpoints: dict[str, Any]) -> None:
         """Update the API reference documentation file."""
-        doc_file = self.doc_files['api_reference']
+        doc_file = self.doc_files["api_reference"]
 
         if not doc_file.exists():
             print(f"⚠️  API reference file not found: {doc_file}")
             return
 
         # Read current documentation
-        with open(doc_file, encoding='utf-8') as f:
+        with open(doc_file, encoding="utf-8") as f:
             content = f.read()
 
         # Generate new endpoints section
@@ -322,7 +352,7 @@ class APIDocumentationSync:
             new_content = f"{before}{start_marker}\n{endpoints_md}\n{end_marker}{after}"
 
             # Write updated documentation
-            with open(doc_file, 'w', encoding='utf-8') as f:
+            with open(doc_file, "w", encoding="utf-8") as f:
                 f.write(new_content)
 
             print(f"✅ Updated API reference documentation: {doc_file.name}")
@@ -333,13 +363,19 @@ class APIDocumentationSync:
         """Generate Markdown documentation for endpoints."""
         md_content = []
         md_content.append("## Auto-Generated API Endpoints\n")
-        md_content.append(f"*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n")
+        md_content.append(
+            f"*Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n"
+        )
 
         # Group endpoints by path prefix
         grouped_endpoints = {}
         for endpoint_key, endpoint in endpoints.items():
-            path = endpoint['path']
-            prefix = path.split('/')[1] if path.startswith('/') and len(path.split('/')) > 1 else 'root'
+            path = endpoint["path"]
+            prefix = (
+                path.split("/")[1]
+                if path.startswith("/") and len(path.split("/")) > 1
+                else "root"
+            )
 
             if prefix not in grouped_endpoints:
                 grouped_endpoints[prefix] = []
@@ -350,10 +386,10 @@ class APIDocumentationSync:
             md_content.append(f"### {prefix.title()} Endpoints\n")
 
             for endpoint_key, endpoint in sorted(group_endpoints):
-                method = endpoint['method']
-                path = endpoint['path']
-                summary = endpoint.get('metadata', {}).get('summary', '')
-                docstring = endpoint.get('docstring', '')
+                method = endpoint["method"]
+                path = endpoint["path"]
+                summary = endpoint.get("metadata", {}).get("summary", "")
+                docstring = endpoint.get("docstring", "")
 
                 md_content.append(f"#### `{method} {path}`\n")
                 if summary:
@@ -362,32 +398,36 @@ class APIDocumentationSync:
                     md_content.append(f"{docstring}\n")
 
                 # Parameters
-                if endpoint.get('parameters'):
+                if endpoint.get("parameters"):
                     md_content.append("**Parameters:**")
-                    for param in endpoint['parameters']:
-                        param_type = param.get('annotation', 'Any')
-                        default = param.get('default')
+                    for param in endpoint["parameters"]:
+                        param_type = param.get("annotation", "Any")
+                        default = param.get("default")
                         default_str = f" = {default}" if default is not None else ""
-                        md_content.append(f"- `{param['name']}: {param_type}{default_str}`")
+                        md_content.append(
+                            f"- `{param['name']}: {param_type}{default_str}`"
+                        )
                     md_content.append("")
 
                 # Response model
-                response_model = endpoint.get('metadata', {}).get('response_model')
+                response_model = endpoint.get("metadata", {}).get("response_model")
                 if response_model:
                     md_content.append(f"**Response Model:** `{response_model}`\n")
 
                 # File location
-                md_content.append(f"**Source:** `{endpoint['file']}:{endpoint['line_number']}`\n")
+                md_content.append(
+                    f"**Source:** `{endpoint['file']}:{endpoint['line_number']}`\n"
+                )
                 md_content.append("---\n")
 
         return "\n".join(md_content)
 
     def save_openapi_spec(self, spec: dict[str, Any]) -> None:
         """Save OpenAPI specification to file."""
-        spec_file = self.doc_files['openapi_spec']
+        spec_file = self.doc_files["openapi_spec"]
 
         try:
-            with open(spec_file, 'w', encoding='utf-8') as f:
+            with open(spec_file, "w", encoding="utf-8") as f:
                 json.dump(spec, f, indent=2, sort_keys=True)
 
             print(f"✅ Saved OpenAPI specification: {spec_file.name}")
@@ -402,24 +442,24 @@ class APIDocumentationSync:
         timestamp = datetime.now().strftime("%Y-%m-%d")
         changelog_entry = [f"## {timestamp}\n"]
 
-        if self.changes['new_endpoints']:
+        if self.changes["new_endpoints"]:
             changelog_entry.append("### New Endpoints")
-            for change in self.changes['new_endpoints']:
-                endpoint = change['endpoint']
+            for change in self.changes["new_endpoints"]:
+                endpoint = change["endpoint"]
                 changelog_entry.append(f"- `{endpoint}` - New endpoint added")
             changelog_entry.append("")
 
-        if self.changes['deprecated_endpoints']:
+        if self.changes["deprecated_endpoints"]:
             changelog_entry.append("### Deprecated Endpoints")
-            for change in self.changes['deprecated_endpoints']:
-                endpoint = change['endpoint']
+            for change in self.changes["deprecated_endpoints"]:
+                endpoint = change["endpoint"]
                 changelog_entry.append(f"- `{endpoint}` - Endpoint deprecated")
             changelog_entry.append("")
 
-        if self.changes['modified_endpoints']:
+        if self.changes["modified_endpoints"]:
             changelog_entry.append("### Modified Endpoints")
-            for change in self.changes['modified_endpoints']:
-                endpoint = change['endpoint']
+            for change in self.changes["modified_endpoints"]:
+                endpoint = change["endpoint"]
                 changelog_entry.append(f"- `{endpoint}` - Endpoint modified")
             changelog_entry.append("")
 
@@ -431,12 +471,12 @@ class APIDocumentationSync:
             print("ℹ️  No changes detected - changelog not updated")
             return
 
-        changelog_file = self.doc_files['changelog']
+        changelog_file = self.doc_files["changelog"]
 
         # Read existing changelog or create new one
         existing_content = ""
         if changelog_file.exists():
-            with open(changelog_file, encoding='utf-8') as f:
+            with open(changelog_file, encoding="utf-8") as f:
                 existing_content = f.read()
 
         # Prepend new entry
@@ -444,7 +484,7 @@ class APIDocumentationSync:
         new_content = header + new_entry + "\n" + existing_content
 
         # Write updated changelog
-        with open(changelog_file, 'w', encoding='utf-8') as f:
+        with open(changelog_file, "w", encoding="utf-8") as f:
             f.write(new_content)
 
         print(f"✅ Updated API changelog: {changelog_file.name}")
@@ -467,14 +507,20 @@ class APIDocumentationSync:
             self.compare_endpoints(code_endpoints, live_spec)
 
             # Report issues from comparison
-            if self.changes['new_endpoints']:
-                issues.append(f"Found {len(self.changes['new_endpoints'])} new endpoints not in live API")
+            if self.changes["new_endpoints"]:
+                issues.append(
+                    f"Found {len(self.changes['new_endpoints'])} new endpoints not in live API"
+                )
 
-            if self.changes['deprecated_endpoints']:
-                issues.append(f"Found {len(self.changes['deprecated_endpoints'])} deprecated endpoints")
+            if self.changes["deprecated_endpoints"]:
+                issues.append(
+                    f"Found {len(self.changes['deprecated_endpoints'])} deprecated endpoints"
+                )
 
-            if self.changes['modified_endpoints']:
-                issues.append(f"Found {len(self.changes['modified_endpoints'])} modified endpoints")
+            if self.changes["modified_endpoints"]:
+                issues.append(
+                    f"Found {len(self.changes['modified_endpoints'])} modified endpoints"
+                )
 
         return issues
 
@@ -511,7 +557,9 @@ class APIDocumentationSync:
         print("\n📊 Synchronization Summary:")
         print(f"   • Endpoints in code: {len(code_endpoints)}")
         if live_spec:
-            live_endpoint_count = sum(len(methods) for methods in live_spec.get('paths', {}).values())
+            live_endpoint_count = sum(
+                len(methods) for methods in live_spec.get("paths", {}).values()
+            )
             print(f"   • Endpoints in live API: {live_endpoint_count}")
         print(f"   • New endpoints: {len(self.changes['new_endpoints'])}")
         print(f"   • Modified endpoints: {len(self.changes['modified_endpoints'])}")
@@ -530,16 +578,18 @@ class APIDocumentationSync:
 
         # Test each endpoint
         for endpoint_key, endpoint in code_endpoints.items():
-            method = endpoint['method']
-            path = endpoint['path']
+            method = endpoint["method"]
+            path = endpoint["path"]
 
             try:
                 # For GET requests, try to access them
-                if method == 'GET':
+                if method == "GET":
                     url = f"{self.api_base_url}{path}"
                     response = requests.head(url, timeout=5)
                     if response.status_code >= 500:
-                        issues.append(f"Endpoint {endpoint_key} returned server error: {response.status_code}")
+                        issues.append(
+                            f"Endpoint {endpoint_key} returned server error: {response.status_code}"
+                        )
 
             except requests.RequestException as e:
                 issues.append(f"Endpoint {endpoint_key} is not accessible: {e}")
@@ -557,9 +607,13 @@ class APIDocumentationSync:
 def main():
     """Main entry point for API documentation synchronization."""
     parser = argparse.ArgumentParser(description="API Documentation Synchronization")
-    parser.add_argument("--check", action="store_true", help="Check for inconsistencies")
+    parser.add_argument(
+        "--check", action="store_true", help="Check for inconsistencies"
+    )
     parser.add_argument("--update", action="store_true", help="Update documentation")
-    parser.add_argument("--validate", action="store_true", help="Validate API endpoints")
+    parser.add_argument(
+        "--validate", action="store_true", help="Validate API endpoints"
+    )
     parser.add_argument("--project-root", default=".", help="Project root directory")
 
     args = parser.parse_args()

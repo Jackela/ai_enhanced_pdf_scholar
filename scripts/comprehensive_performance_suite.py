@@ -15,7 +15,9 @@ from pathlib import Path
 from typing import Any
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Add project root to path
@@ -54,16 +56,24 @@ class ComprehensivePerformanceSuite:
                 "success": True,
                 "results": results,
                 "summary": {
-                    "database_query_avg_ms": self._extract_avg_metric(results, "database_queries", "avg_ms"),
-                    "file_io_avg_mb_s": self._extract_avg_metric(results, "file_operations", "throughput_mb_per_sec"),
-                    "text_processing_avg_chars_s": self._extract_avg_metric(results, "text_processing", "throughput_chars_per_sec")
-                }
+                    "database_query_avg_ms": self._extract_avg_metric(
+                        results, "database_queries", "avg_ms"
+                    ),
+                    "file_io_avg_mb_s": self._extract_avg_metric(
+                        results, "file_operations", "throughput_mb_per_sec"
+                    ),
+                    "text_processing_avg_chars_s": self._extract_avg_metric(
+                        results, "text_processing", "throughput_chars_per_sec"
+                    ),
+                },
             }
         except Exception as e:
             logger.error(f"System benchmarks failed: {e}")
             return {"success": False, "error": str(e)}
 
-    async def run_api_benchmarks(self, base_url: str = "http://localhost:8000") -> dict[str, Any]:
+    async def run_api_benchmarks(
+        self, base_url: str = "http://localhost:8000"
+    ) -> dict[str, Any]:
         """Run API performance benchmarks"""
         logger.info(f"Running API performance benchmarks against {base_url}...")
 
@@ -81,11 +91,17 @@ class ComprehensivePerformanceSuite:
                 return {
                     "success": False,
                     "error": "API server not available",
-                    "skipped": True
+                    "skipped": True,
                 }
 
             # Run API benchmarks using subprocess to avoid import issues
-            cmd = [sys.executable, "scripts/api_benchmark.py", "--url", base_url, "--save"]
+            cmd = [
+                sys.executable,
+                "scripts/api_benchmark.py",
+                "--url",
+                base_url,
+                "--save",
+            ]
             result = subprocess.run(cmd, capture_output=True, text=True, cwd=Path.cwd())
 
             if result.returncode != 0:
@@ -102,7 +118,10 @@ class ComprehensivePerformanceSuite:
                     api_results = json.load(f)
                 return {"success": True, "results": api_results}
             else:
-                return {"success": False, "error": "API benchmark results file not found"}
+                return {
+                    "success": False,
+                    "error": "API benchmark results file not found",
+                }
 
         except Exception as e:
             logger.error(f"API benchmarks failed: {e}")
@@ -140,20 +159,22 @@ class ComprehensivePerformanceSuite:
 
                     # Simulate PDF processing
                     content = pdf_file.read_bytes()
-                    text_content = content.decode('utf-8', errors='ignore')
+                    text_content = content.decode("utf-8", errors="ignore")
                     word_count = len(text_content.split())
 
                     end_time = time.perf_counter()
                     processing_times.append((end_time - start_time) * 1000)
 
-                results.append({
-                    "file_type": pdf_file.stem,
-                    "file_size_bytes": pdf_file.stat().st_size,
-                    "avg_processing_time_ms": statistics.mean(processing_times),
-                    "min_time_ms": min(processing_times),
-                    "max_time_ms": max(processing_times),
-                    "word_count": word_count
-                })
+                results.append(
+                    {
+                        "file_type": pdf_file.stem,
+                        "file_size_bytes": pdf_file.stat().st_size,
+                        "avg_processing_time_ms": statistics.mean(processing_times),
+                        "min_time_ms": min(processing_times),
+                        "max_time_ms": max(processing_times),
+                        "word_count": word_count,
+                    }
+                )
 
             # Cleanup
             for pdf_file in [small_pdf, medium_pdf, large_pdf]:
@@ -164,8 +185,10 @@ class ComprehensivePerformanceSuite:
                 "success": True,
                 "results": results,
                 "summary": {
-                    "avg_processing_time_ms": statistics.mean([r["avg_processing_time_ms"] for r in results])
-                }
+                    "avg_processing_time_ms": statistics.mean(
+                        [r["avg_processing_time_ms"] for r in results]
+                    )
+                },
             }
 
         except Exception as e:
@@ -186,8 +209,9 @@ class ComprehensivePerformanceSuite:
             return sum(values) / len(values)
         return 0.0
 
-    async def run_all_benchmarks(self, api_url: str = "http://localhost:8000",
-                                detect_regressions: bool = True) -> dict[str, Any]:
+    async def run_all_benchmarks(
+        self, api_url: str = "http://localhost:8000", detect_regressions: bool = True
+    ) -> dict[str, Any]:
         """Run comprehensive performance test suite"""
         logger.info("Starting comprehensive performance test suite...")
         self.start_time = time.time()
@@ -208,8 +232,8 @@ class ComprehensivePerformanceSuite:
                     "suite_version": "1.0.0",
                     "environment": {
                         "platform": sys.platform,
-                        "python_version": sys.version
-                    }
+                        "python_version": sys.version,
+                    },
                 },
                 "system_benchmarks": system_results,
                 "api_benchmarks": api_results,
@@ -221,7 +245,9 @@ class ComprehensivePerformanceSuite:
                 regression_analysis = self.perform_regression_analysis()
                 self.results["regression_analysis"] = regression_analysis
 
-            logger.info(f"Comprehensive test suite completed in {self.end_time - self.start_time:.2f} seconds")
+            logger.info(
+                f"Comprehensive test suite completed in {self.end_time - self.start_time:.2f} seconds"
+            )
 
         except Exception as e:
             logger.error(f"Comprehensive test suite failed: {e}")
@@ -242,31 +268,30 @@ class ComprehensivePerformanceSuite:
                 logger.info("No baselines found, establishing new baselines...")
                 if self.results.get("system_benchmarks", {}).get("success"):
                     baseline_detector.establish_baselines(
-                        self.results["system_benchmarks"]["results"],
-                        "system"
+                        self.results["system_benchmarks"]["results"], "system"
                     )
 
                 if self.results.get("api_benchmarks", {}).get("success"):
                     baseline_detector.establish_baselines(
-                        self.results["api_benchmarks"]["results"],
-                        "api"
+                        self.results["api_benchmarks"]["results"], "api"
                     )
 
-                return {"status": "baselines_established", "message": "New baselines created"}
+                return {
+                    "status": "baselines_established",
+                    "message": "New baselines created",
+                }
 
             # Detect regressions
             analysis = {"system": None, "api": None}
 
             if self.results.get("system_benchmarks", {}).get("success"):
                 analysis["system"] = baseline_detector.generate_report(
-                    self.results["system_benchmarks"]["results"],
-                    "system"
+                    self.results["system_benchmarks"]["results"], "system"
                 )
 
             if self.results.get("api_benchmarks", {}).get("success"):
                 analysis["api"] = baseline_detector.generate_report(
-                    self.results["api_benchmarks"]["results"],
-                    "api"
+                    self.results["api_benchmarks"]["results"], "api"
                 )
 
             return analysis
@@ -277,9 +302,9 @@ class ComprehensivePerformanceSuite:
 
     def print_comprehensive_summary(self):
         """Print comprehensive performance summary"""
-        print("\n" + "="*100)
+        print("\n" + "=" * 100)
         print("COMPREHENSIVE PERFORMANCE TEST SUITE SUMMARY")
-        print("="*100)
+        print("=" * 100)
 
         if "error" in self.results:
             print(f"❌ SUITE FAILED: {self.results['error']}")
@@ -298,9 +323,13 @@ class ComprehensivePerformanceSuite:
         if system.get("success"):
             print("\n🖥️  SYSTEM PERFORMANCE:")
             summary = system.get("summary", {})
-            print(f"   • Database Queries: {summary.get('database_query_avg_ms', 0):.3f}ms avg")
+            print(
+                f"   • Database Queries: {summary.get('database_query_avg_ms', 0):.3f}ms avg"
+            )
             print(f"   • File I/O: {summary.get('file_io_avg_mb_s', 0):.1f} MB/s avg")
-            print(f"   • Text Processing: {summary.get('text_processing_avg_chars_s', 0):,.0f} chars/s avg")
+            print(
+                f"   • Text Processing: {summary.get('text_processing_avg_chars_s', 0):,.0f} chars/s avg"
+            )
             print("   ✅ System performance: EXCELLENT")
         else:
             print(f"\n❌ SYSTEM PERFORMANCE: {system.get('error', 'Failed')}")
@@ -323,7 +352,11 @@ class ComprehensivePerformanceSuite:
             summary = pdf.get("summary", {})
             avg_time = summary.get("avg_processing_time_ms", 0)
             print(f"   • Average Processing Time: {avg_time:.2f}ms")
-            status = "✅ EXCELLENT" if avg_time < 10 else "✅ GOOD" if avg_time < 50 else "⚠️ ACCEPTABLE"
+            status = (
+                "✅ EXCELLENT"
+                if avg_time < 10
+                else "✅ GOOD" if avg_time < 50 else "⚠️ ACCEPTABLE"
+            )
             print(f"   {status}")
         else:
             print(f"\n❌ PDF PROCESSING: {pdf.get('error', 'Failed')}")
@@ -366,21 +399,27 @@ class ComprehensivePerformanceSuite:
             critical_regressions = False
             if regression and isinstance(regression, dict):
                 for analysis in regression.values():
-                    if (isinstance(analysis, dict) and
-                        analysis.get("regressions", {}).get("critical", 0) > 0):
+                    if (
+                        isinstance(analysis, dict)
+                        and analysis.get("regressions", {}).get("critical", 0) > 0
+                    ):
                         critical_regressions = True
                         break
 
             if critical_regressions:
-                assessment = "🔴 CRITICAL ISSUES DETECTED - Investigate regressions immediately"
+                assessment = (
+                    "🔴 CRITICAL ISSUES DETECTED - Investigate regressions immediately"
+                )
             else:
                 assessment = "✅ EXCELLENT - All systems performing optimally"
         else:
-            assessment = f"⚠️ ISSUES DETECTED - Failed components: {', '.join(failed_components)}"
+            assessment = (
+                f"⚠️ ISSUES DETECTED - Failed components: {', '.join(failed_components)}"
+            )
 
         print(f"   {assessment}")
 
-        print("\n" + "="*100)
+        print("\n" + "=" * 100)
 
     def save_results(self, filename: str = None):
         """Save comprehensive results to JSON file"""
@@ -389,7 +428,7 @@ class ComprehensivePerformanceSuite:
             filename = f"comprehensive_performance_results_{timestamp}.json"
 
         output_path = self.output_dir / filename
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(self.results, f, indent=2, default=str)
 
         logger.info(f"Comprehensive results saved to: {output_path}")
@@ -486,7 +525,7 @@ class ComprehensivePerformanceSuite:
         """
 
         output_path = self.output_dir / filename
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(html_content)
 
         logger.info(f"HTML report saved to: {output_path}")
@@ -498,8 +537,12 @@ async def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Comprehensive Performance Test Suite")
-    parser.add_argument("--api-url", default="http://localhost:8000", help="API base URL to test")
-    parser.add_argument("--no-regressions", action="store_true", help="Skip regression analysis")
+    parser.add_argument(
+        "--api-url", default="http://localhost:8000", help="API base URL to test"
+    )
+    parser.add_argument(
+        "--no-regressions", action="store_true", help="Skip regression analysis"
+    )
     parser.add_argument("--save", action="store_true", help="Save results to files")
     parser.add_argument("--html", action="store_true", help="Generate HTML report")
     parser.add_argument("--output-dir", help="Output directory for results")
@@ -513,8 +556,7 @@ async def main():
 
         # Run comprehensive tests
         results = await suite.run_all_benchmarks(
-            api_url=args.api_url,
-            detect_regressions=not args.no_regressions
+            api_url=args.api_url, detect_regressions=not args.no_regressions
         )
 
         # Print summary

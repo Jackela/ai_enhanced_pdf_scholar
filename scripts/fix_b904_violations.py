@@ -14,15 +14,13 @@ def get_b904_violations() -> list[tuple[str, int, str]]:
     """Get all B904 violations from ruff."""
     try:
         result = subprocess.run(
-            ["ruff", "check", "--select", "B904"],
-            capture_output=True,
-            text=True
+            ["ruff", "check", "--select", "B904"], capture_output=True, text=True
         )
 
         violations = []
         for line in result.stdout.splitlines():
             # Parse ruff output: filename:line:col: B904 ...
-            match = re.match(r'^([^:]+):(\d+):\d+: B904', line)
+            match = re.match(r"^([^:]+):(\d+):\d+: B904", line)
             if match:
                 filepath = match.group(1)
                 line_num = int(match.group(2))
@@ -42,7 +40,7 @@ def fix_violation(filepath: str, line_num: int) -> bool:
             print(f"File not found: {filepath}")
             return False
 
-        lines = file_path.read_text(encoding='utf-8').splitlines(keepends=True)
+        lines = file_path.read_text(encoding="utf-8").splitlines(keepends=True)
 
         # Find the raise statement
         if line_num > len(lines):
@@ -62,17 +60,17 @@ def fix_violation(filepath: str, line_num: int) -> bool:
             statement_lines.append(line)
 
             # Check if this line contains a closing parenthesis
-            if ')' in line and not line.strip().endswith(','):
+            if ")" in line and not line.strip().endswith(","):
                 # Check if we're at the end of a multi-line statement
                 stripped = line.rstrip()
-                if stripped.endswith(')'):
+                if stripped.endswith(")"):
                     # This is likely the end of the raise statement
                     break
 
             # If line doesn't end with a backslash or comma, and next line doesn't start with whitespace, we're done
             if idx + 1 < len(lines):
                 next_line = lines[idx + 1]
-                if not (line.rstrip().endswith((',', '\\')) or next_line[0].isspace()):
+                if not (line.rstrip().endswith((",", "\\")) or next_line[0].isspace()):
                     break
 
             idx += 1
@@ -82,12 +80,14 @@ def fix_violation(filepath: str, line_num: int) -> bool:
         # Find the corresponding except clause
         except_line_idx = None
         for i in range(raise_line_idx - 1, -1, -1):
-            if re.match(r'\s*except\s+.*\s+as\s+(\w+)', lines[i]):
+            if re.match(r"\s*except\s+.*\s+as\s+(\w+)", lines[i]):
                 except_line_idx = i
-                match = re.match(r'\s*except\s+.*\s+as\s+(\w+)', lines[i])
+                match = re.match(r"\s*except\s+.*\s+as\s+(\w+)", lines[i])
                 exception_var = match.group(1)
                 break
-            elif re.match(r'\s*except\s+\w+:', lines[i]) or re.match(r'\s*except:', lines[i]):
+            elif re.match(r"\s*except\s+\w+:", lines[i]) or re.match(
+                r"\s*except:", lines[i]
+            ):
                 except_line_idx = i
                 exception_var = None
                 break
@@ -98,7 +98,7 @@ def fix_violation(filepath: str, line_num: int) -> bool:
 
         # Check if last line already has 'from'
         last_statement_line = statement_lines[-1].rstrip()
-        if ' from ' in last_statement_line:
+        if " from " in last_statement_line:
             print(f"Already fixed: {filepath}:{line_num}")
             return False
 
@@ -111,18 +111,18 @@ def fix_violation(filepath: str, line_num: int) -> bool:
 
         # Modify the last line of the statement
         modified_line = statement_lines[-1].rstrip()
-        if modified_line.endswith(')'):
-            modified_line = modified_line[:-1] + suffix + ')'
+        if modified_line.endswith(")"):
+            modified_line = modified_line[:-1] + suffix + ")"
         else:
             modified_line = modified_line + suffix
 
-        modified_line += '\n' if statement_lines[-1].endswith('\n') else ''
+        modified_line += "\n" if statement_lines[-1].endswith("\n") else ""
 
         # Update the lines
         lines[raise_line_idx + len(statement_lines) - 1] = modified_line
 
         # Write back to file
-        file_path.write_text(''.join(lines), encoding='utf-8')
+        file_path.write_text("".join(lines), encoding="utf-8")
         print(f"Fixed: {filepath}:{line_num}")
         return True
 

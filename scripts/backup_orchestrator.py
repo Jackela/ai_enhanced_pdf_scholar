@@ -24,7 +24,7 @@ import aiofiles
 import boto3
 
 # Add backend to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.core.secrets import get_secrets_manager
 from backend.services.health_check_service import HealthCheckService
@@ -35,14 +35,16 @@ logger = logging.getLogger(__name__)
 
 class BackupTier(str, Enum):
     """Backup tier classifications."""
-    CRITICAL = "critical"      # Every 15 minutes
-    HIGH = "high"              # Hourly
-    MEDIUM = "medium"          # Daily
-    LOW = "low"                # Weekly
+
+    CRITICAL = "critical"  # Every 15 minutes
+    HIGH = "high"  # Hourly
+    MEDIUM = "medium"  # Daily
+    LOW = "low"  # Weekly
 
 
 class BackupType(str, Enum):
     """Types of backups."""
+
     FULL = "full"
     INCREMENTAL = "incremental"
     DIFFERENTIAL = "differential"
@@ -51,6 +53,7 @@ class BackupType(str, Enum):
 
 class BackupStatus(str, Enum):
     """Backup operation status."""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -60,6 +63,7 @@ class BackupStatus(str, Enum):
 
 class StorageProvider(str, Enum):
     """Backup storage providers."""
+
     LOCAL = "local"
     AWS_S3 = "aws_s3"
     AZURE_BLOB = "azure_blob"
@@ -69,11 +73,12 @@ class StorageProvider(str, Enum):
 @dataclass
 class BackupConfig:
     """Configuration for backup orchestration."""
+
     # Backup intervals (in minutes)
     critical_interval: int = 15
     high_interval: int = 60
     medium_interval: int = 1440  # 24 hours
-    low_interval: int = 10080    # 7 days
+    low_interval: int = 10080  # 7 days
 
     # Retention policies
     daily_retention: int = 7
@@ -106,6 +111,7 @@ class BackupConfig:
 @dataclass
 class BackupMetadata:
     """Metadata for a backup."""
+
     backup_id: str
     backup_type: BackupType
     tier: BackupTier
@@ -134,7 +140,9 @@ class BackupSource:
         self.last_backup: datetime | None = None
         self.last_backup_size: int = 0
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
+    async def create_backup(
+        self, backup_path: str, backup_type: BackupType
+    ) -> tuple[bool, str | None]:
         """Create a backup of this source. Returns (success, error_message)."""
         raise NotImplementedError
 
@@ -164,41 +172,50 @@ class PostgreSQLBackupSource(BackupSource):
         parsed = urlparse(self.connection_url)
         self.host = parsed.hostname or "localhost"
         self.port = parsed.port or 5432
-        self.database = parsed.path.lstrip('/')
+        self.database = parsed.path.lstrip("/")
         self.username = parsed.username
         self.password = parsed.password
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
+    async def create_backup(
+        self, backup_path: str, backup_type: BackupType
+    ) -> tuple[bool, str | None]:
         """Create PostgreSQL backup using pg_dump."""
         try:
             # Prepare environment
             env = os.environ.copy()
             if self.password:
-                env['PGPASSWORD'] = self.password
+                env["PGPASSWORD"] = self.password
 
             # Build pg_dump command
             cmd = [
-                'pg_dump',
-                '--host', self.host,
-                '--port', str(self.port),
-                '--username', self.username,
-                '--dbname', self.database,
-                '--format', 'custom',
-                '--compress', '9',
-                '--verbose',
-                '--file', backup_path
+                "pg_dump",
+                "--host",
+                self.host,
+                "--port",
+                str(self.port),
+                "--username",
+                self.username,
+                "--dbname",
+                self.database,
+                "--format",
+                "custom",
+                "--compress",
+                "9",
+                "--verbose",
+                "--file",
+                backup_path,
             ]
 
             if backup_type == BackupType.INCREMENTAL:
                 # For incremental, we'll use WAL-based backup
-                cmd.extend(['--create', '--clean'])
+                cmd.extend(["--create", "--clean"])
 
             # Execute backup
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 env=env,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await process.communicate()
@@ -209,7 +226,9 @@ class PostgreSQLBackupSource(BackupSource):
                     self.last_backup_size = os.path.getsize(backup_path)
                 return True, None
             else:
-                error_msg = stderr.decode('utf-8') if stderr else "Unknown pg_dump error"
+                error_msg = (
+                    stderr.decode("utf-8") if stderr else "Unknown pg_dump error"
+                )
                 return False, f"pg_dump failed: {error_msg}"
 
         except Exception as e:
@@ -222,12 +241,10 @@ class PostgreSQLBackupSource(BackupSource):
                 return False
 
             # Use pg_restore to list contents
-            cmd = ['pg_restore', '--list', backup_path]
+            cmd = ["pg_restore", "--list", backup_path]
 
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
 
             stdout, stderr = await process.communicate()
@@ -254,9 +271,11 @@ class RedisBackupSource(BackupSource):
         self.host = parsed.hostname or "localhost"
         self.port = parsed.port or 6379
         self.password = parsed.password
-        self.database = int(parsed.path.lstrip('/')) if parsed.path.lstrip('/') else 0
+        self.database = int(parsed.path.lstrip("/")) if parsed.path.lstrip("/") else 0
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
+    async def create_backup(
+        self, backup_path: str, backup_type: BackupType
+    ) -> tuple[bool, str | None]:
         """Create Redis backup using BGSAVE or RDB copy."""
         try:
             import redis
@@ -267,7 +286,7 @@ class RedisBackupSource(BackupSource):
                 port=self.port,
                 db=self.database,
                 password=self.password,
-                decode_responses=False
+                decode_responses=False,
             )
 
             # Test connection
@@ -278,13 +297,13 @@ class RedisBackupSource(BackupSource):
                 result = redis_client.bgsave()
 
                 # Wait for background save to complete
-                while redis_client.info()['bgsave_in_progress']:
+                while redis_client.info()["bgsave_in_progress"]:
                     await asyncio.sleep(1)
 
                 # Copy RDB file
                 redis_info = redis_client.info()
-                rdb_path = redis_info.get('rdb_filename', 'dump.rdb')
-                rdb_dir = redis_info.get('dir', '/var/lib/redis')
+                rdb_path = redis_info.get("rdb_filename", "dump.rdb")
+                rdb_dir = redis_info.get("dir", "/var/lib/redis")
                 source_rdb = os.path.join(rdb_dir, rdb_path)
 
                 if os.path.exists(source_rdb):
@@ -297,30 +316,30 @@ class RedisBackupSource(BackupSource):
 
             else:
                 # For incremental/differential, save all keys to JSON
-                all_keys = redis_client.keys('*')
+                all_keys = redis_client.keys("*")
                 backup_data = {}
 
                 for key in all_keys:
                     key_type = redis_client.type(key)
 
-                    if key_type == b'string':
+                    if key_type == b"string":
                         backup_data[key.decode()] = redis_client.get(key).decode()
-                    elif key_type == b'hash':
+                    elif key_type == b"hash":
                         backup_data[key.decode()] = {
                             k.decode(): v.decode()
                             for k, v in redis_client.hgetall(key).items()
                         }
-                    elif key_type == b'list':
+                    elif key_type == b"list":
                         backup_data[key.decode()] = [
                             item.decode() for item in redis_client.lrange(key, 0, -1)
                         ]
-                    elif key_type == b'set':
+                    elif key_type == b"set":
                         backup_data[key.decode()] = [
                             item.decode() for item in redis_client.smembers(key)
                         ]
 
                 # Save to JSON file
-                async with aiofiles.open(backup_path, 'w') as f:
+                async with aiofiles.open(backup_path, "w") as f:
                     await f.write(json.dumps(backup_data, indent=2))
 
                 self.last_backup = datetime.utcnow()
@@ -334,11 +353,19 @@ class RedisBackupSource(BackupSource):
 class FileSystemBackupSource(BackupSource):
     """File system backup source."""
 
-    def __init__(self, name: str, tier: BackupTier, source_path: str, exclude_patterns: list[str] | None = None):
+    def __init__(
+        self,
+        name: str,
+        tier: BackupTier,
+        source_path: str,
+        exclude_patterns: list[str] | None = None,
+    ):
         super().__init__(name, tier, source_path)
         self.exclude_patterns = exclude_patterns or []
 
-    async def create_backup(self, backup_path: str, backup_type: BackupType) -> tuple[bool, str | None]:
+    async def create_backup(
+        self, backup_path: str, backup_type: BackupType
+    ) -> tuple[bool, str | None]:
         """Create file system backup using tar with compression."""
         try:
             # Ensure source path exists
@@ -346,20 +373,18 @@ class FileSystemBackupSource(BackupSource):
                 return False, f"Source path does not exist: {self.source_path}"
 
             # Build tar command
-            cmd = ['tar', '-czf', backup_path, '-C', os.path.dirname(self.source_path)]
+            cmd = ["tar", "-czf", backup_path, "-C", os.path.dirname(self.source_path)]
 
             # Add exclusions
             for pattern in self.exclude_patterns:
-                cmd.extend(['--exclude', pattern])
+                cmd.extend(["--exclude", pattern])
 
             # Add source directory
             cmd.append(os.path.basename(self.source_path))
 
             # Execute backup
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
 
             stdout, stderr = await process.communicate()
@@ -370,7 +395,7 @@ class FileSystemBackupSource(BackupSource):
                     self.last_backup_size = os.path.getsize(backup_path)
                 return True, None
             else:
-                error_msg = stderr.decode('utf-8') if stderr else "Unknown tar error"
+                error_msg = stderr.decode("utf-8") if stderr else "Unknown tar error"
                 return False, f"File system backup failed: {error_msg}"
 
         except Exception as e:
@@ -383,12 +408,10 @@ class FileSystemBackupSource(BackupSource):
                 return False
 
             # List archive contents
-            cmd = ['tar', '-tzf', backup_path]
+            cmd = ["tar", "-tzf", backup_path]
 
             process = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
 
             stdout, stderr = await process.communicate()
@@ -414,13 +437,13 @@ class S3StorageProvider:
     def client(self):
         """Lazy initialization of S3 client."""
         if self._client is None:
-            self._client = boto3.client('s3', region_name=self.region)
+            self._client = boto3.client("s3", region_name=self.region)
         return self._client
 
     async def upload_backup(self, local_path: str, remote_key: str) -> bool:
         """Upload backup to S3."""
         try:
-            full_key = f"{self.prefix}/{remote_key}".strip('/')
+            full_key = f"{self.prefix}/{remote_key}".strip("/")
 
             # Upload with server-side encryption
             self.client.upload_file(
@@ -428,9 +451,9 @@ class S3StorageProvider:
                 self.bucket,
                 full_key,
                 ExtraArgs={
-                    'ServerSideEncryption': 'AES256',
-                    'StorageClass': 'STANDARD_IA'  # Infrequent Access for backups
-                }
+                    "ServerSideEncryption": "AES256",
+                    "StorageClass": "STANDARD_IA",  # Infrequent Access for backups
+                },
             )
 
             return True
@@ -442,13 +465,9 @@ class S3StorageProvider:
     async def download_backup(self, remote_key: str, local_path: str) -> bool:
         """Download backup from S3."""
         try:
-            full_key = f"{self.prefix}/{remote_key}".strip('/')
+            full_key = f"{self.prefix}/{remote_key}".strip("/")
 
-            self.client.download_file(
-                self.bucket,
-                full_key,
-                local_path
-            )
+            self.client.download_file(self.bucket, full_key, local_path)
 
             return True
 
@@ -459,16 +478,15 @@ class S3StorageProvider:
     async def list_backups(self, prefix_filter: str = "") -> list[str]:
         """List backups in S3."""
         try:
-            full_prefix = f"{self.prefix}/{prefix_filter}".strip('/')
+            full_prefix = f"{self.prefix}/{prefix_filter}".strip("/")
 
             response = self.client.list_objects_v2(
-                Bucket=self.bucket,
-                Prefix=full_prefix
+                Bucket=self.bucket, Prefix=full_prefix
             )
 
             keys = []
-            if 'Contents' in response:
-                keys = [obj['Key'] for obj in response['Contents']]
+            if "Contents" in response:
+                keys = [obj["Key"] for obj in response["Contents"]]
 
             return keys
 
@@ -479,12 +497,9 @@ class S3StorageProvider:
     async def delete_backup(self, remote_key: str) -> bool:
         """Delete backup from S3."""
         try:
-            full_key = f"{self.prefix}/{remote_key}".strip('/')
+            full_key = f"{self.prefix}/{remote_key}".strip("/")
 
-            self.client.delete_object(
-                Bucket=self.bucket,
-                Key=full_key
-            )
+            self.client.delete_object(Bucket=self.bucket, Key=full_key)
 
             return True
 
@@ -527,7 +542,7 @@ class BackupOrchestrator:
         handler = logging.FileHandler(log_path / "backup_orchestrator.log")
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
@@ -539,12 +554,15 @@ class BackupOrchestrator:
         self.storage_providers[StorageProvider.LOCAL] = True
 
         # AWS S3 storage
-        if self.config.secondary_storage == StorageProvider.AWS_S3 and self.config.s3_bucket:
+        if (
+            self.config.secondary_storage == StorageProvider.AWS_S3
+            and self.config.s3_bucket
+        ):
             try:
                 s3_provider = S3StorageProvider(
                     bucket=self.config.s3_bucket,
                     region=self.config.s3_region,
-                    prefix="ai_pdf_scholar_backups"
+                    prefix="ai_pdf_scholar_backups",
                 )
                 self.storage_providers[StorageProvider.AWS_S3] = s3_provider
                 logger.info("Initialized S3 storage provider")
@@ -562,7 +580,7 @@ class BackupOrchestrator:
             base_path / "monthly",
             base_path / "yearly",
             base_path / "logs",
-            base_path / "temp"
+            base_path / "temp",
         ]
 
         for directory in directories:
@@ -571,7 +589,9 @@ class BackupOrchestrator:
     def register_source(self, source: BackupSource):
         """Register a backup source."""
         self.sources.append(source)
-        logger.info(f"Registered backup source: {source.name} (tier: {source.tier.value})")
+        logger.info(
+            f"Registered backup source: {source.name} (tier: {source.tier.value})"
+        )
 
     def _calculate_checksum(self, file_path: str) -> str:
         """Calculate SHA-256 checksum of a file."""
@@ -589,7 +609,7 @@ class BackupOrchestrator:
             "daily": timedelta(days=self.config.daily_retention),
             "weekly": timedelta(weeks=self.config.weekly_retention),
             "monthly": timedelta(days=self.config.monthly_retention * 30),
-            "yearly": timedelta(days=self.config.yearly_retention * 365)
+            "yearly": timedelta(days=self.config.yearly_retention * 365),
         }
         return retention_map.get(backup_type, timedelta(days=7))
 
@@ -597,7 +617,7 @@ class BackupOrchestrator:
         self,
         source: BackupSource,
         backup_type: BackupType = BackupType.FULL,
-        retention_type: str = "daily"
+        retention_type: str = "daily",
     ) -> BackupMetadata | None:
         """Create a backup for a specific source."""
         async with self.backup_semaphore:
@@ -609,17 +629,15 @@ class BackupOrchestrator:
                 timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
                 filename = f"{source.name}_{backup_type.value}_{timestamp}"
 
-                if source.name.startswith('postgres'):
+                if source.name.startswith("postgres"):
                     filename += ".dump"
-                elif source.name.startswith('redis'):
+                elif source.name.startswith("redis"):
                     filename += ".rdb" if backup_type == BackupType.FULL else ".json"
                 else:
                     filename += ".tar.gz"
 
                 backup_path = os.path.join(
-                    self.config.backup_base_path,
-                    retention_type,
-                    filename
+                    self.config.backup_base_path, retention_type, filename
                 )
 
                 # Create backup metadata
@@ -634,12 +652,15 @@ class BackupOrchestrator:
                     size_bytes=0,
                     checksum="",
                     created_at=datetime.utcnow(),
-                    expires_at=datetime.utcnow() + self._get_retention_period(retention_type),
-                    status=BackupStatus.RUNNING
+                    expires_at=datetime.utcnow()
+                    + self._get_retention_period(retention_type),
+                    status=BackupStatus.RUNNING,
                 )
 
                 # Create the backup
-                success, error_msg = await source.create_backup(backup_path, backup_type)
+                success, error_msg = await source.create_backup(
+                    backup_path, backup_type
+                )
 
                 if success and os.path.exists(backup_path):
                     # Update metadata with actual file info
@@ -653,27 +674,37 @@ class BackupOrchestrator:
                             # Calculate directory size
                             original_size = sum(
                                 os.path.getsize(os.path.join(dirpath, filename))
-                                for dirpath, dirnames, filenames in os.walk(source.source_path)
+                                for dirpath, dirnames, filenames in os.walk(
+                                    source.source_path
+                                )
                                 for filename in filenames
                             )
                         else:
                             original_size = os.path.getsize(source.source_path)
 
                         if original_size > 0:
-                            metadata.compression_ratio = metadata.size_bytes / original_size
+                            metadata.compression_ratio = (
+                                metadata.size_bytes / original_size
+                            )
 
                     # Verify backup if enabled
                     if self.config.verification_enabled:
-                        metadata.verification_status = await source.verify_backup(backup_path)
+                        metadata.verification_status = await source.verify_backup(
+                            backup_path
+                        )
                         if not metadata.verification_status:
-                            logger.warning(f"Backup verification failed for {backup_id}")
+                            logger.warning(
+                                f"Backup verification failed for {backup_id}"
+                            )
 
                     # Upload to secondary storage if configured
                     if StorageProvider.AWS_S3 in self.storage_providers:
                         s3_provider = self.storage_providers[StorageProvider.AWS_S3]
                         s3_key = f"{retention_type}/{filename}"
 
-                        upload_success = await s3_provider.upload_backup(backup_path, s3_key)
+                        upload_success = await s3_provider.upload_backup(
+                            backup_path, s3_key
+                        )
                         if upload_success:
                             logger.info(f"Backup uploaded to S3: {s3_key}")
                         else:
@@ -685,22 +716,24 @@ class BackupOrchestrator:
                     # Update metrics
                     await self.metrics_service.record_counter(
                         "backup_completed",
-                        tags={"source": source.name, "type": backup_type.value}
+                        tags={"source": source.name, "type": backup_type.value},
                     )
 
                     await self.metrics_service.record_histogram(
                         "backup_duration_seconds",
                         time.time() - start_time,
-                        tags={"source": source.name, "type": backup_type.value}
+                        tags={"source": source.name, "type": backup_type.value},
                     )
 
                     await self.metrics_service.record_gauge(
                         "backup_size_bytes",
                         metadata.size_bytes,
-                        tags={"source": source.name, "type": backup_type.value}
+                        tags={"source": source.name, "type": backup_type.value},
                     )
 
-                    logger.info(f"Backup completed successfully: {backup_id} ({metadata.size_bytes} bytes)")
+                    logger.info(
+                        f"Backup completed successfully: {backup_id} ({metadata.size_bytes} bytes)"
+                    )
                     return metadata
 
                 else:
@@ -712,7 +745,7 @@ class BackupOrchestrator:
                     # Update failure metrics
                     await self.metrics_service.record_counter(
                         "backup_failed",
-                        tags={"source": source.name, "type": backup_type.value}
+                        tags={"source": source.name, "type": backup_type.value},
                     )
 
                     logger.error(f"Backup failed: {backup_id} - {error_msg}")
@@ -733,9 +766,10 @@ class BackupOrchestrator:
                     size_bytes=0,
                     checksum="",
                     created_at=datetime.utcnow(),
-                    expires_at=datetime.utcnow() + self._get_retention_period(retention_type),
+                    expires_at=datetime.utcnow()
+                    + self._get_retention_period(retention_type),
                     status=BackupStatus.FAILED,
-                    error_message=error_msg
+                    error_message=error_msg,
                 )
 
                 self.backup_metadata[backup_id] = metadata
@@ -756,7 +790,9 @@ class BackupOrchestrator:
                         cleaned_count += 1
                         logger.info(f"Cleaned up expired backup: {backup_id}")
                     except Exception as e:
-                        logger.error(f"Failed to remove backup file {metadata.backup_path}: {e}")
+                        logger.error(
+                            f"Failed to remove backup file {metadata.backup_path}: {e}"
+                        )
 
                 # Remove from S3 if applicable
                 if metadata.storage_provider == StorageProvider.AWS_S3:
@@ -785,7 +821,7 @@ class BackupOrchestrator:
                     BackupTier.CRITICAL: self.config.critical_interval,
                     BackupTier.HIGH: self.config.high_interval,
                     BackupTier.MEDIUM: self.config.medium_interval,
-                    BackupTier.LOW: self.config.low_interval
+                    BackupTier.LOW: self.config.low_interval,
                 }.get(source.tier, self.config.medium_interval)
 
                 if source.should_backup(interval_minutes):
@@ -812,10 +848,14 @@ class BackupOrchestrator:
                         retention_type = "yearly"
                         backup_type = BackupType.FULL
 
-                    logger.info(f"Starting backup: {source.name} ({backup_type.value}, {retention_type})")
+                    logger.info(
+                        f"Starting backup: {source.name} ({backup_type.value}, {retention_type})"
+                    )
 
                     # Create the backup
-                    metadata = await self.create_backup(source, backup_type, retention_type)
+                    metadata = await self.create_backup(
+                        source, backup_type, retention_type
+                    )
 
                     if metadata and metadata.status == BackupStatus.COMPLETED:
                         logger.info(f"Backup successful: {source.name}")
@@ -861,21 +901,30 @@ class BackupOrchestrator:
         # Count backups by status
         status_counts = {}
         for metadata in self.backup_metadata.values():
-            status_counts[metadata.status.value] = status_counts.get(metadata.status.value, 0) + 1
+            status_counts[metadata.status.value] = (
+                status_counts.get(metadata.status.value, 0) + 1
+            )
 
         # Count backups by tier
         tier_counts = {}
         for metadata in self.backup_metadata.values():
-            tier_counts[metadata.tier.value] = tier_counts.get(metadata.tier.value, 0) + 1
+            tier_counts[metadata.tier.value] = (
+                tier_counts.get(metadata.tier.value, 0) + 1
+            )
 
         # Calculate total backup size
-        total_size = sum(metadata.size_bytes for metadata in self.backup_metadata.values())
+        total_size = sum(
+            metadata.size_bytes for metadata in self.backup_metadata.values()
+        )
 
         # Count recent backups (last 24 hours)
-        recent_backups = len([
-            m for m in self.backup_metadata.values()
-            if (now - m.created_at).total_seconds() < 86400
-        ])
+        recent_backups = len(
+            [
+                m
+                for m in self.backup_metadata.values()
+                if (now - m.created_at).total_seconds() < 86400
+            ]
+        )
 
         return {
             "orchestrator_running": self.running,
@@ -886,7 +935,7 @@ class BackupOrchestrator:
             "tier_counts": tier_counts,
             "registered_sources": len(self.sources),
             "storage_providers": list(self.storage_providers.keys()),
-            "last_cleanup": now.isoformat()
+            "last_cleanup": now.isoformat(),
         }
 
 
@@ -906,17 +955,13 @@ async def main():
     # Register backup sources
     if db_url:
         postgres_source = PostgreSQLBackupSource(
-            name="postgres_main",
-            tier=BackupTier.CRITICAL,
-            connection_url=db_url
+            name="postgres_main", tier=BackupTier.CRITICAL, connection_url=db_url
         )
         orchestrator.register_source(postgres_source)
 
     if redis_url:
         redis_source = RedisBackupSource(
-            name="redis_cache",
-            tier=BackupTier.HIGH,
-            connection_url=redis_url
+            name="redis_cache", tier=BackupTier.HIGH, connection_url=redis_url
         )
         orchestrator.register_source(redis_source)
 
@@ -925,7 +970,7 @@ async def main():
         ("documents", "/app/data/documents", BackupTier.HIGH),
         ("vector_indexes", "/app/data/vector_indexes", BackupTier.HIGH),
         ("uploads", "/app/uploads", BackupTier.MEDIUM),
-        ("logs", "/app/logs", BackupTier.LOW)
+        ("logs", "/app/logs", BackupTier.LOW),
     ]
 
     for name, path, tier in data_paths:
@@ -934,7 +979,7 @@ async def main():
                 name=name,
                 tier=tier,
                 source_path=path,
-                exclude_patterns=["*.tmp", "*.lock", "__pycache__"]
+                exclude_patterns=["*.tmp", "*.lock", "__pycache__"],
             )
             orchestrator.register_source(fs_source)
 

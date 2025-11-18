@@ -11,15 +11,23 @@ from pathlib import Path
 from typing import Any
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
 class PerformanceRegression:
     """Represents a detected performance regression"""
 
-    def __init__(self, metric_name: str, baseline: float, current: float,
-                 change_percent: float, severity: str):
+    def __init__(
+        self,
+        metric_name: str,
+        baseline: float,
+        current: float,
+        change_percent: float,
+        severity: str,
+    ):
         self.metric_name = metric_name
         self.baseline = baseline
         self.current = current
@@ -27,7 +35,11 @@ class PerformanceRegression:
         self.severity = severity  # "minor", "major", "critical"
 
     def __str__(self):
-        symbol = "🔴" if self.severity == "critical" else "🟡" if self.severity == "major" else "🟠"
+        symbol = (
+            "🔴"
+            if self.severity == "critical"
+            else "🟡" if self.severity == "major" else "🟠"
+        )
         return f"{symbol} {self.metric_name}: {self.baseline:.2f}ms → {self.current:.2f}ms ({self.change_percent:+.1f}%)"
 
 
@@ -56,21 +68,22 @@ class PerformanceBaseline:
     def save_baselines(self):
         """Save baselines to file"""
         try:
-            with open(self.baseline_file, 'w') as f:
+            with open(self.baseline_file, "w") as f:
                 json.dump(self.baselines, f, indent=2, default=str)
             logger.info(f"Saved baselines to {self.baseline_file}")
         except Exception as e:
             logger.error(f"Failed to save baselines: {e}")
 
-    def establish_baselines(self, benchmark_results: dict[str, Any],
-                          category: str = "default") -> None:
+    def establish_baselines(
+        self, benchmark_results: dict[str, Any], category: str = "default"
+    ) -> None:
         """Establish new performance baselines from benchmark results"""
         logger.info(f"Establishing baselines for category: {category}")
 
         if category not in self.baselines:
             self.baselines[category] = {
                 "created_at": datetime.now().isoformat(),
-                "metrics": {}
+                "metrics": {},
             }
 
         self.baselines[category]["updated_at"] = datetime.now().isoformat()
@@ -82,13 +95,17 @@ class PerformanceBaseline:
             self.baselines[category]["metrics"][metric_name] = {
                 "value": value,
                 "timestamp": datetime.now().isoformat(),
-                "type": "response_time_ms" if "ms" in metric_name.lower() else "throughput"
+                "type": (
+                    "response_time_ms" if "ms" in metric_name.lower() else "throughput"
+                ),
             }
 
         logger.info(f"Established {len(metrics)} baseline metrics")
         self.save_baselines()
 
-    def _extract_metrics_from_results(self, results: dict[str, Any]) -> dict[str, float]:
+    def _extract_metrics_from_results(
+        self, results: dict[str, Any]
+    ) -> dict[str, float]:
         """Extract numeric metrics from various result formats"""
         metrics = {}
 
@@ -112,7 +129,12 @@ class PerformanceBaseline:
                 metrics[metric_name] = text_proc["avg_ms"]
 
         # Handle API benchmark format
-        for category in ["system_endpoints", "document_endpoints", "rag_endpoints", "settings_endpoints"]:
+        for category in [
+            "system_endpoints",
+            "document_endpoints",
+            "rag_endpoints",
+            "settings_endpoints",
+        ]:
             if category in results:
                 for endpoint, result in results[category].items():
                     if "error" not in result and "response_times_ms" in result:
@@ -128,9 +150,12 @@ class PerformanceBaseline:
 
         return metrics
 
-    def detect_regressions(self, current_results: dict[str, Any],
-                          category: str = "default",
-                          regression_threshold: float = 20.0) -> list[PerformanceRegression]:
+    def detect_regressions(
+        self,
+        current_results: dict[str, Any],
+        category: str = "default",
+        regression_threshold: float = 20.0,
+    ) -> list[PerformanceRegression]:
         """Detect performance regressions compared to baselines"""
 
         if category not in self.baselines:
@@ -158,7 +183,9 @@ class PerformanceBaseline:
             is_regression = False
             if "success_rate" in metric_name:
                 # For success rates, lower is worse
-                is_regression = change_percent < -regression_threshold/2  # More sensitive for success rates
+                is_regression = (
+                    change_percent < -regression_threshold / 2
+                )  # More sensitive for success rates
             else:
                 # For response times, higher is worse
                 is_regression = change_percent > regression_threshold
@@ -177,15 +204,18 @@ class PerformanceBaseline:
                     baseline=baseline_value,
                     current=current_value,
                     change_percent=change_percent,
-                    severity=severity
+                    severity=severity,
                 )
                 regressions.append(regression)
 
         return regressions
 
-    def check_improvements(self, current_results: dict[str, Any],
-                          category: str = "default",
-                          improvement_threshold: float = 15.0) -> list[dict[str, Any]]:
+    def check_improvements(
+        self,
+        current_results: dict[str, Any],
+        category: str = "default",
+        improvement_threshold: float = 15.0,
+    ) -> list[dict[str, Any]]:
         """Detect performance improvements"""
 
         if category not in self.baselines:
@@ -211,23 +241,26 @@ class PerformanceBaseline:
             is_improvement = False
             if "success_rate" in metric_name:
                 # For success rates, higher is better
-                is_improvement = change_percent > improvement_threshold/2
+                is_improvement = change_percent > improvement_threshold / 2
             else:
                 # For response times, lower is better
                 is_improvement = change_percent < -improvement_threshold
 
             if is_improvement:
-                improvements.append({
-                    "metric_name": metric_name,
-                    "baseline": baseline_value,
-                    "current": current_value,
-                    "change_percent": change_percent
-                })
+                improvements.append(
+                    {
+                        "metric_name": metric_name,
+                        "baseline": baseline_value,
+                        "current": current_value,
+                        "change_percent": change_percent,
+                    }
+                )
 
         return improvements
 
-    def generate_report(self, current_results: dict[str, Any],
-                       category: str = "default") -> dict[str, Any]:
+    def generate_report(
+        self, current_results: dict[str, Any], category: str = "default"
+    ) -> dict[str, Any]:
         """Generate comprehensive performance comparison report"""
 
         regressions = self.detect_regressions(current_results, category)
@@ -236,7 +269,9 @@ class PerformanceBaseline:
         report = {
             "timestamp": datetime.now().isoformat(),
             "category": category,
-            "baseline_info": self.baselines.get(category, {}).get("created_at", "Unknown"),
+            "baseline_info": self.baselines.get(category, {}).get(
+                "created_at", "Unknown"
+            ),
             "regressions": {
                 "count": len(regressions),
                 "critical": len([r for r in regressions if r.severity == "critical"]),
@@ -248,21 +283,23 @@ class PerformanceBaseline:
                         "baseline": r.baseline,
                         "current": r.current,
                         "change_percent": r.change_percent,
-                        "severity": r.severity
-                    } for r in regressions
-                ]
+                        "severity": r.severity,
+                    }
+                    for r in regressions
+                ],
             },
-            "improvements": {
-                "count": len(improvements),
-                "details": improvements
-            },
+            "improvements": {"count": len(improvements), "details": improvements},
             "overall_status": self._determine_overall_status(regressions),
-            "recommendations": self._generate_recommendations(regressions, improvements)
+            "recommendations": self._generate_recommendations(
+                regressions, improvements
+            ),
         }
 
         return report
 
-    def _determine_overall_status(self, regressions: list[PerformanceRegression]) -> str:
+    def _determine_overall_status(
+        self, regressions: list[PerformanceRegression]
+    ) -> str:
         """Determine overall performance status"""
         if not regressions:
             return "✅ GOOD - No performance regressions detected"
@@ -277,8 +314,9 @@ class PerformanceBaseline:
         else:
             return f"🟠 CAUTION - {len(regressions)} minor regression(s) detected"
 
-    def _generate_recommendations(self, regressions: list[PerformanceRegression],
-                                 improvements: list[dict]) -> list[str]:
+    def _generate_recommendations(
+        self, regressions: list[PerformanceRegression], improvements: list[dict]
+    ) -> list[str]:
         """Generate recommendations based on analysis"""
         recommendations = []
 
@@ -289,34 +327,48 @@ class PerformanceBaseline:
         if regressions:
             critical_regressions = [r for r in regressions if r.severity == "critical"]
             if critical_regressions:
-                recommendations.append("🔴 URGENT: Investigate critical performance regressions immediately")
-                recommendations.append("Consider rolling back recent changes if possible")
+                recommendations.append(
+                    "🔴 URGENT: Investigate critical performance regressions immediately"
+                )
+                recommendations.append(
+                    "Consider rolling back recent changes if possible"
+                )
 
             db_regressions = [r for r in regressions if "db_" in r.metric_name]
             if db_regressions:
-                recommendations.append("🗄️ Database performance issues detected - check indexes and queries")
+                recommendations.append(
+                    "🗄️ Database performance issues detected - check indexes and queries"
+                )
 
             api_regressions = [r for r in regressions if "api_" in r.metric_name]
             if api_regressions:
-                recommendations.append("🌐 API performance regressions detected - review endpoint optimizations")
+                recommendations.append(
+                    "🌐 API performance regressions detected - review endpoint optimizations"
+                )
 
             file_regressions = [r for r in regressions if "file_" in r.metric_name]
             if file_regressions:
-                recommendations.append("📁 File I/O performance issues - check disk usage and file operations")
+                recommendations.append(
+                    "📁 File I/O performance issues - check disk usage and file operations"
+                )
 
         if improvements:
-            recommendations.append(f"✅ {len(improvements)} performance improvements detected - good job!")
+            recommendations.append(
+                f"✅ {len(improvements)} performance improvements detected - good job!"
+            )
 
-        recommendations.append("📊 Update performance baselines if changes are intentional")
+        recommendations.append(
+            "📊 Update performance baselines if changes are intentional"
+        )
         recommendations.append("🔄 Run benchmarks regularly to catch regressions early")
 
         return recommendations
 
     def print_report(self, report: dict[str, Any]):
         """Print formatted performance report"""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("PERFORMANCE REGRESSION ANALYSIS REPORT")
-        print("="*80)
+        print("=" * 80)
 
         print(f"📅 Analysis Time: {report['timestamp']}")
         print(f"📊 Category: {report['category']}")
@@ -326,35 +378,43 @@ class PerformanceBaseline:
         print(f"\n🎯 Overall Status: {report['overall_status']}")
 
         # Regressions
-        regressions = report['regressions']
-        if regressions['count'] > 0:
+        regressions = report["regressions"]
+        if regressions["count"] > 0:
             print(f"\n🚨 REGRESSIONS DETECTED ({regressions['count']}):")
             print(f"   🔴 Critical: {regressions['critical']}")
             print(f"   🟡 Major: {regressions['major']}")
             print(f"   🟠 Minor: {regressions['minor']}")
 
             print("\n📋 Regression Details:")
-            for reg in regressions['details'][:10]:  # Show first 10
-                severity_symbol = "🔴" if reg['severity'] == 'critical' else "🟡" if reg['severity'] == 'major' else "🟠"
+            for reg in regressions["details"][:10]:  # Show first 10
+                severity_symbol = (
+                    "🔴"
+                    if reg["severity"] == "critical"
+                    else "🟡" if reg["severity"] == "major" else "🟠"
+                )
                 print(f"   {severity_symbol} {reg['metric']}:")
-                print(f"      Baseline: {reg['baseline']:.2f} → Current: {reg['current']:.2f}")
+                print(
+                    f"      Baseline: {reg['baseline']:.2f} → Current: {reg['current']:.2f}"
+                )
                 print(f"      Change: {reg['change_percent']:+.1f}%")
         else:
             print("\n✅ No performance regressions detected")
 
         # Improvements
-        improvements = report['improvements']
-        if improvements['count'] > 0:
+        improvements = report["improvements"]
+        if improvements["count"] > 0:
             print(f"\n🚀 IMPROVEMENTS DETECTED ({improvements['count']}):")
-            for imp in improvements['details'][:5]:  # Show first 5
-                print(f"   ✅ {imp['metric_name']}: {imp['change_percent']:+.1f}% improvement")
+            for imp in improvements["details"][:5]:  # Show first 5
+                print(
+                    f"   ✅ {imp['metric_name']}: {imp['change_percent']:+.1f}% improvement"
+                )
 
         # Recommendations
         print("\n💡 RECOMMENDATIONS:")
-        for i, rec in enumerate(report['recommendations'], 1):
+        for i, rec in enumerate(report["recommendations"], 1):
             print(f"   {i}. {rec}")
 
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
 
 
 def main():
@@ -362,11 +422,26 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Performance Regression Detector")
-    parser.add_argument("--results", required=True, help="Path to current benchmark results JSON file")
-    parser.add_argument("--baseline", help="Path to baseline file (default: performance_baselines.json)")
-    parser.add_argument("--category", default="default", help="Baseline category to compare against")
-    parser.add_argument("--establish", action="store_true", help="Establish new baselines instead of detecting regressions")
-    parser.add_argument("--threshold", type=float, default=20.0, help="Regression threshold percentage (default: 20%)")
+    parser.add_argument(
+        "--results", required=True, help="Path to current benchmark results JSON file"
+    )
+    parser.add_argument(
+        "--baseline", help="Path to baseline file (default: performance_baselines.json)"
+    )
+    parser.add_argument(
+        "--category", default="default", help="Baseline category to compare against"
+    )
+    parser.add_argument(
+        "--establish",
+        action="store_true",
+        help="Establish new baselines instead of detecting regressions",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=20.0,
+        help="Regression threshold percentage (default: 20%)",
+    )
     parser.add_argument("--output", help="Save report to JSON file")
 
     args = parser.parse_args()
@@ -388,7 +463,9 @@ def main():
         if args.establish:
             # Establish new baselines
             detector.establish_baselines(current_results, args.category)
-            print(f"✅ Established new performance baselines for category '{args.category}'")
+            print(
+                f"✅ Established new performance baselines for category '{args.category}'"
+            )
             return 0
         else:
             # Detect regressions
@@ -397,14 +474,14 @@ def main():
 
             # Save report if requested
             if args.output:
-                with open(args.output, 'w') as f:
+                with open(args.output, "w") as f:
                     json.dump(report, f, indent=2, default=str)
                 logger.info(f"Report saved to {args.output}")
 
             # Exit with appropriate code
-            if report['regressions']['critical'] > 0:
+            if report["regressions"]["critical"] > 0:
                 return 2  # Critical regressions
-            elif report['regressions']['major'] > 0:
+            elif report["regressions"]["major"] > 0:
                 return 1  # Major regressions
             else:
                 return 0  # No significant regressions

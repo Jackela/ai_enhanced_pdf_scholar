@@ -39,15 +39,14 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
                 event_type="security_validation_failure",
                 field=e.field,
                 value=str(request.url),
-                details=f"Pattern: {e.pattern}, Client: {request.client.host if request.client else 'unknown'}"
+                details=f"Pattern: {e.pattern}, Client: {request.client.host if request.client else 'unknown'}",
             )
 
             # Create security validation error response
             error_response = SecurityValidationErrorResponse.from_security_error(e)
 
             return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                content=error_response.dict()
+                status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict()
             )
 
         except ValidationError as e:
@@ -58,7 +57,7 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
 
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=error_response.dict()
+                content=error_response.dict(),
             )
 
         except Exception as e:
@@ -71,25 +70,28 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
 def create_security_exception_handlers() -> dict[Any, Callable]:
     """Create exception handlers for security validation errors."""
 
-    async def security_validation_handler(request: Request, exc: SecurityValidationError) -> JSONResponse:
+    async def security_validation_handler(
+        request: Request, exc: SecurityValidationError
+    ) -> JSONResponse:
         """Handle SecurityValidationError."""
         # Log the security event
         log_security_event(
             event_type="security_validation_failure",
             field=exc.field,
             value=str(request.url),
-            details=f"Pattern: {exc.pattern}, Client: {request.client.host if request.client else 'unknown'}"
+            details=f"Pattern: {exc.pattern}, Client: {request.client.host if request.client else 'unknown'}",
         )
 
         # Create security validation error response
         error_response = SecurityValidationErrorResponse.from_security_error(exc)
 
         return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content=error_response.dict()
+            status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict()
         )
 
-    async def validation_error_handler(request: Request, exc: ValidationError) -> JSONResponse:
+    async def validation_error_handler(
+        request: Request, exc: ValidationError
+    ) -> JSONResponse:
         """Handle Pydantic ValidationError."""
         logger.warning(f"Validation error for {request.url}: {exc}")
 
@@ -97,7 +99,7 @@ def create_security_exception_handlers() -> dict[Any, Callable]:
 
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content=error_response.dict()
+            content=error_response.dict(),
         )
 
     return {
@@ -114,10 +116,17 @@ def log_security_metrics(event_type: str, field: str, client_ip: str = None):
         "event_type": event_type,
         "field": field,
         "client_ip": client_ip,
-        "timestamp": logging.Formatter().formatTime(logging.LogRecord(
-            name="security", level=logging.INFO, pathname="", lineno=0,
-            msg="", args=(), exc_info=None
-        ))
+        "timestamp": logging.Formatter().formatTime(
+            logging.LogRecord(
+                name="security",
+                level=logging.INFO,
+                pathname="",
+                lineno=0,
+                msg="",
+                args=(),
+                exc_info=None,
+            )
+        ),
     }
 
     metrics_logger.info(f"SECURITY_METRIC: {metrics_data}")

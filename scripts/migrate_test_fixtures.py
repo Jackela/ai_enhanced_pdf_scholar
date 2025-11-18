@@ -17,16 +17,11 @@ class TestMigrationHelper:
         # Common patterns to replace
         self.fixture_migrations = {
             # Database fixtures
-            r'@pytest\.fixture\s*\ndef db_connection.*?yield db.*?db\.close.*?connection.*?\n':
-                'def db_connection(request):\n    """Use optimized database fixture."""\n    from tests.test_utils import db_manager\n    test_name = request.node.name\n    db = db_manager.get_test_db(test_name)\n    db_manager.clean_test_db(test_name)\n    yield db\n',
-
+            r"@pytest\.fixture\s*\ndef db_connection.*?yield db.*?db\.close.*?connection.*?\n": 'def db_connection(request):\n    """Use optimized database fixture."""\n    from tests.test_utils import db_manager\n    test_name = request.node.name\n    db = db_manager.get_test_db(test_name)\n    db_manager.clean_test_db(test_name)\n    yield db\n',
             # Mock fixtures
-            r'mock_.*=.*Mock\(\)':
-                '# Use mock_factory from test_utils instead',
-
+            r"mock_.*=.*Mock\(\)": "# Use mock_factory from test_utils instead",
             # Temp directory fixtures
-            r'@pytest\.fixture\s*\ndef temp_.*?tempfile\..*?yield.*?\n':
-                '# Use test_data_directory fixture instead\n',
+            r"@pytest\.fixture\s*\ndef temp_.*?tempfile\..*?yield.*?\n": "# Use test_data_directory fixture instead\n",
         }
 
     def scan_test_files(self) -> list[Path]:
@@ -42,12 +37,12 @@ class TestMigrationHelper:
 
                 # Check for patterns that suggest migration needed
                 migration_indicators = [
-                    'DatabaseConnection(',
-                    'tempfile.NamedTemporaryFile',
-                    'Mock()',
-                    'MagicMock()',
-                    '@pytest.fixture.*db',
-                    'yield db'
+                    "DatabaseConnection(",
+                    "tempfile.NamedTemporaryFile",
+                    "Mock()",
+                    "MagicMock()",
+                    "@pytest.fixture.*db",
+                    "yield db",
                 ]
 
                 if any(indicator in content for indicator in migration_indicators):
@@ -64,40 +59,46 @@ class TestMigrationHelper:
 
         try:
             content = file_path.read_text()
-            lines = content.split('\n')
+            lines = content.split("\n")
 
             for i, line in enumerate(lines):
                 line_num = i + 1
 
                 # Database fixture suggestions
-                if 'DatabaseConnection(' in line and '@pytest.fixture' in content:
-                    suggestions.append({
-                        'line': line_num,
-                        'type': 'database_fixture',
-                        'current': line.strip(),
-                        'suggestion': 'Use optimized db_connection fixture from test_utils',
-                        'replacement': 'def test_func(db_connection):  # from conftest.py'
-                    })
+                if "DatabaseConnection(" in line and "@pytest.fixture" in content:
+                    suggestions.append(
+                        {
+                            "line": line_num,
+                            "type": "database_fixture",
+                            "current": line.strip(),
+                            "suggestion": "Use optimized db_connection fixture from test_utils",
+                            "replacement": "def test_func(db_connection):  # from conftest.py",
+                        }
+                    )
 
                 # Mock suggestions
-                if 'Mock()' in line or 'MagicMock()' in line:
-                    suggestions.append({
-                        'line': line_num,
-                        'type': 'mock_fixture',
-                        'current': line.strip(),
-                        'suggestion': 'Use MockFactory from test_utils',
-                        'replacement': 'mock_factory.create_mock_...()'
-                    })
+                if "Mock()" in line or "MagicMock()" in line:
+                    suggestions.append(
+                        {
+                            "line": line_num,
+                            "type": "mock_fixture",
+                            "current": line.strip(),
+                            "suggestion": "Use MockFactory from test_utils",
+                            "replacement": "mock_factory.create_mock_...()",
+                        }
+                    )
 
                 # Tempfile suggestions
-                if 'tempfile' in line and 'fixture' in content:
-                    suggestions.append({
-                        'line': line_num,
-                        'type': 'temp_directory',
-                        'current': line.strip(),
-                        'suggestion': 'Use test_data_directory fixture',
-                        'replacement': 'def test_func(test_data_directory):'
-                    })
+                if "tempfile" in line and "fixture" in content:
+                    suggestions.append(
+                        {
+                            "line": line_num,
+                            "type": "temp_directory",
+                            "current": line.strip(),
+                            "suggestion": "Use test_data_directory fixture",
+                            "replacement": "def test_func(test_data_directory):",
+                        }
+                    )
 
         except Exception as e:
             print(f"Warning: Could not analyze {file_path}: {e}")
@@ -112,7 +113,7 @@ class TestMigrationHelper:
             "# Test Infrastructure Migration Report",
             "",
             f"Found {len(files_to_migrate)} files that could benefit from optimization:",
-            ""
+            "",
         ]
 
         for file_path in files_to_migrate:
@@ -120,74 +121,80 @@ class TestMigrationHelper:
             suggestions = self.suggest_migrations(file_path)
 
             if suggestions:
-                report_lines.extend([
-                    f"## {rel_path}",
-                    f"**{len(suggestions)} optimization opportunities**",
-                    ""
-                ])
+                report_lines.extend(
+                    [
+                        f"## {rel_path}",
+                        f"**{len(suggestions)} optimization opportunities**",
+                        "",
+                    ]
+                )
 
                 for suggestion in suggestions:
-                    report_lines.extend([
-                        f"**Line {suggestion['line']}** ({suggestion['type']}):",
-                        "```python",
-                        "# Current:",
-                        f"{suggestion['current']}",
-                        "",
-                        "# Suggested:",
-                        f"{suggestion['replacement']}",
-                        "```",
-                        f"*{suggestion['suggestion']}*",
-                        ""
-                    ])
+                    report_lines.extend(
+                        [
+                            f"**Line {suggestion['line']}** ({suggestion['type']}):",
+                            "```python",
+                            "# Current:",
+                            f"{suggestion['current']}",
+                            "",
+                            "# Suggested:",
+                            f"{suggestion['replacement']}",
+                            "```",
+                            f"*{suggestion['suggestion']}*",
+                            "",
+                        ]
+                    )
 
         # Add quick start guide
-        report_lines.extend([
-            "",
-            "## Quick Migration Guide",
-            "",
-            "### 1. Update imports in test files:",
-            "```python",
-            "# Add to test file imports:",
-            "from tests.test_utils import db_manager, mock_factory",
-            "```",
-            "",
-            "### 2. Replace database fixtures:",
-            "```python",
-            "# Old:",
-            "@pytest.fixture",
-            "def db_connection():",
-            "    db = DatabaseConnection(':memory:')",
-            "    # ... setup ...",
-            "    yield db",
-            "    db.close_connection()",
-            "",
-            "# New:",
-            "def test_my_function(db_connection):  # Use fixture from conftest.py",
-            "    # db_connection is already set up and cleaned",
-            "    pass",
-            "```",
-            "",
-            "### 3. Replace manual mocks:",
-            "```python",
-            "# Old:",
-            "mock_service = Mock()",
-            "mock_service.method.return_value = 'result'",
-            "",
-            "# New:",
-            "def test_my_function(mock_factory):",
-            "    mock_service = mock_factory.create_mock_embedding_service()",
-            "    # Pre-configured with sensible defaults",
-            "```",
-            "",
-            "### 4. Use performance fixtures:",
-            "```python",
-            "def test_performance_sensitive(performance_tracker):",
-            "    with performance_tracker.measure('operation'):",
-            "        # Code being measured",
-            "        pass",
-            "    # Automatically logged if slow",
-            "```",
-        ])
+        report_lines.extend(
+            [
+                "",
+                "## Quick Migration Guide",
+                "",
+                "### 1. Update imports in test files:",
+                "```python",
+                "# Add to test file imports:",
+                "from tests.test_utils import db_manager, mock_factory",
+                "```",
+                "",
+                "### 2. Replace database fixtures:",
+                "```python",
+                "# Old:",
+                "@pytest.fixture",
+                "def db_connection():",
+                "    db = DatabaseConnection(':memory:')",
+                "    # ... setup ...",
+                "    yield db",
+                "    db.close_connection()",
+                "",
+                "# New:",
+                "def test_my_function(db_connection):  # Use fixture from conftest.py",
+                "    # db_connection is already set up and cleaned",
+                "    pass",
+                "```",
+                "",
+                "### 3. Replace manual mocks:",
+                "```python",
+                "# Old:",
+                "mock_service = Mock()",
+                "mock_service.method.return_value = 'result'",
+                "",
+                "# New:",
+                "def test_my_function(mock_factory):",
+                "    mock_service = mock_factory.create_mock_embedding_service()",
+                "    # Pre-configured with sensible defaults",
+                "```",
+                "",
+                "### 4. Use performance fixtures:",
+                "```python",
+                "def test_performance_sensitive(performance_tracker):",
+                "    with performance_tracker.measure('operation'):",
+                "        # Code being measured",
+                "        pass",
+                "    # Automatically logged if slow",
+                "```",
+            ]
+        )
 
         return "\n".join(report_lines)
 
@@ -303,7 +310,9 @@ def main():
 
     # Scan for files that need migration
     files_to_migrate = migrator.scan_test_files()
-    print(f"📊 Found {len(files_to_migrate)} files that could benefit from optimization")
+    print(
+        f"📊 Found {len(files_to_migrate)} files that could benefit from optimization"
+    )
 
     # Generate and save migration materials
     migrator.save_migration_files()

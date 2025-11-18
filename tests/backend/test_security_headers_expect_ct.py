@@ -11,9 +11,11 @@ from backend.api.middleware.security_headers import (
 
 def test_expect_ct_header_enabled():
     cfg = SecurityHeadersConfig(
-        environment=SecurityHeadersConfig.Environment.PRODUCTION
-        if hasattr(SecurityHeadersConfig, "Environment")
-        else None
+        environment=(
+            SecurityHeadersConfig.Environment.PRODUCTION
+            if hasattr(SecurityHeadersConfig, "Environment")
+            else None
+        )
     )
     cfg.expect_ct_enabled = True
     cfg.expect_ct_max_age = 123

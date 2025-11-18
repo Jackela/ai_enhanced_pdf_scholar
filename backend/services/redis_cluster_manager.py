@@ -24,8 +24,10 @@ logger = logging.getLogger(__name__)
 # Configuration Classes
 # ============================================================================
 
+
 class ClusterMode(str, Enum):
     """Redis cluster deployment modes."""
+
     STANDALONE = "standalone"
     SENTINEL = "sentinel"
     CLUSTER = "cluster"
@@ -34,6 +36,7 @@ class ClusterMode(str, Enum):
 
 class NodeRole(str, Enum):
     """Redis node roles."""
+
     MASTER = "master"
     REPLICA = "replica"
     SENTINEL = "sentinel"
@@ -42,6 +45,7 @@ class NodeRole(str, Enum):
 @dataclass
 class RedisNodeConfig:
     """Configuration for a Redis node."""
+
     host: str
     port: int
     role: NodeRole
@@ -61,6 +65,7 @@ class RedisNodeConfig:
 @dataclass
 class ClusterConfig:
     """Redis cluster configuration."""
+
     mode: ClusterMode = ClusterMode.CLUSTER
     nodes: list[RedisNodeConfig] = field(default_factory=list)
     service_name: str = "mymaster"  # For Sentinel
@@ -100,9 +105,11 @@ class ClusterConfig:
 # Node Health Monitoring
 # ============================================================================
 
+
 @dataclass
 class NodeHealth:
     """Redis node health information."""
+
     node_id: str
     address: str
     role: NodeRole
@@ -142,6 +149,7 @@ class NodeHealth:
 # Redis Cluster Manager
 # ============================================================================
 
+
 class RedisClusterManager:
     """
     Advanced Redis cluster management with high availability and monitoring.
@@ -165,7 +173,7 @@ class RedisClusterManager:
             "average_response_time": 0.0,
             "cluster_slots_coverage": 0.0,
             "healthy_nodes": 0,
-            "total_nodes": 0
+            "total_nodes": 0,
         }
 
         logger.info(f"Initialized Redis cluster manager for {config.mode} deployment")
@@ -189,7 +197,9 @@ class RedisClusterManager:
             # Start health monitoring
             await self._start_monitoring()
 
-            logger.info(f"Redis cluster initialized successfully in {self.config.mode} mode")
+            logger.info(
+                f"Redis cluster initialized successfully in {self.config.mode} mode"
+            )
             return True
 
         except Exception as e:
@@ -199,8 +209,7 @@ class RedisClusterManager:
     async def _initialize_cluster(self):
         """Initialize Redis Cluster mode."""
         startup_nodes = [
-            {"host": node.host, "port": node.port}
-            for node in self.config.nodes
+            {"host": node.host, "port": node.port} for node in self.config.nodes
         ]
 
         self._cluster_client = RedisCluster(
@@ -210,7 +219,7 @@ class RedisClusterManager:
             max_connections=self.config.max_connections,
             readonly_mode=self.config.readonly_mode,
             retry=Retry(ExponentialBackoff(), retries=3),
-            **self.config.connection_pool_kwargs
+            **self.config.connection_pool_kwargs,
         )
 
         # Test cluster connection
@@ -222,20 +231,16 @@ class RedisClusterManager:
     async def _initialize_sentinel(self):
         """Initialize Redis Sentinel mode."""
         sentinel_addresses = [
-            (node.host, node.port)
-            for node in self.config.sentinel_nodes
+            (node.host, node.port) for node in self.config.sentinel_nodes
         ]
 
         self._sentinel_client = Sentinel(
-            sentinel_addresses,
-            socket_timeout=5.0,
-            **self.config.connection_pool_kwargs
+            sentinel_addresses, socket_timeout=5.0, **self.config.connection_pool_kwargs
         )
 
         # Get master and replica connections
         master = self._sentinel_client.master_for(
-            self.config.service_name,
-            socket_timeout=5.0
+            self.config.service_name, socket_timeout=5.0
         )
 
         # Test connection
@@ -260,7 +265,7 @@ class RedisClusterManager:
             socket_timeout=node.socket_timeout,
             socket_connect_timeout=node.socket_connect_timeout,
             decode_responses=self.config.decode_responses,
-            **self.config.connection_pool_kwargs
+            **self.config.connection_pool_kwargs,
         )
 
         # Test connection
@@ -276,7 +281,7 @@ class RedisClusterManager:
                     password=node.password,
                     db=node.db,
                     socket_timeout=node.socket_timeout,
-                    decode_responses=False
+                    decode_responses=False,
                 )
 
                 # Test connection
@@ -285,9 +290,7 @@ class RedisClusterManager:
                 node_id = node.address
                 self._clients[node_id] = client
                 self._node_health[node_id] = NodeHealth(
-                    node_id=node_id,
-                    address=node.address,
-                    role=node.role
+                    node_id=node_id, address=node.address, role=node.role
                 )
 
                 logger.debug(f"Initialized client for node {node_id}")
@@ -303,9 +306,7 @@ class RedisClusterManager:
             for master_name, master_info in masters.items():
                 master_id = f"{master_info['ip']}:{master_info['port']}"
                 self._node_health[master_id] = NodeHealth(
-                    node_id=master_id,
-                    address=master_id,
-                    role=NodeRole.MASTER
+                    node_id=master_id, address=master_id, role=NodeRole.MASTER
                 )
 
             # Get replica info
@@ -313,9 +314,7 @@ class RedisClusterManager:
             for replica_info in replicas:
                 replica_id = f"{replica_info['ip']}:{replica_info['port']}"
                 self._node_health[replica_id] = NodeHealth(
-                    node_id=replica_id,
-                    address=replica_id,
-                    role=NodeRole.REPLICA
+                    node_id=replica_id, address=replica_id, role=NodeRole.REPLICA
                 )
 
         except Exception as e:
@@ -370,9 +369,11 @@ class RedisClusterManager:
 
                     # Update health
                     health.update_success(response_time)
-                    health.memory_usage_mb = info.get('used_memory', 0) / 1024 / 1024
-                    health.connections_count = info.get('connected_clients', 0)
-                    health.operations_per_second = info.get('instantaneous_ops_per_sec', 0)
+                    health.memory_usage_mb = info.get("used_memory", 0) / 1024 / 1024
+                    health.connections_count = info.get("connected_clients", 0)
+                    health.operations_per_second = info.get(
+                        "instantaneous_ops_per_sec", 0
+                    )
 
                     if health.is_healthy:
                         healthy_nodes += 1
@@ -382,11 +383,15 @@ class RedisClusterManager:
                 logger.warning(f"Health check failed for node {node_id}: {e}")
 
         # Update cluster metrics
-        self._metrics.update({
-            "healthy_nodes": healthy_nodes,
-            "total_nodes": total_nodes,
-            "cluster_health_percentage": (healthy_nodes / total_nodes * 100) if total_nodes > 0 else 0
-        })
+        self._metrics.update(
+            {
+                "healthy_nodes": healthy_nodes,
+                "total_nodes": total_nodes,
+                "cluster_health_percentage": (
+                    (healthy_nodes / total_nodes * 100) if total_nodes > 0 else 0
+                ),
+            }
+        )
 
         # Check if auto-scaling is needed
         if self.config.enable_auto_scaling:
@@ -400,18 +405,28 @@ class RedisClusterManager:
             if not healthy_nodes:
                 return
 
-            avg_memory = sum(h.memory_usage_mb for h in healthy_nodes) / len(healthy_nodes)
-            avg_connections = sum(h.connections_count for h in healthy_nodes) / len(healthy_nodes)
+            avg_memory = sum(h.memory_usage_mb for h in healthy_nodes) / len(
+                healthy_nodes
+            )
+            avg_connections = sum(h.connections_count for h in healthy_nodes) / len(
+                healthy_nodes
+            )
 
             # Check for scale-up conditions
             memory_usage_percent = (avg_memory / 1000) * 100  # Assuming 1GB nodes
-            connection_usage_percent = (avg_connections / 1000) * 100  # Assuming 1000 max connections
+            connection_usage_percent = (
+                avg_connections / 1000
+            ) * 100  # Assuming 1000 max connections
 
-            if (memory_usage_percent > self.config.memory_threshold or
-                connection_usage_percent > self.config.connection_threshold):
+            if (
+                memory_usage_percent > self.config.memory_threshold
+                or connection_usage_percent > self.config.connection_threshold
+            ):
 
-                logger.info(f"Auto-scaling triggered: Memory {memory_usage_percent:.1f}%, "
-                          f"Connections {connection_usage_percent:.1f}%")
+                logger.info(
+                    f"Auto-scaling triggered: Memory {memory_usage_percent:.1f}%, "
+                    f"Connections {connection_usage_percent:.1f}%"
+                )
                 await self._trigger_scale_up()
 
         except Exception as e:
@@ -420,7 +435,9 @@ class RedisClusterManager:
     async def _trigger_scale_up(self):
         """Trigger cluster scale-up (implementation depends on infrastructure)."""
         # This would integrate with infrastructure automation (Kubernetes, Terraform, etc.)
-        logger.info("Scale-up event triggered - would integrate with infrastructure automation")
+        logger.info(
+            "Scale-up event triggered - would integrate with infrastructure automation"
+        )
 
         # Metrics for monitoring
         self._metrics["scale_events"] = self._metrics.get("scale_events", 0) + 1
@@ -443,10 +460,7 @@ class RedisClusterManager:
         return self._clients.get(node_id)
 
     async def execute_on_all_nodes(
-        self,
-        command: str,
-        *args,
-        **kwargs
+        self, command: str, *args, **kwargs
     ) -> dict[str, Any]:
         """Execute a command on all healthy nodes."""
         results = {}
@@ -456,9 +470,7 @@ class RedisClusterManager:
             if health and health.is_healthy:
                 try:
                     result = await asyncio.to_thread(
-                        getattr(client, command.lower()),
-                        *args,
-                        **kwargs
+                        getattr(client, command.lower()), *args, **kwargs
                     )
                     results[node_id] = result
                 except Exception as e:
@@ -474,14 +486,16 @@ class RedisClusterManager:
             "nodes": {},
             "metrics": self._metrics.copy(),
             "health_summary": {
-                "healthy_nodes": sum(1 for h in self._node_health.values() if h.is_healthy),
+                "healthy_nodes": sum(
+                    1 for h in self._node_health.values() if h.is_healthy
+                ),
                 "total_nodes": len(self._node_health),
                 "unhealthy_nodes": [
                     {"node_id": node_id, "error": h.last_error}
                     for node_id, h in self._node_health.items()
                     if not h.is_healthy
-                ]
-            }
+                ],
+            },
         }
 
         # Add detailed node information
@@ -495,7 +509,7 @@ class RedisClusterManager:
                 "connections_count": health.connections_count,
                 "operations_per_second": health.operations_per_second,
                 "last_check": health.last_check.isoformat(),
-                "consecutive_failures": health.consecutive_failures
+                "consecutive_failures": health.consecutive_failures,
             }
 
         return info
@@ -516,14 +530,15 @@ class RedisClusterManager:
         health.is_healthy = False
 
         # For Sentinel mode, trigger failover if master fails
-        if (self.config.mode == ClusterMode.SENTINEL and
-            health.role == NodeRole.MASTER and
-            self._sentinel_client):
+        if (
+            self.config.mode == ClusterMode.SENTINEL
+            and health.role == NodeRole.MASTER
+            and self._sentinel_client
+        ):
 
             try:
                 await asyncio.to_thread(
-                    self._sentinel_client.sentinel_failover,
-                    self.config.service_name
+                    self._sentinel_client.sentinel_failover, self.config.service_name
                 )
                 logger.info(f"Initiated failover for master {node_id}")
             except Exception as e:
@@ -573,7 +588,7 @@ class RedisClusterManager:
         backup_info = {
             "timestamp": datetime.utcnow().isoformat(),
             "nodes": {},
-            "success": False
+            "success": False,
         }
 
         try:
@@ -585,7 +600,7 @@ class RedisClusterManager:
                 if health and health.role == NodeRole.MASTER:
                     backup_info["nodes"][node_id] = {
                         "result": result,
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.utcnow().isoformat(),
                     }
 
             backup_info["success"] = True
@@ -605,17 +620,23 @@ class RedisClusterManager:
         if self._cluster_client:
             try:
                 info = await asyncio.to_thread(self._cluster_client.info)
-                metrics.update({
-                    "redis_version": info.get("redis_version"),
-                    "uptime_in_seconds": info.get("uptime_in_seconds"),
-                    "used_memory": info.get("used_memory"),
-                    "used_memory_human": info.get("used_memory_human"),
-                    "connected_clients": info.get("connected_clients"),
-                    "total_commands_processed": info.get("total_commands_processed"),
-                    "instantaneous_ops_per_sec": info.get("instantaneous_ops_per_sec"),
-                    "keyspace_hits": info.get("keyspace_hits"),
-                    "keyspace_misses": info.get("keyspace_misses")
-                })
+                metrics.update(
+                    {
+                        "redis_version": info.get("redis_version"),
+                        "uptime_in_seconds": info.get("uptime_in_seconds"),
+                        "used_memory": info.get("used_memory"),
+                        "used_memory_human": info.get("used_memory_human"),
+                        "connected_clients": info.get("connected_clients"),
+                        "total_commands_processed": info.get(
+                            "total_commands_processed"
+                        ),
+                        "instantaneous_ops_per_sec": info.get(
+                            "instantaneous_ops_per_sec"
+                        ),
+                        "keyspace_hits": info.get("keyspace_hits"),
+                        "keyspace_misses": info.get("keyspace_misses"),
+                    }
+                )
 
                 # Calculate hit rate
                 hits = info.get("keyspace_hits", 0)
@@ -648,19 +669,21 @@ class RedisClusterManager:
         # Close all connections
         for client in self._clients.values():
             try:
-                if hasattr(client, 'close'):
+                if hasattr(client, "close"):
                     await asyncio.to_thread(client.close)
-                elif hasattr(client, 'connection_pool'):
+                elif hasattr(client, "connection_pool"):
                     await asyncio.to_thread(client.connection_pool.disconnect)
             except Exception as e:
                 logger.error(f"Error closing client connection: {e}")
 
         if self._cluster_client:
             try:
-                if hasattr(self._cluster_client, 'close'):
+                if hasattr(self._cluster_client, "close"):
                     await asyncio.to_thread(self._cluster_client.close)
-                elif hasattr(self._cluster_client, 'connection_pool'):
-                    await asyncio.to_thread(self._cluster_client.connection_pool.disconnect)
+                elif hasattr(self._cluster_client, "connection_pool"):
+                    await asyncio.to_thread(
+                        self._cluster_client.connection_pool.disconnect
+                    )
             except Exception as e:
                 logger.error(f"Error closing cluster client: {e}")
 
@@ -671,6 +694,7 @@ class RedisClusterManager:
 # Cluster Factory
 # ============================================================================
 
+
 class RedisClusterFactory:
     """Factory for creating Redis cluster managers."""
 
@@ -680,24 +704,28 @@ class RedisClusterFactory:
         # Parse nodes
         nodes = []
         for node_config in config_dict.get("nodes", []):
-            nodes.append(RedisNodeConfig(
-                host=node_config["host"],
-                port=node_config["port"],
-                role=NodeRole(node_config.get("role", "master")),
-                password=node_config.get("password"),
-                db=node_config.get("db", 0),
-                max_connections=node_config.get("max_connections", 100)
-            ))
+            nodes.append(
+                RedisNodeConfig(
+                    host=node_config["host"],
+                    port=node_config["port"],
+                    role=NodeRole(node_config.get("role", "master")),
+                    password=node_config.get("password"),
+                    db=node_config.get("db", 0),
+                    max_connections=node_config.get("max_connections", 100),
+                )
+            )
 
         # Parse sentinel nodes if present
         sentinel_nodes = []
         for sentinel_config in config_dict.get("sentinel_nodes", []):
-            sentinel_nodes.append(RedisNodeConfig(
-                host=sentinel_config["host"],
-                port=sentinel_config["port"],
-                role=NodeRole.SENTINEL,
-                password=sentinel_config.get("password")
-            ))
+            sentinel_nodes.append(
+                RedisNodeConfig(
+                    host=sentinel_config["host"],
+                    port=sentinel_config["port"],
+                    role=NodeRole.SENTINEL,
+                    password=sentinel_config.get("password"),
+                )
+            )
 
         # Create cluster config
         cluster_config = ClusterConfig(
@@ -707,13 +735,15 @@ class RedisClusterFactory:
             service_name=config_dict.get("service_name", "mymaster"),
             max_connections=config_dict.get("max_connections", 1000),
             enable_auto_scaling=config_dict.get("enable_auto_scaling", True),
-            health_check_interval=config_dict.get("health_check_interval", 30.0)
+            health_check_interval=config_dict.get("health_check_interval", 30.0),
         )
 
         return RedisClusterManager(cluster_config)
 
     @staticmethod
-    def create_standalone(host: str = "localhost", port: int = 6379, **kwargs) -> RedisClusterManager:
+    def create_standalone(
+        host: str = "localhost", port: int = 6379, **kwargs
+    ) -> RedisClusterManager:
         """Create standalone Redis cluster manager."""
         node = RedisNodeConfig(host=host, port=port, role=NodeRole.MASTER, **kwargs)
         config = ClusterConfig(mode=ClusterMode.STANDALONE, nodes=[node])
@@ -721,9 +751,7 @@ class RedisClusterFactory:
 
     @staticmethod
     def create_sentinel(
-        sentinel_hosts: list[tuple[str, int]],
-        service_name: str = "mymaster",
-        **kwargs
+        sentinel_hosts: list[tuple[str, int]], service_name: str = "mymaster", **kwargs
     ) -> RedisClusterManager:
         """Create Sentinel-based cluster manager."""
         sentinel_nodes = [
@@ -735,7 +763,7 @@ class RedisClusterFactory:
             mode=ClusterMode.SENTINEL,
             sentinel_nodes=sentinel_nodes,
             service_name=service_name,
-            **kwargs
+            **kwargs,
         )
 
         return RedisClusterManager(config)

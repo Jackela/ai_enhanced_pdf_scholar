@@ -25,6 +25,7 @@ router = APIRouter(prefix="/api/cache", tags=["cache_admin"])
 # Dependencies
 # ============================================================================
 
+
 async def get_cache_service_dependency() -> CacheServiceIntegration | None:
     """
     FastAPI dependency to get the cache service.
@@ -40,8 +41,10 @@ async def get_cache_service_dependency() -> CacheServiceIntegration | None:
 # Request/Response Models
 # ============================================================================
 
+
 class CacheOperationRequest(BaseModel):
     """Request model for cache operations."""
+
     key: str = Field(..., description="Cache key")
     value: Any | None = Field(None, description="Cache value")
     ttl_seconds: int | None = Field(None, description="Time to live in seconds", ge=1)
@@ -49,22 +52,26 @@ class CacheOperationRequest(BaseModel):
 
 class BatchCacheRequest(BaseModel):
     """Request model for batch cache operations."""
+
     data: dict[str, Any] = Field(..., description="Key-value pairs to cache")
     ttl_seconds: int | None = Field(None, description="Time to live in seconds", ge=1)
 
 
 class CacheInvalidationRequest(BaseModel):
     """Request model for cache invalidation."""
+
     pattern: str = Field(..., description="Pattern to match keys for invalidation")
 
 
 class CacheWarmingRequest(BaseModel):
     """Request model for cache warming."""
+
     data: dict[str, Any] = Field(..., description="Key-value pairs to warm in cache")
 
 
 class CacheOperationResponse(BaseModel):
     """Response model for cache operations."""
+
     success: bool
     message: str
     data: Any | None = None
@@ -73,6 +80,7 @@ class CacheOperationResponse(BaseModel):
 
 class CacheHealthResponse(BaseModel):
     """Response model for cache health status."""
+
     overall_status: str
     cache_system_available: bool
     components: dict[str, Any]
@@ -81,6 +89,7 @@ class CacheHealthResponse(BaseModel):
 
 class CacheStatisticsResponse(BaseModel):
     """Response model for cache statistics."""
+
     hit_rate_percent: float
     total_requests: int
     l1_cache: dict[str, Any]
@@ -93,9 +102,12 @@ class CacheStatisticsResponse(BaseModel):
 # Cache Health and Status Endpoints
 # ============================================================================
 
+
 @router.get("/health", response_model=CacheHealthResponse)
 async def get_cache_health(
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency)
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
 ):
     """
     Get comprehensive cache system health status.
@@ -115,8 +127,8 @@ async def get_cache_health(
                 cache_system_available=False,
                 components={
                     "cache_service": False,
-                    "reason": app_cache_status.get("reason", "Unknown")
-                }
+                    "reason": app_cache_status.get("reason", "Unknown"),
+                },
             )
 
         health_data = app_cache_status.get("health", {})
@@ -126,20 +138,23 @@ async def get_cache_health(
             overall_status=health_data.get("overall_status", "unknown"),
             cache_system_available=True,
             components=health_data.get("components", {}),
-            statistics=statistics
+            statistics=statistics,
         )
 
     except Exception as e:
         logger.error(f"Error getting cache health: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache health: {str(e)}") from e
+            detail=f"Failed to get cache health: {str(e)}",
+        ) from e
 
 
 @router.get("/statistics", response_model=CacheStatisticsResponse)
 async def get_cache_statistics(
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication for detailed stats
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(get_current_user),  # Require authentication for detailed stats
 ):
     """
     Get detailed cache performance statistics.
@@ -152,7 +167,7 @@ async def get_cache_statistics(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     try:
@@ -161,7 +176,7 @@ async def get_cache_statistics(
         if not statistics:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Cache statistics not available"
+                detail="Cache statistics not available",
             )
 
         return CacheStatisticsResponse(**statistics)
@@ -170,12 +185,13 @@ async def get_cache_statistics(
         logger.error(f"Error getting cache statistics: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache statistics: {str(e)}") from e
+            detail=f"Failed to get cache statistics: {str(e)}",
+        ) from e
 
 
 @router.get("/configuration")
 async def get_cache_configuration(
-    current_user=Depends(get_current_user)  # Require authentication for config access
+    current_user=Depends(get_current_user),  # Require authentication for config access
 ):
     """
     Get current cache system configuration.
@@ -189,7 +205,7 @@ async def get_cache_configuration(
         if not app_config.caching:
             return {
                 "cache_system_enabled": False,
-                "message": "Cache system not configured"
+                "message": "Cache system not configured",
             }
 
         config_dict = app_config.caching.to_dict()
@@ -201,18 +217,24 @@ async def get_cache_configuration(
         logger.error(f"Error getting cache configuration: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache configuration: {str(e)}") from e
+            detail=f"Failed to get cache configuration: {str(e)}",
+        ) from e
 
 
 # ============================================================================
 # Cache Management Endpoints
 # ============================================================================
 
+
 @router.post("/invalidate", response_model=CacheOperationResponse)
 async def invalidate_cache_pattern(
     request: CacheInvalidationRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication for cache management
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(
+        get_current_user
+    ),  # Require authentication for cache management
 ):
     """
     Invalidate cache entries matching a pattern.
@@ -223,35 +245,42 @@ async def invalidate_cache_pattern(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     try:
         invalidated_count = await cache_service.invalidate_pattern(request.pattern)
 
-        logger.info(f"User {current_user.get('id', 'unknown')} invalidated {invalidated_count} cache entries with pattern: {request.pattern}")
+        logger.info(
+            f"User {current_user.get('id', 'unknown')} invalidated {invalidated_count} cache entries with pattern: {request.pattern}"
+        )
 
         return CacheOperationResponse(
             success=True,
             message=f"Invalidated {invalidated_count} cache entries",
             metadata={
                 "pattern": request.pattern,
-                "invalidated_count": invalidated_count
-            }
+                "invalidated_count": invalidated_count,
+            },
         )
 
     except Exception as e:
         logger.error(f"Error invalidating cache pattern {request.pattern}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to invalidate cache: {str(e)}") from e
+            detail=f"Failed to invalidate cache: {str(e)}",
+        ) from e
 
 
 @router.post("/warm", response_model=CacheOperationResponse)
 async def warm_cache(
     request: CacheWarmingRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication for cache management
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(
+        get_current_user
+    ),  # Require authentication for cache management
 ):
     """
     Warm cache with provided data.
@@ -262,34 +291,41 @@ async def warm_cache(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     try:
         warmed_count = await cache_service.warm_cache(request.data)
 
-        logger.info(f"User {current_user.get('id', 'unknown')} warmed {warmed_count} cache entries")
+        logger.info(
+            f"User {current_user.get('id', 'unknown')} warmed {warmed_count} cache entries"
+        )
 
         return CacheOperationResponse(
             success=True,
             message=f"Warmed {warmed_count} cache entries",
             metadata={
                 "requested_count": len(request.data),
-                "warmed_count": warmed_count
-            }
+                "warmed_count": warmed_count,
+            },
         )
 
     except Exception as e:
         logger.error(f"Error warming cache: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to warm cache: {str(e)}") from e
+            detail=f"Failed to warm cache: {str(e)}",
+        ) from e
 
 
 @router.delete("/clear", response_model=CacheOperationResponse)
 async def clear_all_caches(
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication for dangerous operations
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(
+        get_current_user
+    ),  # Require authentication for dangerous operations
 ):
     """
     Clear all cache entries across all levels.
@@ -300,40 +336,43 @@ async def clear_all_caches(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     try:
         # Clear all caches by invalidating all patterns
         invalidated_count = await cache_service.invalidate_pattern("*")
 
-        logger.warning(f"User {current_user.get('id', 'unknown')} cleared all caches ({invalidated_count} entries)")
+        logger.warning(
+            f"User {current_user.get('id', 'unknown')} cleared all caches ({invalidated_count} entries)"
+        )
 
         return CacheOperationResponse(
             success=True,
             message=f"Cleared all caches ({invalidated_count} entries)",
-            metadata={
-                "operation": "clear_all",
-                "cleared_count": invalidated_count
-            }
+            metadata={"operation": "clear_all", "cleared_count": invalidated_count},
         )
 
     except Exception as e:
         logger.error(f"Error clearing all caches: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to clear caches: {str(e)}") from e
+            detail=f"Failed to clear caches: {str(e)}",
+        ) from e
 
 
 # ============================================================================
 # Direct Cache Operations (Development/Testing)
 # ============================================================================
 
+
 @router.get("/get/{key}")
 async def get_cache_value(
     key: str,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(get_current_user),  # Require authentication
 ):
     """
     Get value from cache by key.
@@ -344,7 +383,7 @@ async def get_cache_value(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     try:
@@ -352,29 +391,28 @@ async def get_cache_value(
 
         if value is None:
             return CacheOperationResponse(
-                success=False,
-                message="Key not found in cache",
-                data=None
+                success=False, message="Key not found in cache", data=None
             )
 
         return CacheOperationResponse(
-            success=True,
-            message="Value retrieved from cache",
-            data=value
+            success=True, message="Value retrieved from cache", data=value
         )
 
     except Exception as e:
         logger.error(f"Error getting cache value for key {key}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cache value: {str(e)}") from e
+            detail=f"Failed to get cache value: {str(e)}",
+        ) from e
 
 
 @router.post("/set", response_model=CacheOperationResponse)
 async def set_cache_value(
     request: CacheOperationRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(get_current_user),  # Require authentication
 ):
     """
     Set value in cache.
@@ -385,43 +423,41 @@ async def set_cache_value(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     if request.value is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Value is required for set operation"
+            detail="Value is required for set operation",
         )
 
     try:
         success = await cache_service.set(
-            request.key,
-            request.value,
-            request.ttl_seconds
+            request.key, request.value, request.ttl_seconds
         )
 
         return CacheOperationResponse(
             success=success,
             message="Value set in cache" if success else "Failed to set value in cache",
-            metadata={
-                "key": request.key,
-                "ttl_seconds": request.ttl_seconds
-            }
+            metadata={"key": request.key, "ttl_seconds": request.ttl_seconds},
         )
 
     except Exception as e:
         logger.error(f"Error setting cache value for key {request.key}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to set cache value: {str(e)}") from e
+            detail=f"Failed to set cache value: {str(e)}",
+        ) from e
 
 
 @router.delete("/delete/{key}", response_model=CacheOperationResponse)
 async def delete_cache_value(
     key: str,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(get_current_user),  # Require authentication
 ):
     """
     Delete value from cache.
@@ -432,7 +468,7 @@ async def delete_cache_value(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     try:
@@ -441,21 +477,24 @@ async def delete_cache_value(
         return CacheOperationResponse(
             success=success,
             message="Key deleted from cache" if success else "Key not found in cache",
-            metadata={"key": key}
+            metadata={"key": key},
         )
 
     except Exception as e:
         logger.error(f"Error deleting cache value for key {key}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete cache value: {str(e)}") from e
+            detail=f"Failed to delete cache value: {str(e)}",
+        ) from e
 
 
 @router.post("/mset", response_model=CacheOperationResponse)
 async def set_multiple_cache_values(
     request: BatchCacheRequest,
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(get_current_user),  # Require authentication
 ):
     """
     Set multiple values in cache.
@@ -466,13 +505,13 @@ async def set_multiple_cache_values(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     if not request.data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Data dictionary cannot be empty"
+            detail="Data dictionary cannot be empty",
         )
 
     try:
@@ -483,22 +522,25 @@ async def set_multiple_cache_values(
             message=f"Batch set {'successful' if success else 'failed'}",
             metadata={
                 "keys_count": len(request.data),
-                "ttl_seconds": request.ttl_seconds
-            }
+                "ttl_seconds": request.ttl_seconds,
+            },
         )
 
     except Exception as e:
         logger.error(f"Error in batch cache set: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to set multiple cache values: {str(e)}") from e
+            detail=f"Failed to set multiple cache values: {str(e)}",
+        ) from e
 
 
 @router.post("/mget")
 async def get_multiple_cache_values(
     keys: list[str],
-    cache_service: CacheServiceIntegration | None = Depends(get_cache_service_dependency),
-    current_user=Depends(get_current_user)  # Require authentication
+    cache_service: CacheServiceIntegration | None = Depends(
+        get_cache_service_dependency
+    ),
+    current_user=Depends(get_current_user),  # Require authentication
 ):
     """
     Get multiple values from cache.
@@ -509,13 +551,12 @@ async def get_multiple_cache_values(
     if not cache_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cache service not available"
+            detail="Cache service not available",
         )
 
     if not keys:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Keys list cannot be empty"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Keys list cannot be empty"
         )
 
     try:
@@ -525,14 +566,12 @@ async def get_multiple_cache_values(
             success=True,
             message=f"Retrieved {len(results)} values from cache",
             data=results,
-            metadata={
-                "requested_keys": len(keys),
-                "found_keys": len(results)
-            }
+            metadata={"requested_keys": len(keys), "found_keys": len(results)},
         )
 
     except Exception as e:
         logger.error(f"Error in batch cache get: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get multiple cache values: {str(e)}") from e
+            detail=f"Failed to get multiple cache values: {str(e)}",
+        ) from e

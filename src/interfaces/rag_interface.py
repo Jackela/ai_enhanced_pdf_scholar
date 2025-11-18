@@ -11,12 +11,16 @@ class IRAGService(ABC):
     """Interface for RAG services."""
 
     @abstractmethod
-    async def process_document(self, document_path: str, document_id: int) -> dict[str, Any]:
+    async def process_document(
+        self, document_path: str, document_id: int
+    ) -> dict[str, Any]:
         """Process a document for RAG functionality."""
         pass
 
     @abstractmethod
-    async def query_document(self, document_id: int, query: str, **kwargs) -> dict[str, Any]:
+    async def query_document(
+        self, document_id: int, query: str, **kwargs
+    ) -> dict[str, Any]:
         """Query a document with RAG functionality."""
         pass
 

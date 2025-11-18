@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 # Tracing Configuration
 # ============================================================================
 
+
 class TracingConfig:
     """OpenTelemetry tracing configuration."""
 
@@ -48,9 +49,15 @@ class TracingConfig:
         self.environment = os.getenv("ENVIRONMENT", "development")
 
         # Exporter configuration
-        self.exporter_type = os.getenv("OTEL_EXPORTER_TYPE", "jaeger")  # jaeger, zipkin, console
-        self.jaeger_endpoint = os.getenv("JAEGER_ENDPOINT", "http://localhost:14268/api/traces")
-        self.zipkin_endpoint = os.getenv("ZIPKIN_ENDPOINT", "http://localhost:9411/api/v2/spans")
+        self.exporter_type = os.getenv(
+            "OTEL_EXPORTER_TYPE", "jaeger"
+        )  # jaeger, zipkin, console
+        self.jaeger_endpoint = os.getenv(
+            "JAEGER_ENDPOINT", "http://localhost:14268/api/traces"
+        )
+        self.zipkin_endpoint = os.getenv(
+            "ZIPKIN_ENDPOINT", "http://localhost:9411/api/v2/spans"
+        )
 
         # Sampling configuration
         self.sample_rate = float(os.getenv("OTEL_SAMPLE_RATE", "1.0"))  # 100% sampling
@@ -59,17 +66,26 @@ class TracingConfig:
         self.propagators = os.getenv("OTEL_PROPAGATORS", "b3multi,jaeger").split(",")
 
         # Instrumentation configuration
-        self.auto_instrument_requests = os.getenv("OTEL_INSTRUMENT_REQUESTS", "true").lower() == "true"
-        self.auto_instrument_database = os.getenv("OTEL_INSTRUMENT_DATABASE", "true").lower() == "true"
-        self.auto_instrument_cache = os.getenv("OTEL_INSTRUMENT_CACHE", "true").lower() == "true"
+        self.auto_instrument_requests = (
+            os.getenv("OTEL_INSTRUMENT_REQUESTS", "true").lower() == "true"
+        )
+        self.auto_instrument_database = (
+            os.getenv("OTEL_INSTRUMENT_DATABASE", "true").lower() == "true"
+        )
+        self.auto_instrument_cache = (
+            os.getenv("OTEL_INSTRUMENT_CACHE", "true").lower() == "true"
+        )
 
         # Excluded URLs (health checks, metrics, etc.)
-        self.excluded_urls = os.getenv("OTEL_EXCLUDED_URLS", "/health,/metrics,/favicon.ico").split(",")
+        self.excluded_urls = os.getenv(
+            "OTEL_EXCLUDED_URLS", "/health,/metrics,/favicon.ico"
+        ).split(",")
 
 
 # ============================================================================
 # Tracing Service
 # ============================================================================
+
 
 class TracingService:
     """
@@ -90,27 +106,25 @@ class TracingService:
     def _setup_tracing(self):
         """Setup OpenTelemetry tracing."""
         # Create resource
-        resource = Resource.create({
-            SERVICE_NAME: self.config.service_name,
-            SERVICE_VERSION: self.config.service_version,
-            "environment": self.config.environment,
-            "host.name": os.getenv("HOSTNAME", "localhost")
-        })
+        resource = Resource.create(
+            {
+                SERVICE_NAME: self.config.service_name,
+                SERVICE_VERSION: self.config.service_version,
+                "environment": self.config.environment,
+                "host.name": os.getenv("HOSTNAME", "localhost"),
+            }
+        )
 
         # Create tracer provider
         self.tracer_provider = TracerProvider(
-            resource=resource,
-            sampler=self._create_sampler()
+            resource=resource, sampler=self._create_sampler()
         )
 
         # Set global tracer provider
         trace.set_tracer_provider(self.tracer_provider)
 
         # Get tracer
-        self.tracer = trace.get_tracer(
-            __name__,
-            self.config.service_version
-        )
+        self.tracer = trace.get_tracer(__name__, self.config.service_version)
 
         # Setup exporters
         self._setup_exporters()
@@ -124,6 +138,7 @@ class TracingService:
     def _create_sampler(self):
         """Create trace sampler."""
         from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
+
         return TraceIdRatioBased(self.config.sample_rate)
 
     def _setup_exporters(self):
@@ -131,15 +146,11 @@ class TracingService:
         processors = []
 
         if self.config.exporter_type == "jaeger":
-            jaeger_exporter = JaegerExporter(
-                endpoint=self.config.jaeger_endpoint
-            )
+            jaeger_exporter = JaegerExporter(endpoint=self.config.jaeger_endpoint)
             processors.append(BatchSpanProcessor(jaeger_exporter))
 
         elif self.config.exporter_type == "zipkin":
-            zipkin_exporter = ZipkinExporter(
-                endpoint=self.config.zipkin_endpoint
-            )
+            zipkin_exporter = ZipkinExporter(endpoint=self.config.zipkin_endpoint)
             processors.append(BatchSpanProcessor(zipkin_exporter))
 
         elif self.config.exporter_type == "console":
@@ -190,7 +201,7 @@ class TracingService:
         name: str,
         kind: trace.SpanKind | None = None,
         attributes: dict[str, Any] | None = None,
-        parent: Union[trace.Span, trace.SpanContext] | None = None
+        parent: Union[trace.Span, trace.SpanContext] | None = None,
     ) -> trace.Span:
         """
         Start a new span.
@@ -208,7 +219,7 @@ class TracingService:
             name=name,
             kind=kind,
             attributes=attributes,
-            context=trace.set_span_in_context(parent) if parent else None
+            context=trace.set_span_in_context(parent) if parent else None,
         )
 
         return span
@@ -218,7 +229,7 @@ class TracingService:
         self,
         name: str,
         kind: trace.SpanKind | None = None,
-        attributes: dict[str, Any] | None = None
+        attributes: dict[str, Any] | None = None,
     ):
         """
         Context manager for tracing operations.
@@ -247,7 +258,7 @@ class TracingService:
         name: str | None = None,
         kind: trace.SpanKind | None = None,
         attributes: dict[str, Any] | None = None,
-        record_exception: bool = True
+        record_exception: bool = True,
     ):
         """
         Decorator for automatic tracing.
@@ -263,6 +274,7 @@ class TracingService:
             def process_document(doc):
                 ...
         """
+
         def decorator(func: Callable) -> Callable:
             span_name = name or f"{func.__module__}.{func.__name__}"
 
@@ -285,7 +297,9 @@ class TracingService:
 
                     try:
                         result = func(*args, **kwargs)
-                        span.set_attribute("function.result.type", type(result).__name__)
+                        span.set_attribute(
+                            "function.result.type", type(result).__name__
+                        )
                         return result
                     except Exception as e:
                         if record_exception:
@@ -303,7 +317,9 @@ class TracingService:
 
                     try:
                         result = await func(*args, **kwargs)
-                        span.set_attribute("function.result.type", type(result).__name__)
+                        span.set_attribute(
+                            "function.result.type", type(result).__name__
+                        )
                         return result
                     except Exception as e:
                         if record_exception:
@@ -313,6 +329,7 @@ class TracingService:
 
             # Return appropriate wrapper based on function type
             import asyncio
+
             if asyncio.iscoroutinefunction(func):
                 return async_wrapper
             else:
@@ -331,7 +348,7 @@ class TracingService:
         status_code: int | None = None,
         user_id: str | None = None,
         request_size: int | None = None,
-        response_size: int | None = None
+        response_size: int | None = None,
     ):
         """Trace HTTP request with standard attributes."""
         span = trace.get_current_span()
@@ -361,7 +378,7 @@ class TracingService:
         table: str,
         query: str | None = None,
         rows_affected: int | None = None,
-        duration: float | None = None
+        duration: float | None = None,
     ):
         """Trace database query with standard attributes."""
         span = trace.get_current_span()
@@ -386,7 +403,7 @@ class TracingService:
         operation: str,
         file_type: str | None = None,
         file_size: int | None = None,
-        page_count: int | None = None
+        page_count: int | None = None,
     ):
         """Trace document processing operations."""
         span = trace.get_current_span()
@@ -410,7 +427,7 @@ class TracingService:
         document_id: str | None = None,
         retrieval_count: int | None = None,
         relevance_scores: list[float] | None = None,
-        model_used: str | None = None
+        model_used: str | None = None,
     ):
         """Trace RAG (Retrieval-Augmented Generation) queries."""
         span = trace.get_current_span()
@@ -418,6 +435,7 @@ class TracingService:
         if span:
             # Hash query for privacy
             import hashlib
+
             query_hash = hashlib.sha256(query.encode()).hexdigest()[:8]
             span.set_attribute("rag.query_hash", query_hash)
             span.set_attribute("rag.query_length", len(query))
@@ -430,7 +448,9 @@ class TracingService:
 
             if relevance_scores:
                 span.set_attribute("rag.max_relevance", max(relevance_scores))
-                span.set_attribute("rag.avg_relevance", sum(relevance_scores) / len(relevance_scores))
+                span.set_attribute(
+                    "rag.avg_relevance", sum(relevance_scores) / len(relevance_scores)
+                )
 
             if model_used:
                 span.set_attribute("rag.model", model_used)
@@ -441,7 +461,7 @@ class TracingService:
         key: str,
         hit: bool | None = None,
         size: int | None = None,
-        ttl: int | None = None
+        ttl: int | None = None,
     ):
         """Trace cache operations."""
         span = trace.get_current_span()
@@ -449,6 +469,7 @@ class TracingService:
         if span:
             # Hash key for privacy
             import hashlib
+
             key_hash = hashlib.sha256(key.encode()).hexdigest()[:8]
             span.set_attribute("cache.key_hash", key_hash)
             span.set_attribute("cache.operation", operation)
@@ -501,12 +522,14 @@ class TracingService:
     def inject_trace_context(self, headers: dict[str, str]) -> dict[str, str]:
         """Inject trace context into HTTP headers."""
         from opentelemetry.propagate import inject
+
         inject(headers)
         return headers
 
     def extract_trace_context(self, headers: dict[str, str]):
         """Extract trace context from HTTP headers."""
         from opentelemetry.propagate import extract
+
         return extract(headers)
 
     # ========================================================================
@@ -530,7 +553,9 @@ class TracingService:
                 for key, value in attributes.items():
                     span.set_attribute(key, value)
 
-    def set_user_context(self, user_id: str, user_email: str | None = None, user_role: str | None = None):
+    def set_user_context(
+        self, user_id: str, user_email: str | None = None, user_role: str | None = None
+    ):
         """Set user context in current span."""
         span = trace.get_current_span()
         if span:
@@ -546,6 +571,7 @@ class TracingService:
 
     def measure_performance(self, operation: str):
         """Context manager to measure operation performance."""
+
         @contextmanager
         def performance_context():
             start_time = time.time()
@@ -558,14 +584,14 @@ class TracingService:
 
                 # Add performance warnings
                 if duration > 5.0:  # > 5 seconds
-                    span.add_event("performance.slow_operation", {
-                        "threshold": "5s",
-                        "actual_duration": duration
-                    })
+                    span.add_event(
+                        "performance.slow_operation",
+                        {"threshold": "5s", "actual_duration": duration},
+                    )
                 elif duration > 1.0:  # > 1 second
-                    span.add_event("performance.moderate_duration", {
-                        "actual_duration": duration
-                    })
+                    span.add_event(
+                        "performance.moderate_duration", {"actual_duration": duration}
+                    )
 
         return performance_context()
 
@@ -584,9 +610,7 @@ class TracingService:
 
         # Instrument FastAPI
         FastAPIInstrumentor.instrument_app(
-            app,
-            excluded_urls=excluded_urls,
-            tracer_provider=self.tracer_provider
+            app, excluded_urls=excluded_urls, tracer_provider=self.tracer_provider
         )
 
         logger.info("FastAPI instrumentation enabled")
@@ -598,8 +622,14 @@ class TracingService:
     def _is_sensitive_key(self, key: str) -> bool:
         """Check if a key contains sensitive information."""
         sensitive_keys = [
-            "password", "token", "secret", "key", "auth",
-            "credential", "private", "confidential"
+            "password",
+            "token",
+            "secret",
+            "key",
+            "auth",
+            "credential",
+            "private",
+            "confidential",
         ]
         return any(sensitive in key.lower() for sensitive in sensitive_keys)
 
@@ -607,7 +637,9 @@ class TracingService:
         """Close tracing service and flush remaining spans."""
         if self.tracer_provider:
             # Shutdown span processors
-            for processor in self.tracer_provider._active_span_processor._span_processors:
+            for (
+                processor
+            ) in self.tracer_provider._active_span_processor._span_processors:
                 processor.shutdown()
 
         logger.info("Tracing service closed")
@@ -620,6 +652,7 @@ class TracingService:
 # Global tracing service instance
 _tracing_service: TracingService | None = None
 
+
 def get_tracer() -> TracingService:
     """Get global tracing service instance."""
     global _tracing_service
@@ -628,6 +661,7 @@ def get_tracer() -> TracingService:
         _tracing_service = TracingService()
 
     return _tracing_service
+
 
 def initialize_tracing(config: TracingConfig | None = None) -> TracingService:
     """Initialize global tracing service."""

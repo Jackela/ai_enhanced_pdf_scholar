@@ -878,16 +878,16 @@ View Dashboard: http://your-domain/dashboard/performance
                 "trigger_count": alert.trigger_count,
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
                     url, json=payload, headers=headers, timeout=10
-                ) as response:
-                    if response.status == 200:
-                        logger.info(
-                            f"Webhook notification sent for alert {alert.alert_id}"
-                        )
-                    else:
-                        logger.error(f"Webhook returned status {response.status}")
+                ) as response,
+            ):
+                if response.status == 200:
+                    logger.info(f"Webhook notification sent for alert {alert.alert_id}")
+                else:
+                    logger.error(f"Webhook returned status {response.status}")
 
         except Exception as e:
             logger.error(f"Error sending webhook notification: {e}")
@@ -944,16 +944,14 @@ View Dashboard: http://your-domain/dashboard/performance
                 ],
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    webhook_url, json=payload, timeout=10
-                ) as response:
-                    if response.status == 200:
-                        logger.info(
-                            f"Slack notification sent for alert {alert.alert_id}"
-                        )
-                    else:
-                        logger.error(f"Slack webhook returned status {response.status}")
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(webhook_url, json=payload, timeout=10) as response,
+            ):
+                if response.status == 200:
+                    logger.info(f"Slack notification sent for alert {alert.alert_id}")
+                else:
+                    logger.error(f"Slack webhook returned status {response.status}")
 
         except Exception as e:
             logger.error(f"Error sending Slack notification: {e}")
@@ -1008,18 +1006,14 @@ View Dashboard: http://your-domain/dashboard/performance
                 ],
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    webhook_url, json=payload, timeout=10
-                ) as response:
-                    if response.status in [200, 204]:
-                        logger.info(
-                            f"Discord notification sent for alert {alert.alert_id}"
-                        )
-                    else:
-                        logger.error(
-                            f"Discord webhook returned status {response.status}"
-                        )
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(webhook_url, json=payload, timeout=10) as response,
+            ):
+                if response.status in [200, 204]:
+                    logger.info(f"Discord notification sent for alert {alert.alert_id}")
+                else:
+                    logger.error(f"Discord webhook returned status {response.status}")
 
         except Exception as e:
             logger.error(f"Error sending Discord notification: {e}")
@@ -1123,8 +1117,8 @@ View Dashboard: http://your-domain/dashboard/performance
             ],
             "system_health": {
                 "monitoring_active": self._running,
-                "last_evaluation": self.last_evaluation.isoformat()
-                if self.last_evaluation
-                else None,
+                "last_evaluation": (
+                    self.last_evaluation.isoformat() if self.last_evaluation else None
+                ),
             },
         }

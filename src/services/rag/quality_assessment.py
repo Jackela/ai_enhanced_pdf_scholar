@@ -105,9 +105,9 @@ class CitationAccuracyValidator:
         valid_citations = max(0, citation_count - 1)
 
         return {
-            "accuracy_score": valid_citations / citation_count
-            if citation_count > 0
-            else 1.0,
+            "accuracy_score": (
+                valid_citations / citation_count if citation_count > 0 else 1.0
+            ),
             "valid_citations": valid_citations,
             "invalid_citations": citation_count - valid_citations,
             "total_citations": citation_count,

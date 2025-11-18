@@ -125,10 +125,12 @@ def list_documents():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT id, title, content, metadata, created_at, updated_at
         FROM documents ORDER BY created_at DESC LIMIT 100
-    """)
+    """
+    )
 
     rows = cursor.fetchall()
     conn.close()

@@ -414,9 +414,9 @@ class RAGCoordinator:
             # Get detailed health checks from recovery service
             try:
                 recovery_health = self.recovery_service.health_checker.run_all_checks()
-                health_status["services"]["recovery_service"]["health_checks"] = (
-                    recovery_health
-                )
+                health_status["services"]["recovery_service"][
+                    "health_checks"
+                ] = recovery_health
 
                 if not all(recovery_health.values()):
                     health_status["services"]["recovery_service"]["healthy"] = False
