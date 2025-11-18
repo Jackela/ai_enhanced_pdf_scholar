@@ -238,6 +238,202 @@ timeout_method = thread
 - **性能监控**: 自动跟踪和报告慢速测试
 - **基准测试**: `scripts/benchmark_tests.py` 性能验证脚本
 
+### 测试架构与组织
+
+#### 📂 **测试目录结构**
+
+```mermaid
+graph TD
+    A[tests/] --> B[conftest.py - 全局配置]
+    A --> C[backend/ - 后端API测试]
+    A --> D[services/ - 服务层测试]
+    A --> E[repositories/ - 仓储层测试]
+    A --> F[database/ - 数据库测试]
+    A --> G[integration/ - 集成测试]
+    A --> H[README.md - 测试文档]
+
+    C --> C1[test_auth_*.py - 认证模块]
+    C --> C2[test_documents_*.py - 文档路由]
+    C --> C3[test_middleware_*.py - 中间件]
+    C --> C4[test_main_*.py - 应用生命周期]
+
+    D --> D1[test_rag_*.py - RAG模块]
+    D --> D2[test_document_*.py - 文档服务]
+    D --> D3[test_cache_*.py - 缓存服务]
+    D --> D4[test_citation_*.py - 引用服务]
+
+    E --> E1[test_document_repository.py]
+    E --> E2[test_vector_repository.py]
+    E --> E3[test_citation_repository.py]
+
+    F --> F1[test_models.py - 数据模型]
+    F --> F2[test_connection.py - 连接管理]
+
+    G --> G1[test_real_*.py - 真实组件集成]
+    G --> G2[test_citation_*.py - 引用工作流]
+
+    style B fill:#e1f5fe
+    style C fill:#fff3e0
+    style D fill:#f3e5f5
+    style E fill:#e8f5e9
+```
+
+#### 🎯 **测试覆盖率现状** (2025-11-18)
+
+**总体覆盖率**: 9.2% (1,356/13,865 statements) | 目标: 75%
+
+```mermaid
+graph LR
+    A[测试覆盖现状] --> B[高覆盖 90-100%]
+    A --> C[中等覆盖 40-60%]
+    A --> D[低覆盖 0-15%]
+    A --> E[零覆盖 0%]
+
+    B --> B1[Models & Interfaces]
+    C --> C1[Document Routes ~60%]
+    C --> C2[Middleware ~40%]
+    D --> D1[Auth Service ~55%]
+    D --> D2[RAG Modules 0-15%]
+    E --> E1[Auth Routes 0%]
+    E --> E2[Auth Dependencies 0%]
+
+    style B fill:#4caf50
+    style C fill:#ff9800
+    style D fill:#f44336
+    style E fill:#9e9e9e
+```
+
+**各模块覆盖详情**:
+
+| 模块类型 | 当前覆盖率 | 优先级 | 预计测试数 |
+|---------|-----------|--------|-----------|
+| **RAG Modules** | 0-15% | 🔴 Critical | ~85 tests |
+| - query_engine.py | 0% | 🔴 High | 20 tests |
+| - recovery_service.py | 10% | 🔴 High | 18 tests |
+| - coordinator.py | 15% | 🔴 High | 15 tests |
+| - index_builder.py | 0% | 🟡 Medium | 12 tests |
+| - chunking_strategies.py | 25% | 🟡 Medium | 20 tests |
+| **Auth Modules** | 0-55% | 🔴 Critical | ~50 tests |
+| - service.py | 55% | 🟡 Medium | 25 tests |
+| - routes.py | 0% | 🔴 High | 15 tests |
+| - dependencies.py | 0% | 🔴 High | 10 tests |
+| **Middleware** | 38-41% | 🟡 Important | ~27 tests |
+| - rate_limiting.py | 38% | 🟡 Medium | 15 tests |
+| - security_headers.py | 41% | 🟡 Medium | 12 tests |
+| **Main Apps** | 38-50% | 🟡 Important | ~12 tests |
+| - main.py | 38% | 🟡 Medium | 12 tests |
+
+#### 🧪 **测试模式与策略**
+
+**Stub模式 (推荐)**
+```python
+class _StubDocRepository:
+    """轻量级仓储桩，用于隔离测试"""
+    def __init__(self, documents: list[DocumentModel] | None = None):
+        self._documents = documents or []
+
+    def find_by_id(self, document_id: int) -> DocumentModel | None:
+        for doc in self._documents:
+            if doc.id == document_id:
+                return doc
+        return None
+```
+
+**RAG模块测试模式 (test_mode)**
+```python
+# CRITICAL: 使用 test_mode=True 避免外部API调用
+from src.services.rag.query_engine import RAGQueryEngine
+
+query_engine = RAGQueryEngine(
+    document_repo=mock_doc_repo,
+    vector_repo=mock_vector_repo,
+    file_manager=mock_file_manager,
+    test_mode=True  # 避免LlamaIndex和Gemini API初始化
+)
+
+# 测试模式响应
+response = query_engine._execute_query("test query")
+assert response == "Test mode response for query: test query"
+```
+
+**错误注入模式**
+```python
+class _FailingRepository(_StubRepository):
+    """用于测试错误处理的失败桩"""
+    def __init__(self, exception: Exception):
+        super().__init__([])
+        self._exception = exception
+
+    def find_by_id(self, document_id: int):
+        raise self._exception
+```
+
+#### 📚 **测试资源文档**
+
+**测试指南**:
+- **完整测试指南**: [`docs/TESTING.md`](./TESTING.md) - 测试模式、Stub示例、最佳实践
+- **RAG API参考**: [`docs/RAG_API_REFERENCE.md`](./RAG_API_REFERENCE.md) - 验证的方法签名，防止测试错误
+- **测试架构**: [`tests/README.md`](../tests/README.md) - 测试组织和覆盖目标
+
+**关键测试原则**:
+1. **读取源码优先**: 编写测试前，始终验证实际的API签名
+2. **使用test_mode**: RAG组件使用`test_mode=True`避免外部依赖
+3. **Stub优于Mock**: 优先使用轻量级stub类而不是unittest.mock
+4. **独立测试**: 每个测试应该独立运行，不依赖其他测试
+5. **清晰命名**: 测试名称应清楚描述被测试的内容
+
+**常见陷阱**:
+- ❌ **错误的API签名**: 过去RAG测试因签名不匹配而失败
+  - 错误: `query_engine.query()` (不存在)
+  - 正确: `query_engine.query_document(query, document_id)`
+- ❌ **缺少test_mode**: 导致真实LlamaIndex/Gemini API调用
+- ❌ **错误的构造函数参数**:
+  - 错误: `RAGCoordinator(test_db=True)`
+  - 正确: `RAGCoordinator(api_key, db_connection, vector_storage_dir, test_mode)`
+
+#### 🔄 **测试工作流程**
+
+```mermaid
+sequenceDiagram
+    participant Dev as 开发者
+    participant Code as 代码
+    participant Ref as API参考文档
+    participant Tests as 测试
+    participant CI as CI/CD
+
+    Dev->>Code: 编写/修改代码
+    Dev->>Ref: 查阅 RAG_API_REFERENCE.md
+    Ref-->>Dev: 返回实际API签名
+    Dev->>Tests: 编写测试 (test_mode=True)
+    Dev->>Tests: 本地运行: pytest
+    Tests-->>Dev: 测试结果 + 覆盖率
+    Dev->>Dev: 修复失败测试
+    Dev->>CI: 提交代码
+    CI->>Tests: 运行完整测试套件
+    CI->>Tests: 生成覆盖率报告
+    Tests-->>CI: 通过/失败
+    CI-->>Dev: CI结果反馈
+```
+
+#### 🎯 **覆盖率提升路线图**
+
+**第一阶段** (当前进行中 - 目标: 15-20%):
+- ✅ RAG模块基础测试 (~85 tests)
+- ⏳ Auth服务测试 (~50 tests)
+- ⏳ Middleware完善 (~27 tests)
+
+**第二阶段** (计划 - 目标: 35-40%):
+- Repository层测试
+- Route层错误处理
+- 集成测试扩展
+
+**第三阶段** (计划 - 目标: 60-75%):
+- 端到端工作流测试
+- 性能测试扩展
+- 边界条件覆盖
+
+**进度追踪**: 查看最新覆盖率报告 `coverage_html/index.html`
+
 ## 核心组件与逻辑
 
 ### 1. LibraryController
