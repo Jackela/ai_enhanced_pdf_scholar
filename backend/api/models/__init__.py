@@ -104,6 +104,14 @@ if os.path.exists(models_path):
         models_main.CacheClearResponse
     )  # Override multi_document import
 
+    # CRITICAL: Import library models from main models.py (correct field names)
+    # multi_document_models has different fields (removed_count vs orphaned_removed, etc.)
+    CleanupResponse = models_main.CleanupResponse  # Override multi_document import
+    DuplicatesResponse = (
+        models_main.DuplicatesResponse
+    )  # Override multi_document import
+    DuplicateGroup = models_main.DuplicateGroup  # Override multi_document import
+
     sanitize_html_content = models_main.sanitize_html_content
     validate_filename = models_main.validate_filename
     validate_file_content_type = models_main.validate_file_content_type
