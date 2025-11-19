@@ -4,8 +4,48 @@ Creates tables for users and refresh tokens.
 """
 
 import logging
+from dataclasses import dataclass
+from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ExecutionResult:
+    """Result of executing a SQL statement or database operation."""
+
+    success: bool
+    error_message: Optional[str] = None
+    context: Optional[str] = None
+
+    @property
+    def has_error(self) -> bool:
+        """Check if execution resulted in an error."""
+        return not self.success
+
+    def is_benign_error(self, patterns: list[str]) -> bool:
+        """Check if error matches benign patterns."""
+        if not self.has_error:
+            return False
+        error_lower = self.error_message.lower()
+        return any(pattern in error_lower for pattern in patterns)
+
+
+def execute_sql_statement(
+    db_connection, sql: str, commit: bool = True
+) -> ExecutionResult:
+    """Execute SQL statement and return result (no exception raised)."""
+    try:
+        db_connection.execute(sql)
+        if commit:
+            db_connection.commit()
+        return ExecutionResult(success=True, context=sql[:100])
+    except Exception as e:
+        return ExecutionResult(
+            success=False,
+            error_message=str(e),
+            context=sql[:100],  # First 100 chars
+        )
 
 
 class AuthenticationMigration:
@@ -156,16 +196,28 @@ class AuthenticationMigration:
         try:
             sql_statements = AuthenticationMigration.get_migration_sql()
 
+            # Execute all statements, collect results
+            results = []
             for sql in sql_statements:
-                try:
-                    db_connection.execute(sql)
-                    db_connection.commit()
-                except Exception as e:
-                    # Table might already exist, log and continue
-                    if "already exists" not in str(e).lower():
-                        logger.error(f"Migration statement failed: {str(e)}")
-                        logger.error(f"SQL: {sql[:100]}...")
-                        return False
+                result = execute_sql_statement(db_connection, sql, commit=True)
+                results.append(result)
+
+            # Filter critical errors after loop
+            BENIGN_ERROR_PATTERNS = ["already exists"]
+            critical_errors = [
+                r
+                for r in results
+                if r.has_error and not r.is_benign_error(BENIGN_ERROR_PATTERNS)
+            ]
+
+            # Handle errors outside loop
+            if critical_errors:
+                for error_result in critical_errors:
+                    logger.error(
+                        f"Migration statement failed: {error_result.error_message}"
+                    )
+                    logger.error(f"SQL: {error_result.context}...")
+                return False
 
             logger.info("Authentication tables migration completed successfully")
             return True
@@ -194,12 +246,20 @@ class AuthenticationMigration:
                 "users",
             ]
 
+            # Execute all drops, collect results
+            results = []
             for table in tables:
-                try:
-                    db_connection.execute(f"DROP TABLE IF EXISTS {table}")
-                    db_connection.commit()
-                except Exception as e:
-                    logger.error(f"Failed to drop table {table}: {str(e)}")
+                result = execute_sql_statement(
+                    db_connection, f"DROP TABLE IF EXISTS {table}", commit=True
+                )
+                results.append((table, result))
+
+            # Log errors after loop
+            failed_drops = [(table, r) for table, r in results if r.has_error]
+            for table, error_result in failed_drops:
+                logger.warning(
+                    f"Failed to drop table {table}: {error_result.error_message}"
+                )
 
             logger.info("Authentication tables rollback completed")
             return True

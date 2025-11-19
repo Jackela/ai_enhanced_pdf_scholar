@@ -44,29 +44,24 @@ class AuthenticationRequired:
         self.required_roles = required_roles
         self.allow_unverified = allow_unverified
 
-    async def __call__(
+    def _extract_token(
         self,
-        request: Request,
-        credentials: HTTPAuthorizationCredentials | None = Depends(security),
-        access_token_cookie: str | None = Cookie(None, alias="access_token"),
-        db: Session = Depends(get_db),
-    ) -> UserModel:
+        credentials: HTTPAuthorizationCredentials | None,
+        access_token_cookie: str | None,
+    ) -> str:
         """
-        Validate authentication and return current user.
+        Extract token from header or cookie.
 
         Args:
-            request: FastAPI request object
             credentials: Authorization header credentials
             access_token_cookie: Access token from cookie (fallback)
-            db: Database session
 
         Returns:
-            Authenticated user model
+            Extracted token string
 
         Raises:
-            HTTPException: If authentication fails
+            HTTPException: If no token found
         """
-        # Extract token from header or cookie
         token = None
 
         if credentials and credentials.credentials:
@@ -81,7 +76,21 @@ class AuthenticationRequired:
                 headers={"WWW-Authenticate": BEARER_TOKEN_SCHEME},
             )
 
-        # Decode and validate token
+        return token
+
+    def _validate_token(self, token: str) -> Any:
+        """
+        Decode and validate JWT token.
+
+        Args:
+            token: JWT token string
+
+        Returns:
+            Decoded token payload
+
+        Raises:
+            HTTPException: If token is invalid or expired
+        """
         payload = jwt_handler.decode_token(token, token_type=TokenType.ACCESS)
 
         if not payload:
@@ -91,7 +100,24 @@ class AuthenticationRequired:
                 headers={"WWW-Authenticate": BEARER_TOKEN_SCHEME},
             )
 
-        # Get user from database
+        return payload
+
+    def _fetch_and_validate_user(
+        self, payload: Any, db: Session
+    ) -> tuple[UserModel, AuthenticationService]:
+        """
+        Fetch user from database and validate account status.
+
+        Args:
+            payload: Decoded JWT payload
+            db: Database session
+
+        Returns:
+            Tuple of (user model, auth service)
+
+        Raises:
+            HTTPException: If user not found or account status invalid
+        """
         auth_service = AuthenticationService(db)
         user = auth_service.get_user_by_id(int(payload.sub))
 
@@ -131,6 +157,25 @@ class AuthenticationRequired:
                 headers={"WWW-Authenticate": BEARER_TOKEN_SCHEME},
             )
 
+        return user, auth_service
+
+    def _finalize_authentication(
+        self, user: UserModel, auth_service: AuthenticationService, request: Request
+    ) -> UserModel:
+        """
+        Finalize authentication by checking permissions and updating activity.
+
+        Args:
+            user: Authenticated user model
+            auth_service: Authentication service instance
+            request: FastAPI request object
+
+        Returns:
+            Authenticated user model
+
+        Raises:
+            HTTPException: If user lacks required permissions
+        """
         # Check role requirements
         if self.required_roles:
             user_role = UserRole(user.role)
@@ -147,6 +192,40 @@ class AuthenticationRequired:
         request.state.current_user = user
 
         return user
+
+    async def __call__(
+        self,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+        access_token_cookie: str | None = Cookie(None, alias="access_token"),
+        db: Session = Depends(get_db),
+    ) -> UserModel:
+        """
+        Validate authentication and return current user.
+
+        Args:
+            request: FastAPI request object
+            credentials: Authorization header credentials
+            access_token_cookie: Access token from cookie (fallback)
+            db: Database session
+
+        Returns:
+            Authenticated user model
+
+        Raises:
+            HTTPException: If authentication fails
+        """
+        # Extract token from header or cookie
+        token = self._extract_token(credentials, access_token_cookie)
+
+        # Decode and validate token
+        payload = self._validate_token(token)
+
+        # Get user from database and validate account status
+        user, auth_service = self._fetch_and_validate_user(payload, db)
+
+        # Finalize authentication with role checks and activity update
+        return self._finalize_authentication(user, auth_service, request)
 
 
 # Convenience dependencies for common use cases
