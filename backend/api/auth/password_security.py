@@ -9,6 +9,13 @@ from datetime import datetime, timedelta
 
 import bcrypt
 
+from backend.api.auth.validators import (
+    CharacterClassValidator,
+    CommonPasswordValidator,
+    LengthValidator,
+    PatternValidator,
+)
+
 
 class PasswordHasher:
     """
@@ -146,7 +153,10 @@ class PasswordPolicy:
         cls, password: str, username: str | None = None
     ) -> tuple[bool, list[str]]:
         """
-        Validate password against security policy.
+        Validate password against security policy using composable validators.
+
+        This method uses the Strategy pattern with validator composition to
+        reduce cyclomatic complexity while maintaining all validation logic.
 
         Args:
             password: Password to validate
@@ -155,58 +165,59 @@ class PasswordPolicy:
         Returns:
             Tuple of (is_valid, list_of_errors)
         """
-        errors = []
+        # Create composable validators based on class configuration
+        validators = [
+            LengthValidator(min_length=cls.MIN_LENGTH, max_length=cls.MAX_LENGTH),
+            CharacterClassValidator(
+                require_uppercase=cls.REQUIRE_UPPERCASE,
+                require_lowercase=cls.REQUIRE_LOWERCASE,
+                require_digit=cls.REQUIRE_DIGIT,
+                require_special=cls.REQUIRE_SPECIAL,
+                special_chars=cls.SPECIAL_CHARS,
+            ),
+            CommonPasswordValidator(cls.COMMON_PASSWORDS),
+            PatternValidator(),
+        ]
 
-        # Length checks
-        if len(password) < cls.MIN_LENGTH:
-            errors.append(f"Password must be at least {cls.MIN_LENGTH} characters long")
+        # Run all validators and collect errors
+        all_errors = []
+        for validator in validators:
+            result = validator.validate(password)
+            if not result.is_valid:
+                all_errors.extend(result.errors)
 
-        if len(password) > cls.MAX_LENGTH:
-            errors.append(
-                f"Password must be no more than {cls.MAX_LENGTH} characters long"
-            )
-
-        # Character requirements
-        if cls.REQUIRE_UPPERCASE and not any(c.isupper() for c in password):
-            errors.append("Password must contain at least one uppercase letter")
-
-        if cls.REQUIRE_LOWERCASE and not any(c.islower() for c in password):
-            errors.append("Password must contain at least one lowercase letter")
-
-        if cls.REQUIRE_DIGIT and not any(c.isdigit() for c in password):
-            errors.append("Password must contain at least one digit")
-
-        if cls.REQUIRE_SPECIAL and not any(c in cls.SPECIAL_CHARS for c in password):
-            errors.append(
-                f"Password must contain at least one special character: {cls.SPECIAL_CHARS}"
-            )
-
-        # Common password check
-        if password.lower() in cls.COMMON_PASSWORDS:
-            errors.append("Password is too common and easily guessable")
-
-        # Username similarity check
+        # Username similarity checks (not part of generic validators)
         if username:
-            username_lower = username.lower()
-            password_lower = password.lower()
+            username_errors = cls._validate_username_similarity(password, username)
+            all_errors.extend(username_errors)
 
-            # Check if password contains username
-            if username_lower in password_lower:
-                errors.append("Password cannot contain your username")
+        return len(all_errors) == 0, all_errors
 
-            # Check if password is too similar to username
-            if cls._calculate_similarity(username_lower, password_lower) > 0.7:
-                errors.append("Password is too similar to your username")
+    @classmethod
+    def _validate_username_similarity(cls, password: str, username: str) -> list[str]:
+        """
+        Validate password is not too similar to username.
 
-        # Check for sequential characters
-        if cls._has_sequential_chars(password):
-            errors.append("Password contains too many sequential characters")
+        Args:
+            password: Password to validate
+            username: Username to check against
 
-        # Check for repeated characters
-        if cls._has_excessive_repeats(password):
-            errors.append("Password contains too many repeated characters")
+        Returns:
+            List of validation errors (empty if valid)
+        """
+        errors = []
+        username_lower = username.lower()
+        password_lower = password.lower()
 
-        return len(errors) == 0, errors
+        # Check if password contains username
+        if username_lower in password_lower:
+            errors.append("Password cannot contain your username")
+
+        # Check if password is too similar to username
+        if cls._calculate_similarity(username_lower, password_lower) > 0.7:
+            errors.append("Password is too similar to your username")
+
+        return errors
 
     @staticmethod
     def _calculate_similarity(str1: str, str2: str) -> float:
@@ -374,8 +385,9 @@ class PasswordPolicy:
 
         # Fill remaining length with random characters
         all_chars = uppercase + lowercase + digits + special
-        for _ in range(length - len(password)):
-            password.append(secrets.choice(all_chars))
+        password.extend(
+            [secrets.choice(all_chars) for _ in range(length - len(password))]
+        )
 
         # Shuffle to avoid predictable patterns
         secrets.SystemRandom().shuffle(password)
