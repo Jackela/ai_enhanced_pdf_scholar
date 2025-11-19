@@ -75,7 +75,7 @@ def secure_endpoint(
                             try:
                                 user = await get_current_user(auth)
                                 kwargs["current_user"] = user
-                            except:
+                            except Exception:
                                 raise HTTPException(
                                     status_code=status.HTTP_401_UNAUTHORIZED,
                                     detail="Invalid authentication credentials",
@@ -104,7 +104,7 @@ def secure_endpoint(
                     try:
                         db = get_db()
                         kwargs["db"] = db
-                    except:
+                    except Exception:
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Database session not available",

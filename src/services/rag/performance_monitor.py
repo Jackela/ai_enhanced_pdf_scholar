@@ -219,7 +219,7 @@ class RAGPerformanceMonitor:
             stats["avg_memory_delta"] += metric.memory_delta
 
         # Calculate averages
-        for op_type, stats in operation_stats.items():
+        for _op_type, stats in operation_stats.items():
             stats["avg_duration"] = stats["total_duration"] / stats["count"]
             stats["avg_memory_delta"] = stats["avg_memory_delta"] / stats["count"]
             stats["success_rate"] = (

@@ -437,7 +437,7 @@ class CacheOptimizationService:
         try:
             candidates = []
 
-            for pattern_id, pattern in self.access_patterns.items():
+            for _pattern_id, pattern in self.access_patterns.items():
                 if pattern.hit_rate < 70:  # Focus on patterns with poor hit rates
                     warming_candidates = (
                         await self._generate_warming_candidates_for_pattern(pattern)

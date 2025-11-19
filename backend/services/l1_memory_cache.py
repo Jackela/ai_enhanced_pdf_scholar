@@ -502,7 +502,7 @@ class L1MemoryCache:
             )  # Descending (highest score first)
 
         # Evict entries until we have enough space
-        for score, key, entry, level in all_entries:
+        for _score, key, entry, level in all_entries:
             if (
                 freed_bytes >= required_bytes
                 and evicted_count >= self.config.cleanup_batch_size
@@ -545,7 +545,7 @@ class L1MemoryCache:
             entries.sort(key=lambda x: x[0], reverse=True)
 
         # Evict entries
-        for score, key, entry in entries:
+        for _score, key, entry in entries:
             if freed_bytes >= required_bytes:
                 break
 
@@ -665,7 +665,7 @@ class L1MemoryCache:
             import sys
 
             return sys.getsizeof(value)
-        except:
+        except Exception:
             # Fallback estimation
             if isinstance(value, str):
                 return len(value.encode("utf-8"))

@@ -304,7 +304,7 @@ class RedisClusterManager:
         try:
             # Get master info
             masters = self._sentinel_client.sentinel_masters()
-            for master_name, master_info in masters.items():
+            for _master_name, master_info in masters.items():
                 master_id = f"{master_info['ip']}:{master_info['port']}"
                 self._node_health[master_id] = NodeHealth(
                     node_id=master_id, address=master_id, role=NodeRole.MASTER

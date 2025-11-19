@@ -304,7 +304,7 @@ class CustomMetricsCollector:
                     else:
                         db_size_mb = 0
                     metrics["database_size_mb"] = db_size_mb
-                except:
+                except Exception:
                     metrics["database_size_mb"] = 0
 
         except Exception as e:

@@ -582,7 +582,7 @@ class CacheTelemetryService:
         recommendations = []
         all_metrics = self.get_all_layer_metrics()
 
-        for layer, metrics in all_metrics.items():
+        for _layer, metrics in all_metrics.items():
             layer_recommendations = self._generate_layer_recommendations(metrics)
             recommendations.extend(layer_recommendations)
 

@@ -451,7 +451,7 @@ class CacheCoherencyManager:
             success_count = 0
 
             # Delete from all cache levels
-            for level_name, level in self.cache_levels.items():
+            for _level_name, level in self.cache_levels.items():
                 if await level.delete(key):
                     success_count += 1
 

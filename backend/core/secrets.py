@@ -1043,7 +1043,7 @@ class SecretsManager:
         """
         all_secrets = set[str]()
 
-        for provider_type, provider in self._providers.items():
+        for _provider_type, provider in self._providers.items():
             if provider.health_check():
                 secrets = provider.list_secrets(prefix)
                 all_secrets.update(secrets)

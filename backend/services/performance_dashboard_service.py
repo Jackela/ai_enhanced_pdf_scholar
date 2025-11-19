@@ -162,7 +162,7 @@ class DashboardMetrics:
                 operation_stats[op_name]["errors"] += 1
 
         # Calculate averages
-        for op_name, stats in operation_stats.items():
+        for _op_name, stats in operation_stats.items():
             stats["avg_duration_ms"] = (
                 stats["total_duration"] / stats["count"] if stats["count"] > 0 else 0
             )

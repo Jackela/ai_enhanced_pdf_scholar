@@ -651,7 +651,7 @@ class RedisCacheService:
                     "keyspace_hits": redis_info.get("keyspace_hits"),
                     "keyspace_misses": redis_info.get("keyspace_misses"),
                 }
-            except:
+            except Exception:
                 pass
 
         return stats

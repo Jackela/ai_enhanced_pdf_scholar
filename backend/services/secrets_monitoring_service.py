@@ -446,7 +446,7 @@ class SecretsMonitoringService:
                                 timestamp_str.replace("Z", "+00:00")
                             )
                             access_times.append(timestamp.hour)
-                        except:
+                        except Exception:
                             continue
 
                     # In real implementation, extract IP from request context

@@ -99,7 +99,7 @@ class SecretsMigration:
             ("AWS_SECRET_ACCESS_KEY", "aws_secret_key", SecretType.API_KEY),
         ]
 
-        for env_var, secret_key, secret_type in secret_env_vars:
+        for env_var, secret_key, _secret_type in secret_env_vars:
             value = os.getenv(env_var)
             if value:
                 secrets[secret_key] = (value, f"env:{env_var}")
@@ -322,7 +322,7 @@ class SecretsMigration:
 
         cleaned = []
 
-        for secret_key, (value, source) in secrets.items():
+        for secret_key, (_value, source) in secrets.items():
             # Only clean up if successfully migrated
             if secret_key not in [m["key"] for m in self.migration_report["migrated"]]:
                 continue

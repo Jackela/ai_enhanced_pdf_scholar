@@ -220,7 +220,7 @@ class AdaptiveChunking(ChunkingStrategy):
         current_chunk = ""
         current_size = 0
 
-        for para_idx, paragraph in enumerate(paragraphs):
+        for _para_idx, paragraph in enumerate(paragraphs):
             para_complexity = self._calculate_complexity(paragraph)
             adaptive_size = self._get_adaptive_chunk_size(para_complexity)
 

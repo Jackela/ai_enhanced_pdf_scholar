@@ -450,7 +450,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 token = auth_header[7:]
                 # Would decode JWT and extract user_id
                 return f"token_{hashlib.sha256(token.encode()).hexdigest()[:8]}"
-            except:
+            except Exception:
                 pass
 
         # Try to get from session

@@ -703,7 +703,7 @@ def main() -> Any:
             try:
                 splitter.execute_query("CREATE TEMP TABLE test_table (id INTEGER)")
                 print("Write query executed successfully")
-            except:
+            except Exception:
                 print("Write query test skipped (read-only)")
 
             print("Basic test completed")

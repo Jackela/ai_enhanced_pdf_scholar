@@ -1025,7 +1025,7 @@ if "DatabaseMigrator" not in globals():
                 ("citation_relations", "target_citation_id", "citations"),
             ]
 
-            for table, column, ref_table in tables_with_fks:
+            for table, column, _ref_table in tables_with_fks:
                 try:
                     # Check if index exists for this foreign key
                     index_check = self.db.fetch_all(

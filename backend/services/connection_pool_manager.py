@@ -157,7 +157,7 @@ class ManagedConnection:
             cursor = self.connection.execute("SELECT 1")
             cursor.fetchone()
             return True
-        except:
+        except Exception:
             return False
 
 
@@ -217,7 +217,7 @@ class AdvancedConnectionPoolManager:
                 f"Initializing connection pool with {self.config.initial_connections} connections"
             )
 
-            for i in range(self.config.initial_connections):
+            for _i in range(self.config.initial_connections):
                 connection = self._create_new_connection()
                 managed_conn = ManagedConnection(connection, self)
 
@@ -363,7 +363,7 @@ class AdvancedConnectionPoolManager:
                         except queue.Empty:
                             break
                     self._idle_connections = new_idle_queue
-                except:
+                except Exception:
                     pass
 
                 # Close the actual connection

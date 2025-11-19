@@ -187,7 +187,7 @@ class DynamicQueryOptimizer:
                     self._table_statistics[table_name] = {
                         "row_count": count_result["count"] if count_result else 0
                     }
-                except:
+                except Exception:
                     self._table_statistics[table_name] = {"row_count": 0}
 
             logger.debug(f"Schema cache refreshed: {len(self._table_schemas)} tables")
@@ -268,7 +268,7 @@ class DynamicQueryOptimizer:
         try:
             plan_rows = self.db.fetch_all(f"EXPLAIN QUERY PLAN {query}")
             return [dict(row) for row in plan_rows]
-        except:
+        except Exception:
             return []
 
     def _apply_optimization(

@@ -350,7 +350,7 @@ class StreamingValidationService:
             # Find page objects
             page_pattern = rb"/Type\s*/Page\b"
             page_matches = list[Any](re.finditer(page_pattern, chunk))
-            for i, match in enumerate(page_matches):
+            for _i, match in enumerate(page_matches):
                 pages_found.add(match.start())
 
             # Security threat detection

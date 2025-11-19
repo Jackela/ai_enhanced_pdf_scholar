@@ -292,7 +292,7 @@ class SimpleAlertingService:
                 return float(metrics_data[metric_name])
 
             # Search in nested structures
-            for category_name, category_data in metrics_data.items():
+            for _category_name, category_data in metrics_data.items():
                 if isinstance(category_data, dict) and metric_name in category_data:
                     return float(category_data[metric_name])
 

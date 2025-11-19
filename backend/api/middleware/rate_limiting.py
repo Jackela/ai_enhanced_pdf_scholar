@@ -293,7 +293,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 self.config.global_ip_limit.requests * multiplier
             )
 
-            for endpoint, rule in self.config.endpoint_limits.items():
+            for _endpoint, rule in self.config.endpoint_limits.items():
                 rule.requests = int(rule.requests * multiplier)
 
             logger.info(

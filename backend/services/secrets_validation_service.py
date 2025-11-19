@@ -376,7 +376,7 @@ class SecretValidationService:
             )
 
         # Run validation rules
-        for rule_name, rule in self.validation_rules.items():
+        for _rule_name, rule in self.validation_rules.items():
             if not rule.enabled:
                 continue
 
@@ -777,7 +777,7 @@ class SecretValidationService:
                 if self.secrets_manager
                 else None
             )
-        except:
+        except Exception:
             metadata = None
 
         if not metadata:
@@ -1069,7 +1069,7 @@ class SecretValidationService:
                 "not_applicable": 0,
             }
 
-            for secret_name, validation_report in validation_reports.items():
+            for _secret_name, validation_report in validation_reports.items():
                 status = validation_report.compliance_status.get(
                     standard, "not_applicable"
                 )

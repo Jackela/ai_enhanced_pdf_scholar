@@ -511,7 +511,7 @@ class CacheWarmingService:
         elif pattern == AccessPattern.SEQUENTIAL:
             # Warm sequential keys in batches
             sorted_keys = sorted(keys, key=lambda x: x[0])  # Sort by key name
-            for i, (key, profile) in enumerate(sorted_keys[:5]):  # Batch of 5
+            for i, (key, _profile) in enumerate(sorted_keys[:5]):  # Batch of 5
                 self.add_warming_task(
                     key=key,
                     priority=WarmingPriority.LOW,
@@ -567,7 +567,7 @@ class CacheWarmingService:
             else key
         )
 
-        for other_key, profile in self.smart_cache.key_profiles.items():
+        for other_key, _profile in self.smart_cache.key_profiles.items():
             if other_key == key:
                 continue
 

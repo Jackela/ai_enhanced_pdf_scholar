@@ -179,7 +179,7 @@ class StructuredFormatter(jsonlogger.JsonFormatter):
                     log_record["timestamp"].replace("Z", "+00:00")
                 )
                 log_record["timestamp"] = dt.isoformat()
-            except:
+            except Exception:
                 log_record["timestamp"] = datetime.utcnow().isoformat()
 
 
