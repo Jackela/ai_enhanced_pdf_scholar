@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 
-def check_file_for_hardcoded_passwords(file_path) -> Any:
+def check_file_for_hardcoded_passwords(file_path: Any) -> Any:
     """Check a Python file for hardcoded passwords."""
     violations = []
 

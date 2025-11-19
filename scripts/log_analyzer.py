@@ -1241,7 +1241,7 @@ class OutputFormatter:
     def _format_json(results: dict[str, Any]) -> str:
         """Format as JSON."""
 
-        def json_serializer(obj) -> Any:
+        def json_serializer(obj: Any) -> Any:
             if isinstance(obj, (datetime, LogLevel, AnalysisType)):
                 return str(obj)
             elif hasattr(obj, "__dict__"):

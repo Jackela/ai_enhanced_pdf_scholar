@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 
-def run_command(cmd, cwd=None, timeout=60) -> Any:
+def run_command(cmd: Any, cwd: Any=None, timeout: Any=60) -> Any:
     """Run a command and return the result with timeout"""
     try:
         result = subprocess.run(

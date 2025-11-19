@@ -172,7 +172,7 @@ class ProductionValidationOrchestrator:
         logger.info("🔄 Running system integration tests...")
         return await test_complete_system_integration_suite()
 
-    def _check_prerequisites(self, test_config) -> Any:
+    def _check_prerequisites(self, test_config: Any) -> Any:
         """Check if test prerequisites are met."""
         for prereq in test_config["prerequisites"]:
             if prereq not in self.validation_results:
@@ -184,7 +184,7 @@ class ProductionValidationOrchestrator:
 
         return True, "Prerequisites met"
 
-    async def _run_single_test_suite(self, test_config) -> Any:
+    async def _run_single_test_suite(self, test_config: Any) -> Any:
         """Run a single test suite with error handling and timeout."""
         test_name = test_config["name"]
         logger.info("=" * 60)
@@ -266,7 +266,7 @@ class ProductionValidationOrchestrator:
                 "error": str(e),
             }
 
-    def _determine_test_success(self, result, test_name) -> Any:
+    def _determine_test_success(self, result: Any, test_name: Any) -> Any:
         """Determine if test was successful based on result structure."""
         if isinstance(result, bool):
             return result
@@ -396,7 +396,7 @@ class ProductionValidationOrchestrator:
 
         return summary
 
-    async def generate_final_certification(self, validation_summary) -> Any:
+    async def generate_final_certification(self, validation_summary: Any) -> Any:
         """Generate final production readiness certification."""
         logger.info("📜 Generating Production Readiness Certification...")
 
