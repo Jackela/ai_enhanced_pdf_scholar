@@ -452,7 +452,7 @@ class DynamicQueryOptimizer:
 
         for index_info in self._index_info[table_name]:
             # Calculate match score
-            index_columns = set(col.lower() for col in index_info["columns"])
+            index_columns = {col.lower() for col in index_info["columns"]}
             matching_columns = where_columns.intersection(index_columns)
 
             if matching_columns:

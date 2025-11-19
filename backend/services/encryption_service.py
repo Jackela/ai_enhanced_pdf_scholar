@@ -637,11 +637,11 @@ class EncryptionService:
         # Get keys that need rotation
         cutoff_date = datetime.utcnow() - timedelta(days=self.key_rotation_days)
 
-        query = self.db.query(EncryptionKey).filter(EncryptionKey.is_active == True)
+        query = self.db.query(EncryptionKey).filter(EncryptionKey.is_active)
 
         if not force:
             query = query.filter(
-                (EncryptionKey.rotated_at == None)
+                (EncryptionKey.rotated_at is None)
                 | (EncryptionKey.rotated_at < cutoff_date)
             )
 

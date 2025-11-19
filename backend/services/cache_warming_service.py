@@ -567,7 +567,7 @@ class CacheWarmingService:
             else key
         )
 
-        for other_key, _profile in self.smart_cache.key_profiles.items():
+        for other_key, _profile in self.smart_cache.key_profiles:
             if other_key == key:
                 continue
 

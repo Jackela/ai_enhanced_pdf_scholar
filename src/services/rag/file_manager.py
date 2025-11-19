@@ -268,7 +268,7 @@ class RAGFileManager:
             if not self.vector_storage_dir.exists():
                 return orphaned_dirs
 
-            valid_paths_set = set(Path(path) for path in valid_index_paths)
+            valid_paths_set = {Path(path) for path in valid_index_paths}
 
             for item in self.vector_storage_dir.iterdir():
                 if item.is_dir() and item.name.startswith("doc_"):

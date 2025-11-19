@@ -110,7 +110,7 @@ class SecretConfig(BaseModel):
     retry_delay_seconds: int = Field(default=1)
 
     @field_validator("environment")
-    def validate_environment(cls, v) -> Any:
+    def validate_environment(self, v) -> Any:
         allowed = ["development", "staging", "production", "test"]
         if v not in allowed:
             raise ValueError(f"Environment must be one of {allowed}")
@@ -1043,7 +1043,7 @@ class SecretsManager:
         """
         all_secrets = set[str]()
 
-        for _provider_type, provider in self._providers.items():
+        for _provider_type, provider in self._providers.values():
             if provider.health_check():
                 secrets = provider.list_secrets(prefix)
                 all_secrets.update(secrets)

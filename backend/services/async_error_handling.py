@@ -402,7 +402,7 @@ class AsyncErrorHandler:
         category_stats: dict[str, Any] = {}
         severity_stats: dict[str, Any] = {}
 
-        for _operation_key, errors in self.error_history.items():
+        for _operation_key, errors in self.error_history.values():
             for error_context in errors:
                 category = error_context.category.value
                 severity = error_context.severity.value

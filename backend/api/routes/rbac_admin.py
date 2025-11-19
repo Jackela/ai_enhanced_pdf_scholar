@@ -146,7 +146,7 @@ async def list_roles(
     query = db.query(Role)
 
     if not include_system:
-        query = query.filter(Role.is_system_role == False)
+        query = query.filter(not Role.is_system_role)
 
     roles = query.order_by(Role.priority, Role.name).all()
 

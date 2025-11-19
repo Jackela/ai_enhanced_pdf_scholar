@@ -376,7 +376,7 @@ class SecretValidationService:
             )
 
         # Run validation rules
-        for _rule_name, rule in self.validation_rules.items():
+        for _rule_name, rule in self.validation_rules.values():
             if not rule.enabled:
                 continue
 
@@ -412,7 +412,7 @@ class SecretValidationService:
             "secret_length": len(secret_value),
             "entropy_bits": calculate_entropy(secret_value),
             "character_classes": self._count_character_classes(secret_value),
-            "validation_rules_run": len([r for r in report.validation_results]),
+            "validation_rules_run": len(list(report.validation_results)),
             "environment": environment,
             "compliance_standards": [s.value for s in compliance_standards],
         }
@@ -1069,7 +1069,7 @@ class SecretValidationService:
                 "not_applicable": 0,
             }
 
-            for _secret_name, validation_report in validation_reports.items():
+            for _secret_name, validation_report in validation_reports.values():
                 status = validation_report.compliance_status.get(
                     standard, "not_applicable"
                 )

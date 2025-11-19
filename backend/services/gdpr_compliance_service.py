@@ -323,7 +323,7 @@ class GDPRComplianceService:
             Success status
         """
         query = self.db.query(ConsentRecord).filter(
-            ConsentRecord.user_id == user_id, ConsentRecord.is_active == True
+            ConsentRecord.user_id == user_id, ConsentRecord.is_active
         )
 
         if consent_id:
@@ -365,7 +365,7 @@ class GDPRComplianceService:
         query = self.db.query(ConsentRecord).filter(ConsentRecord.user_id == user_id)
 
         if active_only:
-            query = query.filter(ConsentRecord.is_active == True)
+            query = query.filter(ConsentRecord.is_active)
 
         consents = query.all()
 

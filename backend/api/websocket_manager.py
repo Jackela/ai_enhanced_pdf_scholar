@@ -119,7 +119,7 @@ class WebSocketManager:
         if client_id in self.active_connections:
             del self.active_connections[client_id]
             # Remove from all rooms
-            for _room_name, members in self.rooms.items():
+            for _room_name, members in self.rooms.values():
                 if client_id in members:
                     members.remove(client_id)
 

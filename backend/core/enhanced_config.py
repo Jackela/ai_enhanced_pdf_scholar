@@ -326,7 +326,7 @@ class ApplicationConfig(BaseModel):
     log_file: Path | None = None
 
     @field_validator("environment")
-    def validate_environment(cls, v) -> Any:
+    def validate_environment(self, v) -> Any:
         if isinstance(v, str):
             return Environment(v)
         return v

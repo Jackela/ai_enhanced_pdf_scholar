@@ -36,8 +36,8 @@ class ErrorCategory(str, Enum):
 class _AutoStrEnum(str, Enum):
     """Enum helper that sets value equal to the member name."""
 
-    def _generate_next_value_(name, start, count, last_values) -> Any:
-        return name
+    def _generate_next_value_(self, start, count, last_values) -> Any:
+        return self
 
 
 class ErrorCode(_AutoStrEnum):

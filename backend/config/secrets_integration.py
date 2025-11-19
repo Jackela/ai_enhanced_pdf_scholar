@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 class SecretType(StrEnum):
     """Classifies the different secret use-cases."""
 
-    def _generate_next_value_(name, start, count, last_values) -> Any:
-        return name.lower()
+    def _generate_next_value_(self, start, count, last_values) -> Any:
+        return self.lower()
 
     GENERIC = auto()
     DATABASE_PASSWORD = auto()
