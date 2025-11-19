@@ -37,7 +37,7 @@ class MetricsSubscriptionRequest(BaseModel):
     """Request model for metrics subscription."""
 
     action: str = Field(..., regex="^(subscribe|unsubscribe)$")
-    metric_types: list[str] = Field(default_factory=list)
+    metric_types: list[str] = Field(default_factory=list[Any])
     update_interval: float | None = Field(1.0, ge=0.1, le=60.0)  # seconds
 
 
@@ -47,9 +47,9 @@ class MetricsWebSocketHandler:
     def __init__(self, client_id: str, websocket: WebSocket) -> None:
         self.client_id = client_id
         self.websocket = websocket
-        self.subscriptions: set[MetricType] = set()
+        self.subscriptions: set[MetricType] = set[str]()
         self.update_interval = 1.0  # seconds
-        self.streaming_task: asyncio.Task | None = None
+        self.streaming_task: asyncio.Task[None] | None = None
         self.last_update = datetime.now()
 
     async def handle_connection(self) -> None:
@@ -122,7 +122,7 @@ class MetricsWebSocketHandler:
             update_interval = message.get("update_interval", 1.0)
 
             # Validate and convert metric types
-            new_subscriptions = set()
+            new_subscriptions = set[str]()
             for metric_str in metric_types:
                 try:
                     metric_type = MetricType(metric_str.lower())
@@ -454,7 +454,7 @@ async def get_websocket_stats() -> Any:
             for metric in subscriptions:
                 metric_counts[metric.value] = metric_counts.get(metric.value, 0) + 1
 
-        stats["most_popular_metrics"] = dict(
+        stats["most_popular_metrics"] = dict[str, Any](
             sorted(metric_counts.items(), key=lambda x: x[1], reverse=True)
         )
 

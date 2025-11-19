@@ -177,7 +177,7 @@ class StreamingPDFProcessor:
 
             raise RuntimeError(f"PDF processing failed: {str(e)}") from e
 
-    async def _process_pdf_chunks(self, pdf_path: str) -> AsyncGenerator[dict, None]:
+    async def _process_pdf_chunks(self, pdf_path: str) -> AsyncGenerator[dict[str, Any], None]:
         """
         Process PDF file in chunks to minimize memory usage.
 
@@ -237,7 +237,7 @@ class StreamingPDFProcessor:
 
     async def _extract_text_from_chunk(
         self,
-        page_chunk: dict,
+        page_chunk: dict[str, Any],
         filename: str,
         processed_pages: int,
     ) -> list[Document]:
@@ -310,7 +310,7 @@ class StreamingPDFProcessor:
 
         return documents
 
-    async def get_pdf_info_streaming(self, pdf_path: str) -> dict:
+    async def get_pdf_info_streaming(self, pdf_path: str) -> dict[str, Any]:
         """
         Get PDF information without loading the entire file into memory.
 
@@ -430,7 +430,7 @@ class StreamingPDFProcessor:
             errors.append(f"Validation error: {str(e)}")
             return False, errors, warnings
 
-    def get_processing_stats(self) -> dict:
+    def get_processing_stats(self) -> dict[str, Any]:
         """Get current processing statistics."""
         return self.processing_stats.copy()
 

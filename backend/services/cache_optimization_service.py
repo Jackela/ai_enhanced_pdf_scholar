@@ -57,7 +57,7 @@ class CachePattern:
     hit_rate: float  # Current hit rate for this pattern
     avg_access_time: float  # Average time between accesses
     last_seen: datetime
-    sample_keys: list[str] = field(default_factory=list)
+    sample_keys: list[str] = field(default_factory=list[Any])
     predictable: bool = False  # Whether access pattern is predictable
 
 
@@ -73,7 +73,7 @@ class WarmingCandidate:
     estimated_hit_improvement: float
     warming_cost: float  # Cost to warm (computation, I/O, etc.)
     predicted_access_time: datetime | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 @dataclass
@@ -88,8 +88,8 @@ class OptimizationRecommendation:
     impact_score: float  # 0-100, higher is better
     implementation_effort: str  # "low", "medium", "high"
     estimated_improvement: dict[str, float]  # metric -> improvement %
-    action_items: list[str] = field(default_factory=list)
-    prerequisites: list[str] = field(default_factory=list)
+    action_items: list[str] = field(default_factory=list[Any])
+    prerequisites: list[str] = field(default_factory=list[Any])
 
 
 @dataclass
@@ -106,7 +106,7 @@ class WarmingJob:
     completed_at: datetime | None = None
     status: str = "pending"  # pending, running, completed, failed
     progress: int = 0  # 0-100
-    results: dict[str, Any] = field(default_factory=dict)
+    results: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 # ============================================================================
@@ -136,10 +136,10 @@ class CacheOptimizationService:
 
         # Warming job management
         self.warming_jobs: dict[str, WarmingJob] = {}
-        self.active_jobs: set[str] = set()
+        self.active_jobs: set[str] = set[str]()
 
         # Learning and prediction
-        self.access_history: dict[str, list[tuple[datetime, str]]] = defaultdict(list)
+        self.access_history: dict[str, list[tuple[datetime, str]]] = defaultdict(list[Any])
         self.pattern_models: dict[str, dict[str, Any]] = {}
 
         # Configuration
@@ -150,8 +150,8 @@ class CacheOptimizationService:
 
         # Background tasks
         self._running = False
-        self._analysis_task: asyncio.Task | None = None
-        self._warming_task: asyncio.Task | None = None
+        self._analysis_task: asyncio.Task[None] | None = None
+        self._warming_task: asyncio.Task[None] | None = None
 
         logger.info("Cache optimization service initialized")
 
@@ -245,7 +245,7 @@ class CacheOptimizationService:
         # Group events by pattern
         pattern_stats = defaultdict(
             lambda: {
-                "keys": set(),
+                "keys": set[str](),
                 "hits": 0,
                 "misses": 0,
                 "total_latency": 0.0,
@@ -310,7 +310,7 @@ class CacheOptimizationService:
                 hit_rate=hit_rate,
                 avg_access_time=avg_access_time,
                 last_seen=max(stats["access_times"]),
-                sample_keys=list(stats["keys"])[:10],
+                sample_keys=list[Any](stats["keys"])[:10],
                 predictable=self._is_pattern_predictable(stats["access_times"]),
             )
 
@@ -912,7 +912,7 @@ class CacheOptimizationService:
         self, cache_layer: CacheLayer | None = None, limit: int = 100
     ) -> list[dict[str, Any]]:
         """Get identified access patterns."""
-        patterns = list(self.access_patterns.values())
+        patterns = list[Any](self.access_patterns.values())
 
         if cache_layer:
             patterns = [p for p in patterns if p.cache_layer == cache_layer]

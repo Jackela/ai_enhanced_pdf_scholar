@@ -275,7 +275,7 @@ class TracingService:
                 ...
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             span_name = name or f"{func.__module__}.{func.__name__}"
 
             @wraps(func)

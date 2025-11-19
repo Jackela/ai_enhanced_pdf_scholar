@@ -191,22 +191,22 @@ class L2RedisCache:
         }
 
         # Write-behind queue
-        self.write_behind_queue: deque = deque()
-        self.write_behind_task: asyncio.Task | None = None
+        self.write_behind_queue: deque[Any] = deque[Any]()
+        self.write_behind_task: asyncio.Task[None] | None = None
         self._write_behind_running = False
 
         # Hot data tracking
-        self.hot_keys: set[str] = set()
+        self.hot_keys: set[str] = set[str]()
         self.key_hit_counts: dict[str, int] = defaultdict(int)
 
         # Access logging
-        self.access_log: deque = deque(maxlen=1000)
+        self.access_log: deque[Any] = deque[Any](maxlen=1000)
 
         # Performance tracking
-        self.operation_times: dict[str, deque] = {
-            "get": deque(maxlen=100),
-            "set": deque(maxlen=100),
-            "delete": deque(maxlen=100),
+        self.operation_times: dict[str, deque[Any]] = {
+            "get": deque[Any](maxlen=100),
+            "set[str]": deque[Any](maxlen=100),
+            "delete": deque[Any](maxlen=100),
         }
 
         logger.info("L2 Redis Cache initialized")
@@ -270,7 +270,7 @@ class L2RedisCache:
                 else:
                     l1_level = CacheLevel.COLD
 
-                self.l1_cache.set(
+                self.l1_cache.set[str](
                     key, entry.value, ttl_seconds=entry.ttl_seconds, level=l1_level
                 )
 
@@ -339,7 +339,7 @@ class L2RedisCache:
 
             # Store in Redis
             redis_data = entry.to_redis_value()
-            success = self.redis_cache.set(key, redis_data, ttl=entry.ttl_seconds)
+            success = self.redis_cache.set[str](key, redis_data, ttl=entry.ttl_seconds)
 
             if success:
                 # Update L1 cache if available
@@ -350,15 +350,15 @@ class L2RedisCache:
                     else:
                         l1_level = CacheLevel.WARM
 
-                    self.l1_cache.set(
+                    self.l1_cache.set[str](
                         key, entry.value, ttl_seconds=entry.ttl_seconds, level=l1_level
                     )
 
                 self.stats["sets"] += 1
                 operation_time = (time.time() - start_time) * 1000
-                self.operation_times["set"].append(operation_time)
+                self.operation_times["set[str]"].append(operation_time)
 
-                await self._log_access(key, "set", time.time() - start_time)
+                await self._log_access(key, "set[str]", time.time() - start_time)
 
                 return True
             else:
@@ -367,7 +367,7 @@ class L2RedisCache:
         except Exception as e:
             logger.error(f"Error setting key {key} in L2 cache: {e}")
             operation_time = (time.time() - start_time) * 1000
-            self.operation_times["set"].append(operation_time)
+            self.operation_times["set[str]"].append(operation_time)
             return False
 
     async def delete(self, key: str) -> bool:
@@ -451,7 +451,7 @@ class L2RedisCache:
 
                             # Store in L1 cache
                             if self.l1_cache:
-                                self.l1_cache.set(
+                                self.l1_cache.set[str](
                                     key, entry.value, ttl_seconds=entry.ttl_seconds
                                 )
                         except Exception as e:
@@ -471,7 +471,7 @@ class L2RedisCache:
         success_count = 0
 
         # Split into batches
-        items = list(data.items())
+        items = list[Any](data.items())
         for i in range(0, len(items), self.config.batch_size):
             batch_items = items[i : i + self.config.batch_size]
 
@@ -504,7 +504,7 @@ class L2RedisCache:
                 # Store in L1 cache
                 if self.l1_cache:
                     for key, value in batch_items:
-                        self.l1_cache.set(key, value, ttl_seconds=ttl_seconds)
+                        self.l1_cache.set[str](key, value, ttl_seconds=ttl_seconds)
 
         self.stats["sets"] += success_count
         return success_count == len(items)
@@ -584,7 +584,7 @@ class L2RedisCache:
 
             # Get cluster info
             cluster_info = await self.cluster_manager.get_cluster_info()
-            nodes = list(cluster_info.get("nodes", {}).keys())
+            nodes = list[Any](cluster_info.get("nodes", {}).keys())
 
             if nodes:
                 node_index = hash_value % len(nodes)
@@ -609,7 +609,7 @@ class L2RedisCache:
         """Update entry metadata in Redis."""
         try:
             redis_data = entry.to_redis_value()
-            self.redis_cache.set(
+            self.redis_cache.set[str](
                 key, redis_data, ttl=entry.ttl_seconds, xx=True
             )  # Only update if exists
         except Exception as e:
@@ -753,7 +753,7 @@ class L2RedisCache:
             "top_keys_by_hits": sorted(
                 self.key_hit_counts.items(), key=lambda x: x[1], reverse=True
             )[:20],  # Top 20 keys
-            "hot_keys_list": list(self.hot_keys)[:50],  # First 50 hot keys
+            "hot_keys_list": list[Any](self.hot_keys)[:50],  # First 50 hot keys
         }
 
     def get_performance_metrics(self) -> dict[str, Any]:
@@ -797,7 +797,7 @@ class L2RedisCache:
             return {}
 
         # Analyze last 100 accesses
-        recent_accesses = list(self.access_log)[-100:]
+        recent_accesses = list[Any](self.access_log)[-100:]
 
         operation_counts = defaultdict(int)
         hourly_distribution = defaultdict(int)
@@ -808,8 +808,8 @@ class L2RedisCache:
             hourly_distribution[hour] += 1
 
         return {
-            "operation_distribution": dict(operation_counts),
-            "hourly_access_distribution": dict(hourly_distribution),
+            "operation_distribution": dict[str, Any](operation_counts),
+            "hourly_access_distribution": dict[str, Any](hourly_distribution),
             "total_logged_accesses": len(recent_accesses),
         }
 
@@ -844,9 +844,9 @@ if __name__ == "__main__":
 
         async with l2_cache:
             # Set some values
-            await l2_cache.set("key1", "value1")
-            await l2_cache.set("key2", {"data": "complex_value"})
-            await l2_cache.set("large_key", "x" * 2000)  # Will be compressed
+            await l2_cache.set[str]("key1", "value1")
+            await l2_cache.set[str]("key2", {"data": "complex_value"})
+            await l2_cache.set[str]("large_key", "x" * 2000)  # Will be compressed
 
             # Get values
             print("key1:", await l2_cache.get("key1"))
@@ -857,7 +857,7 @@ if __name__ == "__main__":
             batch_data = {f"batch_key_{i}": f"batch_value_{i}" for i in range(10)}
             await l2_cache.mset(batch_data)
 
-            batch_results = await l2_cache.mget(list(batch_data.keys()))
+            batch_results = await l2_cache.mget(list[Any](batch_data.keys()))
             print(f"Batch get results: {len(batch_results)} keys retrieved")
 
             # Check statistics

@@ -58,7 +58,7 @@ class RateLimitTester:
         endpoint: str,
         method: str = "GET",
         client_ip: str = None,
-        data: dict = None,
+        data: dict[str, Any] = None,
     ) -> tuple[int, float]:
         """Make a single request and return (status_code, response_time)."""
         headers = {}
@@ -88,7 +88,7 @@ class RateLimitTester:
         num_requests: int,
         client_ip: str = "192.168.1.100",
         method: str = "GET",
-        data: dict = None,
+        data: dict[str, Any] = None,
     ) -> TestResult:
         """Test burst requests to an endpoint."""
         print(f"Testing {num_requests} burst requests to {endpoint}...")

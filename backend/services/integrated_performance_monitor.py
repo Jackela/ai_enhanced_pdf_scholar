@@ -78,7 +78,7 @@ class IntegratedPerformanceMonitor:
 
         # Service state
         self._running = False
-        self._health_check_task: asyncio.Task | None = None
+        self._health_check_task: asyncio.Task[None] | None = None
 
         # Performance tracking
         self.system_health_score = 0.0
@@ -324,7 +324,7 @@ class IntegratedPerformanceMonitor:
                 "recent_errors": len(
                     [
                         trace
-                        for trace in list(self.amp.traces)[-100:]
+                        for trace in list[Any](self.amp.traces)[-100:]
                         if trace.has_errors
                     ]
                 ),
@@ -635,7 +635,7 @@ class IntegratedPerformanceMonitor:
         else:
             return "declining"
 
-    def _generate_trend_summary(self, apm_trends: dict, cache_trends: dict) -> str:
+    def _generate_trend_summary(self, apm_trends: dict[str, Any], cache_trends: dict[str, Any]) -> str:
         """Generate human-readable trend summary."""
         try:
             summaries = []

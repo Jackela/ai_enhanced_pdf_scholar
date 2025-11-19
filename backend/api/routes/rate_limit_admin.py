@@ -193,7 +193,7 @@ else:
         ),
         limit: int = Query(20, ge=1, le=100, description="Maximum number of results"),
     ) -> Any:
-        """Get list of suspicious IP addresses based on behavior patterns."""
+        """Get list[Any] of suspicious IP addresses based on behavior patterns."""
         monitor = get_monitor()
         suspicious_ips = monitor.get_suspicious_ips(
             window_minutes=window_minutes, min_requests=min_requests
@@ -381,6 +381,6 @@ async def get_rate_limit_config() -> Any:
         },
         "redis_enabled": config.redis_url is not None,
         "monitoring_enabled": config.enable_monitoring,
-        "bypass_ips": list(config.bypass_ips),
-        "bypass_user_agents": list(config.bypass_user_agents),
+        "bypass_ips": list[Any](config.bypass_ips),
+        "bypass_user_agents": list[Any](config.bypass_user_agents),
     }

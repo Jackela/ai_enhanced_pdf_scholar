@@ -49,10 +49,10 @@ class UploadResumptionService:
         self.cleanup_interval_minutes = cleanup_interval_minutes
 
         # In-memory cache of resumable sessions
-        self.resumable_sessions: dict[UUID, dict] = {}
+        self.resumable_sessions: dict[UUID, dict[str, Any]] = {}
 
         # Cleanup task
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._start_cleanup_task()
 
     def _start_cleanup_task(self) -> None:
@@ -113,7 +113,7 @@ class UploadResumptionService:
         except Exception as e:
             logger.error(f"Failed to save session state {session.session_id}: {e}")
 
-    async def load_session_state(self, session_id: UUID) -> dict | None:
+    async def load_session_state(self, session_id: UUID) -> dict[str, Any] | None:
         """
         Load saved session state for resumption.
 
@@ -272,7 +272,7 @@ class UploadResumptionService:
             )
             return None
 
-    async def _validate_and_fix_temp_file(self, state: dict) -> None:
+    async def _validate_and_fix_temp_file(self, state: dict[str, Any]) -> None:
         """
         Validate temporary file and fix if needed.
 
@@ -318,9 +318,9 @@ class UploadResumptionService:
             )
             raise
 
-    async def get_resumable_sessions(self, client_id: str | None = None) -> list[dict]:
+    async def get_resumable_sessions(self, client_id: str | None = None) -> list[dict[str, Any]]:
         """
-        Get list of resumable sessions, optionally filtered by client.
+        Get list[Any] of resumable sessions, optionally filtered by client.
 
         Args:
             client_id: Optional client ID filter

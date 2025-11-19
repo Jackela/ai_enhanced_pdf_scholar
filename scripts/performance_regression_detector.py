@@ -317,7 +317,7 @@ class PerformanceBaseline:
             return f"🟠 CAUTION - {len(regressions)} minor regression(s) detected"
 
     def _generate_recommendations(
-        self, regressions: list[PerformanceRegression], improvements: list[dict]
+        self, regressions: list[PerformanceRegression], improvements: list[dict[str, Any]]
     ) -> list[str]:
         """Generate recommendations based on analysis"""
         recommendations = []

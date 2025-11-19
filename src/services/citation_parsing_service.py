@@ -155,7 +155,7 @@ class CitationParsingService:
                 return []
 
             # This would require AnyStyle API configuration
-            # For now, return empty list as it needs API setup
+            # For now, return empty list[Any] as it needs API setup
             logger.debug("AnyStyle API not configured, skipping")
             return []
 
@@ -601,28 +601,28 @@ class CitationParsingService:
             return 0.1  # Low confidence for error cases
 
     # Helper methods for refextract integration
-    def _extract_refextract_authors(self, ref_data: dict) -> str | None:
+    def _extract_refextract_authors(self, ref_data: dict[str, Any]) -> str | None:
         """Extract authors from refextract data."""
         try:
             if "author" in ref_data:
                 authors = ref_data["author"]
-                if isinstance(authors, list) and authors:
+                if isinstance(authors, list[Any]) and authors:
                     # Join multiple authors
                     return ", ".join(
                         [a.get("full_name", "") for a in authors if a.get("full_name")]
                     )
-                elif isinstance(authors, dict):
+                elif isinstance(authors, dict[str, Any]):
                     return authors.get("full_name")
             return None
         except Exception:
             return None
 
-    def _extract_refextract_year(self, ref_data: dict) -> int | None:
+    def _extract_refextract_year(self, ref_data: dict[str, Any]) -> int | None:
         """Extract year from refextract data."""
         try:
             if "year" in ref_data:
                 year_data = ref_data["year"]
-                if isinstance(year_data, dict):
+                if isinstance(year_data, dict[str, Any]):
                     year_str = year_data.get("year", "")
                 elif isinstance(year_data, str):
                     year_str = year_data
@@ -637,12 +637,12 @@ class CitationParsingService:
         except Exception:
             return None
 
-    def _extract_refextract_journal(self, ref_data: dict) -> str | None:
+    def _extract_refextract_journal(self, ref_data: dict[str, Any]) -> str | None:
         """Extract journal from refextract data."""
         try:
             if "journal" in ref_data:
                 journal_data = ref_data["journal"]
-                if isinstance(journal_data, dict):
+                if isinstance(journal_data, dict[str, Any]):
                     return journal_data.get("title")
                 elif isinstance(journal_data, str):
                     return journal_data
@@ -650,7 +650,7 @@ class CitationParsingService:
         except Exception:
             return None
 
-    def _classify_refextract_type(self, ref_data: dict) -> str:
+    def _classify_refextract_type(self, ref_data: dict[str, Any]) -> str:
         """Classify citation type from refextract data."""
         try:
             if "journal" in ref_data:
@@ -668,11 +668,11 @@ class CitationParsingService:
             return "unknown"
 
     def _merge_and_deduplicate_citations(
-        self, primary_citations: list, fallback_citations: list
+        self, primary_citations: list[Any], fallback_citations: list[Any]
     ) -> list[dict[str, Any]]:
         """Merge citations from different sources and remove duplicates."""
         try:
-            all_citations = list(primary_citations)  # Start with primary results
+            all_citations = list[Any](primary_citations)  # Start with primary results
 
             # Add fallback citations that don't duplicate primary ones
             for fallback_cite in fallback_citations:
@@ -860,7 +860,7 @@ class CitationParsingService:
         """Remove duplicates and filter low-quality citations."""
         try:
             filtered_citations = []
-            seen_texts = set()
+            seen_texts = set[str]()
 
             for citation in citations:
                 raw_text = citation.get("raw_text", "").strip().lower()

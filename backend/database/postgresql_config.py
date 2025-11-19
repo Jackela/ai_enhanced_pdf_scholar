@@ -496,7 +496,7 @@ class SQLiteToPostgresMigration:
             return
 
         # Convert rows to dictionaries
-        row_dicts = [dict(row) for row in rows]
+        row_dicts = [dict[str, Any](row) for row in rows]
 
         # Use PostgreSQL COPY for better performance
         insert_query = text(
@@ -621,7 +621,7 @@ class PostgreSQLOptimizer:
                 conn.execute(text(f"VACUUM ANALYZE {table[0]}"))
                 logger.info(f"Vacuumed and analyzed table: {table[0]}")
 
-    def get_slow_queries(self, min_duration_ms: int = 1000) -> list[dict]:
+    def get_slow_queries(self, min_duration_ms: int = 1000) -> list[dict[str, Any]]:
         """Get slow queries from pg_stat_statements."""
         with self.engine.connect() as conn:
             # Enable pg_stat_statements if not already enabled

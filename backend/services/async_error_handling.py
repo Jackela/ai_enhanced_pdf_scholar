@@ -64,7 +64,7 @@ class ErrorContext:
     attempt_count: int = 1
     first_occurrence: datetime = field(default_factory=datetime.now)
     last_occurrence: datetime = field(default_factory=datetime.now)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
     def update_occurrence(self) -> None:
         """Update last occurrence timestamp."""
@@ -82,7 +82,7 @@ class RecoveryConfig:
     backoff_multiplier: float = 2.0
     jitter: bool = True
     timeout_seconds: float | None = None
-    fallback_handler: Callable | None = None
+    fallback_handler: Callable[..., Any] | None = None
     circuit_breaker_failure_threshold: int = 5
     circuit_breaker_recovery_timeout: float = 300.0
 
@@ -379,7 +379,7 @@ class AsyncErrorHandler:
 
     async def with_timeout(
         self,
-        operation: Callable,
+        operation: Callable[..., Any],
         timeout_seconds: float,
         operation_name: str = "async_operation",
     ) -> Any:
@@ -446,7 +446,7 @@ class AsyncErrorHandler:
             "severity_breakdown": severity_stats,
             "circuit_breaker_status": circuit_breaker_stats,
             "recent_errors": recent_errors[:20],  # Last 20 recent errors
-            "error_operations": list(self.error_history.keys()),
+            "error_operations": list[Any](self.error_history.keys()),
         }
 
     async def clear_error_history(self, older_than_hours: int = 24) -> Any:
@@ -455,7 +455,7 @@ class AsyncErrorHandler:
         cutoff_time = datetime.now() - timedelta(hours=older_than_hours)
         cleared_count = 0
 
-        for operation_key in list(self.error_history.keys()):
+        for operation_key in list[Any](self.error_history.keys()):
             errors = self.error_history[operation_key]
             self.error_history[operation_key] = [
                 error for error in errors if error.last_occurrence >= cutoff_time

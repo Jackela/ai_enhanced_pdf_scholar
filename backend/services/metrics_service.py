@@ -458,26 +458,26 @@ class MetricsService:
                 try:
                     # Memory usage
                     memory = psutil.virtual_memory()
-                    self.metrics.memory_usage_bytes.labels(type="total").set(
+                    self.metrics.memory_usage_bytes.labels(type="total").set[str](
                         memory.total
                     )
-                    self.metrics.memory_usage_bytes.labels(type="available").set(
+                    self.metrics.memory_usage_bytes.labels(type="available").set[str](
                         memory.available
                     )
-                    self.metrics.memory_usage_bytes.labels(type="used").set(memory.used)
+                    self.metrics.memory_usage_bytes.labels(type="used").set[str](memory.used)
 
                     # CPU usage
                     cpu_percent = psutil.cpu_percent(interval=1)
-                    self.metrics.cpu_usage_percent.set(cpu_percent)
+                    self.metrics.cpu_usage_percent.set[str](cpu_percent)
 
                     # Disk usage
                     disk = psutil.disk_usage("/")
-                    self.metrics.disk_usage_bytes.labels(path="/").set(disk.used)
+                    self.metrics.disk_usage_bytes.labels(path="/").set[str](disk.used)
 
                     # Process-specific metrics
                     process = psutil.Process()
                     process_memory = process.memory_info()
-                    self.metrics.memory_usage_bytes.labels(type="process").set(
+                    self.metrics.memory_usage_bytes.labels(type="process").set[str](
                         process_memory.rss
                     )
 
@@ -612,23 +612,23 @@ class MetricsService:
 
     def update_active_sessions(self, count: int) -> None:
         """Update active sessions count."""
-        self.metrics.active_sessions.set(count)
+        self.metrics.active_sessions.set[str](count)
 
     def update_documents_total(self, count: int) -> None:
         """Update total documents count."""
-        self.metrics.documents_total.set(count)
+        self.metrics.documents_total.set[str](count)
 
     def update_vector_index_size(self, index_type: str, size: int) -> None:
         """Update vector index size."""
-        self.metrics.vector_index_size.labels(index_type=index_type).set(size)
+        self.metrics.vector_index_size.labels(index_type=index_type).set[str](size)
 
     def update_db_connections(self, db_type: str, count: int) -> None:
         """Update database connections count."""
-        self.metrics.db_connections_active.labels(db_type=db_type).set(count)
+        self.metrics.db_connections_active.labels(db_type=db_type).set[str](count)
 
     def update_cache_size(self, cache_type: str, size_bytes: int) -> None:
         """Update cache size."""
-        self.metrics.cache_size_bytes.labels(cache_type=cache_type).set(size_bytes)
+        self.metrics.cache_size_bytes.labels(cache_type=cache_type).set[str](size_bytes)
 
     def update_health_status(self, status: str) -> None:
         """Update application health status."""
@@ -636,13 +636,13 @@ class MetricsService:
 
     def update_dependency_health(self, dependency: str, healthy: bool) -> None:
         """Update dependency health status."""
-        self.metrics.dependency_health.labels(dependency=dependency).set(
+        self.metrics.dependency_health.labels(dependency=dependency).set[str](
             1 if healthy else 0
         )
 
     def update_error_rate(self, component: str, error_rate: float) -> None:
         """Update error rate for a component."""
-        self.metrics.error_rate.labels(component=component).set(error_rate)
+        self.metrics.error_rate.labels(component=component).set[str](error_rate)
 
     # ========================================================================
     # Decorators
@@ -653,7 +653,7 @@ class MetricsService:
     ) -> Any:
         """Decorator to track operation duration."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 start_time = time.time()
@@ -706,7 +706,7 @@ class MetricsService:
     def track_exceptions(self, component: str) -> Any:
         """Decorator to track exceptions."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
@@ -822,7 +822,7 @@ class MetricsService:
 
             for sample in family.samples:
                 dashboard["metrics"][family.name]["samples"].append(
-                    {"labels": dict(sample.labels), "value": sample.value}
+                    {"labels": dict[str, Any](sample.labels), "value": sample.value}
                 )
 
         return dashboard

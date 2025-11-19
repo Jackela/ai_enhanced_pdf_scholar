@@ -59,7 +59,7 @@ class PerformanceMetric:
     metric_type: MetricType
     value: Union[float, int, dict[str, Any]]
     timestamp: datetime
-    labels: dict[str, str] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict[str, Any])
     description: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -114,8 +114,8 @@ class DatabaseHealthStatus:
     cache_efficiency_health: float
     replication_health: float
     disk_health: float
-    issues: list[str] = field(default_factory=list)
-    recommendations: list[str] = field(default_factory=list)
+    issues: list[str] = field(default_factory=list[Any])
+    recommendations: list[str] = field(default_factory=list[Any])
 
     @property
     def status(self) -> str:
@@ -192,8 +192,8 @@ class DatabasePerformanceMonitor:
         self.alert_thresholds = {**self.DEFAULT_THRESHOLDS, **(alert_thresholds or {})}
 
         # Metrics storage
-        self._metrics: dict[str, deque] = defaultdict(
-            lambda: deque(maxlen=1000)
+        self._metrics: dict[str, deque[Any]] = defaultdict(
+            lambda: deque[Any](maxlen=1000)
         )  # Keep last 1000 samples
         self._current_metrics: dict[str, PerformanceMetric] = {}
         self._alerts: dict[str, PerformanceAlert] = {}
@@ -388,7 +388,7 @@ class DatabasePerformanceMonitor:
                         if result:
                             value = (
                                 next(iter(result))
-                                if isinstance(result, dict)
+                                if isinstance(result, dict[str, Any])
                                 else result[0]
                             )
                             metrics.append(
@@ -931,7 +931,7 @@ class DatabasePerformanceMonitor:
     def get_current_metrics(self) -> dict[str, PerformanceMetric]:
         """Get current performance metrics."""
         with self._metrics_lock:
-            return dict(self._current_metrics)
+            return dict[str, Any](self._current_metrics)
 
     def get_metric_history(
         self, metric_name: str, hours: int = 24
@@ -950,7 +950,7 @@ class DatabasePerformanceMonitor:
             ]
 
     def get_active_alerts(self) -> list[PerformanceAlert]:
-        """Get list of active (unresolved) alerts."""
+        """Get list[Any] of active (unresolved) alerts."""
         with self._alerts_lock:
             return [
                 alert for alert in self._alerts.values() if alert.resolved_at is None
@@ -1143,7 +1143,7 @@ class DatabasePerformanceMonitor:
 
     def shutdown(self) -> None:
         """Shutdown the performance monitor and cleanup resources."""
-        self._shutdown_event.set()
+        self._shutdown_event.set[str]()
 
         if self._monitor_thread:
             self._monitor_thread.join(timeout=5)

@@ -122,7 +122,7 @@ class AuditLogResponse(BaseModel):
     actor_email: str
     target_id: int | None
     target_email: str | None
-    details: dict
+    details: dict[str, Any]
     ip_address: str | None
 
 
@@ -507,7 +507,7 @@ async def get_my_permissions(
     )
 
 
-@router.post("/check-permission", response_model=dict)
+@router.post("/check-permission", response_model=dict[str, Any])
 async def check_permission(
     resource: str,
     action: str,
@@ -590,7 +590,7 @@ async def get_rbac_audit_logs(
     Requires audit:read permission.
     """
     # This would query an audit log table
-    # For now, return empty list as placeholder
+    # For now, return empty list[Any] as placeholder
     logger.info(f"User {current_user.email} accessed RBAC audit logs")
     return []
 
@@ -600,7 +600,7 @@ async def get_rbac_audit_logs(
 # ============================================================================
 
 
-@router.get("/stats", response_model=dict)
+@router.get("/stats", response_model=dict[str, Any])
 @require_permission(ResourceTypes.SYSTEM, Actions.READ)
 async def get_rbac_statistics(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)

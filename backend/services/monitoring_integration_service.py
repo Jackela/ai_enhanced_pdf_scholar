@@ -36,7 +36,7 @@ class MonitoringIntegrationService:
             websocket_manager=websocket_manager, integrated_monitor=integrated_monitor
         )
 
-        self._integration_task: asyncio.Task | None = None
+        self._integration_task: asyncio.Task[None] | None = None
         self._running = False
 
         logger.info("MonitoringIntegrationService initialized")
@@ -239,7 +239,7 @@ class MonitoringIntegrationService:
         """Get the metrics collector instance."""
         return self.metrics_collector
 
-    def get_integration_status(self) -> dict:
+    def get_integration_status(self) -> dict[str, Any]:
         """Get status of monitoring integration."""
         return {
             "running": self._running,
@@ -257,7 +257,7 @@ class MonitoringIntegrationService:
             },
         }
 
-    async def trigger_manual_collection(self) -> dict:
+    async def trigger_manual_collection(self) -> dict[str, Any]:
         """Manually trigger metrics collection and return current state."""
         try:
             current_metrics = self.metrics_collector.get_current_metrics()

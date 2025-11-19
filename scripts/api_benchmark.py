@@ -50,8 +50,8 @@ class APIBenchmark:
             await self.client.aclose()
 
     async def benchmark_endpoint(
-        self, method: str, endpoint: str, runs: int = 50, payload: dict | None = None
-    ) -> dict:
+        self, method: str, endpoint: str, runs: int = 50, payload: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Benchmark a single API endpoint"""
         logger.info(f"Benchmarking {method} {endpoint} with {runs} runs")
 
@@ -137,7 +137,7 @@ class APIBenchmark:
             "errors": errors[:10],  # Keep first 10 errors for analysis
         }
 
-    async def benchmark_system_endpoints(self) -> dict:
+    async def benchmark_system_endpoints(self) -> dict[str, Any]:
         """Benchmark system health endpoints"""
         logger.info("Benchmarking system endpoints...")
 
@@ -164,7 +164,7 @@ class APIBenchmark:
 
         return results
 
-    async def benchmark_document_endpoints(self) -> dict:
+    async def benchmark_document_endpoints(self) -> dict[str, Any]:
         """Benchmark document management endpoints"""
         logger.info("Benchmarking document endpoints...")
 
@@ -192,7 +192,7 @@ class APIBenchmark:
 
         return results
 
-    async def benchmark_rag_endpoints(self) -> dict:
+    async def benchmark_rag_endpoints(self) -> dict[str, Any]:
         """Benchmark RAG query endpoints"""
         logger.info("Benchmarking RAG endpoints...")
 
@@ -218,7 +218,7 @@ class APIBenchmark:
 
         return results
 
-    async def benchmark_settings_endpoints(self) -> dict:
+    async def benchmark_settings_endpoints(self) -> dict[str, Any]:
         """Benchmark settings endpoints"""
         logger.info("Benchmarking settings endpoints...")
 
@@ -242,7 +242,7 @@ class APIBenchmark:
 
         return results
 
-    async def run_all_benchmarks(self) -> dict:
+    async def run_all_benchmarks(self) -> dict[str, Any]:
         """Run all API benchmarks"""
         logger.info("Starting comprehensive API benchmark suite...")
         start_time = time.time()

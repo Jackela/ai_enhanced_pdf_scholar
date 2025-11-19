@@ -182,7 +182,7 @@ class CacheServiceIntegration:
         if not cache_manager:
             return False
 
-        result = await cache_manager.set(key, value, ttl_seconds)
+        result = await cache_manager.set[str](key, value, ttl_seconds)
         return result.success
 
     async def delete(self, key: str) -> bool:
@@ -194,7 +194,7 @@ class CacheServiceIntegration:
         result = await cache_manager.delete(key)
         return result.success
 
-    async def mget(self, keys: list) -> dict[str, Any]:
+    async def mget(self, keys: list[Any]) -> dict[str, Any]:
         """Get multiple keys from cache."""
         cache_manager = await self.get_cache_manager()
         if not cache_manager:
@@ -334,7 +334,7 @@ async def cache_service_context(
     Usage:
         async with cache_service_context() as cache:
             if cache:
-                await cache.set("key", "value")
+                await cache.set[str]("key", "value")
                 value = await cache.get("key")
     """
     cache_service = None
@@ -371,7 +371,7 @@ def create_cache_dependency() -> Any:
 
             # Generate data and cache it
             data = generate_data()
-            await cache.set("data_key", data, ttl_seconds=3600)
+            await cache.set[str]("data_key", data, ttl_seconds=3600)
             return data
     """
 
@@ -445,7 +445,7 @@ def cache_response(
 
             # Cache the response
             if cache_manager and response is not None:
-                await cache_manager.set(
+                await cache_manager.set[str](
                     cache_key,
                     response,
                     ttl_seconds=ttl_seconds,

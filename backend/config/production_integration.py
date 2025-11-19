@@ -60,7 +60,7 @@ class ProductionEnvironmentManager:
         self.initialization_steps: list[dict[str, Any]] = []
 
         # Graceful shutdown handling
-        self._shutdown_handlers: list[asyncio.Task] = []
+        self._shutdown_handlers: list[asyncio.Task[None]] = []
 
         logger.info("Production environment manager initialized")
 

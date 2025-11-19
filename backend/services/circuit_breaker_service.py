@@ -91,7 +91,7 @@ class CircuitBreakerStats:
     slow_call_rate: float
     last_state_change: datetime
     next_retry_time: datetime | None
-    recent_calls: list[CallResult] = field(default_factory=list)
+    recent_calls: list[CallResult] = field(default_factory=list[Any])
 
 
 # ============================================================================
@@ -590,7 +590,7 @@ def circuit_breaker(name: str, config: CircuitBreakerConfig | None = None) -> An
             pass
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         cb = _global_manager.get_circuit_breaker(name, config)
 
         if asyncio.iscoroutinefunction(func):

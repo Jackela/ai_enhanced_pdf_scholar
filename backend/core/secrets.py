@@ -61,7 +61,7 @@ class SecretMetadata:
     expires_at: datetime | None = None
     rotation_interval_days: int | None = None
     last_rotated: datetime | None = None
-    tags: dict[str, str] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict[str, Any])
     description: str | None = None
 
 
@@ -70,7 +70,7 @@ class SecretConfig(BaseModel):
 
     # Provider configuration
     primary_provider: SecretProvider = SecretProvider.LOCAL_ENCRYPTED
-    fallback_providers: list[SecretProvider] = Field(default_factory=list)
+    fallback_providers: list[SecretProvider] = Field(default_factory=list[Any])
 
     # Environment configuration
     environment: str = Field(default="development")
@@ -302,7 +302,7 @@ class VaultProvider(SecretProviderInterface):
 
             return []
         except Exception as e:
-            logger.error(f"Failed to list secrets from Vault: {e}")
+            logger.error(f"Failed to list[Any] secrets from Vault: {e}")
             return []
 
     def rotate_secret(self, key: str, new_value: str) -> bool:
@@ -488,7 +488,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
 
             return secrets
         except Exception as e:
-            logger.error(f"Failed to list secrets from AWS: {e}")
+            logger.error(f"Failed to list[Any] secrets from AWS: {e}")
             return []
 
     def rotate_secret(self, key: str, new_value: str) -> bool:
@@ -532,7 +532,7 @@ class AWSSecretsManagerProvider(SecretProviderInterface):
     def health_check(self) -> bool:
         """Check AWS Secrets Manager health."""
         try:
-            # Try to list secrets with limit 1
+            # Try to list[Any] secrets with limit 1
             self.client.list_secrets(MaxResults=1)
             return True
         except Exception as e:
@@ -607,7 +607,7 @@ class LocalEncryptedProvider(SecretProviderInterface):
             logger.error(f"Failed to save secrets: {e}")
             return False
 
-    def _load_metadata(self) -> dict[str, dict]:
+    def _load_metadata(self) -> dict[str, dict[str, Any]]:
         """Load metadata from file."""
         if not self._metadata_file.exists():
             return {}
@@ -619,7 +619,7 @@ class LocalEncryptedProvider(SecretProviderInterface):
             logger.error(f"Failed to load metadata: {e}")
             return {}
 
-    def _save_metadata(self, metadata: dict[str, dict]) -> bool:
+    def _save_metadata(self, metadata: dict[str, dict[str, Any]]) -> bool:
         """Save metadata to file."""
         try:
             with open(self._metadata_file, "w") as f:
@@ -691,7 +691,7 @@ class LocalEncryptedProvider(SecretProviderInterface):
     def list_secrets(self, prefix: str | None = None) -> list[str]:
         """List secrets in local storage."""
         secrets = self._load_secrets()
-        keys = list(secrets.keys())
+        keys = list[Any](secrets.keys())
 
         if prefix:
             keys = [k for k in keys if k.startswith(prefix)]
@@ -768,7 +768,7 @@ class SecretsManager:
         self.config = config or SecretConfig.from_env()
         self._providers: dict[SecretProvider, SecretProviderInterface] = {}
         self._cache: dict[str, tuple[str, datetime]] = {}
-        self._audit_log: list[dict] = []
+        self._audit_log: list[dict[str, Any]] = []
         self._initialize_providers()
 
     def _initialize_providers(self) -> None:
@@ -957,7 +957,7 @@ class SecretsManager:
         primary_provider = self._providers.get(self.config.primary_provider)
         if primary_provider:
             success = primary_provider.set_secret(key, value, metadata)
-            self._audit_log_operation("set", key, success, self.config.primary_provider)
+            self._audit_log_operation("set[str]", key, success, self.config.primary_provider)
 
             if success:
                 # Clear cache for this key
@@ -967,7 +967,7 @@ class SecretsManager:
             return success
 
         self._audit_log_operation(
-            "set", key, False, error="Primary provider not available"
+            "set[str]", key, False, error="Primary provider not available"
         )
         return False
 
@@ -1040,14 +1040,14 @@ class SecretsManager:
         Returns:
             List of secret keys
         """
-        all_secrets = set()
+        all_secrets = set[str]()
 
         for provider_type, provider in self._providers.items():
             if provider.health_check():
                 secrets = provider.list_secrets(prefix)
                 all_secrets.update(secrets)
 
-        return sorted(list(all_secrets))
+        return sorted(list[Any](all_secrets))
 
     def check_rotation_needed(self) -> list[tuple[str, SecretMetadata]]:
         """
@@ -1120,7 +1120,7 @@ class SecretsManager:
         start_time: datetime | None = None,
         end_time: datetime | None = None,
         operation: str | None = None,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """
         Get audit log entries.
 

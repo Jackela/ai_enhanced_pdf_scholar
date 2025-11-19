@@ -61,14 +61,14 @@ class WarmingTask:
     ttl: int | None = None
 
     # Dependencies
-    dependencies: list[str] = field(default_factory=list)
-    dependent_keys: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list[Any])
+    dependent_keys: list[str] = field(default_factory=list[Any])
 
     # Metadata
     estimated_load_time_ms: float = 100.0
     estimated_size_bytes: int = 1024
     access_probability: float = 0.5
-    user_groups: list[str] = field(default_factory=list)
+    user_groups: list[str] = field(default_factory=list[Any])
 
     # State tracking
     created_at: datetime = field(default_factory=datetime.utcnow)
@@ -131,11 +131,11 @@ class WarmingStatistics:
     total_bytes_warmed: int = 0
 
     # Strategy effectiveness
-    strategy_success_rates: dict[str, float] = field(default_factory=dict)
-    strategy_performance: dict[str, float] = field(default_factory=dict)
+    strategy_success_rates: dict[str, float] = field(default_factory=dict[str, Any])
+    strategy_performance: dict[str, float] = field(default_factory=dict[str, Any])
 
     # Time-based analysis
-    hourly_effectiveness: dict[int, float] = field(default_factory=dict)
+    hourly_effectiveness: dict[int, float] = field(default_factory=dict[str, Any])
 
     def update_completion(
         self, task: WarmingTask, success: bool, duration_ms: float
@@ -198,17 +198,17 @@ class CacheWarmingService:
         # Task management
         self.warming_tasks: dict[str, WarmingTask] = {}
         self.task_queue: list[WarmingTask] = []
-        self.completed_tasks: deque = deque(maxlen=1000)
+        self.completed_tasks: deque[Any] = deque[Any](maxlen=1000)
 
         # Statistics
         self.stats = WarmingStatistics()
 
         # Loader registry
-        self.data_loaders: dict[str, Callable] = {}
+        self.data_loaders: dict[str, Callable[..., Any]] = {}
 
         # Background processing
         self.is_running = False
-        self.worker_tasks: list[asyncio.Task] = []
+        self.worker_tasks: list[asyncio.Task[None]] = []
         self.max_workers = 3
 
         # Configuration
@@ -227,12 +227,12 @@ class CacheWarmingService:
     # Data Loader Registration
     # ========================================================================
 
-    def register_loader(self, pattern: str, loader_func: Callable) -> None:
+    def register_loader(self, pattern: str, loader_func: Callable[..., Any]) -> None:
         """Register a data loader for a key pattern."""
         self.data_loaders[pattern] = loader_func
         logger.info(f"Registered data loader for pattern: {pattern}")
 
-    def get_loader(self, key: str) -> Callable | None:
+    def get_loader(self, key: str) -> Callable[..., Any] | None:
         """Get appropriate loader for a key."""
         # Find matching pattern
         for pattern, loader in self.data_loaders.items():
@@ -267,7 +267,7 @@ class CacheWarmingService:
         key: str,
         priority: WarmingPriority = WarmingPriority.MEDIUM,
         strategy: WarmingStrategy = WarmingStrategy.PREDICTIVE,
-        loader_func: Callable | None = None,
+        loader_func: Callable[..., Any] | None = None,
         scheduled_time: datetime | None = None,
         ttl: int | None = None,
         dependencies: list[str] | None = None,
@@ -334,7 +334,7 @@ class CacheWarmingService:
             # Remove from active queue
             self.task_queue = [t for t in self.task_queue if t.key != key]
 
-            # Remove from tasks dict
+            # Remove from tasks dict[str, Any]
             del self.warming_tasks[key]
 
             logger.debug(f"Removed warming task for key: {key}")
@@ -477,7 +477,7 @@ class CacheWarmingService:
             return
 
         # Group keys by access patterns
-        pattern_groups = defaultdict(list)
+        pattern_groups = defaultdict(list[Any])
         for key, profile in self.smart_cache.key_profiles.items():
             if not self.redis_cache.exists(key):
                 pattern_groups[profile.access_pattern].append((key, profile))
@@ -677,7 +677,7 @@ class CacheWarmingService:
                 data = await asyncio.to_thread(task.loader_func)
 
             # Store in cache
-            success = self.redis_cache.set(task.key, data, ttl=task.ttl)
+            success = self.redis_cache.set[str](task.key, data, ttl=task.ttl)
 
             if success:
                 task.completed = True
@@ -813,7 +813,7 @@ class CacheWarmingService:
                 "average_warm_time_ms": self.stats.average_warm_time_ms,
                 "total_bytes_warmed": self.stats.total_bytes_warmed,
             },
-            "strategy_performance": dict(self.stats.strategy_success_rates),
+            "strategy_performance": dict[str, Any](self.stats.strategy_success_rates),
             "current_tasks": [
                 {
                     "key": task.key,
@@ -824,7 +824,7 @@ class CacheWarmingService:
                         task.scheduled_time.isoformat() if task.scheduled_time else None
                     ),
                 }
-                for task in list(self.task_queue)[:10]  # Top 10 tasks
+                for task in list[Any](self.task_queue)[:10]  # Top 10 tasks
             ],
         }
 

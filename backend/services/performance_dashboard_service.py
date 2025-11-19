@@ -145,7 +145,7 @@ class DashboardMetrics:
 
         # Get trace distribution by operation
         operation_stats = {}
-        for trace in list(self.amp.traces)[-1000:]:  # Last 1000 traces
+        for trace in list[Any](self.amp.traces)[-1000:]:  # Last 1000 traces
             op_name = trace.root_span.operation_name
             if op_name not in operation_stats:
                 operation_stats[op_name] = {
@@ -300,7 +300,7 @@ class PerformanceDashboardService:
         self.connection_manager = ConnectionManager()
 
         # Background task for real-time updates
-        self._update_task: asyncio.Task | None = None
+        self._update_task: asyncio.Task[None] | None = None
         self._running = False
 
     async def start_real_time_updates(self) -> None:
@@ -646,7 +646,7 @@ class PerformanceDashboardService:
                 <!-- Active Alerts -->
                 <div class="widget">
                     <h3>Active Alerts</h3>
-                    <div id="alerts-list">
+                    <div id="alerts-list[Any]">
                         <p>No active alerts</p>
                     </div>
                 </div>
@@ -787,7 +787,7 @@ class PerformanceDashboardService:
                         }
 
                         // Update alerts
-                        const alertsList = document.getElementById('alerts-list');
+                        const alertsList = document.getElementById('alerts-list[Any]');
                         if (data.alerts && data.alerts.length > 0) {
                             alertsList.innerHTML = data.alerts.map(alert => `
                                 <div class="alert-item">

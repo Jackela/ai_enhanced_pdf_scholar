@@ -425,7 +425,7 @@ def require_api_key(scopes: list[str] = None) -> Any:
             ...
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
             request = kwargs.get("request")
@@ -646,9 +646,9 @@ def sanitize_user_input(input_data: Any) -> Any:
         for pattern in dangerous_patterns:
             sanitized = sanitized.replace(pattern, "")
         return sanitized.strip()
-    elif isinstance(input_data, dict):
+    elif isinstance(input_data, dict[str, Any]):
         return {k: sanitize_user_input(v) for k, v in input_data.items()}
-    elif isinstance(input_data, list):
+    elif isinstance(input_data, list[Any]):
         return [sanitize_user_input(item) for item in input_data]
     return input_data
 

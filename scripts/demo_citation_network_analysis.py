@@ -376,7 +376,7 @@ def demonstrate_network_analysis(
                 )
 
 
-def export_network_data(network: dict, output_file: str) -> None:
+def export_network_data(network: dict[str, Any], output_file: str) -> None:
     """
     Export network data to JSON for visualization.
 

@@ -874,7 +874,7 @@ class GDPRComplianceService:
     # ========================================================================
 
     def _create_data_request(
-        self, user_id: int, request_type: str, details: dict | None = None
+        self, user_id: int, request_type: str, details: dict[str, Any] | None = None
     ) -> DataSubjectRequest:
         """Create a data subject request."""
         deadline = datetime.utcnow() + timedelta(days=30)  # GDPR 30-day deadline

@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """Merge radon JSON outputs and report total complexity blocks."""
 
@@ -13,7 +15,7 @@ def main() -> int:
         print("Usage: aggregate_complexity.py <json> [<json> ...]", file=sys.stderr)
         return 1
 
-    merged: dict[str, list] = {}
+    merged: dict[str, list[Any]] = {}
     for path_str in sys.argv[1:]:
         path = Path(path_str)
         with path.open("r", encoding="utf-8") as handle:

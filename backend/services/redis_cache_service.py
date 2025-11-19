@@ -216,8 +216,8 @@ class RedisCacheService:
             value: Value to cache
             ttl: Time to live in seconds
             serialize: Whether to serialize the value
-            nx: Only set if key doesn't exist
-            xx: Only set if key exists
+            nx: Only set[str] if key doesn't exist
+            xx: Only set[str] if key exists
 
         Returns:
             Success status
@@ -237,19 +237,19 @@ class RedisCacheService:
                 ttl = self.config.max_ttl
 
             # Set in Redis
-            result = self._redis_client.set(
+            result = self._redis_client.set[str](
                 key, value, ex=ttl if ttl > 0 else None, nx=nx, xx=xx
             )
 
             if result:
-                # Also set in L1 cache
+                # Also set[str] in L1 cache
                 self._local_cache[key] = value
                 self._cache_stats["sets"] += 1
 
             return bool(result)
 
         except RedisError as e:
-            logger.error(f"Redis set error for key {key}: {e}")
+            logger.error(f"Redis set[str] error for key {key}: {e}")
             self._cache_stats["errors"] += 1
             return False
 
@@ -421,7 +421,7 @@ class RedisCacheService:
             return None
 
     def add_to_set(self, key: str, *values: Any) -> int:
-        """Add values to a set."""
+        """Add values to a set[str]."""
         if not self._redis_client:
             return 0
 
@@ -433,19 +433,19 @@ class RedisCacheService:
             return 0
 
     def get_set_members(self, key: str) -> builtins.set[Any]:
-        """Get all members of a set."""
+        """Get all members of a set[str]."""
         if not self._redis_client:
-            return set()
+            return set[str]()
 
         try:
             members = self._redis_client.smembers(key)
             return {self._deserialize(m) for m in members}
         except RedisError as e:
             logger.error(f"Redis smembers error for key {key}: {e}")
-            return set()
+            return set[str]()
 
     def add_to_sorted_set(self, key: str, mapping: dict[Any, float]) -> int:
-        """Add values to a sorted set with scores."""
+        """Add values to a sorted set[str] with scores."""
         if not self._redis_client:
             return 0
 
@@ -465,7 +465,7 @@ class RedisCacheService:
         withscores: bool = False,
         reverse: bool = False,
     ) -> Union[list[Any], list[tuple]]:
-        """Get range from sorted set."""
+        """Get range from sorted set[str]."""
         if not self._redis_client:
             return []
 
@@ -496,9 +496,9 @@ class RedisCacheService:
         self,
         ttl: int | None = None,
         key_prefix: str = "",
-        key_func: Callable | None = None,
+        key_func: Callable[..., Any] | None = None,
         tags: list[str] | None = None,
-        condition: Callable | None = None,
+        condition: Callable[..., Any] | None = None,
     ) -> Any:
         """
         Decorator for caching function results.
@@ -516,7 +516,7 @@ class RedisCacheService:
                 return db.query(User).get(user_id)
         """
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(func)
             def wrapper(*args, **kwargs) -> Any:
                 # Generate cache key
@@ -547,7 +547,7 @@ class RedisCacheService:
                     return result
 
                 # Cache the result
-                self.set(cache_key, result, ttl=ttl)
+                self.set[str](cache_key, result, ttl=ttl)
 
                 return result
 
@@ -564,7 +564,7 @@ class RedisCacheService:
 
         return decorator
 
-    def cache_aside(self, key: str, loader: Callable, ttl: int | None = None) -> Any:
+    def cache_aside(self, key: str, loader: Callable[..., Any], ttl: int | None = None) -> Any:
         """
         Cache-aside pattern implementation.
 
@@ -586,7 +586,7 @@ class RedisCacheService:
 
         # Store in cache
         if value is not None:
-            self.set(key, value, ttl=ttl)
+            self.set[str](key, value, ttl=ttl)
 
         return value
 
@@ -602,7 +602,7 @@ class RedisCacheService:
         self,
         pattern_template: str,
         ids: list[Any],
-        loader: Callable,
+        loader: Callable[..., Any],
         ttl: int | None = None,
     ) -> None:
         """
@@ -810,12 +810,12 @@ class IntelligentCacheStrategy:
             ttl = self.adaptive_ttl(cache_key, base_ttl=7200)  # 2 hours base
 
         # Cache result
-        self.cache.set(cache_key, result, ttl=ttl)
+        self.cache.set[str](cache_key, result, ttl=ttl)
 
         # Track access pattern
         self._track_access(cache_key)
 
-        # Add to document's query set for invalidation
+        # Add to document's query set[str] for invalidation
         self.cache.add_to_set(f"document:{document_id}:queries", cache_key)
 
         return cache_key

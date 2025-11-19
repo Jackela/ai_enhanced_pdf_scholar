@@ -62,15 +62,15 @@ class CacheAnalyticsMetrics:
     eviction_count: int = 0
 
     # Key Pattern Analysis
-    top_accessed_patterns: dict[str, int] = field(default_factory=dict)
-    key_distribution: dict[str, int] = field(default_factory=dict)
+    top_accessed_patterns: dict[str, int] = field(default_factory=dict[str, Any])
+    key_distribution: dict[str, int] = field(default_factory=dict[str, Any])
 
     # Time-based Analysis
-    hourly_hit_rates: dict[int, float] = field(default_factory=dict)
-    daily_patterns: dict[str, float] = field(default_factory=dict)
+    hourly_hit_rates: dict[int, float] = field(default_factory=dict[str, Any])
+    daily_patterns: dict[str, float] = field(default_factory=dict[str, Any])
 
     # Strategy Effectiveness
-    strategy_performance: dict[str, float] = field(default_factory=dict)
+    strategy_performance: dict[str, float] = field(default_factory=dict[str, Any])
     warming_effectiveness: float = 0.0
 
     # Cost Analysis
@@ -121,11 +121,11 @@ class CacheAnalyticsEngine:
         self.monitoring_service = monitoring_service
 
         # Historical data storage
-        self.historical_metrics: deque = deque(maxlen=10000)
+        self.historical_metrics: deque[Any] = deque[Any](maxlen=10000)
         self.key_access_history: dict[str, list[tuple[datetime, bool]]] = defaultdict(
-            list
+            list[Any]
         )
-        self.response_times: deque = deque(maxlen=5000)
+        self.response_times: deque[Any] = deque[Any](maxlen=5000)
 
         # Analysis configuration
         self.analysis_window_hours = 24
@@ -227,7 +227,7 @@ class CacheAnalyticsEngine:
 
         # Performance percentiles
         if self.response_times:
-            times = list(self.response_times)
+            times = list[Any](self.response_times)
             metrics.p95_response_time_ms = np.percentile(times, 95)
             metrics.p99_response_time_ms = np.percentile(times, 99)
             metrics.avg_response_time_ms = np.mean(times)
@@ -237,7 +237,7 @@ class CacheAnalyticsEngine:
         patterns = defaultdict(int)
 
         if not self.smart_cache:
-            return dict(patterns)
+            return dict[str, Any](patterns)
 
         for key in self.smart_cache.key_profiles.keys():
             # Extract pattern from key
@@ -250,14 +250,14 @@ class CacheAnalyticsEngine:
 
             patterns[pattern] += 1
 
-        return dict(patterns)
+        return dict[str, Any](patterns)
 
     def _get_top_patterns(self) -> dict[str, int]:
         """Get top accessed key patterns."""
         pattern_access = defaultdict(int)
 
         if not self.smart_cache:
-            return dict(pattern_access)
+            return dict[str, Any](pattern_access)
 
         for key, profile in self.smart_cache.key_profiles.items():
             # Extract pattern
@@ -274,7 +274,7 @@ class CacheAnalyticsEngine:
         sorted_patterns = sorted(
             pattern_access.items(), key=lambda x: x[1], reverse=True
         )
-        return dict(sorted_patterns[:10])
+        return dict[str, Any](sorted_patterns[:10])
 
     def _calculate_hourly_hit_rates(self) -> dict[int, float]:
         """Calculate hit rates by hour of day."""
@@ -498,7 +498,7 @@ class CacheAnalyticsEngine:
             return
 
         # Check for significant hourly variations
-        hit_rates = list(metrics.hourly_hit_rates.values())
+        hit_rates = list[Any](metrics.hourly_hit_rates.values())
         if len(hit_rates) > 1:
             hit_rate_std = np.std(hit_rates)
             hit_rate_mean = np.mean(hit_rates)
@@ -651,7 +651,7 @@ class CacheAnalyticsEngine:
         for profile in self.smart_cache.key_profiles.values():
             pattern_counts[profile.access_pattern.value] += 1
 
-        pattern_analysis["access_patterns"] = dict(pattern_counts)
+        pattern_analysis["access_patterns"] = dict[str, Any](pattern_counts)
 
         # Key age distribution
         now = datetime.utcnow()
@@ -713,8 +713,8 @@ class CacheAnalyticsEngine:
                 daily_accesses.items(), key=lambda x: x[1], reverse=True
             ),
             "access_patterns": {
-                "hourly_distribution": dict(hourly_accesses),
-                "daily_distribution": dict(daily_accesses),
+                "hourly_distribution": dict[str, Any](hourly_accesses),
+                "daily_distribution": dict[str, Any](daily_accesses),
             },
         }
 
@@ -858,15 +858,15 @@ class CacheAnalyticsEngine:
 
             # Plot 2: Response Time Distribution
             if self.response_times:
-                axes[0, 1].hist(list(self.response_times), bins=30, alpha=0.7)
+                axes[0, 1].hist(list[Any](self.response_times), bins=30, alpha=0.7)
                 axes[0, 1].set_title("Response Time Distribution")
                 axes[0, 1].set_xlabel("Response Time (ms)")
                 axes[0, 1].set_ylabel("Frequency")
 
             # Plot 3: Key Pattern Distribution
             if metrics.key_distribution:
-                patterns = list(metrics.key_distribution.keys())
-                counts = list(metrics.key_distribution.values())
+                patterns = list[Any](metrics.key_distribution.keys())
+                counts = list[Any](metrics.key_distribution.values())
 
                 axes[1, 0].bar(patterns, counts)
                 axes[1, 0].set_title("Key Pattern Distribution")
@@ -876,8 +876,8 @@ class CacheAnalyticsEngine:
 
             # Plot 4: Hourly Access Pattern
             if metrics.hourly_hit_rates:
-                hours = list(metrics.hourly_hit_rates.keys())
-                rates = list(metrics.hourly_hit_rates.values())
+                hours = list[Any](metrics.hourly_hit_rates.keys())
+                rates = list[Any](metrics.hourly_hit_rates.values())
 
                 axes[1, 1].bar(hours, rates)
                 axes[1, 1].set_title("Hit Rate by Hour of Day")

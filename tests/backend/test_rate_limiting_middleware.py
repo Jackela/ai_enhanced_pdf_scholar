@@ -1,3 +1,5 @@
+from typing import Any
+
 import types
 
 import pytest
@@ -14,7 +16,7 @@ class _StubStore:
     async def get(self, key: str):
         return self.counts.get(key)
 
-    async def set(self, key: str, data: dict, ttl: int):
+    async def set(self, key: str, data: dict[str, Any], ttl: int):
         self.counts[key] = data | {"_ttl": ttl}
 
     async def incr(self, key: str, window: int):

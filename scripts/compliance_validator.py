@@ -113,7 +113,7 @@ class ComplianceValidator:
         # Load compliance control definitions
         self.controls = self._load_control_definitions()
 
-    def _load_control_definitions(self) -> dict[str, dict]:
+    def _load_control_definitions(self) -> dict[str, dict[str, Any]]:
         """Load compliance control definitions"""
         controls = {
             # SOC2 Type II Controls
@@ -498,9 +498,9 @@ class ComplianceValidator:
         evidence = []
 
         # Check for authentication/authorization code
-        auth_files = list(self.project_root.glob("**/auth/*.py"))
-        auth_files.extend(list(self.project_root.glob("**/authentication.py")))
-        auth_files.extend(list(self.project_root.glob("**/authorization.py")))
+        auth_files = list[Any](self.project_root.glob("**/auth/*.py"))
+        auth_files.extend(list[Any](self.project_root.glob("**/authentication.py")))
+        auth_files.extend(list[Any](self.project_root.glob("**/authorization.py")))
 
         if auth_files:
             evidence.append(
@@ -517,7 +517,7 @@ class ComplianceValidator:
             evidence.append("No authentication/authorization files found")
 
         # Check for middleware
-        middleware_files = list(self.project_root.glob("**/middleware/*.py"))
+        middleware_files = list[Any](self.project_root.glob("**/middleware/*.py"))
         if middleware_files:
             evidence.append(f"Found {len(middleware_files)} middleware files")
 
@@ -548,7 +548,7 @@ class ComplianceValidator:
                     except Exception:
                         continue
 
-        unique_implementations = list(set(auth_implementations))
+        unique_implementations = list[Any](set[str](auth_implementations))
         if unique_implementations:
             evidence.append(f"Authentication patterns found: {unique_implementations}")
         else:
@@ -587,7 +587,7 @@ class ComplianceValidator:
                     except Exception:
                         continue
 
-        unique_patterns = list(set(found_patterns))
+        unique_patterns = list[Any](set[str](found_patterns))
         if unique_patterns:
             evidence.append(f"Authorization patterns found: {unique_patterns}")
         else:
@@ -619,7 +619,7 @@ class ComplianceValidator:
 
         if found_mfa:
             evidence.append(
-                f"MFA implementation indicators found: {list(set(found_mfa))}"
+                f"MFA implementation indicators found: {list[Any](set[str](found_mfa))}"
             )
             passed = True
         else:
@@ -633,7 +633,7 @@ class ComplianceValidator:
         evidence = []
 
         # Check for encryption services and patterns
-        encryption_files = list(self.project_root.glob("**/encryption*.py"))
+        encryption_files = list[Any](self.project_root.glob("**/encryption*.py"))
         if encryption_files:
             evidence.append(f"Found {len(encryption_files)} encryption service files")
 
@@ -655,7 +655,7 @@ class ComplianceValidator:
                         continue
 
         if found_crypto or encryption_files:
-            evidence.append(f"Encryption patterns found: {list(set(found_crypto))}")
+            evidence.append(f"Encryption patterns found: {list[Any](set[str](found_crypto))}")
             passed = True
         else:
             evidence.append("No encryption implementation found")
@@ -668,8 +668,8 @@ class ComplianceValidator:
         evidence = []
 
         # Check for monitoring services
-        monitoring_files = list(self.project_root.glob("**/monitoring*.py"))
-        monitoring_files.extend(list(self.project_root.glob("**/metrics*.py")))
+        monitoring_files = list[Any](self.project_root.glob("**/monitoring*.py"))
+        monitoring_files.extend(list[Any](self.project_root.glob("**/metrics*.py")))
 
         if monitoring_files:
             evidence.append(f"Found {len(monitoring_files)} monitoring service files")
@@ -685,8 +685,8 @@ class ComplianceValidator:
         evidence = []
 
         # Check for logging services
-        logging_files = list(self.project_root.glob("**/logging*.py"))
-        logging_files.extend(list(self.project_root.glob("**/log*.py")))
+        logging_files = list[Any](self.project_root.glob("**/logging*.py"))
+        logging_files.extend(list[Any](self.project_root.glob("**/log*.py")))
 
         if logging_files:
             evidence.append(f"Found {len(logging_files)} logging service files")
@@ -766,8 +766,8 @@ class ComplianceValidator:
         evidence = []
 
         # Check for GitHub workflows (change management automation)
-        workflow_files = list(self.project_root.glob(".github/workflows/*.yml"))
-        workflow_files.extend(list(self.project_root.glob(".github/workflows/*.yaml")))
+        workflow_files = list[Any](self.project_root.glob(".github/workflows/*.yml"))
+        workflow_files.extend(list[Any](self.project_root.glob(".github/workflows/*.yaml")))
 
         if workflow_files:
             evidence.append(f"Found {len(workflow_files)} CI/CD workflow files")
@@ -787,9 +787,9 @@ class ComplianceValidator:
             evidence.append("No CI/CD workflows found")
 
         # Check for pull request templates
-        pr_templates = list(self.project_root.glob(".github/pull_request_template.md"))
+        pr_templates = list[Any](self.project_root.glob(".github/pull_request_template.md"))
         pr_templates.extend(
-            list(self.project_root.glob(".github/PULL_REQUEST_TEMPLATE.md"))
+            list[Any](self.project_root.glob(".github/PULL_REQUEST_TEMPLATE.md"))
         )
 
         if pr_templates:
@@ -824,7 +824,7 @@ class ComplianceValidator:
             evidence.append("No security tool configurations found")
 
         # Check for requirements files with security tools
-        req_files = list(self.project_root.glob("requirements*.txt"))
+        req_files = list[Any](self.project_root.glob("requirements*.txt"))
         security_tools_in_reqs = []
 
         for req_file in req_files:
@@ -849,20 +849,20 @@ class ComplianceValidator:
         evidence = []
 
         # Check for branch protection rules indication
-        github_files = list(self.project_root.glob(".github/**/*"))
+        github_files = list[Any](self.project_root.glob(".github/**/*"))
 
         if github_files:
             evidence.append(f"GitHub configuration files found: {len(github_files)}")
 
         # Check for CODEOWNERS file
-        codeowners_files = list(self.project_root.glob(".github/CODEOWNERS"))
-        codeowners_files.extend(list(self.project_root.glob("CODEOWNERS")))
+        codeowners_files = list[Any](self.project_root.glob(".github/CODEOWNERS"))
+        codeowners_files.extend(list[Any](self.project_root.glob("CODEOWNERS")))
 
         if codeowners_files:
             evidence.append("CODEOWNERS file found for mandatory reviews")
 
         # Check for pull request templates
-        pr_templates = list(self.project_root.glob(".github/**/pull_request_template*"))
+        pr_templates = list[Any](self.project_root.glob(".github/**/pull_request_template*"))
         if pr_templates:
             evidence.append("Pull request template found")
 
@@ -886,8 +886,8 @@ class ComplianceValidator:
             evidence.append(f"Security testing workflows: {security_workflows}")
 
         # Check for security test files
-        security_tests = list(self.project_root.glob("**/test*security*.py"))
-        security_tests.extend(list(self.project_root.glob("**/security*test*.py")))
+        security_tests = list[Any](self.project_root.glob("**/test*security*.py"))
+        security_tests.extend(list[Any](self.project_root.glob("**/security*test*.py")))
 
         if security_tests:
             evidence.append(f"Security test files: {len(security_tests)}")

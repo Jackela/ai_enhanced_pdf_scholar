@@ -98,8 +98,8 @@ class Span:
     start_time: datetime
     end_time: datetime | None = None
     duration_ms: float | None = None
-    tags: dict[str, Any] = field(default_factory=dict)
-    logs: list[dict[str, Any]] = field(default_factory=list)
+    tags: dict[str, Any] = field(default_factory=dict[str, Any])
+    logs: list[dict[str, Any]] = field(default_factory=list[Any])
     error: str | None = None
     status_code: int | None = None
 
@@ -139,7 +139,7 @@ class Trace:
 
     trace_id: str
     root_span: Span
-    spans: list[Span] = field(default_factory=list)
+    spans: list[Span] = field(default_factory=list[Any])
     trace_type: TraceType = TraceType.HTTP_REQUEST
     user_id: str | None = None
     session_id: str | None = None
@@ -170,9 +170,9 @@ class PerformanceAlert:
     title: str
     description: str
     timestamp: datetime
-    affected_components: list[str] = field(default_factory=list)
-    metrics: dict[str, Any] = field(default_factory=dict)
-    recommendations: list[str] = field(default_factory=list)
+    affected_components: list[str] = field(default_factory=list[Any])
+    metrics: dict[str, Any] = field(default_factory=dict[str, Any])
+    recommendations: list[str] = field(default_factory=list[Any])
     resolved: bool = False
     resolved_at: datetime | None = None
 
@@ -238,12 +238,12 @@ class APMService:
         self.sampling_rate = sampling_rate
 
         # Trace storage
-        self.traces: deque[Trace] = deque(maxlen=max_traces)
+        self.traces: deque[Trace] = deque[Any](maxlen=max_traces)
         self.active_spans: dict[str, Span] = {}  # span_id -> Span
         self.trace_contexts: dict[str, TraceContext] = {}  # thread_id -> context
 
         # Performance monitoring
-        self.performance_snapshots: deque[PerformanceSnapshot] = deque(
+        self.performance_snapshots: deque[PerformanceSnapshot] = deque[Any](
             maxlen=1440
         )  # 24h at 1min intervals
         self.alerts: list[PerformanceAlert] = []
@@ -252,9 +252,9 @@ class APMService:
         ] = []
 
         # Real-time metrics
-        self.request_latencies: deque = deque(maxlen=1000)
+        self.request_latencies: deque[Any] = deque[Any](maxlen=1000)
         self.error_counts: dict[str, int] = defaultdict(int)
-        self.throughput_window: deque = deque(maxlen=60)  # 60 seconds
+        self.throughput_window: deque[Any] = deque[Any](maxlen=60)  # 60 seconds
 
         # Thread-local storage for trace contexts
         self._local = threading.local()
@@ -437,7 +437,7 @@ class APMService:
     ) -> Any:
         """Decorator for automatic tracing."""
 
-        def decorator(func: Callable) -> Callable:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             op_name = operation_name or f"{func.__module__}.{func.__qualname__}"
 
             @wraps(func)
@@ -982,7 +982,7 @@ def apm_trace(
 ) -> Any:
     """Decorator for APM tracing."""
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # Import here to avoid circular imports
         from backend.services import apm_service_instance
 

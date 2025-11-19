@@ -223,7 +223,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
         logger.info("Cache Optimization Middleware initialized")
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Any:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Any:
         """Main middleware dispatch method."""
         start_time = time.time()
 
@@ -324,10 +324,10 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 return None
 
             # Deserialize cached response
-            if isinstance(cached_data, dict):
+            if isinstance(cached_data, dict[str, Any]):
                 response_data = cached_data
             else:
-                # Fallback for non-dict cached data
+                # Fallback for non-dict[str, Any] cached data
                 return None
 
             # Reconstruct response
@@ -385,7 +385,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
             cache_data = {
                 "content": content,
-                "headers": dict(response.headers),
+                "headers": dict[str, Any](response.headers),
                 "status_code": response.status_code,
                 "cached_at": datetime.utcnow().isoformat(),
                 "request_method": request.method,
@@ -397,14 +397,14 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
             # Store in cache
             if self.smart_cache:
-                await self.smart_cache.set(
+                await self.smart_cache.set[str](
                     cache_key,
                     cache_data,
                     ttl=ttl,
                     user_id=self._extract_user_id(request),
                 )
             else:
-                self.redis_cache.set(cache_key, cache_data, ttl=ttl)
+                self.redis_cache.set[str](cache_key, cache_data, ttl=ttl)
 
             # Replace response body iterator
             async def new_body_iterator() -> None:

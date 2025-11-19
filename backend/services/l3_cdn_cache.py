@@ -161,13 +161,13 @@ class CDNStatistics:
     error_rate_percent: float = 0.0
 
     # Geographic distribution
-    requests_by_region: dict[str, int] = field(default_factory=dict)
+    requests_by_region: dict[str, int] = field(default_factory=dict[str, Any])
 
     # Content type distribution
-    requests_by_content_type: dict[str, int] = field(default_factory=dict)
+    requests_by_content_type: dict[str, int] = field(default_factory=dict[str, Any])
 
     # Edge performance
-    edge_hit_ratios: dict[str, float] = field(default_factory=dict)
+    edge_hit_ratios: dict[str, float] = field(default_factory=dict[str, Any])
 
     def calculate_hit_rate(self) -> float:
         """Calculate overall cache hit rate."""
@@ -200,10 +200,10 @@ class L3CDNCache:
 
         # Cache tracking
         self.cached_urls: dict[str, CDNCacheEntry] = {}
-        self.cache_access_log: deque = deque(maxlen=10000)
+        self.cache_access_log: deque[Any] = deque[Any](maxlen=10000)
 
         # Performance tracking
-        self.response_times: deque = deque(maxlen=1000)
+        self.response_times: deque[Any] = deque[Any](maxlen=1000)
 
         # CDN client initialization
         self._cdn_client = None
@@ -772,7 +772,7 @@ class L3CDNCache:
         bandwidth_savings = self.stats.calculate_bandwidth_savings()
 
         # Analyze access log
-        recent_accesses = list(self.cache_access_log)[-1000:]  # Last 1000 accesses
+        recent_accesses = list[Any](self.cache_access_log)[-1000:]  # Last 1000 accesses
 
         access_by_type = defaultdict(int)
         access_by_hour = defaultdict(int)
@@ -785,7 +785,7 @@ class L3CDNCache:
         # Calculate response time statistics
         response_time_stats = {}
         if self.response_times:
-            times = list(self.response_times)
+            times = list[Any](self.response_times)
             response_time_stats = {
                 "avg_ms": sum(times) / len(times),
                 "min_ms": min(times),
@@ -804,8 +804,8 @@ class L3CDNCache:
             "cached_urls_count": len(self.cached_urls),
             "response_time_stats": response_time_stats,
             "access_patterns": {
-                "by_type": dict(access_by_type),
-                "by_hour": dict(access_by_hour),
+                "by_type": dict[str, Any](access_by_type),
+                "by_hour": dict[str, Any](access_by_hour),
             },
             "content_distribution": {
                 content_type.value: sum(

@@ -148,13 +148,13 @@ class RealTimeMetricsCollector:
         self.max_history_size = int((retention_hours * 3600) / collection_interval)
 
         # Background tasks
-        self._collector_task: asyncio.Task | None = None
-        self._streaming_task: asyncio.Task | None = None
-        self._cleanup_task: asyncio.Task | None = None
+        self._collector_task: asyncio.Task[None] | None = None
+        self._streaming_task: asyncio.Task[None] | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._running = False
 
         # Subscribers for real-time updates
-        self.metric_subscribers: set[Callable] = set()
+        self.metric_subscribers: set[Callable[..., Any]] = set[str]()
 
         # System baseline for comparisons
         self._system_baseline: SystemMetrics | None = None
@@ -209,7 +209,7 @@ class RealTimeMetricsCollector:
         """Subscribe to real-time metric updates."""
         self.metric_subscribers.add(callback)
 
-    def unsubscribe_from_metrics(self, callback: Callable) -> None:
+    def unsubscribe_from_metrics(self, callback: Callable[..., Any]) -> None:
         """Unsubscribe from metric updates."""
         self.metric_subscribers.discard(callback)
 
@@ -668,7 +668,7 @@ class RealTimeMetricsCollector:
                 "status": status,
                 "factors": health_factors,
                 "last_updated": datetime.now().isoformat(),
-                "metrics_available": list(current_metrics.keys()),
+                "metrics_available": list[Any](current_metrics.keys()),
             }
 
         except Exception as e:

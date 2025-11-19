@@ -103,14 +103,14 @@ if "DatabaseMigrator" not in globals():
         """
         Set database schema version.
         Args:
-            version: Version number to set
+            version: Version number to set[str]
         """
         try:
             self.db.execute(f"PRAGMA user_version = {version}")
-            logger.info(f"Database version set to {version}")
+            logger.info(f"Database version set[str] to {version}")
         except Exception as e:
-            logger.error(f"Failed to set database version: {e}")
-            raise MigrationError(f"Cannot set database version: {e}") from e
+            logger.error(f"Failed to set[str] database version: {e}")
+            raise MigrationError(f"Cannot set[str] database version: {e}") from e
 
     def needs_migration(self) -> bool:
         """
@@ -1438,10 +1438,10 @@ if "DatabaseMigrator" not in globals():
             matches = re.findall(pattern, plan_text, re.IGNORECASE)
             indexes_used.extend(matches)
 
-        return list(set(indexes_used))  # Remove duplicates
+        return list[Any](set[str](indexes_used))  # Remove duplicates
 
     def _generate_query_optimization_recommendations(
-        self, query: str, execution_plan: list, execution_time: float
+        self, query: str, execution_plan: list[Any], execution_time: float
     ) -> list[str]:
         """Generate optimization recommendations based on query analysis."""
         recommendations = []
@@ -1493,7 +1493,7 @@ if "DatabaseMigrator" not in globals():
         return recommendations
 
     def _analyze_query_cost(
-        self, query: str, execution_plan: list, rows_returned: int
+        self, query: str, execution_plan: list[Any], rows_returned: int
     ) -> dict[str, Any]:
         """Analyze the cost characteristics of a query."""
         cost_analysis = {
@@ -1916,7 +1916,7 @@ if "DatabaseMigrator" not in globals():
             alphabet = string.ascii_letters + string.digits + string.punctuation
             default_password = "".join(secrets.choice(alphabet) for _ in range(16))
             logger.warning(
-                "No DEFAULT_ADMIN_PASSWORD environment variable set. "
+                "No DEFAULT_ADMIN_PASSWORD environment variable set[str]. "
                 f"Generated temporary password: {default_password}"
             )
             logger.warning(

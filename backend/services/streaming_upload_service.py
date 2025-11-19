@@ -11,7 +11,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 from uuid import UUID
 
 import aiofiles
@@ -62,7 +62,7 @@ class StreamingUploadService:
         # Active sessions tracking
         self.active_sessions: dict[UUID, UploadSession] = {}
         self.session_locks: dict[UUID, asyncio.Lock] = {}
-        self.active_uploads: set[UUID] = set()
+        self.active_uploads: set[UUID] = set[str]()
 
         # Memory monitoring
         self.process = psutil.Process()
@@ -72,7 +72,7 @@ class StreamingUploadService:
         self.chunk_stats: dict[UUID, dict[str, Union[int, float]]] = {}
 
         # Background cleanup task
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._start_cleanup_task()
 
     def _start_cleanup_task(self) -> None:
@@ -544,7 +544,7 @@ class StreamingUploadService:
 
             # Send to client via WebSocket
             await websocket_manager.send_upload_progress(
-                session.client_id, progress.dict()
+                session.client_id, progress.dict[str, Any]()
             )
 
         except Exception as e:
@@ -659,7 +659,7 @@ class StreamingUploadService:
                 pass
 
         # Clean up all active sessions
-        session_ids = list(self.active_sessions.keys())
+        session_ids = list[Any](self.active_sessions.keys())
         for session_id in session_ids:
             await self._cleanup_session(session_id, "Service shutdown")
 
@@ -668,7 +668,7 @@ class StreamingUploadService:
 
 # WebSocket extension methods
 async def send_upload_progress(
-    websocket_manager, client_id: str, progress_data: dict
+    websocket_manager, client_id: str, progress_data: dict[str, Any]
 ) -> None:
     """Send upload progress update via WebSocket."""
     await websocket_manager.send_personal_json(

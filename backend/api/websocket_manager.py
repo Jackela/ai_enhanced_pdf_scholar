@@ -55,7 +55,7 @@ class RAGTask:
     result: str | None = None
     error: str | None = None
     processing_time_ms: float | None = None
-    background_task: asyncio.Task | None = None
+    background_task: asyncio.Task[None] | None = None
     cancellation_token: asyncio.Event | None = field(default_factory=asyncio.Event)
 
 
@@ -82,10 +82,10 @@ class WebSocketManager:
 
         # RAG streaming capabilities
         self.rag_tasks: dict[str, RAGTask] = {}
-        self.client_tasks: dict[str, set[str]] = {}  # client_id -> set of task_ids
+        self.client_tasks: dict[str, set[str]] = {}  # client_id -> set[str] of task_ids
         self.rag_config = RAGStreamConfig()
         self._task_counter = 0
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._is_started = False
 
         # Don't start background task immediately - wait until first connection
@@ -140,7 +140,7 @@ class WebSocketManager:
                 # Clean up broken connection
                 self.disconnect(client_id)
 
-    async def send_personal_json(self, data: dict, client_id: str) -> None:
+    async def send_personal_json(self, data: dict[str, Any], client_id: str) -> None:
         """Send JSON data to a specific client."""
         await self.send_personal_message(json.dumps(data), client_id)
 
@@ -157,7 +157,7 @@ class WebSocketManager:
         for client_id in disconnected:
             self.disconnect(client_id)
 
-    async def broadcast_json(self, data: dict) -> None:
+    async def broadcast_json(self, data: dict[str, Any]) -> None:
         """Broadcast JSON data to all connected clients."""
         await self.broadcast(json.dumps(data))
 
@@ -194,12 +194,12 @@ class WebSocketManager:
         for client_id in disconnected:
             self.disconnect(client_id)
 
-    async def send_json_to_room(self, data: dict, room_name: str) -> None:
+    async def send_json_to_room(self, data: dict[str, Any], room_name: str) -> None:
         """Send JSON data to all clients in a room."""
         await self.send_to_room(json.dumps(data), room_name)
 
     def get_room_members(self, room_name: str) -> list[str]:
-        """Get list of clients in a room."""
+        """Get list[Any] of clients in a room."""
         return self.rooms.get(room_name, [])
 
     def get_connection_count(self) -> int:
@@ -251,7 +251,7 @@ class WebSocketManager:
         await self.send_personal_json(data, client_id)
 
     async def send_document_update(
-        self, document_id: int, action: str, data: dict = None
+        self, document_id: int, action: str, data: dict[str, Any] = None
     ) -> None:
         """Broadcast document update to all clients."""
         message = {
@@ -263,7 +263,7 @@ class WebSocketManager:
             message["data"] = data
         await self.broadcast_json(message)
 
-    async def send_upload_progress(self, client_id: str, progress_data: dict) -> None:
+    async def send_upload_progress(self, client_id: str, progress_data: dict[str, Any]) -> None:
         """Send streaming upload progress update to client."""
         await self.send_personal_json(
             {
@@ -300,7 +300,7 @@ class WebSocketManager:
         await self.send_personal_json(data, client_id)
 
     async def send_upload_completed(
-        self, client_id: str, session_id: str, document_data: dict = None
+        self, client_id: str, session_id: str, document_data: dict[str, Any] = None
     ) -> None:
         """Send upload completion notification."""
         data = {
@@ -322,7 +322,7 @@ class WebSocketManager:
         await self.leave_room(client_id, room_name)
 
     async def broadcast_to_upload_room(
-        self, session_id: str, message_type: str, data: dict
+        self, session_id: str, message_type: str, data: dict[str, Any]
     ) -> None:
         """Broadcast message to all clients watching an upload."""
         room_name = f"upload_{session_id}"
@@ -396,7 +396,7 @@ class WebSocketManager:
 
                 # Set cancellation token
                 if task.cancellation_token:
-                    task.cancellation_token.set()
+                    task.cancellation_token.set[str]()
 
                 # Update status
                 task.status = RAGTaskStatus.CANCELLED
@@ -426,7 +426,7 @@ class WebSocketManager:
         timestamp = int(datetime.now().timestamp() * 1000)
         return f"rag_task_{timestamp}_{self._task_counter}"
 
-    async def send_memory_warning(self, client_id: str, memory_stats: dict) -> None:
+    async def send_memory_warning(self, client_id: str, memory_stats: dict[str, Any]) -> None:
         """Send memory usage warning to client."""
         await self.send_personal_json(
             {
@@ -472,7 +472,7 @@ class WebSocketManager:
 
         await self.send_personal_json(data, client_id)
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get WebSocket connection statistics including RAG streaming stats."""
         # Calculate RAG task statistics
         rag_stats = {
@@ -540,7 +540,7 @@ class WebSocketManager:
         if client_id not in self.active_connections:
             raise ValueError(f"Client {client_id} not connected")
 
-        client_task_count = len(self.client_tasks.get(client_id, set()))
+        client_task_count = len(self.client_tasks.get(client_id, set[str]()))
         if client_task_count >= self.rag_config.max_concurrent_tasks:
             await self.send_rag_error(
                 client_id,
@@ -563,7 +563,7 @@ class WebSocketManager:
 
         self.rag_tasks[task_id] = task
         if client_id not in self.client_tasks:
-            self.client_tasks[client_id] = set()
+            self.client_tasks[client_id] = set[str]()
         self.client_tasks[client_id].add(task_id)
 
         background_task = asyncio.create_task(
@@ -576,7 +576,7 @@ class WebSocketManager:
         return task_id
 
     async def _process_rag_task(
-        self, task: RAGTask, rag_processor: Callable, **kwargs
+        self, task: RAGTask, rag_processor: Callable[..., Any], **kwargs
     ) -> None:
         """Background task to process RAG query with streaming."""
         try:
@@ -646,7 +646,7 @@ class WebSocketManager:
         ]:
             return False
         if task.cancellation_token:
-            task.cancellation_token.set()
+            task.cancellation_token.set[str]()
         if task.background_task and not task.background_task.done():
             task.background_task.cancel()
         task.status = RAGTaskStatus.CANCELLED
@@ -797,12 +797,12 @@ class WebSocketManager:
                 pass
 
         # Cancel all RAG tasks
-        for task_id in list(self.rag_tasks.keys()):
+        for task_id in list[Any](self.rag_tasks.keys()):
             task = self.rag_tasks[task_id]
             if task.background_task and not task.background_task.done():
                 task.background_task.cancel()
             if task.cancellation_token:
-                task.cancellation_token.set()
+                task.cancellation_token.set[str]()
 
         # Clear all data
         self.active_connections.clear()

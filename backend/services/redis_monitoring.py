@@ -165,7 +165,7 @@ class RedisMetricsSnapshot:
     total_net_output_bytes: int = 0
 
     # Error metrics
-    errorstats: dict[str, int] = field(default_factory=dict)
+    errorstats: dict[str, int] = field(default_factory=dict[str, Any])
 
     def calculate_derived_metrics(self) -> None:
         """Calculate derived metrics from raw data."""
@@ -241,7 +241,7 @@ class RedisMetricsSnapshot:
             "total_net_output_bytes": "total_net_output_bytes",
         }
 
-        # Set attributes from info dict
+        # Set attributes from info dict[str, Any]
         for info_key, attr_name in field_mapping.items():
             if info_key in info_dict:
                 setattr(snapshot, attr_name, info_dict[info_key])
@@ -284,11 +284,11 @@ class RedisMonitoringService:
 
         # Monitoring state
         self.is_monitoring = False
-        self.monitoring_task: asyncio.Task | None = None
+        self.monitoring_task: asyncio.Task[None] | None = None
         self.monitoring_interval = 30.0  # seconds
 
         # Metrics storage (ring buffers for efficiency)
-        self.metrics_history: dict[str, deque] = {}
+        self.metrics_history: dict[str, deque[Any]] = {}
         self.max_history_size = 1000  # Keep last 1000 data points
 
         # Alert rules
@@ -492,7 +492,7 @@ class RedisMonitoringService:
 
             # Store in history
             if node_id not in self.metrics_history:
-                self.metrics_history[node_id] = deque(maxlen=self.max_history_size)
+                self.metrics_history[node_id] = deque[Any](maxlen=self.max_history_size)
 
             self.metrics_history[node_id].append(snapshot)
 
@@ -523,7 +523,7 @@ class RedisMonitoringService:
             if hasattr(self.metrics_service.metrics, "db_connections_active"):
                 self.metrics_service.metrics.db_connections_active.labels(
                     db_type="redis"
-                ).set(snapshot.connected_clients)
+                ).set[str](snapshot.connected_clients)
 
             # Record custom metrics
             if hasattr(self.metrics_service.metrics, "cache_hits_total"):

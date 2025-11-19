@@ -58,7 +58,7 @@ class CacheEntry:
     level: CacheLevel = CacheLevel.WARM
 
     # Access tracking
-    last_access_times: deque = field(default_factory=lambda: deque(maxlen=10))
+    last_access_times: deque[Any] = field(default_factory=lambda: deque[Any](maxlen=10))
 
     def is_expired(self) -> bool:
         """Check if entry is expired."""
@@ -235,11 +235,11 @@ class L1MemoryCache:
         self._lock = threading.RLock()
 
         # Background cleanup
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._is_running = False
 
         # Performance tracking
-        self._access_times: deque = deque(maxlen=1000)
+        self._access_times: deque[Any] = deque[Any](maxlen=1000)
 
         logger.info(
             f"L1 Memory Cache initialized with {self.config.max_size_mb}MB capacity"
@@ -670,7 +670,7 @@ class L1MemoryCache:
             # Fallback estimation
             if isinstance(value, str):
                 return len(value.encode("utf-8"))
-            elif isinstance(value, (dict, list)):
+            elif isinstance(value, (dict[str, Any], list[Any])):
                 return len(str(value)) * 4  # Rough estimate
             else:
                 return 100  # Default size
@@ -816,9 +816,9 @@ if __name__ == "__main__":
 
         async with cache:
             # Set some values
-            cache.set("key1", "value1", level=CacheLevel.HOT)
-            cache.set("key2", {"data": "value2"}, level=CacheLevel.WARM)
-            cache.set("key3", "large_value" * 100, level=CacheLevel.COLD)
+            cache.set[str]("key1", "value1", level=CacheLevel.HOT)
+            cache.set[str]("key2", {"data": "value2"}, level=CacheLevel.WARM)
+            cache.set[str]("key3", "large_value" * 100, level=CacheLevel.COLD)
 
             # Get values
             print("key1:", cache.get("key1"))

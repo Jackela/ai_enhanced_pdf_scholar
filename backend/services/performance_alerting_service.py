@@ -73,7 +73,7 @@ class AlertRule:
     min_data_points: int = 3
     cooldown_minutes: int = 15
     enabled: bool = True
-    tags: dict[str, str] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict[str, Any])
     custom_message_template: str | None = None
 
 
@@ -85,7 +85,7 @@ class NotificationConfig:
     config: dict[str, Any]
     enabled: bool = True
     severity_filter: list[AlertSeverity] = field(
-        default_factory=lambda: list(AlertSeverity)
+        default_factory=lambda: list[Any](AlertSeverity)
     )
 
 
@@ -103,7 +103,7 @@ class AlertEvent:
     metric_value: float
     threshold_value: float
     message: str
-    context: dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict[str, Any])
     acknowledged_by: str | None = None
     acknowledged_at: datetime | None = None
     resolved_at: datetime | None = None
@@ -124,8 +124,8 @@ class AlertInstance:
     current_value: float
     threshold_value: float
     message: str
-    context: dict[str, Any] = field(default_factory=dict)
-    events: list[AlertEvent] = field(default_factory=list)
+    context: dict[str, Any] = field(default_factory=dict[str, Any])
+    events: list[AlertEvent] = field(default_factory=list[Any])
 
 
 # ============================================================================
@@ -164,8 +164,8 @@ class PerformanceAlertingService:
 
         # Background tasks
         self._running = False
-        self._evaluation_task: asyncio.Task | None = None
-        self._cleanup_task: asyncio.Task | None = None
+        self._evaluation_task: asyncio.Task[None] | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
 
         # Load configuration
         self._load_configuration()
@@ -204,7 +204,7 @@ class PerformanceAlertingService:
                             AlertSeverity(s)
                             for s in notif_data.get("severity_filter", [])
                         ]
-                        or list(AlertSeverity),
+                        or list[Any](AlertSeverity),
                     )
                     self.notification_configs.append(notif)
 

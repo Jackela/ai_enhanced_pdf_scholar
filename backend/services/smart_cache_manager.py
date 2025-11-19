@@ -110,8 +110,8 @@ class CacheKeyProfile:
     miss_count: int = 0
 
     # Access timing
-    access_times: deque = field(default_factory=lambda: deque(maxlen=100))
-    inter_arrival_times: list[float] = field(default_factory=list)
+    access_times: deque[Any] = field(default_factory=lambda: deque[Any](maxlen=100))
+    inter_arrival_times: list[float] = field(default_factory=list[Any])
 
     # Size and performance
     avg_response_size: float = 0.0
@@ -425,7 +425,7 @@ class SmartCacheManager:
 
         # Key profiles and access tracking
         self.key_profiles: dict[str, CacheKeyProfile] = {}
-        self.access_history: deque = deque(maxlen=10000)
+        self.access_history: deque[Any] = deque[Any](maxlen=10000)
 
         # Cache strategy configuration
         self.default_strategy = CacheStrategy.ML_PREDICT
@@ -449,7 +449,7 @@ class SmartCacheManager:
         }
 
         # Background tasks
-        self.optimization_task: asyncio.Task | None = None
+        self.optimization_task: asyncio.Task[None] | None = None
         self.is_optimizing = False
 
         logger.info("Smart Cache Manager initialized")
@@ -509,7 +509,7 @@ class SmartCacheManager:
         user_id: str | None = None,
         force_eviction: bool = False,
     ) -> bool:
-        """Intelligent cache set with ML-driven TTL optimization."""
+        """Intelligent cache set[str] with ML-driven TTL optimization."""
         # Get or create key profile
         profile = self.key_profiles.get(key)
         if not profile:
@@ -528,7 +528,7 @@ class SmartCacheManager:
 
         # Store in cache
         response_size = len(pickle.dumps(value)) if value else 0
-        success = self.redis_cache.set(key, value, ttl=ttl)
+        success = self.redis_cache.set[str](key, value, ttl=ttl)
 
         # Record access for ML training
         access_record = AccessRecord(
@@ -858,7 +858,7 @@ class SmartCacheManager:
 
         logger.info(
             f"Cache analysis - Hit rate: {hit_rate:.2f}, "
-            f"Patterns: {dict(pattern_counts)}, "
+            f"Patterns: {dict[str, Any](pattern_counts)}, "
             f"Active keys: {len(self.key_profiles)}"
         )
 
@@ -925,7 +925,7 @@ class SmartCacheManager:
                     else None
                 ),
             },
-            "access_patterns": dict(pattern_distribution),
+            "access_patterns": dict[str, Any](pattern_distribution),
             "top_keys": {
                 "most_frequent": [
                     {
@@ -1009,7 +1009,7 @@ if __name__ == "__main__":
             key = f"test_key_{i % 5}"  # Create some repeated patterns
 
             # Set operation
-            await smart_cache.set(key, f"value_{i}", user_id="user123")
+            await smart_cache.set[str](key, f"value_{i}", user_id="user123")
 
             # Get operation
             await smart_cache.get(key, user_id="user123")

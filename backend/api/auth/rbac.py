@@ -166,7 +166,7 @@ class Actions(str, Enum):
     READ = "read"
     UPDATE = "update"
     DELETE = "delete"
-    LIST = "list"
+    LIST = "list[Any]"
     EXECUTE = "execute"
     APPROVE = "approve"
     REJECT = "reject"
@@ -185,7 +185,7 @@ class PermissionCheck:
 
     allowed: bool
     reason: str = ""
-    context: dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict[str, Any])
     cached: bool = False
     ttl: int = 300  # Cache TTL in seconds
 
@@ -445,7 +445,7 @@ class RBACService:
         Returns:
             List of permission names
         """
-        permissions = set()
+        permissions = set[str]()
 
         # Get permissions from roles (including inherited)
         for role in user.roles:
@@ -455,7 +455,7 @@ class RBACService:
         # Get direct permissions
         # This would need to be implemented with proper SQLAlchemy query
 
-        return list(permissions)
+        return list[Any](permissions)
 
     def create_custom_role(
         self,
@@ -578,7 +578,7 @@ class RBACService:
         if role.id in self._role_hierarchy_cache:
             return self._role_hierarchy_cache[role.id]
 
-        permissions = set()
+        permissions = set[str]()
 
         # Get direct permissions
         for permission in role.permissions:
@@ -794,14 +794,14 @@ def initialize_rbac_system(db: Session) -> None:
         ("document:read", ResourceTypes.DOCUMENT, Actions.READ, "Read documents"),
         ("document:update", ResourceTypes.DOCUMENT, Actions.UPDATE, "Update documents"),
         ("document:delete", ResourceTypes.DOCUMENT, Actions.DELETE, "Delete documents"),
-        ("document:list", ResourceTypes.DOCUMENT, Actions.LIST, "List documents"),
+        ("document:list[Any]", ResourceTypes.DOCUMENT, Actions.LIST, "List documents"),
         ("document:export", ResourceTypes.DOCUMENT, Actions.EXPORT, "Export documents"),
         # User permissions
         ("user:create", ResourceTypes.USER, Actions.CREATE, "Create users"),
         ("user:read", ResourceTypes.USER, Actions.READ, "Read user profiles"),
         ("user:update", ResourceTypes.USER, Actions.UPDATE, "Update users"),
         ("user:delete", ResourceTypes.USER, Actions.DELETE, "Delete users"),
-        ("user:list", ResourceTypes.USER, Actions.LIST, "List users"),
+        ("user:list[Any]", ResourceTypes.USER, Actions.LIST, "List users"),
         # System permissions
         ("system:read", ResourceTypes.SYSTEM, Actions.READ, "Read system info"),
         (
@@ -851,7 +851,7 @@ def initialize_rbac_system(db: Session) -> None:
         SystemRoles.MODERATOR: [
             "document:*",
             "user:read",
-            "user:list",
+            "user:list[Any]",
             "library:*",
             "rag:*",
             "audit:read",
@@ -859,13 +859,13 @@ def initialize_rbac_system(db: Session) -> None:
         SystemRoles.USER: [
             "document:create",
             "document:read",
-            "document:list",
+            "document:list[Any]",
             "document:update",
             "library:read",
             "rag:execute",
             "user:read",
         ],
-        SystemRoles.GUEST: ["document:read", "document:list", "library:read"],
+        SystemRoles.GUEST: ["document:read", "document:list[Any]", "library:read"],
         SystemRoles.SERVICE_ACCOUNT: [
             "document:*",
             "library:*",
@@ -880,7 +880,7 @@ def initialize_rbac_system(db: Session) -> None:
                 name=role_name,
                 description=f"System role: {role_name}",
                 is_system_role=True,
-                priority=list(SystemRoles).index(role_name),
+                priority=list[Any](SystemRoles).index(role_name),
             )
 
             # Add permissions to role

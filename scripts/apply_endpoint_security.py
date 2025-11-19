@@ -12,7 +12,7 @@ from pathlib import Path
 # Endpoint security mapping
 ENDPOINT_SECURITY_MAP = {
     # Document endpoints
-    "get_documents": ("document", "list", False),
+    "get_documents": ("document", "list[Any]", False),
     "get_document": ("document", "read", False),
     "upload_document": ("document", "create", False),
     "update_document": ("document", "update", False),
@@ -32,7 +32,7 @@ ENDPOINT_SECURITY_MAP = {
     "get_user_profile": ("user", "read", False),
     "update_user_profile": ("user", "update", False),
     "delete_user": ("user", "delete", False),
-    "list_users": ("user", "list", False),
+    "list_users": ("user", "list[Any]", False),
     # Settings endpoints
     "get_settings": ("settings", "read", False),
     "update_settings": ("settings", "update", False),
@@ -61,7 +61,7 @@ PUBLIC_ROUTES = [
 ]
 
 
-def analyze_route_file(file_path: Path) -> list[dict]:
+def analyze_route_file(file_path: Path) -> list[dict[str, Any]]:
     """
     Analyze a route file to find all endpoints.
 
@@ -111,7 +111,7 @@ def analyze_route_file(file_path: Path) -> list[dict]:
     return endpoints
 
 
-def get_security_requirements(endpoint: dict) -> tuple[str, str, bool] | None:
+def get_security_requirements(endpoint: dict[str, Any]) -> tuple[str, str, bool] | None:
     """
     Get security requirements for an endpoint.
 
@@ -150,7 +150,7 @@ def get_security_requirements(endpoint: dict) -> tuple[str, str, bool] | None:
 
 
 def generate_security_update(
-    endpoint: dict, requirements: tuple[str, str, bool]
+    endpoint: dict[str, Any], requirements: tuple[str, str, bool]
 ) -> str:
     """
     Generate code to add security to an endpoint.
@@ -203,7 +203,7 @@ def generate_security_update(
     }
 
 
-def update_route_file(file_path: Path, updates: list[dict]) -> None:
+def update_route_file(file_path: Path, updates: list[dict[str, Any]]) -> None:
     """
     Update a route file with security enhancements.
 
@@ -257,7 +257,7 @@ from backend.api.security.endpoint_protection import secure_endpoint
         f.writelines(lines)
 
 
-def generate_security_report(all_endpoints: list[dict]) -> str:
+def generate_security_report(all_endpoints: list[dict[str, Any]]) -> str:
     """
     Generate a security report for all endpoints.
 
@@ -343,7 +343,7 @@ def main() -> None:
 
     # Analyze all route files
     all_endpoints = []
-    route_files = list(routes_dir.glob("*.py"))
+    route_files = list[Any](routes_dir.glob("*.py"))
 
     print(f"📁 Found {len(route_files)} route files")
     print("")

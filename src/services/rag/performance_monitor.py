@@ -34,7 +34,7 @@ class PerformanceMetrics:
     cpu_percent: float = 0
     success: bool = True
     error_message: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
     def complete(self) -> None:
         """Mark operation as complete and calculate metrics"""
@@ -55,7 +55,7 @@ class RAGPerformanceMonitor:
         Args:
             max_history: Maximum number of metrics to keep in history
         """
-        self.metrics_history: deque = deque(maxlen=max_history)
+        self.metrics_history: deque[Any] = deque[Any](maxlen=max_history)
         self.active_operations: dict[str, PerformanceMetrics] = {}
         self.thresholds = {
             "query_time": 2.0,  # seconds
@@ -241,7 +241,7 @@ class RAGPerformanceMonitor:
         self.alerts.clear()
 
     def get_active_operations(self) -> list[dict[str, Any]]:
-        """Get list of currently active operations"""
+        """Get list[Any] of currently active operations"""
         return [
             {
                 "id": op_id,
@@ -253,7 +253,7 @@ class RAGPerformanceMonitor:
         ]
 
     async def monitor_async_operation(
-        self, operation_name: str, func: Callable, *args, **kwargs
+        self, operation_name: str, func: Callable[..., Any], *args, **kwargs
     ) -> Any:
         """
         Monitor an async operation

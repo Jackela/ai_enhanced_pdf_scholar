@@ -123,7 +123,7 @@ class EncryptionService:
 
     def encrypt_data(
         self,
-        data: Union[str, bytes, dict],
+        data: Union[str, bytes, dict[str, Any]],
         key_id: str | None = None,
         additional_data: bytes | None = None,
     ) -> tuple[bytes, dict[str, Any]]:
@@ -141,7 +141,7 @@ class EncryptionService:
         # Convert data to bytes
         if isinstance(data, str):
             plaintext = data.encode("utf-8")
-        elif isinstance(data, dict):
+        elif isinstance(data, dict[str, Any]):
             plaintext = json.dumps(data).encode("utf-8")
         else:
             plaintext = data
@@ -192,7 +192,7 @@ class EncryptionService:
         encrypted_data: bytes,
         metadata: dict[str, Any],
         additional_data: bytes | None = None,
-    ) -> Union[str, bytes, dict]:
+    ) -> Union[str, bytes, dict[str, Any]]:
         """
         Decrypt data encrypted with AES-256-GCM.
 
@@ -910,7 +910,7 @@ class SecureChannel:
         fernet = Fernet(self.session_keys[client_id])
 
         # Serialize message
-        if isinstance(message, (dict, list)):
+        if isinstance(message, (dict[str, Any], list[Any])):
             plaintext = json.dumps(message).encode("utf-8")
         else:
             plaintext = str(message).encode("utf-8")

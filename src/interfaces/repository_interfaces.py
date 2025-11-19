@@ -5,7 +5,7 @@ following the Interface Segregation Principle (ISP).
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Any
 
 from src.database.models import (
     CitationModel,
@@ -160,7 +160,7 @@ class ICitationRepository(IRepository[CitationModel]):
         pass
 
     @abstractmethod
-    def get_statistics(self) -> dict:
+    def get_statistics(self) -> dict[str, Any]:
         """Get citation statistics."""
         pass
 
@@ -191,12 +191,12 @@ class ICitationRelationRepository(IRepository[CitationRelationModel]):
         pass
 
     @abstractmethod
-    def get_citation_network(self, document_id: int, depth: int = 1) -> dict:
+    def get_citation_network(self, document_id: int, depth: int = 1) -> dict[str, Any]:
         """Get citation network for a document up to specified depth."""
         pass
 
     @abstractmethod
-    def get_most_cited_documents(self, limit: int = 10) -> list[dict]:
+    def get_most_cited_documents(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get most cited documents in the library."""
         pass
 
@@ -318,7 +318,7 @@ class ICrossDocumentQueryRepository(IRepository[CrossDocumentQueryModel]):
         pass
 
     @abstractmethod
-    def get_query_statistics(self) -> dict:
+    def get_query_statistics(self) -> dict[str, Any]:
         """Get query performance statistics."""
         pass
 

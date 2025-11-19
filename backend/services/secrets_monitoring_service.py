@@ -79,8 +79,8 @@ class AlertRule:
     severity: AlertSeverity
     enabled: bool = True
     cooldown_minutes: int = 60
-    channels: list[AlertChannel] = field(default_factory=list)
-    tags: dict[str, str] = field(default_factory=dict)
+    channels: list[AlertChannel] = field(default_factory=list[Any])
+    tags: dict[str, str] = field(default_factory=dict[str, Any])
 
 
 @dataclass
@@ -104,8 +104,8 @@ class MetricData:
     metric: MonitoringMetric
     value: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    labels: dict[str, str] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict[str, Any])
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 class AlertingConfig(BaseModel):
@@ -127,7 +127,7 @@ class AlertingConfig(BaseModel):
     pagerduty_integration_key: str | None = None
 
     # Webhook configuration
-    webhook_urls: list[str] = Field(default_factory=list)
+    webhook_urls: list[str] = Field(default_factory=list[Any])
     webhook_timeout: int = Field(default=30)
 
     # General settings
@@ -165,8 +165,8 @@ class SecretsMonitoringService:
         self.last_alert_times: dict[str, datetime] = {}
 
         # Background tasks
-        self.monitoring_task: asyncio.Task | None = None
-        self.cleanup_task: asyncio.Task | None = None
+        self.monitoring_task: asyncio.Task[None] | None = None
+        self.cleanup_task: asyncio.Task[None] | None = None
 
         # Initialize alert rules
         self._initialize_alert_rules()
@@ -829,7 +829,7 @@ class SecretsMonitoringService:
     async def _process_alerts(self) -> None:
         """Process and manage active alerts."""
         # Auto-resolve alerts that are no longer triggering
-        for alert_id, alert in list(self.active_alerts.items()):
+        for alert_id, alert in list[Any](self.active_alerts.items()):
             if alert.resolved:
                 continue
 
@@ -903,7 +903,7 @@ class SecretsMonitoringService:
 
     def get_active_alerts(self) -> list[Alert]:
         """Get all active alerts."""
-        return list(self.active_alerts.values())
+        return list[Any](self.active_alerts.values())
 
     def get_alert_history(
         self,

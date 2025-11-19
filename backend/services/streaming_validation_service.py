@@ -165,7 +165,7 @@ class StreamingValidationService:
 
         return result
 
-    def _validate_pdf_signature(self, header_bytes: bytes) -> dict:
+    def _validate_pdf_signature(self, header_bytes: bytes) -> dict[str, Any]:
         """
         Validate PDF file signature and extract version information.
 
@@ -199,7 +199,7 @@ class StreamingValidationService:
             signature = header_bytes[:signature_end]
             result["signature"] = signature.decode("ascii", errors="ignore")
 
-            # Match PDF version
+            # Match[str] PDF version
             for pdf_sig, version in self.PDF_SIGNATURES.items():
                 if header_bytes.startswith(pdf_sig):
                     result["is_pdf"] = True
@@ -227,7 +227,7 @@ class StreamingValidationService:
 
     async def _analyze_pdf_content_streaming(
         self, file_handle, scan_size: int, chunk_size: int
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         Analyze PDF content structure with streaming approach.
 
@@ -249,8 +249,8 @@ class StreamingValidationService:
 
         try:
             # Track PDF structure
-            objects_found = set()
-            pages_found = set()
+            objects_found = set[str]()
+            pages_found = set[str]()
             encryption_found = False
 
             # Security threat tracking
@@ -349,14 +349,14 @@ class StreamingValidationService:
 
             # Find page objects
             page_pattern = rb"/Type\s*/Page\b"
-            page_matches = list(re.finditer(page_pattern, chunk))
+            page_matches = list[Any](re.finditer(page_pattern, chunk))
             for i, match in enumerate(page_matches):
                 pages_found.add(match.start())
 
             # Security threat detection
             for threat_type, patterns in self.SECURITY_PATTERNS.items():
                 for pattern in patterns:
-                    matches = list(re.finditer(pattern, chunk, re.IGNORECASE))
+                    matches = list[Any](re.finditer(pattern, chunk, re.IGNORECASE))
                     for match in matches:
                         security_threats[threat_type].append(match.start())
 
@@ -480,7 +480,7 @@ class StreamingValidationService:
 
         return is_valid, errors, warnings
 
-    def get_validation_stats(self) -> dict:
+    def get_validation_stats(self) -> dict[str, Any]:
         """Get current validation statistics."""
         return self.validation_stats.copy()
 

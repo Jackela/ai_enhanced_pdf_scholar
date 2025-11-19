@@ -12,6 +12,8 @@ References:
 - ADR-001: V2.0 Architecture Principles
 - ADR-003: API Versioning Strategy
 """
+from typing import Any
+
 
 import logging
 
@@ -35,7 +37,7 @@ from src.interfaces.repository_interfaces import (
 
 logger = logging.getLogger(__name__)
 
-# Note: No prefix here because it's set in main.py when including the router
+# Note: No prefix here because it's set[str] in main.py when including the router
 router = APIRouter(tags=["indexes"])
 
 
@@ -395,7 +397,7 @@ async def rebuild_document_index(
 
 @router.get(
     "/{index_id}/verify",
-    response_model=APIResponse[dict],
+    response_model=APIResponse[dict[str, Any]],
     summary="Verify index integrity",
     description="Verify vector index files and metadata",
     responses={
@@ -407,7 +409,7 @@ async def rebuild_document_index(
 async def verify_index(
     index_id: int,
     vector_repo: IVectorIndexRepository = Depends(get_vector_index_repository),
-) -> APIResponse[dict]:
+) -> APIResponse[dict[str, Any]]:
     """
     Verify index integrity.
 
@@ -479,7 +481,7 @@ async def verify_index(
 
 @router.post(
     "/cleanup/orphaned",
-    response_model=APIResponse[dict],
+    response_model=APIResponse[dict[str, Any]],
     summary="Cleanup orphaned indexes",
     description="Remove vector indexes for deleted documents",
     responses={
@@ -489,7 +491,7 @@ async def verify_index(
 )
 async def cleanup_orphaned_indexes(
     resource_manager: IRAGResourceManager = Depends(get_rag_resource_manager),
-) -> APIResponse[dict]:
+) -> APIResponse[dict[str, Any]]:
     """
     Cleanup orphaned vector indexes.
 
@@ -534,7 +536,7 @@ async def cleanup_orphaned_indexes(
 
 @router.get(
     "/stats/storage",
-    response_model=APIResponse[dict],
+    response_model=APIResponse[dict[str, Any]],
     summary="Get storage statistics",
     description="Get vector index storage statistics",
     responses={
@@ -544,7 +546,7 @@ async def cleanup_orphaned_indexes(
 )
 async def get_storage_stats(
     resource_manager: IRAGResourceManager = Depends(get_rag_resource_manager),
-) -> APIResponse[dict]:
+) -> APIResponse[dict[str, Any]]:
     """
     Get vector index storage statistics.
 

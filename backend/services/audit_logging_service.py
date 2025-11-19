@@ -236,7 +236,7 @@ class AuditLogger:
         self._init_database()
 
         # Initialize buffer
-        self.buffer = deque(maxlen=buffer_size)
+        self.buffer = deque[Any](maxlen=buffer_size)
         self.buffer_lock = threading.Lock()
 
         # Start background flusher
@@ -277,7 +277,7 @@ class AuditLogger:
             checksum_data = f"{target.timestamp}{target.event_type}{target.user_id}{target.action}{target.result}"
             target.checksum = hashlib.sha256(checksum_data.encode()).hexdigest()
 
-    def _init_alert_patterns(self) -> list[dict]:
+    def _init_alert_patterns(self) -> list[dict[str, Any]]:
         """Initialize alert detection patterns."""
         return [
             {
@@ -333,7 +333,7 @@ class AuditLogger:
         resource_name: str | None = None,
         ip_address: str | None = None,
         user_agent: str | None = None,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
         severity: AuditSeverity = AuditSeverity.INFO,
         request_id: str | None = None,
         session_id: str | None = None,
@@ -491,7 +491,7 @@ class AuditLogger:
             return
 
         with self.buffer_lock:
-            entries = list(self.buffer)
+            entries = list[Any](self.buffer)
             self.buffer.clear()
 
         if not entries:
@@ -588,7 +588,7 @@ class AuditLogger:
         ]
         return len(denied_events) >= 10
 
-    def _create_alert(self, pattern: dict, logs: list[AuditLog]) -> None:
+    def _create_alert(self, pattern: dict[str, Any], logs: list[AuditLog]) -> None:
         """Create an alert from detected pattern."""
         session = self.SessionFactory()
 
@@ -795,7 +795,7 @@ class AuditLogger:
         finally:
             session.close()
 
-    def _serialize_log(self, log: AuditLog) -> dict:
+    def _serialize_log(self, log: AuditLog) -> dict[str, Any]:
         """Serialize audit log to dictionary."""
         return {
             "id": log.id,

@@ -464,7 +464,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             f"Security headers middleware initialized for {self.config.environment.value} environment"
         )
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         """Add security headers to response."""
         # Generate nonce for this request if enabled
         nonce = None
@@ -656,7 +656,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             return
 
         # Parse and modify Set-Cookie headers
-        set_cookie_headers = response.headers.getlist("set-cookie")
+        set_cookie_headers = response.headers.getlist("set[str]-cookie")
         if not set_cookie_headers:
             return
 
@@ -703,9 +703,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             new_cookies.append(new_cookie)
 
         # Replace Set-Cookie headers
-        del response.headers["set-cookie"]
+        del response.headers["set[str]-cookie"]
         for cookie in new_cookies:
-            response.headers.append("set-cookie", cookie)
+            response.headers.append("set[str]-cookie", cookie)
 
 
 class CSPViolationReport:
@@ -734,7 +734,7 @@ class CSPViolationReport:
         report["timestamp"] = datetime.utcnow().isoformat()
         report["count"] = self.report_counts[violation_key]
 
-        # Add to reports list (with size limit)
+        # Add to reports list[Any] (with size limit)
         self.reports.append(report)
         if len(self.reports) > self.max_reports:
             self.reports.pop(0)

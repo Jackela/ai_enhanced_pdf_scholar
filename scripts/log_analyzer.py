@@ -415,7 +415,7 @@ class LogParser:
             )
 
     def _parse_structured_log(
-        self, match: re.Match, line: str, format_name: str
+        self, match: re.Match[str], line: str, format_name: str
     ) -> LogEntry:
         """Parse structured log entry from regex match."""
         groups = match.groupdict()
@@ -508,15 +508,15 @@ class LogAnalysisEngine:
         self.pattern_cache: dict[str, list[PatternMatch]] = {}
 
         # Performance tracking
-        self.performance_metrics = defaultdict(list)
-        self.response_time_history = defaultdict(deque)
+        self.performance_metrics = defaultdict(list[Any])
+        self.response_time_history = defaultdict(deque[Any])
 
         # Security event tracking
-        self.security_events = defaultdict(list)
+        self.security_events = defaultdict(list[Any])
         self.ip_activity = defaultdict(Counter)
 
         # Business metrics tracking
-        self.business_metrics = defaultdict(list)
+        self.business_metrics = defaultdict(list[Any])
 
         logger.info(f"Log Analysis Engine initialized with cache dir: {self.cache_dir}")
 
@@ -530,7 +530,7 @@ class LogAnalysisEngine:
         """Main analysis entry point."""
 
         if analysis_types is None:
-            analysis_types = list(AnalysisType)
+            analysis_types = list[Any](AnalysisType)
 
         logger.info(f"Starting log analysis for timeframe: {timeframe}")
         logger.info(f"Analysis types: {[t.value for t in analysis_types]}")
@@ -678,7 +678,7 @@ class LogAnalysisEngine:
         logger.info("Analyzing performance bottlenecks...")
 
         # Group by endpoint
-        endpoint_metrics = defaultdict(list)
+        endpoint_metrics = defaultdict(list[Any])
         endpoint_errors = defaultdict(int)
         endpoint_requests = defaultdict(int)
 
@@ -774,7 +774,7 @@ class LogAnalysisEngine:
         security_events = []
 
         # Track events by IP and pattern
-        ip_events = defaultdict(lambda: defaultdict(list))
+        ip_events = defaultdict(lambda: defaultdict(list[Any]))
 
         for (
             pattern_id,
@@ -844,7 +844,7 @@ class LogAnalysisEngine:
 
                 # Determine attack pattern
                 attack_pattern = None
-                if frequency > 20 and len(set(e["endpoint"] for e in events)) > 5:
+                if frequency > 20 and len(set[str](e["endpoint"] for e in events)) > 5:
                     attack_pattern = "reconnaissance_scan"
                 elif frequency > 50:
                     attack_pattern = "brute_force_attack"
@@ -855,7 +855,7 @@ class LogAnalysisEngine:
                     event_type=pattern_config["name"],
                     source_ip=ip,
                     target_endpoint=max(
-                        set(e["endpoint"] for e in events),
+                        set[str](e["endpoint"] for e in events),
                         key=lambda x: sum(1 for e in events if e["endpoint"] == x),
                     ),
                     frequency=frequency,
@@ -1035,7 +1035,7 @@ class LogAnalysisEngine:
             hourly_traffic[hour_key] += 1
 
         if len(hourly_traffic) > 5:
-            traffic_volumes = list(hourly_traffic.values())
+            traffic_volumes = list[Any](hourly_traffic.values())
             mean_traffic = statistics.mean(traffic_volumes)
             std_traffic = (
                 statistics.stdev(traffic_volumes) if len(traffic_volumes) > 1 else 0
@@ -1083,7 +1083,7 @@ class LogAnalysisEngine:
 
             # Simple linear trend
             if len(recent_errors) > 3:
-                x = list(range(len(recent_errors)))
+                x = list[Any](range(len(recent_errors)))
                 slope = sum(
                     (x[i] - statistics.mean(x))
                     * (recent_errors[i] - statistics.mean(recent_errors))
@@ -1119,7 +1119,7 @@ class LogAnalysisEngine:
 
         if len(response_times) > 50:
             # Group by hour and calculate averages
-            hourly_performance = defaultdict(list)
+            hourly_performance = defaultdict(list[Any])
             for timestamp, response_time in response_times:
                 hour_key = timestamp.replace(minute=0, second=0, microsecond=0)
                 hourly_performance[hour_key].append(response_time)
@@ -1162,7 +1162,7 @@ class LogAnalysisEngine:
 
         # 3. Security threat escalation prediction
         security_events_by_hour = defaultdict(int)
-        unique_ips_by_hour = defaultdict(set)
+        unique_ips_by_hour = defaultdict(set[str])
 
         for entry in self.log_entries:
             # Check for security-related log patterns
@@ -1180,14 +1180,14 @@ class LogAnalysisEngine:
                     break
 
         if len(security_events_by_hour) > 0:
-            recent_security_activity = list(security_events_by_hour.values())[
+            recent_security_activity = list[Any](security_events_by_hour.values())[
                 -6:
             ]  # Last 6 hours
 
             if len(recent_security_activity) > 3 and sum(recent_security_activity) > 20:
                 total_recent_events = sum(recent_security_activity)
                 unique_ips_count = (
-                    len(set.union(*unique_ips_by_hour.values()))
+                    len(set[str].union(*unique_ips_by_hour.values()))
                     if unique_ips_by_hour
                     else 0
                 )
@@ -1556,7 +1556,7 @@ Examples:
 
     parser.add_argument(
         "--analysis",
-        help="Comma-separated list of analysis types: error_patterns, performance_bottlenecks, security_events, business_metrics, anomaly_detection, predictive_analysis",
+        help="Comma-separated list[Any] of analysis types: error_patterns, performance_bottlenecks, security_events, business_metrics, anomaly_detection, predictive_analysis",
     )
 
     parser.add_argument(

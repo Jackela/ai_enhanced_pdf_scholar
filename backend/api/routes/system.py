@@ -109,7 +109,7 @@ async def get_system_health(
 
 
 @router.get("/config", response_model=ConfigurationResponse)
-async def get_configuration(config: dict = Depends(get_api_config)) -> Any:
+async def get_configuration(config: dict[str, Any] = Depends(get_api_config)) -> Any:
     """Get system configuration."""
     try:
         # Feature availability
@@ -324,7 +324,7 @@ async def get_secrets_health() -> Any:
 
 @router.post("/secrets/validate", response_model=BaseResponse)
 async def validate_environment_secrets(
-    environment: str = "production", compliance_standards: list | None = None
+    environment: str = "production", compliance_standards: list[Any] | None = None
 ) -> Any:
     """Validate all secrets in an environment for compliance."""
     try:
@@ -808,7 +808,7 @@ async def performance_health_check() -> Any:
             "core_count": cpu_count,
             "frequency_mhz": cpu_freq.current if cpu_freq else None,
             "load_average": (
-                list(psutil.getloadavg()) if hasattr(psutil, "getloadavg") else None
+                list[Any](psutil.getloadavg()) if hasattr(psutil, "getloadavg") else None
             ),
             "context_switches": psutil.cpu_stats().ctx_switches,
             "interrupts": psutil.cpu_stats().interrupts,

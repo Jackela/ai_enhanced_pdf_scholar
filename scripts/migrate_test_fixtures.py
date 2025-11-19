@@ -28,8 +28,8 @@ class TestMigrationHelper:
 
     def scan_test_files(self) -> list[Path]:
         """Scan for test files that might need migration."""
-        test_files = list(self.test_dir.rglob("test_*.py"))
-        conftest_files = list(self.test_dir.rglob("conftest.py"))
+        test_files = list[Any](self.test_dir.rglob("test_*.py"))
+        conftest_files = list[Any](self.test_dir.rglob("conftest.py"))
 
         files_to_migrate = []
 
@@ -55,7 +55,7 @@ class TestMigrationHelper:
 
         return files_to_migrate
 
-    def suggest_migrations(self, file_path: Path) -> list[dict]:
+    def suggest_migrations(self, file_path: Path) -> list[dict[str, Any]]:
         """Suggest specific migrations for a file."""
         suggestions = []
 
@@ -171,7 +171,7 @@ class TestMigrationHelper:
                 "",
                 "# New:",
                 "def test_my_function(db_connection):  # Use fixture from conftest.py",
-                "    # db_connection is already set up and cleaned",
+                "    # db_connection is already set[str] up and cleaned",
                 "    pass",
                 "```",
                 "",

@@ -39,7 +39,7 @@ class AutonomousRepairSystem:
         print(log_entry)
         self.repair_log.append(log_entry)
 
-    def run_uat(self) -> tuple[float, dict]:
+    def run_uat(self) -> tuple[float, dict[str, Any]]:
         """Run UAT and return success rate and detailed results."""
         self.log("Running UAT to assess current state...")
 
@@ -76,7 +76,7 @@ class AutonomousRepairSystem:
             self.log(f"UAT failed with error: {e}", "ERROR")
             return 0.0, {"error": str(e)}
 
-    def analyze_failures(self, report: dict) -> list[dict]:
+    def analyze_failures(self, report: dict[str, Any]) -> list[dict[str, Any]]:
         """Analyze UAT report to identify root causes."""
         self.log("Analyzing failures to identify root causes...")
 
@@ -131,7 +131,7 @@ class AutonomousRepairSystem:
         self.log(f"Identified {len(root_causes)} root causes")
         return root_causes
 
-    def apply_fix(self, root_cause: dict) -> bool:
+    def apply_fix(self, root_cause: dict[str, Any]) -> bool:
         """Apply a fix for the identified root cause."""
         fix_type = root_cause['type']
 

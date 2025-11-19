@@ -222,7 +222,7 @@ class RAGRecoveryService:
 
                     # Basic structure validation for vector store
                     if file_path.name == "default__vector_store.json":
-                        if not isinstance(data, dict) or "embedding_dict" not in data:
+                        if not isinstance(data, dict[str, Any]) or "embedding_dict" not in data:
                             analysis_result["corrupted_files"].append(
                                 f"{file_path.name}: Invalid structure"
                             )
@@ -297,7 +297,7 @@ class RAGRecoveryService:
         self,
         vector_index: VectorIndexModel,
         force_rebuild: bool = False,
-        rebuild_callback: Callable | None = None,
+        rebuild_callback: Callable[..., Any] | None = None,
     ) -> dict[str, Any]:
         """
         Recover a corrupted vector index with comprehensive repair strategies.
@@ -407,7 +407,7 @@ class RAGRecoveryService:
                         vector_data = json.load(f)
 
                     if (
-                        isinstance(vector_data, dict)
+                        isinstance(vector_data, dict[str, Any])
                         and "embedding_dict" in vector_data
                     ):
                         # Vector store seems intact, try to regenerate missing metadata

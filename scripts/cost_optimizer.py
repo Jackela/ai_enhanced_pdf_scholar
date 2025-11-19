@@ -272,7 +272,7 @@ class AWSCostAnalyzer:
             logger.error(f"Error collecting metrics for instance {instance_id}: {e}")
             return None
 
-    def _get_instance_lifecycle(self, instance: dict) -> str:
+    def _get_instance_lifecycle(self, instance: dict[str, Any]) -> str:
         """Determine instance lifecycle (spot, on-demand, reserved)"""
         if instance.get("InstanceLifecycle") == "spot" or any(
             tag.get("Key") == "aws:ec2spot:fleet-request-id"

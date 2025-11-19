@@ -2,6 +2,8 @@
 Authentication Routes
 API endpoints for user authentication and management.
 """
+from typing import Any
+
 
 import logging
 import secrets
@@ -509,14 +511,14 @@ async def change_password(
     )
 
 
-@router.get("/sessions", response_model=list)
+@router.get("/sessions", response_model=list[Any])
 async def get_active_sessions(
     request: Request,
     user: UserModel = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> list:
+) -> list[Any]:
     """
-    Get list of active sessions (refresh tokens).
+    Get list[Any] of active sessions (refresh tokens).
 
     - Shows all active refresh tokens
     - Includes device information

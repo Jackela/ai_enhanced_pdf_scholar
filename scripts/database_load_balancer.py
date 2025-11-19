@@ -148,7 +148,7 @@ class RoutingDecision:
     routing_reason: str
     backup_servers: list[DatabaseServer]
     estimated_response_time_ms: float
-    routing_metadata: dict[str, Any] = field(default_factory=dict)
+    routing_metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 class DatabaseLoadBalancer:
@@ -199,8 +199,8 @@ class DatabaseLoadBalancer:
         self._circuit_breaker_state: dict[str, dict[str, Any]] = {}
 
         # Performance tracking
-        self._response_times: dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
-        self._error_rates: dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        self._response_times: dict[str, deque[Any]] = defaultdict(lambda: deque[Any](maxlen=100))
+        self._error_rates: dict[str, deque[Any]] = defaultdict(lambda: deque[Any](maxlen=100))
 
         # Thread safety
         self._routing_lock = threading.RLock()
@@ -475,15 +475,15 @@ class DatabaseLoadBalancer:
         """Clean up old performance metrics."""
         with self._metrics_lock:
             # Keep only recent metrics (last 1000 samples)
-            for server_id in list(self._response_times.keys()):
+            for server_id in list[Any](self._response_times.keys()):
                 if len(self._response_times[server_id]) > 1000:
                     # Keep only the most recent 500
-                    recent_times = list(self._response_times[server_id])[-500:]
-                    self._response_times[server_id] = deque(recent_times, maxlen=100)
+                    recent_times = list[Any](self._response_times[server_id])[-500:]
+                    self._response_times[server_id] = deque[Any](recent_times, maxlen=100)
 
                 if len(self._error_rates[server_id]) > 1000:
-                    recent_errors = list(self._error_rates[server_id])[-500:]
-                    self._error_rates[server_id] = deque(recent_errors, maxlen=100)
+                    recent_errors = list[Any](self._error_rates[server_id])[-500:]
+                    self._error_rates[server_id] = deque[Any](recent_errors, maxlen=100)
 
     def select_server(self, request: LoadBalancingRequest) -> RoutingDecision:
         """
@@ -566,7 +566,7 @@ class DatabaseLoadBalancer:
     def _get_available_servers(
         self, request: LoadBalancingRequest
     ) -> list[DatabaseServer]:
-        """Get list of available servers for a request."""
+        """Get list[Any] of available servers for a request."""
         available_servers = []
 
         for server in self.servers.values():
@@ -976,7 +976,7 @@ class DatabaseLoadBalancer:
 
     def shutdown(self) -> None:
         """Shutdown the load balancer and cleanup resources."""
-        self._shutdown_event.set()
+        self._shutdown_event.set[str]()
 
         # Wait for background threads
         if self._health_monitor_thread:

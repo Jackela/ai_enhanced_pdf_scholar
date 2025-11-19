@@ -83,12 +83,12 @@ class HealthCheck:
 
     name: str
     description: str
-    check_function: Callable
+    check_function: Callable[..., Any]
     interval_seconds: int
     timeout_seconds: int
     critical: bool = False
-    dependencies: list[str] = field(default_factory=list)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    dependencies: list[str] = field(default_factory=list[Any])
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 @dataclass
@@ -100,7 +100,7 @@ class HealthCheckResult:
     message: str
     duration_seconds: float
     timestamp: float
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
     error: str | None = None
 
 
@@ -143,7 +143,7 @@ class ProductionMonitoringService:
         self.alert_thresholds = self._get_alert_thresholds()
 
         # Background tasks
-        self._monitoring_tasks: list[asyncio.Task] = []
+        self._monitoring_tasks: list[asyncio.Task[None]] = []
 
         # Initialize default health checks
         self._register_default_health_checks()
@@ -245,7 +245,7 @@ class ProductionMonitoringService:
         self,
         name: str,
         description: str,
-        check_function: Callable,
+        check_function: Callable[..., Any],
         interval_seconds: int,
         timeout_seconds: int,
         critical: bool = False,

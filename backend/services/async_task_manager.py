@@ -74,9 +74,9 @@ class AsyncTask:
     task_id: str
     category: TaskCategory
     priority: TaskPriority
-    handler: Callable
+    handler: Callable[..., Any]
     args: tuple = field(default_factory=tuple)
-    kwargs: dict = field(default_factory=dict)
+    kwargs: dict[str, Any] = field(default_factory=dict[str, Any])
     created_at: datetime = field(default_factory=datetime.now)
     started_at: datetime | None = None
     completed_at: datetime | None = None
@@ -87,7 +87,7 @@ class AsyncTask:
     timeout_seconds: float | None = None
 
     # Async task tracking
-    asyncio_task: asyncio.Task | None = None
+    asyncio_task: asyncio.Task[None] | None = None
     cancellation_event: asyncio.Event = field(default_factory=asyncio.Event)
 
     @property
@@ -167,7 +167,7 @@ class AsyncTaskManager:
 
         # Task tracking
         self.active_tasks: dict[str, AsyncTask] = {}
-        self.task_queue: asyncio.PriorityQueue = asyncio.PriorityQueue(
+        self.task_queue: asyncio.PriorityQueue[Any] = asyncio.PriorityQueue[Any](
             maxsize=max_queue_size
         )
         self.completed_tasks: dict[str, AsyncTask] = {}
@@ -180,8 +180,8 @@ class AsyncTaskManager:
         )
 
         # Background processing
-        self._processor_task: asyncio.Task | None = None
-        self._cleanup_task: asyncio.Task | None = None
+        self._processor_task: asyncio.Task[None] | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._running = False
 
         # Statistics
@@ -207,7 +207,7 @@ class AsyncTaskManager:
         for task in self.active_tasks.values():
             if task.asyncio_task and not task.asyncio_task.done():
                 task.asyncio_task.cancel()
-                task.cancellation_event.set()
+                task.cancellation_event.set[str]()
 
         # Wait for processor tasks to complete
         if self._processor_task:
@@ -222,7 +222,7 @@ class AsyncTaskManager:
 
     async def submit_task(
         self,
-        handler: Callable,
+        handler: Callable[..., Any],
         category: TaskCategory = TaskCategory.RAG_QUERY,
         priority: TaskPriority = TaskPriority.NORMAL,
         memory_limit_mb: float | None = None,
@@ -274,7 +274,7 @@ class AsyncTaskManager:
             task = self.active_tasks[task_id]
             if task.asyncio_task and not task.asyncio_task.done():
                 task.asyncio_task.cancel()
-                task.cancellation_event.set()
+                task.cancellation_event.set[str]()
                 logger.info(f"Cancelled active task {task_id}")
                 return True
 
@@ -416,7 +416,7 @@ class AsyncTaskManager:
                     pending_task.cancel()
 
                 # Check what completed first
-                completed_task = list(done)[0]
+                completed_task = list[Any](done)[0]
                 if completed_task == timeout_task:
                     raise asyncio.TimeoutError(
                         f"Task {task.task_id} timed out after {task.timeout_seconds}s"

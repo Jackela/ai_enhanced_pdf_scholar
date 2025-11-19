@@ -67,13 +67,13 @@ class ClusterConfig:
     """Redis cluster configuration."""
 
     mode: ClusterMode = ClusterMode.CLUSTER
-    nodes: list[RedisNodeConfig] = field(default_factory=list)
+    nodes: list[RedisNodeConfig] = field(default_factory=list[Any])
     service_name: str = "mymaster"  # For Sentinel
-    sentinel_nodes: list[RedisNodeConfig] = field(default_factory=list)
+    sentinel_nodes: list[RedisNodeConfig] = field(default_factory=list[Any])
 
     # Connection settings
     max_connections_per_node: int = 100
-    connection_pool_kwargs: dict[str, Any] = field(default_factory=dict)
+    connection_pool_kwargs: dict[str, Any] = field(default_factory=dict[str, Any])
 
     # Cluster settings
     skip_full_coverage_check: bool = False
@@ -163,7 +163,7 @@ class RedisClusterManager:
         self._sentinel_client: Sentinel | None = None
         self._node_health: dict[str, NodeHealth] = {}
         self._is_monitoring = False
-        self._monitoring_task: asyncio.Task | None = None
+        self._monitoring_task: asyncio.Task[None] | None = None
 
         # Performance metrics
         self._metrics = {

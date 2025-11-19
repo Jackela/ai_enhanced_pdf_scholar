@@ -186,7 +186,7 @@ class ProductionSecretsIntegration:
         self.rotation_schedule: dict[
             str, float
         ] = {}  # secret_key -> next_rotation_time
-        self.rotation_in_progress: set = set()
+        self.rotation_in_progress: set[str] = set[str]()
 
         # Security monitoring
         self.access_tracking: dict[str, list[float]] = {}  # secret_key -> access_times
@@ -533,7 +533,7 @@ class ProductionSecretsIntegration:
             try:
                 current_time = time.time()
 
-                for secret_key, next_rotation_time in list(
+                for secret_key, next_rotation_time in list[Any](
                     self.rotation_schedule.items()
                 ):
                     if current_time >= next_rotation_time:
@@ -566,7 +566,7 @@ class ProductionSecretsIntegration:
 
                 # Clean old access records (keep last 24 hours)
                 cutoff_time = current_time - 86400
-                for secret_key in list(self.access_tracking.keys()):
+                for secret_key in list[Any](self.access_tracking.keys()):
                     self.access_tracking[secret_key] = [
                         access_time
                         for access_time in self.access_tracking[secret_key]

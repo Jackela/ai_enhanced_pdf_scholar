@@ -92,7 +92,7 @@ class RecoveryMetrics:
     cleanup_operations: int = 0
     last_failure_time: datetime | None = None
     last_success_time: datetime | None = None
-    error_types: dict[str, int] = field(default_factory=dict)
+    error_types: dict[str, int] = field(default_factory=dict[str, Any])
 
 
 class RetryMechanism:
@@ -102,7 +102,7 @@ class RetryMechanism:
         self.config = config
         self.metrics = RecoveryMetrics()
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Decorator for retry functionality."""
 
         @wraps(func)
@@ -111,7 +111,7 @@ class RetryMechanism:
 
         return wrapper
 
-    def _execute_with_retry(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
+    def _execute_with_retry(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute function with retry logic."""
         last_exception = None
         delay = self.config.initial_delay
@@ -184,7 +184,7 @@ class CircuitBreaker:
         self.metrics = RecoveryMetrics()
         self._lock = threading.Lock()
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Decorator for circuit breaker functionality."""
 
         @wraps(func)
@@ -193,7 +193,7 @@ class CircuitBreaker:
 
         return wrapper
 
-    def _execute_with_circuit_breaker(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
+    def _execute_with_circuit_breaker(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute function with circuit breaker protection."""
         with self._lock:
             if self.state == CircuitBreakerState.OPEN:
@@ -288,7 +288,7 @@ class ResourceCleanupManager:
     """Manages cleanup of resources with automatic tracking."""
 
     def __init__(self) -> None:
-        self.cleanup_handlers: list[Callable] = []
+        self.cleanup_handlers: list[Callable[..., Any]] = []
         self.cleanup_paths: list[Path] = []
         self.metrics = RecoveryMetrics()
         self._lock = threading.Lock()
@@ -305,7 +305,7 @@ class ResourceCleanupManager:
         finally:
             self.cleanup_all()
 
-    def add_cleanup_handler(self, handler: Callable, *args: Any, **kwargs: Any) -> None:
+    def add_cleanup_handler(self, handler: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         """Add a cleanup handler function."""
         with self._lock:
             self.cleanup_handlers.append(lambda: handler(*args, **kwargs))
@@ -386,10 +386,10 @@ class HealthChecker:
     """Health checking and system recovery verification."""
 
     def __init__(self) -> None:
-        self.checks: dict[str, Callable] = {}
+        self.checks: dict[str, Callable[..., Any]] = {}
         self.metrics = RecoveryMetrics()
 
-    def add_health_check(self, name: str, check_func: Callable) -> None:
+    def add_health_check(self, name: str, check_func: Callable[..., Any]) -> None:
         """Add a health check function."""
         self.checks[name] = check_func
 
@@ -432,9 +432,9 @@ class RecoveryOrchestrator:
 
     def with_recovery(
         self,
-        operation: Callable,
+        operation: Callable[..., Any],
         cleanup_paths: list[Union[str, Path]] | None = None,
-        cleanup_handlers: list[Callable] | None = None,
+        cleanup_handlers: list[Callable[..., Any]] | None = None,
         retry_config: RetryConfig | None = None,
         circuit_breaker_config: CircuitBreakerConfig | None = None,
     ) -> Any:

@@ -40,7 +40,7 @@ class EncryptionSetup:
         self.config_file = self.project_root / ".encryption_config.json"
         self.status = self._load_status()
 
-    def _load_status(self) -> dict:
+    def _load_status(self) -> dict[str, Any]:
         """Load current encryption status."""
         if self.config_file.exists():
             with open(self.config_file) as f:
@@ -315,7 +315,7 @@ server {{
                 return False
 
             # Count unencrypted files
-            pdf_files = list(doc_dir.glob("**/*.pdf"))
+            pdf_files = list[Any](doc_dir.glob("**/*.pdf"))
             unencrypted = [f for f in pdf_files if not Path(str(f) + ".enc").exists()]
 
             if unencrypted:

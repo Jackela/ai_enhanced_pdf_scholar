@@ -2,6 +2,8 @@
 Multi-Document RAG Repository Implementations
 Concrete implementations of multi-document repository interfaces.
 """
+from typing import Any
+
 
 import logging
 from datetime import datetime, timedelta
@@ -98,7 +100,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
 
                 row = cursor.fetchone()
                 if row:
-                    return MultiDocumentCollectionModel.from_database_row(dict(row))
+                    return MultiDocumentCollectionModel.from_database_row(dict[str, Any](row))
                 return None
         except Exception as e:
             logger.error(f"Failed to get collection {entity_id}: {e}")
@@ -123,7 +125,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    MultiDocumentCollectionModel.from_database_row(dict(row))
+                    MultiDocumentCollectionModel.from_database_row(dict[str, Any](row))
                     for row in rows
                 ]
         except Exception as e:
@@ -194,7 +196,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    MultiDocumentCollectionModel.from_database_row(dict(row))
+                    MultiDocumentCollectionModel.from_database_row(dict[str, Any](row))
                     for row in rows
                 ]
         except Exception as e:
@@ -216,7 +218,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
 
                 row = cursor.fetchone()
                 if row:
-                    return MultiDocumentCollectionModel.from_database_row(dict(row))
+                    return MultiDocumentCollectionModel.from_database_row(dict[str, Any](row))
                 return None
         except Exception as e:
             logger.error(f"Failed to find collection by name {name}: {e}")
@@ -241,7 +243,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    MultiDocumentCollectionModel.from_database_row(dict(row))
+                    MultiDocumentCollectionModel.from_database_row(dict[str, Any](row))
                     for row in rows
                 ]
         except Exception as e:
@@ -266,7 +268,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
                 collections = []
                 for row in rows:
                     collection = MultiDocumentCollectionModel.from_database_row(
-                        dict(row)
+                        dict[str, Any](row)
                     )
                     if document_id in collection.document_ids:
                         collections.append(collection)
@@ -369,7 +371,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
 
                 row = cursor.fetchone()
                 if row:
-                    return MultiDocumentIndexModel.from_database_row(dict(row))
+                    return MultiDocumentIndexModel.from_database_row(dict[str, Any](row))
                 return None
         except Exception as e:
             logger.error(f"Failed to get index {entity_id}: {e}")
@@ -395,7 +397,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    MultiDocumentIndexModel.from_database_row(dict(row)) for row in rows
+                    MultiDocumentIndexModel.from_database_row(dict[str, Any](row)) for row in rows
                 ]
         except Exception as e:
             logger.error(f"Failed to get indexes {entity_ids}: {e}")
@@ -464,7 +466,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
 
                 row = cursor.fetchone()
                 if row:
-                    return MultiDocumentIndexModel.from_database_row(dict(row))
+                    return MultiDocumentIndexModel.from_database_row(dict[str, Any](row))
                 return None
         except Exception as e:
             logger.error(f"Failed to get index for collection {collection_id}: {e}")
@@ -486,7 +488,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
 
                 row = cursor.fetchone()
                 if row:
-                    return MultiDocumentIndexModel.from_database_row(dict(row))
+                    return MultiDocumentIndexModel.from_database_row(dict[str, Any](row))
                 return None
         except Exception as e:
             logger.error(f"Failed to find index by hash {index_hash}: {e}")
@@ -509,7 +511,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    MultiDocumentIndexModel.from_database_row(dict(row)) for row in rows
+                    MultiDocumentIndexModel.from_database_row(dict[str, Any](row)) for row in rows
                 ]
         except Exception as e:
             logger.error(f"Failed to get orphaned indexes: {e}")
@@ -629,7 +631,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 row = cursor.fetchone()
                 if row:
-                    return CrossDocumentQueryModel.from_database_row(dict(row))
+                    return CrossDocumentQueryModel.from_database_row(dict[str, Any](row))
                 return None
         except Exception as e:
             logger.error(f"Failed to get query {entity_id}: {e}")
@@ -656,7 +658,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                    CrossDocumentQueryModel.from_database_row(dict[str, Any](row)) for row in rows
                 ]
         except Exception as e:
             logger.error(f"Failed to get queries {entity_ids}: {e}")
@@ -736,7 +738,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                    CrossDocumentQueryModel.from_database_row(dict[str, Any](row)) for row in rows
                 ]
         except Exception as e:
             logger.error(f"Failed to find queries for collection {collection_id}: {e}")
@@ -764,7 +766,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                    CrossDocumentQueryModel.from_database_row(dict[str, Any](row)) for row in rows
                 ]
         except Exception as e:
             logger.error(f"Failed to find queries for user {user_id}: {e}")
@@ -792,7 +794,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                    CrossDocumentQueryModel.from_database_row(dict[str, Any](row)) for row in rows
                 ]
         except Exception as e:
             logger.error(f"Failed to find queries by status {status}: {e}")
@@ -822,13 +824,13 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
 
                 rows = cursor.fetchall()
                 return [
-                    CrossDocumentQueryModel.from_database_row(dict(row)) for row in rows
+                    CrossDocumentQueryModel.from_database_row(dict[str, Any](row)) for row in rows
                 ]
         except Exception as e:
             logger.error(f"Failed to get recent queries: {e}")
             raise
 
-    def get_query_statistics(self) -> dict:
+    def get_query_statistics(self) -> dict[str, Any]:
         """Get query performance statistics."""
         try:
             with self.db.get_connection() as conn:
@@ -847,7 +849,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                 """
                 )
 
-                stats = dict(cursor.fetchone())
+                stats = dict[str, Any](cursor.fetchone())
                 return stats
         except Exception as e:
             logger.error(f"Failed to get query statistics: {e}")

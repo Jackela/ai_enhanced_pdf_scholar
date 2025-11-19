@@ -121,7 +121,7 @@ class PrometheusMetricsCollector:
                 result = self.prometheus.custom_query(query)
                 if result and len(result) > 0:
                     # Take the first result's value, handle different result formats
-                    if isinstance(result[0], dict) and "value" in result[0]:
+                    if isinstance(result[0], dict[str, Any]) and "value" in result[0]:
                         value = float(result[0]["value"][1])
                     else:
                         value = float(result[0])
@@ -153,7 +153,7 @@ class PrometheusMetricsCollector:
                 try:
                     result = self.prometheus.custom_query(query, time=current_time)
                     if result and len(result) > 0:
-                        if isinstance(result[0], dict) and "value" in result[0]:
+                        if isinstance(result[0], dict[str, Any]) and "value" in result[0]:
                             value = float(result[0]["value"][1])
                         else:
                             value = float(result[0])
@@ -692,7 +692,7 @@ class ScalingManager:
                 logger.error(f"Error in continuous loop: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute before retrying
 
-    def get_status(self) -> dict:
+    def get_status(self) -> dict[str, Any]:
         """Get current status and metrics"""
         recent_predictions = (
             self.predictions_history[-10:] if self.predictions_history else []

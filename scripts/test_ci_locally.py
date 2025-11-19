@@ -31,7 +31,7 @@ class LocalCITester:
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[{timestamp}] {level}: {message}")
 
-    def run_command(self, cmd: list, timeout: int = 60) -> dict:
+    def run_command(self, cmd: list[Any], timeout: int = 60) -> dict[str, Any]:
         """Run a command and return result."""
         try:
             result = subprocess.run(
@@ -106,12 +106,12 @@ class LocalCITester:
             self.log("❌ Workflows directory not found")
             return False
 
-        workflow_files = list(self.workflows_dir.glob("*.yml"))
+        workflow_files = list[Any](self.workflows_dir.glob("*.yml"))
         valid_count = 0
 
         for workflow_file in workflow_files:
             self.log(f"Checking {workflow_file.name}...")
-            result = self.run_command(["act", "--list", "-W", str(workflow_file)])
+            result = self.run_command(["act", "--list[Any]", "-W", str(workflow_file)])
 
             if result["success"]:
                 self.log(f"✅ {workflow_file.name} is valid")

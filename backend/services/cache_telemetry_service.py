@@ -40,7 +40,7 @@ class CacheOperation(str, Enum):
     """Cache operation types."""
 
     GET = "get"
-    SET = "set"
+    SET = "set[str]"
     DELETE = "delete"
     INVALIDATE = "invalidate"
     EVICT = "evict"
@@ -70,7 +70,7 @@ class CacheEvent:
     size_bytes: int
     latency_ms: float
     ttl_seconds: int | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 @dataclass
@@ -108,7 +108,7 @@ class CacheLayerMetrics:
     expired_entries: int = 0
 
     # Key pattern analysis
-    top_key_patterns: list[dict[str, Any]] = field(default_factory=list)
+    top_key_patterns: list[dict[str, Any]] = field(default_factory=list[Any])
 
     # Time-based metrics
     last_updated: datetime = field(default_factory=datetime.utcnow)
@@ -120,9 +120,9 @@ class CacheHealthStatus:
 
     overall_score: float  # 0-100
     status: str  # healthy, degraded, critical
-    issues: list[str] = field(default_factory=list)
-    recommendations: list[str] = field(default_factory=list)
-    layer_scores: dict[CacheLayer, float] = field(default_factory=dict)
+    issues: list[str] = field(default_factory=list[Any])
+    recommendations: list[str] = field(default_factory=list[Any])
+    layer_scores: dict[CacheLayer, float] = field(default_factory=dict[str, Any])
 
 
 @dataclass
@@ -159,18 +159,18 @@ class CacheTelemetryService:
         self.metrics_retention = timedelta(hours=metrics_retention_hours)
 
         # Event storage
-        self.events: deque[CacheEvent] = deque(maxlen=max_events)
+        self.events: deque[CacheEvent] = deque[Any](maxlen=max_events)
         self.layer_metrics: dict[CacheLayer, CacheLayerMetrics] = {}
 
         # Real-time tracking
-        self.latency_windows: dict[CacheLayer, deque] = defaultdict(
-            lambda: deque(maxlen=1000)
+        self.latency_windows: dict[CacheLayer, deque[Any]] = defaultdict(
+            lambda: deque[Any](maxlen=1000)
         )
-        self.throughput_windows: dict[CacheLayer, deque] = defaultdict(
-            lambda: deque(maxlen=100)
+        self.throughput_windows: dict[CacheLayer, deque[Any]] = defaultdict(
+            lambda: deque[Any](maxlen=100)
         )
-        self.size_windows: dict[CacheLayer, deque] = defaultdict(
-            lambda: deque(maxlen=1000)
+        self.size_windows: dict[CacheLayer, deque[Any]] = defaultdict(
+            lambda: deque[Any](maxlen=1000)
         )
 
         # Pattern analysis
@@ -260,11 +260,11 @@ class CacheTelemetryService:
         size_bytes: int,
         ttl_seconds: int | None = None,
     ) -> None:
-        """Record a cache set operation."""
+        """Record a cache set[str] operation."""
         self.record_cache_event(
             cache_layer=cache_layer,
             operation=CacheOperation.SET,
-            status=CacheStatus.HIT,  # Assuming successful set
+            status=CacheStatus.HIT,  # Assuming successful set[str]
             key=key,
             latency_ms=latency_ms,
             size_bytes=size_bytes,
@@ -691,7 +691,7 @@ class CacheTelemetryService:
                             "pattern": pattern,
                             "miss_rate": miss_rate,
                             "total_requests": total,
-                            "sample_keys": list(set(stats["keys"]))[:5],
+                            "sample_keys": list[Any](set[str](stats["keys"]))[:5],
                             "priority": "high" if miss_rate > 0.6 else "medium",
                         }
                     )
@@ -842,8 +842,8 @@ class CacheTelemetryService:
         # Get real-time statistics
         real_time_stats = {}
         for layer in CacheLayer:
-            latency_window = list(self.latency_windows[layer])
-            throughput_window = list(self.throughput_windows[layer])
+            latency_window = list[Any](self.latency_windows[layer])
+            throughput_window = list[Any](self.throughput_windows[layer])
 
             real_time_stats[layer.value] = {
                 "current_avg_latency_ms": mean(latency_window) if latency_window else 0,
@@ -882,7 +882,7 @@ class CacheTelemetryService:
         }
 
     def _calculate_trend_direction(self, values: list[float]) -> str:
-        """Calculate trend direction for a list of values."""
+        """Calculate trend direction for a list[Any] of values."""
         if len(values) < 5:
             return "stable"
 

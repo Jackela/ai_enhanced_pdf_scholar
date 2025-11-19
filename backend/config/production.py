@@ -36,7 +36,7 @@ class DatabasePoolConfig:
 
     # Read/write splitting configuration
     enable_read_write_split: bool = False
-    read_replica_urls: list[str] = field(default_factory=list)
+    read_replica_urls: list[str] = field(default_factory=list[Any])
     read_weight: float = 0.7  # 70% reads go to replicas
 
 
@@ -56,7 +56,7 @@ class CacheClusterConfig:
     # Failover and HA
     enable_sentinel: bool = False
     sentinel_service: str = "mymaster"
-    sentinel_nodes: list[str] = field(default_factory=list)
+    sentinel_nodes: list[str] = field(default_factory=list[Any])
 
     # Memory management
     max_memory: str = "2gb"
@@ -107,10 +107,10 @@ class SecurityHardeningConfig:
 
     # IP Filtering
     enable_ip_whitelist: bool = True
-    allowed_ip_ranges: list[str] = field(default_factory=list)
-    blocked_ip_ranges: list[str] = field(default_factory=list)
+    allowed_ip_ranges: list[str] = field(default_factory=list[Any])
+    blocked_ip_ranges: list[str] = field(default_factory=list[Any])
     enable_geoip_filtering: bool = False
-    allowed_countries: list[str] = field(default_factory=list)
+    allowed_countries: list[str] = field(default_factory=list[Any])
 
     # Request signing
     enable_request_signing: bool = True
@@ -129,7 +129,7 @@ class SecurityHardeningConfig:
 
     # CORS hardening
     strict_cors: bool = True
-    allowed_origins: list[str] = field(default_factory=list)
+    allowed_origins: list[str] = field(default_factory=list[Any])
     max_age: int = 86400
 
 

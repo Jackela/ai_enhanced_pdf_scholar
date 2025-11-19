@@ -542,7 +542,7 @@ class CitationService:
                 "earliest_document": earliest,
                 "latest_document": latest,
                 "date_coverage": f"{earliest} to {latest}",
-                "chronological_distribution": len(set(dates)),  # Unique dates
+                "chronological_distribution": len(set[str](dates)),  # Unique dates
             }
 
         except Exception as e:
@@ -718,9 +718,9 @@ class CitationService:
                 target_id = relation.target_document_id
 
                 if source_id not in adjacency:
-                    adjacency[source_id] = set()
+                    adjacency[source_id] = set[str]()
                 if target_id not in adjacency:
-                    adjacency[target_id] = set()
+                    adjacency[target_id] = set[str]()
 
                 adjacency[source_id].add(target_id)
                 adjacency[target_id].add(
@@ -728,7 +728,7 @@ class CitationService:
                 )  # Treat as undirected for clustering
 
             # Simple clustering algorithm (connected components)
-            visited = set()
+            visited = set[str]()
             clusters = []
 
             def dfs_cluster(node_id, current_cluster) -> None:
@@ -737,7 +737,7 @@ class CitationService:
                 visited.add(node_id)
                 current_cluster.append(node_id)
 
-                for neighbor in adjacency.get(node_id, set()):
+                for neighbor in adjacency.get(node_id, set[str]()):
                     if neighbor not in visited:
                         dfs_cluster(neighbor, current_cluster)
 
@@ -766,7 +766,7 @@ class CitationService:
             return []
 
     def _count_internal_connections(
-        self, cluster_docs: list[int], all_relations: list
+        self, cluster_docs: list[int], all_relations: list[Any]
     ) -> int:
         """
         Count internal connections within a cluster.
@@ -778,7 +778,7 @@ class CitationService:
         Returns:
             Number of internal connections
         """
-        cluster_set = set(cluster_docs)
+        cluster_set = set[str](cluster_docs)
         internal_count = 0
 
         for relation in all_relations:

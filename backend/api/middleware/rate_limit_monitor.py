@@ -77,13 +77,13 @@ class RateLimitMonitor:
         self.log_file = log_file
 
         # Event storage
-        self._events: deque = deque(maxlen=max_events)
+        self._events: deque[Any] = deque[Any](maxlen=max_events)
 
         # Real-time counters
         self._counters = defaultdict(int)
         self._ip_counters = defaultdict(int)
         self._endpoint_counters = defaultdict(int)
-        self._response_times = deque(maxlen=1000)
+        self._response_times = deque[Any](maxlen=1000)
 
         # Alerting state
         self._last_alert_time = {}
@@ -183,7 +183,7 @@ class RateLimitMonitor:
             return True
         return current_time - last_alert > self._alert_cooldown
 
-    def _trigger_alert(self, alert_type: str, context: dict) -> None:
+    def _trigger_alert(self, alert_type: str, context: dict[str, Any]) -> None:
         """Trigger a rate limiting alert."""
         logger.warning(f"Rate limiting alert [{alert_type}]: {context}")
 
@@ -227,7 +227,7 @@ class RateLimitMonitor:
             1 for e in recent_events if e.status_code not in [200, 429]
         )
 
-        unique_ips = len(set(e.client_ip for e in recent_events))
+        unique_ips = len(set[str](e.client_ip for e in recent_events))
 
         response_times = [e.response_time for e in recent_events]
         avg_response_time = (
@@ -269,7 +269,7 @@ class RateLimitMonitor:
             rate_limit_effectiveness=min(1.0, effectiveness),
         )
 
-    def get_ip_metrics(self, client_ip: str, window_minutes: int = 60) -> dict:
+    def get_ip_metrics(self, client_ip: str, window_minutes: int = 60) -> dict[str, Any]:
         """Get metrics for a specific IP address."""
         events = self._get_recent_events_for_ip(client_ip, window_minutes)
 
@@ -280,7 +280,7 @@ class RateLimitMonitor:
         rate_limited_requests = sum(1 for e in events if e.status_code == 429)
 
         # Endpoints accessed
-        endpoints = set(e.endpoint for e in events)
+        endpoints = set[str](e.endpoint for e in events)
 
         # Request pattern
         timestamps = [e.timestamp for e in events]
@@ -297,13 +297,13 @@ class RateLimitMonitor:
             "total_requests": total_requests,
             "rate_limited_requests": rate_limited_requests,
             "rate_limited_percentage": rate_limited_requests / total_requests * 100,
-            "endpoints_accessed": list(endpoints),
+            "endpoints_accessed": list[Any](endpoints),
             "request_rate_per_minute": request_rate,
             "first_seen": min(timestamps) if timestamps else None,
             "last_seen": max(timestamps) if timestamps else None,
         }
 
-    def get_endpoint_metrics(self, endpoint: str, window_minutes: int = 60) -> dict:
+    def get_endpoint_metrics(self, endpoint: str, window_minutes: int = 60) -> dict[str, Any]:
         """Get metrics for a specific endpoint."""
         events = self._get_recent_events_for_endpoint(endpoint, window_minutes)
 
@@ -312,7 +312,7 @@ class RateLimitMonitor:
 
         total_requests = len(events)
         rate_limited_requests = sum(1 for e in events if e.status_code == 429)
-        unique_ips = len(set(e.client_ip for e in events))
+        unique_ips = len(set[str](e.client_ip for e in events))
 
         # Response time stats
         response_times = [e.response_time for e in events]
@@ -362,13 +362,13 @@ class RateLimitMonitor:
 
     def get_suspicious_ips(
         self, window_minutes: int = 60, min_requests: int = 50
-    ) -> list[dict]:
-        """Get list of suspicious IP addresses based on request patterns."""
+    ) -> list[dict[str, Any]]:
+        """Get list[Any] of suspicious IP addresses based on request patterns."""
         cutoff_time = time.time() - (window_minutes * 60)
         recent_events = [e for e in self._events if e.timestamp >= cutoff_time]
 
         # Group by IP
-        ip_events = defaultdict(list)
+        ip_events = defaultdict(list[Any])
         for event in recent_events:
             ip_events[event.client_ip].append(event)
 
@@ -389,10 +389,10 @@ class RateLimitMonitor:
             request_rate = total_requests / max(time_span, 1) * 60  # per minute
 
             # Unique endpoints
-            endpoints = set(e.endpoint for e in events)
+            endpoints = set[str](e.endpoint for e in events)
 
             # User agents
-            user_agents = set(e.user_agent for e in events if e.user_agent)
+            user_agents = set[str](e.user_agent for e in events if e.user_agent)
 
             # Suspicion score (higher = more suspicious)
             score = 0
@@ -429,7 +429,7 @@ class RateLimitMonitor:
             cutoff_time = time.time() - (window_minutes * 60)
             events = [e for e in self._events if e.timestamp >= cutoff_time]
         else:
-            events = list(self._events)
+            events = list[Any](self._events)
 
         with open(filename, "w", encoding="utf-8") as f:
             for event in events:
@@ -441,7 +441,7 @@ class RateLimitMonitor:
         """Clear events older than specified hours."""
         cutoff_time = time.time() - (hours_to_keep * 3600)
 
-        # Convert deque to list, filter, then back to deque
+        # Convert deque[Any] to list[Any], filter, then back to deque[Any]
         filtered_events = [e for e in self._events if e.timestamp >= cutoff_time]
         self._events.clear()
         self._events.extend(filtered_events)

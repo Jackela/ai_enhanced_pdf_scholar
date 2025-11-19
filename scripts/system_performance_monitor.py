@@ -486,7 +486,7 @@ class SystemPerformanceMonitor:
                 ),
                 max_recovery_time_ms=max(recovery_times) if recovery_times else 0,
                 reliability_score=successful / iterations,
-                error_messages=list(set(errors)),  # Unique errors only
+                error_messages=list[Any](set[str](errors)),  # Unique errors only
             )
         )
 
@@ -542,7 +542,7 @@ class SystemPerformanceMonitor:
                 ),
                 max_recovery_time_ms=max(recovery_times) if recovery_times else 0,
                 reliability_score=successful / iterations,
-                error_messages=list(set(errors)),
+                error_messages=list[Any](set[str](errors)),
             )
         )
 
@@ -647,7 +647,7 @@ class SystemPerformanceMonitor:
 
     def generate_performance_summary(
         self,
-        resource_metrics: dict,
+        resource_metrics: dict[str, Any],
         db_metrics: DatabaseMetrics,
         memory_tests: list[MemoryLeakTest],
         load_tests: list[ConcurrentLoadTest],
@@ -810,7 +810,7 @@ class SystemPerformanceMonitor:
                 "Optimize memory usage, consider implementing data streaming for large files"
             )
             recommendations.append(
-                "Monitor memory usage in production and set up alerts"
+                "Monitor memory usage in production and set[str] up alerts"
             )
 
         # General recommendations

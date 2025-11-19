@@ -109,9 +109,9 @@ class ComprehensivePerformanceSuite:
                 return {"success": False, "error": result.stderr}
 
             # Find and load the results file
-            results_files = list(self.output_dir.glob("api_benchmark_results_*.json"))
+            results_files = list[Any](self.output_dir.glob("api_benchmark_results_*.json"))
             if not results_files:
-                results_files = list(Path.cwd().glob("api_benchmark_results_*.json"))
+                results_files = list[Any](Path.cwd().glob("api_benchmark_results_*.json"))
 
             if results_files:
                 with open(results_files[-1]) as f:
@@ -195,7 +195,7 @@ class ComprehensivePerformanceSuite:
             logger.error(f"PDF processing benchmarks failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def _extract_avg_metric(self, results: dict, category: str, metric: str) -> float:
+    def _extract_avg_metric(self, results: dict[str, Any], category: str, metric: str) -> float:
         """Extract average metric from benchmark results"""
         if category not in results:
             return 0.0
@@ -373,7 +373,7 @@ class ComprehensivePerformanceSuite:
             else:
                 print("\n📈 REGRESSION ANALYSIS:")
                 for category, analysis in regression.items():
-                    if analysis and isinstance(analysis, dict):
+                    if analysis and isinstance(analysis, dict[str, Any]):
                         status = analysis.get("overall_status", "Unknown")
                         print(f"   • {category.title()}: {status}")
 
@@ -399,10 +399,10 @@ class ComprehensivePerformanceSuite:
         if not failed_components:
             # Check for critical regressions
             critical_regressions = False
-            if regression and isinstance(regression, dict):
+            if regression and isinstance(regression, dict[str, Any]):
                 for analysis in regression.values():
                     if (
-                        isinstance(analysis, dict)
+                        isinstance(analysis, dict[str, Any])
                         and analysis.get("regressions", {}).get("critical", 0) > 0
                     ):
                         critical_regressions = True

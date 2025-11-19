@@ -26,7 +26,7 @@ security_logger = logging.getLogger("security.validation")
 class SecurityValidationMiddleware(BaseHTTPMiddleware):
     """Middleware to handle security validation errors."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         """Process request and handle security validation errors."""
 
         try:
@@ -46,7 +46,7 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
             error_response = SecurityValidationErrorResponse.from_security_error(e)
 
             return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict()
+                status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict[str, Any]()
             )
 
         except ValidationError as e:
@@ -57,7 +57,7 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
 
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=error_response.dict(),
+                content=error_response.dict[str, Any](),
             )
 
         except Exception as e:
@@ -67,7 +67,7 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
             raise
 
 
-def create_security_exception_handlers() -> dict[Any, Callable]:
+def create_security_exception_handlers() -> dict[Any, Callable[..., Any]]:
     """Create exception handlers for security validation errors."""
 
     async def security_validation_handler(
@@ -86,7 +86,7 @@ def create_security_exception_handlers() -> dict[Any, Callable]:
         error_response = SecurityValidationErrorResponse.from_security_error(exc)
 
         return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict()
+            status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict[str, Any]()
         )
 
     async def validation_error_handler(
@@ -99,7 +99,7 @@ def create_security_exception_handlers() -> dict[Any, Callable]:
 
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content=error_response.dict(),
+            content=error_response.dict[str, Any](),
         )
 
     return {

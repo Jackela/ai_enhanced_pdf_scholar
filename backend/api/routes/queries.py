@@ -12,6 +12,8 @@ References:
 - ADR-001: V2.0 Architecture Principles
 - ADR-003: API Versioning Strategy
 """
+from typing import Any
+
 
 import logging
 
@@ -54,7 +56,7 @@ class QueryResultData(BaseModel):
         None, description="Document IDs (for multi-doc)"
     )
     response: str = Field(..., description="Generated response")
-    sources: list[dict] = Field(default_factory=list, description="Source chunks used")
+    sources: list[dict[str, Any]] = Field(default_factory=list[Any], description="Source chunks used")
     cached: bool = Field(False, description="Whether result was cached")
     processing_time_ms: int = Field(..., description="Processing time in milliseconds")
     links: Links | None = Field(None, description="HATEOAS links", alias="_links")
@@ -298,10 +300,10 @@ async def query_multiple_documents(
 
         if len(documents) != len(request.document_ids):
             found_ids = {doc.id for doc in documents}
-            missing_ids = set(request.document_ids) - found_ids
+            missing_ids = set[str](request.document_ids) - found_ids
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Documents not found: {list(missing_ids)}",
+                detail=f"Documents not found: {list[Any](missing_ids)}",
             )
 
         # 2. Execute query (placeholder)
@@ -416,7 +418,7 @@ async def clear_document_cache(
 
 @router.get(
     "/cache/stats",
-    response_model=APIResponse[dict],
+    response_model=APIResponse[dict[str, Any]],
     summary="Get cache statistics",
     description="Get query cache statistics",
     responses={
@@ -426,7 +428,7 @@ async def clear_document_cache(
 )
 async def get_cache_stats(
     cache_manager: IRAGCacheManager = Depends(get_rag_cache_manager),
-) -> APIResponse[dict]:
+) -> APIResponse[dict[str, Any]]:
     """
     Get query cache statistics.
 

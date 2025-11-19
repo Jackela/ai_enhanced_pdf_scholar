@@ -162,7 +162,7 @@ class DocumentationGenerator:
 
     def _analyze_python_files(self) -> None:
         """Analyze Python files for API endpoints, models, services, etc."""
-        python_files = list(self.project_root.rglob("*.py"))
+        python_files = list[Any](self.project_root.rglob("*.py"))
 
         for py_file in python_files:
             if any(
@@ -592,7 +592,7 @@ class DocumentationGenerator:
 
     def _analyze_typescript_files(self) -> None:
         """Analyze TypeScript files for frontend types and components."""
-        ts_files = list(self.project_root.rglob("*.ts")) + list(
+        ts_files = list[Any](self.project_root.rglob("*.ts")) + list[Any](
             self.project_root.rglob("*.tsx")
         )
 
@@ -754,7 +754,7 @@ class DocumentationGenerator:
         return options
 
     def _flatten_config_dict(
-        self, config_dict: dict, prefix: str = ""
+        self, config_dict: dict[str, Any], prefix: str = ""
     ) -> list[dict[str, Any]]:
         """Flatten nested configuration dictionary."""
         options = []
@@ -762,7 +762,7 @@ class DocumentationGenerator:
         for key, value in config_dict.items():
             full_key = f"{prefix}.{key}" if prefix else key
 
-            if isinstance(value, dict):
+            if isinstance(value, dict[str, Any]):
                 options.extend(self._flatten_config_dict(value, full_key))
             else:
                 options.append(
@@ -784,8 +784,8 @@ class DocumentationGenerator:
 
     def _collect_code_metrics(self) -> None:
         """Collect basic code metrics."""
-        python_files = list(self.project_root.rglob("*.py"))
-        ts_files = list(self.project_root.rglob("*.ts")) + list(
+        python_files = list[Any](self.project_root.rglob("*.py"))
+        ts_files = list[Any](self.project_root.rglob("*.ts")) + list[Any](
             self.project_root.rglob("*.tsx")
         )
 
@@ -852,8 +852,8 @@ class DocumentationGenerator:
 
     def _collect_performance_metrics(self) -> None:
         """Collect performance metrics from benchmark files."""
-        performance_files = list(self.project_root.rglob("*performance*.json"))
-        benchmark_files = list(self.project_root.rglob("*benchmark*.json"))
+        performance_files = list[Any](self.project_root.rglob("*performance*.json"))
+        benchmark_files = list[Any](self.project_root.rglob("*benchmark*.json"))
 
         performance_data = []
 
@@ -1849,7 +1849,7 @@ Version: {{ metadata.version }}
         <tr>
             <td style="padding: 10px; border: 1px solid #dee2e6;">{{ filename }}</td>
             <td style="padding: 10px; text-align: center; border: 1px solid #dee2e6;">
-                {% set coverage_pct = (file_data.summary.covered_lines / file_data.summary.num_statements * 100) if file_data.summary.num_statements > 0 else 0 %}
+                {% set[str] coverage_pct = (file_data.summary.covered_lines / file_data.summary.num_statements * 100) if file_data.summary.num_statements > 0 else 0 %}
                 <span style="color: {% if coverage_pct >= 80 %}#28a745{% elif coverage_pct >= 60 %}#ffc107{% else %}#dc3545{% endif %};">
                     {{ "%.1f"|format(coverage_pct) }}%
                 </span>

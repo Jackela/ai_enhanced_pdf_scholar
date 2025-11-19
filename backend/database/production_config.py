@@ -61,7 +61,7 @@ class DatabasePerformanceConfig:
 
     # Read/write splitting
     enable_read_write_split: bool = False
-    read_replica_urls: list[str] = field(default_factory=list)
+    read_replica_urls: list[str] = field(default_factory=list[Any])
     read_weight: float = 0.7  # 70% reads go to replicas
 
     # Monitoring
@@ -81,7 +81,7 @@ class DatabaseConnectionStats:
     slow_queries: int = 0
     total_queries: int = 0
     avg_query_time: float = 0.0
-    connection_errors: list[str] = field(default_factory=list)
+    connection_errors: list[str] = field(default_factory=list[Any])
 
 
 class ProductionDatabaseManager:

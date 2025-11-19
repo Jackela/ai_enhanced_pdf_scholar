@@ -39,7 +39,7 @@ class MemoryMonitor:
         self.samples.append((time.time(), current, label))
         return current
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get memory statistics."""
         current = self.get_current_memory()
         return {
@@ -57,7 +57,7 @@ class MockWebSocketManager:
     def __init__(self) -> None:
         self.progress_updates = []
 
-    async def send_upload_progress(self, client_id: str, progress_data: dict) -> None:
+    async def send_upload_progress(self, client_id: str, progress_data: dict[str, Any]) -> None:
         self.progress_updates.append((time.time(), progress_data))
 
     async def join_upload_room(self, client_id: str, session_id: str) -> None:
@@ -90,7 +90,7 @@ def create_test_file(size_mb: int, filename: str) -> Path:
 
 async def benchmark_traditional_upload(
     file_path: Path, memory_monitor: MemoryMonitor
-) -> dict:
+) -> dict[str, Any]:
     """Benchmark traditional upload (loading entire file into memory)."""
     print("\n=== Traditional Upload Benchmark ===")
 
@@ -137,7 +137,7 @@ async def benchmark_traditional_upload(
 
 async def benchmark_streaming_upload(
     file_path: Path, memory_monitor: MemoryMonitor
-) -> dict:
+) -> dict[str, Any]:
     """Benchmark streaming upload with chunked processing."""
     print("\n=== Streaming Upload Benchmark ===")
 
@@ -245,7 +245,7 @@ async def benchmark_streaming_upload(
     return stats
 
 
-def print_comparison(traditional_stats: dict, streaming_stats: dict) -> None:
+def print_comparison(traditional_stats: dict[str, Any], streaming_stats: dict[str, Any]) -> None:
     """Print comparison between traditional and streaming methods."""
     print(f"\n{'='*60}")
     print("PERFORMANCE COMPARISON")

@@ -39,7 +39,7 @@ class CacheOperationResult:
     operation_time_ms: float = 0.0
     hit: bool = False
     source: str = ""
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 @dataclass
@@ -154,7 +154,7 @@ class IntegratedCacheManager:
 
         # Operational state
         self._initialized = False
-        self._background_tasks: set[asyncio.Task] = set()
+        self._background_tasks: set[asyncio.Task[None]] = set[str]()
 
         logger.info("Integrated Cache Manager created")
 
@@ -171,7 +171,7 @@ class IntegratedCacheManager:
     ) -> bool:
         if not self.l1_cache:
             return False
-        self.l1_cache.set(prefixed_key, value, ttl_seconds=ttl_seconds)
+        self.l1_cache.set[str](prefixed_key, value, ttl_seconds=ttl_seconds)
         logger.debug("Successfully wrote key %s to L1 cache", prefixed_key)
         return True
 
@@ -180,7 +180,7 @@ class IntegratedCacheManager:
     ) -> bool:
         if not self.l2_cache:
             return False
-        success = await self.l2_cache.set(prefixed_key, value, ttl_seconds)
+        success = await self.l2_cache.set[str](prefixed_key, value, ttl_seconds)
         if success:
             logger.debug("Successfully wrote key %s to L2 cache", prefixed_key)
         return success
@@ -357,7 +357,7 @@ class IntegratedCacheManager:
             return None
 
         if use_l1 and self.l1_cache:
-            self.l1_cache.set(prefixed_key, value)
+            self.l1_cache.set[str](prefixed_key, value)
 
         return await self._handle_cache_hit(
             value=value,
@@ -770,7 +770,7 @@ class IntegratedCacheManager:
                 ]
             )
 
-            results.update(dict(zip(batch_keys, batch_results, strict=False)))
+            results.update(dict[str, Any](zip(batch_keys, batch_results, strict=False)))
 
         return results
 
@@ -786,14 +786,14 @@ class IntegratedCacheManager:
         results = {}
 
         # Process in batches
-        items = list(data.items())
+        items = list[Any](data.items())
         batch_size = self.config.l2_cache.batch_size if self.l2_cache else 50
 
         for i in range(0, len(items), batch_size):
             batch_items = items[i : i + batch_size]
             batch_results = await asyncio.gather(
                 *[
-                    self.set(
+                    self.set[str](
                         key, value, ttl_seconds, write_to_l1, write_to_l2, write_to_l3
                     )
                     for key, value in batch_items
@@ -801,7 +801,7 @@ class IntegratedCacheManager:
             )
 
             results.update(
-                dict(zip([key for key, _ in batch_items], batch_results, strict=False))
+                dict[str, Any](zip([key for key, _ in batch_items], batch_results, strict=False))
             )
 
         return results
@@ -1007,23 +1007,23 @@ class IntegratedCacheManager:
             # Update Prometheus metrics
             if self.metrics:
                 # Cache hit rates
-                self.metrics.cache_hit_rate.labels(cache_level="l1").set(
+                self.metrics.cache_hit_rate.labels(cache_level="l1").set[str](
                     (stats.l1_hits / (stats.l1_hits + stats.l1_misses) * 100)
                     if (stats.l1_hits + stats.l1_misses) > 0
                     else 0
                 )
-                self.metrics.cache_hit_rate.labels(cache_level="l2").set(
+                self.metrics.cache_hit_rate.labels(cache_level="l2").set[str](
                     (stats.l2_hits / (stats.l2_hits + stats.l2_misses) * 100)
                     if (stats.l2_hits + stats.l2_misses) > 0
                     else 0
                 )
-                self.metrics.cache_hit_rate.labels(cache_level="overall").set(
+                self.metrics.cache_hit_rate.labels(cache_level="overall").set[str](
                     stats.calculate_hit_rate()
                 )
 
                 # Cache sizes
                 if self.l1_cache:
-                    self.metrics.cache_size_bytes.labels(cache_level="l1").set(
+                    self.metrics.cache_size_bytes.labels(cache_level="l1").set[str](
                         stats.l1_size_bytes
                     )
 
@@ -1031,7 +1031,7 @@ class IntegratedCacheManager:
                 if self.response_times:
                     recent_times = self.response_times[-100:]  # Last 100 operations
                     avg_time = sum(recent_times) / len(recent_times)
-                    self.metrics.cache_response_time.labels(cache_level="overall").set(
+                    self.metrics.cache_response_time.labels(cache_level="overall").set[str](
                         avg_time / 1000
                     )
 

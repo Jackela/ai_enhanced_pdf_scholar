@@ -198,16 +198,16 @@ class CacheLevelWrapper:
 
             # L1 Memory Cache
             if isinstance(self.cache, L1MemoryCache):
-                success = self.cache.set(key, value, ttl_seconds=ttl_seconds)
+                success = self.cache.set[str](key, value, ttl_seconds=ttl_seconds)
 
             # L2 Redis Cache
             elif isinstance(self.cache, L2RedisCache):
-                success = await self.cache.set(key, value, ttl_seconds=ttl_seconds)
+                success = await self.cache.set[str](key, value, ttl_seconds=ttl_seconds)
 
             # L3 CDN Cache
             elif isinstance(self.cache, L3CDNCache):
                 # Convert value to bytes for CDN
-                if isinstance(value, (dict, list)):
+                if isinstance(value, (dict[str, Any], list[Any])):
                     content_data = json.dumps(value).encode()
                     content_type = ContentType.API_RESPONSES
                 else:
@@ -297,7 +297,7 @@ class CacheLevelWrapper:
         try:
             data_str = (
                 json.dumps(value, sort_keys=True)
-                if isinstance(value, (dict, list))
+                if isinstance(value, (dict[str, Any], list[Any]))
                 else str(value)
             )
             return hashlib.sha256(data_str.encode()).hexdigest()
@@ -336,9 +336,9 @@ class CacheCoherencyManager:
             self.cache_levels["L3"] = CacheLevelWrapper(l3_cache, "L3", self)
 
         # Coherency tracking
-        self.entry_versions: dict[str, dict[str, CacheEntryVersion]] = defaultdict(dict)
-        self.coherency_events: deque = deque(maxlen=10000)
-        self.invalidation_queue: deque = deque()
+        self.entry_versions: dict[str, dict[str, CacheEntryVersion]] = defaultdict(dict[str, Any])
+        self.coherency_events: deque[Any] = deque[Any](maxlen=10000)
+        self.invalidation_queue: deque[Any] = deque[Any]()
 
         # Statistics
         self.stats = {
@@ -351,7 +351,7 @@ class CacheCoherencyManager:
         }
 
         # Background tasks
-        self.background_tasks: list[asyncio.Task] = []
+        self.background_tasks: list[asyncio.Task[None]] = []
         self.is_running = False
 
         logger.info(
@@ -488,7 +488,7 @@ class CacheCoherencyManager:
         # Write to all cache levels synchronously
         for level_name, level in self.cache_levels.items():
             try:
-                if await level.set(key, value, ttl_seconds, version):
+                if await level.set[str](key, value, ttl_seconds, version):
                     success_count += 1
                     self.entry_versions[key][level_name] = version
             except Exception as e:
@@ -506,7 +506,7 @@ class CacheCoherencyManager:
         # Write to L1 (fastest) immediately
         l1_success = False
         if "L1" in self.cache_levels:
-            l1_success = await self.cache_levels["L1"].set(
+            l1_success = await self.cache_levels["L1"].set[str](
                 key, value, ttl_seconds, version
             )
             if l1_success:
@@ -517,7 +517,7 @@ class CacheCoherencyManager:
             if level_name in self.cache_levels:
                 self.invalidation_queue.append(
                     {
-                        "operation": "set",
+                        "operation": "set[str]",
                         "key": key,
                         "value": value,
                         "ttl_seconds": ttl_seconds,
@@ -539,7 +539,7 @@ class CacheCoherencyManager:
         primary_level = "L1" if "L1" in self.cache_levels else "L2"
 
         if primary_level in self.cache_levels:
-            success = await self.cache_levels[primary_level].set(
+            success = await self.cache_levels[primary_level].set[str](
                 key, value, ttl_seconds, version
             )
 
@@ -605,7 +605,7 @@ class CacheCoherencyManager:
     ) -> bool:
         """Safely write to cache level with error handling."""
         try:
-            return await level.set(key, value, ttl_seconds, version)
+            return await level.set[str](key, value, ttl_seconds, version)
         except Exception as e:
             logger.error(f"Error writing to level {level.level_name}: {e}")
             return False
@@ -638,7 +638,7 @@ class CacheCoherencyManager:
                         continue  # Don't promote older version
 
                 # Promote
-                await level.set(key, value, ttl_seconds=None, version=version)
+                await level.set[str](key, value, ttl_seconds=None, version=version)
                 self.entry_versions[key][target_level] = version
 
                 logger.debug(
@@ -685,12 +685,12 @@ class CacheCoherencyManager:
             checksums = [v["checksum"] for v in versions.values()]
 
             # Version conflicts
-            if len(set(version_values)) > 1:
+            if len(set[str](version_values)) > 1:
                 coherency_info["consistent"] = False
                 coherency_info["conflicts"].append("version_mismatch")
 
             # Data conflicts
-            if len(set(checksums)) > 1:
+            if len(set[str](checksums)) > 1:
                 coherency_info["consistent"] = False
                 coherency_info["conflicts"].append("data_mismatch")
 
@@ -719,8 +719,8 @@ class CacheCoherencyManager:
         recommendations.append(f"Sync all levels to version from {latest_level}")
 
         # Check for missing levels
-        expected_levels = set(self.cache_levels.keys())
-        present_levels = set(versions.keys())
+        expected_levels = set[str](self.cache_levels.keys())
+        present_levels = set[str](versions.keys())
         missing_levels = expected_levels - present_levels
 
         if missing_levels:
@@ -790,7 +790,7 @@ class CacheCoherencyManager:
         """Sync all cache levels to a specific version."""
         for level_name, level in self.cache_levels.items():
             try:
-                await level.set(key, value, ttl_seconds=None, version=version)
+                await level.set[str](key, value, ttl_seconds=None, version=version)
                 self.entry_versions[key][level_name] = version
             except Exception as e:
                 logger.error(f"Error syncing level {level_name}: {e}")
@@ -850,12 +850,12 @@ class CacheCoherencyManager:
                 # Execute batch operations
                 for operation in batch:
                     try:
-                        if operation["operation"] == "set":
+                        if operation["operation"] == "set[str]":
                             level_name = operation["level_name"]
                             level = self.cache_levels.get(level_name)
 
                             if level:
-                                await level.set(
+                                await level.set[str](
                                     operation["key"],
                                     operation["value"],
                                     operation["ttl_seconds"],
@@ -885,7 +885,7 @@ class CacheCoherencyManager:
                 await asyncio.sleep(self.config.coherency_check_interval_seconds)
 
                 # Check coherency for a sample of keys
-                keys_to_check = list(self.entry_versions.keys())[
+                keys_to_check = list[Any](self.entry_versions.keys())[
                     :100
                 ]  # Sample of 100 keys
 
@@ -931,7 +931,7 @@ class CacheCoherencyManager:
                 expired_keys = []
 
                 for key, levels in self.entry_versions.items():
-                    for level_name, version in list(levels.items()):
+                    for level_name, version in list[Any](levels.items()):
                         # Remove versions older than 24 hours
                         if (now - version.timestamp).total_seconds() > 86400:
                             expired_keys.append((key, level_name))
@@ -1038,7 +1038,7 @@ class CacheCoherencyManager:
         try:
             data_str = (
                 json.dumps(value, sort_keys=True)
-                if isinstance(value, (dict, list))
+                if isinstance(value, (dict[str, Any], list[Any]))
                 else str(value)
             )
             return hashlib.sha256(data_str.encode()).hexdigest()
@@ -1084,8 +1084,8 @@ if __name__ == "__main__":
 
         async with coherency_manager:
             # Set values with coherency
-            await coherency_manager.set("user:123", {"name": "John", "age": 30})
-            await coherency_manager.set(
+            await coherency_manager.set[str]("user:123", {"name": "John", "age": 30})
+            await coherency_manager.set[str](
                 "document:456", {"title": "Test Doc", "size": 1024}
             )
 
