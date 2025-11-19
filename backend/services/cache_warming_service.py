@@ -385,7 +385,7 @@ class CacheWarmingService:
 
     async def _analyze_access_patterns(self) -> dict[str, float]:
         """Analyze access patterns to predict future cache needs."""
-        predictions = {}
+        predictions: dict[str, Any] = {}
 
         if not self.smart_cache:
             return predictions
@@ -438,7 +438,7 @@ class CacheWarmingService:
         current_hour = current_time.hour
 
         # Check if current hour is common for this key
-        hour_counts = defaultdict(int)
+        hour_counts: Any = defaultdict(int)
         for hour in hours:
             hour_counts[hour] += 1
 
@@ -456,7 +456,7 @@ class CacheWarmingService:
                 days = [t.weekday() for t in profile.access_times]
                 current_day = current_time.weekday()
 
-                day_counts = defaultdict(int)
+                day_counts: Any = defaultdict(int)
                 for day in days:
                     day_counts[day] += 1
 
@@ -477,7 +477,7 @@ class CacheWarmingService:
             return
 
         # Group keys by access patterns
-        pattern_groups = defaultdict(list[Any])
+        pattern_groups: Any = defaultdict(list[Any])
         for key, profile in self.smart_cache.key_profiles.items():
             if not self.redis_cache.exists(key):
                 pattern_groups[profile.access_pattern].append((key, profile))
@@ -556,7 +556,7 @@ class CacheWarmingService:
 
     async def _find_related_keys(self, key: str) -> list[str]:
         """Find keys related to the given key."""
-        related_keys = []
+        related_keys: list[Any] = []
 
         if not self.smart_cache:
             return related_keys

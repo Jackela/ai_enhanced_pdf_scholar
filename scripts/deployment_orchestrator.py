@@ -140,7 +140,7 @@ class DeploymentResult:
 class DeploymentOrchestrator:
     """Master deployment orchestrator"""
 
-    def __init__(self, work_dir: Path = None) -> None:
+    def __init__(self, work_dir: Path | None = None) -> None:
         self.work_dir = work_dir or Path.cwd()
         self.deployments: dict[str, DeploymentResult] = {}
         self.github_token = os.getenv("GITHUB_TOKEN")
@@ -414,7 +414,7 @@ class DeploymentOrchestrator:
 
         return deployments
 
-    def save_deployment_history(self, file_path: Path = None) -> None:
+    def save_deployment_history(self, file_path: Path | None = None) -> None:
         """Save deployment history to file"""
         if file_path is None:
             file_path = self.work_dir / "deployment_history.json"
@@ -429,7 +429,7 @@ class DeploymentOrchestrator:
 
         logger.info(f"📊 Deployment history saved to {file_path}")
 
-    def load_deployment_history(self, file_path: Path = None) -> None:
+    def load_deployment_history(self, file_path: Path | None = None) -> None:
         """Load deployment history from file"""
         if file_path is None:
             file_path = self.work_dir / "deployment_history.json"

@@ -35,7 +35,7 @@ class ProductionReadinessCertificationGenerator:
     def __init__(self) -> None:
         """Initialize certification generator."""
         self.certification_criteria = self._define_certification_criteria()
-        self.test_results = {}
+        self.test_results: dict[str, Any] = {}
         self.certification_score = 0.0
         self.certification_level = "NOT_READY"
 
@@ -503,7 +503,7 @@ class ProductionReadinessCertificationGenerator:
         # Calculate risk levels
         high_risks = []
         medium_risks = []
-        low_risks = []
+        low_risks: list[Any] = []
 
         for criterion in self.certification_criteria:
             score = scores.get(criterion.name, 0.0)
@@ -742,7 +742,7 @@ class ProductionReadinessCertificationGenerator:
         }
 
     def save_certification_report(
-        self, report: dict[str, Any], filename: str = None
+        self, report: dict[str, Any], filename: str | None = None
     ) -> str:
         """Save certification report to file."""
         if not filename:

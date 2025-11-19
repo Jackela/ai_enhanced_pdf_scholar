@@ -105,7 +105,7 @@ class MaintenanceConfig:
 class SystemMaintenanceEngine:
     """Main maintenance automation engine."""
 
-    def __init__(self, config: MaintenanceConfig = None) -> None:
+    def __init__(self, config: MaintenanceConfig | None = None) -> None:
         self.config = config or MaintenanceConfig()
         self.tasks_completed: list[MaintenanceTask] = []
         self.start_time = datetime.now()

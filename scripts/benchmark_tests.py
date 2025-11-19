@@ -21,7 +21,7 @@ class TestBenchmark:
 
     def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
-        self.results = {}
+        self.results: dict[str, Any] = {}
 
     def run_benchmark_suite(self) -> dict[str, Any]:
         """Run complete benchmark suite and return results."""

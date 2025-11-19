@@ -108,7 +108,7 @@ class DocumentationQualityChecker:
         self.thresholds = {"excellent": 0.9, "good": 0.75, "fair": 0.6, "poor": 0.4}
 
         # Word lists for analysis
-        self.technical_terms = set()
+        self.technical_terms: set[Any] = set()
         self.load_technical_terms()
 
         # Readability parameters
@@ -455,7 +455,7 @@ class DocumentationQualityChecker:
         headers = re.findall(r"^(#{1,6})\s+(.+)$", content, re.MULTILINE)
         if headers:
             # Check for consistent header formatting
-            header_styles = Counter()
+            header_styles: Any = Counter()
             for level, text in headers:
                 # Check title case consistency
                 is_title_case = text.strip().istitle()

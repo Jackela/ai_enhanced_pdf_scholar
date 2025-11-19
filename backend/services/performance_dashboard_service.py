@@ -211,7 +211,7 @@ class ConnectionManager:
         self.connection_metadata: dict[WebSocket, dict[str, Any]] = {}
 
     async def connect(
-        self, websocket: WebSocket, client_info: dict[str, Any] = None
+        self, websocket: WebSocket, client_info: dict[str, Any] | None = None
     ) -> None:
         """Accept a WebSocket connection."""
         await websocket.accept()

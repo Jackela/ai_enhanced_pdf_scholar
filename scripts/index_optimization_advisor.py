@@ -442,7 +442,7 @@ class IndexOptimizationAdvisor:
         recommendations = []
 
         # Find column combinations that are frequently used together
-        column_pairs = defaultdict(int)
+        column_pairs: Any = defaultdict(int)
 
         # This is simplified - in practice, you'd analyze actual query patterns
         # For now, we'll look at JOIN patterns and high-usage columns

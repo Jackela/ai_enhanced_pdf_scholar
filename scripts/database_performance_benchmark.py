@@ -458,7 +458,7 @@ class DatabasePerformanceBenchmark:
             logger.warning(f"Error measuring current performance: {e}")
 
         # Compare with baselines
-        regression_results = {
+        regression_results: Any = {
             "baseline_comparison": {},
             "regressions_detected": [],
             "improvements_detected": [],

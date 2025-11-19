@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import fitz  # type: ignore
+    import fitz
 except ImportError:  # pragma: no cover - optional dependency
-    fitz = None  # type: ignore
+    fitz = None
 
 logger = logging.getLogger(__name__)
 

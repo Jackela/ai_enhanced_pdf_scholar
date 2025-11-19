@@ -63,11 +63,11 @@ class CustomMetricsCollector:
         self._init_prometheus_metrics()
 
         # Tracking variables
-        self.request_times = []
-        self.rag_query_times = []
-        self.document_processing_queue = []
+        self.request_times: list[Any] = []
+        self.rag_query_times: list[Any] = []
+        self.document_processing_queue: list[Any] = []
         self.error_counts = {"last_hour": 0, "last_day": 0}
-        self.user_sessions = {}
+        self.user_sessions: dict[str, Any] = {}
         self.cache_stats = {"hits": 0, "misses": 0, "total": 0}
 
         # Configuration

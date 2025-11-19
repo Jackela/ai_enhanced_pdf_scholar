@@ -26,9 +26,9 @@ try:
     SKLEARN_AVAILABLE = True
     SKLEARN_IMPORT_ERROR: Exception | None = None
 except Exception as import_error:  # pragma: no cover - optional dependency
-    KMeans = None  # type: ignore[assignment]
-    RandomForestRegressor = None  # type: ignore[assignment]
-    StandardScaler = None  # type: ignore[assignment]
+    KMeans = None
+    RandomForestRegressor = None
+    StandardScaler = None
     SKLEARN_AVAILABLE = False
     SKLEARN_IMPORT_ERROR = import_error
 
@@ -852,7 +852,7 @@ class SmartCacheManager:
         hit_rate = hits / len(recent_accesses) if recent_accesses else 0
 
         # Pattern distribution
-        pattern_counts = defaultdict(int)
+        pattern_counts: Any = defaultdict(int)
         for profile in self.key_profiles.values():
             pattern_counts[profile.access_pattern] += 1
 
@@ -899,7 +899,7 @@ class SmartCacheManager:
         )
 
         # Access pattern distribution
-        pattern_distribution = defaultdict(int)
+        pattern_distribution: Any = defaultdict(int)
         for profile in self.key_profiles.values():
             pattern_distribution[profile.access_pattern.value] += 1
 

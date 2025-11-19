@@ -40,7 +40,7 @@ class APIDocumentationSync:
         }
 
         # Tracked changes
-        self.changes = {
+        self.changes: Any = {
             "new_endpoints": [],
             "modified_endpoints": [],
             "deprecated_endpoints": [],
@@ -368,7 +368,7 @@ class APIDocumentationSync:
         )
 
         # Group endpoints by path prefix
-        grouped_endpoints = {}
+        grouped_endpoints: dict[str, Any] = {}
         for endpoint_key, endpoint in endpoints.items():
             path = endpoint["path"]
             prefix = (

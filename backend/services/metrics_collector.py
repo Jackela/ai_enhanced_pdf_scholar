@@ -26,7 +26,9 @@ class EnhancedMetricsCollector:
     Extends the base MetricsService with business-specific monitoring.
     """
 
-    def __init__(self, db_path: str = None, redis_url: str = None) -> None:
+    def __init__(
+        self, db_path: str | None = None, redis_url: str | None = None
+    ) -> None:
         """Initialize enhanced metrics collector."""
         self.db_path = db_path or os.getenv("DATABASE_URL", "data/library.db")
         self.redis_url = redis_url or os.getenv("REDIS_URL")
@@ -415,7 +417,7 @@ class EnhancedMetricsCollector:
         operation: str,
         duration: float,
         success: bool,
-        error_type: str = None,
+        error_type: str | None = None,
     ) -> None:
         """Record completion of document processing operation."""
         self.metrics.document_processing_duration.labels(operation=operation).observe(
@@ -435,8 +437,8 @@ class EnhancedMetricsCollector:
         chunk_count: int,
         duration: float,
         success: bool,
-        relevance_score: float = None,
-        response_length: int = None,
+        relevance_score: float | None = None,
+        response_length: int | None = None,
     ) -> None:
         """Record detailed RAG query metrics."""
         # Use base service method

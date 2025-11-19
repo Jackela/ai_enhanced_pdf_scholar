@@ -508,15 +508,15 @@ class LogAnalysisEngine:
         self.pattern_cache: dict[str, list[PatternMatch]] = {}
 
         # Performance tracking
-        self.performance_metrics = defaultdict(list[Any])
-        self.response_time_history = defaultdict(deque[Any])
+        self.performance_metrics: Any = defaultdict(list[Any])
+        self.response_time_history: Any = defaultdict(deque[Any])
 
         # Security event tracking
-        self.security_events = defaultdict(list[Any])
-        self.ip_activity = defaultdict(Counter)
+        self.security_events: Any = defaultdict(list[Any])
+        self.ip_activity: Any = defaultdict(Counter)
 
         # Business metrics tracking
-        self.business_metrics = defaultdict(list[Any])
+        self.business_metrics: Any = defaultdict(list[Any])
 
         logger.info(f"Log Analysis Engine initialized with cache dir: {self.cache_dir}")
 
@@ -678,9 +678,9 @@ class LogAnalysisEngine:
         logger.info("Analyzing performance bottlenecks...")
 
         # Group by endpoint
-        endpoint_metrics = defaultdict(list[Any])
-        endpoint_errors = defaultdict(int)
-        endpoint_requests = defaultdict(int)
+        endpoint_metrics: Any = defaultdict(list[Any])
+        endpoint_errors: Any = defaultdict(int)
+        endpoint_requests: Any = defaultdict(int)
 
         for entry in self.log_entries:
             if entry.endpoint:
@@ -774,7 +774,7 @@ class LogAnalysisEngine:
         security_events = []
 
         # Track events by IP and pattern
-        ip_events = defaultdict(lambda: defaultdict(list[Any]))
+        ip_events: Any = defaultdict(lambda: defaultdict(list[Any]))
 
         for (
             pattern_id,
@@ -985,7 +985,7 @@ class LogAnalysisEngine:
                 anomalies.append(anomaly)
 
         # 2. Error rate anomalies
-        time_buckets = defaultdict(lambda: {"total": 0, "errors": 0})
+        time_buckets: Any = defaultdict(lambda: {"total": 0, "errors": 0})
 
         for entry in self.log_entries:
             bucket_key = entry.timestamp.replace(minute=0, second=0, microsecond=0)
@@ -1029,7 +1029,7 @@ class LogAnalysisEngine:
                     anomalies.append(anomaly)
 
         # 3. Traffic volume anomalies
-        hourly_traffic = defaultdict(int)
+        hourly_traffic: Any = defaultdict(int)
         for entry in self.log_entries:
             hour_key = entry.timestamp.replace(minute=0, second=0, microsecond=0)
             hourly_traffic[hour_key] += 1
@@ -1071,7 +1071,7 @@ class LogAnalysisEngine:
         predictions = []
 
         # 1. Error trend prediction
-        error_counts = defaultdict(int)
+        error_counts: Any = defaultdict(int)
         for entry in self.log_entries:
             if entry.level in [LogLevel.ERROR, LogLevel.CRITICAL]:
                 hour_key = entry.timestamp.replace(minute=0, second=0, microsecond=0)
@@ -1119,7 +1119,7 @@ class LogAnalysisEngine:
 
         if len(response_times) > 50:
             # Group by hour and calculate averages
-            hourly_performance = defaultdict(list[Any])
+            hourly_performance: Any = defaultdict(list[Any])
             for timestamp, response_time in response_times:
                 hour_key = timestamp.replace(minute=0, second=0, microsecond=0)
                 hourly_performance[hour_key].append(response_time)
@@ -1161,8 +1161,8 @@ class LogAnalysisEngine:
                         predictions.append(prediction)
 
         # 3. Security threat escalation prediction
-        security_events_by_hour = defaultdict(int)
-        unique_ips_by_hour = defaultdict(set[str])
+        security_events_by_hour: Any = defaultdict(int)
+        unique_ips_by_hour: Any = defaultdict(set[str])
 
         for entry in self.log_entries:
             # Check for security-related log patterns

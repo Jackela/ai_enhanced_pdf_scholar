@@ -196,7 +196,7 @@ class ElasticsearchHandler(logging.Handler):
         super().__init__()
         self.config = config
         self.client = None
-        self.buffer = []
+        self.buffer: list[Any] = []
         self.buffer_lock = threading.Lock()
 
         # Initialize Elasticsearch client
@@ -405,7 +405,7 @@ class CentralizedLoggingService:
         self.logstash_config = LogstashConfig()
 
         # Handlers
-        self.handlers = []
+        self.handlers: list[Any] = []
 
         # Setup logging
         self._setup_logging()

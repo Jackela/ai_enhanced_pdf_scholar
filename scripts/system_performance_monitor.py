@@ -116,9 +116,9 @@ class ReliabilityTest:
 class SystemPerformanceMonitor:
     """Comprehensive system performance monitoring and testing"""
 
-    def __init__(self, db_path: str = None) -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         self.db_path = db_path or "E:\\Code\\ai_enhanced_pdf_scholar\\data\\library.db"
-        self.results = {}
+        self.results: dict[str, Any] = {}
         self.start_time = time.time()
 
     def get_system_metrics(self) -> SystemMetrics:
@@ -825,7 +825,7 @@ class SystemPerformanceMonitor:
 
         return recommendations
 
-    def save_results(self, filename: str = None) -> str:
+    def save_results(self, filename: str | None = None) -> str:
         """Save assessment results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

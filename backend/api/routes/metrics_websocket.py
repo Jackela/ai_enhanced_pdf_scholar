@@ -448,7 +448,7 @@ async def get_websocket_stats() -> Any:
         }
 
         # Count subscriptions by metric type
-        metric_counts = {}
+        metric_counts: dict[str, Any] = {}
         for client_id, subscriptions in active_subscriptions.items():
             stats["total_subscriptions"] += len(subscriptions)
             for metric in subscriptions:

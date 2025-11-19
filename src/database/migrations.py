@@ -1006,7 +1006,7 @@ if "DatabaseMigrator" not in globals():
 
     def _get_query_performance_hints(self) -> dict[str, Any]:
         """Get query performance analysis and hints."""
-        hints = {
+        hints: Any = {
             "recommendations": [],
             "slow_query_patterns": [],
             "optimization_opportunities": [],
@@ -1260,7 +1260,7 @@ if "DatabaseMigrator" not in globals():
         Returns:
             Dictionary with slow query analysis and recommendations
         """
-        analysis = {
+        analysis: Any = {
             "potential_slow_queries": [],
             "optimization_suggestions": [],
             "index_recommendations": [],
@@ -1553,7 +1553,7 @@ if "DatabaseMigrator" not in globals():
         Returns:
             Dictionary with benchmark results and comparisons
         """
-        benchmark_results = {
+        benchmark_results: Any = {
             "benchmarks": [],
             "fastest_query": None,
             "slowest_query": None,

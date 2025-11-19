@@ -80,13 +80,13 @@ class RateLimitMonitor:
         self._events: deque[Any] = deque[Any](maxlen=max_events)
 
         # Real-time counters
-        self._counters = defaultdict(int)
-        self._ip_counters = defaultdict(int)
-        self._endpoint_counters = defaultdict(int)
+        self._counters: Any = defaultdict(int)
+        self._ip_counters: Any = defaultdict(int)
+        self._endpoint_counters: Any = defaultdict(int)
         self._response_times = deque[Any](maxlen=1000)
 
         # Alerting state
-        self._last_alert_time = {}
+        self._last_alert_time: dict[str, Any] = {}
         self._alert_cooldown = timedelta(minutes=5)
 
         logger.info(f"Rate limit monitor initialized with {max_events} event capacity")
@@ -235,7 +235,7 @@ class RateLimitMonitor:
         )
 
         # Top endpoints
-        endpoint_counts = defaultdict(int)
+        endpoint_counts: Any = defaultdict(int)
         for event in recent_events:
             endpoint_counts[event.endpoint] += 1
         top_endpoints = sorted(
@@ -243,7 +243,7 @@ class RateLimitMonitor:
         )[:10]
 
         # Top IPs
-        ip_counts = defaultdict(int)
+        ip_counts: Any = defaultdict(int)
         for event in recent_events:
             ip_counts[event.client_ip] += 1
         top_ips = sorted(ip_counts.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -269,7 +269,9 @@ class RateLimitMonitor:
             rate_limit_effectiveness=min(1.0, effectiveness),
         )
 
-    def get_ip_metrics(self, client_ip: str, window_minutes: int = 60) -> dict[str, Any]:
+    def get_ip_metrics(
+        self, client_ip: str, window_minutes: int = 60
+    ) -> dict[str, Any]:
         """Get metrics for a specific IP address."""
         events = self._get_recent_events_for_ip(client_ip, window_minutes)
 
@@ -303,7 +305,9 @@ class RateLimitMonitor:
             "last_seen": max(timestamps) if timestamps else None,
         }
 
-    def get_endpoint_metrics(self, endpoint: str, window_minutes: int = 60) -> dict[str, Any]:
+    def get_endpoint_metrics(
+        self, endpoint: str, window_minutes: int = 60
+    ) -> dict[str, Any]:
         """Get metrics for a specific endpoint."""
         events = self._get_recent_events_for_endpoint(endpoint, window_minutes)
 
@@ -321,7 +325,7 @@ class RateLimitMonitor:
         max_response_time = max(response_times)
 
         # Top IPs for this endpoint
-        ip_counts = defaultdict(int)
+        ip_counts: Any = defaultdict(int)
         for event in events:
             ip_counts[event.client_ip] += 1
         top_ips = sorted(ip_counts.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -368,7 +372,7 @@ class RateLimitMonitor:
         recent_events = [e for e in self._events if e.timestamp >= cutoff_time]
 
         # Group by IP
-        ip_events = defaultdict(list[Any])
+        ip_events: Any = defaultdict(list[Any])
         for event in recent_events:
             ip_events[event.client_ip].append(event)
 

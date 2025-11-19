@@ -34,7 +34,7 @@ class APIBenchmark:
 
     def __init__(self, base_url: str = "http://localhost:8000") -> None:
         self.base_url = base_url.rstrip("/")
-        self.results = {}
+        self.results: dict[str, Any] = {}
         self.client = None
 
     async def setup(self) -> None:
@@ -50,7 +50,11 @@ class APIBenchmark:
             await self.client.aclose()
 
     async def benchmark_endpoint(
-        self, method: str, endpoint: str, runs: int = 50, payload: dict[str, Any] | None = None
+        self,
+        method: str,
+        endpoint: str,
+        runs: int = 50,
+        payload: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Benchmark a single API endpoint"""
         logger.info(f"Benchmarking {method} {endpoint} with {runs} runs")
@@ -102,7 +106,7 @@ class APIBenchmark:
         error_rate = len(errors) / runs * 100
 
         # Status code analysis
-        status_distribution = {}
+        status_distribution: dict[str, Any] = {}
         for code in status_codes:
             status_distribution[code] = status_distribution.get(code, 0) + 1
 
@@ -406,7 +410,7 @@ class APIBenchmark:
 
         print("\n" + "=" * 80)
 
-    def save_results(self, filename: str = None) -> Any:
+    def save_results(self, filename: str | None = None) -> Any:
         """Save results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

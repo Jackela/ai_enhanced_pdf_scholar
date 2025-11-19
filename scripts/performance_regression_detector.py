@@ -48,7 +48,7 @@ class PerformanceRegression:
 class PerformanceBaseline:
     """Manages performance baselines and regression detection"""
 
-    def __init__(self, baseline_file: Path = None) -> None:
+    def __init__(self, baseline_file: Path | None = None) -> None:
         self.baseline_file = baseline_file or Path("performance_baselines.json")
         self.baselines = self.load_baselines()
 
@@ -317,7 +317,9 @@ class PerformanceBaseline:
             return f"🟠 CAUTION - {len(regressions)} minor regression(s) detected"
 
     def _generate_recommendations(
-        self, regressions: list[PerformanceRegression], improvements: list[dict[str, Any]]
+        self,
+        regressions: list[PerformanceRegression],
+        improvements: list[dict[str, Any]],
     ) -> list[str]:
         """Generate recommendations based on analysis"""
         recommendations = []

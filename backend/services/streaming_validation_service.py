@@ -175,7 +175,7 @@ class StreamingValidationService:
         Returns:
             Dict: Signature validation results
         """
-        result = {
+        result: Any = {
             "is_pdf": False,
             "version": None,
             "mime_type": "unknown",
@@ -239,7 +239,7 @@ class StreamingValidationService:
         Returns:
             Dict: Content analysis results
         """
-        analysis = {
+        analysis: Any = {
             "page_count": None,
             "is_encrypted": False,
             "errors": [],
@@ -254,7 +254,7 @@ class StreamingValidationService:
             encryption_found = False
 
             # Security threat tracking
-            security_threats = {
+            security_threats: Any = {
                 threat_type: [] for threat_type in self.SECURITY_PATTERNS.keys()
             }
 

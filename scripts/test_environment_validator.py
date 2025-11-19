@@ -39,7 +39,7 @@ class TestEnvironmentValidator:
             "import_system": {"status": "unknown", "details": {}},
         }
         self.overall_health = 0
-        self.issues = []
+        self.issues: list[Any] = []
 
     def validate_all(self) -> dict[str, Any]:
         """Run all validation checks."""

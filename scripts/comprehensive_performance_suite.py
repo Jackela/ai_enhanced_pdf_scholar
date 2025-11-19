@@ -37,10 +37,10 @@ except ImportError as e:
 class ComprehensivePerformanceSuite:
     """Orchestrates comprehensive performance testing"""
 
-    def __init__(self, output_dir: Path = None) -> None:
+    def __init__(self, output_dir: Path | None = None) -> None:
         self.output_dir = output_dir or Path("performance_results")
         self.output_dir.mkdir(exist_ok=True)
-        self.results = {}
+        self.results: dict[str, Any] = {}
         self.start_time = None
         self.end_time = None
 
@@ -109,9 +109,13 @@ class ComprehensivePerformanceSuite:
                 return {"success": False, "error": result.stderr}
 
             # Find and load the results file
-            results_files = list[Any](self.output_dir.glob("api_benchmark_results_*.json"))
+            results_files = list[Any](
+                self.output_dir.glob("api_benchmark_results_*.json")
+            )
             if not results_files:
-                results_files = list[Any](Path.cwd().glob("api_benchmark_results_*.json"))
+                results_files = list[Any](
+                    Path.cwd().glob("api_benchmark_results_*.json")
+                )
 
             if results_files:
                 with open(results_files[-1]) as f:
@@ -195,7 +199,9 @@ class ComprehensivePerformanceSuite:
             logger.error(f"PDF processing benchmarks failed: {e}")
             return {"success": False, "error": str(e)}
 
-    def _extract_avg_metric(self, results: dict[str, Any], category: str, metric: str) -> float:
+    def _extract_avg_metric(
+        self, results: dict[str, Any], category: str, metric: str
+    ) -> float:
         """Extract average metric from benchmark results"""
         if category not in results:
             return 0.0
@@ -423,7 +429,7 @@ class ComprehensivePerformanceSuite:
 
         print("\n" + "=" * 100)
 
-    def save_results(self, filename: str = None) -> Any:
+    def save_results(self, filename: str | None = None) -> Any:
         """Save comprehensive results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -436,7 +442,7 @@ class ComprehensivePerformanceSuite:
         logger.info(f"Comprehensive results saved to: {output_path}")
         return output_path
 
-    def generate_html_report(self, filename: str = None) -> Any:
+    def generate_html_report(self, filename: str | None = None) -> Any:
         """Generate HTML performance report"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

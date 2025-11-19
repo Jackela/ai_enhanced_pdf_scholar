@@ -200,7 +200,7 @@ class RollbackResult:
 class RollbackAutomation:
     """Automated rollback system"""
 
-    def __init__(self, work_dir: Path = None) -> None:
+    def __init__(self, work_dir: Path | None = None) -> None:
         self.work_dir = work_dir or Path.cwd()
         self.rollbacks: dict[str, RollbackResult] = {}
         self.github_token = os.getenv("GITHUB_TOKEN")
@@ -671,7 +671,7 @@ class RollbackAutomation:
 
         return rollbacks[:limit]
 
-    def save_rollback_history(self, file_path: Path = None) -> None:
+    def save_rollback_history(self, file_path: Path | None = None) -> None:
         """Save rollback history to file"""
         if file_path is None:
             file_path = self.work_dir / "rollback_history.json"

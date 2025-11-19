@@ -476,7 +476,7 @@ class CitationService:
                 return {"pattern_count": 0}
 
             # Analyze relation types
-            relation_types = {}
+            relation_types: dict[str, Any] = {}
             confidence_distribution = {"high": 0, "medium": 0, "low": 0}
 
             for edge in edges:
@@ -677,7 +677,7 @@ class CitationService:
                 return []
 
             # Find other documents that cite the same papers
-            similar_docs = []
+            similar_docs: list[Any] = []
 
             # This is a placeholder for more sophisticated similarity calculation
             # In a full implementation, you would use techniques like:
@@ -729,7 +729,7 @@ class CitationService:
 
             # Simple clustering algorithm (connected components)
             visited = set[str]()
-            clusters = []
+            clusters: list[Any] = []
 
             def dfs_cluster(node_id, current_cluster) -> None:
                 if node_id in visited:
@@ -743,7 +743,7 @@ class CitationService:
 
             for doc_id in adjacency:
                 if doc_id not in visited:
-                    cluster = []
+                    cluster: list[Any] = []
                     dfs_cluster(doc_id, cluster)
 
                     if len(cluster) >= min_cluster_size:

@@ -48,7 +48,7 @@ class TestSuiteHealthReport:
 class TestSuiteHealthChecker:
     """Comprehensive test suite health checker."""
 
-    def __init__(self, project_root: str = None) -> None:
+    def __init__(self, project_root: str | None = None) -> None:
         """Initialize health checker."""
         self.project_root = (
             Path(project_root) if project_root else Path(__file__).parent.parent

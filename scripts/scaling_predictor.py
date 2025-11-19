@@ -153,7 +153,10 @@ class PrometheusMetricsCollector:
                 try:
                     result = self.prometheus.custom_query(query, time=current_time)
                     if result and len(result) > 0:
-                        if isinstance(result[0], dict[str, Any]) and "value" in result[0]:
+                        if (
+                            isinstance(result[0], dict[str, Any])
+                            and "value" in result[0]
+                        ):
                             value = float(result[0]["value"][1])
                         else:
                             value = float(result[0])
@@ -557,8 +560,8 @@ class ScalingManager:
         self.last_training = datetime.min
 
         # State tracking
-        self.predictions_history = []
-        self.recommendations_history = []
+        self.predictions_history: list[Any] = []
+        self.recommendations_history: list[Any] = []
 
     async def initialize(self) -> None:
         """Initialize the scaling manager"""

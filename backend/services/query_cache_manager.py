@@ -742,8 +742,8 @@ class IntelligentQueryCacheManager:
         stats = self.get_statistics()
 
         with self._cache_lock:
-            entries_by_age = {}
-            entries_by_size = {}
+            entries_by_age: dict[str, Any] = {}
+            entries_by_size: dict[str, Any] = {}
 
             now = datetime.now()
             for entry in self._cache.values():

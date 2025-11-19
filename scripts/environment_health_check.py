@@ -206,7 +206,7 @@ def run_health_check() -> dict[str, any]:
     print("🔍 Running AI Enhanced PDF Scholar Environment Health Check...")
     print("=" * 60)
 
-    health_report = {
+    health_report: Any = {
         "timestamp": None,
         "python_environment": {},
         "core_dependencies": {},

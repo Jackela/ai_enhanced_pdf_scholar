@@ -636,7 +636,7 @@ class CostOptimizer:
         recommendations = []
 
         # Count stable on-demand instances
-        stable_instances = {}
+        stable_instances: dict[str, Any] = {}
         for instance in instance_metrics:
             if instance.lifecycle == "on-demand" and instance.efficiency_score > 60:
                 family = instance.instance_type.split(".")[0]

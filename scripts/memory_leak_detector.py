@@ -258,7 +258,7 @@ class MemoryLeakDetector:
             text_variations.append(variation)
 
         # Process text (simulate text analysis)
-        word_counts = {}
+        word_counts: dict[str, Any] = {}
         for text in text_variations:
             words = text.split()
             for word in words:

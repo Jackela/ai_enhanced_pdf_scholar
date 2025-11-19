@@ -105,7 +105,7 @@ class ComplianceReport:
 class ComplianceValidator:
     """Main compliance validation engine"""
 
-    def __init__(self, project_root: Path = None) -> None:
+    def __init__(self, project_root: Path | None = None) -> None:
         self.project_root = project_root or Path.cwd()
         self.findings: list[ComplianceFinding] = []
         self.recommendations: list[str] = []
@@ -655,7 +655,9 @@ class ComplianceValidator:
                         continue
 
         if found_crypto or encryption_files:
-            evidence.append(f"Encryption patterns found: {list[Any](set[str](found_crypto))}")
+            evidence.append(
+                f"Encryption patterns found: {list[Any](set[str](found_crypto))}"
+            )
             passed = True
         else:
             evidence.append("No encryption implementation found")
@@ -767,7 +769,9 @@ class ComplianceValidator:
 
         # Check for GitHub workflows (change management automation)
         workflow_files = list[Any](self.project_root.glob(".github/workflows/*.yml"))
-        workflow_files.extend(list[Any](self.project_root.glob(".github/workflows/*.yaml")))
+        workflow_files.extend(
+            list[Any](self.project_root.glob(".github/workflows/*.yaml"))
+        )
 
         if workflow_files:
             evidence.append(f"Found {len(workflow_files)} CI/CD workflow files")
@@ -787,7 +791,9 @@ class ComplianceValidator:
             evidence.append("No CI/CD workflows found")
 
         # Check for pull request templates
-        pr_templates = list[Any](self.project_root.glob(".github/pull_request_template.md"))
+        pr_templates = list[Any](
+            self.project_root.glob(".github/pull_request_template.md")
+        )
         pr_templates.extend(
             list[Any](self.project_root.glob(".github/PULL_REQUEST_TEMPLATE.md"))
         )
@@ -862,7 +868,9 @@ class ComplianceValidator:
             evidence.append("CODEOWNERS file found for mandatory reviews")
 
         # Check for pull request templates
-        pr_templates = list[Any](self.project_root.glob(".github/**/pull_request_template*"))
+        pr_templates = list[Any](
+            self.project_root.glob(".github/**/pull_request_template*")
+        )
         if pr_templates:
             evidence.append("Pull request template found")
 
@@ -1032,7 +1040,7 @@ class ComplianceValidator:
         self,
         report: ComplianceReport,
         output_format: str = "json",
-        output_file: Path = None,
+        output_file: Path | None = None,
     ) -> None:
         """Export compliance report in specified format"""
 

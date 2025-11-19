@@ -13,7 +13,7 @@ def fix_from_e_indentation(filepath: Path) -> int:
     """Fix 'from e)' on wrong lines."""
     try:
         lines = filepath.read_text(encoding="utf-8").splitlines()
-        new_lines = []
+        new_lines: list[Any] = []
         fixes = 0
 
         i = 0

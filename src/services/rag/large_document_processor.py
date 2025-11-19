@@ -209,7 +209,7 @@ class LargeDocumentProcessor:
         Returns:
             Optimized chunks
         """
-        optimized = []
+        optimized: list[Any] = []
 
         for chunk in chunks:
             # Remove very small chunks

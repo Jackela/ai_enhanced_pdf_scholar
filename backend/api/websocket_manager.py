@@ -234,7 +234,7 @@ class WebSocketManager:
         )
 
     async def send_rag_error(
-        self, client_id: str, error: str, document_id: int = None
+        self, client_id: str, error: str, document_id: int | None = None
     ) -> None:
         """Send RAG query error."""
         await self.send_personal_json(
@@ -242,7 +242,7 @@ class WebSocketManager:
         )
 
     async def send_index_progress(
-        self, client_id: str, document_id: int, status: str, progress: int = None
+        self, client_id: str, document_id: int, status: str, progress: int | None = None
     ) -> None:
         """Send index build progress."""
         data = {"type": "index_progress", "document_id": document_id, "status": status}
@@ -251,7 +251,7 @@ class WebSocketManager:
         await self.send_personal_json(data, client_id)
 
     async def send_document_update(
-        self, document_id: int, action: str, data: dict[str, Any] = None
+        self, document_id: int, action: str, data: dict[str, Any] | None = None
     ) -> None:
         """Broadcast document update to all clients."""
         message = {
@@ -263,7 +263,9 @@ class WebSocketManager:
             message["data"] = data
         await self.broadcast_json(message)
 
-    async def send_upload_progress(self, client_id: str, progress_data: dict[str, Any]) -> None:
+    async def send_upload_progress(
+        self, client_id: str, progress_data: dict[str, Any]
+    ) -> None:
         """Send streaming upload progress update to client."""
         await self.send_personal_json(
             {
@@ -274,7 +276,7 @@ class WebSocketManager:
         )
 
     async def send_upload_status(
-        self, client_id: str, session_id: str, status: str, message: str = None
+        self, client_id: str, session_id: str, status: str, message: str | None = None
     ) -> None:
         """Send upload status update to client."""
         data = {
@@ -287,7 +289,7 @@ class WebSocketManager:
         await self.send_personal_json(data, client_id)
 
     async def send_upload_error(
-        self, client_id: str, session_id: str, error: str, error_code: str = None
+        self, client_id: str, session_id: str, error: str, error_code: str | None = None
     ) -> None:
         """Send upload error to client."""
         data = {
@@ -300,7 +302,10 @@ class WebSocketManager:
         await self.send_personal_json(data, client_id)
 
     async def send_upload_completed(
-        self, client_id: str, session_id: str, document_data: dict[str, Any] = None
+        self,
+        client_id: str,
+        session_id: str,
+        document_data: dict[str, Any] | None = None,
     ) -> None:
         """Send upload completion notification."""
         data = {
@@ -426,7 +431,9 @@ class WebSocketManager:
         timestamp = int(datetime.now().timestamp() * 1000)
         return f"rag_task_{timestamp}_{self._task_counter}"
 
-    async def send_memory_warning(self, client_id: str, memory_stats: dict[str, Any]) -> None:
+    async def send_memory_warning(
+        self, client_id: str, memory_stats: dict[str, Any]
+    ) -> None:
         """Send memory usage warning to client."""
         await self.send_personal_json(
             {
@@ -445,7 +452,7 @@ class WebSocketManager:
         total_chunks: int,
         bytes_uploaded: int,
         total_bytes: int,
-        upload_speed: float = None,
+        upload_speed: float | None = None,
     ) -> None:
         """Send detailed chunk upload progress."""
         progress_percentage = (

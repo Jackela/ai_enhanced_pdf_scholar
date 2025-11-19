@@ -14,7 +14,7 @@ from pathlib import Path
 
 def check_file_for_hardcoded_passwords(file_path: Any) -> Any:
     """Check a Python file for hardcoded passwords."""
-    violations = []
+    violations: list[Any] = []
 
     with open(file_path, encoding="utf-8") as f:
         content = f.read()

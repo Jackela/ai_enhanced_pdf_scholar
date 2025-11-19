@@ -246,7 +246,7 @@ app.include_router(api_router, prefix="/api")
 # ============================================================================
 
 
-@app.get("/metrics")  # type: ignore[misc]
+@app.get("/metrics")
 async def get_metrics() -> Response:
     """Prometheus metrics endpoint."""
     try:
@@ -257,7 +257,7 @@ async def get_metrics() -> Response:
         raise HTTPException(status_code=500, detail="Failed to generate metrics") from e
 
 
-@app.get("/")  # type: ignore[misc]
+@app.get("/")
 async def root() -> dict[str, Any]:
     """Root endpoint for basic connectivity test."""
     return {
@@ -267,14 +267,14 @@ async def root() -> dict[str, Any]:
     }
 
 
-@app.get("/ping")  # type: ignore[misc]
+@app.get("/ping")
 async def ping() -> dict[str, bool]:
     """Simple ping endpoint for connectivity test."""
     return {"pong": True}
 
 
-@app.get("/health")  # type: ignore[misc]
-@app.get(  # type: ignore[misc]
+@app.get("/health")
+@app.get(
     "/api/system/health"
 )  # Alias for frontend compatibility (Vite proxy expects /api prefix)
 async def basic_health_check() -> dict[str, Any]:
@@ -287,7 +287,7 @@ async def basic_health_check() -> dict[str, Any]:
     }
 
 
-@app.get("/health/detailed")  # type: ignore[misc]
+@app.get("/health/detailed")
 async def detailed_health_check() -> dict[str, Any]:
     """Comprehensive health check endpoint."""
     try:
@@ -302,7 +302,7 @@ async def detailed_health_check() -> dict[str, Any]:
         }
 
 
-@app.get("/metrics/dashboard")  # type: ignore[misc]
+@app.get("/metrics/dashboard")
 async def get_dashboard_metrics() -> dict[str, Any]:
     """Get formatted metrics for custom dashboard."""
     try:

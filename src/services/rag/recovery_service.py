@@ -140,7 +140,7 @@ class RAGRecoveryService:
         """
         logger.debug(f"Analyzing corruption for index {vector_index.id}")
 
-        analysis_result = {
+        analysis_result: Any = {
             "index_id": vector_index.id,
             "document_id": vector_index.document_id,
             "corruption_detected": False,
@@ -222,7 +222,10 @@ class RAGRecoveryService:
 
                     # Basic structure validation for vector store
                     if file_path.name == "default__vector_store.json":
-                        if not isinstance(data, dict[str, Any]) or "embedding_dict" not in data:
+                        if (
+                            not isinstance(data, dict[str, Any])
+                            or "embedding_dict" not in data
+                        ):
                             analysis_result["corrupted_files"].append(
                                 f"{file_path.name}: Invalid structure"
                             )
@@ -316,7 +319,7 @@ class RAGRecoveryService:
         recovery_start_time = datetime.now()
         logger.info(f"Starting index recovery for index {vector_index.id}")
 
-        recovery_result = {
+        recovery_result: Any = {
             "index_id": vector_index.id,
             "document_id": vector_index.document_id,
             "recovery_successful": False,
@@ -434,7 +437,7 @@ class RAGRecoveryService:
             # Generate basic graph_store.json if missing
             graph_store_file = index_path / "graph_store.json"
             if not graph_store_file.exists():
-                graph_store_data = {"graph": {}, "node_list": []}
+                graph_store_data: Any = {"graph": {}, "node_list": []}
                 with open(graph_store_file, "w") as f:
                     json.dump(graph_store_data, f)
                 logger.debug("Regenerated graph_store.json")
@@ -442,7 +445,7 @@ class RAGRecoveryService:
             # Generate basic index_store.json if missing
             index_store_file = index_path / "index_store.json"
             if not index_store_file.exists():
-                index_store_data = {"index_struct": {"nodes": []}}
+                index_store_data: Any = {"index_struct": {"nodes": []}}
                 with open(index_store_file, "w") as f:
                     json.dump(index_store_data, f)
                 logger.debug("Regenerated index_store.json")

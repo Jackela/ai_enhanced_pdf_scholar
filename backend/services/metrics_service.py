@@ -464,7 +464,9 @@ class MetricsService:
                     self.metrics.memory_usage_bytes.labels(type="available").set[str](
                         memory.available
                     )
-                    self.metrics.memory_usage_bytes.labels(type="used").set[str](memory.used)
+                    self.metrics.memory_usage_bytes.labels(type="used").set[str](
+                        memory.used
+                    )
 
                     # CPU usage
                     cpu_percent = psutil.cpu_percent(interval=1)
@@ -543,7 +545,7 @@ class MetricsService:
         query_type: str,
         duration: float,
         success: bool,
-        relevance_score: float = None,
+        relevance_score: float | None = None,
     ) -> None:
         """Record RAG query metrics."""
         result = "success" if success else "failure"
@@ -576,7 +578,7 @@ class MetricsService:
         operation: str,
         cache_type: str,
         hit: bool | None = None,
-        duration: float = None,
+        duration: float | None = None,
         key_pattern: str = "default",
     ) -> None:
         """Record cache operation metrics."""
@@ -740,7 +742,7 @@ class MetricsService:
             logger.error(f"Failed to start metrics server: {e}")
 
     def push_metrics(
-        self, job: str = None, grouping_key: dict[str, str] = None
+        self, job: str | None = None, grouping_key: dict[str, str] | None = None
     ) -> None:
         """Push metrics to Prometheus Push Gateway."""
         if not self.enable_push_gateway:

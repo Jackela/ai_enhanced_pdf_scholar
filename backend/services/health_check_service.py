@@ -114,14 +114,14 @@ class HealthCheckService:
         self.startup_time = time.time()
 
         # Health check registry
-        self.health_checks = {}
+        self.health_checks: dict[str, Any] = {}
 
         # Health history for trend analysis
-        self.health_history = []
+        self.health_history: list[Any] = []
         self.max_history_size = 100
 
         # Circuit breaker states
-        self.circuit_states = {}
+        self.circuit_states: dict[str, Any] = {}
 
         # Register default health checks
         self._register_default_checks()
@@ -878,8 +878,8 @@ class HealthCheckService:
         if not results:
             return {}
 
-        status_counts = {}
-        severity_counts = {}
+        status_counts: dict[str, Any] = {}
+        severity_counts: dict[str, Any] = {}
         total_duration = 0
 
         for result in results:

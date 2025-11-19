@@ -143,7 +143,7 @@ def main() -> Any:
     print(f"Found {len(violations)} B904 violations")
 
     # Group violations by file
-    files_to_fix = {}
+    files_to_fix: dict[str, Any] = {}
     for filepath, line_num, full_line in violations:
         if filepath not in files_to_fix:
             files_to_fix[filepath] = []

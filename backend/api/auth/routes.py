@@ -2,12 +2,11 @@
 Authentication Routes
 API endpoints for user authentication and management.
 """
-from typing import Any
-
 
 import logging
 import secrets
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
@@ -228,7 +227,7 @@ async def refresh_tokens(
 @router.post("/logout", response_model=BaseResponse)
 async def logout(
     token_data: TokenRefresh | None = None,
-    response: Response = None,
+    response: Response | None = None,
     user: UserModel | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ) -> BaseResponse:

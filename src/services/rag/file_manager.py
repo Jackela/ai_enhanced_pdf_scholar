@@ -262,7 +262,7 @@ class RAGFileManager:
         Returns:
             List of orphaned directory paths
         """
-        orphaned_dirs = []
+        orphaned_dirs: list[Any] = []
 
         try:
             if not self.vector_storage_dir.exists():

@@ -177,7 +177,9 @@ class StreamingPDFProcessor:
 
             raise RuntimeError(f"PDF processing failed: {str(e)}") from e
 
-    async def _process_pdf_chunks(self, pdf_path: str) -> AsyncGenerator[dict[str, Any], None]:
+    async def _process_pdf_chunks(
+        self, pdf_path: str
+    ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Process PDF file in chunks to minimize memory usage.
 
@@ -252,7 +254,7 @@ class StreamingPDFProcessor:
         Returns:
             List[Document]: LlamaIndex documents for the chunk
         """
-        documents = []
+        documents: list[Any] = []
 
         try:
             pages = page_chunk["pages"]
@@ -321,7 +323,7 @@ class StreamingPDFProcessor:
             Dict: PDF information including page count, metadata, etc.
         """
         try:
-            info = {
+            info: Any = {
                 "page_count": None,
                 "file_size": 0,
                 "is_encrypted": False,
@@ -377,7 +379,7 @@ class StreamingPDFProcessor:
             Tuple[bool, List[str], List[str]]: (is_ready, errors, warnings)
         """
         errors = []
-        warnings = []
+        warnings: list[Any] = []
 
         try:
             # Check file exists and is readable

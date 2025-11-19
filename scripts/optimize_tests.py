@@ -18,7 +18,7 @@ class TestOptimizer:
     def __init__(self, project_root: str = ".") -> None:
         self.project_root = Path(project_root)
         self.test_dir = self.project_root / "tests"
-        self.results = {}
+        self.results: dict[str, Any] = {}
 
     def analyze_test_structure(self) -> dict[str, Any]:
         """Analyze current test structure and complexity."""
@@ -203,7 +203,7 @@ class TestOptimizer:
         """Analyze test dependencies and imports."""
         print("📦 Analyzing test dependencies...")
 
-        dependencies = {
+        dependencies: Any = {
             "common_imports": {},
             "fixture_dependencies": {},
             "slow_imports": [],

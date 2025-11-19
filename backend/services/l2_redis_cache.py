@@ -799,8 +799,8 @@ class L2RedisCache:
         # Analyze last 100 accesses
         recent_accesses = list[Any](self.access_log)[-100:]
 
-        operation_counts = defaultdict(int)
-        hourly_distribution = defaultdict(int)
+        operation_counts: Any = defaultdict(int)
+        hourly_distribution: Any = defaultdict(int)
 
         for record in recent_accesses:
             operation_counts[record["operation"]] += 1

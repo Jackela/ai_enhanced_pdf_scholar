@@ -469,7 +469,7 @@ async def get_user_permissions(
     roles = [role.name for role in target_user.roles]
 
     # Get direct permissions (would need to be implemented)
-    direct_permissions = []  # This would query the user_permissions table
+    direct_permissions: list[Any] = []  # This would query the user_permissions table
 
     # Get all effective permissions
     effective_permissions = rbac.get_user_permissions(target_user)
@@ -494,7 +494,7 @@ async def get_my_permissions(
     Get current user's permissions.
     """
     roles = [role.name for role in current_user.roles]
-    direct_permissions = []  # This would query the user_permissions table
+    direct_permissions: list[Any] = []  # This would query the user_permissions table
     effective_permissions = rbac.get_user_permissions(current_user)
 
     return UserPermissionsResponse(

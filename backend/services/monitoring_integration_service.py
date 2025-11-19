@@ -212,8 +212,8 @@ class MonitoringIntegrationService:
         alert_type: str,
         severity: str,
         message: str,
-        value: float = None,
-        threshold: float = None,
+        value: float | None = None,
+        threshold: float | None = None,
     ) -> None:
         """Send alert through WebSocket channels."""
         try:

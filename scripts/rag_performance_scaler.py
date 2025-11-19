@@ -255,7 +255,7 @@ class RAGPerformanceScaler:
         }
 
         # Scaling history for trend analysis
-        self.scaling_history = []
+        self.scaling_history: list[Any] = []
 
     async def calculate_rag_scaling_factors(
         self, profile: RAGWorkloadProfile, current_replicas: int

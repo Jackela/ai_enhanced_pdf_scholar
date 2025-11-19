@@ -43,7 +43,7 @@ class PerformanceBaselineEstablisher:
 
     def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
-        self.baselines = {}
+        self.baselines: dict[str, Any] = {}
         self.start_time = time.time()
         self.memory_start = self._get_memory_usage()
 

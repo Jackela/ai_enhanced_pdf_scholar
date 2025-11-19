@@ -103,7 +103,9 @@ class DocumentationGenerator:
             print(f"⚠️  Warning: Could not determine project version: {e}")
             return "unknown"
 
-    def generate_all_documentation(self, formats: list[str] = None) -> dict[str, Path]:
+    def generate_all_documentation(
+        self, formats: list[str] | None = None
+    ) -> dict[str, Path]:
         """Generate all documentation components."""
         if formats is None:
             formats = ["html", "markdown"]
@@ -310,7 +312,7 @@ class DocumentationGenerator:
     ) -> dict[str, Any] | None:
         """Parse SQLAlchemy model details."""
         try:
-            model_info = {
+            model_info: Any = {
                 "name": class_node.name,
                 "docstring": ast.get_docstring(class_node),
                 "file_path": str(file_path.relative_to(self.project_root)),
@@ -435,7 +437,7 @@ class DocumentationGenerator:
     ) -> dict[str, Any] | None:
         """Parse service class details."""
         try:
-            service_info = {
+            service_info: Any = {
                 "name": class_node.name,
                 "docstring": ast.get_docstring(class_node),
                 "file_path": str(file_path.relative_to(self.project_root)),
@@ -493,7 +495,7 @@ class DocumentationGenerator:
     ) -> dict[str, Any] | None:
         """Parse repository class details."""
         try:
-            repo_info = {
+            repo_info: Any = {
                 "name": class_node.name,
                 "docstring": ast.get_docstring(class_node),
                 "file_path": str(file_path.relative_to(self.project_root)),
@@ -547,7 +549,7 @@ class DocumentationGenerator:
     ) -> dict[str, Any] | None:
         """Parse type definition details."""
         try:
-            type_info = {
+            type_info: Any = {
                 "name": class_node.name,
                 "docstring": ast.get_docstring(class_node),
                 "file_path": str(file_path.relative_to(self.project_root)),
@@ -872,7 +874,7 @@ class DocumentationGenerator:
         template = self.jinja_env.get_template("api_documentation.html")
 
         # Organize endpoints by tags/paths
-        organized_endpoints = {}
+        organized_endpoints: dict[str, Any] = {}
         for endpoint in self.api_endpoints:
             path_parts = endpoint["path"].strip("/").split("/")
             category = path_parts[1] if len(path_parts) > 1 else "default"

@@ -234,7 +234,7 @@ class CacheAnalyticsEngine:
 
     def _analyze_key_patterns(self) -> dict[str, int]:
         """Analyze cache key patterns."""
-        patterns = defaultdict(int)
+        patterns: Any = defaultdict(int)
 
         if not self.smart_cache:
             return dict[str, Any](patterns)
@@ -254,7 +254,7 @@ class CacheAnalyticsEngine:
 
     def _get_top_patterns(self) -> dict[str, int]:
         """Get top accessed key patterns."""
-        pattern_access = defaultdict(int)
+        pattern_access: Any = defaultdict(int)
 
         if not self.smart_cache:
             return dict[str, Any](pattern_access)
@@ -278,7 +278,7 @@ class CacheAnalyticsEngine:
 
     def _calculate_hourly_hit_rates(self) -> dict[int, float]:
         """Calculate hit rates by hour of day."""
-        hourly_data = defaultdict(lambda: {"hits": 0, "total": 0})
+        hourly_data: Any = defaultdict(lambda: {"hits": 0, "total": 0})
 
         # Analyze historical access data
         for key, accesses in self.key_access_history.items():
@@ -300,7 +300,7 @@ class CacheAnalyticsEngine:
 
     def _calculate_daily_patterns(self) -> dict[str, float]:
         """Calculate daily access patterns."""
-        daily_data = defaultdict(lambda: {"hits": 0, "total": 0})
+        daily_data: Any = defaultdict(lambda: {"hits": 0, "total": 0})
 
         for key, accesses in self.key_access_history.items():
             for timestamp, hit in accesses:
@@ -647,7 +647,7 @@ class CacheAnalyticsEngine:
         pattern_analysis = {}
 
         # Access pattern distribution
-        pattern_counts = defaultdict(int)
+        pattern_counts: Any = defaultdict(int)
         for profile in self.smart_cache.key_profiles.values():
             pattern_counts[profile.access_pattern.value] += 1
 
@@ -697,8 +697,8 @@ class CacheAnalyticsEngine:
             return {"message": "No access history available"}
 
         # Analyze access patterns by hour and day
-        hourly_accesses = defaultdict(int)
-        daily_accesses = defaultdict(int)
+        hourly_accesses: Any = defaultdict(int)
+        daily_accesses: Any = defaultdict(int)
 
         for accesses in self.key_access_history.values():
             for timestamp, hit in accesses:
@@ -750,7 +750,7 @@ class CacheAnalyticsEngine:
 
     async def _review_configuration(self) -> dict[str, Any]:
         """Review current cache configuration."""
-        config_review = {
+        config_review: Any = {
             "redis_configuration": {},
             "smart_cache_settings": {},
             "warming_configuration": {},

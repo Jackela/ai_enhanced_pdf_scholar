@@ -369,7 +369,7 @@ class MigrationManager:
                 max(available_versions) if available_versions else 0
             )
 
-            plan = {
+            plan: Any = {
                 "current_version": current_version,
                 "target_version": target,
                 "direction": (

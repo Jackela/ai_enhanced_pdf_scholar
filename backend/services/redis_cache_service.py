@@ -62,7 +62,7 @@ class RedisConfig:
         self.socket_timeout = int(os.getenv("REDIS_SOCKET_TIMEOUT", "5"))
         self.socket_connect_timeout = int(os.getenv("REDIS_CONNECT_TIMEOUT", "5"))
         self.socket_keepalive = True
-        self.socket_keepalive_options = {}
+        self.socket_keepalive_options: dict[str, Any] = {}
 
         # Cluster settings
         self.cluster_enabled = os.getenv("REDIS_CLUSTER", "false").lower() == "true"
@@ -96,7 +96,7 @@ class RedisCacheService:
         self.config = config or RedisConfig()
         self._redis_client = None
         self._connection_pool = None
-        self._local_cache = {}  # L1 memory cache
+        self._local_cache: dict[str, Any] = {}  # L1 memory cache
         self._cache_stats = {
             "hits": 0,
             "misses": 0,
@@ -564,7 +564,9 @@ class RedisCacheService:
 
         return decorator
 
-    def cache_aside(self, key: str, loader: Callable[..., Any], ttl: int | None = None) -> Any:
+    def cache_aside(
+        self, key: str, loader: Callable[..., Any], ttl: int | None = None
+    ) -> Any:
         """
         Cache-aside pattern implementation.
 
@@ -725,8 +727,8 @@ class IntelligentCacheStrategy:
     def __init__(self, cache_service: RedisCacheService) -> None:
         """Initialize intelligent cache strategy."""
         self.cache = cache_service
-        self.access_patterns = {}  # Track access patterns
-        self.ttl_adjustments = {}  # Dynamic TTL adjustments
+        self.access_patterns: dict[str, Any] = {}  # Track access patterns
+        self.ttl_adjustments: dict[str, Any] = {}  # Dynamic TTL adjustments
 
     def adaptive_ttl(self, key: str, base_ttl: int = 3600) -> int:
         """

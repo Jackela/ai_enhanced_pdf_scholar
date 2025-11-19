@@ -412,7 +412,7 @@ class APIKeyAuth:
         return None
 
 
-def require_api_key(scopes: list[str] = None) -> Any:
+def require_api_key(scopes: list[str] | None = None) -> Any:
     """
     Decorator to require API key authentication.
 

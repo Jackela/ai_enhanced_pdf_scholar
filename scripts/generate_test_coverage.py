@@ -16,7 +16,7 @@ from typing import Any
 class TestCoverageGenerator:
     """Generate comprehensive test coverage reports."""
 
-    def __init__(self, project_root: str = None) -> None:
+    def __init__(self, project_root: str | None = None) -> None:
         """Initialize coverage generator."""
         self.project_root = (
             Path(project_root) if project_root else Path(__file__).parent.parent
@@ -25,7 +25,7 @@ class TestCoverageGenerator:
         self.coverage_file = self.project_root / ".coverage"
 
     def run_pytest_with_coverage(
-        self, test_patterns: list[str] = None, timeout: int = 300
+        self, test_patterns: list[str] | None = None, timeout: int = 300
     ) -> bool:
         """Run pytest with coverage collection."""
         print("🧪 Running test suite with coverage collection...")
@@ -292,7 +292,7 @@ class TestCoverageGenerator:
 
     def run_comprehensive_coverage(
         self,
-        test_patterns: list[str] = None,
+        test_patterns: list[str] | None = None,
         threshold: float = 80.0,
         timeout: int = 300,
     ) -> bool:

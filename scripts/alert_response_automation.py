@@ -93,7 +93,7 @@ class AutoRemediationConfig:
 class AlertResponseAutomation:
     """Main automation engine for alert response and remediation."""
 
-    def __init__(self, config: AutoRemediationConfig = None) -> None:
+    def __init__(self, config: AutoRemediationConfig | None = None) -> None:
         self.config = config or AutoRemediationConfig()
         self.redis_client = None
         self.action_history: list[RemediationAction] = []
@@ -135,7 +135,7 @@ class AlertResponseAutomation:
 
     async def process_alert(self, alert: AlertData) -> list[RemediationAction]:
         """Process incoming alert and execute appropriate remediation actions."""
-        actions = []
+        actions: list[Any] = []
 
         try:
             logger.info(f"Processing alert: {alert.alert_name} ({alert.severity})")
@@ -1191,7 +1191,7 @@ class AlertResponseAutomation:
             sum(a.execution_time for a in self.action_history) / total_actions
         )
 
-        action_types = {}
+        action_types: dict[str, Any] = {}
         for action in self.action_history:
             action_types[action.action] = action_types.get(action.action, 0) + 1
 

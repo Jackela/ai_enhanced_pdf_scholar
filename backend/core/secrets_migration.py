@@ -35,7 +35,7 @@ class SecretsMigration:
         """
         self.dry_run = dry_run
         self.secrets_manager = None
-        self.migration_report = {
+        self.migration_report: Any = {
             "migrated": [],
             "failed": [],
             "skipped": [],

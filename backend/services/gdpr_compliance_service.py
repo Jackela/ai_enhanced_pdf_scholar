@@ -255,7 +255,7 @@ class GDPRComplianceService:
         purpose: ProcessingPurpose,
         data_categories: list[DataCategory],
         legal_basis: LegalBasis = LegalBasis.CONSENT,
-        consent_text: str = None,
+        consent_text: str | None = None,
         expires_in_days: int | None = None,
         ip_address: str | None = None,
         user_agent: str | None = None,
@@ -907,7 +907,7 @@ class GDPRComplianceService:
         self, user_id: int, categories: list[DataCategory] | None = None
     ) -> list[str]:
         """Perform actual data erasure."""
-        erased_items = []
+        erased_items: list[Any] = []
 
         # Implementation depends on your data model
         # This would delete/anonymize data from relevant tables

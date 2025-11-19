@@ -723,7 +723,7 @@ if __name__ == "__main__":
         return response.json()
 
     # Example 2: Using context manager
-    cb = CircuitBreaker("test_service")
+    cb: Any = CircuitBreaker("test_service")
 
     def test_function() -> Any:
         with CircuitBreakerContext(cb):

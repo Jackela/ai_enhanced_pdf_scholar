@@ -454,7 +454,7 @@ class DatabaseTracker:
                 {"snapshot_id": since_snapshot_id},
             )
 
-            previous_checksums = dict(result.fetchall())
+            previous_checksums: dict[str, Any] = dict(result.fetchall())
 
             # Check current state against previous
             for table, prev_checksum in previous_checksums.items():
@@ -616,7 +616,7 @@ class IncrementalBackupService:
             )
 
             # Count changes by type
-            change_counts = {}
+            change_counts: dict[str, Any] = {}
             for change in changes:
                 change_counts[change.change_type.value] = (
                     change_counts.get(change.change_type.value, 0) + 1

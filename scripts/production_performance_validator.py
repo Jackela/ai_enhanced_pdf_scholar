@@ -31,7 +31,7 @@ class ProductionPerformanceValidator:
 
     def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
-        self.validation_results = {}
+        self.validation_results: dict[str, Any] = {}
         self.start_time = time.time()
 
         # Production performance criteria

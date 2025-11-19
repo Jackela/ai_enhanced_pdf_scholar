@@ -460,7 +460,7 @@ class LightweightLoadTester:
         """Analyze error patterns and types."""
         errors = [r for r in results if r.status_code != 200 or r.error]
 
-        error_types = {}
+        error_types: dict[str, Any] = {}
         for result in errors:
             if result.error:
                 error_types[result.error] = error_types.get(result.error, 0) + 1

@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 class LocalCITester:
-    def __init__(self, project_root: str = None) -> None:
+    def __init__(self, project_root: str | None = None) -> None:
         self.project_root = Path(project_root or os.getcwd())
         self.workflows_dir = self.project_root / ".github" / "workflows"
         self.results = {

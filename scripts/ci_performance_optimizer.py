@@ -26,9 +26,9 @@ class CIPerformanceOptimizer:
 
     def __init__(self) -> None:
         self.project_root = Path(__file__).parent.parent
-        self.metrics = {}
-        self.cache_stats = {}
-        self.performance_data = {}
+        self.metrics: dict[str, Any] = {}
+        self.cache_stats: dict[str, Any] = {}
+        self.performance_data: dict[str, Any] = {}
 
     def collect_pipeline_metrics(self) -> dict[str, Any]:
         """Collect comprehensive CI/CD pipeline performance metrics."""

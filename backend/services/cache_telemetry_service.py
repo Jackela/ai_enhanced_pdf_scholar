@@ -661,7 +661,9 @@ class CacheTelemetryService:
     ) -> list[dict[str, Any]]:
         """Identify keys that should be pre-warmed in cache."""
         # Analyze hot keys that are frequently missed
-        pattern_analysis = defaultdict(lambda: {"misses": 0, "hits": 0, "keys": []})
+        pattern_analysis: Any = defaultdict(
+            lambda: {"misses": 0, "hits": 0, "keys": []}
+        )
 
         cutoff_time = datetime.utcnow() - timedelta(hours=1)  # Last hour
         recent_events = [
@@ -713,7 +715,7 @@ class CacheTelemetryService:
         relevant_events = [e for e in self.events if e.timestamp >= cutoff_time]
 
         # Group events by hour
-        hourly_stats = defaultdict(
+        hourly_stats: Any = defaultdict(
             lambda: {
                 "total_ops": 0,
                 "hits": 0,

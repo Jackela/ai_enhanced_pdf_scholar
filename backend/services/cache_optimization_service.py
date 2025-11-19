@@ -139,7 +139,9 @@ class CacheOptimizationService:
         self.active_jobs: set[str] = set[str]()
 
         # Learning and prediction
-        self.access_history: dict[str, list[tuple[datetime, str]]] = defaultdict(list[Any])
+        self.access_history: dict[str, list[tuple[datetime, str]]] = defaultdict(
+            list[Any]
+        )
         self.pattern_models: dict[str, dict[str, Any]] = {}
 
         # Configuration
@@ -243,7 +245,7 @@ class CacheOptimizationService:
             return
 
         # Group events by pattern
-        pattern_stats = defaultdict(
+        pattern_stats: Any = defaultdict(
             lambda: {
                 "keys": set[str](),
                 "hits": 0,
@@ -381,7 +383,7 @@ class CacheOptimizationService:
             all_accesses.sort(key=lambda x: x[0])
 
             # Extract hourly access patterns
-            hourly_counts = defaultdict(int)
+            hourly_counts: Any = defaultdict(int)
             for timestamp, _ in all_accesses:
                 hour = timestamp.hour
                 hourly_counts[hour] += 1
@@ -463,7 +465,7 @@ class CacheOptimizationService:
         self, pattern: CachePattern
     ) -> list[WarmingCandidate]:
         """Generate warming candidates for a specific pattern."""
-        candidates = []
+        candidates: list[Any] = []
 
         try:
             # Use pattern model to predict future accesses

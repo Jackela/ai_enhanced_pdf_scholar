@@ -185,7 +185,7 @@ def write_categorized_files(
         errors = analysis.errors_by_category.get(category, [])
 
         # Get unique files, sorted by error count
-        file_error_counts = defaultdict(int)
+        file_error_counts: Any = defaultdict(int)
         for error in errors:
             file_error_counts[error.file_path] += 1
 

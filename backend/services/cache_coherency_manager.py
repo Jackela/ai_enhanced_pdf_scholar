@@ -336,7 +336,9 @@ class CacheCoherencyManager:
             self.cache_levels["L3"] = CacheLevelWrapper(l3_cache, "L3", self)
 
         # Coherency tracking
-        self.entry_versions: dict[str, dict[str, CacheEntryVersion]] = defaultdict(dict[str, Any])
+        self.entry_versions: dict[str, dict[str, CacheEntryVersion]] = defaultdict(
+            dict[str, Any]
+        )
         self.coherency_events: deque[Any] = deque[Any](maxlen=10000)
         self.invalidation_queue: deque[Any] = deque[Any]()
 
@@ -706,7 +708,7 @@ class CacheCoherencyManager:
         self, key: str, versions: dict[str, dict[str, Any]]
     ) -> list[str]:
         """Generate recommendations for resolving coherency issues."""
-        recommendations = []
+        recommendations: list[Any] = []
 
         if not versions:
             return recommendations

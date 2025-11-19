@@ -499,7 +499,7 @@ async def detailed_health_check(
         }
 
         # Database health
-        db_health = {
+        db_health: Any = {
             "status": "unknown",
             "connection_pool": {},
             "response_time_ms": None,
@@ -808,7 +808,9 @@ async def performance_health_check() -> Any:
             "core_count": cpu_count,
             "frequency_mhz": cpu_freq.current if cpu_freq else None,
             "load_average": (
-                list[Any](psutil.getloadavg()) if hasattr(psutil, "getloadavg") else None
+                list[Any](psutil.getloadavg())
+                if hasattr(psutil, "getloadavg")
+                else None
             ),
             "context_switches": psutil.cpu_stats().ctx_switches,
             "interrupts": psutil.cpu_stats().interrupts,

@@ -141,7 +141,7 @@ class EnhancedRAGService:
         db_connection: DatabaseConnection,
         vector_storage_dir: str = "vector_indexes",
         test_mode: bool = False,
-        prompt_manager: PromptManager = None,
+        prompt_manager: PromptManager | None = None,
     ) -> None:
         """
         Initialize enhanced RAG service with database integration.
@@ -954,7 +954,7 @@ class EnhancedRAGService:
         recovery_start_time = datetime.now()
         logger.info(f"Starting index recovery for document {document_id}")
 
-        recovery_result = {
+        recovery_result: Any = {
             "document_id": document_id,
             "recovery_successful": False,
             "corruption_detected": False,

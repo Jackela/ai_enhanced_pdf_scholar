@@ -385,7 +385,7 @@ class CachingConfig:
 
     def validate(self, environment: Environment) -> list[str]:
         """Validate entire caching configuration."""
-        all_issues = []
+        all_issues: list[Any] = []
 
         # Validate each configuration section
         config_sections = [

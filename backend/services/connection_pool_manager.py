@@ -352,7 +352,7 @@ class AdvancedConnectionPoolManager:
                 # Remove from idle queue (if present)
                 try:
                     # Create new queue without the connection
-                    new_idle_queue = queue.Queue()
+                    new_idle_queue: Any = queue.Queue()
                     while True:
                         try:
                             conn = self._idle_connections.get_nowait()

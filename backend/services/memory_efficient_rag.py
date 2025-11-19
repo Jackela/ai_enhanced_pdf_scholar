@@ -37,7 +37,7 @@ class MemoryOptimizedRAGProcessor:
         self.gc_threshold = gc_threshold
 
         self.memory_monitor = MemoryMonitor()
-        self._active_processors = weakref.WeakSet()
+        self._active_processors: Any = weakref.WeakSet()
 
     async def process_with_memory_management(
         self,

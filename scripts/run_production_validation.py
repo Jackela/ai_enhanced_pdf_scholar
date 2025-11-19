@@ -54,7 +54,7 @@ class ProductionValidationOrchestrator:
     def __init__(self) -> None:
         """Initialize validation orchestrator."""
         self.start_time = None
-        self.validation_results = {}
+        self.validation_results: dict[str, Any] = {}
         self.overall_success = False
 
         # Define test execution plan with dependencies

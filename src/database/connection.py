@@ -26,7 +26,7 @@ try:
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
-    psutil = None  # type: ignore
+    psutil = None
 
 logger = logging.getLogger(__name__)
 
@@ -675,7 +675,9 @@ class ConnectionPool:
                 f"Error during force close of connection {conn_info.connection_id}: {e}"
             )
 
-    def _log_to_leak_detector(self, action: str, conn_info: Any, reason: str = None) -> None:
+    def _log_to_leak_detector(
+        self, action: str, conn_info: Any, reason: str | None = None
+    ) -> None:
         """Helper to safely call leak detector methods only when enabled."""
         if self._leak_detector:
             if reason:
@@ -1108,7 +1110,7 @@ class DatabaseConnection:
                 pass  # Fallback to weakref only
 
         # Verify connection is still valid and mark activity
-        conn_info = self._local.connection_info  # type: ignore
+        conn_info = self._local.connection_info
         if conn_info and not self._pool._is_connection_valid(conn_info):
             # Connection became invalid, get a new one
             self._pool.return_connection(conn_info)

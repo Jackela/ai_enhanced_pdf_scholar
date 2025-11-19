@@ -26,7 +26,9 @@ security_logger = logging.getLogger("security.validation")
 class SecurityValidationMiddleware(BaseHTTPMiddleware):
     """Middleware to handle security validation errors."""
 
-    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[..., Any]
+    ) -> Response:
         """Process request and handle security validation errors."""
 
         try:
@@ -46,7 +48,8 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
             error_response = SecurityValidationErrorResponse.from_security_error(e)
 
             return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict[str, Any]()
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content=error_response.dict[str, Any](),
             )
 
         except ValidationError as e:
@@ -86,7 +89,8 @@ def create_security_exception_handlers() -> dict[Any, Callable[..., Any]]:
         error_response = SecurityValidationErrorResponse.from_security_error(exc)
 
         return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST, content=error_response.dict[str, Any]()
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=error_response.dict[str, Any](),
         )
 
     async def validation_error_handler(
@@ -108,7 +112,9 @@ def create_security_exception_handlers() -> dict[Any, Callable[..., Any]]:
     }
 
 
-def log_security_metrics(event_type: str, field: str, client_ip: str = None) -> None:
+def log_security_metrics(
+    event_type: str, field: str, client_ip: str | None = None
+) -> None:
     """Log security metrics for monitoring."""
     metrics_logger = logging.getLogger("security.metrics")
 

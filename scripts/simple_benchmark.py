@@ -34,7 +34,7 @@ class SimpleBenchmark:
     def __init__(self) -> None:
         self.db_path = tempfile.mktemp(suffix=".db")
         self.db = None
-        self.results = {}
+        self.results: dict[str, Any] = {}
 
     def setup_database(self) -> None:
         """Setup test database"""
@@ -338,7 +338,7 @@ class SimpleBenchmark:
 
         print("\n" + "=" * 80)
 
-    def save_results(self, filename: str = None) -> Any:
+    def save_results(self, filename: str | None = None) -> Any:
         """Save results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

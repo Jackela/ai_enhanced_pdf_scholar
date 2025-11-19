@@ -432,7 +432,7 @@ class DynamicQueryOptimizer:
             return None
 
         # Extract column names from WHERE clause
-        where_columns = set()
+        where_columns: set[Any] = set()
 
         # Simple pattern matching for column names in conditions
         column_patterns = [

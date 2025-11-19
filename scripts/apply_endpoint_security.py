@@ -405,7 +405,7 @@ def main() -> None:
             print("🔧 Applying security updates...")
 
             # Group endpoints by file
-            updates_by_file = {}
+            updates_by_file: dict[str, Any] = {}
             for endpoint in unprotected:
                 file_path = endpoint["file"]
                 if file_path not in updates_by_file:

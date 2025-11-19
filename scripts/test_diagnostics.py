@@ -19,8 +19,8 @@ class TestDiagnostics:
         self.project_root = Path(__file__).parent.parent
         self.tests_dir = self.project_root / "tests"
         self.src_dir = self.project_root / "src"
-        self.issues_found = []
-        self.recommendations = []
+        self.issues_found: list[Any] = []
+        self.recommendations: list[Any] = []
 
     def check_directory_structure(self) -> None:
         """Check if all required directories and files exist."""

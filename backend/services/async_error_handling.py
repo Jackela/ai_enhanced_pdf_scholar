@@ -399,8 +399,8 @@ class AsyncErrorHandler:
         total_errors = sum(len(errors) for errors in self.error_history.values())
 
         # Category breakdown
-        category_stats = {}
-        severity_stats = {}
+        category_stats: dict[str, Any] = {}
+        severity_stats: dict[str, Any] = {}
 
         for operation_key, errors in self.error_history.items():
             for error_context in errors:
@@ -473,7 +473,7 @@ class AsyncErrorHandler:
 
 # Decorator for automatic error handling
 def with_async_error_handling(
-    operation_name: str = None,
+    operation_name: str | None = None,
     max_retries: int = 3,
     circuit_breaker: bool = False,
     timeout_seconds: float | None = None,

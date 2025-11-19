@@ -901,14 +901,14 @@ class BackupOrchestrator:
         now = datetime.utcnow()
 
         # Count backups by status
-        status_counts = {}
+        status_counts: dict[str, Any] = {}
         for metadata in self.backup_metadata.values():
             status_counts[metadata.status.value] = (
                 status_counts.get(metadata.status.value, 0) + 1
             )
 
         # Count backups by tier
-        tier_counts = {}
+        tier_counts: dict[str, Any] = {}
         for metadata in self.backup_metadata.values():
             tier_counts[metadata.tier.value] = (
                 tier_counts.get(metadata.tier.value, 0) + 1

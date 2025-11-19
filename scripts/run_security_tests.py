@@ -353,7 +353,7 @@ web application security, and common penetration testing techniques.
         """Generate prioritized action plan for remediation."""
 
         # Group vulnerabilities by type and severity
-        vuln_groups = {}
+        vuln_groups: dict[str, Any] = {}
         for vuln in vulnerabilities:
             vuln_type = vuln.get("type", "Unknown")
             severity = vuln.get("severity", "low")

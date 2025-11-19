@@ -43,9 +43,9 @@ class CIPerformanceCheck:
     }
 
     def __init__(self) -> None:
-        self.results = {}
-        self.violations = []
-        self.warnings = []
+        self.results: dict[str, Any] = {}
+        self.violations: list[Any] = []
+        self.warnings: list[Any] = []
 
     def run_quick_benchmarks(self) -> dict[str, Any]:
         """Run quick performance benchmarks suitable for CI"""
@@ -56,7 +56,7 @@ class CIPerformanceCheck:
             benchmark = SimpleBenchmark()
 
             # Override with smaller test counts for CI speed
-            results = {
+            results: Any = {
                 "database_queries": [],
                 "file_operations": [],
                 "text_processing": [],

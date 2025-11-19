@@ -1095,7 +1095,7 @@ def calculate_entropy(text: str) -> float:
         return 0.0
 
     # Count character frequencies
-    char_counts = {}
+    char_counts: dict[str, Any] = {}
     for char in text:
         char_counts[char] = char_counts.get(char, 0) + 1
 

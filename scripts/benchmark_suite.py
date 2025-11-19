@@ -745,7 +745,7 @@ class ComprehensiveBenchmarkSuite:
 
         self.start_time = None
         self.end_time = None
-        self.results = {}
+        self.results: dict[str, Any] = {}
 
     def run_full_benchmark_suite(self) -> dict[str, Any]:
         """Run the complete benchmark suite."""
@@ -915,7 +915,7 @@ class ComprehensiveBenchmarkSuite:
             "platform": sys.platform,
         }
 
-    def save_results(self, filename: str = None) -> Any:
+    def save_results(self, filename: str | None = None) -> Any:
         """Save benchmark results to JSON file."""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

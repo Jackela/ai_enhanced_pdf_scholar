@@ -1103,7 +1103,7 @@ View Dashboard: http://your-domain/dashboard/performance
             )
 
         # Top alerting rules
-        rule_counts = {}
+        rule_counts: dict[str, Any] = {}
         for event in recent_events:
             rule_counts[event.rule_id] = rule_counts.get(event.rule_id, 0) + 1
 

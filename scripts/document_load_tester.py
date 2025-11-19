@@ -73,7 +73,7 @@ class DocumentLoadTester:
     def __init__(self, output_dir: str = "performance_results") -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
-        self.results = {}
+        self.results: dict[str, Any] = {}
 
     def create_test_document(self, size_mb: float) -> bytes:
         """Create a test PDF document of specified size"""
@@ -458,7 +458,7 @@ class DocumentLoadTester:
 
         if all_results:
             # Group by document size and analyze performance
-            size_performance = {}
+            size_performance: dict[str, Any] = {}
             for doc_result in all_results:
                 if doc_result["success"]:
                     size_mb = round(doc_result["file_size_mb"])
@@ -585,7 +585,7 @@ class DocumentLoadTester:
 
         return list(set(bottlenecks))  # Remove duplicates
 
-    def save_results(self, filename: str = None) -> str:
+    def save_results(self, filename: str | None = None) -> str:
         """Save load test results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

@@ -493,7 +493,7 @@ class ApplicationConfig:
         Raises:
             ConfigValidationError: If critical configuration issues are found
         """
-        all_issues = []
+        all_issues: list[Any] = []
 
         # Validate each configuration section
         config_sections = [

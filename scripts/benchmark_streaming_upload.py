@@ -26,7 +26,7 @@ class MemoryMonitor:
         self.process = psutil.Process()
         self.baseline_memory = self.get_current_memory()
         self.peak_memory = self.baseline_memory
-        self.samples = []
+        self.samples: list[Any] = []
 
     def get_current_memory(self) -> float:
         """Get current memory usage in MB."""
@@ -55,9 +55,11 @@ class MockWebSocketManager:
     """Mock WebSocket manager for benchmarking."""
 
     def __init__(self) -> None:
-        self.progress_updates = []
+        self.progress_updates: list[Any] = []
 
-    async def send_upload_progress(self, client_id: str, progress_data: dict[str, Any]) -> None:
+    async def send_upload_progress(
+        self, client_id: str, progress_data: dict[str, Any]
+    ) -> None:
         self.progress_updates.append((time.time(), progress_data))
 
     async def join_upload_room(self, client_id: str, session_id: str) -> None:
@@ -245,7 +247,9 @@ async def benchmark_streaming_upload(
     return stats
 
 
-def print_comparison(traditional_stats: dict[str, Any], streaming_stats: dict[str, Any]) -> None:
+def print_comparison(
+    traditional_stats: dict[str, Any], streaming_stats: dict[str, Any]
+) -> None:
     """Print comparison between traditional and streaming methods."""
     print(f"\n{'='*60}")
     print("PERFORMANCE COMPARISON")

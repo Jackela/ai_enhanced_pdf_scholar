@@ -178,7 +178,9 @@ class FeatureFlagDeployment:
 class FeatureFlagDeployer:
     """Feature flag deployment and management system"""
 
-    def __init__(self, config_dir: Path = None, state_file: Path = None) -> None:
+    def __init__(
+        self, config_dir: Path | None = None, state_file: Path | None = None
+    ) -> None:
         self.config_dir = config_dir or Path.cwd() / "feature_flags"
         self.state_file = state_file or self.config_dir / "state.json"
 

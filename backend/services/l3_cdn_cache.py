@@ -774,8 +774,8 @@ class L3CDNCache:
         # Analyze access log
         recent_accesses = list[Any](self.cache_access_log)[-1000:]  # Last 1000 accesses
 
-        access_by_type = defaultdict(int)
-        access_by_hour = defaultdict(int)
+        access_by_type: Any = defaultdict(int)
+        access_by_hour: Any = defaultdict(int)
 
         for record in recent_accesses:
             access_by_type[record["access_type"]] += 1

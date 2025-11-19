@@ -258,7 +258,7 @@ class SecurityValidator:
         Returns:
             List of security issues found
         """
-        issues = []
+        issues: list[Any] = []
 
         if environment.lower() != "production":
             return issues
