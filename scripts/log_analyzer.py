@@ -125,7 +125,7 @@ class BusinessMetric:
     """Business metric extraction result."""
 
     metric_name: str
-    metric_value: Union[int, float]
+    metric_value: int | float
     metric_type: str  # "counter", "gauge", "rate"
     time_period: str
     trend: str | None = None
@@ -522,7 +522,7 @@ class LogAnalysisEngine:
 
     def analyze_logs(
         self,
-        log_sources: list[Union[str, Path]],
+        log_sources: list[str | Path],
         timeframe: str = "24h",
         analysis_types: list[AnalysisType] | None = None,
         output_format: str = "json",
@@ -576,7 +576,7 @@ class LogAnalysisEngine:
 
         return results
 
-    def _load_logs(self, log_sources: list[Union[str, Path]], timeframe: str) -> None:
+    def _load_logs(self, log_sources: list[str | Path], timeframe: str) -> None:
         """Load and parse log files within the specified timeframe."""
 
         # Calculate time window

@@ -239,7 +239,7 @@ class CacheAnalyticsEngine:
         if not self.smart_cache:
             return dict[str, Any](patterns)
 
-        for key in self.smart_cache.key_profiles.keys():
+        for key in self.smart_cache.key_profiles:
             # Extract pattern from key
             if ":" in key:
                 pattern = key.split(":")[0] + ":*"

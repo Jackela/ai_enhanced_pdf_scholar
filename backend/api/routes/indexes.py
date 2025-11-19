@@ -12,10 +12,9 @@ References:
 - ADR-001: V2.0 Architecture Principles
 - ADR-003: API Versioning Strategy
 """
-from typing import Any
-
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field

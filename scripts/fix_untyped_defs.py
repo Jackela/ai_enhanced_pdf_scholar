@@ -94,12 +94,10 @@ class UntypedDefFixer(cst.CSTTransformer):
 
             def visit_Return(self, node: cst.Return) -> None:
                 # Return with value (not just 'return' or 'return None')
-                if node.value is not None:
-                    if (
-                        not isinstance(node.value, cst.Name)
-                        or node.value.value != "None"
-                    ):
-                        self.has_value_return = True
+                if node.value is not None and (
+                    not isinstance(node.value, cst.Name) or node.value.value != "None"
+                ):
+                    self.has_value_return = True
 
         visitor = ReturnVisitor()
         node.body.visit(visitor)

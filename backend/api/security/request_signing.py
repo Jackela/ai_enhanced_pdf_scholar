@@ -154,7 +154,7 @@ class ProductionRequestSigning:
     def add_signing_key(
         self,
         key_id: str,
-        secret: Union[str, bytes],
+        secret: str | bytes,
         algorithm: SigningAlgorithm = SigningAlgorithm.SHA256,
         expires_in: int | None = None,
         allowed_methods: set[str] | None = None,
@@ -210,7 +210,7 @@ class ProductionRequestSigning:
             logger.error(f"Failed to add signing key {key_id}: {e}")
             return False
 
-    def rotate_signing_key(self, key_id: str, new_secret: Union[str, bytes]) -> bool:
+    def rotate_signing_key(self, key_id: str, new_secret: str | bytes) -> bool:
         """
         Rotate signing key secret.
 

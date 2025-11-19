@@ -123,7 +123,7 @@ class EncryptionService:
 
     def encrypt_data(
         self,
-        data: Union[str, bytes, dict[str, Any]],
+        data: str | bytes | dict[str, Any],
         key_id: str | None = None,
         additional_data: bytes | None = None,
     ) -> tuple[bytes, dict[str, Any]]:
@@ -192,7 +192,7 @@ class EncryptionService:
         encrypted_data: bytes,
         metadata: dict[str, Any],
         additional_data: bytes | None = None,
-    ) -> Union[str, bytes, dict[str, Any]]:
+    ) -> str | bytes | dict[str, Any]:
         """
         Decrypt data encrypted with AES-256-GCM.
 

@@ -4,6 +4,7 @@ Distributed L2 cache with intelligent data management and cluster support.
 """
 
 import asyncio
+import contextlib
 import hashlib
 import logging
 import pickle
@@ -635,10 +636,8 @@ class L2RedisCache:
 
         if self.write_behind_task:
             self.write_behind_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.write_behind_task
-            except asyncio.CancelledError:
-                pass
 
         # Flush remaining queue
         await self._flush_write_behind_queue()

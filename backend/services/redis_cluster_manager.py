@@ -4,6 +4,7 @@ Production-ready Redis cluster orchestration with high availability and auto-sca
 """
 
 import asyncio
+import contextlib
 import logging
 import time
 from dataclasses import dataclass, field
@@ -159,7 +160,7 @@ class RedisClusterManager:
         """Initialize cluster manager."""
         self.config = config
         self._clients: dict[str, Redis] = {}
-        self._cluster_client: Union[RedisCluster, Redis] | None = None
+        self._cluster_client: RedisCluster | Redis | None = None
         self._sentinel_client: Sentinel | None = None
         self._node_health: dict[str, NodeHealth] = {}
         self._is_monitoring = False
@@ -448,7 +449,7 @@ class RedisClusterManager:
     # Client Operations
     # ========================================================================
 
-    def get_client(self) -> Union[Redis, RedisCluster]:
+    def get_client(self) -> Redis | RedisCluster:
         """Get the main cluster client."""
         if not self._cluster_client:
             raise RuntimeError("Cluster not initialized")
@@ -659,10 +660,8 @@ class RedisClusterManager:
         self._is_monitoring = False
         if self._monitoring_task:
             self._monitoring_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitoring_task
-            except asyncio.CancelledError:
-                pass
 
         # Close all connections
         for client in self._clients.values():

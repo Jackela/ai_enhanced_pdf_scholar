@@ -158,9 +158,7 @@ class RedisPerformanceTuner:
     # Metrics Collection
     # ========================================================================
 
-    async def collect_metrics(
-        self, client: Union[Redis, RedisCluster]
-    ) -> PerformanceMetrics:
+    async def collect_metrics(self, client: Redis | RedisCluster) -> PerformanceMetrics:
         """Collect comprehensive performance metrics from Redis."""
         try:
             # Get Redis info
@@ -439,7 +437,7 @@ class RedisPerformanceTuner:
 
     async def apply_recommendations(
         self,
-        client: Union[Redis, RedisCluster],
+        client: Redis | RedisCluster,
         recommendations: list[OptimizationRecommendation],
         dry_run: bool = True,
     ) -> dict[str, Any]:
@@ -491,9 +489,7 @@ class RedisPerformanceTuner:
 
         return results
 
-    async def get_current_config(
-        self, client: Union[Redis, RedisCluster]
-    ) -> dict[str, str]:
+    async def get_current_config(self, client: Redis | RedisCluster) -> dict[str, str]:
         """Get current Redis configuration."""
         try:
             config = await asyncio.to_thread(client.config_get, "*")
@@ -502,7 +498,7 @@ class RedisPerformanceTuner:
             logger.error(f"Failed to get Redis config: {e}")
             return {}
 
-    async def backup_config(self, client: Union[Redis, RedisCluster]) -> str:
+    async def backup_config(self, client: Redis | RedisCluster) -> str:
         """Backup current Redis configuration."""
         config = await self.get_current_config(client)
 
@@ -522,7 +518,7 @@ class RedisPerformanceTuner:
 
     async def run_continuous_tuning(
         self,
-        client: Union[Redis, RedisCluster],
+        client: Redis | RedisCluster,
         interval_minutes: int = 60,
         auto_apply: bool = False,
     ) -> None:
@@ -580,7 +576,7 @@ class RedisPerformanceTuner:
                     self.metrics_service.record_cache_operation(
                         operation="health_check",
                         cache_type="redis",
-                        hit=True if metrics.hit_rate_percent > 80 else False,
+                        hit=metrics.hit_rate_percent > 80,
                     )
                     self.metrics_service.update_cache_size(
                         "redis", int(metrics.used_memory_mb * 1024 * 1024)

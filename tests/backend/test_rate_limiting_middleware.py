@@ -1,6 +1,5 @@
-from typing import Any
-
 import types
+from typing import Any
 
 import pytest
 from fastapi import FastAPI

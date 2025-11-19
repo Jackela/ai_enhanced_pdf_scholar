@@ -464,7 +464,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             f"Security headers middleware initialized for {self.config.environment.value} environment"
         )
 
-    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[..., Any]
+    ) -> Response:
         """Add security headers to response."""
         # Generate nonce for this request if enabled
         nonce = None

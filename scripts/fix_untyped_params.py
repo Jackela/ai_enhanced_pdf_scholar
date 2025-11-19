@@ -226,9 +226,11 @@ def fix_file(
                     # Add Any to existing typing import
                     fixed_code = re.sub(
                         r"from typing import ([^\n]+)",
-                        lambda m: f"from typing import {m.group(1)}, Any"
-                        if "Any" not in m.group(1)
-                        else m.group(0),
+                        lambda m: (
+                            f"from typing import {m.group(1)}, Any"
+                            if "Any" not in m.group(1)
+                            else m.group(0)
+                        ),
                         fixed_code,
                         count=1,
                     )

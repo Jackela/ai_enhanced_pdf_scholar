@@ -262,10 +262,7 @@ class ProductionReadinessCertificationGenerator:
                     f"{criterion.name}: {score:.1f}% (weight: {criterion.weight}%)"
                 )
 
-        if total_weight > 0:
-            overall_score = total_weighted_score / total_weight
-        else:
-            overall_score = 0.0
+        overall_score = total_weighted_score / total_weight if total_weight > 0 else 0.0
 
         return overall_score
 

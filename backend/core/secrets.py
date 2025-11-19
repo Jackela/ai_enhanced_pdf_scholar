@@ -957,7 +957,9 @@ class SecretsManager:
         primary_provider = self._providers.get(self.config.primary_provider)
         if primary_provider:
             success = primary_provider.set_secret(key, value, metadata)
-            self._audit_log_operation("set[str]", key, success, self.config.primary_provider)
+            self._audit_log_operation(
+                "set[str]", key, success, self.config.primary_provider
+            )
 
             if success:
                 # Clear cache for this key
@@ -1014,10 +1016,9 @@ class SecretsManager:
         deleted = False
 
         for provider_type, provider in self._providers.items():
-            if provider.health_check():
-                if provider.delete_secret(key):
-                    deleted = True
-                    self._audit_log_operation("delete", key, True, provider_type)
+            if provider.health_check() and provider.delete_secret(key):
+                deleted = True
+                self._audit_log_operation("delete", key, True, provider_type)
 
         # Clear cache
         if key in self._cache:

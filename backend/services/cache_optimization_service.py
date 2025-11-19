@@ -6,6 +6,7 @@ and automated cache management strategies for all cache layers.
 """
 
 import asyncio
+import contextlib
 import logging
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -175,17 +176,13 @@ class CacheOptimizationService:
 
         if self._analysis_task:
             self._analysis_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._analysis_task
-            except asyncio.CancelledError:
-                pass
 
         if self._warming_task:
             self._warming_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._warming_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Cache optimization service stopped")
 
@@ -364,7 +361,7 @@ class CacheOptimizationService:
             # Get historical access data
             pattern_keys = [
                 key
-                for key in self.access_history.keys()
+                for key in self.access_history
                 if self._extract_pattern(key) == pattern.pattern_template
             ]
 

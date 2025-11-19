@@ -134,7 +134,7 @@ class StandardErrorResponse(BaseModel):
         category: ErrorCategory,
         status_code: int,
         correlation_id: str | None = None,
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        details: ErrorDetail | list[ErrorDetail] | None = None,
         context: ErrorContext | None = None,
         help_url: str | None = None,
         localization: dict[str, str] | None = None,
@@ -180,7 +180,7 @@ class APIException(HTTPException):
         message: str,
         category: ErrorCategory,
         status_code: int,
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        details: ErrorDetail | list[ErrorDetail] | None = None,
         correlation_id: str | None = None,
         help_url: str | None = None,
     ) -> None:
@@ -200,7 +200,7 @@ class ValidationException(APIException):
     def __init__(
         self,
         message: str = "Request validation failed",
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        details: ErrorDetail | list[ErrorDetail] | None = None,
         correlation_id: str | None = None,
     ) -> None:
         super().__init__(
@@ -221,7 +221,7 @@ class SecurityException(APIException):
         self,
         message: str = "Security validation failed",
         security_type: str = "general",
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        details: ErrorDetail | list[ErrorDetail] | None = None,
         correlation_id: str | None = None,
     ) -> None:
         code_mapping = {
@@ -340,7 +340,7 @@ class BusinessLogicException(APIException):
         self,
         message: str = "Business rule violation",
         rule_type: str = "general",
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        details: ErrorDetail | list[ErrorDetail] | None = None,
         correlation_id: str | None = None,
     ) -> None:
         code_mapping = {
@@ -423,7 +423,7 @@ class ErrorLogger:
 
     @staticmethod
     def log_error(
-        exception: Union[APIException, Exception],
+        exception: APIException | Exception,
         request: Request | None = None,
         extra_context: dict[str, Any] | None = None,
     ) -> None:
@@ -494,7 +494,7 @@ class ErrorLogger:
 
 
 def create_error_response(
-    exception: Union[APIException, HTTPException, Exception],
+    exception: APIException | HTTPException | Exception,
     request: Request | None = None,
     include_debug_info: bool = False,
 ) -> JSONResponse:
@@ -603,7 +603,7 @@ class ErrorTemplates:
     """Pre-configured error templates for common scenarios."""
 
     @staticmethod
-    def document_not_found(document_id: Union[int, str]) -> ResourceNotFoundException:
+    def document_not_found(document_id: int | str) -> ResourceNotFoundException:
         """Document not found error."""
         return ResourceNotFoundException(
             resource_type="document",

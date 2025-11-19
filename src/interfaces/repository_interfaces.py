@@ -5,7 +5,7 @@ following the Interface Segregation Principle (ISP).
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Any
+from typing import Any, Generic, TypeVar
 
 from src.database.models import (
     CitationModel,

@@ -985,7 +985,7 @@ class HealthCheckService:
 
     def get_all_checks_status(self) -> dict[str, Any]:
         """Get status of all registered health checks."""
-        return {name: self.get_check_status(name) for name in self.health_checks.keys()}
+        return {name: self.get_check_status(name) for name in self.health_checks}
 
 
 if __name__ == "__main__":

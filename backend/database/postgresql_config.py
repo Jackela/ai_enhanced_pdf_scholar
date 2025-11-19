@@ -3,10 +3,11 @@ PostgreSQL Database Configuration and Migration
 Production-ready PostgreSQL setup with connection pooling and optimization.
 """
 
+import builtins
 import logging
 import os
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from typing import Any
 
@@ -501,7 +502,7 @@ class SQLiteToPostgresMigration:
         # Use PostgreSQL COPY for better performance
         insert_query = text(
             f"INSERT INTO {table_name} ({','.join(row_dicts[0].keys())}) "
-            f"VALUES ({','.join([':' + k for k in row_dicts[0].keys()])})"
+            f"VALUES ({','.join([':' + k for k in row_dicts[0]])})"
         )
 
         session.execute(insert_query, row_dicts)
@@ -625,10 +626,8 @@ class PostgreSQLOptimizer:
         """Get slow queries from pg_stat_statements."""
         with self.engine.connect() as conn:
             # Enable pg_stat_statements if not already enabled
-            try:
+            with suppress(builtins.BaseException):
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_stat_statements"))
-            except:
-                pass
 
             # Get slow queries
             result = conn.execute(

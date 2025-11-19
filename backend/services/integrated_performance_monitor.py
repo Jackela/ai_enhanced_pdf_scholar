@@ -6,6 +6,7 @@ and optimization services into a unified performance monitoring solution.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 from datetime import datetime
@@ -134,10 +135,8 @@ class IntegratedPerformanceMonitor:
             # Stop health check
             if self._health_check_task:
                 self._health_check_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._health_check_task
-                except asyncio.CancelledError:
-                    pass
 
             # Stop services
             await self.alerting_service.stop_monitoring()
@@ -635,7 +634,9 @@ class IntegratedPerformanceMonitor:
         else:
             return "declining"
 
-    def _generate_trend_summary(self, apm_trends: dict[str, Any], cache_trends: dict[str, Any]) -> str:
+    def _generate_trend_summary(
+        self, apm_trends: dict[str, Any], cache_trends: dict[str, Any]
+    ) -> str:
         """Generate human-readable trend summary."""
         try:
             summaries = []

@@ -742,16 +742,15 @@ class DocumentationGenerator:
 
         for line in content.split("\n"):
             line = line.strip()
-            if line and not line.startswith("#"):
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    options.append(
-                        {
-                            "name": key.strip(),
-                            "value": value.strip(),
-                            "type": "environment_variable",
-                        }
-                    )
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                options.append(
+                    {
+                        "name": key.strip(),
+                        "value": value.strip(),
+                        "type": "environment_variable",
+                    }
+                )
 
         return options
 

@@ -4,6 +4,8 @@ High-performance database connection pooling with intelligent load balancing,
 health monitoring, and automatic scaling.
 """
 
+import builtins
+import contextlib
 import logging
 import queue
 import sqlite3
@@ -365,10 +367,8 @@ class AdvancedConnectionPoolManager:
                     pass
 
                 # Close the actual connection
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     managed_conn.connection.close()
-                except:
-                    pass
 
                 self._stats.total_connections -= 1
 

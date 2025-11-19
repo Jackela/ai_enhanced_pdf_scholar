@@ -344,7 +344,7 @@ class L3CDNCache:
             return content_url
 
     async def invalidate_cache(
-        self, urls: Union[str, list[str]], wait_for_completion: bool = False
+        self, urls: str | list[str], wait_for_completion: bool = False
     ) -> bool:
         """Invalidate cached content on CDN."""
         if isinstance(urls, str):

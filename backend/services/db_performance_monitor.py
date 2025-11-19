@@ -57,7 +57,7 @@ class PerformanceMetric:
 
     name: str
     metric_type: MetricType
-    value: Union[float, int, dict[str, Any]]
+    value: float | int | dict[str, Any]
     timestamp: datetime
     labels: dict[str, str] = field(default_factory=dict[str, Any])
     description: str = ""

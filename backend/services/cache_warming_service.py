@@ -253,10 +253,7 @@ class CacheWarmingService:
         # Check if key starts and ends with the pattern parts
         if pattern_parts[0] and not key.startswith(pattern_parts[0]):
             return False
-        if pattern_parts[-1] and not key.endswith(pattern_parts[-1]):
-            return False
-
-        return True
+        return not (pattern_parts[-1] and not key.endswith(pattern_parts[-1]))
 
     # ========================================================================
     # Task Management

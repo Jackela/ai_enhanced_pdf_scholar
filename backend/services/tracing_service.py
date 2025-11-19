@@ -201,7 +201,7 @@ class TracingService:
         name: str,
         kind: trace.SpanKind | None = None,
         attributes: dict[str, Any] | None = None,
-        parent: Union[trace.Span, trace.SpanContext] | None = None,
+        parent: trace.Span | trace.SpanContext | None = None,
     ) -> trace.Span:
         """
         Start a new span.

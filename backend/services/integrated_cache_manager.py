@@ -801,7 +801,9 @@ class IntegratedCacheManager:
             )
 
             results.update(
-                dict[str, Any](zip([key for key, _ in batch_items], batch_results, strict=False))
+                dict[str, Any](
+                    zip([key for key, _ in batch_items], batch_results, strict=False)
+                )
             )
 
         return results
@@ -1031,9 +1033,9 @@ class IntegratedCacheManager:
                 if self.response_times:
                     recent_times = self.response_times[-100:]  # Last 100 operations
                     avg_time = sum(recent_times) / len(recent_times)
-                    self.metrics.cache_response_time.labels(cache_level="overall").set[str](
-                        avg_time / 1000
-                    )
+                    self.metrics.cache_response_time.labels(cache_level="overall").set[
+                        str
+                    ](avg_time / 1000)
 
             logger.debug(
                 f"Performance metrics collected: hit_rate={stats.calculate_hit_rate():.1f}%"

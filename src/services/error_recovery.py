@@ -111,7 +111,9 @@ class RetryMechanism:
 
         return wrapper
 
-    def _execute_with_retry(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    def _execute_with_retry(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute function with retry logic."""
         last_exception = None
         delay = self.config.initial_delay
@@ -193,7 +195,9 @@ class CircuitBreaker:
 
         return wrapper
 
-    def _execute_with_circuit_breaker(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    def _execute_with_circuit_breaker(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute function with circuit breaker protection."""
         with self._lock:
             if self.state == CircuitBreakerState.OPEN:
@@ -305,12 +309,14 @@ class ResourceCleanupManager:
         finally:
             self.cleanup_all()
 
-    def add_cleanup_handler(self, handler: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
+    def add_cleanup_handler(
+        self, handler: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
         """Add a cleanup handler function."""
         with self._lock:
             self.cleanup_handlers.append(lambda: handler(*args, **kwargs))
 
-    def add_cleanup_path(self, path: Union[str, Path]) -> None:
+    def add_cleanup_path(self, path: str | Path) -> None:
         """Add a path for cleanup."""
         with self._lock:
             self.cleanup_paths.append(Path(path))
@@ -433,7 +439,7 @@ class RecoveryOrchestrator:
     def with_recovery(
         self,
         operation: Callable[..., Any],
-        cleanup_paths: list[Union[str, Path]] | None = None,
+        cleanup_paths: list[str | Path] | None = None,
         cleanup_handlers: list[Callable[..., Any]] | None = None,
         retry_config: RetryConfig | None = None,
         circuit_breaker_config: CircuitBreakerConfig | None = None,
@@ -441,10 +447,7 @@ class RecoveryOrchestrator:
         """Execute operation with full recovery support."""
 
         # Setup custom configurations if provided
-        if retry_config:
-            retry_mechanism = RetryMechanism(retry_config)
-        else:
-            retry_mechanism = self.retry
+        retry_mechanism = RetryMechanism(retry_config) if retry_config else self.retry
 
         if circuit_breaker_config:
             circuit_breaker = CircuitBreaker(circuit_breaker_config)

@@ -255,7 +255,7 @@ class StreamingValidationService:
 
             # Security threat tracking
             security_threats: Any = {
-                threat_type: [] for threat_type in self.SECURITY_PATTERNS.keys()
+                threat_type: [] for threat_type in self.SECURITY_PATTERNS
             }
 
             bytes_read = 0

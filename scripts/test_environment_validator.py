@@ -9,6 +9,8 @@ Usage:
     python scripts/test_environment_validator.py
 """
 
+import builtins
+import contextlib
 import importlib
 import logging
 import sys
@@ -82,17 +84,6 @@ class TestEnvironmentValidator:
             python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
             # Check minimum Python version (3.8+)
-            if sys.version_info < (3, 8):
-                self.results["python_environment"]["status"] = "error"
-                self.results["python_environment"]["details"] = {
-                    "version": python_version,
-                    "error": "Python 3.8+ required",
-                }
-                self.issues.append(
-                    f"Python version {python_version} too old (3.8+ required)"
-                )
-                print(f"❌ Python version: {python_version} (too old)")
-                return
 
             # Check virtual environment
             in_venv = hasattr(sys, "real_prefix") or (
@@ -237,10 +228,8 @@ class TestEnvironmentValidator:
 
             finally:
                 # Clean up temp file
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     Path(temp_path).unlink(missing_ok=True)
-                except:
-                    pass
 
         except Exception as e:
             self.results["database_system"]["status"] = "error"
@@ -308,10 +297,8 @@ class TestEnvironmentValidator:
                 db.close_all_connections()
 
             finally:
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     Path(temp_path).unlink(missing_ok=True)
-                except:
-                    pass
 
         except Exception as e:
             self.results["migration_system"]["status"] = "error"

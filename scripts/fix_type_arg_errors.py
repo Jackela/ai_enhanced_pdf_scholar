@@ -26,7 +26,6 @@ from typing import Any
 import libcst as cst
 from libcst import metadata
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -118,8 +117,7 @@ class TypeArgFixer(cst.CSTTransformer):
             slice_node = cst.Index(
                 value=cst.Tuple(
                     elements=[
-                        cst.Element(cst.Name(part.strip()))
-                        for part in param_parts
+                        cst.Element(cst.Name(part.strip())) for part in param_parts
                     ]
                 )
             )
@@ -140,8 +138,7 @@ class TypeArgFixer(cst.CSTTransformer):
             slice_node = cst.Index(
                 value=cst.Tuple(
                     elements=[
-                        cst.Element(cst.Name(part.strip()))
-                        for part in param_parts
+                        cst.Element(cst.Name(part.strip())) for part in param_parts
                     ]
                 )
             )
@@ -201,9 +198,11 @@ def fix_file(
                 # Add Any to existing typing import
                 fixed_code = re.sub(
                     r"from typing import ([^\n]+)",
-                    lambda m: f"from typing import {m.group(1)}, Any"
-                    if "Any" not in m.group(1)
-                    else m.group(0),
+                    lambda m: (
+                        f"from typing import {m.group(1)}, Any"
+                        if "Any" not in m.group(1)
+                        else m.group(0)
+                    ),
                     fixed_code,
                     count=1,
                 )
@@ -211,17 +210,13 @@ def fix_file(
             # Write back to file
             file_path.write_text(fixed_code, encoding="utf-8")
 
-            types_summary = ", ".join(
-                f"{k}({v})" for k, v in fixer.types_fixed.items()
-            )
+            types_summary = ", ".join(f"{k}({v})" for k, v in fixer.types_fixed.items())
             logger.info(
                 f"✓ {file_path.name}: Fixed {fixer.fixes_applied} type-arg errors "
                 f"[{types_summary}]"
             )
         else:
-            types_summary = ", ".join(
-                f"{k}({v})" for k, v in fixer.types_fixed.items()
-            )
+            types_summary = ", ".join(f"{k}({v})" for k, v in fixer.types_fixed.items())
             logger.info(
                 f"[DRY RUN] Would fix {fixer.fixes_applied} type-arg errors "
                 f"in {file_path.name} [{types_summary}]"
@@ -283,7 +278,7 @@ def fix_files_batch(
 
     logger.info("")
     logger.info("=" * 60)
-    logger.info(f"Batch Processing Summary:")
+    logger.info("Batch Processing Summary:")
     logger.info(f"  Total files: {len(files)}")
     logger.info(f"  Successful: {total_success}")
     logger.info(f"  Failed: {total_failed}")
@@ -313,7 +308,9 @@ Examples:
         """,
     )
 
-    parser.add_argument("file_path", type=Path, nargs="?", help="Path to Python file to fix")
+    parser.add_argument(
+        "file_path", type=Path, nargs="?", help="Path to Python file to fix"
+    )
     parser.add_argument(
         "--batch", type=Path, help="Path to file containing list of files to fix"
     )

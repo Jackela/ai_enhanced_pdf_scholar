@@ -50,7 +50,7 @@ class ThreatLevel(str, Enum):
 class IPRule:
     """IP access rule configuration."""
 
-    network: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
+    network: ipaddress.IPv4Network | ipaddress.IPv6Network
     action: IPAccessAction
     description: str
     priority: int = 1000  # Lower number = higher priority

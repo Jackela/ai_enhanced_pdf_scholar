@@ -50,10 +50,7 @@ class ConfigValidator:
                 return False
 
             # Must have netloc (domain)
-            if not parsed.netloc:
-                return False
-
-            return True
+            return parsed.netloc
 
         except Exception:
             return False
@@ -77,10 +74,7 @@ class ConfigValidator:
             return False
 
         # Should not end with slash
-        if origin.endswith("/"):
-            return False
-
-        return True
+        return not origin.endswith("/")
 
     @staticmethod
     def validate_redis_url(redis_url: str) -> bool:
@@ -99,7 +93,7 @@ class ConfigValidator:
         return ConfigValidator.validate_url(redis_url, schemes=["redis", "rediss"])
 
     @staticmethod
-    def validate_port(port: Union[int, str]) -> bool:
+    def validate_port(port: int | str) -> bool:
         """
         Validate port number.
 
@@ -116,7 +110,7 @@ class ConfigValidator:
             return False
 
     @staticmethod
-    def validate_positive_int(value: Union[int, str], min_value: int = 1) -> bool:
+    def validate_positive_int(value: int | str, min_value: int = 1) -> bool:
         """
         Validate positive integer.
 
@@ -188,11 +182,7 @@ class ConfigValidator:
         ]
 
         secret_lower = secret.lower()
-        for pattern in weak_patterns:
-            if pattern in secret_lower:
-                return False
-
-        return True
+        return all(pattern not in secret_lower for pattern in weak_patterns)
 
     @staticmethod
     def validate_api_key(api_key: str, service: str = "generic") -> bool:
@@ -234,11 +224,7 @@ class ConfigValidator:
         ]
 
         api_key_lower = api_key.lower()
-        for pattern in placeholder_patterns:
-            if pattern in api_key_lower:
-                return False
-
-        return True
+        return all(pattern not in api_key_lower for pattern in placeholder_patterns)
 
 
 class SecurityValidator:

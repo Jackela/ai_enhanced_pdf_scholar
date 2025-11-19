@@ -4,6 +4,7 @@ Memory-efficient file upload service with chunked processing and progress tracki
 """
 
 import asyncio
+import contextlib
 import hashlib
 import logging
 import os
@@ -11,7 +12,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union, Any
+from typing import Any, Union
 from uuid import UUID
 
 import aiofiles
@@ -69,7 +70,7 @@ class StreamingUploadService:
         self.peak_memory_mb: float = 0.0
 
         # Chunk processing statistics
-        self.chunk_stats: dict[UUID, dict[str, Union[int, float]]] = {}
+        self.chunk_stats: dict[UUID, dict[str, int | float]] = {}
 
         # Background cleanup task
         self._cleanup_task: asyncio.Task[None] | None = None
@@ -653,10 +654,8 @@ class StreamingUploadService:
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         # Clean up all active sessions
         session_ids = list[Any](self.active_sessions.keys())

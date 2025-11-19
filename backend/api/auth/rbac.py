@@ -602,7 +602,7 @@ class RBACService:
     def _clear_user_cache(self, user_id: int) -> None:
         """Clear all cached permissions for a user."""
         keys_to_remove = [
-            k for k in self._permission_cache.keys() if k.startswith(f"{user_id}:")
+            k for k in self._permission_cache if k.startswith(f"{user_id}:")
         ]
         for key in keys_to_remove:
             del self._permission_cache[key]

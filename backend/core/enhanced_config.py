@@ -124,10 +124,7 @@ class RedisConfig(BaseModel):
         # Build connection string
         scheme = "rediss" if self.ssl else "redis"
 
-        if self.password:
-            auth = f":{self.password.get_secret_value()}@"
-        else:
-            auth = ""
+        auth = f":{self.password.get_secret_value()}@" if self.password else ""
 
         return f"{scheme}://{auth}{self.host}:{self.port}/{self.database}"
 

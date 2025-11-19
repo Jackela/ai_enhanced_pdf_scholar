@@ -6,6 +6,7 @@ Service for handling interrupted upload resumption with persistent state trackin
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -318,7 +319,9 @@ class UploadResumptionService:
             )
             raise
 
-    async def get_resumable_sessions(self, client_id: str | None = None) -> list[dict[str, Any]]:
+    async def get_resumable_sessions(
+        self, client_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get list[Any] of resumable sessions, optionally filtered by client.
 
@@ -468,10 +471,8 @@ class UploadResumptionService:
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         # Clear memory cache
         self.resumable_sessions.clear()

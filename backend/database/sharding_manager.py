@@ -918,7 +918,7 @@ class ShardingManager:
                 # Redistribute data to appropriate shards
                 for row in data_rows:
                     # Extract shard key from row
-                    if self.config.shard_key.column_name in row.keys():
+                    if self.config.shard_key.column_name in row:
                         key_value = row[self.config.shard_key.column_name]
                         target_shard_id = self._find_shard_for_key(key_value)
 

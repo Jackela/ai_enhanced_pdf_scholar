@@ -3,6 +3,7 @@ Rate Limiting Configuration Module
 Provides environment-aware configuration for rate limiting
 """
 
+import contextlib
 import os
 
 from backend.api.middleware.rate_limiting import RateLimitConfig, RateLimitRule
@@ -151,16 +152,12 @@ def get_env_override_config(base_config: RateLimitConfig) -> RateLimitConfig:
 
     # Apply specific overrides
     if global_limit := os.getenv("RATE_LIMIT_GLOBAL_LIMIT"):
-        try:
+        with contextlib.suppress(ValueError):
             base_config.global_ip_limit.requests = int(global_limit)
-        except ValueError:
-            pass
 
     if default_limit := os.getenv("RATE_LIMIT_DEFAULT_LIMIT"):
-        try:
+        with contextlib.suppress(ValueError):
             base_config.default_limit.requests = int(default_limit)
-        except ValueError:
-            pass
 
     if upload_limit := os.getenv("RATE_LIMIT_UPLOAD_LIMIT"):
         try:

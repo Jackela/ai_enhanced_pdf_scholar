@@ -4,6 +4,7 @@ Real-time monitoring, alerting, and performance tracking for Redis cluster.
 """
 
 import asyncio
+import contextlib
 import logging
 from collections import deque
 from collections.abc import Callable
@@ -428,10 +429,8 @@ class RedisMonitoringService:
 
         if self.monitoring_task:
             self.monitoring_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.monitoring_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Stopped Redis monitoring")
 
@@ -480,7 +479,7 @@ class RedisMonitoringService:
             logger.warning("No cluster manager provided for monitoring")
 
     async def _collect_node_metrics(
-        self, client: Union[Redis, RedisCluster], node_id: str
+        self, client: Redis | RedisCluster, node_id: str
     ) -> None:
         """Collect metrics from a specific Redis node."""
         try:

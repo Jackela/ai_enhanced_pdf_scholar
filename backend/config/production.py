@@ -195,7 +195,7 @@ class MonitoringIntegrationConfig:
     log_retention_days: int = 90
 
     # Alerting thresholds
-    alert_thresholds: dict[str, Union[int, float]] = field(
+    alert_thresholds: dict[str, int | float] = field(
         default_factory=lambda: {
             "error_rate_percent": 5.0,
             "response_time_p95_seconds": 2.0,

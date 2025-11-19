@@ -18,6 +18,7 @@ except ImportError:
     # Python 3.13+ compatibility
     from email.mime.multipart import MIMEMultipart as MimeMultipart
     from email.mime.text import MIMEText as MimeText
+import contextlib
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -277,17 +278,13 @@ class SecretsMonitoringService:
         """Stop background monitoring tasks."""
         if self.monitoring_task and not self.monitoring_task.done():
             self.monitoring_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.monitoring_task
-            except asyncio.CancelledError:
-                pass
 
         if self.cleanup_task and not self.cleanup_task.done():
             self.cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Stopped secrets monitoring background tasks")
 

@@ -314,8 +314,8 @@ class BackupEncryptionService:
 
     async def encrypt_file(
         self,
-        input_file: Union[str, Path],
-        output_file: Union[str, Path],
+        input_file: str | Path,
+        output_file: str | Path,
         key_id: str,
         algorithm: EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
         compression: bool = True,
@@ -401,9 +401,9 @@ class BackupEncryptionService:
 
     async def decrypt_file(
         self,
-        input_file: Union[str, Path],
-        output_file: Union[str, Path],
-        metadata_file: Union[str, Path] | None = None,
+        input_file: str | Path,
+        output_file: str | Path,
+        metadata_file: str | Path | None = None,
     ) -> bool:
         """Decrypt a backup file."""
         start_time = time.time()

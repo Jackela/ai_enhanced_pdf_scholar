@@ -281,10 +281,7 @@ def validate_origin_format(origin: str) -> bool:
 
     # Must contain domain after protocol
     protocol_part = origin.split("://", 1)
-    if len(protocol_part) != 2 or not protocol_part[1]:
-        return False
-
-    return True
+    return not (len(protocol_part) != 2 or not protocol_part[1])
 
 
 def get_safe_cors_origins() -> list[str]:

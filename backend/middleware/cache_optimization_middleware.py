@@ -157,10 +157,7 @@ class CacheKeyGenerator:
         # Check route-specific config
         path = str(request.url.path)
         route_config = self.config.route_configs.get(path)
-        if route_config and not route_config.get("enabled", True):
-            return False
-
-        return True
+        return not (route_config and not route_config.get("enabled", True))
 
     def should_cache_response(self, response: Response) -> bool:
         """Determine if response should be cached."""
@@ -175,10 +172,7 @@ class CacheKeyGenerator:
 
         # Check cache control headers
         cache_control = response.headers.get("cache-control", "")
-        if "no-cache" in cache_control or "no-store" in cache_control:
-            return False
-
-        return True
+        return not ("no-cache" in cache_control or "no-store" in cache_control)
 
 
 # ============================================================================

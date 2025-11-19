@@ -179,13 +179,15 @@ class BaseRepository(ABC, Generic[T]):
                         f"No result from INSERT RETURNING for {table_name}"
                     )
                 new_id = result[0]
-            except Exception:
+            except Exception as fallback_error:
                 # Fallback to traditional INSERT + last_insert_rowid()
                 query = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
                 self.db.execute(query, tuple(values))
                 new_id = self.db.get_last_insert_id()
                 if new_id is None or new_id <= 0:
-                    raise RuntimeError(f"Failed to get insert ID for {table_name}")
+                    raise RuntimeError(
+                        f"Failed to get insert ID for {table_name}"
+                    ) from fallback_error
 
             # Retrieve the created model
             created_model = self.find_by_id(new_id)

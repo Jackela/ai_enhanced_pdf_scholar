@@ -608,14 +608,13 @@ def mask_sensitive_data(data: dict[str, Any], fields: list[str]) -> dict[str, An
     """
     masked_data = data.copy()
     for field in fields:
-        if field in masked_data:
-            if isinstance(masked_data[field], str):
-                # Keep first and last 2 characters
-                value = masked_data[field]
-                if len(value) > 4:
-                    masked_data[field] = value[:2] + "*" * (len(value) - 4) + value[-2:]
-                else:
-                    masked_data[field] = "*" * len(value)
+        if field in masked_data and isinstance(masked_data[field], str):
+            # Keep first and last 2 characters
+            value = masked_data[field]
+            if len(value) > 4:
+                masked_data[field] = value[:2] + "*" * (len(value) - 4) + value[-2:]
+            else:
+                masked_data[field] = "*" * len(value)
     return masked_data
 
 

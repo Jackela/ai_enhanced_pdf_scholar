@@ -368,10 +368,7 @@ class MemoryLeakDetector:
 
         # Slope (trend)
         denominator = n * sum_xx - sum_x * sum_x
-        if denominator == 0:
-            slope = 0
-        else:
-            slope = (n * sum_xy - sum_x * sum_y) / denominator
+        slope = 0 if denominator == 0 else (n * sum_xy - sum_x * sum_y) / denominator
 
         # Correlation coefficient
         mean_x = sum_x / n

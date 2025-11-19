@@ -12,10 +12,9 @@ References:
 - ADR-001: V2.0 Architecture Principles
 - ADR-003: API Versioning Strategy
 """
-from typing import Any
-
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -56,7 +55,9 @@ class QueryResultData(BaseModel):
         None, description="Document IDs (for multi-doc)"
     )
     response: str = Field(..., description="Generated response")
-    sources: list[dict[str, Any]] = Field(default_factory=list[Any], description="Source chunks used")
+    sources: list[dict[str, Any]] = Field(
+        default_factory=list[Any], description="Source chunks used"
+    )
     cached: bool = Field(False, description="Whether result was cached")
     processing_time_ms: int = Field(..., description="Processing time in milliseconds")
     links: Links | None = Field(None, description="HATEOAS links", alias="_links")

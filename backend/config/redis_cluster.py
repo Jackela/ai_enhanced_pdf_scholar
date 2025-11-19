@@ -181,10 +181,8 @@ class RedisClusterManager:
         self.caching_config = caching_config or CachingConfig()
 
         # Connection management
-        self._redis_client: Union[redis.Redis, RedisCluster] | None = None
-        self._async_redis_client: (
-            Union[aioredis.Redis, aioredis.RedisCluster] | None
-        ) = None
+        self._redis_client: redis.Redis | RedisCluster | None = None
+        self._async_redis_client: aioredis.Redis | aioredis.RedisCluster | None = None
         self._connection_pools: dict[str, redis.ConnectionPool] = {}
         self._health_status: dict[str, bool] = {}
 

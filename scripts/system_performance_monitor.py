@@ -5,7 +5,9 @@ Comprehensive performance analysis for AI Enhanced PDF Scholar
 Includes memory monitoring, concurrent load testing, and reliability assessment
 """
 
+import builtins
 import concurrent.futures
+import contextlib
 import json
 import logging
 import os
@@ -521,10 +523,8 @@ class SystemPerformanceMonitor:
                 except Exception as conn_error:
                     # Cleanup any remaining connections
                     for conn in connections:
-                        try:
+                        with contextlib.suppress(builtins.BaseException):
                             conn.close()
-                        except:
-                            pass
                     raise conn_error
 
             except Exception as e:

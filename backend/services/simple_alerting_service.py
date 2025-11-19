@@ -5,6 +5,7 @@ Provides basic alerting capabilities for system performance monitoring
 with configurable thresholds and notification channels.
 """
 
+import contextlib
 import logging
 import time
 from collections.abc import Callable
@@ -244,10 +245,8 @@ class SimpleAlertingService:
 
     def remove_alert_callback(self, callback: Callable[[Alert], None]) -> None:
         """Remove an alert callback."""
-        try:
+        with contextlib.suppress(ValueError):
             self.alert_callbacks.remove(callback)
-        except ValueError:
-            pass
 
     def evaluate_metrics(self, metrics_data: dict[str, Any]) -> None:
         """Evaluate metrics against alert rules and trigger alerts."""

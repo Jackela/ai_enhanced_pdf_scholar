@@ -4,6 +4,7 @@ Manages WebSocket connections for real-time communication.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 from collections.abc import Callable
@@ -798,10 +799,8 @@ class WebSocketManager:
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         # Cancel all RAG tasks
         for task_id in list[Any](self.rag_tasks.keys()):

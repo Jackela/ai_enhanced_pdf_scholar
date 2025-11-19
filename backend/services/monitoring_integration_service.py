@@ -8,6 +8,7 @@ infrastructure including WebSocket manager and performance monitor.
 """
 
 import asyncio
+import contextlib
 import logging
 
 from backend.api.websocket_manager import WebSocketManager
@@ -78,10 +79,8 @@ class MonitoringIntegrationService:
             # Stop integration bridge
             if self._integration_task and not self._integration_task.done():
                 self._integration_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._integration_task
-                except asyncio.CancelledError:
-                    pass
 
             # Stop metrics collector
             await self.metrics_collector.stop_collection()

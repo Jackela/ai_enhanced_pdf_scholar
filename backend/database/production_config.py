@@ -416,7 +416,7 @@ class ProductionDatabaseManager:
 
     async def execute_query(
         self,
-        query: Union[str, sa.text],
+        query: str | sa.text,
         parameters: dict[str, Any] | None = None,
         read_only: bool = False,
     ) -> Any:

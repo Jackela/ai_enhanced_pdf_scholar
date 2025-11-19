@@ -6,6 +6,7 @@ to dashboard clients with filtering and subscription management.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 from datetime import datetime
@@ -329,10 +330,8 @@ class MetricsWebSocketHandler:
             # Cancel streaming task
             if self.streaming_task and not self.streaming_task.done():
                 self.streaming_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self.streaming_task
-                except asyncio.CancelledError:
-                    pass
 
             # Unsubscribe from metrics updates
             if metrics_collector:

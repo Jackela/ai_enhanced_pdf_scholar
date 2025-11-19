@@ -526,7 +526,7 @@ class IncrementalBackupService:
         """Initialize incremental backup service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
-        self.trackers: dict[str, Union[FileSystemTracker, DatabaseTracker]] = {}
+        self.trackers: dict[str, FileSystemTracker | DatabaseTracker] = {}
         self.backup_history: dict[str, list[IncrementalSnapshot]] = {}
 
     def register_filesystem_source(

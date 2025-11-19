@@ -344,10 +344,7 @@ class ImageOptimizer:
         self, input_path: Path, output_dir: Path, format_name: str
     ) -> Path:
         """Get output path for optimized image."""
-        if format_name == "original":
-            suffix = input_path.suffix
-        else:
-            suffix = f".{format_name}"
+        suffix = input_path.suffix if format_name == "original" else f".{format_name}"
 
         filename = f"{input_path.stem}{suffix}"
         return (
@@ -569,7 +566,7 @@ class StaticAssetOptimizer:
         logger.info("Static Asset Optimizer initialized")
 
     async def optimize_directory(
-        self, input_dir: Union[str, Path], output_dir: Union[str, Path] | None = None
+        self, input_dir: str | Path, output_dir: str | Path | None = None
     ) -> OptimizationStatistics:
         """Optimize all assets in a directory."""
         input_path = Path(input_dir)

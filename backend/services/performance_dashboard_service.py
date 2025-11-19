@@ -6,6 +6,7 @@ and interactive performance monitoring for the AI Enhanced PDF Scholar system.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 from dataclasses import asdict
@@ -315,10 +316,8 @@ class PerformanceDashboardService:
         self._running = False
         if self._update_task:
             self._update_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._update_task
-            except asyncio.CancelledError:
-                pass
             logger.info("Real-time dashboard updates stopped")
 
     async def _real_time_update_loop(self) -> None:

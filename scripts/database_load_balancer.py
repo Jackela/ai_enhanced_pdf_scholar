@@ -199,8 +199,12 @@ class DatabaseLoadBalancer:
         self._circuit_breaker_state: dict[str, dict[str, Any]] = {}
 
         # Performance tracking
-        self._response_times: dict[str, deque[Any]] = defaultdict(lambda: deque[Any](maxlen=100))
-        self._error_rates: dict[str, deque[Any]] = defaultdict(lambda: deque[Any](maxlen=100))
+        self._response_times: dict[str, deque[Any]] = defaultdict(
+            lambda: deque[Any](maxlen=100)
+        )
+        self._error_rates: dict[str, deque[Any]] = defaultdict(
+            lambda: deque[Any](maxlen=100)
+        )
 
         # Thread safety
         self._routing_lock = threading.RLock()
@@ -479,7 +483,9 @@ class DatabaseLoadBalancer:
                 if len(self._response_times[server_id]) > 1000:
                     # Keep only the most recent 500
                     recent_times = list[Any](self._response_times[server_id])[-500:]
-                    self._response_times[server_id] = deque[Any](recent_times, maxlen=100)
+                    self._response_times[server_id] = deque[Any](
+                        recent_times, maxlen=100
+                    )
 
                 if len(self._error_rates[server_id]) > 1000:
                     recent_errors = list[Any](self._error_rates[server_id])[-500:]

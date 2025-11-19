@@ -6,6 +6,7 @@ and system health problems with configurable thresholds and notification channel
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import smtplib
@@ -484,17 +485,13 @@ class PerformanceAlertingService:
 
         if self._evaluation_task:
             self._evaluation_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._evaluation_task
-            except asyncio.CancelledError:
-                pass
 
         if self._cleanup_task:
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Performance alerting monitoring stopped")
 

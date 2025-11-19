@@ -174,8 +174,8 @@ class TestCoverageGenerator:
                 recommendations.append(f"   • {file_path}: {coverage:.1f}% coverage")
 
         # Module-specific recommendations
-        src_files = [f for f in file_analysis.keys() if f.startswith("src/")]
-        backend_files = [f for f in file_analysis.keys() if f.startswith("backend/")]
+        src_files = [f for f in file_analysis if f.startswith("src/")]
+        backend_files = [f for f in file_analysis if f.startswith("backend/")]
 
         if src_files:
             src_coverage = sum(file_analysis[f]["coverage"] for f in src_files) / len(

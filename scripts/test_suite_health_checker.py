@@ -7,6 +7,7 @@ Comprehensive validation of test suite health and readiness for production.
 """
 
 import argparse
+import contextlib
 import json
 import subprocess
 import sys
@@ -126,38 +127,28 @@ class TestSuiteHealthChecker:
                     parts = line.split()
                     for i, part in enumerate(parts):
                         if part == "passed" and i > 0:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 passed_tests = int(parts[i - 1])
-                            except ValueError:
-                                pass
                         elif part == "failed" and i > 0:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 failed_tests = int(parts[i - 1])
-                            except ValueError:
-                                pass
                         elif part == "skipped" and i > 0:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 skipped_tests = int(parts[i - 1])
-                            except ValueError:
-                                pass
                 elif "passed" in line and "failed" not in line:
                     # Parse line like "10 passed in 2.34s"
                     parts = line.split()
                     for i, part in enumerate(parts):
                         if part == "passed" and i > 0:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 passed_tests = int(parts[i - 1])
-                            except ValueError:
-                                pass
                 elif "skipped" in line and "passed" not in line:
                     # Parse line like "5 skipped"
                     parts = line.split()
                     for i, part in enumerate(parts):
                         if part == "skipped" and i > 0:
-                            try:
+                            with contextlib.suppress(ValueError):
                                 skipped_tests = int(parts[i - 1])
-                            except ValueError:
-                                pass
 
             total_tests = passed_tests + failed_tests + skipped_tests
 

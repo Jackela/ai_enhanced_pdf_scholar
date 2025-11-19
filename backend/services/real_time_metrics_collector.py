@@ -6,6 +6,7 @@ performance monitoring dashboard with WebSocket integration.
 """
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections.abc import Callable
@@ -198,10 +199,8 @@ class RealTimeMetricsCollector:
         for task in [self._collector_task, self._streaming_task, self._cleanup_task]:
             if task and not task.done():
                 task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await task
-                except asyncio.CancelledError:
-                    pass
 
         logger.info("Real-time metrics collection stopped")
 

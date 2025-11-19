@@ -1315,7 +1315,7 @@ async def main() -> None:
     print("  python alert_response_automation.py --history")
     print()
     print("Supported alert types:")
-    for alert_type in automation.remediation_actions.keys():
+    for alert_type in automation.remediation_actions:
         print(f"  - {alert_type}")
 
 

@@ -98,7 +98,7 @@ class UploadSession(BaseModel):
     temp_file_path: str | None = Field(None, description="Temporary file path")
     expected_hash: str | None = Field(None, description="Expected file SHA-256 hash")
     actual_hash: str | None = Field(None, description="Calculated file SHA-256 hash")
-    metadata: dict[str, Union[str, int, float, bool]] = Field(
+    metadata: dict[str, str | int | float | bool] = Field(
         default_factory=dict, description="Additional metadata"
     )
 
@@ -184,9 +184,8 @@ class StreamingUploadRequest(BaseModel):
     @classmethod
     def validate_expected_hash(cls, v: str | None) -> str | None:
         """Validate SHA-256 hash format."""
-        if v is not None:
-            if not re.match(r"^[a-fA-F0-9]{64}$", v):
-                raise ValueError("Invalid SHA-256 hash format")
+        if v is not None and not re.match(r"^[a-fA-F0-9]{64}$", v):
+            raise ValueError("Invalid SHA-256 hash format")
         return v
 
 

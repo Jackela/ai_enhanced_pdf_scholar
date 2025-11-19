@@ -121,7 +121,7 @@ class CacheLevelWrapper:
 
     def __init__(
         self,
-        cache: Union[L1MemoryCache, L2RedisCache, L3CDNCache],
+        cache: L1MemoryCache | L2RedisCache | L3CDNCache,
         level_name: str,
         coherency_manager: "CacheCoherencyManager",
     ) -> None:

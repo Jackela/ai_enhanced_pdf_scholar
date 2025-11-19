@@ -464,7 +464,7 @@ class RedisCacheService:
         end: int = -1,
         withscores: bool = False,
         reverse: bool = False,
-    ) -> Union[list[Any], list[tuple]]:
+    ) -> list[Any] | list[tuple]:
         """Get range from sorted set[str]."""
         if not self._redis_client:
             return []
