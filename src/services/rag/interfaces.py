@@ -16,12 +16,14 @@ class IRAGIndexBuilder(ABC):
     """Interface for RAG index building operations."""
 
     @abstractmethod
-    async def build_index(self, document: DocumentModel, **kwargs) -> dict[str, Any]:
+    async def build_index(
+        self, document: DocumentModel, **kwargs: Any
+    ) -> dict[str, Any]:
         """Build vector index for a document."""
         pass
 
     @abstractmethod
-    async def rebuild_index(self, document_id: int, **kwargs) -> dict[str, Any]:
+    async def rebuild_index(self, document_id: int, **kwargs: Any) -> dict[str, Any]:
         """Rebuild vector index for existing document."""
         pass
 
@@ -45,13 +47,15 @@ class IRAGQueryEngine(ABC):
     """Interface for RAG query processing operations."""
 
     @abstractmethod
-    async def query(self, document_id: int, query: str, **kwargs) -> dict[str, Any]:
+    async def query(
+        self, document_id: int, query: str, **kwargs: Any
+    ) -> dict[str, Any]:
         """Execute RAG query against document index."""
         pass
 
     @abstractmethod
     async def multi_document_query(
-        self, document_ids: list[int], query: str, **kwargs
+        self, document_ids: list[int], query: str, **kwargs: Any
     ) -> dict[str, Any]:
         """Execute query across multiple documents."""
         pass
@@ -83,12 +87,12 @@ class IRAGRecoveryService(ABC):
         pass
 
     @abstractmethod
-    async def repair_index(self, document_id: int, **kwargs) -> dict[str, Any]:
+    async def repair_index(self, document_id: int, **kwargs: Any) -> dict[str, Any]:
         """Repair corrupted index."""
         pass
 
     @abstractmethod
-    async def health_check(self, **kwargs) -> dict[str, Any]:
+    async def health_check(self, **kwargs: Any) -> dict[str, Any]:
         """Perform comprehensive health check."""
         pass
 
@@ -114,12 +118,14 @@ class IRAGFileManager(ABC):
     """Interface for RAG file management operations."""
 
     @abstractmethod
-    async def cleanup_temp_files(self, document_id: int | None = None, **kwargs) -> int:
+    async def cleanup_temp_files(
+        self, document_id: int | None = None, **kwargs: Any
+    ) -> int:
         """Clean up temporary files."""
         pass
 
     @abstractmethod
-    async def cleanup_orphaned_files(self, **kwargs) -> int:
+    async def cleanup_orphaned_files(self, **kwargs: Any) -> int:
         """Clean up orphaned files without parent documents."""
         pass
 
@@ -146,7 +152,7 @@ class IRAGFileManager(ABC):
         pass
 
     @abstractmethod
-    async def optimize_storage(self, **kwargs) -> dict[str, Any]:
+    async def optimize_storage(self, **kwargs: Any) -> dict[str, Any]:
         """Optimize storage usage."""
         pass
 
@@ -163,39 +169,39 @@ class IRAGCoordinator(ABC):
 
     @abstractmethod
     async def process_document_complete(
-        self, document: DocumentModel, **kwargs
+        self, document: DocumentModel, **kwargs: Any
     ) -> dict[str, Any]:
         """Complete document processing workflow."""
         pass
 
     @abstractmethod
     async def query_document(
-        self, document_id: int, query: str, **kwargs
+        self, document_id: int, query: str, **kwargs: Any
     ) -> dict[str, Any]:
         """Query document with full workflow."""
         pass
 
     @abstractmethod
     async def batch_process_documents(
-        self, document_ids: list[int], **kwargs
+        self, document_ids: list[int], **kwargs: Any
     ) -> list[dict[str, Any]]:
         """Process multiple documents in batch."""
         pass
 
     @abstractmethod
     async def cleanup_resources(
-        self, document_id: int | None = None, **kwargs
+        self, document_id: int | None = None, **kwargs: Any
     ) -> dict[str, Any]:
         """Clean up system resources."""
         pass
 
     @abstractmethod
-    async def health_check(self, **kwargs) -> dict[str, Any]:
+    async def health_check(self, **kwargs: Any) -> dict[str, Any]:
         """System-wide health check."""
         pass
 
     @abstractmethod
-    def get_performance_metrics(self, **kwargs) -> dict[str, Any]:
+    def get_performance_metrics(self, **kwargs: Any) -> dict[str, Any]:
         """Get system performance metrics."""
         pass
 
@@ -208,21 +214,21 @@ class IRAGVectorStore(ABC):
 
     @abstractmethod
     async def add_documents(
-        self, documents: list[dict[str, Any]], **kwargs
+        self, documents: list[dict[str, Any]], **kwargs: Any
     ) -> dict[str, Any]:
         """Add documents to vector store."""
         pass
 
     @abstractmethod
     async def similarity_search_with_score(
-        self, query: str, k: int = 5, **kwargs
+        self, query: str, k: int = 5, **kwargs: Any
     ) -> list[tuple]:
         """Perform similarity search with relevance scores."""
         pass
 
     @abstractmethod
     async def delete_documents(
-        self, document_ids: list[str], **kwargs
+        self, document_ids: list[str], **kwargs: Any
     ) -> dict[str, Any]:
         """Delete documents from vector store."""
         pass
@@ -242,13 +248,13 @@ class IRAGTextSplitter(ABC):
     """Interface for text splitting strategies."""
 
     @abstractmethod
-    def split_text(self, text: str, **kwargs) -> list[str]:
+    def split_text(self, text: str, **kwargs: Any) -> list[str]:
         """Split text into chunks."""
         pass
 
     @abstractmethod
     def split_documents(
-        self, documents: list[dict[str, Any]], **kwargs
+        self, documents: list[dict[str, Any]], **kwargs: Any
     ) -> list[dict[str, Any]]:
         """Split multiple documents."""
         pass
@@ -266,14 +272,14 @@ class IRAGLLMClient(ABC):
 
     @abstractmethod
     async def generate_response(
-        self, prompt: str, context: str, **kwargs
+        self, prompt: str, context: str, **kwargs: Any
     ) -> dict[str, Any]:
         """Generate response using LLM."""
         pass
 
     @abstractmethod
     async def generate_embeddings(
-        self, texts: list[str], **kwargs
+        self, texts: list[str], **kwargs: Any
     ) -> list[list[float]]:
         """Generate embeddings for texts."""
         pass
@@ -291,7 +297,7 @@ class IRAGContextBuilder(ABC):
 
     @abstractmethod
     def build_context(
-        self, query: str, retrieved_documents: list[dict[str, Any]], **kwargs
+        self, query: str, retrieved_documents: list[dict[str, Any]], **kwargs: Any
     ) -> dict[str, Any]:
         """Build context for LLM query."""
         pass
