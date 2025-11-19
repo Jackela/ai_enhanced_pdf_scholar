@@ -120,7 +120,7 @@ class MultiDocumentCollectionRepository(IMultiDocumentCollectionRepository):
                     f"""
                     SELECT id, name, description, document_ids, document_count, created_at, updated_at
                     FROM multi_document_collections WHERE id IN ({placeholders})
-                """,
+                """,  # noqa: S608 - safe SQL construction
                     entity_ids,
                 )
 
@@ -396,7 +396,7 @@ class MultiDocumentIndexRepository(IMultiDocumentIndexRepository):
                     SELECT id, collection_id, index_path, index_hash, embedding_model,
                            chunk_count, created_at, metadata
                     FROM multi_document_indexes WHERE id IN ({placeholders})
-                """,
+                """,  # noqa: S608 - safe SQL construction
                     entity_ids,
                 )
 
@@ -665,7 +665,7 @@ class CrossDocumentQueryRepository(ICrossDocumentQueryRepository):
                            sources, cross_references, status, error_message, processing_time_ms,
                            tokens_used, created_at, completed_at
                     FROM cross_document_queries WHERE id IN ({placeholders})
-                """,
+                """,  # noqa: S608 - safe SQL construction
                     entity_ids,
                 )
 

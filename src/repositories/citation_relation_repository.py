@@ -91,7 +91,7 @@ class CitationRelationRepository(
             sql = f"""
                 INSERT INTO citation_relations ({", ".join(columns)})
                 VALUES ({", ".join(placeholders)})
-            """
+            """  # noqa: S608 - safe SQL construction
 
             self.db.execute(sql, values)
 
@@ -159,7 +159,7 @@ class CitationRelationRepository(
                 UPDATE citation_relations
                 SET {", ".join(set_clauses)}
                 WHERE id = ?
-            """
+            """  # noqa: S608 - safe SQL construction
 
             self.db.execute(sql, values)
 
@@ -224,7 +224,7 @@ class CitationRelationRepository(
                 SELECT * FROM citation_relations
                 WHERE id IN ({placeholders})
                 ORDER BY id
-            """
+            """  # noqa: S608 - safe SQL construction
             results = self.db.fetch_all(sql, tuple(relation_ids))
 
             relations = [
@@ -427,7 +427,7 @@ class CitationRelationRepository(
                     SELECT id, title, created_at
                     FROM documents
                     WHERE id IN ({placeholders})
-                """
+                """  # noqa: S608 - safe SQL construction
                 node_results = self.db.fetch_all(node_sql, list(nodes))
 
                 for node in node_results:

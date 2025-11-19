@@ -357,7 +357,7 @@ class SQLiteToPostgresMigration:
                 logger.info(f"Migrating table: {table_name}")
 
                 # Count records
-                count_query = text(f"SELECT COUNT(*) FROM {table_name}")
+                count_query = text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 total_records = sqlite_session.execute(count_query).scalar()
 
                 if total_records == 0:
@@ -368,7 +368,7 @@ class SQLiteToPostgresMigration:
                 while offset < total_records:
                     # Read batch from SQLite
                     select_query = text(
-                        f"SELECT * FROM {table_name} "
+                        f"SELECT * FROM {table_name} "  # noqa: S608 - safe SQL construction
                         f"LIMIT {self.batch_size} OFFSET {offset}"
                     )
                     rows = sqlite_session.execute(select_query).fetchall()
@@ -421,11 +421,11 @@ class SQLiteToPostgresMigration:
             for table_name in metadata.tables:
                 # Count records in both databases
                 sqlite_count = sqlite_session.execute(
-                    text(f"SELECT COUNT(*) FROM {table_name}")
+                    text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 ).scalar()
 
                 postgres_count = postgres_session.execute(
-                    text(f"SELECT COUNT(*) FROM {table_name}")
+                    text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 ).scalar()
 
                 results["tables"][table_name] = {
@@ -501,7 +501,7 @@ class SQLiteToPostgresMigration:
 
         # Use PostgreSQL COPY for better performance
         insert_query = text(
-            f"INSERT INTO {table_name} ({','.join(row_dicts[0].keys())}) "
+            f"INSERT INTO {table_name} ({','.join(row_dicts[0].keys())}) "  # noqa: S608 - safe SQL construction
             f"VALUES ({','.join([':' + k for k in row_dicts[0]])})"
         )
 
@@ -524,7 +524,7 @@ class SQLiteToPostgresMigration:
 
                 # Get max value
                 max_value = session.execute(
-                    text(f"SELECT MAX({column_name}) FROM {table_name}")
+                    text(f"SELECT MAX({column_name}) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 ).scalar()
 
                 if max_value:

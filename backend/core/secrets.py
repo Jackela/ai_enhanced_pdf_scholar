@@ -33,10 +33,10 @@ class SecretType(str, Enum):
     JWT_PRIVATE_KEY = "jwt_private_key"
     JWT_PUBLIC_KEY = "jwt_public_key"
     REDIS_URL = "redis_url"
-    SMTP_PASSWORD = "smtp_password"
+    SMTP_PASSWORD = "smtp_password"  # noqa: S105 - config key, not password
     ENCRYPTION_KEY = "encryption_key"
-    OAUTH_SECRET = "oauth_secret"
-    WEBHOOK_SECRET = "webhook_secret"
+    OAUTH_SECRET = "oauth_secret"  # noqa: S105 - config key, not password
+    WEBHOOK_SECRET = "webhook_secret"  # noqa: S105 - config key, not password
     SIGNING_KEY = "signing_key"
 
 

@@ -73,7 +73,7 @@ class RAGStreamingProcessor:
         self.controller = controller
         self.rag_service = rag_service
 
-    async def process_rag_query(
+    async def process_rag_query(  # noqa: C901 - RAG workflow orchestration with state machine logic
         self,
         query: str,
         document_id: int,

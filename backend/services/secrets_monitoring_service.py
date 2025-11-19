@@ -56,9 +56,9 @@ class AlertChannel(str, Enum):
 class MonitoringMetric(str, Enum):
     """Monitoring metrics for secrets."""
 
-    SECRET_ACCESS_COUNT = "secret_access_count"
-    SECRET_ACCESS_FREQUENCY = "secret_access_frequency"
-    SECRET_AGE = "secret_age"
+    SECRET_ACCESS_COUNT = "secret_access_count"  # noqa: S105 - metric key constant, not password
+    SECRET_ACCESS_FREQUENCY = "secret_access_frequency"  # noqa: S105 - metric key constant, not password
+    SECRET_AGE = "secret_age"  # noqa: S105 - metric key constant, not password
     ROTATION_OVERDUE = "rotation_overdue"
     VALIDATION_FAILURES = "validation_failures"
     ENCRYPTION_HEALTH = "encryption_health"

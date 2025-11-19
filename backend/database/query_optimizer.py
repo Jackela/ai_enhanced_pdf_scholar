@@ -182,7 +182,7 @@ class DynamicQueryOptimizer:
                 # Get table statistics
                 try:
                     count_result = self.db.fetch_one(
-                        f"SELECT COUNT(*) as count FROM {table_name}"
+                        f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - safe SQL construction
                     )
                     self._table_statistics[table_name] = {
                         "row_count": count_result["count"] if count_result else 0

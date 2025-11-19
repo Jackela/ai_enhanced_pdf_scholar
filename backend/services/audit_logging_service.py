@@ -49,8 +49,8 @@ class AuditEventType(str, Enum):
     USER_LOGIN = "user.login"
     USER_LOGOUT = "user.logout"
     USER_REGISTER = "user.register"
-    PASSWORD_CHANGE = "user.password_change"
-    PASSWORD_RESET = "user.password_reset"
+    PASSWORD_CHANGE = "user.password_change"  # noqa: S105 - event type constant, not password
+    PASSWORD_RESET = "user.password_reset"  # noqa: S105 - event type constant, not password
     MFA_ENABLE = "user.mfa_enable"
     MFA_DISABLE = "user.mfa_disable"
 

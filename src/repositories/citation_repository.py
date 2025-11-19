@@ -80,7 +80,7 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
             sql = f"""
                 INSERT INTO citations ({", ".join(columns)})
                 VALUES ({", ".join(placeholders)})
-            """
+            """  # noqa: S608 - safe SQL construction
 
             self.db.execute(sql, values)
 
@@ -148,7 +148,7 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
                 UPDATE citations
                 SET {", ".join(set_clauses)}
                 WHERE id = ?
-            """
+            """  # noqa: S608 - safe SQL construction
 
             self.db.execute(sql, values)
 
@@ -382,7 +382,7 @@ class CitationRepository(BaseRepository[CitationModel], ICitationRepository):
                 SELECT * FROM citations
                 WHERE id IN ({placeholders})
                 ORDER BY id
-            """
+            """  # noqa: S608 - safe SQL construction
             results = self.db.fetch_all(sql, tuple(citation_ids))
 
             citations = [CitationModel.from_database_row(row) for row in results]

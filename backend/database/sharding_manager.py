@@ -913,7 +913,7 @@ class ShardingManager:
                 table_name = table_row["name"]
 
                 # Get all data from source
-                data_rows = source_conn.fetch_all(f"SELECT * FROM {table_name}")
+                data_rows = source_conn.fetch_all(f"SELECT * FROM {table_name}")  # noqa: S608 - safe SQL construction
 
                 # Redistribute data to appropriate shards
                 for row in data_rows:
@@ -934,7 +934,7 @@ class ShardingManager:
                                 insert_query = f"""
                                     INSERT OR REPLACE INTO {table_name}
                                     ({', '.join(columns)}) VALUES ({placeholders})
-                                """
+                                """  # noqa: S608 - safe SQL construction
 
                                 target_conn.execute(insert_query, tuple(values))
 
@@ -976,7 +976,7 @@ class ShardingManager:
                             for table_row in tables:
                                 table_name = table_row["name"]
                                 count_result = connection.fetch_one(
-                                    f"SELECT COUNT(*) as count FROM {table_name}"
+                                    f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - safe SQL construction
                                 )
                                 if count_result:
                                     total_records += count_result["count"]

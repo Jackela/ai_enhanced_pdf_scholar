@@ -378,7 +378,7 @@ class DatabaseTracker:
                     # which filters to only public schema tables. This is not user input.
                     # Additionally validated with _validate_table_name() above.
                     # COUNT queries cannot be parameterized for table names in standard SQL
-                    result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                    result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))  # noqa: S608 - safe SQL construction
                     count = result.scalar()
                     total_records += count
 
@@ -390,7 +390,7 @@ class DatabaseTracker:
                             f"""
                         SELECT MD5(ARRAY_AGG(ROW(t.*)::text ORDER BY (SELECT 1))::text)
                         FROM {table} t
-                    """
+                    """  # noqa: S608 - safe SQL construction
                         )
                     )
                     checksum = result.scalar() or ""
@@ -404,7 +404,7 @@ class DatabaseTracker:
                         INSERT INTO {self.snapshot_table}
                         (snapshot_id, table_name, record_count, checksum, metadata)
                         VALUES (:snapshot_id, :table_name, :record_count, :checksum, :metadata)
-                    """
+                    """  # noqa: S608 - safe SQL construction
                         ),
                         {
                             "snapshot_id": snapshot_id,
@@ -449,7 +449,7 @@ class DatabaseTracker:
                     f"""
                 SELECT table_name, checksum FROM {self.snapshot_table}
                 WHERE snapshot_id = :snapshot_id
-            """
+            """  # noqa: S608 - safe SQL construction
                 ),
                 {"snapshot_id": since_snapshot_id},
             )
@@ -474,7 +474,7 @@ class DatabaseTracker:
                             f"""
                         SELECT MD5(ARRAY_AGG(ROW(t.*)::text ORDER BY (SELECT 1))::text)
                         FROM {table} t
-                    """
+                    """  # noqa: S608 - safe SQL construction
                         )
                     )
                     current_checksum = result.scalar() or ""
@@ -483,7 +483,7 @@ class DatabaseTracker:
                         # Table has changed
                         # SAFETY: Table names come from validated database results and validated above
                         # COUNT queries cannot parameterize table names in standard SQL
-                        result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                        result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))  # noqa: S608 - safe SQL construction
                         count = result.scalar()
 
                         changes.append(

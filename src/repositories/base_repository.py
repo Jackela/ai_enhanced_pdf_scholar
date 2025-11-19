@@ -96,7 +96,7 @@ class BaseRepository(ABC, Generic[T]):
             # Validate table name to prevent SQL injection
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
-            query = f"SELECT * FROM {table_name} WHERE id = ?"
+            query = f"SELECT * FROM {table_name} WHERE id = ?"  # noqa: S608 - table name validated
             row = self.db.fetch_one(query, (id,))
             if row:
                 return self.to_model(dict(row))
@@ -121,10 +121,10 @@ class BaseRepository(ABC, Generic[T]):
 
             if limit is not None:
                 # Use parameterized query for pagination
-                query = f"SELECT * FROM {table_name} ORDER BY id LIMIT ? OFFSET ?"
+                query = f"SELECT * FROM {table_name} ORDER BY id LIMIT ? OFFSET ?"  # noqa: S608 - table name validated
                 rows = self.db.fetch_all(query, (limit, offset))
             else:
-                query = f"SELECT * FROM {table_name} ORDER BY id"
+                query = f"SELECT * FROM {table_name} ORDER BY id"  # noqa: S608 - table name validated
                 rows = self.db.fetch_all(query)
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:
@@ -141,7 +141,7 @@ class BaseRepository(ABC, Generic[T]):
             table_name = self.get_table_name()
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
-            query = f"SELECT COUNT(*) as count FROM {table_name}"
+            query = f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - table name validated
             result = self.db.fetch_one(query)
             return result["count"] if result else 0
         except Exception as e:
@@ -171,7 +171,7 @@ class BaseRepository(ABC, Generic[T]):
 
             # Try using INSERT ... RETURNING first (SQLite 3.35+)
             try:
-                query = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders}) RETURNING id"
+                query = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders}) RETURNING id"  # noqa: S608 - table name validated
                 cursor = self.db.execute(query, tuple(values))
                 result = cursor.fetchone()
                 if result is None:
@@ -181,7 +181,7 @@ class BaseRepository(ABC, Generic[T]):
                 new_id = result[0]
             except Exception as fallback_error:
                 # Fallback to traditional INSERT + last_insert_rowid()
-                query = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"
+                query = f"INSERT INTO {table_name} ({cols}) VALUES ({placeholders})"  # noqa: S608 - table name validated
                 self.db.execute(query, tuple(values))
                 new_id = self.db.get_last_insert_id()
                 if new_id is None or new_id <= 0:
@@ -221,7 +221,7 @@ class BaseRepository(ABC, Generic[T]):
             table_name = self.get_table_name()
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
-            query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"
+            query = f"UPDATE {table_name} SET {set_clause} WHERE id = ?"  # noqa: S608 - table name validated
             result = self.db.execute(query, tuple(values))
             if result.rowcount == 0:
                 raise ValueError(
@@ -249,7 +249,7 @@ class BaseRepository(ABC, Generic[T]):
             table_name = self.get_table_name()
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
-            query = f"DELETE FROM {table_name} WHERE id = ?"
+            query = f"DELETE FROM {table_name} WHERE id = ?"  # noqa: S608 - table name validated
             result = self.db.execute(query, (id,))
             return result.rowcount > 0
         except Exception as e:
@@ -268,7 +268,7 @@ class BaseRepository(ABC, Generic[T]):
             table_name = self.get_table_name()
             if not self._is_valid_table_name(table_name):
                 raise ValueError(f"Invalid table name: {table_name}")
-            query = f"SELECT 1 FROM {table_name} WHERE id = ? LIMIT 1"
+            query = f"SELECT 1 FROM {table_name} WHERE id = ? LIMIT 1"  # noqa: S608 - table name validated
             result = self.db.fetch_one(query, (id,))
             return result is not None
         except Exception as e:
@@ -293,7 +293,7 @@ class BaseRepository(ABC, Generic[T]):
             # Validate field name to prevent SQL injection
             if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", field):
                 raise ValueError(f"Invalid field name: {field}")
-            query = f"SELECT * FROM {table_name} WHERE {field} = ?"
+            query = f"SELECT * FROM {table_name} WHERE {field} = ?"  # noqa: S608 - table name validated
             rows = self.db.fetch_all(query, (value,))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:
