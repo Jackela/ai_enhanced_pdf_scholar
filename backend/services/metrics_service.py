@@ -655,7 +655,7 @@ class MetricsService:
 
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(*args, **kwargs) -> Any:
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
                 start_time = time.time()
                 try:
                     result = func(*args, **kwargs)
@@ -708,7 +708,7 @@ class MetricsService:
 
         def decorator(func: Callable) -> Callable:
             @wraps(func)
-            def wrapper(*args, **kwargs) -> Any:
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
                 try:
                     return func(*args, **kwargs)
                 except Exception:
@@ -838,12 +838,12 @@ class FastAPIMetricsMiddleware:
     FastAPI middleware for automatic metrics collection.
     """
 
-    def __init__(self, app, metrics_service: MetricsService) -> None:
+    def __init__(self, app: Any, metrics_service: MetricsService) -> None:
         """Initialize middleware."""
         self.app = app
         self.metrics = metrics_service
 
-    async def __call__(self, scope, receive, send) -> Any:
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> Any:
         """Process request and collect metrics."""
         if scope["type"] != "http":
             await self.app(scope, receive, send)
@@ -863,7 +863,7 @@ class FastAPIMetricsMiddleware:
             return message
 
         # Track response size and status
-        async def send_wrapper(message) -> None:
+        async def send_wrapper(message: Any) -> None:
             nonlocal response_size, status_code
             if message["type"] == "http.response.start":
                 status_code = message["status"]

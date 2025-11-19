@@ -106,12 +106,12 @@ class RetryMechanism:
         """Decorator for retry functionality."""
 
         @wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return self._execute_with_retry(func, *args, **kwargs)
 
         return wrapper
 
-    def _execute_with_retry(self, func: Callable, *args, **kwargs) -> Any:
+    def _execute_with_retry(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
         """Execute function with retry logic."""
         last_exception = None
         delay = self.config.initial_delay
@@ -188,12 +188,12 @@ class CircuitBreaker:
         """Decorator for circuit breaker functionality."""
 
         @wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return self._execute_with_circuit_breaker(func, *args, **kwargs)
 
         return wrapper
 
-    def _execute_with_circuit_breaker(self, func: Callable, *args, **kwargs) -> Any:
+    def _execute_with_circuit_breaker(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
         """Execute function with circuit breaker protection."""
         with self._lock:
             if self.state == CircuitBreakerState.OPEN:
@@ -305,7 +305,7 @@ class ResourceCleanupManager:
         finally:
             self.cleanup_all()
 
-    def add_cleanup_handler(self, handler: Callable, *args, **kwargs) -> None:
+    def add_cleanup_handler(self, handler: Callable, *args: Any, **kwargs: Any) -> None:
         """Add a cleanup handler function."""
         with self._lock:
             self.cleanup_handlers.append(lambda: handler(*args, **kwargs))
@@ -358,7 +358,7 @@ class ResourceCleanupManager:
 class TransactionManager:
     """Manages database transactions with automatic rollback."""
 
-    def __init__(self, db_connection) -> None:
+    def __init__(self, db_connection: Any) -> None:
         self.db = db_connection
         self.metrics = RecoveryMetrics()
 

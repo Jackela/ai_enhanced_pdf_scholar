@@ -138,7 +138,7 @@ class StructuredFormatter(jsonlogger.JsonFormatter):
             },
         )
 
-    def add_fields(self, log_record, record, message_dict) -> None:
+    def add_fields(self, log_record: Any, record: Any, message_dict: Any) -> None:
         """Add custom fields to log record."""
         super().add_fields(log_record, record, message_dict)
 
@@ -250,7 +250,7 @@ class ElasticsearchHandler(logging.Handler):
             )
             self.client = None
 
-    def emit(self, record) -> None:
+    def emit(self, record: Any) -> None:
         """Emit a log record to Elasticsearch."""
         if not self.client:
             return
@@ -340,7 +340,7 @@ class LogstashHandler(logging.handlers.SocketHandler):
             super().__init__(config.host, config.port)
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    def emit(self, record) -> None:
+    def emit(self, record: Any) -> None:
         """Emit a log record to Logstash."""
         try:
             # Format the record as JSON
@@ -468,7 +468,7 @@ class CentralizedLoggingService:
         # Setup loguru for enhanced logging
         self._setup_loguru()
 
-    def _setup_file_handlers(self, formatter) -> None:
+    def _setup_file_handlers(self, formatter: Any) -> None:
         """Setup file-based logging handlers."""
         # Application log file (rotating)
         app_log_file = self.log_directory / "application.log"
@@ -527,7 +527,7 @@ class CentralizedLoggingService:
         loguru_logger.remove()
 
         # Add loguru handler that forwards to our logging system
-        def loguru_sink(message) -> None:
+        def loguru_sink(message: Any) -> None:
             # Parse loguru message and forward to standard logging
             logger = logging.getLogger("loguru")
             level = message.record["level"].name.lower()
@@ -556,7 +556,7 @@ class CentralizedLoggingService:
 
         # Add contextual information
         class ContextFilter(logging.Filter):
-            def filter(self, record) -> Any:
+            def filter(self, record: Any) -> Any:
                 record.source = source.value
                 if correlation_id:
                     record.correlation_id = correlation_id
@@ -964,7 +964,7 @@ class CentralizedLoggingService:
 class LoggingContext:
     """Context manager for adding correlation ID to logs."""
 
-    def __init__(self, correlation_id: str | None = None, **kwargs) -> None:
+    def __init__(self, correlation_id: str | None = None, **kwargs: Any) -> None:
         """Initialize logging context."""
         self.correlation_id = correlation_id or str(uuid4())
         self.context_data = kwargs
@@ -974,7 +974,7 @@ class LoggingContext:
         """Enter context and set up log record factory."""
         self.old_factory = logging.getLogRecordFactory()
 
-        def record_factory(*args, **kwargs) -> Any:
+        def record_factory(*args: Any, **kwargs: Any) -> Any:
             record = self.old_factory(*args, **kwargs)
             record.correlation_id = self.correlation_id
 
@@ -987,7 +987,7 @@ class LoggingContext:
         logging.setLogRecordFactory(record_factory)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit context and restore original factory."""
         logging.setLogRecordFactory(self.old_factory)
 

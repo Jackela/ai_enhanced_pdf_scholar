@@ -675,7 +675,7 @@ class ConnectionPool:
                 f"Error during force close of connection {conn_info.connection_id}: {e}"
             )
 
-    def _log_to_leak_detector(self, action: str, conn_info, reason: str = None) -> None:
+    def _log_to_leak_detector(self, action: str, conn_info: Any, reason: str = None) -> None:
         """Helper to safely call leak detector methods only when enabled."""
         if self._leak_detector:
             if reason:
