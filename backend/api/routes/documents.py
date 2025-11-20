@@ -436,6 +436,148 @@ async def get_document_thumbnail(
 # ============================================================================
 
 
+def _validate_file_upload(file: UploadFile | None) -> None:
+    """
+    Validate uploaded file type and presence.
+
+    Args:
+        file: Uploaded file to validate
+
+    Raises:
+        HTTPException(400): File is None
+        HTTPException(415): File is not PDF
+    """
+    if file is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is required",
+        )
+    if not file.content_type == "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Only PDF files are supported",
+        )
+
+
+async def _save_uploaded_file(
+    file: UploadFile,
+    documents_dir: Path,
+    max_size_mb: int = 50,
+) -> tuple[Path, int]:
+    """
+    Save uploaded file to temporary location with size validation.
+
+    Args:
+        file: Uploaded file
+        documents_dir: Base documents directory
+        max_size_mb: Maximum file size in MB
+
+    Returns:
+        (temp_path, file_size_bytes)
+
+    Raises:
+        HTTPException(413): File exceeds size limit
+    """
+    MAX_SIZE = max_size_mb * 1024 * 1024
+    file_size = 0
+    temp_path = build_safe_temp_path(documents_dir, file.filename)
+
+    with open(temp_path, "wb") as f:
+        while chunk := await file.read(8192):  # 8KB chunks
+            file_size += len(chunk)
+            if file_size > MAX_SIZE:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"File too large (max {max_size_mb}MB)",
+                )
+            f.write(chunk)
+
+    return temp_path, file_size
+
+
+def _import_and_build_response(
+    temp_path: Path,
+    title: str | None,
+    check_duplicates: bool,
+    overwrite_duplicates: bool,
+    library_service: IDocumentLibraryService,
+) -> DocumentResponse:
+    """
+    Import document via service and build response.
+
+    Args:
+        temp_path: Temporary file path
+        title: Optional document title
+        check_duplicates: Whether to check for duplicates
+        overwrite_duplicates: Whether to overwrite duplicates
+        library_service: Document library service
+
+    Returns:
+        DocumentResponse with imported document data
+    """
+    document = library_service.import_document(
+        file_path=str(temp_path),
+        title=title,
+        check_duplicates=check_duplicates,
+        overwrite_duplicates=overwrite_duplicates,
+    )
+
+    document_data = model_to_response_data(document)
+
+    return DocumentResponse(
+        success=True,
+        data=document_data,
+        errors=None,
+    )
+
+
+def _map_document_import_error(exc: Exception) -> HTTPException:
+    """
+    Map domain exceptions to HTTP exceptions.
+
+    Args:
+        exc: Exception from document import
+
+    Returns:
+        HTTPException with appropriate status code and message
+    """
+    if isinstance(exc, HTTPException):
+        return exc
+    if isinstance(exc, DuplicateDocumentError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.user_message,
+        )
+    if isinstance(exc, DocumentValidationError):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.user_message,
+        )
+    if isinstance(exc, DocumentImportError):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.user_message,
+        )
+    if isinstance(exc, ValueError):
+        if "duplicate" in str(exc).lower():
+            return HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            )
+        else:
+            return HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            )
+
+    # Generic error
+    logger.error(f"Failed to upload document: {exc}", exc_info=True)
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to upload document",
+    )
+
+
 @router.post(
     "",
     response_model=DocumentResponse,
@@ -466,113 +608,30 @@ async def upload_document(
     library_service: IDocumentLibraryService = Depends(get_document_library_service),
     documents_dir: Path = Depends(get_documents_dir),
 ) -> DocumentResponse:
-    """
-    Upload a new document to the library.
-
-    This endpoint demonstrates:
-    - File upload handling with FastAPI
-    - Business logic delegation to service layer
-    - Duplicate detection
-    - Proper error handling with specific status codes
-
-    Args:
-        file: Uploaded PDF file
-        title: Optional document title
-        check_duplicates: Whether to check for duplicates
-        overwrite_duplicates: Whether to overwrite duplicates
-        library_service: Document library service (injected)
-        documents_dir: Documents storage directory (injected)
-
-    Returns:
-        DocumentResponse with uploaded document data
-
-    Raises:
-        HTTPException: Various status codes for different errors
-    """
+    """Upload a new document to the library with validation and duplicate handling."""
     try:
-        if file is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Uploaded file is required",
-            )
-        # Validate file type
-        if not file.content_type == "application/pdf":
-            raise HTTPException(
-                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                detail="Only PDF files are supported",
-            )
+        # Validate file type and presence
+        _validate_file_upload(file)
 
-        # Validate file size (50MB limit)
-        MAX_SIZE = 50 * 1024 * 1024  # 50MB
-        file_size = 0
+        # Save file with size validation
+        temp_path, _ = await _save_uploaded_file(file, documents_dir)
 
-        # Save file to sanitized temporary location
-        temp_path = build_safe_temp_path(documents_dir, file.filename)
         try:
-            with open(temp_path, "wb") as f:
-                while chunk := await file.read(8192):  # 8KB chunks
-                    file_size += len(chunk)
-                    if file_size > MAX_SIZE:
-                        raise HTTPException(
-                            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                            detail=f"File too large (max {MAX_SIZE // 1024 // 1024}MB)",
-                        )
-                    f.write(chunk)
-
-            # Import document using service
-            document = library_service.import_document(
-                file_path=str(temp_path),
-                title=title,
-                check_duplicates=check_duplicates,
-                overwrite_duplicates=overwrite_duplicates,
+            # Import document and build response
+            return _import_and_build_response(
+                temp_path,
+                title,
+                check_duplicates,
+                overwrite_duplicates,
+                library_service,
             )
-
-            # Convert to response format
-            document_data = model_to_response_data(document)
-
-            return DocumentResponse(
-                success=True,
-                data=document_data,
-                errors=None,
-            )
-
         finally:
-            # Clean up temp file if it still exists
+            # Clean up temp file
             if temp_path.exists():
                 temp_path.unlink()
 
-    except HTTPException:
-        raise
-    except DuplicateDocumentError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=e.user_message
-        ) from e
-    except DocumentValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=e.user_message
-        ) from e
-    except DocumentImportError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=e.user_message
-        ) from e
-    except ValueError as e:
-        # Duplicate document or validation error
-        if "duplicate" in str(e).lower():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(e),
-            ) from e
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e),
-            ) from e
     except Exception as e:
-        logger.error(f"Failed to upload document: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to upload document",
-        ) from e
+        raise _map_document_import_error(e) from e
 
 
 # ============================================================================

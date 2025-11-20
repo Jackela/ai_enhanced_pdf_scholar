@@ -296,71 +296,101 @@ async def cancel_async_query(
         ) from e
 
 
+def _validate_websocket_message(data: dict) -> str:
+    """
+    Validate WebSocket message structure and extract type.
+
+    Args:
+        data: Received JSON message
+
+    Returns:
+        message_type string
+
+    Raises:
+        ValueError: Missing or invalid message type
+    """
+    message_type = data.get("type")
+    if not message_type or not isinstance(message_type, str):
+        raise ValueError("Invalid or missing 'type' field in message")
+    return message_type
+
+
+async def _handle_websocket_message(
+    data: dict,
+    client_id: str,
+    websocket: WebSocket,
+    ws_manager: WebSocketManager,
+) -> None:
+    """
+    Route and handle WebSocket message based on type.
+
+    Args:
+        data: Received JSON message
+        client_id: Client identifier
+        websocket: WebSocket connection
+        ws_manager: WebSocket manager
+    """
+    message_type = data.get("type")
+
+    if message_type == "ping":
+        await websocket.send_json({"type": "pong", "timestamp": time.time()})
+
+    elif message_type == "task_status":
+        task_id = data.get("task_id")
+        if task_id:
+            status_info = await ws_manager.get_rag_task_status(client_id, task_id)
+            await websocket.send_json(
+                {
+                    "type": "task_status_response",
+                    "task_id": task_id,
+                    "status": status_info,
+                }
+            )
+
+    elif message_type == "cancel_task":
+        task_id = data.get("task_id")
+        if task_id:
+            success = await ws_manager.cancel_rag_task(client_id, task_id)
+            await websocket.send_json(
+                {
+                    "type": "task_cancelled",
+                    "task_id": task_id,
+                    "success": success,
+                }
+            )
+
+    else:
+        await websocket.send_json(
+            {
+                "type": "error",
+                "message": f"Unknown message type: {message_type}",
+            }
+        )
+
+
 @router.websocket("/stream")
 async def websocket_rag_endpoint(
     websocket: WebSocket,
     ws_manager: WebSocketManager = Depends(get_websocket_manager),
 ) -> None:
     """WebSocket endpoint for RAG streaming operations."""
-    client_id = None
+    client_id = f"rag_client_{int(time.time() * 1000)}"
+
     try:
-        # Generate client ID and connect
-        client_id = f"rag_client_{int(time.time() * 1000)}"
         await ws_manager.connect(websocket, client_id)
 
         while True:
-            # Wait for messages from client
             data = await websocket.receive_json()
-
-            # Handle different message types
-            message_type = data.get("type")
-
-            if message_type == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": time.time()})
-
-            elif message_type == "task_status":
-                task_id = data.get("task_id")
-                if task_id:
-                    status_info = await ws_manager.get_rag_task_status(
-                        client_id, task_id
-                    )
-                    await websocket.send_json(
-                        {
-                            "type": "task_status_response",
-                            "task_id": task_id,
-                            "status": status_info,
-                        }
-                    )
-
-            elif message_type == "cancel_task":
-                task_id = data.get("task_id")
-                if task_id:
-                    success = await ws_manager.cancel_rag_task(client_id, task_id)
-                    await websocket.send_json(
-                        {
-                            "type": "task_cancelled",
-                            "task_id": task_id,
-                            "success": success,
-                        }
-                    )
-
-            else:
-                await websocket.send_json(
-                    {
-                        "type": "error",
-                        "message": f"Unknown message type: {message_type}",
-                    }
-                )
+            await _handle_websocket_message(data, client_id, websocket, ws_manager)
 
     except WebSocketDisconnect:
         logger.info(f"RAG WebSocket client {client_id} disconnected")
     except Exception as e:
         logger.error(f"RAG WebSocket error for client {client_id}: {e}")
         if websocket.client_state.name != "DISCONNECTED":
-            await websocket.close(code=1011)  # Internal error
+            await websocket.close(code=1011)
     finally:
-        if client_id:
-            ws_manager.disconnect(client_id)
+        ws_manager.disconnect(client_id)
 
 
 @router.get("/stream/stats", response_model=dict[str, Any])
