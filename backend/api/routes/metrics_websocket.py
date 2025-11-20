@@ -34,10 +34,48 @@ websocket_manager: WebSocketManager | None = None
 active_subscriptions: dict[str, set[MetricType]] = {}
 
 
+def _parse_metric_type_safe(metric_str: str) -> tuple[MetricType | None, str | None]:
+    """
+    Parse metric type string, returning (metric_type, error_message).
+
+    Args:
+        metric_str: Metric type string to parse
+
+    Returns:
+        (MetricType, None) on success
+        (None, error_message) on failure
+
+    Complexity: 1 (single try-except, no branching)
+    """
+    try:
+        return (MetricType(metric_str.lower()), None)
+    except ValueError:
+        return (None, f"Invalid metric type: {metric_str}")
+
+
+def _parse_json_safe(text: str) -> tuple[dict[str, Any] | None, str | None]:
+    """
+    Parse JSON text, returning (data, error_message).
+
+    Args:
+        text: JSON text to parse
+
+    Returns:
+        (dict, None) on success
+        (None, error_message) on failure
+
+    Complexity: 1 (single try-except, no branching)
+    """
+    try:
+        return (json.loads(text), None)
+    except json.JSONDecodeError as e:
+        return (None, f"Invalid JSON: {e}")
+
+
 class MetricsSubscriptionRequest(BaseModel):
     """Request model for metrics subscription."""
 
-    action: str = Field(..., regex="^(subscribe|unsubscribe)$")
+    action: str = Field(..., pattern="^(subscribe|unsubscribe)$")
     metric_types: list[str] = Field(default_factory=list[Any])
     update_interval: float | None = Field(1.0, ge=0.1, le=60.0)  # seconds
 
@@ -79,10 +117,15 @@ class MetricsWebSocketHandler:
             while True:
                 try:
                     # Wait for client message
-                    data = await self.websocket.receive_text()
-                    await self.handle_client_message(json.loads(data))
-                except json.JSONDecodeError as e:
-                    await self.send_error(f"Invalid JSON: {e}")
+                    data_text = await self.websocket.receive_text()
+
+                    # Parse JSON outside try-except loop pattern
+                    data, error = _parse_json_safe(data_text)
+                    if error:
+                        await self.send_error(error)
+                        continue
+
+                    await self.handle_client_message(data)
                 except Exception as e:
                     logger.error(f"Error handling client message: {e}")
                     await self.send_error(f"Message handling error: {e}")
@@ -122,15 +165,17 @@ class MetricsWebSocketHandler:
             metric_types = message.get("metric_types", [])
             update_interval = message.get("update_interval", 1.0)
 
-            # Validate and convert metric types
-            new_subscriptions = set[str]()
-            for metric_str in metric_types:
-                try:
-                    metric_type = MetricType(metric_str.lower())
-                    new_subscriptions.add(metric_type)
-                except ValueError:
-                    await self.send_error(f"Invalid metric type: {metric_str}")
-                    return
+            # Validate all metric types first (no try-except in loop)
+            parsed_metrics = [_parse_metric_type_safe(m) for m in metric_types]
+
+            # Check for any invalid metrics
+            invalid_metrics = [error for _, error in parsed_metrics if error]
+            if invalid_metrics:
+                await self.send_error(invalid_metrics[0])  # Send first error
+                return
+
+            # All valid - extract metric types
+            new_subscriptions = {metric for metric, _ in parsed_metrics if metric}
 
             # Update subscriptions
             self.subscriptions = new_subscriptions
@@ -172,14 +217,19 @@ class MetricsWebSocketHandler:
                 # Unsubscribe from all
                 self.subscriptions.clear()
             else:
-                # Remove specific subscriptions
-                for metric_str in metric_types:
-                    try:
-                        metric_type = MetricType(metric_str.lower())
-                        self.subscriptions.discard(metric_type)
-                    except ValueError:
-                        await self.send_error(f"Invalid metric type: {metric_str}")
-                        return
+                # Validate all metric types first (no try-except in loop)
+                parsed_metrics = [_parse_metric_type_safe(m) for m in metric_types]
+
+                # Check for any invalid metrics
+                invalid_metrics = [error for _, error in parsed_metrics if error]
+                if invalid_metrics:
+                    await self.send_error(invalid_metrics[0])  # Send first error
+                    return
+
+                # All valid - remove from subscriptions
+                for metric, _ in parsed_metrics:
+                    if metric:
+                        self.subscriptions.discard(metric)
 
             # Update global tracking
             active_subscriptions[self.client_id] = self.subscriptions
