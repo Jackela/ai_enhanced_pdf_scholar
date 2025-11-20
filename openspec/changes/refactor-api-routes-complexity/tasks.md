@@ -97,44 +97,59 @@
 
 **File:** `tests/backend/test_routes_system_helpers.py`
 
-- [ ] Test `_evaluate_memory_status()`
+- [x] Test `_evaluate_memory_status()`
   - Test healthy status (<80%)
   - Test warning status (80-90%)
   - Test critical status (>90%)
-- [ ] Test `_evaluate_disk_status()`
+- [x] Test `_evaluate_disk_status()`
   - Test healthy, warning, critical thresholds
-- [ ] Test `_evaluate_cpu_status()`
+- [x] Test `_evaluate_cpu_status()`
   - Test healthy, warning, critical thresholds
-- [ ] Test `_check_database_status()`
+- [x] Test `_check_database_status()`
   - Test connected status
   - Test connection failure
   - Mock database connection
-- [ ] Test `_check_rag_status()`
+- [x] Test `_check_rag_status()`
   - Test RAG service ready
   - Test RAG service unavailable
   - Mock RAG service
-- [ ] Test `_check_cache_status()`
-  - Test cache healthy
-  - Test cache degraded
-- [ ] Test `_aggregate_health_status()`
+- [x] Test `_check_storage_status()`
+  - Test storage healthy
+  - Test storage not initialized
+  - Test directory missing
+- [x] Test `_check_api_configuration()`
+  - Test API key configured/not configured
+- [x] Test `_calculate_overall_health()`
   - Test all healthy → overall healthy
   - Test one warning → overall warning
   - Test one critical → overall critical
-- [ ] Target: 15-20 unit tests for system helpers
+- [x] Test `_check_system_resources()`
+  - Integration test for resource collection
+- [x] Test all 11 performance helper functions
+  - CPU/memory/disk/network/process metrics
+  - Database performance
+  - Health evaluators
+- [x] Target: 15-20 unit tests for system helpers
+  - **Actual: 55 unit tests created** ✅
 
 ### 1.6 Day 1 Checkpoint
 
-- [ ] Run all route tests to verify behavior preservation
+- [x] Run all route tests to verify behavior preservation
   ```bash
   pytest tests/backend/test_routes_* -v
+  # Result: 95 tests passed (55 new + 40 existing)
   ```
-- [ ] Verify C901 violations reduced: 2 → 0
-- [ ] Verify PERF203 violations reduced: 1 → 0
-- [ ] Commit Day 1 changes
+- [x] Verify C901 violations reduced: 2 → 0
+  - system.py:450 detailed_health_check (C901: 16 → <5) ✅
+  - system.py:793 performance_health_check (C901: 13 → <5) ✅
+- [x] Verify PERF203 violations reduced: 1 → 0
+  - system.py:349 compliance standards loop ✅
+- [x] Commit Day 1 changes
   ```bash
-  git add backend/api/routes/system.py tests/backend/test_routes_system_helpers.py
-  git commit -m "refactor(routes): Day 1 - System health checks helpers (C901: 16,13 → <5)"
-  git push origin v2.0-refactor
+  # Commit 1: Refactored helpers (20 helpers extracted)
+  git commit 61b1060f
+  # Commit 2: Unit tests (55 tests created)
+  git commit 1dafdbde
   ```
 
 ---
