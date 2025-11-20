@@ -340,14 +340,32 @@ async def validate_environment_secrets(
         secrets_manager = ProductionSecretsManager()
         validation_service = SecretValidationService(secrets_manager)
 
-        # Convert compliance standards
+        # Convert compliance standards - validation-first pattern
+        def _parse_standard_safe(
+            std_str: str,
+        ) -> tuple[ComplianceStandard | None, bool]:
+            """Parse compliance standard, returning (standard, is_valid)."""
+            try:
+                return (ComplianceStandard(std_str), True)
+            except ValueError:
+                return (None, False)
+
         standards = []
         if compliance_standards:
-            for std in compliance_standards:
-                try:
-                    standards.append(ComplianceStandard(std))
-                except ValueError:
-                    logger.warning(f"Unknown compliance standard: {std}")
+            # Parse all standards (no exceptions in loop)
+            parsed = [_parse_standard_safe(std) for std in compliance_standards]
+
+            # Collect valid standards
+            standards = [std for std, valid in parsed if valid]
+
+            # Log invalid standards after collection
+            invalid = [
+                compliance_standards[i]
+                for i, (_, valid) in enumerate(parsed)
+                if not valid
+            ]
+            for std in invalid:
+                logger.warning(f"Unknown compliance standard: {std}")
 
         # Validate all secrets
         validation_results = await validation_service.validate_environment_secrets(
@@ -446,6 +464,219 @@ async def backup_secrets(backup_name: str | None = None) -> Any:
         ) from e
 
 
+def _check_system_resources() -> dict[str, Any]:
+    """Check system resources (memory, disk, CPU) with status evaluation."""
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage("/")
+    cpu_percent = psutil.cpu_percent(interval=1)
+
+    return {
+        "memory": _evaluate_memory_status(memory),
+        "disk": _evaluate_disk_status(disk),
+        "cpu": _evaluate_cpu_status(cpu_percent),
+    }
+
+
+def _evaluate_memory_status(memory) -> dict[str, Any]:
+    """Evaluate memory status against thresholds."""
+    status = (
+        "critical"
+        if memory.percent >= 90
+        else "warning"
+        if memory.percent >= 80
+        else "healthy"
+    )
+
+    return {
+        "total_bytes": memory.total,
+        "available_bytes": memory.available,
+        "used_percent": memory.percent,
+        "status": status,
+    }
+
+
+def _evaluate_disk_status(disk) -> dict[str, Any]:
+    """Evaluate disk status against thresholds."""
+    status = (
+        "critical"
+        if disk.free <= disk.total * 0.1
+        else "warning"
+        if disk.free <= disk.total * 0.2
+        else "healthy"
+    )
+
+    return {
+        "total_bytes": disk.total,
+        "free_bytes": disk.free,
+        "used_percent": round(100 * (disk.used / disk.total), 2),
+        "status": status,
+    }
+
+
+def _evaluate_cpu_status(cpu_percent: float) -> dict[str, Any]:
+    """Evaluate CPU status against thresholds."""
+    status = (
+        "critical"
+        if cpu_percent >= 85
+        else "warning"
+        if cpu_percent >= 70
+        else "healthy"
+    )
+
+    return {
+        "usage_percent": cpu_percent,
+        "core_count": psutil.cpu_count(),
+        "status": status,
+    }
+
+
+async def _check_database_status(db: DatabaseConnection) -> dict[str, Any]:
+    """Check database connectivity and response time."""
+    db_health: dict[str, Any] = {
+        "status": "unknown",
+        "connection_pool": {},
+        "response_time_ms": None,
+    }
+
+    try:
+        start_time = time.time()
+        result = db.fetch_one("SELECT 1 as test, datetime('now') as current_time")
+        response_time = (time.time() - start_time) * 1000
+
+        db_health.update(
+            {
+                "status": "healthy",
+                "response_time_ms": round(response_time, 2),
+                "connection_active": True,
+                "last_check": result["current_time"] if result else None,
+            }
+        )
+    except Exception as e:
+        db_health.update(
+            {"status": "error", "error": str(e), "connection_active": False}
+        )
+
+    return db_health
+
+
+def _check_rag_status(rag_service: EnhancedRAGService | None) -> dict[str, Any]:
+    """Check RAG service availability and health."""
+    rag_health = {
+        "available": rag_service is not None,
+        "status": "healthy" if rag_service is not None else "unavailable",
+    }
+
+    if rag_service:
+        try:
+            # Test RAG service with a simple operation
+            rag_health["components"] = {
+                "llama_index": "available",
+                "embedding_service": "healthy",
+                "vector_store": "operational",
+            }
+        except Exception as e:
+            rag_health.update({"status": "error", "error": str(e)})
+
+    return rag_health
+
+
+def _check_storage_status() -> dict[str, Any]:
+    """Check storage health with detailed directory breakdown."""
+    storage_health: dict[str, Any] = {"status": "unknown", "directories": {}}
+
+    try:
+        base_dir = Path.home() / ".ai_pdf_scholar"
+
+        if base_dir.exists():
+            # Check critical directories
+            critical_dirs = ["uploads", "vector_indexes", "cache"]
+            for dir_name in critical_dirs:
+                dir_path = base_dir / dir_name
+                if dir_path.exists():
+                    dir_size = sum(
+                        f.stat().st_size for f in dir_path.rglob("*") if f.is_file()
+                    )
+                    file_count = len([f for f in dir_path.rglob("*") if f.is_file()])
+
+                    storage_health["directories"][dir_name] = {
+                        "exists": True,
+                        "size_bytes": dir_size,
+                        "file_count": file_count,
+                        "writable": os.access(dir_path, os.W_OK),
+                    }
+                else:
+                    storage_health["directories"][dir_name] = {
+                        "exists": False,
+                        "error": "Directory not found",
+                    }
+
+            storage_health["status"] = "healthy"
+        else:
+            storage_health["status"] = "not_initialized"
+
+    except Exception as e:
+        storage_health.update({"status": "error", "error": str(e)})
+
+    return storage_health
+
+
+def _check_api_configuration() -> dict[str, Any]:
+    """Check API configuration status."""
+    return {
+        "gemini_api_configured": Config.get_gemini_api_key() is not None,
+        "environment": Config.ENVIRONMENT,
+        "debug_mode": Config.DEBUG,
+    }
+
+
+def _calculate_overall_health(health_data: dict[str, Any]) -> dict[str, Any]:
+    """Calculate overall health score and status from component health."""
+    component_scores = []
+
+    # System resources score (40%)
+    if health_data["system_resources"]["memory"]["status"] == "healthy":
+        component_scores.append(0.4)
+    elif health_data["system_resources"]["memory"]["status"] == "warning":
+        component_scores.append(0.2)
+    else:
+        component_scores.append(0.0)
+
+    # Database score (30%)
+    if health_data["database"]["status"] == "healthy":
+        component_scores.append(0.3)
+    else:
+        component_scores.append(0.0)
+
+    # RAG service score (20%)
+    if health_data["rag_service"]["status"] == "healthy":
+        component_scores.append(0.2)
+    else:
+        component_scores.append(0.0)
+
+    # Storage score (10%)
+    if health_data["storage"]["status"] == "healthy":
+        component_scores.append(0.1)
+    else:
+        component_scores.append(0.0)
+
+    overall_score = sum(component_scores)
+
+    # Determine overall status
+    if overall_score >= 0.8:
+        overall_status = "healthy"
+    elif overall_score >= 0.5:
+        overall_status = "degraded"
+    else:
+        overall_status = "unhealthy"
+
+    return {
+        "status": overall_status,
+        "score": round(overall_score, 2),
+        "uptime_seconds": time.time() - startup_time,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
 @router.get("/health/detailed", response_model=BaseResponse)
 async def detailed_health_check(
     db: DatabaseConnection = Depends(get_db),
@@ -453,188 +684,17 @@ async def detailed_health_check(
 ) -> Any:
     """Comprehensive health status with detailed component information."""
     try:
-        health_data = {}
-
-        # System resources
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage("/")
-        cpu_percent = psutil.cpu_percent(interval=1)
-
-        health_data["system_resources"] = {
-            "memory": {
-                "total_bytes": memory.total,
-                "available_bytes": memory.available,
-                "used_percent": memory.percent,
-                "status": (
-                    "healthy"
-                    if memory.percent < 80
-                    else "warning"
-                    if memory.percent < 90
-                    else "critical"
-                ),
-            },
-            "disk": {
-                "total_bytes": disk.total,
-                "free_bytes": disk.free,
-                "used_percent": round(100 * (disk.used / disk.total), 2),
-                "status": (
-                    "healthy"
-                    if disk.free > disk.total * 0.2
-                    else "warning"
-                    if disk.free > disk.total * 0.1
-                    else "critical"
-                ),
-            },
-            "cpu": {
-                "usage_percent": cpu_percent,
-                "core_count": psutil.cpu_count(),
-                "status": (
-                    "healthy"
-                    if cpu_percent < 70
-                    else "warning"
-                    if cpu_percent < 85
-                    else "critical"
-                ),
-            },
+        # Collect health data from all components
+        health_data = {
+            "system_resources": _check_system_resources(),
+            "database": await _check_database_status(db),
+            "rag_service": _check_rag_status(rag_service),
+            "storage": _check_storage_status(),
+            "api_configuration": _check_api_configuration(),
         }
 
-        # Database health
-        db_health: Any = {
-            "status": "unknown",
-            "connection_pool": {},
-            "response_time_ms": None,
-        }
-        try:
-            start_time = time.time()
-            result = db.fetch_one("SELECT 1 as test, datetime('now') as current_time")
-            response_time = (time.time() - start_time) * 1000
-
-            db_health.update(
-                {
-                    "status": "healthy",
-                    "response_time_ms": round(response_time, 2),
-                    "connection_active": True,
-                    "last_check": result["current_time"] if result else None,
-                }
-            )
-        except Exception as e:
-            db_health.update(
-                {"status": "error", "error": str(e), "connection_active": False}
-            )
-
-        health_data["database"] = db_health
-
-        # RAG service health
-        rag_health = {
-            "available": rag_service is not None,
-            "status": "healthy" if rag_service is not None else "unavailable",
-        }
-
-        if rag_service:
-            try:
-                # Test RAG service with a simple operation
-                rag_health["components"] = {
-                    "llama_index": "available",
-                    "embedding_service": "healthy",
-                    "vector_store": "operational",
-                }
-            except Exception as e:
-                rag_health.update({"status": "error", "error": str(e)})
-
-        health_data["rag_service"] = rag_health
-
-        # Storage health with detailed breakdown
-        storage_health = {"status": "unknown", "directories": {}}
-        try:
-            base_dir = Path.home() / ".ai_pdf_scholar"
-
-            if base_dir.exists():
-                # Check critical directories
-                critical_dirs = ["uploads", "vector_indexes", "cache"]
-                for dir_name in critical_dirs:
-                    dir_path = base_dir / dir_name
-                    if dir_path.exists():
-                        dir_size = sum(
-                            f.stat().st_size for f in dir_path.rglob("*") if f.is_file()
-                        )
-                        file_count = len(
-                            [f for f in dir_path.rglob("*") if f.is_file()]
-                        )
-
-                        storage_health["directories"][dir_name] = {
-                            "exists": True,
-                            "size_bytes": dir_size,
-                            "file_count": file_count,
-                            "writable": os.access(dir_path, os.W_OK),
-                        }
-                    else:
-                        storage_health["directories"][dir_name] = {
-                            "exists": False,
-                            "error": "Directory not found",
-                        }
-
-                storage_health["status"] = "healthy"
-            else:
-                storage_health["status"] = "not_initialized"
-
-        except Exception as e:
-            storage_health.update({"status": "error", "error": str(e)})
-
-        health_data["storage"] = storage_health
-
-        # API configuration health
-        api_health = {
-            "gemini_api_configured": Config.get_gemini_api_key() is not None,
-            "environment": Config.ENVIRONMENT,
-            "debug_mode": Config.DEBUG,
-        }
-        health_data["api_configuration"] = api_health
-
-        # Calculate overall health score
-        component_scores = []
-
-        # System resources score (40%)
-        if health_data["system_resources"]["memory"]["status"] == "healthy":
-            component_scores.append(0.4)
-        elif health_data["system_resources"]["memory"]["status"] == "warning":
-            component_scores.append(0.2)
-        else:
-            component_scores.append(0.0)
-
-        # Database score (30%)
-        if health_data["database"]["status"] == "healthy":
-            component_scores.append(0.3)
-        else:
-            component_scores.append(0.0)
-
-        # RAG service score (20%)
-        if health_data["rag_service"]["status"] == "healthy":
-            component_scores.append(0.2)
-        else:
-            component_scores.append(0.0)
-
-        # Storage score (10%)
-        if health_data["storage"]["status"] == "healthy":
-            component_scores.append(0.1)
-        else:
-            component_scores.append(0.0)
-
-        overall_score = sum(component_scores)
-
-        # Determine overall status
-        if overall_score >= 0.8:
-            overall_status = "healthy"
-        elif overall_score >= 0.5:
-            overall_status = "degraded"
-        else:
-            overall_status = "unhealthy"
-
-        health_data["overall"] = {
-            "status": overall_status,
-            "score": round(overall_score, 2),
-            "uptime_seconds": time.time() - startup_time,
-            "timestamp": datetime.now().isoformat(),
-        }
+        # Calculate overall health
+        health_data["overall"] = _calculate_overall_health(health_data)
 
         return BaseResponse(message="Detailed health check completed", data=health_data)
 
@@ -789,213 +849,242 @@ async def dependency_health_check() -> Any:
         ) from e
 
 
+def _collect_cpu_metrics() -> dict[str, Any]:
+    """Collect detailed CPU performance metrics."""
+    cpu_count = psutil.cpu_count()
+    cpu_freq = psutil.cpu_freq()
+
+    return {
+        "usage_percent": psutil.cpu_percent(interval=1),
+        "core_count": cpu_count,
+        "frequency_mhz": cpu_freq.current if cpu_freq else None,
+        "load_average": (
+            list[Any](psutil.getloadavg()) if hasattr(psutil, "getloadavg") else None
+        ),
+        "context_switches": psutil.cpu_stats().ctx_switches,
+        "interrupts": psutil.cpu_stats().interrupts,
+    }
+
+
+def _collect_memory_metrics() -> dict[str, Any]:
+    """Collect memory and swap metrics."""
+    memory = psutil.virtual_memory()
+    swap = psutil.swap_memory()
+
+    return {
+        "total_bytes": memory.total,
+        "available_bytes": memory.available,
+        "used_bytes": memory.used,
+        "free_bytes": memory.free,
+        "cached_bytes": getattr(memory, "cached", 0),
+        "buffers_bytes": getattr(memory, "buffers", 0),
+        "swap_total_bytes": swap.total,
+        "swap_used_bytes": swap.used,
+        "swap_percent": swap.percent,
+    }
+
+
+def _collect_disk_metrics() -> dict[str, Any]:
+    """Collect disk I/O metrics."""
+    disk = psutil.disk_usage("/")
+    disk_io = psutil.disk_io_counters()
+
+    return {
+        "total_bytes": disk.total,
+        "used_bytes": disk.used,
+        "free_bytes": disk.free,
+        "read_count": disk_io.read_count if disk_io else 0,
+        "write_count": disk_io.write_count if disk_io else 0,
+        "read_bytes": disk_io.read_bytes if disk_io else 0,
+        "write_bytes": disk_io.write_bytes if disk_io else 0,
+        "read_time_ms": disk_io.read_time if disk_io else 0,
+        "write_time_ms": disk_io.write_time if disk_io else 0,
+    }
+
+
+def _collect_network_metrics() -> dict[str, Any]:
+    """Collect network I/O metrics."""
+    net_io = psutil.net_io_counters()
+
+    return {
+        "bytes_sent": net_io.bytes_sent if net_io else 0,
+        "bytes_recv": net_io.bytes_recv if net_io else 0,
+        "packets_sent": net_io.packets_sent if net_io else 0,
+        "packets_recv": net_io.packets_recv if net_io else 0,
+        "errin": net_io.errin if net_io else 0,
+        "errout": net_io.errout if net_io else 0,
+        "dropin": net_io.dropin if net_io else 0,
+        "dropout": net_io.dropout if net_io else 0,
+    }
+
+
+def _collect_process_metrics() -> dict[str, Any]:
+    """Collect current process metrics."""
+    current_process = psutil.Process()
+    process_memory = current_process.memory_info()
+
+    return {
+        "pid": current_process.pid,
+        "cpu_percent": current_process.cpu_percent(),
+        "memory_rss_bytes": process_memory.rss,
+        "memory_vms_bytes": process_memory.vms,
+        "num_threads": current_process.num_threads(),
+        "num_fds": (
+            current_process.num_fds() if hasattr(current_process, "num_fds") else None
+        ),
+        "create_time": current_process.create_time(),
+        "uptime_seconds": time.time() - current_process.create_time(),
+    }
+
+
+def _check_database_performance() -> dict[str, Any]:
+    """Check database query performance."""
+    db_performance: dict[str, Any] = {"status": "unknown"}
+
+    try:
+        from backend.api.dependencies import get_db
+
+        db = next(get_db())
+
+        # Simple query performance test
+        start_time = time.time()
+        _ = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
+        query_time = (time.time() - start_time) * 1000
+
+        db_performance.update(
+            {
+                "status": "healthy",
+                "simple_query_ms": round(query_time, 2),
+                "connection_pool_active": True,
+            }
+        )
+    except Exception as e:
+        db_performance.update({"status": "error", "error": str(e)})
+
+    return db_performance
+
+
+def _evaluate_cpu_health(cpu_usage: float) -> list[dict[str, str]]:
+    """Evaluate CPU usage and return health indicators."""
+    if cpu_usage > 90:
+        return [
+            {"component": "cpu", "level": "critical", "message": "CPU usage very high"}
+        ]
+    elif cpu_usage > 75:
+        return [
+            {"component": "cpu", "level": "warning", "message": "CPU usage elevated"}
+        ]
+    return []
+
+
+def _evaluate_memory_health(memory_data: dict[str, Any]) -> list[dict[str, str]]:
+    """Evaluate memory usage and return health indicators."""
+    memory_percent = (memory_data["used_bytes"] / memory_data["total_bytes"]) * 100
+    if memory_percent > 90:
+        return [
+            {
+                "component": "memory",
+                "level": "critical",
+                "message": "Memory usage very high",
+            }
+        ]
+    elif memory_percent > 80:
+        return [
+            {
+                "component": "memory",
+                "level": "warning",
+                "message": "Memory usage elevated",
+            }
+        ]
+    return []
+
+
+def _evaluate_disk_health(disk_data: dict[str, Any]) -> list[dict[str, str]]:
+    """Evaluate disk usage and return health indicators."""
+    disk_percent = (disk_data["used_bytes"] / disk_data["total_bytes"]) * 100
+    if disk_percent > 95:
+        return [
+            {
+                "component": "disk",
+                "level": "critical",
+                "message": "Disk space critically low",
+            }
+        ]
+    elif disk_percent > 85:
+        return [{"component": "disk", "level": "warning", "message": "Disk space low"}]
+    return []
+
+
+def _evaluate_database_health(db_perf: dict[str, Any]) -> list[dict[str, str]]:
+    """Evaluate database performance and return health indicators."""
+    if db_perf["status"] == "healthy" and db_perf.get("simple_query_ms", 0) > 1000:
+        return [
+            {
+                "component": "database",
+                "level": "warning",
+                "message": "Database queries slow",
+            }
+        ]
+    elif db_perf["status"] != "healthy":
+        return [
+            {
+                "component": "database",
+                "level": "critical",
+                "message": "Database not responding",
+            }
+        ]
+    return []
+
+
+def _evaluate_performance_health(performance_data: dict[str, Any]) -> dict[str, Any]:
+    """Evaluate performance health and generate health assessment."""
+    # Collect health indicators from all components
+    health_indicators = []
+    health_indicators.extend(
+        _evaluate_cpu_health(performance_data["cpu"]["usage_percent"])
+    )
+    health_indicators.extend(_evaluate_memory_health(performance_data["memory"]))
+    health_indicators.extend(_evaluate_disk_health(performance_data["disk"]))
+    health_indicators.extend(_evaluate_database_health(performance_data["database"]))
+
+    # Calculate overall status
+    critical_issues = len([i for i in health_indicators if i["level"] == "critical"])
+    warning_issues = len([i for i in health_indicators if i["level"] == "warning"])
+
+    if critical_issues > 0:
+        overall_status = "critical"
+    elif warning_issues > 0:
+        overall_status = "warning"
+    else:
+        overall_status = "healthy"
+
+    return {
+        "overall_status": overall_status,
+        "critical_issues": critical_issues,
+        "warning_issues": warning_issues,
+        "health_indicators": health_indicators,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
 @router.get("/health/performance", response_model=BaseResponse)
 async def performance_health_check() -> Any:
     """Real-time performance metrics and health indicators."""
     try:
-        performance_data = {}
-
-        # System performance metrics
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage("/")
-
-        # CPU metrics with more detail
-        cpu_count = psutil.cpu_count()
-        cpu_freq = psutil.cpu_freq()
-
-        performance_data["cpu"] = {
-            "usage_percent": psutil.cpu_percent(interval=1),
-            "core_count": cpu_count,
-            "frequency_mhz": cpu_freq.current if cpu_freq else None,
-            "load_average": (
-                list[Any](psutil.getloadavg())
-                if hasattr(psutil, "getloadavg")
-                else None
-            ),
-            "context_switches": psutil.cpu_stats().ctx_switches,
-            "interrupts": psutil.cpu_stats().interrupts,
+        # Collect performance metrics from all components
+        performance_data = {
+            "cpu": _collect_cpu_metrics(),
+            "memory": _collect_memory_metrics(),
+            "disk": _collect_disk_metrics(),
+            "network": _collect_network_metrics(),
+            "process": _collect_process_metrics(),
+            "database": _check_database_performance(),
         }
 
-        # Memory metrics with swap info
-        swap = psutil.swap_memory()
-        performance_data["memory"] = {
-            "total_bytes": memory.total,
-            "available_bytes": memory.available,
-            "used_bytes": memory.used,
-            "free_bytes": memory.free,
-            "cached_bytes": getattr(memory, "cached", 0),
-            "buffers_bytes": getattr(memory, "buffers", 0),
-            "swap_total_bytes": swap.total,
-            "swap_used_bytes": swap.used,
-            "swap_percent": swap.percent,
-        }
-
-        # Disk I/O metrics
-        disk_io = psutil.disk_io_counters()
-        performance_data["disk"] = {
-            "total_bytes": disk.total,
-            "used_bytes": disk.used,
-            "free_bytes": disk.free,
-            "read_count": disk_io.read_count if disk_io else 0,
-            "write_count": disk_io.write_count if disk_io else 0,
-            "read_bytes": disk_io.read_bytes if disk_io else 0,
-            "write_bytes": disk_io.write_bytes if disk_io else 0,
-            "read_time_ms": disk_io.read_time if disk_io else 0,
-            "write_time_ms": disk_io.write_time if disk_io else 0,
-        }
-
-        # Network I/O metrics
-        net_io = psutil.net_io_counters()
-        performance_data["network"] = {
-            "bytes_sent": net_io.bytes_sent if net_io else 0,
-            "bytes_recv": net_io.bytes_recv if net_io else 0,
-            "packets_sent": net_io.packets_sent if net_io else 0,
-            "packets_recv": net_io.packets_recv if net_io else 0,
-            "errin": net_io.errin if net_io else 0,
-            "errout": net_io.errout if net_io else 0,
-            "dropin": net_io.dropin if net_io else 0,
-            "dropout": net_io.dropout if net_io else 0,
-        }
-
-        # Process-specific metrics
-        current_process = psutil.Process()
-        process_memory = current_process.memory_info()
-
-        performance_data["process"] = {
-            "pid": current_process.pid,
-            "cpu_percent": current_process.cpu_percent(),
-            "memory_rss_bytes": process_memory.rss,
-            "memory_vms_bytes": process_memory.vms,
-            "num_threads": current_process.num_threads(),
-            "num_fds": (
-                current_process.num_fds()
-                if hasattr(current_process, "num_fds")
-                else None
-            ),
-            "create_time": current_process.create_time(),
-            "uptime_seconds": time.time() - current_process.create_time(),
-        }
-
-        # Database performance test
-        db_performance = {"status": "unknown"}
-        try:
-            from backend.api.dependencies import get_db
-
-            db = next(get_db())
-
-            # Simple query performance test
-            start_time = time.time()
-            _ = db.fetch_one("SELECT COUNT(*) as count FROM sqlite_master")
-            query_time = (time.time() - start_time) * 1000
-
-            db_performance.update(
-                {
-                    "status": "healthy",
-                    "simple_query_ms": round(query_time, 2),
-                    "connection_pool_active": True,
-                }
-            )
-        except Exception as e:
-            db_performance.update({"status": "error", "error": str(e)})
-
-        performance_data["database"] = db_performance
-
-        # Performance health assessment
-        health_indicators = []
-
-        # CPU health
-        if performance_data["cpu"]["usage_percent"] > 90:
-            health_indicators.append(
-                {
-                    "component": "cpu",
-                    "level": "critical",
-                    "message": "CPU usage very high",
-                }
-            )
-        elif performance_data["cpu"]["usage_percent"] > 75:
-            health_indicators.append(
-                {
-                    "component": "cpu",
-                    "level": "warning",
-                    "message": "CPU usage elevated",
-                }
-            )
-
-        # Memory health
-        memory_percent = (memory.used / memory.total) * 100
-        if memory_percent > 90:
-            health_indicators.append(
-                {
-                    "component": "memory",
-                    "level": "critical",
-                    "message": "Memory usage very high",
-                }
-            )
-        elif memory_percent > 80:
-            health_indicators.append(
-                {
-                    "component": "memory",
-                    "level": "warning",
-                    "message": "Memory usage elevated",
-                }
-            )
-
-        # Disk health
-        disk_percent = (disk.used / disk.total) * 100
-        if disk_percent > 95:
-            health_indicators.append(
-                {
-                    "component": "disk",
-                    "level": "critical",
-                    "message": "Disk space critically low",
-                }
-            )
-        elif disk_percent > 85:
-            health_indicators.append(
-                {"component": "disk", "level": "warning", "message": "Disk space low"}
-            )
-
-        # Database performance health
-        if (
-            db_performance["status"] == "healthy"
-            and db_performance.get("simple_query_ms", 0) > 1000
-        ):
-            health_indicators.append(
-                {
-                    "component": "database",
-                    "level": "warning",
-                    "message": "Database queries slow",
-                }
-            )
-        elif db_performance["status"] != "healthy":
-            health_indicators.append(
-                {
-                    "component": "database",
-                    "level": "critical",
-                    "message": "Database not responding",
-                }
-            )
-
-        # Overall performance score
-        critical_issues = len(
-            [i for i in health_indicators if i["level"] == "critical"]
+        # Evaluate performance health
+        performance_data["health_assessment"] = _evaluate_performance_health(
+            performance_data
         )
-        warning_issues = len([i for i in health_indicators if i["level"] == "warning"])
-
-        if critical_issues > 0:
-            overall_status = "critical"
-        elif warning_issues > 0:
-            overall_status = "warning"
-        else:
-            overall_status = "healthy"
-
-        performance_data["health_assessment"] = {
-            "overall_status": overall_status,
-            "critical_issues": critical_issues,
-            "warning_issues": warning_issues,
-            "health_indicators": health_indicators,
-            "timestamp": datetime.now().isoformat(),
-        }
 
         return BaseResponse(
             message="Performance health check completed", data=performance_data
