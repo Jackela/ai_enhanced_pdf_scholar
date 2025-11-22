@@ -749,6 +749,8 @@ jobs:
   cleanup:
     name: 🧹 Cleanup Artifacts
     runs-on: ubuntu-latest
+    permissions:
+      actions: write  # Required for deleting artifacts
     needs: quality-gate
     if: always() && github.event_name == 'pull_request'
     timeout-minutes: 2
