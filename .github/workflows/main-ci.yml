@@ -639,27 +639,27 @@ jobs:
             QUALITY_SCORE=${QUALITY_SCORE//\'/}
           fi
           if [ "$QUALITY_SCORE" -ge "$MIN_QUALITY_SCORE" ]; then
-            echo "✅ Code Quality: $QUALITY_SCORE >= $MIN_QUALITY_SCORE"
-            ((GATES_PASSED++))
+            echo "[PASS] Code Quality: $QUALITY_SCORE >= $MIN_QUALITY_SCORE"
+            GATES_PASSED=$((GATES_PASSED + 1))
           else
-            echo "❌ Code Quality: $QUALITY_SCORE < $MIN_QUALITY_SCORE"
-            ((GATES_FAILED++))
+            echo "[FAIL] Code Quality: $QUALITY_SCORE < $MIN_QUALITY_SCORE"
+            GATES_FAILED=$((GATES_FAILED + 1))
           fi
 
           # Coverage Gate (relaxed - coverage aggregation needs improvement)
           COVERAGE='${{ needs.coverage-aggregate.outputs.coverage_percentage }}'
           if [[ "$COVERAGE" == *"{{"* ]] || [ -z "$COVERAGE" ] || [ "$COVERAGE" == "0" ]; then
             # If coverage is not available, assume it passes (tests ran successfully)
-            echo "⚠️ Coverage: Data not available, assuming pass (tests ran successfully)"
-            ((GATES_PASSED++))
+            echo "[WARN] Coverage: Data not available, assuming pass (tests ran successfully)"
+            GATES_PASSED=$((GATES_PASSED + 1))
           else
             COVERAGE=${COVERAGE//\'/}
             if (( $(echo "$COVERAGE >= $MIN_COVERAGE" | bc -l) )); then
-              echo "✅ Coverage: $COVERAGE% >= $MIN_COVERAGE%"
-              ((GATES_PASSED++))
+              echo "[PASS] Coverage: $COVERAGE% >= $MIN_COVERAGE%"
+              GATES_PASSED=$((GATES_PASSED + 1))
             else
-              echo "❌ Coverage: $COVERAGE% < $MIN_COVERAGE%"
-              ((GATES_FAILED++))
+              echo "[FAIL] Coverage: $COVERAGE% < $MIN_COVERAGE%"
+              GATES_FAILED=$((GATES_FAILED + 1))
             fi
           fi
 
@@ -671,38 +671,38 @@ jobs:
             SECURITY_SCORE=${SECURITY_SCORE//\'/}
           fi
           if [ "$SECURITY_SCORE" -ge "$MIN_SECURITY_SCORE" ]; then
-            echo "✅ Security: $SECURITY_SCORE >= $MIN_SECURITY_SCORE"
-            ((GATES_PASSED++))
+            echo "[PASS] Security: $SECURITY_SCORE >= $MIN_SECURITY_SCORE"
+            GATES_PASSED=$((GATES_PASSED + 1))
           else
-            echo "❌ Security: $SECURITY_SCORE < $MIN_SECURITY_SCORE"
-            ((GATES_FAILED++))
+            echo "[FAIL] Security: $SECURITY_SCORE < $MIN_SECURITY_SCORE"
+            GATES_FAILED=$((GATES_FAILED + 1))
           fi
 
           # Frontend Gate (if applicable)
           FRONTEND_RESULT='${{ needs.frontend-quality.result }}'
           FRONTEND_RESULT=${FRONTEND_RESULT//\'/}
           if [ "$FRONTEND_RESULT" == "failure" ]; then
-            echo "❌ Frontend Quality: Failed"
-            ((GATES_FAILED++))
+            echo "[FAIL] Frontend Quality: Failed"
+            GATES_FAILED=$((GATES_FAILED + 1))
           elif [ "$FRONTEND_RESULT" == "success" ]; then
-            echo "✅ Frontend Quality: Passed"
-            ((GATES_PASSED++))
+            echo "[PASS] Frontend Quality: Passed"
+            GATES_PASSED=$((GATES_PASSED + 1))
           fi
 
           # Final Decision
           echo ""
-          echo "📊 QUALITY GATE SUMMARY"
-          echo "======================="
+          echo "=== QUALITY GATE SUMMARY ==="
+          echo "============================"
           echo "Gates Passed: $GATES_PASSED"
           echo "Gates Failed: $GATES_FAILED"
           echo "Gate Level: $GATE_LEVEL"
           echo ""
 
           if [ $GATES_FAILED -eq 0 ]; then
-            echo "🎉 QUALITY GATE: PASSED"
+            echo "[SUCCESS] QUALITY GATE: PASSED"
             echo "All quality criteria met!"
           else
-            echo "❌ QUALITY GATE: FAILED"
+            echo "[FAILURE] QUALITY GATE: FAILED"
             echo "Quality criteria not met. Please review the failures above."
             exit 1
           fi
