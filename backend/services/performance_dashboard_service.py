@@ -6,6 +6,7 @@ and interactive performance monitoring for the AI Enhanced PDF Scholar system.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 from dataclasses import asdict
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 # Dashboard Data Models
 # ============================================================================
 
+
 class DashboardMetrics:
     """Real-time dashboard metrics."""
 
@@ -34,8 +36,8 @@ class DashboardMetrics:
         self,
         apm_service: APMService,
         cache_telemetry: CacheTelemetryService,
-        metrics_service: MetricsService
-    ):
+        metrics_service: MetricsService,
+    ) -> None:
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.metrics = metrics_service
@@ -45,50 +47,45 @@ class DashboardMetrics:
         # Get latest performance snapshot
         latest_snapshot = (
             self.apm.performance_snapshots[-1]
-            if self.apm.performance_snapshots else None
+            if self.apm.performance_snapshots
+            else None
         )
 
         if not latest_snapshot:
-            return {
-                "status": "no_data",
-                "message": "No performance data available"
-            }
+            return {"status": "no_data", "message": "No performance data available"}
 
         # Get cache health
         cache_health = self.cache_telemetry.assess_cache_health()
 
         # Get active alerts
-        active_alerts = [
-            alert for alert in self.amp.alerts
-            if not alert.resolved
-        ]
+        active_alerts = [alert for alert in self.amp.alerts if not alert.resolved]
 
         return {
             "timestamp": datetime.utcnow().isoformat(),
             "system_health": {
                 "overall_score": cache_health.overall_score,
                 "status": cache_health.status,
-                "active_alerts": len(active_alerts)
+                "active_alerts": len(active_alerts),
             },
             "performance": {
                 "requests_per_second": latest_snapshot.requests_per_second,
                 "avg_response_time_ms": latest_snapshot.avg_response_time_ms,
                 "p95_response_time_ms": latest_snapshot.p95_response_time_ms,
-                "error_rate_percent": latest_snapshot.error_rate_percent
+                "error_rate_percent": latest_snapshot.error_rate_percent,
             },
             "resources": {
                 "cpu_percent": latest_snapshot.cpu_percent,
                 "memory_percent": latest_snapshot.memory_percent,
-                "cache_hit_rate": latest_snapshot.cache_hit_rate_percent
+                "cache_hit_rate": latest_snapshot.cache_hit_rate_percent,
             },
             "alerts": [
                 {
                     "severity": alert.severity,
                     "title": alert.title,
-                    "timestamp": alert.timestamp.isoformat()
+                    "timestamp": alert.timestamp.isoformat(),
                 }
                 for alert in active_alerts[-5:]  # Last 5 alerts
-            ]
+            ],
         }
 
     def get_detailed_performance_metrics(self) -> dict[str, Any]:
@@ -96,7 +93,8 @@ class DashboardMetrics:
         # Get last hour of performance snapshots
         cutoff_time = datetime.utcnow() - timedelta(hours=1)
         recent_snapshots = [
-            snapshot for snapshot in self.apm.performance_snapshots
+            snapshot
+            for snapshot in self.apm.performance_snapshots
             if snapshot.timestamp >= cutoff_time
         ]
 
@@ -112,7 +110,7 @@ class DashboardMetrics:
                 "avg": [s.avg_response_time_ms for s in recent_snapshots],
                 "p50": [s.p50_response_time_ms for s in recent_snapshots],
                 "p95": [s.p95_response_time_ms for s in recent_snapshots],
-                "p99": [s.p99_response_time_ms for s in recent_snapshots]
+                "p99": [s.p99_response_time_ms for s in recent_snapshots],
             },
             "throughput": {
                 "requests_per_second": [s.requests_per_second for s in recent_snapshots]
@@ -122,12 +120,16 @@ class DashboardMetrics:
             },
             "resources": {
                 "cpu_percent": [s.cpu_percent for s in recent_snapshots],
-                "memory_percent": [s.memory_percent for s in recent_snapshots]
+                "memory_percent": [s.memory_percent for s in recent_snapshots],
             },
             "cache": {
-                "hit_rate_percent": [s.cache_hit_rate_percent for s in recent_snapshots],
-                "miss_rate_percent": [s.cache_miss_rate_percent for s in recent_snapshots]
-            }
+                "hit_rate_percent": [
+                    s.cache_hit_rate_percent for s in recent_snapshots
+                ],
+                "miss_rate_percent": [
+                    s.cache_miss_rate_percent for s in recent_snapshots
+                ],
+            },
         }
 
     def get_cache_analytics(self) -> dict[str, Any]:
@@ -144,13 +146,13 @@ class DashboardMetrics:
 
         # Get trace distribution by operation
         operation_stats = {}
-        for trace in list(self.amp.traces)[-1000:]:  # Last 1000 traces
+        for trace in list[Any](self.amp.traces)[-1000:]:  # Last 1000 traces
             op_name = trace.root_span.operation_name
             if op_name not in operation_stats:
                 operation_stats[op_name] = {
                     "count": 0,
                     "total_duration": 0,
-                    "errors": 0
+                    "errors": 0,
                 }
 
             operation_stats[op_name]["count"] += 1
@@ -160,14 +162,12 @@ class DashboardMetrics:
                 operation_stats[op_name]["errors"] += 1
 
         # Calculate averages
-        for op_name, stats in operation_stats.items():
+        for _op_name, stats in operation_stats.values():
             stats["avg_duration_ms"] = (
-                stats["total_duration"] / stats["count"]
-                if stats["count"] > 0 else 0
+                stats["total_duration"] / stats["count"] if stats["count"] > 0 else 0
             )
             stats["error_rate_percent"] = (
-                (stats["errors"] / stats["count"]) * 100
-                if stats["count"] > 0 else 0
+                (stats["errors"] / stats["count"]) * 100 if stats["count"] > 0 else 0
             )
 
         return {
@@ -177,7 +177,7 @@ class DashboardMetrics:
                     "operation": trace.root_span.operation_name,
                     "duration_ms": trace.duration_ms,
                     "start_time": trace.root_span.start_time.isoformat(),
-                    "has_errors": trace.has_errors
+                    "has_errors": trace.has_errors,
                 }
                 for trace in slow_traces
             ],
@@ -187,18 +187,15 @@ class DashboardMetrics:
                     "operation": trace.root_span.operation_name,
                     "duration_ms": trace.duration_ms,
                     "error_count": trace.error_count,
-                    "start_time": trace.root_span.start_time.isoformat()
+                    "start_time": trace.root_span.start_time.isoformat(),
                 }
                 for trace in error_traces
             ],
             "operation_statistics": sorted(
-                [
-                    {"operation": op, **stats}
-                    for op, stats in operation_stats.items()
-                ],
+                [{"operation": op, **stats} for op, stats in operation_stats.items()],
                 key=lambda x: x["avg_duration_ms"],
-                reverse=True
-            )[:20]  # Top 20 operations
+                reverse=True,
+            )[:20],  # Top 20 operations
         }
 
 
@@ -206,28 +203,37 @@ class DashboardMetrics:
 # WebSocket Connection Manager
 # ============================================================================
 
+
 class ConnectionManager:
     """Manages WebSocket connections for real-time updates."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.active_connections: list[WebSocket] = []
         self.connection_metadata: dict[WebSocket, dict[str, Any]] = {}
 
-    async def connect(self, websocket: WebSocket, client_info: dict[str, Any] = None):
+    async def connect(
+        self, websocket: WebSocket, client_info: dict[str, Any] | None = None
+    ) -> None:
         """Accept a WebSocket connection."""
         await websocket.accept()
         self.active_connections.append(websocket)
         self.connection_metadata[websocket] = client_info or {}
-        logger.info(f"WebSocket connection established. Total connections: {len(self.active_connections)}")
+        logger.info(
+            f"WebSocket connection established. Total connections: {len(self.active_connections)}"
+        )
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket) -> None:
         """Remove a WebSocket connection."""
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
             self.connection_metadata.pop(websocket, None)
-            logger.info(f"WebSocket connection closed. Total connections: {len(self.active_connections)}")
+            logger.info(
+                f"WebSocket connection closed. Total connections: {len(self.active_connections)}"
+            )
 
-    async def send_personal_message(self, message: dict[str, Any], websocket: WebSocket):
+    async def send_personal_message(
+        self, message: dict[str, Any], websocket: WebSocket
+    ) -> None:
         """Send a message to a specific WebSocket."""
         if websocket.client_state == WebSocketState.CONNECTED:
             try:
@@ -236,7 +242,7 @@ class ConnectionManager:
                 logger.error(f"Error sending WebSocket message: {e}")
                 self.disconnect(websocket)
 
-    async def broadcast(self, message: dict[str, Any]):
+    async def broadcast(self, message: dict[str, Any]) -> None:
         """Broadcast a message to all connected WebSockets."""
         if not self.active_connections:
             return
@@ -257,7 +263,9 @@ class ConnectionManager:
         for connection in disconnected_connections:
             self.disconnect(connection)
 
-    async def send_to_subscribers(self, message: dict[str, Any], subscription_type: str):
+    async def send_to_subscribers(
+        self, message: dict[str, Any], subscription_type: str
+    ) -> None:
         """Send message to subscribers of a specific type."""
         for connection in self.active_connections:
             metadata = self.connection_metadata.get(connection, {})
@@ -271,6 +279,7 @@ class ConnectionManager:
 # Performance Dashboard Service
 # ============================================================================
 
+
 class PerformanceDashboardService:
     """
     Real-time performance dashboard service with WebSocket support.
@@ -280,71 +289,61 @@ class PerformanceDashboardService:
         self,
         apm_service: APMService,
         cache_telemetry: CacheTelemetryService,
-        metrics_service: MetricsService
-    ):
+        metrics_service: MetricsService,
+    ) -> None:
         self.apm = apm_service
         self.cache_telemetry = cache_telemetry
         self.metrics = metrics_service
 
-        self.dashboard_metrics = DashboardMetrics(apm_service, cache_telemetry, metrics_service)
+        self.dashboard_metrics = DashboardMetrics(
+            apm_service, cache_telemetry, metrics_service
+        )
         self.connection_manager = ConnectionManager()
 
         # Background task for real-time updates
-        self._update_task: asyncio.Task | None = None
+        self._update_task: asyncio.Task[None] | None = None
         self._running = False
 
-    async def start_real_time_updates(self):
+    async def start_real_time_updates(self) -> None:
         """Start background task for real-time updates."""
         if not self._running:
             self._running = True
             self._update_task = asyncio.create_task(self._real_time_update_loop())
             logger.info("Real-time dashboard updates started")
 
-    async def stop_real_time_updates(self):
+    async def stop_real_time_updates(self) -> None:
         """Stop background task for real-time updates."""
         self._running = False
         if self._update_task:
             self._update_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._update_task
-            except asyncio.CancelledError:
-                pass
             logger.info("Real-time dashboard updates stopped")
 
-    async def _real_time_update_loop(self):
+    async def _real_time_update_loop(self) -> None:
         """Background loop for sending real-time updates."""
         while self._running:
             try:
                 # Send overview metrics every 5 seconds
                 overview_data = self.dashboard_metrics.get_overview_metrics()
                 await self.connection_manager.send_to_subscribers(
-                    {
-                        "type": "overview_update",
-                        "data": overview_data
-                    },
-                    "overview"
+                    {"type": "overview_update", "data": overview_data}, "overview"
                 )
 
                 await asyncio.sleep(5)
 
                 # Send detailed metrics every 30 seconds
-                detailed_data = self.dashboard_metrics.get_detailed_performance_metrics()
+                detailed_data = (
+                    self.dashboard_metrics.get_detailed_performance_metrics()
+                )
                 await self.connection_manager.send_to_subscribers(
-                    {
-                        "type": "performance_update",
-                        "data": detailed_data
-                    },
-                    "performance"
+                    {"type": "performance_update", "data": detailed_data}, "performance"
                 )
 
                 # Send cache analytics every 60 seconds
                 cache_data = self.dashboard_metrics.get_cache_analytics()
                 await self.connection_manager.send_to_subscribers(
-                    {
-                        "type": "cache_update",
-                        "data": cache_data
-                    },
-                    "cache"
+                    {"type": "cache_update", "data": cache_data}, "cache"
                 )
 
                 await asyncio.sleep(25)  # Total 30 seconds between detailed updates
@@ -359,7 +358,7 @@ class PerformanceDashboardService:
     # WebSocket Handlers
     # ========================================================================
 
-    async def handle_websocket_connection(self, websocket: WebSocket):
+    async def handle_websocket_connection(self, websocket: WebSocket) -> None:
         """Handle new WebSocket connection."""
         try:
             # Accept connection
@@ -372,8 +371,8 @@ class PerformanceDashboardService:
                     "overview": self.dashboard_metrics.get_overview_metrics(),
                     "performance": self.dashboard_metrics.get_detailed_performance_metrics(),
                     "cache": self.dashboard_metrics.get_cache_analytics(),
-                    "traces": self.dashboard_metrics.get_trace_analytics()
-                }
+                    "traces": self.dashboard_metrics.get_trace_analytics(),
+                },
             }
             await self.connection_manager.send_personal_message(initial_data, websocket)
 
@@ -388,8 +387,7 @@ class PerformanceDashboardService:
                 except Exception as e:
                     logger.error(f"Error handling WebSocket message: {e}")
                     await self.connection_manager.send_personal_message(
-                        {"type": "error", "message": str(e)},
-                        websocket
+                        {"type": "error", "message": str(e)}, websocket
                     )
 
         except WebSocketDisconnect:
@@ -397,7 +395,9 @@ class PerformanceDashboardService:
         finally:
             self.connection_manager.disconnect(websocket)
 
-    async def _handle_client_message(self, websocket: WebSocket, message: dict[str, Any]):
+    async def _handle_client_message(
+        self, websocket: WebSocket, message: dict[str, Any]
+    ) -> None:
         """Handle message from WebSocket client."""
         message_type = message.get("type")
 
@@ -410,7 +410,7 @@ class PerformanceDashboardService:
 
             await self.connection_manager.send_personal_message(
                 {"type": "subscription_confirmed", "subscriptions": subscriptions},
-                websocket
+                websocket,
             )
 
         elif message_type == "get_trace_details":
@@ -419,20 +419,21 @@ class PerformanceDashboardService:
             trace_details = self._get_trace_details(trace_id)
 
             await self.connection_manager.send_personal_message(
-                {"type": "trace_details", "data": trace_details},
-                websocket
+                {"type": "trace_details", "data": trace_details}, websocket
             )
 
         elif message_type == "get_cache_recommendations":
             # Get cache optimization recommendations
-            recommendations = self.cache_telemetry.generate_optimization_recommendations()
+            recommendations = (
+                self.cache_telemetry.generate_optimization_recommendations()
+            )
 
             await self.connection_manager.send_personal_message(
                 {
                     "type": "cache_recommendations",
-                    "data": [asdict(rec) for rec in recommendations]
+                    "data": [asdict(rec) for rec in recommendations],
                 },
-                websocket
+                websocket,
             )
 
         elif message_type == "trigger_cache_analysis":
@@ -441,14 +442,15 @@ class PerformanceDashboardService:
                 "health": self.cache_telemetry.assess_cache_health(),
                 "optimization": self.cache_telemetry.generate_optimization_recommendations(),
                 "warming_candidates": {
-                    layer.value: self.cache_telemetry.identify_cache_warming_candidates(layer)
+                    layer.value: self.cache_telemetry.identify_cache_warming_candidates(
+                        layer
+                    )
                     for layer in self.cache_telemetry.CacheLayer
-                }
+                },
             }
 
             await self.connection_manager.send_personal_message(
-                {"type": "cache_analysis_result", "data": analysis},
-                websocket
+                {"type": "cache_analysis_result", "data": analysis}, websocket
             )
 
     def _get_trace_details(self, trace_id: str) -> dict[str, Any] | None:
@@ -465,14 +467,15 @@ class PerformanceDashboardService:
                     "session_id": trace.session_id,
                     "root_span": asdict(trace.root_span),
                     "spans": [asdict(span) for span in trace.spans],
-                    "span_tree": self._build_span_tree(trace)
+                    "span_tree": self._build_span_tree(trace),
                 }
 
         return None
 
     def _build_span_tree(self, trace) -> dict[str, Any]:
         """Build hierarchical span tree for visualization."""
-        def build_node(span, children):
+
+        def build_node(span, children) -> Any:
             return {
                 "span_id": span.span_id,
                 "operation_name": span.operation_name,
@@ -482,7 +485,7 @@ class PerformanceDashboardService:
                 "end_time": span.end_time.isoformat() if span.end_time else None,
                 "tags": span.tags,
                 "error": span.error,
-                "children": children
+                "children": children,
             }
 
         # Build parent-child relationships
@@ -491,12 +494,12 @@ class PerformanceDashboardService:
             span_map[span.span_id] = span
 
         # Build tree recursively
-        def build_children(parent_span_id):
-            children = []
-            for span in trace.spans:
-                if span.parent_span_id == parent_span_id:
-                    children.append(build_node(span, build_children(span.span_id)))
-            return children
+        def build_children(parent_span_id) -> Any:
+            return [
+                build_node(span, build_children(span.span_id))
+                for span in trace.spans
+                if span.parent_span_id == parent_span_id
+            ]
 
         return build_node(trace.root_span, build_children(trace.root_span.span_id))
 
@@ -642,7 +645,7 @@ class PerformanceDashboardService:
                 <!-- Active Alerts -->
                 <div class="widget">
                     <h3>Active Alerts</h3>
-                    <div id="alerts-list">
+                    <div id="alerts-list[Any]">
                         <p>No active alerts</p>
                     </div>
                 </div>
@@ -783,7 +786,7 @@ class PerformanceDashboardService:
                         }
 
                         // Update alerts
-                        const alertsList = document.getElementById('alerts-list');
+                        const alertsList = document.getElementById('alerts-list[Any]');
                         if (data.alerts && data.alerts.length > 0) {
                             alertsList.innerHTML = data.alerts.map(alert => `
                                 <div class="alert-item">
@@ -941,7 +944,7 @@ class PerformanceDashboardService:
             "overview": self.dashboard_metrics.get_overview_metrics(),
             "performance": self.dashboard_metrics.get_detailed_performance_metrics(),
             "cache": self.dashboard_metrics.get_cache_analytics(),
-            "traces": self.dashboard_metrics.get_trace_analytics()
+            "traces": self.dashboard_metrics.get_trace_analytics(),
         }
 
     def get_export_data(self, format: str = "json") -> dict[str, Any]:
@@ -953,7 +956,7 @@ class PerformanceDashboardService:
             "generated_at": datetime.utcnow().isoformat(),
             "format": format,
             "service_version": "2.0.0",
-            "export_type": "performance_dashboard"
+            "export_type": "performance_dashboard",
         }
 
         return data

@@ -31,7 +31,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from backend.core.secrets import get_secrets_manager
 from backend.services.metrics_service import MetricsService
@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 class EncryptionAlgorithm(str, Enum):
     """Supported encryption algorithms."""
+
     AES_256_GCM = "AES-256-GCM"
     FERNET = "FERNET"
     RSA_OAEP = "RSA-OAEP"
@@ -48,6 +49,7 @@ class EncryptionAlgorithm(str, Enum):
 
 class KeyDerivationAlgorithm(str, Enum):
     """Key derivation algorithms."""
+
     PBKDF2_SHA256 = "PBKDF2-SHA256"
     SCRYPT = "SCRYPT"
 
@@ -55,6 +57,7 @@ class KeyDerivationAlgorithm(str, Enum):
 @dataclass
 class EncryptionMetadata:
     """Metadata for encrypted backup files."""
+
     algorithm: EncryptionAlgorithm
     key_id: str
     key_version: int
@@ -74,6 +77,7 @@ class EncryptionMetadata:
 @dataclass
 class EncryptionKey:
     """Encryption key with metadata."""
+
     key_id: str
     algorithm: EncryptionAlgorithm
     key_data: bytes
@@ -87,7 +91,7 @@ class EncryptionKey:
 class BackupEncryptionService:
     """Service for encrypting and decrypting backup files."""
 
-    def __init__(self, metrics_service: MetricsService | None = None):
+    def __init__(self, metrics_service: MetricsService | None = None) -> None:
         """Initialize backup encryption service."""
         self.metrics_service = metrics_service or MetricsService()
         self.secrets_manager = get_secrets_manager()
@@ -129,7 +133,7 @@ class BackupEncryptionService:
         password: bytes,
         salt: bytes,
         algorithm: KeyDerivationAlgorithm = KeyDerivationAlgorithm.PBKDF2_SHA256,
-        iterations: int = 100000
+        iterations: int = 100000,
     ) -> bytes:
         """Derive encryption key from password and salt."""
         if algorithm == KeyDerivationAlgorithm.PBKDF2_SHA256:
@@ -138,7 +142,7 @@ class BackupEncryptionService:
                 length=32,  # 256-bit key
                 salt=salt,
                 iterations=iterations,
-                backend=default_backend()
+                backend=default_backend(),
             )
             return kdf.derive(password)
 
@@ -148,9 +152,9 @@ class BackupEncryptionService:
                 length=32,
                 salt=salt,
                 n=2**14,  # CPU/memory cost parameter
-                r=8,      # Block size
-                p=1,      # Parallelization parameter
-                backend=default_backend()
+                r=8,  # Block size
+                p=1,  # Parallelization parameter
+                backend=default_backend(),
             )
             return kdf.derive(password)
 
@@ -161,7 +165,7 @@ class BackupEncryptionService:
         self,
         key_id: str,
         algorithm: EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
-        expires_after: timedelta | None = None
+        expires_after: timedelta | None = None,
     ) -> EncryptionKey:
         """Generate a new encryption key."""
         if algorithm == EncryptionAlgorithm.AES_256_GCM:
@@ -171,14 +175,12 @@ class BackupEncryptionService:
         elif algorithm == EncryptionAlgorithm.RSA_OAEP:
             # Generate RSA key pair
             private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=2048,
-                backend=default_backend()
+                public_exponent=65537, key_size=2048, backend=default_backend()
             )
             key_data = private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
+                encryption_algorithm=serialization.NoEncryption(),
             )
         else:
             raise ValueError(f"Unsupported encryption algorithm: {algorithm}")
@@ -194,7 +196,7 @@ class BackupEncryptionService:
             version=1,
             created_at=datetime.utcnow(),
             expires_at=expires_at,
-            is_active=True
+            is_active=True,
         )
 
         # Store key
@@ -206,13 +208,13 @@ class BackupEncryptionService:
         # Update metrics
         await self.metrics_service.record_counter(
             "backup_encryption_key_generated",
-            tags={"key_id": key_id, "algorithm": algorithm.value}
+            tags={"key_id": key_id, "algorithm": algorithm.value},
         )
 
         logger.info(f"Generated encryption key: {key_id} ({algorithm.value})")
         return encryption_key
 
-    async def _persist_encryption_key(self, key: EncryptionKey):
+    async def _persist_encryption_key(self, key: EncryptionKey) -> None:
         """Persist encryption key to secure storage."""
         # Encrypt key with master key
         aesgcm = AESGCM(self.master_key)
@@ -225,26 +227,30 @@ class BackupEncryptionService:
             "created_at": key.created_at.isoformat(),
             "expires_at": key.expires_at.isoformat() if key.expires_at else None,
             "is_active": key.is_active,
-            "metadata": key.metadata
+            "metadata": key.metadata,
         }
 
-        plaintext = json.dumps({
-            "key_data": base64.b64encode(key.key_data).decode(),
-            "metadata": key_metadata
-        }).encode()
+        plaintext = json.dumps(
+            {
+                "key_data": base64.b64encode(key.key_data).decode(),
+                "metadata": key_metadata,
+            }
+        ).encode()
 
         encrypted_key = aesgcm.encrypt(nonce, plaintext, None)
 
         # Store in file system as backup
         key_file = self.backup_encryption_path / f"{key.key_id}.key"
-        async with aiofiles.open(key_file, 'wb') as f:
+        async with aiofiles.open(key_file, "wb") as f:
             # Write nonce + encrypted key
             await f.write(nonce + encrypted_key)
 
         # Store in secrets manager
         try:
             encrypted_key_b64 = base64.b64encode(nonce + encrypted_key).decode()
-            self.secrets_manager.set_secret(f"BACKUP_KEY_{key.key_id}", encrypted_key_b64)
+            self.secrets_manager.set_secret(
+                f"BACKUP_KEY_{key.key_id}", encrypted_key_b64
+            )
         except Exception as e:
             logger.warning(f"Failed to store key in secrets manager: {e}")
 
@@ -266,7 +272,7 @@ class BackupEncryptionService:
         if not encrypted_key_data:
             key_file = self.backup_encryption_path / f"{key_id}.key"
             if key_file.exists():
-                async with aiofiles.open(key_file, 'rb') as f:
+                async with aiofiles.open(key_file, "rb") as f:
                     encrypted_key_data = await f.read()
 
         if not encrypted_key_data:
@@ -290,9 +296,13 @@ class BackupEncryptionService:
                 key_data=key_data,
                 version=metadata["version"],
                 created_at=datetime.fromisoformat(metadata["created_at"]),
-                expires_at=datetime.fromisoformat(metadata["expires_at"]) if metadata["expires_at"] else None,
+                expires_at=(
+                    datetime.fromisoformat(metadata["expires_at"])
+                    if metadata["expires_at"]
+                    else None
+                ),
                 is_active=metadata["is_active"],
-                metadata=metadata.get("metadata", {})
+                metadata=metadata.get("metadata", {}),
             )
 
             self.encryption_keys[key_id] = encryption_key
@@ -304,11 +314,11 @@ class BackupEncryptionService:
 
     async def encrypt_file(
         self,
-        input_file: Union[str, Path],
-        output_file: Union[str, Path],
+        input_file: str | Path,
+        output_file: str | Path,
         key_id: str,
         algorithm: EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
-        compression: bool = True
+        compression: bool = True,
     ) -> EncryptionMetadata:
         """Encrypt a backup file."""
         start_time = time.time()
@@ -359,39 +369,41 @@ class BackupEncryptionService:
             file_size_original=original_size,
             file_size_encrypted=encrypted_size,
             checksum_original=original_checksum,
-            checksum_encrypted=encrypted_checksum
+            checksum_encrypted=encrypted_checksum,
         )
 
         # Save metadata
-        metadata_file = output_path.with_suffix(output_path.suffix + '.meta')
+        metadata_file = output_path.with_suffix(output_path.suffix + ".meta")
         await self._save_encryption_metadata(metadata_file, encryption_metadata)
 
         # Update metrics
         await self.metrics_service.record_counter(
             "backup_file_encrypted",
-            tags={"key_id": key_id, "algorithm": algorithm.value}
+            tags={"key_id": key_id, "algorithm": algorithm.value},
         )
 
         await self.metrics_service.record_histogram(
             "backup_encryption_duration",
             time.time() - start_time,
-            tags={"algorithm": algorithm.value}
+            tags={"algorithm": algorithm.value},
         )
 
         await self.metrics_service.record_gauge(
             "backup_encryption_ratio",
             encrypted_size / original_size if original_size > 0 else 1,
-            tags={"algorithm": algorithm.value}
+            tags={"algorithm": algorithm.value},
         )
 
-        logger.info(f"Encrypted file: {input_path} -> {output_path} (ratio: {encrypted_size/original_size:.2f})")
+        logger.info(
+            f"Encrypted file: {input_path} -> {output_path} (ratio: {encrypted_size/original_size:.2f})"
+        )
         return encryption_metadata
 
     async def decrypt_file(
         self,
-        input_file: Union[str, Path],
-        output_file: Union[str, Path],
-        metadata_file: Union[str, Path] | None = None
+        input_file: str | Path,
+        output_file: str | Path,
+        metadata_file: str | Path | None = None,
     ) -> bool:
         """Decrypt a backup file."""
         start_time = time.time()
@@ -403,7 +415,7 @@ class BackupEncryptionService:
 
         # Load metadata
         if metadata_file is None:
-            metadata_file = input_path.with_suffix(input_path.suffix + '.meta')
+            metadata_file = input_path.with_suffix(input_path.suffix + ".meta")
 
         metadata = await self._load_encryption_metadata(Path(metadata_file))
         if not metadata:
@@ -417,9 +429,13 @@ class BackupEncryptionService:
         # Decrypt file
         success = False
         if metadata.algorithm == EncryptionAlgorithm.AES_256_GCM:
-            success = await self._decrypt_aes_gcm(input_path, output_path, encryption_key, metadata)
+            success = await self._decrypt_aes_gcm(
+                input_path, output_path, encryption_key, metadata
+            )
         elif metadata.algorithm == EncryptionAlgorithm.FERNET:
-            success = await self._decrypt_fernet(input_path, output_path, encryption_key, metadata)
+            success = await self._decrypt_fernet(
+                input_path, output_path, encryption_key, metadata
+            )
 
         if success:
             # Verify checksum
@@ -431,13 +447,13 @@ class BackupEncryptionService:
             # Update metrics
             await self.metrics_service.record_counter(
                 "backup_file_decrypted",
-                tags={"key_id": metadata.key_id, "algorithm": metadata.algorithm.value}
+                tags={"key_id": metadata.key_id, "algorithm": metadata.algorithm.value},
             )
 
             await self.metrics_service.record_histogram(
                 "backup_decryption_duration",
                 time.time() - start_time,
-                tags={"algorithm": metadata.algorithm.value}
+                tags={"algorithm": metadata.algorithm.value},
             )
 
             logger.info(f"Decrypted file: {input_path} -> {output_path}")
@@ -446,49 +462,43 @@ class BackupEncryptionService:
         return False
 
     async def _encrypt_aes_gcm(
-        self,
-        input_path: Path,
-        output_path: Path,
-        key: EncryptionKey,
-        compression: bool
+        self, input_path: Path, output_path: Path, key: EncryptionKey, compression: bool
     ) -> dict[str, Any]:
         """Encrypt file using AES-256-GCM."""
         aesgcm = AESGCM(key.key_data)
         nonce = secrets.token_bytes(12)  # 96-bit nonce
 
         # Read and encrypt file
-        async with aiofiles.open(input_path, 'rb') as infile:
+        async with aiofiles.open(input_path, "rb") as infile:
             plaintext = await infile.read()
 
         # Optional compression
         if compression:
             import zlib
+
             plaintext = zlib.compress(plaintext, level=6)
 
         ciphertext = aesgcm.encrypt(nonce, plaintext, None)
 
         # Write encrypted file
-        async with aiofiles.open(output_path, 'wb') as outfile:
+        async with aiofiles.open(output_path, "wb") as outfile:
             await outfile.write(nonce + ciphertext)
 
-        return {
-            "nonce": base64.b64encode(nonce).decode(),
-            "compression": compression
-        }
+        return {"nonce": base64.b64encode(nonce).decode(), "compression": compression}
 
     async def _decrypt_aes_gcm(
         self,
         input_path: Path,
         output_path: Path,
         key: EncryptionKey,
-        metadata: EncryptionMetadata
+        metadata: EncryptionMetadata,
     ) -> bool:
         """Decrypt file using AES-256-GCM."""
         try:
             aesgcm = AESGCM(key.key_data)
 
             # Read encrypted file
-            async with aiofiles.open(input_path, 'rb') as infile:
+            async with aiofiles.open(input_path, "rb") as infile:
                 encrypted_data = await infile.read()
 
             nonce = encrypted_data[:12]
@@ -501,10 +511,11 @@ class BackupEncryptionService:
             compression = metadata.metadata.get("compression", False)
             if compression:
                 import zlib
+
                 plaintext = zlib.decompress(plaintext)
 
             # Write decrypted file
-            async with aiofiles.open(output_path, 'wb') as outfile:
+            async with aiofiles.open(output_path, "wb") as outfile:
                 await outfile.write(plaintext)
 
             return True
@@ -514,34 +525,31 @@ class BackupEncryptionService:
             return False
 
     async def _encrypt_fernet(
-        self,
-        input_path: Path,
-        output_path: Path,
-        key: EncryptionKey,
-        compression: bool
+        self, input_path: Path, output_path: Path, key: EncryptionKey, compression: bool
     ) -> dict[str, Any]:
         """Encrypt file using Fernet."""
         fernet = Fernet(key.key_data)
 
         # Read file
-        async with aiofiles.open(input_path, 'rb') as infile:
+        async with aiofiles.open(input_path, "rb") as infile:
             plaintext = await infile.read()
 
         # Optional compression
         if compression:
             import zlib
+
             plaintext = zlib.compress(plaintext, level=6)
 
         # Encrypt
         ciphertext = fernet.encrypt(plaintext)
 
         # Write encrypted file
-        async with aiofiles.open(output_path, 'wb') as outfile:
+        async with aiofiles.open(output_path, "wb") as outfile:
             await outfile.write(ciphertext)
 
         return {
             "nonce": "",  # Fernet includes nonce/IV internally
-            "compression": compression
+            "compression": compression,
         }
 
     async def _decrypt_fernet(
@@ -549,14 +557,14 @@ class BackupEncryptionService:
         input_path: Path,
         output_path: Path,
         key: EncryptionKey,
-        metadata: EncryptionMetadata
+        metadata: EncryptionMetadata,
     ) -> bool:
         """Decrypt file using Fernet."""
         try:
             fernet = Fernet(key.key_data)
 
             # Read encrypted file
-            async with aiofiles.open(input_path, 'rb') as infile:
+            async with aiofiles.open(input_path, "rb") as infile:
                 ciphertext = await infile.read()
 
             # Decrypt
@@ -566,10 +574,11 @@ class BackupEncryptionService:
             compression = metadata.metadata.get("compression", False)
             if compression:
                 import zlib
+
                 plaintext = zlib.decompress(plaintext)
 
             # Write decrypted file
-            async with aiofiles.open(output_path, 'wb') as outfile:
+            async with aiofiles.open(output_path, "wb") as outfile:
                 await outfile.write(plaintext)
 
             return True
@@ -582,13 +591,15 @@ class BackupEncryptionService:
         """Calculate SHA-256 checksum of file."""
         hash_sha256 = hashlib.sha256()
 
-        async with aiofiles.open(file_path, 'rb') as f:
+        async with aiofiles.open(file_path, "rb") as f:
             while chunk := await f.read(8192):
                 hash_sha256.update(chunk)
 
         return hash_sha256.hexdigest()
 
-    async def _save_encryption_metadata(self, metadata_file: Path, metadata: EncryptionMetadata):
+    async def _save_encryption_metadata(
+        self, metadata_file: Path, metadata: EncryptionMetadata
+    ) -> None:
         """Save encryption metadata to file."""
         metadata_dict = {
             "algorithm": metadata.algorithm.value,
@@ -604,13 +615,15 @@ class BackupEncryptionService:
             "file_size_encrypted": metadata.file_size_encrypted,
             "checksum_original": metadata.checksum_original,
             "checksum_encrypted": metadata.checksum_encrypted,
-            "metadata": metadata.metadata
+            "metadata": metadata.metadata,
         }
 
-        async with aiofiles.open(metadata_file, 'w') as f:
+        async with aiofiles.open(metadata_file, "w") as f:
             await f.write(json.dumps(metadata_dict, indent=2))
 
-    async def _load_encryption_metadata(self, metadata_file: Path) -> EncryptionMetadata | None:
+    async def _load_encryption_metadata(
+        self, metadata_file: Path
+    ) -> EncryptionMetadata | None:
         """Load encryption metadata from file."""
         if not metadata_file.exists():
             return None
@@ -633,7 +646,7 @@ class BackupEncryptionService:
                 file_size_encrypted=metadata_dict["file_size_encrypted"],
                 checksum_original=metadata_dict["checksum_original"],
                 checksum_encrypted=metadata_dict["checksum_encrypted"],
-                metadata=metadata_dict.get("metadata", {})
+                metadata=metadata_dict.get("metadata", {}),
             )
 
         except Exception as e:
@@ -654,7 +667,7 @@ class BackupEncryptionService:
                 new_key = await self.generate_encryption_key(
                     f"{key_id}_v{key.version + 1}",
                     key.algorithm,
-                    expires_after=self.key_rotation_interval
+                    expires_after=self.key_rotation_interval,
                 )
 
                 # Mark old key as inactive
@@ -666,8 +679,7 @@ class BackupEncryptionService:
 
         if rotated_count > 0:
             await self.metrics_service.record_counter(
-                "backup_encryption_keys_rotated",
-                value=rotated_count
+                "backup_encryption_keys_rotated", value=rotated_count
             )
 
         return rotated_count
@@ -678,7 +690,8 @@ class BackupEncryptionService:
 
         active_keys = [k for k in self.encryption_keys.values() if k.is_active]
         expired_keys = [
-            k for k in self.encryption_keys.values()
+            k
+            for k in self.encryption_keys.values()
             if k.expires_at and k.expires_at < now
         ]
 
@@ -688,12 +701,12 @@ class BackupEncryptionService:
             "expired_keys": len(expired_keys),
             "key_rotation_interval_days": self.key_rotation_interval.days,
             "algorithms_supported": [alg.value for alg in EncryptionAlgorithm],
-            "master_key_present": bool(self.master_key)
+            "master_key_present": bool(self.master_key),
         }
 
 
 # Example usage
-async def main():
+async def main() -> None:
     """Example usage of backup encryption service."""
     service = BackupEncryptionService()
 
@@ -703,7 +716,7 @@ async def main():
     decrypted_file = Path("/tmp/test_backup_decrypted.txt")
 
     # Create test file
-    async with aiofiles.open(test_file, 'w') as f:
+    async with aiofiles.open(test_file, "w") as f:
         await f.write("This is a test backup file for encryption.")
 
     # Encrypt

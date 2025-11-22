@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python
 """Test script to verify hypercorn can serve a basic endpoint."""
 
@@ -9,7 +11,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-async def main():
+async def main() -> Any:
     """Test hypercorn with minimal FastAPI app."""
     from fastapi import FastAPI
     from hypercorn.asyncio import serve
@@ -19,11 +21,11 @@ async def main():
     app = FastAPI()
 
     @app.get("/test")
-    async def test():
+    async def test() -> Any:
         return {"status": "ok", "message": "Hypercorn is working"}
 
     @app.get("/health")
-    async def health():
+    async def health() -> Any:
         return {"status": "healthy"}
 
     # Configure Hypercorn

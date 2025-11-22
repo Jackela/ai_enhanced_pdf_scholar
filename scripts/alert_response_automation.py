@@ -21,8 +21,7 @@ from pydantic import BaseModel, Field
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -31,17 +30,19 @@ logger = logging.getLogger(__name__)
 # Configuration and Models
 # ============================================================================
 
+
 class AlertData(BaseModel):
     """Alert data model from Prometheus AlertManager."""
-    alert_name: str = Field(alias='alertname')
+
+    alert_name: str = Field(alias="alertname")
     status: str
     severity: str
     category: str
     instance: str
     labels: dict[str, str] = {}
     annotations: dict[str, str] = {}
-    starts_at: datetime = Field(alias='startsAt')
-    ends_at: datetime | None = Field(alias='endsAt', default=None)
+    starts_at: datetime = Field(alias="startsAt")
+    ends_at: datetime | None = Field(alias="endsAt", default=None)
 
     class Config:
         allow_population_by_field_name = True
@@ -49,6 +50,7 @@ class AlertData(BaseModel):
 
 class RemediationAction(BaseModel):
     """Remediation action result."""
+
     action: str
     status: str  # success, failed, skipped
     message: str
@@ -60,7 +62,9 @@ class AutoRemediationConfig:
     """Configuration for auto-remediation system."""
 
     # Enable/disable auto-remediation
-    ENABLE_AUTO_REMEDIATION = os.getenv("AUTO_REMEDIATION_ENABLED", "true").lower() == "true"
+    ENABLE_AUTO_REMEDIATION = (
+        os.getenv("AUTO_REMEDIATION_ENABLED", "true").lower() == "true"
+    )
     TEST_MODE = os.getenv("AUTO_REMEDIATION_TEST_MODE", "false").lower() == "true"
 
     # Thresholds and limits
@@ -85,10 +89,11 @@ class AutoRemediationConfig:
 # Alert Response Automation Engine
 # ============================================================================
 
+
 class AlertResponseAutomation:
     """Main automation engine for alert response and remediation."""
 
-    def __init__(self, config: AutoRemediationConfig = None):
+    def __init__(self, config: AutoRemediationConfig | None = None) -> None:
         self.config = config or AutoRemediationConfig()
         self.redis_client = None
         self.action_history: list[RemediationAction] = []
@@ -98,19 +103,21 @@ class AlertResponseAutomation:
 
         # Remediation action registry
         self.remediation_actions = {
-            'CriticalMemoryUsage': self.handle_memory_pressure,
-            'CriticalCPUUsage': self.handle_cpu_pressure,
-            'ServiceDown': self.handle_service_down,
-            'LowCacheHitRate': self.handle_cache_performance,
-            'DiskSpaceLow': self.handle_disk_space,
-            'SlowDatabaseQueries': self.handle_database_performance,
-            'HighErrorRate': self.handle_error_rate_spike,
-            'RAGServiceUnavailable': self.handle_rag_service_down,
+            "CriticalMemoryUsage": self.handle_memory_pressure,
+            "CriticalCPUUsage": self.handle_cpu_pressure,
+            "ServiceDown": self.handle_service_down,
+            "LowCacheHitRate": self.handle_cache_performance,
+            "DiskSpaceLow": self.handle_disk_space,
+            "SlowDatabaseQueries": self.handle_database_performance,
+            "HighErrorRate": self.handle_error_rate_spike,
+            "RAGServiceUnavailable": self.handle_rag_service_down,
         }
 
-        logger.info(f"Alert Response Automation initialized. Test mode: {self.config.TEST_MODE}")
+        logger.info(
+            f"Alert Response Automation initialized. Test mode: {self.config.TEST_MODE}"
+        )
 
-    def _init_redis(self):
+    def _init_redis(self) -> None:
         """Initialize Redis connection for coordination and state tracking."""
         try:
             self.redis_client = redis.Redis(
@@ -118,7 +125,7 @@ class AlertResponseAutomation:
                 port=self.config.REDIS_PORT,
                 db=0,
                 decode_responses=True,
-                socket_timeout=5
+                socket_timeout=5,
             )
             self.redis_client.ping()
             logger.info("Redis connection established")
@@ -128,7 +135,7 @@ class AlertResponseAutomation:
 
     async def process_alert(self, alert: AlertData) -> list[RemediationAction]:
         """Process incoming alert and execute appropriate remediation actions."""
-        actions = []
+        actions: list[Any] = []
 
         try:
             logger.info(f"Processing alert: {alert.alert_name} ({alert.severity})")
@@ -141,12 +148,14 @@ class AlertResponseAutomation:
             # Check rate limiting to prevent remediation storms
             if not self._check_rate_limit(alert.alert_name):
                 logger.warning(f"Rate limit exceeded for {alert.alert_name}")
-                actions.append(RemediationAction(
-                    action="rate_limit_check",
-                    status="skipped",
-                    message="Rate limit exceeded - remediation throttled",
-                    execution_time=0.0
-                ))
+                actions.append(
+                    RemediationAction(
+                        action="rate_limit_check",
+                        status="skipped",
+                        message="Rate limit exceeded - remediation throttled",
+                        execution_time=0.0,
+                    )
+                )
                 return actions
 
             # Execute remediation action
@@ -165,12 +174,14 @@ class AlertResponseAutomation:
 
         except Exception as e:
             logger.error(f"Error processing alert {alert.alert_name}: {e}")
-            actions.append(RemediationAction(
-                action="error_handling",
-                status="failed",
-                message=f"Error processing alert: {str(e)}",
-                execution_time=0.0
-            ))
+            actions.append(
+                RemediationAction(
+                    action="error_handling",
+                    status="failed",
+                    message=f"Error processing alert: {str(e)}",
+                    execution_time=0.0,
+                )
+            )
 
         return actions
 
@@ -181,7 +192,10 @@ class AlertResponseAutomation:
             return False
 
         # Skip if alert doesn't have auto-remediation enabled
-        if alert.labels.get('auto_remediation', '').lower() not in ['true', 'cache_warming']:
+        if alert.labels.get("auto_remediation", "").lower() not in [
+            "true",
+            "cache_warming",
+        ]:
             return False
 
         # Skip if system is in maintenance mode
@@ -257,9 +271,13 @@ class AlertResponseAutomation:
             # 1. Clear system caches
             if not self.config.TEST_MODE:
                 try:
-                    subprocess.run(['sync'], check=True, timeout=30)
-                    subprocess.run(['echo', '3', '>', '/proc/sys/vm/drop_caches'],
-                                 shell=True, check=False, timeout=30)
+                    subprocess.run(["sync"], check=True, timeout=30)
+                    subprocess.run(
+                        ["echo", "3", ">", "/proc/sys/vm/drop_caches"],
+                        shell=True,
+                        check=False,
+                        timeout=30,
+                    )
                     actions_taken.append("system_cache_cleared")
                 except Exception as e:
                     logger.warning(f"System cache clear failed: {e}")
@@ -270,21 +288,28 @@ class AlertResponseAutomation:
             if self.redis_client:
                 try:
                     # Clear non-essential Redis keys
-                    pattern_keys = self.redis_client.keys("temp:*") + self.redis_client.keys("cache:temp:*")
+                    pattern_keys = self.redis_client.keys(
+                        "temp:*"
+                    ) + self.redis_client.keys("cache:temp:*")
                     if pattern_keys:
                         self.redis_client.delete(*pattern_keys)
-                        actions_taken.append(f"cleared_{len(pattern_keys)}_temp_cache_keys")
+                        actions_taken.append(
+                            f"cleared_{len(pattern_keys)}_temp_cache_keys"
+                        )
                 except Exception as e:
                     logger.warning(f"Redis cache clear failed: {e}")
 
             # 3. Restart memory-intensive processes (if configured)
-            if alert.labels.get('auto_restart_services', '').lower() == 'true':
-                services_to_restart = ['ai-pdf-scholar-worker']  # Non-critical services
+            if alert.labels.get("auto_restart_services", "").lower() == "true":
+                services_to_restart = ["ai-pdf-scholar-worker"]  # Non-critical services
                 for service in services_to_restart:
                     try:
                         if not self.config.TEST_MODE:
-                            subprocess.run(['systemctl', 'restart', service],
-                                         check=True, timeout=60)
+                            subprocess.run(
+                                ["systemctl", "restart", service],
+                                check=True,
+                                timeout=60,
+                            )
                         actions_taken.append(f"restarted_{service}")
                     except Exception as e:
                         logger.warning(f"Service restart failed for {service}: {e}")
@@ -292,8 +317,10 @@ class AlertResponseAutomation:
             # 4. Garbage collection trigger
             try:
                 # Send SIGUSR1 to Python processes to trigger GC
-                for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                    if 'python' in proc.info['name'] and 'ai_pdf_scholar' in str(proc.info['cmdline']):
+                for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+                    if "python" in proc.info["name"] and "ai_pdf_scholar" in str(
+                        proc.info["cmdline"]
+                    ):
                         if not self.config.TEST_MODE:
                             proc.send_signal(10)  # SIGUSR1
                         actions_taken.append(f"gc_triggered_pid_{proc.info['pid']}")
@@ -310,14 +337,14 @@ class AlertResponseAutomation:
                 action="memory_pressure_remediation",
                 status="success" if memory_freed > 0 else "partial",
                 message=f"Memory remediation completed. Actions: {', '.join(actions_taken)}. "
-                       f"Memory freed: {memory_freed:.2f}%",
+                f"Memory freed: {memory_freed:.2f}%",
                 execution_time=execution_time,
                 metrics={
                     "memory_before_percent": memory_before,
                     "memory_after_percent": memory_after,
                     "memory_freed_percent": memory_freed,
-                    "actions_taken": actions_taken
-                }
+                    "actions_taken": actions_taken,
+                },
             )
 
         except Exception as e:
@@ -326,7 +353,7 @@ class AlertResponseAutomation:
                 action="memory_pressure_remediation",
                 status="failed",
                 message=f"Memory remediation failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     async def handle_cpu_pressure(self, alert: AlertData) -> RemediationAction:
@@ -341,15 +368,17 @@ class AlertResponseAutomation:
 
             # 1. Identify high-CPU processes
             high_cpu_procs = []
-            for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'cmdline']):
+            for proc in psutil.process_iter(["pid", "name", "cpu_percent", "cmdline"]):
                 try:
-                    if proc.info['cpu_percent'] > 20:  # Processes using >20% CPU
-                        high_cpu_procs.append({
-                            'pid': proc.info['pid'],
-                            'name': proc.info['name'],
-                            'cpu_percent': proc.info['cpu_percent'],
-                            'cmdline': proc.info['cmdline']
-                        })
+                    if proc.info["cpu_percent"] > 20:  # Processes using >20% CPU
+                        high_cpu_procs.append(
+                            {
+                                "pid": proc.info["pid"],
+                                "name": proc.info["name"],
+                                "cpu_percent": proc.info["cpu_percent"],
+                                "cmdline": proc.info["cmdline"],
+                            }
+                        )
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
 
@@ -357,11 +386,11 @@ class AlertResponseAutomation:
             for proc_info in high_cpu_procs:
                 try:
                     # Skip critical system processes
-                    if proc_info['name'] in ['systemd', 'kernel', 'kthreadd']:
+                    if proc_info["name"] in ["systemd", "kernel", "kthreadd"]:
                         continue
 
                     if not self.config.TEST_MODE:
-                        proc = psutil.Process(proc_info['pid'])
+                        proc = psutil.Process(proc_info["pid"])
                         if proc.nice() < 10:  # Only increase niceness
                             proc.nice(min(proc.nice() + 5, 19))  # Max niceness is 19
 
@@ -371,7 +400,7 @@ class AlertResponseAutomation:
                     logger.warning(f"Failed to renice process {proc_info['pid']}: {e}")
 
             # 3. Scale down non-essential services
-            if alert.labels.get('auto_scale_down', '').lower() == 'true':
+            if alert.labels.get("auto_scale_down", "").lower() == "true":
                 try:
                     # This would integrate with container orchestration or service management
                     # For now, we'll just log the intent
@@ -383,8 +412,11 @@ class AlertResponseAutomation:
             try:
                 # Stop non-essential cron jobs or background tasks
                 if not self.config.TEST_MODE:
-                    subprocess.run(['systemctl', 'stop', 'ai-pdf-scholar-indexing'],
-                                 check=False, timeout=30)
+                    subprocess.run(
+                        ["systemctl", "stop", "ai-pdf-scholar-indexing"],
+                        check=False,
+                        timeout=30,
+                    )
                 actions_taken.append("stopped_background_indexing")
             except Exception as e:
                 logger.warning(f"Background task stop failed: {e}")
@@ -398,15 +430,15 @@ class AlertResponseAutomation:
                 action="cpu_pressure_remediation",
                 status="success" if cpu_reduction > 0 else "partial",
                 message=f"CPU remediation completed. Actions: {', '.join(actions_taken)}. "
-                       f"CPU reduction: {cpu_reduction:.2f}%",
+                f"CPU reduction: {cpu_reduction:.2f}%",
                 execution_time=execution_time,
                 metrics={
                     "cpu_before_percent": cpu_before,
                     "cpu_after_percent": cpu_after,
                     "cpu_reduction_percent": cpu_reduction,
                     "high_cpu_processes": len(high_cpu_procs),
-                    "actions_taken": actions_taken
-                }
+                    "actions_taken": actions_taken,
+                },
             )
 
         except Exception as e:
@@ -415,7 +447,7 @@ class AlertResponseAutomation:
                 action="cpu_pressure_remediation",
                 status="failed",
                 message=f"CPU remediation failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     async def handle_service_down(self, alert: AlertData) -> RemediationAction:
@@ -423,15 +455,19 @@ class AlertResponseAutomation:
         start_time = time.time()
 
         try:
-            service_name = alert.labels.get('job', 'unknown')
+            service_name = alert.labels.get("job", "unknown")
             logger.info(f"Executing service restart remediation for {service_name}")
 
             actions_taken = []
 
             # 1. Check service status
             try:
-                result = subprocess.run(['systemctl', 'is-active', service_name],
-                                     capture_output=True, text=True, timeout=10)
+                result = subprocess.run(
+                    ["systemctl", "is-active", service_name],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
                 service_status = result.stdout.strip()
                 actions_taken.append(f"checked_status:{service_status}")
             except Exception as e:
@@ -440,7 +476,7 @@ class AlertResponseAutomation:
 
             # 2. Attempt service restart (with rate limiting)
             restart_attempted = False
-            if service_status in ['inactive', 'failed']:
+            if service_status in ["inactive", "failed"]:
                 restart_key = f"service_restart:{service_name}"
 
                 if self.redis_client:
@@ -450,19 +486,28 @@ class AlertResponseAutomation:
                     if restart_count < self.config.MAX_RESTART_ATTEMPTS:
                         try:
                             if not self.config.TEST_MODE:
-                                subprocess.run(['systemctl', 'restart', service_name],
-                                             check=True, timeout=60)
+                                subprocess.run(
+                                    ["systemctl", "restart", service_name],
+                                    check=True,
+                                    timeout=60,
+                                )
 
                             # Increment restart counter
-                            self.redis_client.setex(restart_key, 3600, restart_count + 1)  # 1 hour window
+                            self.redis_client.setex(
+                                restart_key, 3600, restart_count + 1
+                            )  # 1 hour window
 
                             actions_taken.append("restarted_service")
                             restart_attempted = True
 
                             # Wait and check if restart was successful
                             await asyncio.sleep(5)
-                            result = subprocess.run(['systemctl', 'is-active', service_name],
-                                                 capture_output=True, text=True, timeout=10)
+                            result = subprocess.run(
+                                ["systemctl", "is-active", service_name],
+                                capture_output=True,
+                                text=True,
+                                timeout=10,
+                            )
                             new_status = result.stdout.strip()
                             actions_taken.append(f"post_restart_status:{new_status}")
 
@@ -474,24 +519,31 @@ class AlertResponseAutomation:
                     # No Redis - attempt restart anyway
                     try:
                         if not self.config.TEST_MODE:
-                            subprocess.run(['systemctl', 'restart', service_name],
-                                         check=True, timeout=60)
+                            subprocess.run(
+                                ["systemctl", "restart", service_name],
+                                check=True,
+                                timeout=60,
+                            )
                         actions_taken.append("restarted_service_no_rate_limit")
                         restart_attempted = True
                     except Exception as e:
                         actions_taken.append(f"restart_failed:{str(e)}")
 
             # 3. Check dependencies if restart failed
-            if not restart_attempted or service_status == 'failed':
-                dependency_services = ['postgresql', 'redis', 'nginx']
+            if not restart_attempted or service_status == "failed":
+                dependency_services = ["postgresql", "redis", "nginx"]
                 for dep_service in dependency_services:
                     try:
-                        result = subprocess.run(['systemctl', 'is-active', dep_service],
-                                             capture_output=True, text=True, timeout=10)
+                        result = subprocess.run(
+                            ["systemctl", "is-active", dep_service],
+                            capture_output=True,
+                            text=True,
+                            timeout=10,
+                        )
                         dep_status = result.stdout.strip()
                         actions_taken.append(f"dependency_{dep_service}:{dep_status}")
 
-                        if dep_status not in ['active']:
+                        if dep_status not in ["active"]:
                             logger.warning(f"Dependency {dep_service} is {dep_status}")
                     except Exception:
                         continue
@@ -507,8 +559,8 @@ class AlertResponseAutomation:
                     "service_name": service_name,
                     "initial_status": service_status,
                     "restart_attempted": restart_attempted,
-                    "actions_taken": actions_taken
-                }
+                    "actions_taken": actions_taken,
+                },
             )
 
         except Exception as e:
@@ -517,7 +569,7 @@ class AlertResponseAutomation:
                 action="service_down_remediation",
                 status="failed",
                 message=f"Service remediation failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     async def handle_cache_performance(self, alert: AlertData) -> RemediationAction:
@@ -542,7 +594,9 @@ class AlertResponseAutomation:
                         if count and int(count) > 5:  # Only queries used >5 times
                             popular_queries.append(query)
 
-                    actions_taken.append(f"identified_{len(popular_queries)}_popular_queries")
+                    actions_taken.append(
+                        f"identified_{len(popular_queries)}_popular_queries"
+                    )
 
                     # Warm cache with popular queries (this would integrate with your RAG service)
                     if popular_queries and not self.config.TEST_MODE:
@@ -564,9 +618,9 @@ class AlertResponseAutomation:
             try:
                 if self.redis_client:
                     # Check Redis memory usage and optimize if needed
-                    info = self.redis_client.info('memory')
-                    used_memory = info.get('used_memory', 0)
-                    max_memory = info.get('maxmemory', 0)
+                    info = self.redis_client.info("memory")
+                    used_memory = info.get("used_memory", 0)
+                    max_memory = info.get("maxmemory", 0)
 
                     if max_memory > 0 and used_memory / max_memory > 0.8:
                         # Redis is near memory limit - clean old keys
@@ -580,8 +634,12 @@ class AlertResponseAutomation:
                                     old_keys.append(key)
 
                             if old_keys and not self.config.TEST_MODE:
-                                self.redis_client.delete(*old_keys[:50])  # Delete up to 50 old keys
-                                actions_taken.append(f"cleaned_{len(old_keys[:50])}_old_cache_keys")
+                                self.redis_client.delete(
+                                    *old_keys[:50]
+                                )  # Delete up to 50 old keys
+                                actions_taken.append(
+                                    f"cleaned_{len(old_keys[:50])}_old_cache_keys"
+                                )
 
                     actions_taken.append("redis_memory_optimized")
 
@@ -608,8 +666,8 @@ class AlertResponseAutomation:
                 execution_time=execution_time,
                 metrics={
                     "actions_taken": actions_taken,
-                    "redis_available": self.redis_client is not None
-                }
+                    "redis_available": self.redis_client is not None,
+                },
             )
 
         except Exception as e:
@@ -618,7 +676,7 @@ class AlertResponseAutomation:
                 action="cache_performance_remediation",
                 status="failed",
                 message=f"Cache remediation failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     async def handle_disk_space(self, alert: AlertData) -> RemediationAction:
@@ -629,19 +687,20 @@ class AlertResponseAutomation:
             logger.info("Executing disk space cleanup remediation")
 
             actions_taken = []
-            disk_before = psutil.disk_usage('/').free
+            disk_before = psutil.disk_usage("/").free
 
             # 1. Log rotation
             try:
                 if not self.config.TEST_MODE:
-                    subprocess.run(['logrotate', '/etc/logrotate.conf'],
-                                 check=True, timeout=60)
+                    subprocess.run(
+                        ["logrotate", "/etc/logrotate.conf"], check=True, timeout=60
+                    )
                 actions_taken.append("log_rotation_completed")
             except Exception as e:
                 logger.warning(f"Log rotation failed: {e}")
 
             # 2. Clean temporary files
-            temp_dirs = ['/tmp', '/var/tmp', Path.home() / '.ai_pdf_scholar' / 'temp']
+            temp_dirs = ["/tmp", "/var/tmp", Path.home() / ".ai_pdf_scholar" / "temp"]
             total_cleaned = 0
 
             for temp_dir in temp_dirs:
@@ -664,14 +723,16 @@ class AlertResponseAutomation:
                                     continue
 
                         if cleaned_count > 0:
-                            actions_taken.append(f"cleaned_{cleaned_count}_files_from_{temp_dir}")
+                            actions_taken.append(
+                                f"cleaned_{cleaned_count}_files_from_{temp_dir}"
+                            )
 
                 except Exception as e:
                     logger.warning(f"Temp cleanup failed for {temp_dir}: {e}")
 
             # 3. Clean old application logs
             try:
-                log_dirs = ['/var/log', Path.home() / '.ai_pdf_scholar' / 'logs']
+                log_dirs = ["/var/log", Path.home() / ".ai_pdf_scholar" / "logs"]
                 for log_dir in log_dirs:
                     log_path = Path(log_dir)
                     if log_path.exists():
@@ -684,7 +745,9 @@ class AlertResponseAutomation:
                                     if log_file.stat().st_mtime < cutoff_time:
                                         if not self.config.TEST_MODE:
                                             log_file.unlink()
-                                        actions_taken.append(f"deleted_old_log_{log_file.name}")
+                                        actions_taken.append(
+                                            f"deleted_old_log_{log_file.name}"
+                                        )
                                 except Exception:
                                     continue
             except Exception as e:
@@ -692,10 +755,10 @@ class AlertResponseAutomation:
 
             # 4. Clean old vector indexes and caches
             try:
-                app_dir = Path.home() / '.ai_pdf_scholar'
+                app_dir = Path.home() / ".ai_pdf_scholar"
                 if app_dir.exists():
                     # Clean old backup files
-                    backup_dir = app_dir / 'backups'
+                    backup_dir = app_dir / "backups"
                     if backup_dir.exists():
                         cutoff_time = time.time() - (30 * 24 * 60 * 60)  # 30 days
 
@@ -705,7 +768,9 @@ class AlertResponseAutomation:
                                     if backup_file.stat().st_mtime < cutoff_time:
                                         if not self.config.TEST_MODE:
                                             backup_file.unlink()
-                                        actions_taken.append(f"deleted_old_backup_{backup_file.name}")
+                                        actions_taken.append(
+                                            f"deleted_old_backup_{backup_file.name}"
+                                        )
                                 except Exception:
                                     continue
             except Exception as e:
@@ -714,15 +779,15 @@ class AlertResponseAutomation:
             # 5. Clear package manager caches
             try:
                 if not self.config.TEST_MODE:
-                    subprocess.run(['apt-get', 'autoremove', '-y'],
-                                 check=False, timeout=120)
-                    subprocess.run(['apt-get', 'autoclean'],
-                                 check=False, timeout=60)
+                    subprocess.run(
+                        ["apt-get", "autoremove", "-y"], check=False, timeout=120
+                    )
+                    subprocess.run(["apt-get", "autoclean"], check=False, timeout=60)
                 actions_taken.append("package_cache_cleaned")
             except Exception as e:
                 logger.warning(f"Package cache cleanup failed: {e}")
 
-            disk_after = psutil.disk_usage('/').free
+            disk_after = psutil.disk_usage("/").free
             space_freed = disk_after - disk_before
 
             execution_time = time.time() - start_time
@@ -731,15 +796,15 @@ class AlertResponseAutomation:
                 action="disk_space_remediation",
                 status="success" if space_freed > 0 else "partial",
                 message=f"Disk cleanup completed. Actions: {', '.join(actions_taken)}. "
-                       f"Space freed: {space_freed / (1024**3):.2f} GB",
+                f"Space freed: {space_freed / (1024**3):.2f} GB",
                 execution_time=execution_time,
                 metrics={
                     "disk_before_free_bytes": disk_before,
                     "disk_after_free_bytes": disk_after,
                     "space_freed_bytes": space_freed,
                     "files_cleaned": total_cleaned,
-                    "actions_taken": actions_taken
-                }
+                    "actions_taken": actions_taken,
+                },
             )
 
         except Exception as e:
@@ -748,7 +813,7 @@ class AlertResponseAutomation:
                 action="disk_space_remediation",
                 status="failed",
                 message=f"Disk cleanup failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     async def handle_database_performance(self, alert: AlertData) -> RemediationAction:
@@ -778,7 +843,7 @@ class AlertResponseAutomation:
 
                     # Check for and rebuild indexes if needed
                     result = db.fetch_all("PRAGMA integrity_check;")
-                    if result and result[0]['integrity_check'] == 'ok':
+                    if result and result[0]["integrity_check"] == "ok":
                         actions_taken.append("database_integrity_verified")
 
                 else:
@@ -810,7 +875,9 @@ class AlertResponseAutomation:
 
                     if old_keys and not self.config.TEST_MODE:
                         self.redis_client.delete(*old_keys)
-                        actions_taken.append(f"cleared_{len(old_keys)}_old_query_cache_entries")
+                        actions_taken.append(
+                            f"cleared_{len(old_keys)}_old_query_cache_entries"
+                        )
 
                 except Exception as e:
                     logger.warning(f"Query cache optimization failed: {e}")
@@ -822,9 +889,7 @@ class AlertResponseAutomation:
                 status="success",
                 message=f"Database optimization completed. Actions: {', '.join(actions_taken)}",
                 execution_time=execution_time,
-                metrics={
-                    "actions_taken": actions_taken
-                }
+                metrics={"actions_taken": actions_taken},
             )
 
         except Exception as e:
@@ -833,7 +898,7 @@ class AlertResponseAutomation:
                 action="database_performance_remediation",
                 status="failed",
                 message=f"Database remediation failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     async def handle_error_rate_spike(self, alert: AlertData) -> RemediationAction:
@@ -849,7 +914,9 @@ class AlertResponseAutomation:
             if self.redis_client and not self.config.TEST_MODE:
                 try:
                     # Set circuit breaker flag to protect system
-                    self.redis_client.setex("circuit_breaker:enabled", 300, "true")  # 5 minutes
+                    self.redis_client.setex(
+                        "circuit_breaker:enabled", 300, "true"
+                    )  # 5 minutes
                     actions_taken.append("circuit_breaker_enabled")
                 except Exception as e:
                     logger.warning(f"Circuit breaker activation failed: {e}")
@@ -860,12 +927,14 @@ class AlertResponseAutomation:
                 features_to_disable = [
                     "background_indexing",
                     "analytics_collection",
-                    "non_essential_apis"
+                    "non_essential_apis",
                 ]
 
                 for feature in features_to_disable:
                     if self.redis_client and not self.config.TEST_MODE:
-                        self.redis_client.setex(f"feature_flag:{feature}:disabled", 600, "true")  # 10 minutes
+                        self.redis_client.setex(
+                            f"feature_flag:{feature}:disabled", 600, "true"
+                        )  # 10 minutes
                     actions_taken.append(f"disabled_feature_{feature}")
 
             except Exception as e:
@@ -889,8 +958,8 @@ class AlertResponseAutomation:
                     "system_metrics": {
                         "memory_percent": psutil.virtual_memory().percent,
                         "cpu_percent": psutil.cpu_percent(interval=1),
-                        "disk_usage": psutil.disk_usage('/').percent
-                    }
+                        "disk_usage": psutil.disk_usage("/").percent,
+                    },
                 }
 
                 # Save diagnostic info
@@ -898,7 +967,7 @@ class AlertResponseAutomation:
                     self.redis_client.setex(
                         f"diagnostic_report:{int(time.time())}",
                         3600,
-                        json.dumps(diagnostic_info)
+                        json.dumps(diagnostic_info),
                     )
 
                 actions_taken.append("diagnostic_report_generated")
@@ -915,8 +984,9 @@ class AlertResponseAutomation:
                 execution_time=execution_time,
                 metrics={
                     "actions_taken": actions_taken,
-                    "circuit_breaker_enabled": "circuit_breaker_enabled" in actions_taken
-                }
+                    "circuit_breaker_enabled": "circuit_breaker_enabled"
+                    in actions_taken,
+                },
             )
 
         except Exception as e:
@@ -925,7 +995,7 @@ class AlertResponseAutomation:
                 action="error_rate_spike_remediation",
                 status="failed",
                 message=f"Error rate remediation failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     async def handle_rag_service_down(self, alert: AlertData) -> RemediationAction:
@@ -940,6 +1010,7 @@ class AlertResponseAutomation:
             # 1. Check API key configuration
             try:
                 from config import Config
+
                 api_key_configured = Config.get_gemini_api_key() is not None
 
                 if api_key_configured:
@@ -960,7 +1031,9 @@ class AlertResponseAutomation:
                     if response.status_code == 404:  # Expected for base URL
                         actions_taken.append("external_api_connectivity_ok")
                     else:
-                        actions_taken.append(f"external_api_response_code_{response.status_code}")
+                        actions_taken.append(
+                            f"external_api_response_code_{response.status_code}"
+                        )
                 else:
                     actions_taken.append("external_api_connectivity_simulated")
 
@@ -972,8 +1045,11 @@ class AlertResponseAutomation:
                 # This would restart your RAG service
                 if not self.config.TEST_MODE:
                     # Restart the RAG service or reinitialize components
-                    subprocess.run(['systemctl', 'restart', 'ai-pdf-scholar-rag'],
-                                 check=False, timeout=60)
+                    subprocess.run(
+                        ["systemctl", "restart", "ai-pdf-scholar-rag"],
+                        check=False,
+                        timeout=60,
+                    )
                 actions_taken.append("rag_service_restart_attempted")
             except Exception as e:
                 actions_taken.append(f"rag_service_restart_failed: {str(e)}")
@@ -982,7 +1058,9 @@ class AlertResponseAutomation:
             try:
                 if self.redis_client and not self.config.TEST_MODE:
                     # Enable fallback mode for queries
-                    self.redis_client.setex("rag_fallback_mode", 900, "true")  # 15 minutes
+                    self.redis_client.setex(
+                        "rag_fallback_mode", 900, "true"
+                    )  # 15 minutes
                     actions_taken.append("rag_fallback_mode_enabled")
             except Exception as e:
                 logger.warning(f"Fallback mode activation failed: {e}")
@@ -994,9 +1072,7 @@ class AlertResponseAutomation:
                 status="success",
                 message=f"RAG service remediation completed. Actions: {', '.join(actions_taken)}",
                 execution_time=execution_time,
-                metrics={
-                    "actions_taken": actions_taken
-                }
+                metrics={"actions_taken": actions_taken},
             )
 
         except Exception as e:
@@ -1005,14 +1081,16 @@ class AlertResponseAutomation:
                 action="rag_service_remediation",
                 status="failed",
                 message=f"RAG service remediation failed: {str(e)}",
-                execution_time=execution_time
+                execution_time=execution_time,
             )
 
     # ============================================================================
     # Utility Methods
     # ============================================================================
 
-    def _record_action_metrics(self, alert: AlertData, action: RemediationAction):
+    def _record_action_metrics(
+        self, alert: AlertData, action: RemediationAction
+    ) -> None:
         """Record remediation action metrics."""
         try:
             if self.redis_client:
@@ -1023,7 +1101,7 @@ class AlertResponseAutomation:
                     "action": action.action,
                     "status": action.status,
                     "execution_time": action.execution_time,
-                    "message": action.message
+                    "message": action.message,
                 }
 
                 self.redis_client.lpush(metrics_key, json.dumps(metrics_data))
@@ -1033,14 +1111,22 @@ class AlertResponseAutomation:
         except Exception as e:
             logger.warning(f"Failed to record metrics: {e}")
 
-    async def _send_remediation_notification(self, alert: AlertData, action: RemediationAction):
+    async def _send_remediation_notification(
+        self, alert: AlertData, action: RemediationAction
+    ) -> None:
         """Send notification about remediation action taken."""
         try:
             if not self.config.SLACK_WEBHOOK_URL:
                 return
 
             # Prepare notification message
-            color = "good" if action.status == "success" else "warning" if action.status == "partial" else "danger"
+            color = (
+                "good"
+                if action.status == "success"
+                else "warning"
+                if action.status == "partial"
+                else "danger"
+            )
 
             notification = {
                 "text": f"Auto-remediation executed for alert: {alert.alert_name}",
@@ -1051,41 +1137,35 @@ class AlertResponseAutomation:
                             {
                                 "title": "Alert",
                                 "value": alert.alert_name,
-                                "short": True
+                                "short": True,
                             },
-                            {
-                                "title": "Action",
-                                "value": action.action,
-                                "short": True
-                            },
+                            {"title": "Action", "value": action.action, "short": True},
                             {
                                 "title": "Status",
                                 "value": action.status.upper(),
-                                "short": True
+                                "short": True,
                             },
                             {
                                 "title": "Execution Time",
                                 "value": f"{action.execution_time:.2f}s",
-                                "short": True
+                                "short": True,
                             },
                             {
                                 "title": "Message",
                                 "value": action.message,
-                                "short": False
-                            }
+                                "short": False,
+                            },
                         ],
                         "footer": "Auto-Remediation System",
-                        "ts": int(time.time())
+                        "ts": int(time.time()),
                     }
-                ]
+                ],
             }
 
             # Send notification (don't block on this)
             if not self.config.TEST_MODE:
                 requests.post(
-                    self.config.SLACK_WEBHOOK_URL,
-                    json=notification,
-                    timeout=10
+                    self.config.SLACK_WEBHOOK_URL, json=notification, timeout=10
                 )
 
         except Exception as e:
@@ -1101,13 +1181,17 @@ class AlertResponseAutomation:
             return {"total_actions": 0}
 
         total_actions = len(self.action_history)
-        successful_actions = len([a for a in self.action_history if a.status == "success"])
+        successful_actions = len(
+            [a for a in self.action_history if a.status == "success"]
+        )
         failed_actions = len([a for a in self.action_history if a.status == "failed"])
         partial_actions = len([a for a in self.action_history if a.status == "partial"])
 
-        avg_execution_time = sum(a.execution_time for a in self.action_history) / total_actions
+        avg_execution_time = (
+            sum(a.execution_time for a in self.action_history) / total_actions
+        )
 
-        action_types = {}
+        action_types: dict[str, Any] = {}
         for action in self.action_history:
             action_types[action.action] = action_types.get(action.action, 0) + 1
 
@@ -1116,9 +1200,11 @@ class AlertResponseAutomation:
             "successful_actions": successful_actions,
             "failed_actions": failed_actions,
             "partial_actions": partial_actions,
-            "success_rate": successful_actions / total_actions * 100 if total_actions > 0 else 0,
+            "success_rate": (
+                successful_actions / total_actions * 100 if total_actions > 0 else 0
+            ),
             "average_execution_time": avg_execution_time,
-            "action_types": action_types
+            "action_types": action_types,
         }
 
 
@@ -1126,15 +1212,26 @@ class AlertResponseAutomation:
 # Main CLI Interface
 # ============================================================================
 
-async def main():
+
+async def main() -> None:
     """Main function for running the alert response automation system."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Alert Response Automation System")
-    parser.add_argument("--test-mode", action="store_true", help="Run in test mode (no actual changes)")
-    parser.add_argument("--alert-file", type=str, help="Path to JSON file containing alert data for testing")
-    parser.add_argument("--metrics", action="store_true", help="Show metrics summary and exit")
-    parser.add_argument("--history", action="store_true", help="Show action history and exit")
+    parser.add_argument(
+        "--test-mode", action="store_true", help="Run in test mode (no actual changes)"
+    )
+    parser.add_argument(
+        "--alert-file",
+        type=str,
+        help="Path to JSON file containing alert data for testing",
+    )
+    parser.add_argument(
+        "--metrics", action="store_true", help="Show metrics summary and exit"
+    )
+    parser.add_argument(
+        "--history", action="store_true", help="Show action history and exit"
+    )
 
     args = parser.parse_args()
 
@@ -1158,7 +1255,9 @@ async def main():
         history = automation.get_action_history()
         print("\n=== Recent Remediation Actions ===")
         for i, action in enumerate(history[-10:], 1):  # Last 10 actions
-            print(f"{i}. {action.action} - {action.status} ({action.execution_time:.2f}s)")
+            print(
+                f"{i}. {action.action} - {action.status} ({action.execution_time:.2f}s)"
+            )
             print(f"   {action.message}")
         return
 
@@ -1204,15 +1303,19 @@ async def main():
     print(f"  Auto-remediation enabled: {config.ENABLE_AUTO_REMEDIATION}")
     print(f"  Test mode: {config.TEST_MODE}")
     print(f"  Max restart attempts: {config.MAX_RESTART_ATTEMPTS}")
-    print(f"  Redis connection: {'Available' if automation.redis_client else 'Not available'}")
+    print(
+        f"  Redis connection: {'Available' if automation.redis_client else 'Not available'}"
+    )
     print()
     print("Usage examples:")
-    print("  python alert_response_automation.py --test-mode --alert-file test_alert.json")
+    print(
+        "  python alert_response_automation.py --test-mode --alert-file test_alert.json"
+    )
     print("  python alert_response_automation.py --metrics")
     print("  python alert_response_automation.py --history")
     print()
     print("Supported alert types:")
-    for alert_type in automation.remediation_actions.keys():
+    for alert_type in automation.remediation_actions:
         print(f"  - {alert_type}")
 
 

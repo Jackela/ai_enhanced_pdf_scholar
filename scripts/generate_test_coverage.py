@@ -16,13 +16,17 @@ from typing import Any
 class TestCoverageGenerator:
     """Generate comprehensive test coverage reports."""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str | None = None) -> None:
         """Initialize coverage generator."""
-        self.project_root = Path(project_root) if project_root else Path(__file__).parent.parent
+        self.project_root = (
+            Path(project_root) if project_root else Path(__file__).parent.parent
+        )
         self.coverage_dir = self.project_root / "coverage_html"
         self.coverage_file = self.project_root / ".coverage"
 
-    def run_pytest_with_coverage(self, test_patterns: list[str] = None, timeout: int = 300) -> bool:
+    def run_pytest_with_coverage(
+        self, test_patterns: list[str] | None = None, timeout: int = 300
+    ) -> bool:
         """Run pytest with coverage collection."""
         print("🧪 Running test suite with coverage collection...")
 
@@ -34,12 +38,14 @@ class TestCoverageGenerator:
                 "tests/test_citation_repositories.py",
                 "tests/test_citation_services.py",
                 "tests/test_database_models.py",
-                "tests/unit/test_smoke.py"
+                "tests/unit/test_smoke.py",
             ]
 
         # Build pytest command
         cmd = [
-            sys.executable, "-m", "pytest",
+            sys.executable,
+            "-m",
+            "pytest",
             "--cov=src",
             "--cov=backend",
             "--cov-report=html:" + str(self.coverage_dir),
@@ -47,7 +53,7 @@ class TestCoverageGenerator:
             "--cov-report=term-missing",
             "-v",
             "--tb=short",
-            f"--timeout={timeout}"
+            f"--timeout={timeout}",
         ]
 
         # Add test patterns
@@ -59,7 +65,7 @@ class TestCoverageGenerator:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
             )
 
             print("📊 Test execution completed")
@@ -92,12 +98,20 @@ class TestCoverageGenerator:
                 coverage_data = json.load(f)
 
             analysis = {
-                "overall_coverage": coverage_data.get("totals", {}).get("percent_covered", 0),
-                "total_statements": coverage_data.get("totals", {}).get("num_statements", 0),
-                "covered_statements": coverage_data.get("totals", {}).get("covered_lines", 0),
-                "missing_statements": coverage_data.get("totals", {}).get("missing_lines", 0),
+                "overall_coverage": coverage_data.get("totals", {}).get(
+                    "percent_covered", 0
+                ),
+                "total_statements": coverage_data.get("totals", {}).get(
+                    "num_statements", 0
+                ),
+                "covered_statements": coverage_data.get("totals", {}).get(
+                    "covered_lines", 0
+                ),
+                "missing_statements": coverage_data.get("totals", {}).get(
+                    "missing_lines", 0
+                ),
                 "file_analysis": {},
-                "recommendations": []
+                "recommendations": [],
             }
 
             # Analyze by file
@@ -107,7 +121,7 @@ class TestCoverageGenerator:
                 analysis["file_analysis"][file_path] = {
                     "coverage": file_coverage,
                     "statements": file_data.get("summary", {}).get("num_statements", 0),
-                    "missing_lines": file_data.get("missing_lines", [])
+                    "missing_lines": file_data.get("missing_lines", []),
                 }
 
             # Generate recommendations
@@ -126,13 +140,21 @@ class TestCoverageGenerator:
 
         # Overall coverage recommendations
         if overall_coverage < 60:
-            recommendations.append("❗ CRITICAL: Overall coverage is below 60%. Prioritize adding basic unit tests.")
+            recommendations.append(
+                "❗ CRITICAL: Overall coverage is below 60%. Prioritize adding basic unit tests."
+            )
         elif overall_coverage < 80:
-            recommendations.append("⚠️  Coverage is below 80%. Focus on testing core business logic.")
+            recommendations.append(
+                "⚠️  Coverage is below 80%. Focus on testing core business logic."
+            )
         elif overall_coverage < 90:
-            recommendations.append("✅ Good coverage! Consider adding edge case and error handling tests.")
+            recommendations.append(
+                "✅ Good coverage! Consider adding edge case and error handling tests."
+            )
         else:
-            recommendations.append("🎯 Excellent coverage! Focus on maintaining quality.")
+            recommendations.append(
+                "🎯 Excellent coverage! Focus on maintaining quality."
+            )
 
         # File-specific recommendations
         file_analysis = analysis.get("file_analysis", {})
@@ -152,20 +174,30 @@ class TestCoverageGenerator:
                 recommendations.append(f"   • {file_path}: {coverage:.1f}% coverage")
 
         # Module-specific recommendations
-        src_files = [f for f in file_analysis.keys() if f.startswith('src/')]
-        backend_files = [f for f in file_analysis.keys() if f.startswith('backend/')]
+        src_files = [f for f in file_analysis if f.startswith("src/")]
+        backend_files = [f for f in file_analysis if f.startswith("backend/")]
 
         if src_files:
-            src_coverage = sum(file_analysis[f]["coverage"] for f in src_files) / len(src_files)
-            recommendations.append(f"📊 Core modules (src/) coverage: {src_coverage:.1f}%")
+            src_coverage = sum(file_analysis[f]["coverage"] for f in src_files) / len(
+                src_files
+            )
+            recommendations.append(
+                f"📊 Core modules (src/) coverage: {src_coverage:.1f}%"
+            )
 
         if backend_files:
-            backend_coverage = sum(file_analysis[f]["coverage"] for f in backend_files) / len(backend_files)
-            recommendations.append(f"📊 Backend modules coverage: {backend_coverage:.1f}%")
+            backend_coverage = sum(
+                file_analysis[f]["coverage"] for f in backend_files
+            ) / len(backend_files)
+            recommendations.append(
+                f"📊 Backend modules coverage: {backend_coverage:.1f}%"
+            )
 
         return recommendations
 
-    def generate_summary_report(self, analysis: dict[str, Any], test_results: dict[str, Any]) -> str:
+    def generate_summary_report(
+        self, analysis: dict[str, Any], test_results: dict[str, Any]
+    ) -> str:
         """Generate a comprehensive summary report."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         overall_coverage = analysis.get("overall_coverage", 0)
@@ -219,7 +251,9 @@ class TestCoverageGenerator:
         file_analysis = analysis.get("file_analysis", {})
         if file_analysis:
             # Sort files by coverage
-            sorted_files = sorted(file_analysis.items(), key=lambda x: x[1]["coverage"], reverse=True)
+            sorted_files = sorted(
+                file_analysis.items(), key=lambda x: x[1]["coverage"], reverse=True
+            )
 
             if sorted_files:
                 report += "\n## 📁 File Coverage Details\n\n"
@@ -252,12 +286,16 @@ class TestCoverageGenerator:
     def save_report(self, report: str, filename: str = "coverage_report.md") -> Path:
         """Save coverage report to file."""
         report_path = self.project_root / filename
-        with open(report_path, 'w', encoding='utf-8') as f:
+        with open(report_path, "w", encoding="utf-8") as f:
             f.write(report)
         return report_path
 
-    def run_comprehensive_coverage(self, test_patterns: list[str] = None,
-                                 threshold: float = 80.0, timeout: int = 300) -> bool:
+    def run_comprehensive_coverage(
+        self,
+        test_patterns: list[str] | None = None,
+        threshold: float = 80.0,
+        timeout: int = 300,
+    ) -> bool:
         """Run comprehensive coverage analysis."""
         print("🚀 Starting comprehensive test coverage analysis...")
 
@@ -272,17 +310,19 @@ class TestCoverageGenerator:
             "total_tests": 0,
             "passed_tests": 0,
             "failed_tests": 0,
-            "pass_rate": 0.0
+            "pass_rate": 0.0,
         }
 
         if success and analysis:
             # Rough estimate based on our successful test runs
-            test_results.update({
-                "total_tests": 100,  # Approximate based on test runs
-                "passed_tests": 95,   # Based on our successful tests
-                "failed_tests": 5,    # Some integration tests may fail
-                "pass_rate": 95.0
-            })
+            test_results.update(
+                {
+                    "total_tests": 100,  # Approximate based on test runs
+                    "passed_tests": 95,  # Based on our successful tests
+                    "failed_tests": 5,  # Some integration tests may fail
+                    "pass_rate": 95.0,
+                }
+            )
 
         # Generate summary report
         report = self.generate_summary_report(analysis, test_results)
@@ -291,9 +331,9 @@ class TestCoverageGenerator:
         report_path = self.save_report(report)
 
         # Print summary
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("📊 COVERAGE ANALYSIS COMPLETE")
-        print("="*60)
+        print("=" * 60)
 
         if analysis:
             overall_coverage = analysis.get("overall_coverage", 0)
@@ -317,23 +357,30 @@ class TestCoverageGenerator:
         return status
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Generate test coverage report")
-    parser.add_argument("--threshold", type=float, default=80.0,
-                       help="Coverage threshold percentage (default: 80.0)")
-    parser.add_argument("--timeout", type=int, default=300,
-                       help="Test execution timeout in seconds (default: 300)")
-    parser.add_argument("--test-patterns", nargs="+",
-                       help="Specific test patterns to run")
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=80.0,
+        help="Coverage threshold percentage (default: 80.0)",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=300,
+        help="Test execution timeout in seconds (default: 300)",
+    )
+    parser.add_argument(
+        "--test-patterns", nargs="+", help="Specific test patterns to run"
+    )
 
     args = parser.parse_args()
 
     generator = TestCoverageGenerator()
     success = generator.run_comprehensive_coverage(
-        test_patterns=args.test_patterns,
-        threshold=args.threshold,
-        timeout=args.timeout
+        test_patterns=args.test_patterns, threshold=args.threshold, timeout=args.timeout
     )
 
     sys.exit(0 if success else 1)

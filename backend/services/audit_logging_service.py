@@ -41,14 +41,16 @@ Base = declarative_base()
 # Audit Log Models
 # ============================================================================
 
+
 class AuditEventType(str, Enum):
     """Types of audit events."""
+
     # Authentication events
     USER_LOGIN = "user.login"
     USER_LOGOUT = "user.logout"
     USER_REGISTER = "user.register"
-    PASSWORD_CHANGE = "user.password_change"
-    PASSWORD_RESET = "user.password_reset"
+    PASSWORD_CHANGE = "user.password_change"  # noqa: S105 - event type constant, not password
+    PASSWORD_RESET = "user.password_reset"  # noqa: S105 - event type constant, not password
     MFA_ENABLE = "user.mfa_enable"
     MFA_DISABLE = "user.mfa_disable"
 
@@ -97,6 +99,7 @@ class AuditEventType(str, Enum):
 
 class AuditSeverity(str, Enum):
     """Severity levels for audit events."""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
@@ -106,7 +109,8 @@ class AuditSeverity(str, Enum):
 
 class AuditLog(Base):
     """Main audit log table."""
-    __tablename__ = 'audit_logs'
+
+    __tablename__ = "audit_logs"
 
     # Primary fields
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
@@ -115,7 +119,7 @@ class AuditLog(Base):
     severity = Column(String(20), nullable=False, default=AuditSeverity.INFO)
 
     # Actor information
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     user_email = Column(String(255), nullable=True)
     service_account = Column(String(100), nullable=True)
     ip_address = Column(String(45), nullable=True, index=True)  # Support IPv6
@@ -153,16 +157,17 @@ class AuditLog(Base):
 
     # Indexes for common queries
     __table_args__ = (
-        Index('idx_timestamp_event', 'timestamp', 'event_type'),
-        Index('idx_user_timestamp', 'user_id', 'timestamp'),
-        Index('idx_resource', 'resource_type', 'resource_id'),
-        Index('idx_session', 'session_id', 'timestamp'),
+        Index("idx_timestamp_event", "timestamp", "event_type"),
+        Index("idx_user_timestamp", "user_id", "timestamp"),
+        Index("idx_resource", "resource_type", "resource_id"),
+        Index("idx_session", "session_id", "timestamp"),
     )
 
 
 class AuditLogArchive(Base):
     """Archive table for old audit logs."""
-    __tablename__ = 'audit_logs_archive'
+
+    __tablename__ = "audit_logs_archive"
 
     # Same structure as AuditLog but for archived records
     id = Column(String(36), primary_key=True)
@@ -175,7 +180,8 @@ class AuditLogArchive(Base):
 
 class AuditLogAlert(Base):
     """Alerts generated from audit log analysis."""
-    __tablename__ = 'audit_log_alerts'
+
+    __tablename__ = "audit_log_alerts"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -187,8 +193,10 @@ class AuditLogAlert(Base):
     audit_log_ids = Column(JSON, nullable=True)  # List of related audit log IDs
 
     # Alert status
-    status = Column(String(20), nullable=False, default='new')  # new, acknowledged, resolved
-    acknowledged_by = Column(Integer, ForeignKey('users.id'), nullable=True)
+    status = Column(
+        String(20), nullable=False, default="new"
+    )  # new, acknowledged, resolved
+    acknowledged_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     acknowledged_at = Column(DateTime, nullable=True)
     resolved_at = Column(DateTime, nullable=True)
 
@@ -200,6 +208,7 @@ class AuditLogAlert(Base):
 # ============================================================================
 # Audit Logging Service
 # ============================================================================
+
 
 class AuditLogger:
     """
@@ -213,8 +222,8 @@ class AuditLogger:
         flush_interval: int = 5,
         enable_compression: bool = True,
         enable_encryption: bool = True,
-        enable_alerts: bool = True
-    ):
+        enable_alerts: bool = True,
+    ) -> None:
         """Initialize audit logger."""
         self.db_url = db_url or os.getenv("AUDIT_DB_URL", "sqlite:///audit.db")
         self.buffer_size = buffer_size
@@ -227,7 +236,7 @@ class AuditLogger:
         self._init_database()
 
         # Initialize buffer
-        self.buffer = deque(maxlen=buffer_size)
+        self.buffer = deque[Any](maxlen=buffer_size)
         self.buffer_lock = threading.Lock()
 
         # Start background flusher
@@ -237,7 +246,7 @@ class AuditLogger:
         # Alert patterns
         self.alert_patterns = self._init_alert_patterns()
 
-    def _init_database(self):
+    def _init_database(self) -> None:
         """Initialize audit database."""
         # Create engine with connection pooling
         self.engine = create_engine(
@@ -246,7 +255,7 @@ class AuditLogger:
             pool_size=10,
             max_overflow=20,
             pool_timeout=30,
-            pool_recycle=3600
+            pool_recycle=3600,
         )
 
         # Create tables
@@ -258,16 +267,17 @@ class AuditLogger:
         # Setup database triggers for integrity
         self._setup_database_triggers()
 
-    def _setup_database_triggers(self):
+    def _setup_database_triggers(self) -> None:
         """Setup database triggers for audit log integrity."""
-        @event.listens_for(AuditLog, 'before_insert')
-        def generate_checksum(mapper, connection, target):
+
+        @event.listens_for(AuditLog, "before_insert")
+        def generate_checksum(mapper, connection, target) -> None:
             """Generate checksum for audit log entry."""
             # Create checksum from critical fields
             checksum_data = f"{target.timestamp}{target.event_type}{target.user_id}{target.action}{target.result}"
             target.checksum = hashlib.sha256(checksum_data.encode()).hexdigest()
 
-    def _init_alert_patterns(self) -> list[dict]:
+    def _init_alert_patterns(self) -> list[dict[str, Any]]:
         """Initialize alert detection patterns."""
         return [
             {
@@ -275,36 +285,36 @@ class AuditLogger:
                 "condition": lambda logs: self._detect_failed_logins(logs),
                 "severity": AuditSeverity.WARNING,
                 "threshold": 5,
-                "window": 300  # 5 minutes
+                "window": 300,  # 5 minutes
             },
             {
                 "name": "Privilege Escalation",
                 "condition": lambda logs: self._detect_privilege_escalation(logs),
                 "severity": AuditSeverity.CRITICAL,
                 "threshold": 1,
-                "window": 60
+                "window": 60,
             },
             {
                 "name": "Mass Data Export",
                 "condition": lambda logs: self._detect_mass_export(logs),
                 "severity": AuditSeverity.WARNING,
                 "threshold": 100,
-                "window": 3600  # 1 hour
+                "window": 3600,  # 1 hour
             },
             {
                 "name": "SQL Injection Attempt",
                 "condition": lambda logs: self._detect_sql_injection(logs),
                 "severity": AuditSeverity.CRITICAL,
                 "threshold": 1,
-                "window": 60
+                "window": 60,
             },
             {
                 "name": "Unauthorized Access Pattern",
                 "condition": lambda logs: self._detect_unauthorized_pattern(logs),
                 "severity": AuditSeverity.ERROR,
                 "threshold": 10,
-                "window": 600
-            }
+                "window": 600,
+            },
         ]
 
     # ========================================================================
@@ -323,7 +333,7 @@ class AuditLogger:
         resource_name: str | None = None,
         ip_address: str | None = None,
         user_agent: str | None = None,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
         severity: AuditSeverity = AuditSeverity.INFO,
         request_id: str | None = None,
         session_id: str | None = None,
@@ -331,7 +341,7 @@ class AuditLogger:
         duration_ms: float | None = None,
         error_code: str | None = None,
         error_message: str | None = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Log an audit event.
@@ -358,7 +368,7 @@ class AuditLogger:
             correlation_id=correlation_id,
             duration_ms=duration_ms,
             error_code=error_code,
-            error_message=error_message
+            error_message=error_message,
         )
 
         # Add to buffer
@@ -383,8 +393,8 @@ class AuditLogger:
         ip_address: str,
         user_agent: str | None = None,
         mfa_used: bool = False,
-        **kwargs
-    ):
+        **kwargs,
+    ) -> None:
         """Log user login attempt."""
         self.log(
             event_type=AuditEventType.USER_LOGIN,
@@ -396,7 +406,7 @@ class AuditLogger:
             user_agent=user_agent,
             metadata={"mfa_used": mfa_used},
             severity=AuditSeverity.INFO if success else AuditSeverity.WARNING,
-            **kwargs
+            **kwargs,
         )
 
     def log_data_access(
@@ -406,8 +416,8 @@ class AuditLogger:
         resource_id: str,
         action: str,
         fields_accessed: list[str] | None = None,
-        **kwargs
-    ):
+        **kwargs,
+    ) -> None:
         """Log data access event."""
         self.log(
             event_type=AuditEventType.DATA_READ,
@@ -416,7 +426,7 @@ class AuditLogger:
             resource_type=resource_type,
             resource_id=resource_id,
             metadata={"fields_accessed": fields_accessed},
-            **kwargs
+            **kwargs,
         )
 
     def log_security_event(
@@ -425,8 +435,8 @@ class AuditLogger:
         description: str,
         ip_address: str,
         severity: AuditSeverity = AuditSeverity.ERROR,
-        **kwargs
-    ):
+        **kwargs,
+    ) -> None:
         """Log security-related event."""
         self.log(
             event_type=event_type,
@@ -435,7 +445,7 @@ class AuditLogger:
             ip_address=ip_address,
             metadata={"description": description},
             severity=severity,
-            **kwargs
+            **kwargs,
         )
 
     def log_compliance_event(
@@ -446,8 +456,8 @@ class AuditLogger:
         legal_basis: str | None = None,
         data_categories: list[str] | None = None,
         purposes: list[str] | None = None,
-        **kwargs
-    ):
+        **kwargs,
+    ) -> Any:
         """Log compliance-related event."""
         log_entry = self.log(
             event_type=event_type,
@@ -456,7 +466,7 @@ class AuditLogger:
             legal_basis=legal_basis,
             data_categories=data_categories,
             purposes=purposes,
-            **kwargs
+            **kwargs,
         )
 
         # Additional compliance tracking
@@ -469,19 +479,19 @@ class AuditLogger:
     # Buffer Management
     # ========================================================================
 
-    def _flush_worker(self):
+    def _flush_worker(self) -> None:
         """Background worker to flush buffer periodically."""
         while True:
             time.sleep(self.flush_interval)
             self._flush_buffer()
 
-    def _flush_buffer(self):
+    def _flush_buffer(self) -> None:
         """Flush buffer to database."""
         if not self.buffer:
             return
 
         with self.buffer_lock:
-            entries = list(self.buffer)
+            entries = list[Any](self.buffer)
             self.buffer.clear()
 
         if not entries:
@@ -504,7 +514,7 @@ class AuditLogger:
         finally:
             session.close()
 
-    def flush(self):
+    def flush(self) -> None:
         """Force flush the buffer."""
         self._flush_buffer()
 
@@ -512,7 +522,7 @@ class AuditLogger:
     # Alert Detection
     # ========================================================================
 
-    def _check_alerts(self, logs: list[AuditLog]):
+    def _check_alerts(self, logs: list[AuditLog]) -> None:
         """Check for alert conditions."""
         if not self.enable_alerts:
             return
@@ -524,7 +534,8 @@ class AuditLogger:
     def _detect_failed_logins(self, logs: list[AuditLog]) -> bool:
         """Detect multiple failed login attempts."""
         failed_logins = [
-            log for log in logs
+            log
+            for log in logs
             if log.event_type == AuditEventType.USER_LOGIN and log.result == "failure"
         ]
         return len(failed_logins) >= 5
@@ -532,19 +543,19 @@ class AuditLogger:
     def _detect_privilege_escalation(self, logs: list[AuditLog]) -> bool:
         """Detect potential privilege escalation."""
         escalation_events = [
-            log for log in logs
-            if log.event_type in [
-                AuditEventType.ROLE_ASSIGNED,
-                AuditEventType.PERMISSION_GRANTED
-            ] and log.metadata and log.metadata.get("elevated_privileges")
+            log
+            for log in logs
+            if log.event_type
+            in [AuditEventType.ROLE_ASSIGNED, AuditEventType.PERMISSION_GRANTED]
+            and log.metadata
+            and log.metadata.get("elevated_privileges")
         ]
         return len(escalation_events) > 0
 
     def _detect_mass_export(self, logs: list[AuditLog]) -> bool:
         """Detect mass data export."""
         export_events = [
-            log for log in logs
-            if log.event_type == AuditEventType.DATA_EXPORT
+            log for log in logs if log.event_type == AuditEventType.DATA_EXPORT
         ]
 
         if not export_events:
@@ -552,8 +563,7 @@ class AuditLogger:
 
         # Calculate total exported records
         total_records = sum(
-            log.metadata.get("record_count", 0) for log in export_events
-            if log.metadata
+            log.metadata.get("record_count", 0) for log in export_events if log.metadata
         )
 
         return total_records > 1000
@@ -574,12 +584,11 @@ class AuditLogger:
     def _detect_unauthorized_pattern(self, logs: list[AuditLog]) -> bool:
         """Detect unauthorized access patterns."""
         denied_events = [
-            log for log in logs
-            if log.event_type == AuditEventType.PERMISSION_DENIED
+            log for log in logs if log.event_type == AuditEventType.PERMISSION_DENIED
         ]
         return len(denied_events) >= 10
 
-    def _create_alert(self, pattern: dict, logs: list[AuditLog]):
+    def _create_alert(self, pattern: dict[str, Any], logs: list[AuditLog]) -> None:
         """Create an alert from detected pattern."""
         session = self.SessionFactory()
 
@@ -592,9 +601,9 @@ class AuditLogger:
                 metadata={
                     "pattern": pattern["name"],
                     "threshold": pattern["threshold"],
-                    "window": pattern["window"]
+                    "window": pattern["window"],
                 },
-                recommendations=self._get_alert_recommendations(pattern["name"])
+                recommendations=self._get_alert_recommendations(pattern["name"]),
             )
 
             session.add(alert)
@@ -617,11 +626,13 @@ class AuditLogger:
             "Privilege Escalation": "1. Review the privilege change\n2. Verify authorization\n3. Check for compromised account",
             "Mass Data Export": "1. Verify the export is authorized\n2. Check for data exfiltration\n3. Review user permissions",
             "SQL Injection Attempt": "1. Block the source IP immediately\n2. Review application logs\n3. Check for vulnerabilities",
-            "Unauthorized Access Pattern": "1. Review user permissions\n2. Check for misconfiguration\n3. Investigate access attempts"
+            "Unauthorized Access Pattern": "1. Review user permissions\n2. Check for misconfiguration\n3. Investigate access attempts",
         }
-        return recommendations.get(alert_type, "Review the alert and take appropriate action")
+        return recommendations.get(
+            alert_type, "Review the alert and take appropriate action"
+        )
 
-    def _send_alert_notification(self, alert: AuditLogAlert):
+    def _send_alert_notification(self, alert: AuditLogAlert) -> None:
         """Send alert notification."""
         # Implement based on your notification system
         # E.g., send email, Slack message, PagerDuty alert, etc.
@@ -640,7 +651,7 @@ class AuditLogger:
         resource_type: str | None = None,
         resource_id: str | None = None,
         severity: AuditSeverity | None = None,
-        limit: int = 1000
+        limit: int = 1000,
     ) -> list[AuditLog]:
         """Query audit logs."""
         session = self.SessionFactory()
@@ -674,32 +685,26 @@ class AuditLogger:
         finally:
             session.close()
 
-    def get_user_activity(
-        self,
-        user_id: int,
-        days: int = 30
-    ) -> dict[str, Any]:
+    def get_user_activity(self, user_id: int, days: int = 30) -> dict[str, Any]:
         """Get user activity summary."""
         start_date = datetime.utcnow() - timedelta(days=days)
 
-        logs = self.query(
-            start_date=start_date,
-            user_id=user_id
-        )
+        logs = self.query(start_date=start_date, user_id=user_id)
 
         return {
             "total_events": len(logs),
-            "login_count": sum(1 for log in logs if log.event_type == AuditEventType.USER_LOGIN),
-            "data_access_count": sum(1 for log in logs if log.event_type == AuditEventType.DATA_READ),
+            "login_count": sum(
+                1 for log in logs if log.event_type == AuditEventType.USER_LOGIN
+            ),
+            "data_access_count": sum(
+                1 for log in logs if log.event_type == AuditEventType.DATA_READ
+            ),
             "failed_attempts": sum(1 for log in logs if log.result == "failure"),
-            "last_activity": max((log.timestamp for log in logs), default=None)
+            "last_activity": max((log.timestamp for log in logs), default=None),
         }
 
     def generate_compliance_report(
-        self,
-        start_date: datetime,
-        end_date: datetime,
-        compliance_type: str = "GDPR"
+        self, start_date: datetime, end_date: datetime, compliance_type: str = "GDPR"
     ) -> dict[str, Any]:
         """Generate compliance report."""
         logs = self.query(
@@ -709,33 +714,42 @@ class AuditLogger:
                 AuditEventType.CONSENT_GIVEN,
                 AuditEventType.CONSENT_WITHDRAWN,
                 AuditEventType.DATA_REQUEST,
-                AuditEventType.DATA_DELETION
-            ]
+                AuditEventType.DATA_DELETION,
+            ],
         )
 
         report = {
-            "period": {
-                "start": start_date.isoformat(),
-                "end": end_date.isoformat()
-            },
+            "period": {"start": start_date.isoformat(), "end": end_date.isoformat()},
             "compliance_type": compliance_type,
             "summary": {
-                "consent_given": sum(1 for log in logs if log.event_type == AuditEventType.CONSENT_GIVEN),
-                "consent_withdrawn": sum(1 for log in logs if log.event_type == AuditEventType.CONSENT_WITHDRAWN),
-                "data_requests": sum(1 for log in logs if log.event_type == AuditEventType.DATA_REQUEST),
-                "data_deletions": sum(1 for log in logs if log.event_type == AuditEventType.DATA_DELETION)
+                "consent_given": sum(
+                    1 for log in logs if log.event_type == AuditEventType.CONSENT_GIVEN
+                ),
+                "consent_withdrawn": sum(
+                    1
+                    for log in logs
+                    if log.event_type == AuditEventType.CONSENT_WITHDRAWN
+                ),
+                "data_requests": sum(
+                    1 for log in logs if log.event_type == AuditEventType.DATA_REQUEST
+                ),
+                "data_deletions": sum(
+                    1 for log in logs if log.event_type == AuditEventType.DATA_DELETION
+                ),
             },
-            "details": []
+            "details": [],
         }
 
         for log in logs:
-            report["details"].append({
-                "timestamp": log.timestamp.isoformat(),
-                "event": log.event_type,
-                "user": log.user_email,
-                "legal_basis": log.legal_basis,
-                "result": log.result
-            })
+            report["details"].append(
+                {
+                    "timestamp": log.timestamp.isoformat(),
+                    "event": log.event_type,
+                    "user": log.user_email,
+                    "legal_basis": log.legal_basis,
+                    "result": log.result,
+                }
+            )
 
         return report
 
@@ -751,9 +765,9 @@ class AuditLogger:
 
         try:
             # Get logs to archive
-            old_logs = session.query(AuditLog).filter(
-                AuditLog.timestamp < cutoff_date
-            ).all()
+            old_logs = (
+                session.query(AuditLog).filter(AuditLog.timestamp < cutoff_date).all()
+            )
 
             if not old_logs:
                 return 0
@@ -764,7 +778,7 @@ class AuditLogger:
                     id=log.id,
                     original_timestamp=log.timestamp,
                     data=self._serialize_log(log),
-                    retention_period=days * 2  # Keep archives for double the period
+                    retention_period=days * 2,  # Keep archives for double the period
                 )
                 session.add(archive_entry)
                 session.delete(log)
@@ -781,7 +795,7 @@ class AuditLogger:
         finally:
             session.close()
 
-    def _serialize_log(self, log: AuditLog) -> dict:
+    def _serialize_log(self, log: AuditLog) -> dict[str, Any]:
         """Serialize audit log to dictionary."""
         return {
             "id": log.id,
@@ -796,10 +810,10 @@ class AuditLogger:
             "result": log.result,
             "metadata": log.metadata,
             "ip_address": log.ip_address,
-            "checksum": log.checksum
+            "checksum": log.checksum,
         }
 
-    def _track_data_deletion(self, user_id: int, resource_id: str | None):
+    def _track_data_deletion(self, user_id: int, resource_id: str | None) -> None:
         """Track data deletion for compliance."""
         # Implement based on your compliance requirements
         pass
@@ -808,6 +822,7 @@ class AuditLogger:
 # ============================================================================
 # Audit Context Manager
 # ============================================================================
+
 
 class AuditContext:
     """Context manager for auditing operations."""
@@ -820,8 +835,8 @@ class AuditContext:
         user_id: int | None = None,
         resource_type: str | None = None,
         resource_id: str | None = None,
-        **kwargs
-    ):
+        **kwargs,
+    ) -> None:
         """Initialize audit context."""
         self.audit_logger = audit_logger
         self.event_type = event_type
@@ -833,14 +848,16 @@ class AuditContext:
         self.start_time = None
         self.log_id = None
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         """Enter audit context."""
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit audit context and log the event."""
-        duration_ms = (time.time() - self.start_time) * 1000 if self.start_time else None
+        duration_ms = (
+            (time.time() - self.start_time) * 1000 if self.start_time else None
+        )
 
         result = "failure" if exc_type else "success"
         error_code = None
@@ -860,7 +877,7 @@ class AuditContext:
             duration_ms=duration_ms,
             error_code=error_code,
             error_message=error_message,
-            **self.kwargs
+            **self.kwargs,
         )
 
 

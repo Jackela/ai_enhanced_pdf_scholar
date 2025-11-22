@@ -4,8 +4,47 @@ Creates tables for users and refresh tokens.
 """
 
 import logging
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ExecutionResult:
+    """Result of executing a SQL statement or database operation."""
+
+    success: bool
+    error_message: str | None = None
+    context: str | None = None
+
+    @property
+    def has_error(self) -> bool:
+        """Check if execution resulted in an error."""
+        return not self.success
+
+    def is_benign_error(self, patterns: list[str]) -> bool:
+        """Check if error matches benign patterns."""
+        if not self.has_error:
+            return False
+        error_lower = self.error_message.lower()
+        return any(pattern in error_lower for pattern in patterns)
+
+
+def execute_sql_statement(
+    db_connection, sql: str, commit: bool = True
+) -> ExecutionResult:
+    """Execute SQL statement and return result (no exception raised)."""
+    try:
+        db_connection.execute(sql)
+        if commit:
+            db_connection.commit()
+        return ExecutionResult(success=True, context=sql[:100])
+    except Exception as e:
+        return ExecutionResult(
+            success=False,
+            error_message=str(e),
+            context=sql[:100],  # First 100 chars
+        )
 
 
 class AuthenticationMigration:
@@ -62,14 +101,12 @@ class AuthenticationMigration:
                 CHECK (account_status IN ('active', 'inactive', 'locked', 'suspended', 'pending_verification'))
             )
             """,
-
             # Create indexes for users table
             "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
             "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
             "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
             "CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active)",
             "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)",
-
             # Refresh tokens table
             """
             CREATE TABLE IF NOT EXISTS refresh_tokens (
@@ -86,14 +123,12 @@ class AuthenticationMigration:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
             """,
-
             # Create indexes for refresh_tokens table
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_jti ON refresh_tokens(token_jti)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_family ON refresh_tokens(token_family)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at)",
             "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_revoked_at ON refresh_tokens(revoked_at)",
-
             # Password history table (for future use)
             """
             CREATE TABLE IF NOT EXISTS password_history (
@@ -105,11 +140,9 @@ class AuthenticationMigration:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
             """,
-
             # Create index for password_history
             "CREATE INDEX IF NOT EXISTS idx_password_history_user_id ON password_history(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_password_history_created_at ON password_history(created_at)",
-
             # Login attempts table (for audit logging)
             """
             CREATE TABLE IF NOT EXISTS login_attempts (
@@ -122,13 +155,11 @@ class AuthenticationMigration:
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             )
             """,
-
             # Create indexes for login_attempts
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_username ON login_attempts(username)",
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_address ON login_attempts(ip_address)",
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_timestamp ON login_attempts(timestamp)",
             "CREATE INDEX IF NOT EXISTS idx_login_attempts_success ON login_attempts(success)",
-
             # User sessions table (for tracking active sessions)
             """
             CREATE TABLE IF NOT EXISTS user_sessions (
@@ -144,7 +175,6 @@ class AuthenticationMigration:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
             """,
-
             # Create indexes for user_sessions
             "CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_user_sessions_session_id ON user_sessions(session_id)",
@@ -165,16 +195,28 @@ class AuthenticationMigration:
         try:
             sql_statements = AuthenticationMigration.get_migration_sql()
 
+            # Execute all statements, collect results
+            results = []
             for sql in sql_statements:
-                try:
-                    db_connection.execute(sql)
-                    db_connection.commit()
-                except Exception as e:
-                    # Table might already exist, log and continue
-                    if "already exists" not in str(e).lower():
-                        logger.error(f"Migration statement failed: {str(e)}")
-                        logger.error(f"SQL: {sql[:100]}...")
-                        return False
+                result = execute_sql_statement(db_connection, sql, commit=True)
+                results.append(result)
+
+            # Filter critical errors after loop
+            BENIGN_ERROR_PATTERNS = ["already exists"]
+            critical_errors = [
+                r
+                for r in results
+                if r.has_error and not r.is_benign_error(BENIGN_ERROR_PATTERNS)
+            ]
+
+            # Handle errors outside loop
+            if critical_errors:
+                for error_result in critical_errors:
+                    logger.error(
+                        f"Migration statement failed: {error_result.error_message}"
+                    )
+                    logger.error(f"SQL: {error_result.context}...")
+                return False
 
             logger.info("Authentication tables migration completed successfully")
             return True
@@ -200,15 +242,23 @@ class AuthenticationMigration:
                 "login_attempts",
                 "password_history",
                 "refresh_tokens",
-                "users"
+                "users",
             ]
 
+            # Execute all drops, collect results
+            results = []
             for table in tables:
-                try:
-                    db_connection.execute(f"DROP TABLE IF EXISTS {table}")
-                    db_connection.commit()
-                except Exception as e:
-                    logger.error(f"Failed to drop table {table}: {str(e)}")
+                result = execute_sql_statement(
+                    db_connection, f"DROP TABLE IF EXISTS {table}", commit=True
+                )
+                results.append((table, result))
+
+            # Log errors after loop
+            failed_drops = [(table, r) for table, r in results if r.has_error]
+            for table, error_result in failed_drops:
+                logger.warning(
+                    f"Failed to drop table {table}: {error_result.error_message}"
+                )
 
             logger.info("Authentication tables rollback completed")
             return True

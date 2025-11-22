@@ -9,7 +9,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 import httpx
 from fastapi import HTTPException, Request, status
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class IPAccessAction(str, Enum):
     """IP access control actions."""
+
     ALLOW = "allow"
     BLOCK = "block"
     MONITOR = "monitor"  # Allow but log
@@ -30,6 +31,7 @@ class IPAccessAction(str, Enum):
 
 class IPListType(str, Enum):
     """IP list types."""
+
     WHITELIST = "whitelist"
     BLACKLIST = "blacklist"
     GRAYLIST = "graylist"  # Monitored IPs
@@ -37,6 +39,7 @@ class IPListType(str, Enum):
 
 class ThreatLevel(str, Enum):
     """Threat level classifications."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -46,7 +49,8 @@ class ThreatLevel(str, Enum):
 @dataclass
 class IPRule:
     """IP access rule configuration."""
-    network: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
+
+    network: ipaddress.IPv4Network | ipaddress.IPv6Network
     action: IPAccessAction
     description: str
     priority: int = 1000  # Lower number = higher priority
@@ -60,6 +64,7 @@ class IPRule:
 @dataclass
 class GeoLocation:
     """Geographic location information."""
+
     country_code: str
     country_name: str
     city: str | None = None
@@ -74,6 +79,7 @@ class GeoLocation:
 @dataclass
 class IPThreatInfo:
     """IP threat intelligence information."""
+
     is_malicious: bool
     threat_level: ThreatLevel
     threat_types: set[str]
@@ -85,6 +91,7 @@ class IPThreatInfo:
 @dataclass
 class IPAccessAttempt:
     """IP access attempt record."""
+
     ip_address: str
     timestamp: float
     user_agent: str | None
@@ -105,8 +112,8 @@ class ProductionIPWhitelist:
     def __init__(
         self,
         production_config: ProductionConfig | None = None,
-        metrics_service: MetricsService | None = None
-    ):
+        metrics_service: MetricsService | None = None,
+    ) -> None:
         """Initialize IP whitelist system."""
         self.production_config = production_config
         self.metrics_service = metrics_service
@@ -140,7 +147,7 @@ class ProductionIPWhitelist:
 
         logger.info("Production IP whitelist system initialized")
 
-    def _initialize_default_rules(self):
+    def _initialize_default_rules(self) -> None:
         """Initialize default IP rules for production."""
         default_rules = [
             # Private network ranges (usually blocked in production)
@@ -149,64 +156,60 @@ class ProductionIPWhitelist:
                 action=IPAccessAction.BLOCK,
                 description="Private network - RFC 1918",
                 priority=100,
-                tags={"private", "rfc1918"}
+                tags={"private", "rfc1918"},
             ),
             IPRule(
                 network=ipaddress.IPv4Network("172.16.0.0/12"),
                 action=IPAccessAction.BLOCK,
                 description="Private network - RFC 1918",
                 priority=100,
-                tags={"private", "rfc1918"}
+                tags={"private", "rfc1918"},
             ),
             IPRule(
                 network=ipaddress.IPv4Network("192.168.0.0/16"),
                 action=IPAccessAction.BLOCK,
                 description="Private network - RFC 1918",
                 priority=100,
-                tags={"private", "rfc1918"}
+                tags={"private", "rfc1918"},
             ),
-
             # Localhost (allow for health checks)
             IPRule(
                 network=ipaddress.IPv4Network("127.0.0.0/8"),
                 action=IPAccessAction.ALLOW,
                 description="Localhost - health checks",
                 priority=50,
-                tags={"localhost", "health"}
+                tags={"localhost", "health"},
             ),
-
             # Link-local (usually blocked)
             IPRule(
                 network=ipaddress.IPv4Network("169.254.0.0/16"),
                 action=IPAccessAction.BLOCK,
                 description="Link-local addresses",
                 priority=100,
-                tags={"link-local"}
+                tags={"link-local"},
             ),
-
             # Multicast (blocked)
             IPRule(
                 network=ipaddress.IPv4Network("224.0.0.0/4"),
                 action=IPAccessAction.BLOCK,
                 description="Multicast addresses",
                 priority=100,
-                tags={"multicast"}
+                tags={"multicast"},
             ),
-
             # Reserved (blocked)
             IPRule(
                 network=ipaddress.IPv4Network("240.0.0.0/4"),
                 action=IPAccessAction.BLOCK,
                 description="Reserved addresses",
                 priority=100,
-                tags={"reserved"}
-            )
+                tags={"reserved"},
+            ),
         ]
 
         self.ip_rules.extend(default_rules)
         self.ip_rules.sort(key=lambda r: r.priority)
 
-    def _load_production_rules(self):
+    def _load_production_rules(self) -> None:
         """Load production-specific IP rules."""
         if not self.production_config:
             return
@@ -222,7 +225,7 @@ class ProductionIPWhitelist:
                     action=IPAccessAction.ALLOW,
                     description=f"Production allowed range: {ip_range}",
                     priority=10,  # High priority
-                    tags={"production", "whitelist"}
+                    tags={"production", "whitelist"},
                 )
                 self.ip_rules.append(rule)
             except ValueError as e:
@@ -237,14 +240,14 @@ class ProductionIPWhitelist:
                     action=IPAccessAction.BLOCK,
                     description=f"Production blocked range: {ip_range}",
                     priority=20,  # High priority
-                    tags={"production", "blacklist"}
+                    tags={"production", "blacklist"},
                 )
                 self.ip_rules.append(rule)
             except ValueError as e:
                 logger.error(f"Invalid IP range in production config: {ip_range} - {e}")
 
         # Load geo-blocking rules
-        if hasattr(security_config, 'allowed_countries'):
+        if hasattr(security_config, "allowed_countries"):
             for country_code in security_config.allowed_countries:
                 self.geo_rules[country_code.upper()] = IPAccessAction.ALLOW
 
@@ -252,9 +255,15 @@ class ProductionIPWhitelist:
         self.ip_rules.sort(key=lambda r: r.priority)
         logger.info(f"Loaded {len(self.ip_rules)} IP rules from production config")
 
-    def add_ip_rule(self, ip_range: str, action: IPAccessAction, description: str,
-                   priority: int = 1000, expires_in: int | None = None,
-                   tags: set[str] | None = None) -> bool:
+    def add_ip_rule(
+        self,
+        ip_range: str,
+        action: IPAccessAction,
+        description: str,
+        priority: int = 1000,
+        expires_in: int | None = None,
+        tags: set[str] | None = None,
+    ) -> bool:
         """
         Add new IP rule.
 
@@ -282,7 +291,7 @@ class ProductionIPWhitelist:
                 description=description,
                 priority=priority,
                 expires_at=expires_at,
-                tags=tags or set()
+                tags=tags or set(),
             )
 
             self.ip_rules.append(rule)
@@ -325,13 +334,15 @@ class ProductionIPWhitelist:
             logger.error(f"Invalid IP range: {ip_range} - {e}")
             return False
 
-    def _clear_cache_for_network(self, network):
+    def _clear_cache_for_network(self, network) -> None:
         """Clear cache entries that might be affected by network rule change."""
         # This is simplified - in production you'd check which cached IPs fall within the network
         if len(self.ip_cache) > 10000:  # If cache is large, clear it entirely
             self.ip_cache.clear()
 
-    async def check_ip_access(self, ip_address: str, request: Request | None = None) -> tuple[IPAccessAction, str]:
+    async def check_ip_access(
+        self, ip_address: str, request: Request | None = None
+    ) -> tuple[IPAccessAction, str]:
         """
         Check IP access permissions.
 
@@ -380,7 +391,9 @@ class ProductionIPWhitelist:
 
             # Check threat intelligence
             if self.threat_intelligence_enabled:
-                threat_action, threat_reason = await self._check_threat_intelligence(ip_address)
+                threat_action, threat_reason = await self._check_threat_intelligence(
+                    ip_address
+                )
                 if threat_action != IPAccessAction.ALLOW:
                     return threat_action, threat_reason
 
@@ -417,7 +430,7 @@ class ProductionIPWhitelist:
                 return action, f"Geo-blocking: {country_code}"
 
             # Check for high-risk countries (simplified list)
-            high_risk_countries = {'CN', 'RU', 'KP', 'IR', 'SY'}
+            high_risk_countries = {"CN", "RU", "KP", "IR", "SY"}
             if country_code in high_risk_countries:
                 return IPAccessAction.MONITOR, f"High-risk country: {country_code}"
 
@@ -448,7 +461,7 @@ class ProductionIPWhitelist:
                         longitude=data.get("longitude"),
                         timezone=data.get("timezone"),
                         isp=data.get("org"),
-                        organization=data.get("org")
+                        organization=data.get("org"),
                     )
 
         except Exception as e:
@@ -456,7 +469,9 @@ class ProductionIPWhitelist:
 
         return None
 
-    async def _check_threat_intelligence(self, ip_address: str) -> tuple[IPAccessAction, str]:
+    async def _check_threat_intelligence(
+        self, ip_address: str
+    ) -> tuple[IPAccessAction, str]:
         """Check threat intelligence for IP address."""
         try:
             # Check threat cache first
@@ -472,13 +487,25 @@ class ProductionIPWhitelist:
 
             if threat_info.is_malicious:
                 if threat_info.threat_level == ThreatLevel.CRITICAL:
-                    return IPAccessAction.BLOCK, f"Critical threat: {', '.join(threat_info.threat_types)}"
+                    return (
+                        IPAccessAction.BLOCK,
+                        f"Critical threat: {', '.join(threat_info.threat_types)}",
+                    )
                 elif threat_info.threat_level == ThreatLevel.HIGH:
-                    return IPAccessAction.BLOCK, f"High threat: {', '.join(threat_info.threat_types)}"
+                    return (
+                        IPAccessAction.BLOCK,
+                        f"High threat: {', '.join(threat_info.threat_types)}",
+                    )
                 elif threat_info.threat_level == ThreatLevel.MEDIUM:
-                    return IPAccessAction.RATE_LIMIT, f"Medium threat: {', '.join(threat_info.threat_types)}"
+                    return (
+                        IPAccessAction.RATE_LIMIT,
+                        f"Medium threat: {', '.join(threat_info.threat_types)}",
+                    )
                 else:
-                    return IPAccessAction.MONITOR, f"Low threat: {', '.join(threat_info.threat_types)}"
+                    return (
+                        IPAccessAction.MONITOR,
+                        f"Low threat: {', '.join(threat_info.threat_types)}",
+                    )
 
             return IPAccessAction.ALLOW, "Threat check passed"
 
@@ -500,13 +527,13 @@ class ProductionIPWhitelist:
             ip_obj = ipaddress.ip_address(ip_address)
 
             # Common malicious IP patterns (this is very simplified)
-            if str(ip_obj).startswith(('1.1.1.', '8.8.8.')):
+            if str(ip_obj).startswith(("1.1.1.", "8.8.8.")):
                 # These are actually good IPs (Google DNS, Cloudflare)
                 return IPThreatInfo(
                     is_malicious=False,
                     threat_level=ThreatLevel.LOW,
                     threat_types=set(),
-                    reputation_score=100
+                    reputation_score=100,
                 )
 
             # In production, you would query actual threat intelligence APIs
@@ -516,7 +543,9 @@ class ProductionIPWhitelist:
             logger.error(f"Threat intelligence lookup failed for {ip_address}: {e}")
             return None
 
-    async def _log_access_attempt(self, ip_address: str, action: IPAccessAction, request: Request | None):
+    async def _log_access_attempt(
+        self, ip_address: str, action: IPAccessAction, request: Request | None
+    ) -> None:
         """Log IP access attempt."""
         try:
             attempt = IPAccessAttempt(
@@ -528,14 +557,16 @@ class ProductionIPWhitelist:
                 status_code=200 if action == IPAccessAction.ALLOW else 403,
                 response_time=0,  # Would be filled in by middleware
                 geo_location=self.geo_cache.get(ip_address),
-                threat_info=self.threat_cache.get(ip_address)
+                threat_info=self.threat_cache.get(ip_address),
             )
 
             self.access_attempts.append(attempt)
 
             # Keep only recent attempts
             if len(self.access_attempts) > self.max_access_attempts:
-                self.access_attempts = self.access_attempts[-self.max_access_attempts//2:]
+                self.access_attempts = self.access_attempts[
+                    -self.max_access_attempts // 2 :
+                ]
 
             # Update blocked IPs counter
             if action == IPAccessAction.BLOCK:
@@ -547,7 +578,7 @@ class ProductionIPWhitelist:
             if self.metrics_service:
                 self.metrics_service.record_security_event(
                     f"ip_{action.value}",
-                    "warning" if action == IPAccessAction.BLOCK else "info"
+                    "warning" if action == IPAccessAction.BLOCK else "info",
                 )
 
         except Exception as e:
@@ -559,18 +590,22 @@ class ProductionIPWhitelist:
 
         # Calculate statistics
         total_attempts = len(self.access_attempts)
-        recent_attempts = [a for a in self.access_attempts if current_time - a.timestamp < 3600]  # Last hour
+        recent_attempts = [
+            a for a in self.access_attempts if current_time - a.timestamp < 3600
+        ]  # Last hour
         blocked_attempts = [a for a in recent_attempts if a.status_code == 403]
 
         # Rule statistics
-        active_rules = [r for r in self.ip_rules if not r.expires_at or r.expires_at > current_time]
+        active_rules = [
+            r for r in self.ip_rules if not r.expires_at or r.expires_at > current_time
+        ]
         rule_stats = {}
         for rule in active_rules:
             rule_stats[str(rule.network)] = {
                 "action": rule.action.value,
                 "hit_count": rule.hit_count,
                 "last_hit": rule.last_hit,
-                "tags": list(rule.tags)
+                "tags": list(rule.tags),
             }
 
         # Geographic distribution
@@ -588,14 +623,16 @@ class ProductionIPWhitelist:
             "recent_attempts": len(recent_attempts),
             "blocked_attempts": len(blocked_attempts),
             "block_rate": len(blocked_attempts) / max(len(recent_attempts), 1),
-            "top_blocked_ips": dict(sorted(self.blocked_ips.items(), key=lambda x: x[1], reverse=True)[:10]),
+            "top_blocked_ips": dict(
+                sorted(self.blocked_ips.items(), key=lambda x: x[1], reverse=True)[:10]
+            ),
             "geographic_distribution": geo_stats,
             "cache_stats": {
                 "ip_cache_size": len(self.ip_cache),
                 "geo_cache_size": len(self.geo_cache),
-                "threat_cache_size": len(self.threat_cache)
+                "threat_cache_size": len(self.threat_cache),
             },
-            "rule_statistics": rule_stats
+            "rule_statistics": rule_stats,
         }
 
     def cleanup_expired_rules(self) -> int:
@@ -603,7 +640,11 @@ class ProductionIPWhitelist:
         current_time = time.time()
         original_count = len(self.ip_rules)
 
-        self.ip_rules = [rule for rule in self.ip_rules if not rule.expires_at or rule.expires_at > current_time]
+        self.ip_rules = [
+            rule
+            for rule in self.ip_rules
+            if not rule.expires_at or rule.expires_at > current_time
+        ]
 
         removed_count = original_count - len(self.ip_rules)
         if removed_count > 0:
@@ -617,11 +658,11 @@ class IPWhitelistMiddleware:
     FastAPI middleware for IP whitelist enforcement.
     """
 
-    def __init__(self, ip_whitelist: ProductionIPWhitelist):
+    def __init__(self, ip_whitelist: ProductionIPWhitelist) -> None:
         """Initialize IP whitelist middleware."""
         self.ip_whitelist = ip_whitelist
 
-    async def __call__(self, request: Request, call_next):
+    async def __call__(self, request: Request, call_next) -> Any:
         """Check IP access before processing request."""
         # Get client IP address
         client_ip = self._get_client_ip(request)
@@ -633,8 +674,7 @@ class IPWhitelistMiddleware:
         if action == IPAccessAction.BLOCK:
             logger.warning(f"Blocked IP {client_ip}: {reason}")
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
             )
         elif action == IPAccessAction.RATE_LIMIT:
             # Apply strict rate limiting (this would integrate with rate limiting middleware)
@@ -665,7 +705,7 @@ class IPWhitelistMiddleware:
 
 def create_production_ip_whitelist(
     production_config: ProductionConfig | None = None,
-    metrics_service: MetricsService | None = None
+    metrics_service: MetricsService | None = None,
 ) -> ProductionIPWhitelist:
     """Create production IP whitelist instance."""
     return ProductionIPWhitelist(production_config, metrics_service)
@@ -674,7 +714,7 @@ def create_production_ip_whitelist(
 def setup_ip_whitelist_middleware(
     app,
     production_config: ProductionConfig | None = None,
-    metrics_service: MetricsService | None = None
+    metrics_service: MetricsService | None = None,
 ) -> ProductionIPWhitelist:
     """Set up IP whitelist middleware for FastAPI application."""
     ip_whitelist = create_production_ip_whitelist(production_config, metrics_service)
@@ -685,22 +725,26 @@ def setup_ip_whitelist_middleware(
 
     # Add management endpoints
     @app.get("/admin/ip-whitelist/stats")
-    async def get_ip_stats():
+    async def get_ip_stats() -> Any:
         """Get IP whitelist statistics."""
         return ip_whitelist.get_statistics()
 
     @app.post("/admin/ip-whitelist/add")
-    async def add_ip_rule(ip_range: str, action: str, description: str, priority: int = 1000):
+    async def add_ip_rule(
+        ip_range: str, action: str, description: str, priority: int = 1000
+    ) -> Any:
         """Add new IP rule."""
         try:
             action_enum = IPAccessAction(action)
-            result = ip_whitelist.add_ip_rule(ip_range, action_enum, description, priority)
+            result = ip_whitelist.add_ip_rule(
+                ip_range, action_enum, description, priority
+            )
             return {"success": result}
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
     @app.delete("/admin/ip-whitelist/remove")
-    async def remove_ip_rule(ip_range: str):
+    async def remove_ip_rule(ip_range: str) -> Any:
         """Remove IP rule."""
         result = ip_whitelist.remove_ip_rule(ip_range)
         return {"success": result}

@@ -25,14 +25,14 @@ import aiohttp
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
 class RollbackTrigger(Enum):
     """Rollback trigger types"""
+
     MANUAL = "manual"
     HEALTH_CHECK_FAILURE = "health_check_failure"
     ERROR_RATE_THRESHOLD = "error_rate_threshold"
@@ -43,6 +43,7 @@ class RollbackTrigger(Enum):
 
 class RollbackStatus(Enum):
     """Rollback execution status"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -52,6 +53,7 @@ class RollbackStatus(Enum):
 
 class Environment(Enum):
     """Target environments"""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -60,6 +62,7 @@ class Environment(Enum):
 @dataclass
 class HealthCheckResult:
     """Health check result"""
+
     endpoint: str
     status_code: int
     response_time_ms: float
@@ -67,7 +70,7 @@ class HealthCheckResult:
     error_message: str | None = None
     timestamp: datetime = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.now(timezone.utc)
 
@@ -75,6 +78,7 @@ class HealthCheckResult:
 @dataclass
 class RollbackTarget:
     """Rollback target configuration"""
+
     deployment_id: str
     version: str
     commit_sha: str
@@ -82,7 +86,7 @@ class RollbackTarget:
     health_check_endpoints: list[str]
     backup_urls: list[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.backup_urls is None:
             self.backup_urls = []
 
@@ -90,6 +94,7 @@ class RollbackTarget:
 @dataclass
 class RollbackConfig:
     """Rollback configuration"""
+
     environment: Environment
     trigger: RollbackTrigger
     source_deployment_id: str
@@ -115,6 +120,7 @@ class RollbackConfig:
 @dataclass
 class RollbackResult:
     """Rollback execution result"""
+
     rollback_id: str
     config: RollbackConfig
     status: RollbackStatus
@@ -128,7 +134,7 @@ class RollbackResult:
     metrics: dict[str, Any] = None
     error_message: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.pre_rollback_health is None:
             self.pre_rollback_health = []
         if self.post_rollback_health is None:
@@ -148,62 +154,64 @@ class RollbackResult:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
-            'rollback_id': self.rollback_id,
-            'config': {
-                'environment': self.config.environment.value,
-                'trigger': self.config.trigger.value,
-                'source_deployment_id': self.config.source_deployment_id,
-                'target': {
-                    'deployment_id': self.config.target.deployment_id,
-                    'version': self.config.target.version,
-                    'commit_sha': self.config.target.commit_sha,
-                    'deployment_url': self.config.target.deployment_url,
-                    'health_check_endpoints': self.config.target.health_check_endpoints
+            "rollback_id": self.rollback_id,
+            "config": {
+                "environment": self.config.environment.value,
+                "trigger": self.config.trigger.value,
+                "source_deployment_id": self.config.source_deployment_id,
+                "target": {
+                    "deployment_id": self.config.target.deployment_id,
+                    "version": self.config.target.version,
+                    "commit_sha": self.config.target.commit_sha,
+                    "deployment_url": self.config.target.deployment_url,
+                    "health_check_endpoints": self.config.target.health_check_endpoints,
                 },
-                'fast_rollback': self.config.fast_rollback,
-                'traffic_switch_strategy': self.config.traffic_switch_strategy
+                "fast_rollback": self.config.fast_rollback,
+                "traffic_switch_strategy": self.config.traffic_switch_strategy,
             },
-            'status': self.status.value,
-            'start_time': self.start_time.isoformat(),
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'duration_seconds': self.duration_seconds,
-            'logs': self.logs,
-            'metrics': self.metrics,
-            'error_message': self.error_message,
-            'pre_rollback_health': [
+            "status": self.status.value,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "duration_seconds": self.duration_seconds,
+            "logs": self.logs,
+            "metrics": self.metrics,
+            "error_message": self.error_message,
+            "pre_rollback_health": [
                 {
-                    'endpoint': h.endpoint,
-                    'healthy': h.healthy,
-                    'response_time_ms': h.response_time_ms,
-                    'timestamp': h.timestamp.isoformat()
-                } for h in self.pre_rollback_health
+                    "endpoint": h.endpoint,
+                    "healthy": h.healthy,
+                    "response_time_ms": h.response_time_ms,
+                    "timestamp": h.timestamp.isoformat(),
+                }
+                for h in self.pre_rollback_health
             ],
-            'post_rollback_health': [
+            "post_rollback_health": [
                 {
-                    'endpoint': h.endpoint,
-                    'healthy': h.healthy,
-                    'response_time_ms': h.response_time_ms,
-                    'timestamp': h.timestamp.isoformat()
-                } for h in self.post_rollback_health
-            ]
+                    "endpoint": h.endpoint,
+                    "healthy": h.healthy,
+                    "response_time_ms": h.response_time_ms,
+                    "timestamp": h.timestamp.isoformat(),
+                }
+                for h in self.post_rollback_health
+            ],
         }
 
 
 class RollbackAutomation:
     """Automated rollback system"""
 
-    def __init__(self, work_dir: Path = None):
+    def __init__(self, work_dir: Path | None = None) -> None:
         self.work_dir = work_dir or Path.cwd()
         self.rollbacks: dict[str, RollbackResult] = {}
-        self.github_token = os.getenv('GITHUB_TOKEN')
-        self.repository = os.getenv('GITHUB_REPOSITORY', 'ai-enhanced-pdf-scholar')
+        self.github_token = os.getenv("GITHUB_TOKEN")
+        self.repository = os.getenv("GITHUB_REPOSITORY", "ai-enhanced-pdf-scholar")
 
         # HTTP session for health checks
         self.http_timeout = aiohttp.ClientTimeout(total=30)
 
     def generate_rollback_id(self, config: RollbackConfig) -> str:
         """Generate unique rollback ID"""
-        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         return f"rollback-{config.environment.value}-{config.trigger.value}-{timestamp}"
 
     async def execute_rollback(self, config: RollbackConfig) -> RollbackResult:
@@ -212,13 +220,15 @@ class RollbackAutomation:
 
         logger.info(f"🛡️ Starting rollback {rollback_id}")
         logger.info(f"📋 Trigger: {config.trigger.value}")
-        logger.info(f"🎯 Target: {config.target.deployment_id} ({config.target.version})")
+        logger.info(
+            f"🎯 Target: {config.target.deployment_id} ({config.target.version})"
+        )
 
         result = RollbackResult(
             rollback_id=rollback_id,
             config=config,
             status=RollbackStatus.PENDING,
-            start_time=datetime.now(timezone.utc)
+            start_time=datetime.now(timezone.utc),
         )
 
         self.rollbacks[rollback_id] = result
@@ -261,21 +271,26 @@ class RollbackAutomation:
 
         # Check current deployment health
         current_health = await self._comprehensive_health_check(
-            config.target.health_check_endpoints,
-            config.health_check_timeout
+            config.target.health_check_endpoints, config.health_check_timeout
         )
         result.pre_rollback_health = current_health
 
         # Analyze health results
         healthy_endpoints = sum(1 for h in current_health if h.healthy)
         total_endpoints = len(current_health)
-        health_percentage = (healthy_endpoints / total_endpoints) * 100 if total_endpoints > 0 else 0
+        health_percentage = (
+            (healthy_endpoints / total_endpoints) * 100 if total_endpoints > 0 else 0
+        )
 
-        result.logs.append(f"Current health: {healthy_endpoints}/{total_endpoints} endpoints healthy ({health_percentage:.1f}%)")
+        result.logs.append(
+            f"Current health: {healthy_endpoints}/{total_endpoints} endpoints healthy ({health_percentage:.1f}%)"
+        )
 
         # If system is mostly healthy, we might want to confirm rollback
         if health_percentage > 80 and config.trigger == RollbackTrigger.MANUAL:
-            logger.warning("⚠️ System appears healthy - confirming rollback necessity...")
+            logger.warning(
+                "⚠️ System appears healthy - confirming rollback necessity..."
+            )
             result.logs.append("Warning: System appears healthy for manual rollback")
 
         # Check rollback target availability
@@ -293,10 +308,14 @@ class RollbackAutomation:
                 async with aiohttp.ClientSession(timeout=self.http_timeout) as session:
                     async with session.get(f"{backup_url}/health") as response:
                         if response.status == 200:
-                            result.logs.append(f"Rollback target verified: {backup_url}")
+                            result.logs.append(
+                                f"Rollback target verified: {backup_url}"
+                            )
                             return
                         else:
-                            result.logs.append(f"Rollback target unhealthy: {backup_url} (status: {response.status})")
+                            result.logs.append(
+                                f"Rollback target unhealthy: {backup_url} (status: {response.status})"
+                            )
             except Exception as e:
                 result.logs.append(f"Rollback target check failed: {backup_url} - {e}")
 
@@ -359,13 +378,19 @@ class RollbackAutomation:
 
             # Quick health check
             if stage < 100:
-                health = await self._quick_health_check(result.config.target.health_check_endpoints[:1])
+                health = await self._quick_health_check(
+                    result.config.target.health_check_endpoints[:1]
+                )
                 if not health[0].healthy:
-                    raise Exception(f"Health check failed during gradual rollback at {stage}%")
+                    raise Exception(
+                        f"Health check failed during gradual rollback at {stage}%"
+                    )
 
         result.logs.append("Gradual rollback completed")
 
-    async def _redirect_traffic(self, result: RollbackResult, immediate: bool = False, percentage: int = 100) -> None:
+    async def _redirect_traffic(
+        self, result: RollbackResult, immediate: bool = False, percentage: int = 100
+    ) -> None:
         """Redirect traffic to rollback target"""
         config = result.config
 
@@ -379,8 +404,8 @@ class RollbackAutomation:
         await asyncio.sleep(2)
 
         # Record metrics
-        result.metrics['traffic_redirect_percentage'] = percentage
-        result.metrics['traffic_redirect_time'] = datetime.now(timezone.utc).isoformat()
+        result.metrics["traffic_redirect_percentage"] = percentage
+        result.metrics["traffic_redirect_time"] = datetime.now(timezone.utc).isoformat()
 
     async def _stop_failed_services(self, result: RollbackResult) -> None:
         """Stop failed services"""
@@ -401,22 +426,30 @@ class RollbackAutomation:
         await asyncio.sleep(3)
 
         result.logs.append(f"Rollback target activated: {config.deployment_id}")
-        result.metrics['rollback_target_activation'] = datetime.now(timezone.utc).isoformat()
+        result.metrics["rollback_target_activation"] = datetime.now(
+            timezone.utc
+        ).isoformat()
 
     async def _verify_rollback_success(self, result: RollbackResult) -> None:
         """Verify rollback was successful"""
         logger.info("✅ Verifying rollback success...")
 
         # Quick health check to confirm rollback
-        health_checks = await self._quick_health_check(result.config.target.health_check_endpoints)
+        health_checks = await self._quick_health_check(
+            result.config.target.health_check_endpoints
+        )
 
         healthy_count = sum(1 for h in health_checks if h.healthy)
         total_count = len(health_checks)
 
         if healthy_count < total_count:
-            logger.warning(f"⚠️ Some endpoints unhealthy after rollback: {healthy_count}/{total_count}")
+            logger.warning(
+                f"⚠️ Some endpoints unhealthy after rollback: {healthy_count}/{total_count}"
+            )
 
-        result.logs.append(f"Rollback verification: {healthy_count}/{total_count} endpoints healthy")
+        result.logs.append(
+            f"Rollback verification: {healthy_count}/{total_count} endpoints healthy"
+        )
 
     async def _post_rollback_validation(self, result: RollbackResult) -> None:
         """Comprehensive validation after rollback"""
@@ -427,48 +460,62 @@ class RollbackAutomation:
 
         # Comprehensive health check
         post_health = await self._comprehensive_health_check(
-            config.target.health_check_endpoints,
-            config.health_check_timeout
+            config.target.health_check_endpoints, config.health_check_timeout
         )
         result.post_rollback_health = post_health
 
         # Analyze results
         healthy_endpoints = sum(1 for h in post_health if h.healthy)
         total_endpoints = len(post_health)
-        health_percentage = (healthy_endpoints / total_endpoints) * 100 if total_endpoints > 0 else 0
+        health_percentage = (
+            (healthy_endpoints / total_endpoints) * 100 if total_endpoints > 0 else 0
+        )
 
-        avg_response_time = sum(h.response_time_ms for h in post_health if h.healthy) / max(healthy_endpoints, 1)
+        avg_response_time = sum(
+            h.response_time_ms for h in post_health if h.healthy
+        ) / max(healthy_endpoints, 1)
 
-        result.logs.append(f"Post-rollback health: {healthy_endpoints}/{total_endpoints} endpoints healthy ({health_percentage:.1f}%)")
+        result.logs.append(
+            f"Post-rollback health: {healthy_endpoints}/{total_endpoints} endpoints healthy ({health_percentage:.1f}%)"
+        )
         result.logs.append(f"Average response time: {avg_response_time:.1f}ms")
 
         # Store metrics
-        result.metrics.update({
-            'post_rollback_health_percentage': health_percentage,
-            'post_rollback_avg_response_time_ms': avg_response_time,
-            'post_rollback_healthy_endpoints': healthy_endpoints,
-            'post_rollback_total_endpoints': total_endpoints
-        })
+        result.metrics.update(
+            {
+                "post_rollback_health_percentage": health_percentage,
+                "post_rollback_avg_response_time_ms": avg_response_time,
+                "post_rollback_healthy_endpoints": healthy_endpoints,
+                "post_rollback_total_endpoints": total_endpoints,
+            }
+        )
 
         # Validation thresholds
         if health_percentage < config.min_success_rate_percent:
-            raise Exception(f"Post-rollback health check failed: {health_percentage:.1f}% < {config.min_success_rate_percent}%")
+            raise Exception(
+                f"Post-rollback health check failed: {health_percentage:.1f}% < {config.min_success_rate_percent}%"
+            )
 
         if avg_response_time > config.max_response_time_ms:
-            logger.warning(f"⚠️ Average response time high: {avg_response_time:.1f}ms > {config.max_response_time_ms}ms")
+            logger.warning(
+                f"⚠️ Average response time high: {avg_response_time:.1f}ms > {config.max_response_time_ms}ms"
+            )
 
         logger.info("✅ Post-rollback validation completed successfully")
 
-    async def _comprehensive_health_check(self, endpoints: list[str], timeout: int) -> list[HealthCheckResult]:
+    async def _comprehensive_health_check(
+        self, endpoints: list[str], timeout: int
+    ) -> list[HealthCheckResult]:
         """Perform comprehensive health check on endpoints"""
-        logger.info(f"🏥 Running comprehensive health check on {len(endpoints)} endpoints...")
+        logger.info(
+            f"🏥 Running comprehensive health check on {len(endpoints)} endpoints..."
+        )
 
         results = []
 
         async with aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=timeout)
         ) as session:
-
             tasks = []
             for endpoint in endpoints:
                 task = self._check_endpoint_health(session, endpoint)
@@ -480,23 +527,29 @@ class RollbackAutomation:
         health_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                health_results.append(HealthCheckResult(
-                    endpoint=endpoints[i],
-                    status_code=0,
-                    response_time_ms=0,
-                    healthy=False,
-                    error_message=str(result)
-                ))
+                health_results.append(
+                    HealthCheckResult(
+                        endpoint=endpoints[i],
+                        status_code=0,
+                        response_time_ms=0,
+                        healthy=False,
+                        error_message=str(result),
+                    )
+                )
             else:
                 health_results.append(result)
 
         return health_results
 
-    async def _quick_health_check(self, endpoints: list[str]) -> list[HealthCheckResult]:
+    async def _quick_health_check(
+        self, endpoints: list[str]
+    ) -> list[HealthCheckResult]:
         """Quick health check with shorter timeout"""
         return await self._comprehensive_health_check(endpoints, 30)
 
-    async def _check_endpoint_health(self, session: aiohttp.ClientSession, endpoint: str) -> HealthCheckResult:
+    async def _check_endpoint_health(
+        self, session: aiohttp.ClientSession, endpoint: str
+    ) -> HealthCheckResult:
         """Check health of a single endpoint"""
         start_time = time.time()
 
@@ -511,7 +564,7 @@ class RollbackAutomation:
                     status_code=response.status,
                     response_time_ms=response_time_ms,
                     healthy=healthy,
-                    error_message=None if healthy else f"HTTP {response.status}"
+                    error_message=None if healthy else f"HTTP {response.status}",
                 )
 
         except Exception as e:
@@ -522,30 +575,30 @@ class RollbackAutomation:
                 status_code=0,
                 response_time_ms=response_time_ms,
                 healthy=False,
-                error_message=str(e)
+                error_message=str(e),
             )
 
     def detect_rollback_conditions(
-        self,
-        environment: Environment,
-        current_metrics: dict[str, float]
+        self, environment: Environment, current_metrics: dict[str, float]
     ) -> RollbackTrigger | None:
         """Detect if rollback conditions are met"""
 
         # Error rate threshold
-        error_rate = current_metrics.get('error_rate_percent', 0)
+        error_rate = current_metrics.get("error_rate_percent", 0)
         if error_rate > 5.0:  # 5% error rate threshold
             logger.warning(f"🚨 High error rate detected: {error_rate:.2f}%")
             return RollbackTrigger.ERROR_RATE_THRESHOLD
 
         # Performance degradation
-        avg_response_time = current_metrics.get('avg_response_time_ms', 0)
+        avg_response_time = current_metrics.get("avg_response_time_ms", 0)
         if avg_response_time > 2000:  # 2 second threshold
-            logger.warning(f"🐌 Performance degradation detected: {avg_response_time:.1f}ms")
+            logger.warning(
+                f"🐌 Performance degradation detected: {avg_response_time:.1f}ms"
+            )
             return RollbackTrigger.PERFORMANCE_DEGRADATION
 
         # Success rate threshold
-        success_rate = current_metrics.get('success_rate_percent', 100)
+        success_rate = current_metrics.get("success_rate_percent", 100)
         if success_rate < 95:  # 95% success rate threshold
             logger.warning(f"📉 Low success rate detected: {success_rate:.1f}%")
             return RollbackTrigger.ERROR_RATE_THRESHOLD
@@ -557,7 +610,7 @@ class RollbackAutomation:
         environment: Environment,
         current_deployment_id: str,
         rollback_target: RollbackTarget,
-        check_interval: int = 60  # seconds
+        check_interval: int = 60,  # seconds
     ) -> None:
         """Continuous monitoring for auto-rollback conditions"""
         logger.info(f"🔍 Starting auto-rollback monitor for {environment.value}")
@@ -567,9 +620,9 @@ class RollbackAutomation:
                 # Simulate metrics collection
                 # In production, this would collect real metrics
                 current_metrics = {
-                    'error_rate_percent': 2.1,  # Simulated
-                    'avg_response_time_ms': 150,  # Simulated
-                    'success_rate_percent': 97.8  # Simulated
+                    "error_rate_percent": 2.1,  # Simulated
+                    "avg_response_time_ms": 150,  # Simulated
+                    "success_rate_percent": 97.8,  # Simulated
                 }
 
                 trigger = self.detect_rollback_conditions(environment, current_metrics)
@@ -582,7 +635,7 @@ class RollbackAutomation:
                         trigger=trigger,
                         source_deployment_id=current_deployment_id,
                         target=rollback_target,
-                        fast_rollback=True  # Auto-rollbacks should be fast
+                        fast_rollback=True,  # Auto-rollbacks should be fast
                     )
 
                     await self.execute_rollback(config)
@@ -602,7 +655,7 @@ class RollbackAutomation:
         self,
         environment: Environment | None = None,
         trigger: RollbackTrigger | None = None,
-        limit: int = 10
+        limit: int = 10,
     ) -> list[RollbackResult]:
         """List rollbacks with optional filtering"""
         rollbacks = list(self.rollbacks.values())
@@ -618,23 +671,23 @@ class RollbackAutomation:
 
         return rollbacks[:limit]
 
-    def save_rollback_history(self, file_path: Path = None) -> None:
+    def save_rollback_history(self, file_path: Path | None = None) -> None:
         """Save rollback history to file"""
         if file_path is None:
             file_path = self.work_dir / "rollback_history.json"
 
         history = {
-            'rollbacks': [r.to_dict() for r in self.rollbacks.values()],
-            'exported_at': datetime.now(timezone.utc).isoformat()
+            "rollbacks": [r.to_dict() for r in self.rollbacks.values()],
+            "exported_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(history, f, indent=2)
 
         logger.info(f"📊 Rollback history saved to {file_path}")
 
 
-async def main():
+async def main() -> None:
     """Main CLI interface"""
     parser = argparse.ArgumentParser(
         description="🛡️ Automated Rollback System for AI Enhanced PDF Scholar",
@@ -652,75 +705,134 @@ Examples:
 
   # Monitor for auto-rollback conditions
   python rollback_automation.py monitor --env production --current-deployment prod-123 --target-deployment prod-122
-        """
+        """,
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Rollback command
-    rollback_parser = subparsers.add_parser('rollback', help='Execute rollback')
-    rollback_parser.add_argument('--env', '--environment', type=str, required=True,
-                                choices=['development', 'staging', 'production'],
-                                help='Target environment')
-    rollback_parser.add_argument('--trigger', type=str, required=True,
-                                choices=['manual', 'health_check_failure', 'error_rate_threshold', 'performance_degradation'],
-                                help='Rollback trigger')
-    rollback_parser.add_argument('--source-deployment', type=str, required=True,
-                                help='Source deployment ID to rollback from')
-    rollback_parser.add_argument('--target-deployment', type=str, required=True,
-                                help='Target deployment ID to rollback to')
-    rollback_parser.add_argument('--target-version', type=str, required=True,
-                                help='Target version')
-    rollback_parser.add_argument('--target-sha', type=str, required=True,
-                                help='Target commit SHA')
-    rollback_parser.add_argument('--target-url', type=str,
-                                help='Target deployment URL')
-    rollback_parser.add_argument('--health-endpoints', type=str, nargs='*',
-                                help='Health check endpoints')
-    rollback_parser.add_argument('--fast', action='store_true',
-                                help='Execute fast rollback (immediate)')
-    rollback_parser.add_argument('--no-validation', action='store_true',
-                                help='Skip pre/post validation')
+    rollback_parser = subparsers.add_parser("rollback", help="Execute rollback")
+    rollback_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        required=True,
+        choices=["development", "staging", "production"],
+        help="Target environment",
+    )
+    rollback_parser.add_argument(
+        "--trigger",
+        type=str,
+        required=True,
+        choices=[
+            "manual",
+            "health_check_failure",
+            "error_rate_threshold",
+            "performance_degradation",
+        ],
+        help="Rollback trigger",
+    )
+    rollback_parser.add_argument(
+        "--source-deployment",
+        type=str,
+        required=True,
+        help="Source deployment ID to rollback from",
+    )
+    rollback_parser.add_argument(
+        "--target-deployment",
+        type=str,
+        required=True,
+        help="Target deployment ID to rollback to",
+    )
+    rollback_parser.add_argument(
+        "--target-version", type=str, required=True, help="Target version"
+    )
+    rollback_parser.add_argument(
+        "--target-sha", type=str, required=True, help="Target commit SHA"
+    )
+    rollback_parser.add_argument("--target-url", type=str, help="Target deployment URL")
+    rollback_parser.add_argument(
+        "--health-endpoints", type=str, nargs="*", help="Health check endpoints"
+    )
+    rollback_parser.add_argument(
+        "--fast", action="store_true", help="Execute fast rollback (immediate)"
+    )
+    rollback_parser.add_argument(
+        "--no-validation", action="store_true", help="Skip pre/post validation"
+    )
 
     # Check command
-    check_parser = subparsers.add_parser('check', help='Check rollback conditions')
-    check_parser.add_argument('--env', '--environment', type=str, required=True,
-                             choices=['development', 'staging', 'production'],
-                             help='Environment to check')
-    check_parser.add_argument('--error-rate', type=float,
-                             help='Current error rate percentage')
-    check_parser.add_argument('--response-time', type=float,
-                             help='Current average response time (ms)')
-    check_parser.add_argument('--success-rate', type=float,
-                             help='Current success rate percentage')
+    check_parser = subparsers.add_parser("check", help="Check rollback conditions")
+    check_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        required=True,
+        choices=["development", "staging", "production"],
+        help="Environment to check",
+    )
+    check_parser.add_argument(
+        "--error-rate", type=float, help="Current error rate percentage"
+    )
+    check_parser.add_argument(
+        "--response-time", type=float, help="Current average response time (ms)"
+    )
+    check_parser.add_argument(
+        "--success-rate", type=float, help="Current success rate percentage"
+    )
 
     # List command
-    list_parser = subparsers.add_parser('list', help='List rollbacks')
-    list_parser.add_argument('--env', '--environment', type=str,
-                            choices=['development', 'staging', 'production'],
-                            help='Filter by environment')
-    list_parser.add_argument('--trigger', type=str,
-                            choices=['manual', 'health_check_failure', 'error_rate_threshold', 'performance_degradation'],
-                            help='Filter by trigger')
-    list_parser.add_argument('--limit', type=int, default=10,
-                            help='Maximum number of results')
+    list_parser = subparsers.add_parser("list", help="List rollbacks")
+    list_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        choices=["development", "staging", "production"],
+        help="Filter by environment",
+    )
+    list_parser.add_argument(
+        "--trigger",
+        type=str,
+        choices=[
+            "manual",
+            "health_check_failure",
+            "error_rate_threshold",
+            "performance_degradation",
+        ],
+        help="Filter by trigger",
+    )
+    list_parser.add_argument(
+        "--limit", type=int, default=10, help="Maximum number of results"
+    )
 
     # Get command
-    get_parser = subparsers.add_parser('get', help='Get rollback details')
-    get_parser.add_argument('--rollback-id', type=str, required=True,
-                           help='Rollback ID')
+    get_parser = subparsers.add_parser("get", help="Get rollback details")
+    get_parser.add_argument(
+        "--rollback-id", type=str, required=True, help="Rollback ID"
+    )
 
     # Monitor command
-    monitor_parser = subparsers.add_parser('monitor', help='Monitor for auto-rollback')
-    monitor_parser.add_argument('--env', '--environment', type=str, required=True,
-                               choices=['development', 'staging', 'production'],
-                               help='Environment to monitor')
-    monitor_parser.add_argument('--current-deployment', type=str, required=True,
-                               help='Current deployment ID')
-    monitor_parser.add_argument('--target-deployment', type=str, required=True,
-                               help='Target deployment ID for rollback')
-    monitor_parser.add_argument('--interval', type=int, default=60,
-                               help='Check interval in seconds')
+    monitor_parser = subparsers.add_parser("monitor", help="Monitor for auto-rollback")
+    monitor_parser.add_argument(
+        "--env",
+        "--environment",
+        type=str,
+        required=True,
+        choices=["development", "staging", "production"],
+        help="Environment to monitor",
+    )
+    monitor_parser.add_argument(
+        "--current-deployment", type=str, required=True, help="Current deployment ID"
+    )
+    monitor_parser.add_argument(
+        "--target-deployment",
+        type=str,
+        required=True,
+        help="Target deployment ID for rollback",
+    )
+    monitor_parser.add_argument(
+        "--interval", type=int, default=60, help="Check interval in seconds"
+    )
 
     args = parser.parse_args()
 
@@ -732,17 +844,19 @@ Examples:
     rollback_system = RollbackAutomation()
 
     try:
-        if args.command == 'rollback':
+        if args.command == "rollback":
             # Build rollback target
             target = RollbackTarget(
                 deployment_id=args.target_deployment,
                 version=args.target_version,
                 commit_sha=args.target_sha,
-                deployment_url=args.target_url or f"https://{args.env}.ai-pdf-scholar.com",
-                health_check_endpoints=args.health_endpoints or [
+                deployment_url=args.target_url
+                or f"https://{args.env}.ai-pdf-scholar.com",
+                health_check_endpoints=args.health_endpoints
+                or [
                     f"https://{args.env}.ai-pdf-scholar.com/health",
-                    f"https://{args.env}.ai-pdf-scholar.com/api/v1/system/status"
-                ]
+                    f"https://{args.env}.ai-pdf-scholar.com/api/v1/system/status",
+                ],
             )
 
             config = RollbackConfig(
@@ -752,7 +866,7 @@ Examples:
                 target=target,
                 fast_rollback=args.fast,
                 validate_before_rollback=not args.no_validation,
-                validate_after_rollback=not args.no_validation
+                validate_after_rollback=not args.no_validation,
             )
 
             result = await rollback_system.execute_rollback(config)
@@ -760,23 +874,26 @@ Examples:
             print("🛡️ Rollback Result:")
             print(f"  ID: {result.rollback_id}")
             print(f"  Status: {result.status.value}")
-            print(f"  Duration: {result.duration_seconds:.1f}s" if result.duration_seconds else "  Duration: N/A")
+            print(
+                f"  Duration: {result.duration_seconds:.1f}s"
+                if result.duration_seconds
+                else "  Duration: N/A"
+            )
 
             if result.error_message:
                 print(f"  Error: {result.error_message}")
 
-        elif args.command == 'check':
+        elif args.command == "check":
             metrics = {}
             if args.error_rate is not None:
-                metrics['error_rate_percent'] = args.error_rate
+                metrics["error_rate_percent"] = args.error_rate
             if args.response_time is not None:
-                metrics['avg_response_time_ms'] = args.response_time
+                metrics["avg_response_time_ms"] = args.response_time
             if args.success_rate is not None:
-                metrics['success_rate_percent'] = args.success_rate
+                metrics["success_rate_percent"] = args.success_rate
 
             trigger = rollback_system.detect_rollback_conditions(
-                Environment(args.env),
-                metrics
+                Environment(args.env), metrics
             )
 
             if trigger:
@@ -786,11 +903,13 @@ Examples:
                 print("✅ No rollback conditions detected")
                 print(f"  Metrics: {metrics}")
 
-        elif args.command == 'list':
+        elif args.command == "list":
             env_filter = Environment(args.env) if args.env else None
             trigger_filter = RollbackTrigger(args.trigger) if args.trigger else None
 
-            rollbacks = rollback_system.list_rollbacks(env_filter, trigger_filter, args.limit)
+            rollbacks = rollback_system.list_rollbacks(
+                env_filter, trigger_filter, args.limit
+            )
 
             if not rollbacks:
                 print("No rollbacks found")
@@ -800,7 +919,11 @@ Examples:
             print()
 
             for rollback in rollbacks:
-                duration = f"{rollback.duration_seconds:.1f}s" if rollback.duration_seconds else "N/A"
+                duration = (
+                    f"{rollback.duration_seconds:.1f}s"
+                    if rollback.duration_seconds
+                    else "N/A"
+                )
                 print(f"  🔄 {rollback.rollback_id}")
                 print(f"     Status: {rollback.status.value}")
                 print(f"     Environment: {rollback.config.environment.value}")
@@ -808,7 +931,7 @@ Examples:
                 print(f"     Duration: {duration}")
                 print()
 
-        elif args.command == 'get':
+        elif args.command == "get":
             rollback = rollback_system.get_rollback(args.rollback_id)
 
             if not rollback:
@@ -820,8 +943,14 @@ Examples:
             print(f"  Environment: {rollback.config.environment.value}")
             print(f"  Trigger: {rollback.config.trigger.value}")
             print(f"  Source: {rollback.config.source_deployment_id}")
-            print(f"  Target: {rollback.config.target.deployment_id} ({rollback.config.target.version})")
-            print(f"  Duration: {rollback.duration_seconds:.1f}s" if rollback.duration_seconds else "  Duration: N/A")
+            print(
+                f"  Target: {rollback.config.target.deployment_id} ({rollback.config.target.version})"
+            )
+            print(
+                f"  Duration: {rollback.duration_seconds:.1f}s"
+                if rollback.duration_seconds
+                else "  Duration: N/A"
+            )
 
             if rollback.error_message:
                 print(f"  Error: {rollback.error_message}")
@@ -832,7 +961,7 @@ Examples:
                 total = len(rollback.post_rollback_health)
                 print(f"  Post-rollback Health: {healthy}/{total} endpoints healthy")
 
-        elif args.command == 'monitor':
+        elif args.command == "monitor":
             target = RollbackTarget(
                 deployment_id=args.target_deployment,
                 version="stable",
@@ -840,14 +969,11 @@ Examples:
                 deployment_url=f"https://{args.env}.ai-pdf-scholar.com",
                 health_check_endpoints=[
                     f"https://{args.env}.ai-pdf-scholar.com/health"
-                ]
+                ],
             )
 
             await rollback_system.auto_rollback_monitor(
-                Environment(args.env),
-                args.current_deployment,
-                target,
-                args.interval
+                Environment(args.env), args.current_deployment, target, args.interval
             )
 
     finally:
@@ -855,5 +981,5 @@ Examples:
         rollback_system.save_rollback_history()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

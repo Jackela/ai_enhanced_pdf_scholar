@@ -1,9 +1,11 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Check available LlamaIndex imports for Google GenAI
 """
 
-def check_embeddings():
+def check_embeddings() -> None:
     """Check available embedding classes"""
     try:
         import llama_index.embeddings.google_genai as google_genai
@@ -37,7 +39,7 @@ def check_embeddings():
     except Exception as e:
         print(f"Failed to import embeddings module: {e}")
 
-def check_llms():
+def check_llms() -> None:
     """Check available LLM classes"""
     try:
         import llama_index.llms.google_genai as google_genai

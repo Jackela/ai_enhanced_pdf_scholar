@@ -20,9 +20,9 @@ from src.exceptions import (
     DocumentValidationError,
     DuplicateDocumentError,
 )
-from src.repositories.document_repository import DocumentRepository
+from src.interfaces.repository_interfaces import IDocumentRepository
+from src.interfaces.service_interfaces import IContentHashService
 from src.repositories.vector_repository import VectorIndexRepository
-from src.services.content_hash_service import ContentHashService
 
 logger = logging.getLogger(__name__)
 
@@ -51,18 +51,28 @@ class DocumentLibraryService:
     """
 
     def __init__(
-        self, db_connection: DatabaseConnection, documents_dir: str | None = None
+        self,
+        document_repository: IDocumentRepository,
+        hash_service: IContentHashService,
+        documents_dir: str | None = None,
     ) -> None:
         """
-        Initialize document library service.
+        Initialize document library service with dependency injection.
+
         Args:
-            db_connection: Database connection instance
+            document_repository: Document repository implementation
+            hash_service: Content hash service implementation
             documents_dir: Directory for permanent document storage
                 (defaults to ~/.ai_pdf_scholar/documents)
         """
-        self.db: DatabaseConnection = db_connection
-        self.document_repo: DocumentRepository = DocumentRepository(db_connection)
-        self.vector_repo: VectorIndexRepository = VectorIndexRepository(db_connection)
+        self.document_repo: IDocumentRepository = document_repository
+        self.hash_service: IContentHashService = hash_service
+
+        # Get database connection from repository for vector repo (legacy compatibility)
+        # TODO: Refactor to inject VectorIndexRepository in v2.2
+        self.db: DatabaseConnection = document_repository.db
+        self.vector_repo: VectorIndexRepository = VectorIndexRepository(self.db)
+
         # Set up managed documents directory
         if documents_dir:
             self.documents_dir: Path = Path(documents_dir)
@@ -70,7 +80,9 @@ class DocumentLibraryService:
             self.documents_dir: Path = Path.home() / ".ai_pdf_scholar" / "documents"
         self.documents_dir.mkdir(parents=True, exist_ok=True)
 
-    def _create_managed_file_path(self, file_hash: str, original_filename: str, force_unique: bool = False) -> Path:
+    def _create_managed_file_path(
+        self, file_hash: str, original_filename: str, force_unique: bool = False
+    ) -> Path:
         """
         Create a managed file path for permanent storage.
         Args:
@@ -84,6 +96,7 @@ class DocumentLibraryService:
         extension = Path(original_filename).suffix
         if force_unique:
             import time
+
             timestamp = str(int(time.time() * 1000))[-6:]  # Last 6 digits of timestamp
             managed_filename = f"{file_hash[:8]}_{timestamp}{extension}"
         else:
@@ -108,6 +121,47 @@ class DocumentLibraryService:
                 f"Failed to copy file to managed storage: {e}"
             ) from e
 
+    def _remove_vector_index_artifacts(self, document_id: int) -> None:
+        vector_index = self.vector_repo.find_by_document_id(document_id)
+        if not vector_index:
+            return
+
+        try:
+            index_path = Path(vector_index.index_path)
+            if index_path.exists():
+                shutil.rmtree(index_path, ignore_errors=True)
+                logger.debug("Removed vector index files: %s", index_path)
+        except Exception as exc:
+            logger.warning("Could not remove vector index files: %s", exc)
+
+        self.vector_repo.delete_by_document_id(document_id)
+
+    def _remove_document_file(self, document: DocumentModel) -> None:
+        if not document.file_path:
+            return
+
+        try:
+            file_path = Path(document.file_path)
+            if file_path.exists():
+                file_path.unlink()
+                logger.debug("Removed document file: %s", file_path)
+        except Exception as exc:
+            logger.warning(
+                "Could not remove document file %s: %s", document.file_path, exc
+            )
+
+    @staticmethod
+    def _safe_remove_path(path: Path, remove_dir: bool = False) -> bool:
+        try:
+            if path.is_dir() and remove_dir:
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+            return True
+        except Exception as exc:
+            logger.warning("Failed to remove %s: %s", path, exc)
+            return False
+
     def _validate_import_file(self, file_path: str) -> Path:
         """Validate file for import."""
         file_path_obj = Path(file_path)
@@ -117,7 +171,7 @@ class DocumentLibraryService:
                 file_path=file_path,
                 reason="File does not exist",
             )
-        if not ContentHashService.validate_pdf_file(file_path):
+        if not self.hash_service.validate_pdf_file(file_path):
             raise DocumentValidationError(
                 f"Invalid PDF file: {file_path}",
                 file_path=file_path,
@@ -128,7 +182,7 @@ class DocumentLibraryService:
     def _calculate_file_hashes(self, file_path: str) -> tuple[str, str]:
         """Calculate file and content hashes."""
         try:
-            file_hash, content_hash = ContentHashService.calculate_combined_hashes(
+            file_hash, content_hash = self.hash_service.calculate_combined_hashes(
                 file_path
             )
             logger.debug(
@@ -168,9 +222,14 @@ class DocumentLibraryService:
     ) -> None:
         """Enrich document with additional metadata."""
         try:
-            file_info = ContentHashService.get_file_info(file_path)
+            file_info = self.hash_service.get_file_info(file_path)
             document.page_count = file_info.get("page_count", 0)
             if document.metadata is not None:
+                normalized_type = DocumentModel._normalize_file_type(
+                    Path(file_path).suffix or file_info.get("mime_type")
+                )
+                if normalized_type:
+                    document.file_type = normalized_type
                 document.metadata.update(
                     {
                         "content_hash": content_hash,
@@ -178,6 +237,7 @@ class DocumentLibraryService:
                         "original_path": str(Path(file_path).absolute()),
                         "managed_path": str(managed_file_path),
                         "file_valid": file_info.get("is_valid_pdf", False),
+                        "file_type": document.file_type,
                     }
                 )
         except Exception as e:
@@ -339,48 +399,18 @@ class DocumentLibraryService:
         """
         try:
             with self.db.transaction():
-                # Get document info before deletion for file cleanup
                 document = self.document_repo.find_by_id(document_id)
                 if not document:
-                    logger.warning(f"Document {document_id} not found for deletion")
+                    logger.warning("Document %s not found for deletion", document_id)
                     return False
 
-                # Remove vector index if requested
                 if remove_vector_index:
-                    vector_index = self.vector_repo.find_by_document_id(document_id)
-                    if vector_index:
-                        # Remove index files
-                        try:
-                            index_path = Path(vector_index.index_path)
-                            if index_path.exists():
-                                import shutil
+                    self._remove_vector_index_artifacts(document_id)
 
-                                shutil.rmtree(index_path, ignore_errors=True)
-                                logger.debug(
-                                    f"Removed vector index files: {index_path}"
-                                )
-                        except Exception as e:
-                            logger.warning(f"Could not remove vector index files: {e}")
-                        # Remove from database
-                        self.vector_repo.delete_by_document_id(document_id)
-
-                # Remove document from database
                 deleted = self.document_repo.delete(document_id)
                 if deleted:
-                    # Remove document file from managed storage
-                    if document.file_path:
-                        try:
-                            file_path = Path(document.file_path)
-                            if file_path.exists():
-                                file_path.unlink()
-                                logger.debug(f"Removed document file: {file_path}")
-                            else:
-                                logger.debug(f"Document file not found: {file_path}")
-                        except Exception as e:
-                            logger.warning(f"Could not remove document file {document.file_path}: {e}")
-                            # Don't fail the deletion if file removal fails
-
-                    logger.info(f"Document {document_id} deleted successfully")
+                    self._remove_document_file(document)
+                    logger.info("Document %s deleted successfully", document_id)
                 return deleted
         except Exception as e:
             logger.error(f"Failed to delete document {document_id}: {e}")
@@ -545,7 +575,9 @@ class DocumentLibraryService:
                 total_bytes = stats["total_size_bytes"]
                 # Use 4 decimal places to handle small files better, then round to 2 for display
                 total_mb = total_bytes / (1024 * 1024)
-                stats["total_size_mb"] = round(total_mb, 4) if total_mb < 0.01 else round(total_mb, 2)
+                stats["total_size_mb"] = (
+                    round(total_mb, 4) if total_mb < 0.01 else round(total_mb, 2)
+                )
             else:
                 stats["total_size_mb"] = 0.0
 
@@ -553,7 +585,9 @@ class DocumentLibraryService:
                 avg_bytes = stats["average_size_bytes"]
                 # Use 4 decimal places to handle small files better, then round to 2 for display
                 avg_mb = avg_bytes / (1024 * 1024)
-                stats["average_size_mb"] = round(avg_mb, 4) if avg_mb < 0.01 else round(avg_mb, 2)
+                stats["average_size_mb"] = (
+                    round(avg_mb, 4) if avg_mb < 0.01 else round(avg_mb, 2)
+                )
             else:
                 stats["average_size_mb"] = 0.0
 
@@ -562,11 +596,13 @@ class DocumentLibraryService:
                 # Count unique content hashes
                 unique_content_query = """
                 SELECT COUNT(DISTINCT content_hash) as unique_count
-                FROM documents 
+                FROM documents
                 WHERE content_hash IS NOT NULL AND content_hash != ''
                 """
                 unique_result = self.document_repo.db.fetch_one(unique_content_query)
-                stats["unique_content_count"] = unique_result["unique_count"] if unique_result else 0
+                stats["unique_content_count"] = (
+                    unique_result["unique_count"] if unique_result else 0
+                )
 
                 # Count duplicate groups (groups with more than 1 document sharing same content_hash)
                 duplicate_groups_query = """
@@ -579,8 +615,12 @@ class DocumentLibraryService:
                     HAVING COUNT(*) > 1
                 ) duplicate_groups
                 """
-                duplicate_result = self.document_repo.db.fetch_one(duplicate_groups_query)
-                stats["duplicate_groups"] = duplicate_result["group_count"] if duplicate_result else 0
+                duplicate_result = self.document_repo.db.fetch_one(
+                    duplicate_groups_query
+                )
+                stats["duplicate_groups"] = (
+                    duplicate_result["group_count"] if duplicate_result else 0
+                )
             except Exception as e:
                 logger.warning(f"Failed to calculate content statistics: {e}")
                 stats["unique_content_count"] = 0
@@ -740,14 +780,9 @@ class DocumentLibraryService:
             if self.documents_dir.exists():
                 for pattern in temp_patterns:
                     for temp_file in self.documents_dir.glob(pattern):
-                        try:
-                            temp_file.unlink()
+                        if self._safe_remove_path(temp_file):
                             count += 1
-                            logger.debug(f"Removed temp file: {temp_file}")
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to remove temp file {temp_file}: {e}"
-                            )
+                            logger.debug("Removed temp file: %s", temp_file)
 
             # Clean temp files from system temp directory
             import tempfile
@@ -755,16 +790,10 @@ class DocumentLibraryService:
             temp_dir = Path(tempfile.gettempdir())
             ai_temp_pattern = "ai_pdf_scholar_*"
             for temp_item in temp_dir.glob(ai_temp_pattern):
-                try:
-                    if temp_item.is_file():
-                        temp_item.unlink()
-                        count += 1
-                    elif temp_item.is_dir():
-                        shutil.rmtree(temp_item)
-                        count += 1
-                    logger.debug(f"Removed temp item: {temp_item}")
-                except Exception as e:
-                    logger.warning(f"Failed to remove temp item {temp_item}: {e}")
+                removed = self._safe_remove_path(temp_item, remove_dir=True)
+                if removed:
+                    count += 1
+                    logger.debug("Removed temp item: %s", temp_item)
 
         except Exception as e:
             logger.error(f"Error during temp file cleanup: {e}")
@@ -847,7 +876,7 @@ class DocumentLibraryService:
                     result["file_accessible"] = file_path.is_file()
                     # Verify file hash
                     try:
-                        current_hash = ContentHashService.calculate_file_hash(
+                        current_hash = self.hash_service.calculate_file_hash(
                             document.file_path
                         )
                         result["hash_matches"] = current_hash == document.file_hash

@@ -17,7 +17,10 @@ def find_syntax_errors() -> list[tuple[Path, int, str]]:
         # Pattern 1: from e inside string literal
         (r'(raise\s+\w+Exception\([^)]*"[^"]*)\s+from\s+(\w+)\)', r'\1") from \2'),
         # Pattern 2: from e on next line with wrong indentation
-        (r'(raise\s+\w+Exception\([^)]*\n\s*[^)]*)\n\s+from\s+(\w+)\)', r'\1\n        ) from \2'),
+        (
+            r"(raise\s+\w+Exception\([^)]*\n\s*[^)]*)\n\s+from\s+(\w+)\)",
+            r"\1\n        ) from \2",
+        ),
         # Pattern 3: RuntimeError with from inside string
         (r'(raise\s+RuntimeError\("[^"]*)\s+from\s+(\w+)\)', r'\1") from \2'),
         # Pattern 4: ValueError with from inside string
@@ -32,7 +35,7 @@ def find_syntax_errors() -> list[tuple[Path, int, str]]:
             continue
 
         try:
-            content = py_file.read_text(encoding='utf-8')
+            content = py_file.read_text(encoding="utf-8")
 
             # Check if file has the error pattern
             for pattern, _ in patterns:
@@ -49,15 +52,21 @@ def find_syntax_errors() -> list[tuple[Path, int, str]]:
 def fix_file(filepath: Path) -> bool:
     """Fix syntax errors in a file."""
     try:
-        content = filepath.read_text(encoding='utf-8')
+        content = filepath.read_text(encoding="utf-8")
         original_content = content
 
         # Fix patterns
         replacements = [
             # Fix: from e inside string literal - move it outside
-            (r'(raise\s+\w+Exception\([^)]*)"([^"]*)\s+from\s+(\w+)', r'\1"\2) from \3'),
+            (
+                r'(raise\s+\w+Exception\([^)]*)"([^"]*)\s+from\s+(\w+)',
+                r'\1"\2) from \3',
+            ),
             # Fix: from e on wrong line with wrong indentation
-            (r'(raise\s+\w+Exception\([^)]*\n\s*[^)]*)\n\s+from\s+(\w+)\)', r'\1\n        ) from \2'),
+            (
+                r"(raise\s+\w+Exception\([^)]*\n\s*[^)]*)\n\s+from\s+(\w+)\)",
+                r"\1\n        ) from \2",
+            ),
             # Fix: RuntimeError with from inside string
             (r'(raise\s+RuntimeError\("[^"]*)\s+from\s+(\w+)(\))?', r'\1") from \2'),
             # Fix: ValueError with from inside f-string
@@ -65,17 +74,23 @@ def fix_file(filepath: Path) -> bool:
             # Fix: Exception with from inside f-string
             (r'(raise\s+Exception\(f"[^"]*)\s+from\s+(\w+)(\))?', r'\1") from \2'),
             # Fix: HTTPException patterns
-            (r'(raise\s+HTTPException\([^)]+detail="[^"]*)\s+from\s+(\w+)', r'\1") from \2'),
-            (r'(raise\s+HTTPException\([^)]+detail=str\([^)]+\)\s+from\s+(\w+)', r'\1)) from \2'),
+            (
+                r'(raise\s+HTTPException\([^)]+detail="[^"]*)\s+from\s+(\w+)',
+                r'\1") from \2',
+            ),
+            (
+                r"(raise\s+HTTPException\([^)]+detail=str\([^)]+\)\s+from\s+(\w+)",
+                r"\1)) from \2",
+            ),
             # Fix: SystemException patterns
-            (r'(error_type="[^"]*"\n\s*)\s+from\s+(\w+)\)', r'\1) from \2'),
+            (r'(error_type="[^"]*"\n\s*)\s+from\s+(\w+)\)', r"\1) from \2"),
         ]
 
         for pattern, replacement in replacements:
             content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
 
         if content != original_content:
-            filepath.write_text(content, encoding='utf-8')
+            filepath.write_text(content, encoding="utf-8")
             print(f"Fixed: {filepath}")
             return True
 
@@ -86,7 +101,7 @@ def fix_file(filepath: Path) -> bool:
         return False
 
 
-def main():
+def main() -> Any:
     """Main function to fix syntax errors."""
     print("Scanning for syntax errors from B904 fixes...")
 
@@ -108,4 +123,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

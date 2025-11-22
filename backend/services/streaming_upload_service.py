@@ -4,6 +4,7 @@ Memory-efficient file upload service with chunked processing and progress tracki
 """
 
 import asyncio
+import contextlib
 import hashlib
 import logging
 import os
@@ -11,7 +12,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union
+from typing import Any
 from uuid import UUID
 
 import aiofiles
@@ -49,7 +50,7 @@ class StreamingUploadService:
         memory_limit_mb: float = 500.0,
         session_timeout_minutes: int = 60,
         cleanup_interval_seconds: int = 300,
-    ):
+    ) -> None:
         self.upload_dir = Path(upload_dir)
         self.upload_dir.mkdir(exist_ok=True, parents=True)
 
@@ -62,25 +63,25 @@ class StreamingUploadService:
         # Active sessions tracking
         self.active_sessions: dict[UUID, UploadSession] = {}
         self.session_locks: dict[UUID, asyncio.Lock] = {}
-        self.active_uploads: set[UUID] = set()
+        self.active_uploads: set[UUID] = set[str]()
 
         # Memory monitoring
         self.process = psutil.Process()
         self.peak_memory_mb: float = 0.0
 
         # Chunk processing statistics
-        self.chunk_stats: dict[UUID, dict[str, Union[int, float]]] = {}
+        self.chunk_stats: dict[UUID, dict[str, int | float]] = {}
 
         # Background cleanup task
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._start_cleanup_task()
 
-    def _start_cleanup_task(self):
+    def _start_cleanup_task(self) -> None:
         """Start background cleanup task."""
         if self._cleanup_task is None or self._cleanup_task.done():
             self._cleanup_task = asyncio.create_task(self._cleanup_expired_sessions())
 
-    async def _cleanup_expired_sessions(self):
+    async def _cleanup_expired_sessions(self) -> None:
         """Periodically clean up expired upload sessions."""
         while True:
             try:
@@ -91,7 +92,7 @@ class StreamingUploadService:
             except Exception as e:
                 logger.error(f"Error in cleanup task: {e}")
 
-    async def _cleanup_expired(self):
+    async def _cleanup_expired(self) -> None:
         """Clean up expired sessions and temporary files."""
         current_time = datetime.utcnow()
         expired_sessions = []
@@ -105,7 +106,7 @@ class StreamingUploadService:
             logger.info(f"Cleaning up expired session: {session_id}")
             await self._cleanup_session(session_id, "Session expired")
 
-    async def _cleanup_session(self, session_id: UUID, reason: str = "Cleanup"):
+    async def _cleanup_session(self, session_id: UUID, reason: str = "Cleanup") -> None:
         """Clean up a specific upload session."""
         if session_id in self.active_sessions:
             session = self.active_sessions[session_id]
@@ -118,7 +119,9 @@ class StreamingUploadService:
                         temp_path.unlink()
                         logger.info(f"Removed temp file: {session.temp_file_path}")
                 except Exception as e:
-                    logger.error(f"Failed to remove temp file {session.temp_file_path}: {e}")
+                    logger.error(
+                        f"Failed to remove temp file {session.temp_file_path}: {e}"
+                    )
 
             # Clean up tracking data
             self.active_sessions.pop(session_id, None)
@@ -166,13 +169,13 @@ class StreamingUploadService:
         optimal_chunk_size = self._calculate_optimal_chunk_size(
             request.file_size, request.chunk_size
         )
-        total_chunks = (request.file_size + optimal_chunk_size - 1) // optimal_chunk_size
+        total_chunks = (
+            request.file_size + optimal_chunk_size - 1
+        ) // optimal_chunk_size
 
         # Create temporary file
         temp_fd, temp_path = tempfile.mkstemp(
-            suffix=".tmp",
-            prefix=f"upload_{request.client_id}_",
-            dir=self.upload_dir
+            suffix=".tmp", prefix=f"upload_{request.client_id}_", dir=self.upload_dir
         )
         os.close(temp_fd)  # Close the file descriptor, we'll use aiofiles
 
@@ -190,7 +193,7 @@ class StreamingUploadService:
                 "title": request.title,
                 "check_duplicates": request.check_duplicates,
                 "auto_build_index": request.auto_build_index,
-            }
+            },
         )
 
         # Register session
@@ -213,7 +216,9 @@ class StreamingUploadService:
 
         return session
 
-    def _calculate_optimal_chunk_size(self, file_size: int, requested_chunk_size: int) -> int:
+    def _calculate_optimal_chunk_size(
+        self, file_size: int, requested_chunk_size: int
+    ) -> int:
         """
         Calculate optimal chunk size based on file size and system resources.
 
@@ -290,26 +295,38 @@ class StreamingUploadService:
                     return False, "Empty chunk data"
 
                 if chunk_id != session.uploaded_chunks:
-                    return False, f"Expected chunk {session.uploaded_chunks}, got {chunk_id}"
+                    return (
+                        False,
+                        f"Expected chunk {session.uploaded_chunks}, got {chunk_id}",
+                    )
 
                 # Validate chunk size (except for final chunk)
                 if not is_final and len(chunk_data) != session.chunk_size:
-                    return False, f"Invalid chunk size: expected {session.chunk_size}, got {len(chunk_data)}"
+                    return (
+                        False,
+                        f"Invalid chunk size: expected {session.chunk_size}, got {len(chunk_data)}",
+                    )
 
                 # Validate checksum if provided
                 if expected_checksum:
                     actual_checksum = hashlib.sha256(chunk_data).hexdigest()
                     if actual_checksum != expected_checksum:
-                        return False, f"Chunk checksum mismatch: expected {expected_checksum}, got {actual_checksum}"
+                        return (
+                            False,
+                            f"Chunk checksum mismatch: expected {expected_checksum}, got {actual_checksum}",
+                        )
 
                 # Check memory usage before processing
                 current_memory = await self._get_memory_usage_mb()
                 if current_memory > self.memory_limit_mb:
                     session.status = UploadStatus.PAUSED
-                    return False, f"Memory limit exceeded: {current_memory:.1f}MB > {self.memory_limit_mb}MB"
+                    return (
+                        False,
+                        f"Memory limit exceeded: {current_memory:.1f}MB > {self.memory_limit_mb}MB",
+                    )
 
                 # Write chunk to temporary file
-                async with aiofiles.open(session.temp_file_path, 'ab') as f:
+                async with aiofiles.open(session.temp_file_path, "ab") as f:
                     await f.write(chunk_data)
 
                 # Update session progress
@@ -346,7 +363,9 @@ class StreamingUploadService:
             except Exception as e:
                 session.status = UploadStatus.FAILED
                 session.error_message = f"Chunk processing failed: {str(e)}"
-                logger.error(f"Failed to process chunk {chunk_id} for session {session_id}: {e}")
+                logger.error(
+                    f"Failed to process chunk {chunk_id} for session {session_id}: {e}"
+                )
 
                 # Send error update
                 if websocket_manager:
@@ -354,7 +373,9 @@ class StreamingUploadService:
 
                 return False, str(e)
 
-    async def _finalize_upload(self, session: UploadSession, websocket_manager=None):
+    async def _finalize_upload(
+        self, session: UploadSession, websocket_manager=None
+    ) -> None:
         """
         Finalize upload by validating file integrity and preparing for processing.
 
@@ -365,28 +386,37 @@ class StreamingUploadService:
         try:
             # Calculate file hash for integrity check
             if session.temp_file_path:
-                session.actual_hash = await self._calculate_file_hash(session.temp_file_path)
+                session.actual_hash = await self._calculate_file_hash(
+                    session.temp_file_path
+                )
 
                 # Verify hash if expected hash was provided
-                if session.expected_hash and session.actual_hash != session.expected_hash:
+                if (
+                    session.expected_hash
+                    and session.actual_hash != session.expected_hash
+                ):
                     session.status = UploadStatus.FAILED
                     session.error_message = "File integrity check failed: hash mismatch"
                     return
 
                 # Validate file format
-                validation_result = await self._validate_uploaded_file(session.temp_file_path)
+                validation_result = await self._validate_uploaded_file(
+                    session.temp_file_path
+                )
                 if not validation_result.is_valid:
                     session.status = UploadStatus.FAILED
                     session.error_message = f"File validation failed: {', '.join(validation_result.validation_errors)}"
                     return
 
                 # Update metadata with validation results
-                session.metadata.update({
-                    "pdf_version": validation_result.pdf_version,
-                    "page_count": validation_result.page_count,
-                    "is_encrypted": validation_result.is_encrypted,
-                    "detected_mime_type": validation_result.detected_mime_type,
-                })
+                session.metadata.update(
+                    {
+                        "pdf_version": validation_result.pdf_version,
+                        "page_count": validation_result.page_count,
+                        "is_encrypted": validation_result.is_encrypted,
+                        "detected_mime_type": validation_result.detected_mime_type,
+                    }
+                )
 
             session.status = UploadStatus.COMPLETED
             session.updated_at = datetime.utcnow()
@@ -417,7 +447,7 @@ class StreamingUploadService:
         """
         hash_obj = hashlib.sha256()
 
-        async with aiofiles.open(file_path, 'rb') as f:
+        async with aiofiles.open(file_path, "rb") as f:
             while True:
                 chunk = await f.read(8192)  # 8KB chunks
                 if not chunk:
@@ -426,7 +456,9 @@ class StreamingUploadService:
 
         return hash_obj.hexdigest()
 
-    async def _validate_uploaded_file(self, file_path: str) -> StreamingValidationResult:
+    async def _validate_uploaded_file(
+        self, file_path: str
+    ) -> StreamingValidationResult:
         """
         Validate uploaded file format and content.
 
@@ -440,20 +472,22 @@ class StreamingUploadService:
 
         try:
             # Read file signature (first 1024 bytes)
-            async with aiofiles.open(file_path, 'rb') as f:
+            async with aiofiles.open(file_path, "rb") as f:
                 signature_bytes = await f.read(1024)
 
             # Check PDF signature
-            if signature_bytes.startswith(b'%PDF-'):
+            if signature_bytes.startswith(b"%PDF-"):
                 result.is_pdf = True
                 result.detected_mime_type = "application/pdf"
-                result.file_signature = signature_bytes[:8].decode('ascii', errors='ignore')
+                result.file_signature = signature_bytes[:8].decode(
+                    "ascii", errors="ignore"
+                )
 
                 # Extract PDF version
-                version_match = signature_bytes[:20].decode('ascii', errors='ignore')
-                if '-' in version_match:
-                    version_part = version_match.split('-')[1][:3]
-                    if version_part.replace('.', '').isdigit():
+                version_match = signature_bytes[:20].decode("ascii", errors="ignore")
+                if "-" in version_match:
+                    version_part = version_match.split("-")[1][:3]
+                    if version_part.replace(".", "").isdigit():
                         result.pdf_version = version_part
 
                 # Basic PDF validation
@@ -475,7 +509,9 @@ class StreamingUploadService:
 
         return result
 
-    async def _send_progress_update(self, session: UploadSession, websocket_manager):
+    async def _send_progress_update(
+        self, session: UploadSession, websocket_manager
+    ) -> None:
         """
         Send progress update via WebSocket.
 
@@ -495,7 +531,11 @@ class StreamingUploadService:
                 total_bytes=session.total_size,
                 uploaded_chunks=session.uploaded_chunks,
                 total_chunks=session.total_chunks,
-                progress_percentage=(uploaded_bytes / session.total_size) * 100 if session.total_size > 0 else 0,
+                progress_percentage=(
+                    (uploaded_bytes / session.total_size) * 100
+                    if session.total_size > 0
+                    else 0
+                ),
                 upload_speed_bps=upload_speed,
                 estimated_time_remaining=self._calculate_eta(session, upload_speed),
                 current_chunk=session.uploaded_chunks,
@@ -504,10 +544,14 @@ class StreamingUploadService:
             )
 
             # Send to client via WebSocket
-            await websocket_manager.send_upload_progress(session.client_id, progress.dict())
+            await websocket_manager.send_upload_progress(
+                session.client_id, progress.dict[str, Any]()
+            )
 
         except Exception as e:
-            logger.error(f"Failed to send progress update for session {session.session_id}: {e}")
+            logger.error(
+                f"Failed to send progress update for session {session.session_id}: {e}"
+            )
 
     def _calculate_eta(self, session: UploadSession, upload_speed: float) -> int | None:
         """Calculate estimated time remaining."""
@@ -537,7 +581,9 @@ class StreamingUploadService:
         }
         return status_messages.get(session.status, "Unknown status")
 
-    async def cancel_upload(self, session_id: UUID, reason: str = "User cancelled") -> bool:
+    async def cancel_upload(
+        self, session_id: UUID, reason: str = "User cancelled"
+    ) -> bool:
         """
         Cancel an active upload session.
 
@@ -603,18 +649,16 @@ class StreamingUploadService:
         except Exception:
             return 0.0
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up all resources and stop background tasks."""
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         # Clean up all active sessions
-        session_ids = list(self.active_sessions.keys())
+        session_ids = list[Any](self.active_sessions.keys())
         for session_id in session_ids:
             await self._cleanup_session(session_id, "Service shutdown")
 
@@ -622,21 +666,23 @@ class StreamingUploadService:
 
 
 # WebSocket extension methods
-async def send_upload_progress(websocket_manager, client_id: str, progress_data: dict):
+async def send_upload_progress(
+    websocket_manager, client_id: str, progress_data: dict[str, Any]
+) -> None:
     """Send upload progress update via WebSocket."""
     await websocket_manager.send_personal_json(
         {
             "type": "upload_progress",
             "data": progress_data,
         },
-        client_id
+        client_id,
     )
 
 
 # Monkey patch WebSocket manager to add upload progress method
-def extend_websocket_manager():
+def extend_websocket_manager() -> None:
     """Extend WebSocket manager with upload-specific methods."""
     from backend.api.websocket_manager import WebSocketManager
 
-    if not hasattr(WebSocketManager, 'send_upload_progress'):
+    if not hasattr(WebSocketManager, "send_upload_progress"):
         WebSocketManager.send_upload_progress = send_upload_progress

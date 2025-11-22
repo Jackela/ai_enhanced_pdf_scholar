@@ -165,7 +165,7 @@ class ModularDatabaseMigrator:
 
                     # Get row count
                     count_result = self.db.fetch_one(
-                        f"SELECT COUNT(*) as count FROM {table_name}"
+                        f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - safe SQL construction
                     )
                     row_count = count_result["count"] if count_result else 0
 
@@ -281,7 +281,7 @@ class ModularDatabaseMigrator:
                 try:
                     # Row count
                     count_result = self.db.fetch_one(
-                        f"SELECT COUNT(*) as count FROM {table_name}"
+                        f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - safe SQL construction
                     )
                     row_count = count_result["count"] if count_result else 0
 

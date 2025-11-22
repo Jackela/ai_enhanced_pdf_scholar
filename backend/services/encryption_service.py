@@ -11,7 +11,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
@@ -33,9 +33,11 @@ Base = declarative_base()
 # Encryption Models
 # ============================================================================
 
+
 class EncryptionKey(Base):
     """Model for encryption key management."""
-    __tablename__ = 'encryption_keys'
+
+    __tablename__ = "encryption_keys"
 
     id = Column(Integer, primary_key=True)
     key_id = Column(String(100), unique=True, nullable=False)
@@ -52,7 +54,8 @@ class EncryptionKey(Base):
 
 class EncryptedField(Base):
     """Model for field-level encryption tracking."""
-    __tablename__ = 'encrypted_fields'
+
+    __tablename__ = "encrypted_fields"
 
     id = Column(Integer, primary_key=True)
     table_name = Column(String(100), nullable=False)
@@ -67,6 +70,7 @@ class EncryptedField(Base):
 # Encryption Service
 # ============================================================================
 
+
 class EncryptionService:
     """
     Comprehensive encryption service for data protection.
@@ -77,8 +81,8 @@ class EncryptionService:
         self,
         db: Session,
         secrets_manager: SecretsManagerService | None = None,
-        key_rotation_days: int = 90
-    ):
+        key_rotation_days: int = 90,
+    ) -> None:
         """Initialize encryption service."""
         self.db = db
         self.secrets_manager = secrets_manager or SecretsManagerService()
@@ -89,7 +93,7 @@ class EncryptionService:
         # Initialize master key
         self._initialize_master_key()
 
-    def _initialize_master_key(self):
+    def _initialize_master_key(self) -> None:
         """Initialize or retrieve master encryption key."""
         try:
             # Try to get master key from secrets manager
@@ -101,7 +105,7 @@ class EncryptionService:
                 self._master_key = Fernet.generate_key()
                 self.secrets_manager.set_secret(
                     "encryption/master_key",
-                    base64.b64encode(self._master_key).decode('utf-8')
+                    base64.b64encode(self._master_key).decode("utf-8"),
                 )
                 logger.info("Generated new master encryption key")
         except Exception as e:
@@ -119,9 +123,9 @@ class EncryptionService:
 
     def encrypt_data(
         self,
-        data: Union[str, bytes, dict],
+        data: str | bytes | dict[str, Any],
         key_id: str | None = None,
-        additional_data: bytes | None = None
+        additional_data: bytes | None = None,
     ) -> tuple[bytes, dict[str, Any]]:
         """
         Encrypt data using AES-256-GCM.
@@ -136,9 +140,9 @@ class EncryptionService:
         """
         # Convert data to bytes
         if isinstance(data, str):
-            plaintext = data.encode('utf-8')
-        elif isinstance(data, dict):
-            plaintext = json.dumps(data).encode('utf-8')
+            plaintext = data.encode("utf-8")
+        elif isinstance(data, dict[str, Any]):
+            plaintext = json.dumps(data).encode("utf-8")
         else:
             plaintext = data
 
@@ -154,9 +158,7 @@ class EncryptionService:
 
         # Create cipher
         cipher = Cipher(
-            algorithms.AES(key),
-            modes.GCM(nonce),
-            backend=default_backend()
+            algorithms.AES(key), modes.GCM(nonce), backend=default_backend()
         )
         encryptor = cipher.encryptor()
 
@@ -180,7 +182,7 @@ class EncryptionService:
             "nonce_size": 12,
             "tag_size": 16,
             "timestamp": datetime.utcnow().isoformat(),
-            "has_aad": additional_data is not None
+            "has_aad": additional_data is not None,
         }
 
         return encrypted_data, metadata
@@ -189,8 +191,8 @@ class EncryptionService:
         self,
         encrypted_data: bytes,
         metadata: dict[str, Any],
-        additional_data: bytes | None = None
-    ) -> Union[str, bytes, dict]:
+        additional_data: bytes | None = None,
+    ) -> str | bytes | dict[str, Any]:
         """
         Decrypt data encrypted with AES-256-GCM.
 
@@ -207,8 +209,8 @@ class EncryptionService:
         tag_size = metadata.get("tag_size", 16)
 
         nonce = encrypted_data[:nonce_size]
-        tag = encrypted_data[nonce_size:nonce_size + tag_size]
-        ciphertext = encrypted_data[nonce_size + tag_size:]
+        tag = encrypted_data[nonce_size : nonce_size + tag_size]
+        ciphertext = encrypted_data[nonce_size + tag_size :]
 
         # Get decryption key
         key_id = metadata["key_id"]
@@ -216,9 +218,7 @@ class EncryptionService:
 
         # Create cipher
         cipher = Cipher(
-            algorithms.AES(key),
-            modes.GCM(nonce, tag),
-            backend=default_backend()
+            algorithms.AES(key), modes.GCM(nonce, tag), backend=default_backend()
         )
         decryptor = cipher.decryptor()
 
@@ -231,7 +231,7 @@ class EncryptionService:
 
         # Try to decode as string or JSON
         try:
-            text = plaintext.decode('utf-8')
+            text = plaintext.decode("utf-8")
             # Try to parse as JSON
             try:
                 return json.loads(text)
@@ -245,11 +245,7 @@ class EncryptionService:
     # ========================================================================
 
     def encrypt_field(
-        self,
-        value: Any,
-        table_name: str,
-        column_name: str,
-        record_id: str
+        self, value: Any, table_name: str, column_name: str, record_id: str
     ) -> str:
         """
         Encrypt a database field value.
@@ -275,20 +271,16 @@ class EncryptionService:
             column_name=column_name,
             record_id=record_id,
             encryption_key_id=key_id,
-            encryption_metadata=json.dumps(metadata)
+            encryption_metadata=json.dumps(metadata),
         )
         self.db.add(field_record)
         self.db.commit()
 
         # Return base64-encoded encrypted data
-        return base64.b64encode(encrypted_data).decode('utf-8')
+        return base64.b64encode(encrypted_data).decode("utf-8")
 
     def decrypt_field(
-        self,
-        encrypted_value: str,
-        table_name: str,
-        column_name: str,
-        record_id: str
+        self, encrypted_value: str, table_name: str, column_name: str, record_id: str
     ) -> Any:
         """
         Decrypt a database field value.
@@ -306,14 +298,18 @@ class EncryptionService:
         encrypted_data = base64.b64decode(encrypted_value)
 
         # Get encryption metadata
-        field_record = self.db.query(EncryptedField).filter_by(
-            table_name=table_name,
-            column_name=column_name,
-            record_id=record_id
-        ).first()
+        field_record = (
+            self.db.query(EncryptedField)
+            .filter_by(
+                table_name=table_name, column_name=column_name, record_id=record_id
+            )
+            .first()
+        )
 
         if not field_record:
-            raise ValueError(f"No encryption metadata found for {table_name}.{column_name}:{record_id}")
+            raise ValueError(
+                f"No encryption metadata found for {table_name}.{column_name}:{record_id}"
+            )
 
         metadata = json.loads(field_record.encryption_metadata)
 
@@ -328,7 +324,7 @@ class EncryptionService:
         self,
         input_path: Path,
         output_path: Path | None = None,
-        chunk_size: int = 64 * 1024  # 64KB chunks
+        chunk_size: int = 64 * 1024,  # 64KB chunks
     ) -> tuple[Path, dict[str, Any]]:
         """
         Encrypt a file using streaming encryption.
@@ -342,20 +338,18 @@ class EncryptionService:
             Tuple of (output_path, metadata)
         """
         if output_path is None:
-            output_path = Path(str(input_path) + '.enc')
+            output_path = Path(str(input_path) + ".enc")
 
         # Generate file encryption key
         key = self._generate_data_key()
-        key_id = self._store_data_key(key, key_type='file')
+        key_id = self._store_data_key(key, key_type="file")
 
         # Generate nonce
         nonce = os.urandom(12)
 
         # Create cipher
         cipher = Cipher(
-            algorithms.AES(key),
-            modes.GCM(nonce),
-            backend=default_backend()
+            algorithms.AES(key), modes.GCM(nonce), backend=default_backend()
         )
         encryptor = cipher.encryptor()
 
@@ -363,13 +357,13 @@ class EncryptionService:
         file_hash = hashlib.sha256()
 
         # Encrypt file
-        with open(input_path, 'rb') as infile, open(output_path, 'wb') as outfile:
+        with open(input_path, "rb") as infile, open(output_path, "wb") as outfile:
             # Write nonce at the beginning
             outfile.write(nonce)
 
             # Reserve space for tag (will write later)
             tag_position = outfile.tell()
-            outfile.write(b'\x00' * 16)
+            outfile.write(b"\x00" * 16)
 
             # Encrypt file contents
             while True:
@@ -395,12 +389,12 @@ class EncryptionService:
             "file_size": input_path.stat().st_size,
             "encrypted_size": output_path.stat().st_size,
             "file_hash": file_hash.hexdigest(),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         # Store metadata
-        metadata_path = Path(str(output_path) + '.meta')
-        with open(metadata_path, 'w') as f:
+        metadata_path = Path(str(output_path) + ".meta")
+        with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=2)
 
         logger.info(f"Encrypted file: {input_path} -> {output_path}")
@@ -411,7 +405,7 @@ class EncryptionService:
         self,
         input_path: Path,
         output_path: Path | None = None,
-        chunk_size: int = 64 * 1024
+        chunk_size: int = 64 * 1024,
     ) -> Path:
         """
         Decrypt a file encrypted with encrypt_file.
@@ -425,13 +419,13 @@ class EncryptionService:
             Path to decrypted file
         """
         if output_path is None:
-            if str(input_path).endswith('.enc'):
+            if str(input_path).endswith(".enc"):
                 output_path = Path(str(input_path)[:-4])
             else:
-                output_path = Path(str(input_path) + '.dec')
+                output_path = Path(str(input_path) + ".dec")
 
         # Load metadata
-        metadata_path = Path(str(input_path) + '.meta')
+        metadata_path = Path(str(input_path) + ".meta")
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
 
@@ -442,7 +436,7 @@ class EncryptionService:
         key = self._get_encryption_key(metadata["key_id"])
 
         # Read encrypted file
-        with open(input_path, 'rb') as infile:
+        with open(input_path, "rb") as infile:
             # Read nonce
             nonce = infile.read(12)
 
@@ -451,16 +445,14 @@ class EncryptionService:
 
             # Create cipher
             cipher = Cipher(
-                algorithms.AES(key),
-                modes.GCM(nonce, tag),
-                backend=default_backend()
+                algorithms.AES(key), modes.GCM(nonce, tag), backend=default_backend()
             )
             decryptor = cipher.decryptor()
 
             # Decrypt file contents
             file_hash = hashlib.sha256()
 
-            with open(output_path, 'wb') as outfile:
+            with open(output_path, "wb") as outfile:
                 while True:
                     chunk = infile.read(chunk_size)
                     if not chunk:
@@ -497,23 +489,21 @@ class EncryptionService:
             Tuple of (private_key_pem, public_key_pem)
         """
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=key_size,
-            backend=default_backend()
+            public_exponent=65537, key_size=key_size, backend=default_backend()
         )
 
         # Serialize private key
         private_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
+            encryption_algorithm=serialization.NoEncryption(),
         )
 
         # Serialize public key
         public_key = private_key.public_key()
         public_pem = public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
 
         return private_pem, public_pem
@@ -530,8 +520,7 @@ class EncryptionService:
             Encrypted data
         """
         public_key = serialization.load_pem_public_key(
-            public_key_pem,
-            backend=default_backend()
+            public_key_pem, backend=default_backend()
         )
 
         encrypted = public_key.encrypt(
@@ -539,13 +528,15 @@ class EncryptionService:
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
                 algorithm=hashes.SHA256(),
-                label=None
-            )
+                label=None,
+            ),
         )
 
         return encrypted
 
-    def decrypt_with_private_key(self, encrypted_data: bytes, private_key_pem: bytes) -> bytes:
+    def decrypt_with_private_key(
+        self, encrypted_data: bytes, private_key_pem: bytes
+    ) -> bytes:
         """
         Decrypt data with RSA private key.
 
@@ -557,9 +548,7 @@ class EncryptionService:
             Decrypted data
         """
         private_key = serialization.load_pem_private_key(
-            private_key_pem,
-            password=None,
-            backend=default_backend()
+            private_key_pem, password=None, backend=default_backend()
         )
 
         decrypted = private_key.decrypt(
@@ -567,8 +556,8 @@ class EncryptionService:
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
                 algorithm=hashes.SHA256(),
-                label=None
-            )
+                label=None,
+            ),
         )
 
         return decrypted
@@ -577,11 +566,11 @@ class EncryptionService:
     # Key Management
     # ========================================================================
 
-    def _generate_data_key(self, key_type: str = 'field') -> bytes:
+    def _generate_data_key(self, key_type: str = "field") -> bytes:
         """Generate a new data encryption key."""
         return Fernet.generate_key()
 
-    def _store_data_key(self, key: bytes, key_type: str = 'field') -> str:
+    def _store_data_key(self, key: bytes, key_type: str = "field") -> str:
         """Store a data key encrypted with master key."""
         # Generate key ID
         key_id = f"{key_type}_{secrets.token_urlsafe(16)}"
@@ -594,10 +583,10 @@ class EncryptionService:
         key_record = EncryptionKey(
             key_id=key_id,
             key_type=key_type,
-            algorithm='AES-256-GCM',
-            encrypted_key=base64.b64encode(encrypted_key).decode('utf-8'),
+            algorithm="AES-256-GCM",
+            encrypted_key=base64.b64encode(encrypted_key).decode("utf-8"),
             key_version=1,
-            is_active=True
+            is_active=True,
         )
         self.db.add(key_record)
         self.db.commit()
@@ -614,10 +603,11 @@ class EncryptionService:
             return self._key_cache[key_id]
 
         # Get from database
-        key_record = self.db.query(EncryptionKey).filter_by(
-            key_id=key_id,
-            is_active=True
-        ).first()
+        key_record = (
+            self.db.query(EncryptionKey)
+            .filter_by(key_id=key_id, is_active=True)
+            .first()
+        )
 
         if not key_record:
             raise ValueError(f"Encryption key not found: {key_id}")
@@ -647,14 +637,12 @@ class EncryptionService:
         # Get keys that need rotation
         cutoff_date = datetime.utcnow() - timedelta(days=self.key_rotation_days)
 
-        query = self.db.query(EncryptionKey).filter(
-            EncryptionKey.is_active == True
-        )
+        query = self.db.query(EncryptionKey).filter(EncryptionKey.is_active)
 
         if not force:
             query = query.filter(
-                (EncryptionKey.rotated_at == None) |
-                (EncryptionKey.rotated_at < cutoff_date)
+                (EncryptionKey.rotated_at is None)
+                | (EncryptionKey.rotated_at < cutoff_date)
             )
 
         keys_to_rotate = query.all()
@@ -671,9 +659,9 @@ class EncryptionService:
                     algorithm=key_record.algorithm,
                     encrypted_key=base64.b64encode(
                         Fernet(self._master_key).encrypt(new_key)
-                    ).decode('utf-8'),
+                    ).decode("utf-8"),
                     key_version=key_record.key_version + 1,
-                    is_active=True
+                    is_active=True,
                 )
                 self.db.add(new_key_record)
 
@@ -736,18 +724,23 @@ class EncryptionService:
 # TLS Configuration
 # ============================================================================
 
+
 class TLSConfiguration:
     """
     TLS/SSL configuration for secure communication.
     """
 
-    def __init__(self, cert_path: Path | None = None, key_path: Path | None = None):
+    def __init__(
+        self, cert_path: Path | None = None, key_path: Path | None = None
+    ) -> None:
         """Initialize TLS configuration."""
         self.cert_path = cert_path or Path("certs/server.crt")
         self.key_path = key_path or Path("certs/server.key")
         self.ca_path = Path("certs/ca.crt")
 
-    def generate_self_signed_cert(self, common_name: str = "localhost") -> tuple[Path, Path]:
+    def generate_self_signed_cert(
+        self, common_name: str = "localhost"
+    ) -> tuple[Path, Path]:
         """
         Generate self-signed certificate for development.
 
@@ -762,51 +755,53 @@ class TLSConfiguration:
 
         # Generate private key
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
+            public_exponent=65537, key_size=2048, backend=default_backend()
         )
 
         # Generate certificate
-        subject = issuer = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "State"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, "City"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "AI PDF Scholar"),
-            x509.NameAttribute(NameOID.COMMON_NAME, common_name),
-        ])
+        subject = issuer = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+                x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "State"),
+                x509.NameAttribute(NameOID.LOCALITY_NAME, "City"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "AI PDF Scholar"),
+                x509.NameAttribute(NameOID.COMMON_NAME, common_name),
+            ]
+        )
 
-        cert = x509.CertificateBuilder().subject_name(
-            subject
-        ).issuer_name(
-            issuer
-        ).public_key(
-            private_key.public_key()
-        ).serial_number(
-            x509.random_serial_number()
-        ).not_valid_before(
-            datetime.utcnow()
-        ).not_valid_after(
-            datetime.utcnow() + timedelta(days=365)
-        ).add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName("localhost"),
-                x509.DNSName("127.0.0.1"),
-                x509.DNSName("::1"),
-            ]),
-            critical=False,
-        ).sign(private_key, hashes.SHA256(), default_backend())
+        cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(private_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.utcnow())
+            .not_valid_after(datetime.utcnow() + timedelta(days=365))
+            .add_extension(
+                x509.SubjectAlternativeName(
+                    [
+                        x509.DNSName("localhost"),
+                        x509.DNSName("127.0.0.1"),
+                        x509.DNSName("::1"),
+                    ]
+                ),
+                critical=False,
+            )
+            .sign(private_key, hashes.SHA256(), default_backend())
+        )
 
         # Create certs directory
         self.cert_path.parent.mkdir(exist_ok=True)
 
         # Write private key
         with open(self.key_path, "wb") as f:
-            f.write(private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption()
-            ))
+            f.write(
+                private_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.TraditionalOpenSSL,
+                    encryption_algorithm=serialization.NoEncryption(),
+                )
+            )
 
         # Write certificate
         with open(self.cert_path, "wb") as f:
@@ -816,7 +811,7 @@ class TLSConfiguration:
 
         return self.cert_path, self.key_path
 
-    def get_ssl_context(self):
+    def get_ssl_context(self) -> Any:
         """
         Get SSL context for server.
 
@@ -836,7 +831,9 @@ class TLSConfiguration:
         context.load_cert_chain(str(self.cert_path), str(self.key_path))
 
         # Set secure ciphers
-        context.set_ciphers('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS')
+        context.set_ciphers(
+            "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS"
+        )
 
         # Require TLS 1.2 or higher
         context.minimum_version = ssl.TLSVersion.TLSv1_2
@@ -848,17 +845,20 @@ class TLSConfiguration:
 # Secure Communication Channel
 # ============================================================================
 
+
 class SecureChannel:
     """
     Secure communication channel with end-to-end encryption.
     """
 
-    def __init__(self, encryption_service: EncryptionService):
+    def __init__(self, encryption_service: EncryptionService) -> None:
         """Initialize secure channel."""
         self.encryption_service = encryption_service
         self.session_keys: dict[str, bytes] = {}
 
-    def establish_session(self, client_id: str, client_public_key: bytes) -> dict[str, Any]:
+    def establish_session(
+        self, client_id: str, client_public_key: bytes
+    ) -> dict[str, Any]:
         """
         Establish secure session with client.
 
@@ -874,8 +874,7 @@ class SecureChannel:
 
         # Encrypt session key with client's public key
         encrypted_session_key = self.encryption_service.encrypt_with_public_key(
-            session_key,
-            client_public_key
+            session_key, client_public_key
         )
 
         # Store session key
@@ -886,9 +885,11 @@ class SecureChannel:
 
         return {
             "session_id": secrets.token_urlsafe(32),
-            "encrypted_session_key": base64.b64encode(encrypted_session_key).decode('utf-8'),
-            "server_public_key": server_public.decode('utf-8'),
-            "timestamp": datetime.utcnow().isoformat()
+            "encrypted_session_key": base64.b64encode(encrypted_session_key).decode(
+                "utf-8"
+            ),
+            "server_public_key": server_public.decode("utf-8"),
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     def encrypt_message(self, client_id: str, message: Any) -> str:
@@ -909,15 +910,15 @@ class SecureChannel:
         fernet = Fernet(self.session_keys[client_id])
 
         # Serialize message
-        if isinstance(message, (dict, list)):
-            plaintext = json.dumps(message).encode('utf-8')
+        if isinstance(message, (dict[str, Any], list[Any])):
+            plaintext = json.dumps(message).encode("utf-8")
         else:
-            plaintext = str(message).encode('utf-8')
+            plaintext = str(message).encode("utf-8")
 
         # Encrypt
         encrypted = fernet.encrypt(plaintext)
 
-        return base64.b64encode(encrypted).decode('utf-8')
+        return base64.b64encode(encrypted).decode("utf-8")
 
     def decrypt_message(self, client_id: str, encrypted_message: str) -> Any:
         """
@@ -942,9 +943,9 @@ class SecureChannel:
 
         # Try to parse as JSON
         try:
-            return json.loads(plaintext.decode('utf-8'))
+            return json.loads(plaintext.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError):
-            return plaintext.decode('utf-8')
+            return plaintext.decode("utf-8")
 
 
 if __name__ == "__main__":

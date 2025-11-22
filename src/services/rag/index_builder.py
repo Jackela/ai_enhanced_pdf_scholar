@@ -63,7 +63,7 @@ class RAGIndexBuilder:
 
     def __init__(
         self, api_key: str, file_manager: RAGFileManager, test_mode: bool = False
-    ):
+    ) -> None:
         """
         Initialize RAG index builder.
 
@@ -207,7 +207,7 @@ class RAGIndexBuilder:
             exponential_base=self.api_retry_config.exponential_base,
             retryable_exceptions=self.api_retry_config.retryable_exceptions,
         )
-        def protected_creation():
+        def protected_creation() -> Any:
             from llama_index.core import VectorStoreIndex
 
             return VectorStoreIndex.from_documents(documents)
@@ -385,12 +385,9 @@ class RAGIndexBuilder:
                 validation_result["valid"] = False
 
             # Check API availability (if not in test mode)
-            if not self.test_mode:
-                if not self.api_key:
-                    validation_result["issues"].append(
-                        "Google API key is not configured"
-                    )
-                    validation_result["valid"] = False
+            if not self.test_mode and not self.api_key:
+                validation_result["issues"].append("Google API key is not configured")
+                validation_result["valid"] = False
 
         except Exception as e:
             validation_result["issues"].append(f"Validation error: {e}")

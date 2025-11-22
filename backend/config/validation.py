@@ -6,7 +6,7 @@ Provides validation utilities for configuration settings across all modules.
 
 import logging
 import os
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 class ConfigValidationError(Exception):
     """Exception raised when configuration validation fails."""
 
-    def __init__(self, message: str, field: str | None = None, issues: list[str] | None = None):
+    def __init__(
+        self, message: str, field: str | None = None, issues: list[str] | None = None
+    ):
         super().__init__(message)
         self.field = field
         self.issues = issues or []
@@ -43,15 +45,12 @@ class ConfigValidator:
             parsed = urlparse(url)
 
             # Check scheme
-            allowed_schemes = schemes or ['http', 'https']
+            allowed_schemes = schemes or ["http", "https"]
             if parsed.scheme.lower() not in allowed_schemes:
                 return False
 
             # Must have netloc (domain)
-            if not parsed.netloc:
-                return False
-
-            return True
+            return parsed.netloc
 
         except Exception:
             return False
@@ -75,10 +74,7 @@ class ConfigValidator:
             return False
 
         # Should not end with slash
-        if origin.endswith("/"):
-            return False
-
-        return True
+        return not origin.endswith("/")
 
     @staticmethod
     def validate_redis_url(redis_url: str) -> bool:
@@ -94,10 +90,10 @@ class ConfigValidator:
         if not redis_url:
             return False
 
-        return ConfigValidator.validate_url(redis_url, schemes=['redis', 'rediss'])
+        return ConfigValidator.validate_url(redis_url, schemes=["redis", "rediss"])
 
     @staticmethod
-    def validate_port(port: Union[int, str]) -> bool:
+    def validate_port(port: int | str) -> bool:
         """
         Validate port number.
 
@@ -114,7 +110,7 @@ class ConfigValidator:
             return False
 
     @staticmethod
-    def validate_positive_int(value: Union[int, str], min_value: int = 1) -> bool:
+    def validate_positive_int(value: int | str, min_value: int = 1) -> bool:
         """
         Validate positive integer.
 
@@ -176,16 +172,17 @@ class ConfigValidator:
 
         # Check for common weak patterns
         weak_patterns = [
-            "password", "secret", "key", "token",
-            "123456", "abcdef", "default"
+            "password",
+            "secret",
+            "key",
+            "token",
+            "123456",
+            "abcdef",
+            "default",
         ]
 
         secret_lower = secret.lower()
-        for pattern in weak_patterns:
-            if pattern in secret_lower:
-                return False
-
-        return True
+        return all(pattern not in secret_lower for pattern in weak_patterns)
 
     @staticmethod
     def validate_api_key(api_key: str, service: str = "generic") -> bool:
@@ -217,23 +214,26 @@ class ConfigValidator:
 
         # Check for placeholder values
         placeholder_patterns = [
-            "your_api_key", "placeholder", "example", "test_key",
-            "fake_key", "dummy", "sample"
+            "your_api_key",
+            "placeholder",
+            "example",
+            "test_key",
+            "fake_key",
+            "dummy",
+            "sample",
         ]
 
         api_key_lower = api_key.lower()
-        for pattern in placeholder_patterns:
-            if pattern in api_key_lower:
-                return False
-
-        return True
+        return all(pattern not in api_key_lower for pattern in placeholder_patterns)
 
 
 class SecurityValidator:
     """Security-focused configuration validation."""
 
     @staticmethod
-    def validate_production_security(config: dict[str, Any], environment: str) -> list[str]:
+    def validate_production_security(
+        config: dict[str, Any], environment: str
+    ) -> list[str]:
         """
         Validate production security settings.
 
@@ -244,7 +244,7 @@ class SecurityValidator:
         Returns:
             List of security issues found
         """
-        issues = []
+        issues: list[Any] = []
 
         if environment.lower() != "production":
             return issues
@@ -301,22 +301,28 @@ class SecurityValidator:
 
         # Check for hardcoded secrets in config
         sensitive_keys = [
-            "secret_key", "api_key", "password", "token",
-            "private_key", "credential", "auth"
+            "secret_key",
+            "api_key",
+            "password",
+            "token",
+            "private_key",
+            "credential",
+            "auth",
         ]
 
         def check_dict_for_secrets(d: dict[str, Any], path: str = "") -> None:
             for key, value in d.items():
                 current_path = f"{path}.{key}" if path else key
 
-                # Check if key name suggests it's sensitive
-                if any(sensitive in key.lower() for sensitive in sensitive_keys):
-                    if isinstance(value, str):
-                        # Check if value looks like a hardcoded secret
-                        if (len(value) > 10 and
-                            not value.startswith("${") and  # Environment variable
-                            not value.startswith("$(")):   # Command substitution
-                            issues.append(f"Potential hardcoded secret at {current_path}")
+                # Check if key name suggests it's sensitive and value looks hardcoded
+                if (
+                    any(sensitive in key.lower() for sensitive in sensitive_keys)
+                    and isinstance(value, str)
+                    and len(value) > 10
+                    and not value.startswith("${")  # Environment variable
+                    and not value.startswith("$(")  # Command substitution
+                ):
+                    issues.append(f"Potential hardcoded secret at {current_path}")
 
                 # Recursively check nested dictionaries
                 elif isinstance(value, dict):

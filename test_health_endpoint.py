@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python
 """
 Test script to verify the health endpoint is working correctly.
@@ -12,7 +14,7 @@ import time
 import requests
 
 
-def test_health_endpoint():
+def test_health_endpoint() -> Any:
     """Test the health endpoint after fixing the model import issue."""
 
     print("Starting API server...")

@@ -369,12 +369,14 @@ class MigrationManager:
                 max(available_versions) if available_versions else 0
             )
 
-            plan = {
+            plan: Any = {
                 "current_version": current_version,
                 "target_version": target,
-                "direction": "upgrade"
-                if target > current_version
-                else ("rollback" if target < current_version else "none"),
+                "direction": (
+                    "upgrade"
+                    if target > current_version
+                    else ("rollback" if target < current_version else "none")
+                ),
                 "migrations_to_apply": [],
                 "migrations_to_rollback": [],
                 "validation_issues": [],

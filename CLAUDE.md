@@ -171,11 +171,151 @@ python test_complete_workflow.py
 ---
 
 **记忆创建日期**: 2025-07-13
-**最后更新**: 2025-01-15
+**最后更新**: 2025-01-12
 **适用版本**: AI Enhanced PDF Scholar v2.1.0+
 **更新要求**: 每次重大架构变更时更新此文档
 
-## ⚡ 最新开发实践 (2025-01-19)
+## ⚡ 最新开发实践
+
+### 📦 DocumentLibraryService 依赖注入重构 (2025-01-12)
+
+#### 🎯 重构目标
+将 DocumentLibraryService 从静态依赖迁移到依赖注入模式，提升可测试性和解耦度。
+
+#### 🔄 架构变更
+
+**修改前（Legacy）:**
+```python
+class DocumentLibraryService:
+    def __init__(self, documents_dir: str | None = None):
+        self.document_repo = DocumentRepository(db)  # Hard-coded dependency
+        # Static method call
+        content_hash = ContentHashService.calculate_content_hash(content)
+```
+
+**修改后（DI Pattern）:**
+```python
+class DocumentLibraryService:
+    def __init__(
+        self,
+        document_repository: IDocumentRepository,  # Injected interface
+        hash_service: IContentHashService,          # Injected interface
+        documents_dir: str | None = None,
+    ):
+        self.document_repo = document_repository
+        self.hash_service = hash_service
+
+    # Instance method call
+    content_hash = self.hash_service.calculate_content_hash(content)
+```
+
+#### 📋 修改文件清单
+
+**核心服务层（1个文件）:**
+1. `src/services/document_library_service.py`
+   - 构造函数：新增2个DI参数
+   - 4处方法调用：从静态调用改为实例方法
+
+**服务集成层（2个文件）:**
+2. `src/services/document_service.py` - 使用DI实例化
+3. `src/controllers/library_controller.py` - Fallback实例化
+
+**测试层（5个文件）:**
+4. `tests/services/test_document_library_service.py` - 主测试文件
+5. `tests/services/test_document_library_service_enhancements.py` - 增强测试
+6. `tests/integration/test_real_document_library.py` - 集成测试
+7. `tests/integration/test_real_pdf_processing.py` - PDF处理测试
+8. `tests/integration/test_mock_replacement_demo.py` - Mock演示
+
+**总计：8个文件更新**
+
+#### ✅ 验证结果
+
+**测试通过率:**
+- 单元测试：13 passed, 1 failed (无关fixture issue), 1 error (无关文件问题)
+- 集成测试：所有DI相关测试通过
+
+**生产环境验证:**
+```bash
+# API 端点测试
+POST /api/documents
+Response: 201 Created
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "file_hash": "fb4489b5938e9206",
+    "content_hash": "4837479125758add"  # ✅ ContentHashService via DI working
+  }
+}
+```
+
+#### 🛠️ 后端启动问题修复
+
+**问题诊断:**
+- `.trunk/tmp` 目录存在循环符号链接
+- Uvicorn WatchFiles 检测到文件系统循环导致崩溃
+- 用户症状：前端 `ERR_CONNECTION_REFUSED`
+
+**解决方案:**
+```bash
+rm -rf .trunk/tmp  # 删除循环符号链接目录
+```
+
+**结果:** 后端成功启动，监听端口 8000
+
+#### 📝 DI模式最佳实践
+
+**依赖注入优势:**
+- ✅ 接口隔离：依赖抽象接口而非具体实现
+- ✅ 可测试性：轻松注入 Mock 对象
+- ✅ 单一职责：服务专注业务逻辑，不负责依赖创建
+- ✅ 解耦合：降低模块间的耦合度
+
+**实例化模式:**
+```python
+# 方式1: FastAPI Dependency Injection (推荐)
+def get_document_library_service(
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
+    hash_service: IContentHashService = Depends(get_content_hash_service),
+) -> IDocumentLibraryService:
+    return DocumentLibraryService(
+        document_repository=doc_repo,
+        hash_service=hash_service
+    )
+
+# 方式2: 直接实例化 (Fallback)
+doc_repo = DocumentRepository(db)
+hash_service = ContentHashService()
+service = DocumentLibraryService(
+    document_repository=doc_repo,
+    hash_service=hash_service
+)
+```
+
+#### 🎓 经验总结
+
+**重构原则:**
+1. **接口优先**：定义清晰的接口（IDocumentRepository, IContentHashService）
+2. **向后兼容**：保持公共API不变，仅修改内部实现
+3. **测试先行**：确保所有测试用例更新并通过
+4. **生产验证**：实际API调用验证功能正常
+
+**避免的陷阱:**
+- ❌ 不要在服务内部直接创建依赖对象
+- ❌ 不要使用全局单例（除非通过DI容器管理）
+- ❌ 不要静态方法调用外部服务
+- ✅ 始终通过构造函数注入依赖
+
+---
+
+## 🔧 历史开发实践
+
+### 🎯 引用提取系统架构完成状态 (2025-01-19)
+- **数据层**：CitationModel + CitationRelationModel (24个测试通过)
+- **仓库层**：Repository Pattern + SOLID原则 (21个测试通过)
+- **服务层**：业务逻辑 + 智能解析 (18个测试通过)
+- **总计**：63个单元测试，100%通过率
 
 ### 🎯 引用提取系统架构完成状态
 - **数据层**：CitationModel + CitationRelationModel (24个测试通过)

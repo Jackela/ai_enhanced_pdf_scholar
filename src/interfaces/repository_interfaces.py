@@ -5,7 +5,7 @@ following the Interface Segregation Principle (ISP).
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from src.database.models import (
     CitationModel,
@@ -75,8 +75,8 @@ class IDocumentRepository(IRepository[DocumentModel]):
     @abstractmethod
     def search(
         self, query: str, limit: int = 50, offset: int = 0
-    ) -> list[DocumentModel]:
-        """Search documents by query."""
+    ) -> tuple[list[DocumentModel], int]:
+        """Search documents by query and return results with a total count."""
         pass
 
     @abstractmethod
@@ -160,7 +160,7 @@ class ICitationRepository(IRepository[CitationModel]):
         pass
 
     @abstractmethod
-    def get_statistics(self) -> dict:
+    def get_statistics(self) -> dict[str, Any]:
         """Get citation statistics."""
         pass
 
@@ -191,12 +191,12 @@ class ICitationRelationRepository(IRepository[CitationRelationModel]):
         pass
 
     @abstractmethod
-    def get_citation_network(self, document_id: int, depth: int = 1) -> dict:
+    def get_citation_network(self, document_id: int, depth: int = 1) -> dict[str, Any]:
         """Get citation network for a document up to specified depth."""
         pass
 
     @abstractmethod
-    def get_most_cited_documents(self, limit: int = 10) -> list[dict]:
+    def get_most_cited_documents(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get most cited documents in the library."""
         pass
 
@@ -225,7 +225,9 @@ class IMultiDocumentCollectionRepository(IRepository[MultiDocumentCollectionMode
     """
 
     @abstractmethod
-    def get_all(self, limit: int = 50, offset: int = 0) -> list[MultiDocumentCollectionModel]:
+    def get_all(
+        self, limit: int = 50, offset: int = 0
+    ) -> list[MultiDocumentCollectionModel]:
         """Get all collections with pagination."""
         pass
 
@@ -240,7 +242,9 @@ class IMultiDocumentCollectionRepository(IRepository[MultiDocumentCollectionMode
         pass
 
     @abstractmethod
-    def get_collections_containing_document(self, document_id: int) -> list[MultiDocumentCollectionModel]:
+    def get_collections_containing_document(
+        self, document_id: int
+    ) -> list[MultiDocumentCollectionModel]:
         """Get all collections that contain a specific document."""
         pass
 
@@ -257,7 +261,9 @@ class IMultiDocumentIndexRepository(IRepository[MultiDocumentIndexModel]):
     """
 
     @abstractmethod
-    def get_by_collection_id(self, collection_id: int) -> MultiDocumentIndexModel | None:
+    def get_by_collection_id(
+        self, collection_id: int
+    ) -> MultiDocumentIndexModel | None:
         """Get index by collection ID."""
         pass
 
@@ -284,27 +290,35 @@ class ICrossDocumentQueryRepository(IRepository[CrossDocumentQueryModel]):
     """
 
     @abstractmethod
-    def find_by_collection_id(self, collection_id: int, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def find_by_collection_id(
+        self, collection_id: int, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Find queries by collection ID."""
         pass
 
     @abstractmethod
-    def find_by_user_id(self, user_id: str, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def find_by_user_id(
+        self, user_id: str, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Find queries by user ID."""
         pass
 
     @abstractmethod
-    def find_by_status(self, status: str, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def find_by_status(
+        self, status: str, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Find queries by status."""
         pass
 
     @abstractmethod
-    def get_recent_queries(self, days: int = 7, limit: int = 50) -> list[CrossDocumentQueryModel]:
+    def get_recent_queries(
+        self, days: int = 7, limit: int = 50
+    ) -> list[CrossDocumentQueryModel]:
         """Get recent queries within specified days."""
         pass
 
     @abstractmethod
-    def get_query_statistics(self) -> dict:
+    def get_query_statistics(self) -> dict[str, Any]:
         """Get query performance statistics."""
         pass
 

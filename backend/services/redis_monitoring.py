@@ -4,13 +4,14 @@ Real-time monitoring, alerting, and performance tracking for Redis cluster.
 """
 
 import asyncio
+import contextlib
 import logging
 from collections import deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 from redis import Redis
 from redis.cluster import RedisCluster
@@ -26,8 +27,10 @@ logger = logging.getLogger(__name__)
 # Monitoring Configuration
 # ============================================================================
 
+
 class AlertSeverity(str, Enum):
     """Alert severity levels."""
+
     CRITICAL = "critical"
     WARNING = "warning"
     INFO = "info"
@@ -35,6 +38,7 @@ class AlertSeverity(str, Enum):
 
 class MetricType(str, Enum):
     """Types of Redis metrics."""
+
     MEMORY = "memory"
     PERFORMANCE = "performance"
     CONNECTIONS = "connections"
@@ -47,6 +51,7 @@ class MetricType(str, Enum):
 @dataclass
 class AlertRule:
     """Alert rule configuration."""
+
     name: str
     metric_path: str  # e.g., "used_memory_percent"
     operator: str  # gt, lt, eq, ne
@@ -89,13 +94,14 @@ class AlertRule:
             name=self.name,
             threshold=self.threshold,
             severity=self.severity.value,
-            timestamp=self.last_triggered.isoformat()
+            timestamp=self.last_triggered.isoformat(),
         )
 
 
 @dataclass
 class RedisMetricsSnapshot:
     """Snapshot of Redis metrics at a point in time."""
+
     timestamp: datetime = field(default_factory=datetime.utcnow)
     node_id: str = "default"
 
@@ -160,9 +166,9 @@ class RedisMetricsSnapshot:
     total_net_output_bytes: int = 0
 
     # Error metrics
-    errorstats: dict[str, int] = field(default_factory=dict)
+    errorstats: dict[str, int] = field(default_factory=dict[str, Any])
 
-    def calculate_derived_metrics(self):
+    def calculate_derived_metrics(self) -> None:
         """Calculate derived metrics from raw data."""
         # Memory percentage
         if self.maxmemory > 0:
@@ -177,81 +183,76 @@ class RedisMetricsSnapshot:
         self.uptime_in_days = self.uptime_in_seconds // 86400
 
     @classmethod
-    def from_redis_info(cls, info_dict: dict[str, Any], node_id: str = "default") -> 'RedisMetricsSnapshot':
+    def from_redis_info(
+        cls, info_dict: dict[str, Any], node_id: str = "default"
+    ) -> "RedisMetricsSnapshot":
         """Create metrics snapshot from Redis INFO output."""
         snapshot = cls(node_id=node_id)
 
         # Map Redis INFO fields to snapshot attributes
         field_mapping = {
             # Memory
-            'used_memory': 'used_memory',
-            'used_memory_human': 'used_memory_human',
-            'used_memory_rss': 'used_memory_rss',
-            'used_memory_peak': 'used_memory_peak',
-            'used_memory_lua': 'used_memory_lua',
-            'mem_fragmentation_ratio': 'mem_fragmentation_ratio',
-            'maxmemory': 'maxmemory',
-
+            "used_memory": "used_memory",
+            "used_memory_human": "used_memory_human",
+            "used_memory_rss": "used_memory_rss",
+            "used_memory_peak": "used_memory_peak",
+            "used_memory_lua": "used_memory_lua",
+            "mem_fragmentation_ratio": "mem_fragmentation_ratio",
+            "maxmemory": "maxmemory",
             # Performance
-            'instantaneous_ops_per_sec': 'instantaneous_ops_per_sec',
-            'total_commands_processed': 'total_commands_processed',
-            'instantaneous_input_kbps': 'instantaneous_input_kbps',
-            'instantaneous_output_kbps': 'instantaneous_output_kbps',
-            'keyspace_hits': 'keyspace_hits',
-            'keyspace_misses': 'keyspace_misses',
-
+            "instantaneous_ops_per_sec": "instantaneous_ops_per_sec",
+            "total_commands_processed": "total_commands_processed",
+            "instantaneous_input_kbps": "instantaneous_input_kbps",
+            "instantaneous_output_kbps": "instantaneous_output_kbps",
+            "keyspace_hits": "keyspace_hits",
+            "keyspace_misses": "keyspace_misses",
             # Connections
-            'connected_clients': 'connected_clients',
-            'client_recent_max_input_buffer': 'client_recent_max_input_buffer',
-            'client_recent_max_output_buffer': 'client_recent_max_output_buffer',
-            'blocked_clients': 'blocked_clients',
-
+            "connected_clients": "connected_clients",
+            "client_recent_max_input_buffer": "client_recent_max_input_buffer",
+            "client_recent_max_output_buffer": "client_recent_max_output_buffer",
+            "blocked_clients": "blocked_clients",
             # Server
-            'uptime_in_seconds': 'uptime_in_seconds',
-            'hz': 'hz',
-            'lru_clock': 'lru_clock',
-
+            "uptime_in_seconds": "uptime_in_seconds",
+            "hz": "hz",
+            "lru_clock": "lru_clock",
             # Replication
-            'role': 'role',
-            'connected_slaves': 'connected_slaves',
-            'master_replid': 'master_replid',
-            'master_repl_offset': 'master_repl_offset',
-            'repl_backlog_active': 'repl_backlog_active',
-            'repl_backlog_size': 'repl_backlog_size',
-
+            "role": "role",
+            "connected_slaves": "connected_slaves",
+            "master_replid": "master_replid",
+            "master_repl_offset": "master_repl_offset",
+            "repl_backlog_active": "repl_backlog_active",
+            "repl_backlog_size": "repl_backlog_size",
             # Persistence
-            'rdb_changes_since_last_save': 'rdb_changes_since_last_save',
-            'rdb_bgsave_in_progress': 'rdb_bgsave_in_progress',
-            'rdb_last_save_time': 'rdb_last_save_time',
-            'rdb_last_bgsave_status': 'rdb_last_bgsave_status',
-            'aof_enabled': 'aof_enabled',
-            'aof_rewrite_in_progress': 'aof_rewrite_in_progress',
-            'aof_last_rewrite_time_sec': 'aof_last_rewrite_time_sec',
-            'aof_current_size': 'aof_current_size',
-
+            "rdb_changes_since_last_save": "rdb_changes_since_last_save",
+            "rdb_bgsave_in_progress": "rdb_bgsave_in_progress",
+            "rdb_last_save_time": "rdb_last_save_time",
+            "rdb_last_bgsave_status": "rdb_last_bgsave_status",
+            "aof_enabled": "aof_enabled",
+            "aof_rewrite_in_progress": "aof_rewrite_in_progress",
+            "aof_last_rewrite_time_sec": "aof_last_rewrite_time_sec",
+            "aof_current_size": "aof_current_size",
             # Cluster
-            'cluster_enabled': 'cluster_enabled',
-            'cluster_state': 'cluster_state',
-            'cluster_slots_assigned': 'cluster_slots_assigned',
-            'cluster_slots_ok': 'cluster_slots_ok',
-            'cluster_known_nodes': 'cluster_known_nodes',
-
+            "cluster_enabled": "cluster_enabled",
+            "cluster_state": "cluster_state",
+            "cluster_slots_assigned": "cluster_slots_assigned",
+            "cluster_slots_ok": "cluster_slots_ok",
+            "cluster_known_nodes": "cluster_known_nodes",
             # Network
-            'total_net_input_bytes': 'total_net_input_bytes',
-            'total_net_output_bytes': 'total_net_output_bytes'
+            "total_net_input_bytes": "total_net_input_bytes",
+            "total_net_output_bytes": "total_net_output_bytes",
         }
 
-        # Set attributes from info dict
+        # Set attributes from info dict[str, Any]
         for info_key, attr_name in field_mapping.items():
             if info_key in info_dict:
                 setattr(snapshot, attr_name, info_dict[info_key])
 
         # Handle errorstats section
-        if 'errorstats_ERR' in info_dict:
+        if "errorstats_ERR" in info_dict:
             snapshot.errorstats = {
-                k.replace('errorstats_', ''): v
+                k.replace("errorstats_", ""): v
                 for k, v in info_dict.items()
-                if k.startswith('errorstats_')
+                if k.startswith("errorstats_")
             }
 
         # Calculate derived metrics
@@ -264,6 +265,7 @@ class RedisMetricsSnapshot:
 # Redis Monitoring Service
 # ============================================================================
 
+
 class RedisMonitoringService:
     """
     Comprehensive Redis monitoring service with real-time metrics,
@@ -274,8 +276,8 @@ class RedisMonitoringService:
         self,
         cluster_manager: RedisClusterManager | None = None,
         metrics_service: MetricsService | None = None,
-        alert_handlers: list[Callable[[str, AlertSeverity, str], None]] | None = None
-    ):
+        alert_handlers: list[Callable[[str, AlertSeverity, str], None]] | None = None,
+    ) -> None:
         """Initialize Redis monitoring service."""
         self.cluster_manager = cluster_manager
         self.metrics_service = metrics_service
@@ -283,11 +285,11 @@ class RedisMonitoringService:
 
         # Monitoring state
         self.is_monitoring = False
-        self.monitoring_task: asyncio.Task | None = None
+        self.monitoring_task: asyncio.Task[None] | None = None
         self.monitoring_interval = 30.0  # seconds
 
         # Metrics storage (ring buffers for efficiency)
-        self.metrics_history: dict[str, deque] = {}
+        self.metrics_history: dict[str, deque[Any]] = {}
         self.max_history_size = 1000  # Keep last 1000 data points
 
         # Alert rules
@@ -300,7 +302,7 @@ class RedisMonitoringService:
 
         logger.info("Redis Monitoring Service initialized")
 
-    def _load_default_alert_rules(self):
+    def _load_default_alert_rules(self) -> None:
         """Load default alert rules."""
         default_rules = [
             # Memory alerts
@@ -311,7 +313,7 @@ class RedisMonitoringService:
                 threshold=85.0,
                 severity=AlertSeverity.WARNING,
                 message_template="Redis memory usage is {threshold}% (threshold: {threshold}%)",
-                cooldown_minutes=5
+                cooldown_minutes=5,
             ),
             AlertRule(
                 name="Critical Memory Usage",
@@ -320,7 +322,7 @@ class RedisMonitoringService:
                 threshold=95.0,
                 severity=AlertSeverity.CRITICAL,
                 message_template="CRITICAL: Redis memory usage is {threshold}% (threshold: {threshold}%)",
-                cooldown_minutes=2
+                cooldown_minutes=2,
             ),
             AlertRule(
                 name="High Memory Fragmentation",
@@ -329,9 +331,8 @@ class RedisMonitoringService:
                 threshold=1.5,
                 severity=AlertSeverity.WARNING,
                 message_template="High memory fragmentation ratio: {threshold} (threshold: {threshold})",
-                cooldown_minutes=10
+                cooldown_minutes=10,
             ),
-
             # Performance alerts
             AlertRule(
                 name="Low Hit Ratio",
@@ -340,7 +341,7 @@ class RedisMonitoringService:
                 threshold=80.0,
                 severity=AlertSeverity.WARNING,
                 message_template="Low cache hit ratio: {threshold}% (threshold: {threshold}%)",
-                cooldown_minutes=15
+                cooldown_minutes=15,
             ),
             AlertRule(
                 name="High Operations Rate",
@@ -349,9 +350,8 @@ class RedisMonitoringService:
                 threshold=10000,
                 severity=AlertSeverity.INFO,
                 message_template="High operations rate: {threshold} ops/sec (threshold: {threshold})",
-                cooldown_minutes=30
+                cooldown_minutes=30,
             ),
-
             # Connection alerts
             AlertRule(
                 name="High Client Connections",
@@ -360,7 +360,7 @@ class RedisMonitoringService:
                 threshold=1000,
                 severity=AlertSeverity.WARNING,
                 message_template="High client connections: {threshold} (threshold: {threshold})",
-                cooldown_minutes=5
+                cooldown_minutes=5,
             ),
             AlertRule(
                 name="Blocked Clients",
@@ -369,9 +369,8 @@ class RedisMonitoringService:
                 threshold=100,
                 severity=AlertSeverity.WARNING,
                 message_template="High blocked clients: {threshold} (threshold: {threshold})",
-                cooldown_minutes=5
+                cooldown_minutes=5,
             ),
-
             # Persistence alerts
             AlertRule(
                 name="RDB Save Failed",
@@ -380,7 +379,7 @@ class RedisMonitoringService:
                 threshold="ok",
                 severity=AlertSeverity.CRITICAL,
                 message_template="RDB background save failed",
-                cooldown_minutes=1
+                cooldown_minutes=1,
             ),
             AlertRule(
                 name="High Unsaved Changes",
@@ -389,9 +388,8 @@ class RedisMonitoringService:
                 threshold=50000,
                 severity=AlertSeverity.WARNING,
                 message_template="High unsaved changes: {threshold} (threshold: {threshold})",
-                cooldown_minutes=30
+                cooldown_minutes=30,
             ),
-
             # Cluster alerts (if applicable)
             AlertRule(
                 name="Cluster State Unhealthy",
@@ -400,8 +398,8 @@ class RedisMonitoringService:
                 threshold="ok",
                 severity=AlertSeverity.CRITICAL,
                 message_template="Cluster state is not OK",
-                cooldown_minutes=1
-            )
+                cooldown_minutes=1,
+            ),
         ]
 
         self.alert_rules = default_rules
@@ -410,7 +408,7 @@ class RedisMonitoringService:
     # Monitoring Control
     # ========================================================================
 
-    async def start_monitoring(self, interval_seconds: float = 30.0):
+    async def start_monitoring(self, interval_seconds: float = 30.0) -> None:
         """Start continuous Redis monitoring."""
         if self.is_monitoring:
             logger.warning("Monitoring is already running")
@@ -422,7 +420,7 @@ class RedisMonitoringService:
 
         logger.info(f"Started Redis monitoring with {interval_seconds}s interval")
 
-    async def stop_monitoring(self):
+    async def stop_monitoring(self) -> None:
         """Stop continuous Redis monitoring."""
         if not self.is_monitoring:
             return
@@ -431,14 +429,12 @@ class RedisMonitoringService:
 
         if self.monitoring_task:
             self.monitoring_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.monitoring_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Stopped Redis monitoring")
 
-    async def _monitoring_loop(self):
+    async def _monitoring_loop(self) -> None:
         """Main monitoring loop."""
         while self.is_monitoring:
             try:
@@ -467,7 +463,7 @@ class RedisMonitoringService:
     # Metrics Collection
     # ========================================================================
 
-    async def _collect_all_metrics(self):
+    async def _collect_all_metrics(self) -> None:
         """Collect metrics from all Redis nodes."""
         if self.cluster_manager:
             # Collect from cluster manager
@@ -482,7 +478,9 @@ class RedisMonitoringService:
             # Single node monitoring - would need client injection
             logger.warning("No cluster manager provided for monitoring")
 
-    async def _collect_node_metrics(self, client: Union[Redis, RedisCluster], node_id: str):
+    async def _collect_node_metrics(
+        self, client: Redis | RedisCluster, node_id: str
+    ) -> None:
         """Collect metrics from a specific Redis node."""
         try:
             # Get Redis INFO
@@ -493,7 +491,7 @@ class RedisMonitoringService:
 
             # Store in history
             if node_id not in self.metrics_history:
-                self.metrics_history[node_id] = deque(maxlen=self.max_history_size)
+                self.metrics_history[node_id] = deque[Any](maxlen=self.max_history_size)
 
             self.metrics_history[node_id].append(snapshot)
 
@@ -506,39 +504,34 @@ class RedisMonitoringService:
         except Exception as e:
             logger.error(f"Failed to collect metrics from node {node_id}: {e}")
 
-    async def _export_node_metrics(self, snapshot: RedisMetricsSnapshot):
+    async def _export_node_metrics(self, snapshot: RedisMetricsSnapshot) -> None:
         """Export node metrics to external metrics service."""
         try:
             # Record memory metrics
-            self.metrics_service.update_cache_size(
-                "redis",
-                snapshot.used_memory
-            )
+            self.metrics_service.update_cache_size("redis", snapshot.used_memory)
 
             # Record performance metrics
             self.metrics_service.record_cache_operation(
                 operation="health_check",
                 cache_type="redis",
                 hit=snapshot.keyspace_hit_ratio > 80,
-                duration=0.001  # Monitoring overhead
+                duration=0.001,  # Monitoring overhead
             )
 
             # Record connection metrics
-            if hasattr(self.metrics_service.metrics, 'db_connections_active'):
+            if hasattr(self.metrics_service.metrics, "db_connections_active"):
                 self.metrics_service.metrics.db_connections_active.labels(
                     db_type="redis"
-                ).set(snapshot.connected_clients)
+                ).set[str](snapshot.connected_clients)
 
             # Record custom metrics
-            if hasattr(self.metrics_service.metrics, 'cache_hits_total'):
+            if hasattr(self.metrics_service.metrics, "cache_hits_total"):
                 self.metrics_service.metrics.cache_hits_total.labels(
-                    cache_type="redis",
-                    key_pattern="all"
+                    cache_type="redis", key_pattern="all"
                 )._value._value = snapshot.keyspace_hits
 
                 self.metrics_service.metrics.cache_misses_total.labels(
-                    cache_type="redis",
-                    key_pattern="all"
+                    cache_type="redis", key_pattern="all"
                 )._value._value = snapshot.keyspace_misses
 
         except Exception as e:
@@ -548,7 +541,7 @@ class RedisMonitoringService:
     # Alert Management
     # ========================================================================
 
-    async def _check_alerts(self):
+    async def _check_alerts(self) -> None:
         """Check all alert rules against current metrics."""
         for node_id, history in self.metrics_history.items():
             if not history:
@@ -569,19 +562,23 @@ class RedisMonitoringService:
                     # Check threshold
                     if rule.check_threshold(value):
                         message = rule.trigger()
-                        await self._send_alert(rule.severity, f"Node {node_id}: {message}")
+                        await self._send_alert(
+                            rule.severity, f"Node {node_id}: {message}"
+                        )
 
                 except Exception as e:
                     logger.error(f"Error checking alert rule {rule.name}: {e}")
 
-    def _get_metric_value(self, snapshot: RedisMetricsSnapshot, metric_path: str) -> Any:
+    def _get_metric_value(
+        self, snapshot: RedisMetricsSnapshot, metric_path: str
+    ) -> Any:
         """Get metric value from snapshot using dot notation path."""
         try:
             return getattr(snapshot, metric_path)
         except AttributeError:
             return None
 
-    async def _send_alert(self, severity: AlertSeverity, message: str):
+    async def _send_alert(self, severity: AlertSeverity, message: str) -> None:
         """Send alert to all registered handlers."""
         timestamp = datetime.utcnow().isoformat()
 
@@ -589,7 +586,7 @@ class RedisMonitoringService:
         log_level = {
             AlertSeverity.INFO: logging.INFO,
             AlertSeverity.WARNING: logging.WARNING,
-            AlertSeverity.CRITICAL: logging.CRITICAL
+            AlertSeverity.CRITICAL: logging.CRITICAL,
         }
         logger.log(log_level[severity], f"ALERT [{severity.value.upper()}]: {message}")
 
@@ -603,7 +600,7 @@ class RedisMonitoringService:
             except Exception as e:
                 logger.error(f"Alert handler failed: {e}")
 
-    def add_alert_rule(self, rule: AlertRule):
+    def add_alert_rule(self, rule: AlertRule) -> None:
         """Add a new alert rule."""
         self.alert_rules.append(rule)
         logger.info(f"Added alert rule: {rule.name}")
@@ -619,7 +616,9 @@ class RedisMonitoringService:
 
         return removed
 
-    def add_alert_handler(self, handler: Callable[[str, AlertSeverity, str], None]):
+    def add_alert_handler(
+        self, handler: Callable[[str, AlertSeverity, str], None]
+    ) -> None:
         """Add an alert handler function."""
         self.alert_handlers.append(handler)
 
@@ -627,15 +626,14 @@ class RedisMonitoringService:
     # Performance Baselines
     # ========================================================================
 
-    async def _update_baselines(self):
+    async def _update_baselines(self) -> None:
         """Update performance baselines from historical data."""
         cutoff_time = datetime.utcnow() - timedelta(hours=self.baseline_window_hours)
 
         for node_id, history in self.metrics_history.items():
             # Filter recent data
             recent_data = [
-                snapshot for snapshot in history
-                if snapshot.timestamp > cutoff_time
+                snapshot for snapshot in history if snapshot.timestamp > cutoff_time
             ]
 
             if len(recent_data) < 10:  # Need enough data points
@@ -643,11 +641,16 @@ class RedisMonitoringService:
 
             # Calculate baselines
             baselines = {
-                "avg_ops_per_sec": sum(s.instantaneous_ops_per_sec for s in recent_data) / len(recent_data),
-                "avg_hit_ratio": sum(s.keyspace_hit_ratio for s in recent_data) / len(recent_data),
-                "avg_memory_usage": sum(s.used_memory_percent for s in recent_data) / len(recent_data),
-                "avg_connections": sum(s.connected_clients for s in recent_data) / len(recent_data),
-                "avg_fragmentation": sum(s.mem_fragmentation_ratio for s in recent_data) / len(recent_data)
+                "avg_ops_per_sec": sum(s.instantaneous_ops_per_sec for s in recent_data)
+                / len(recent_data),
+                "avg_hit_ratio": sum(s.keyspace_hit_ratio for s in recent_data)
+                / len(recent_data),
+                "avg_memory_usage": sum(s.used_memory_percent for s in recent_data)
+                / len(recent_data),
+                "avg_connections": sum(s.connected_clients for s in recent_data)
+                / len(recent_data),
+                "avg_fragmentation": sum(s.mem_fragmentation_ratio for s in recent_data)
+                / len(recent_data),
             }
 
             self.baselines[node_id] = baselines
@@ -656,7 +659,7 @@ class RedisMonitoringService:
     # Data Export and API
     # ========================================================================
 
-    async def _export_metrics(self):
+    async def _export_metrics(self) -> None:
         """Export metrics to external systems."""
         # This could export to time-series databases, monitoring systems, etc.
         pass
@@ -672,7 +675,7 @@ class RedisMonitoringService:
             return {
                 "node_id": node_id,
                 "timestamp": latest.timestamp.isoformat(),
-                "metrics": asdict(latest)
+                "metrics": asdict(latest),
             }
         else:
             # Return all nodes
@@ -682,15 +685,11 @@ class RedisMonitoringService:
                     latest = history[-1]
                     result[nid] = {
                         "timestamp": latest.timestamp.isoformat(),
-                        "metrics": asdict(latest)
+                        "metrics": asdict(latest),
                     }
             return result
 
-    def get_metrics_history(
-        self,
-        node_id: str,
-        hours: int = 1
-    ) -> list[dict[str, Any]]:
+    def get_metrics_history(self, node_id: str, hours: int = 1) -> list[dict[str, Any]]:
         """Get metrics history for a node."""
         history = self.metrics_history.get(node_id)
         if not history:
@@ -699,10 +698,7 @@ class RedisMonitoringService:
         cutoff_time = datetime.utcnow() - timedelta(hours=hours)
 
         return [
-            {
-                "timestamp": snapshot.timestamp.isoformat(),
-                "metrics": asdict(snapshot)
-            }
+            {"timestamp": snapshot.timestamp.isoformat(), "metrics": asdict(snapshot)}
             for snapshot in history
             if snapshot.timestamp > cutoff_time
         ]
@@ -717,7 +713,7 @@ class RedisMonitoringService:
             "avg_hit_ratio": 0.0,
             "total_connections": 0,
             "alerts_active": len([r for r in self.alert_rules if r.last_triggered]),
-            "last_update": None
+            "last_update": None,
         }
 
         if not self.metrics_history:
@@ -769,11 +765,13 @@ class RedisMonitoringService:
                     "name": r.name,
                     "severity": r.severity.value,
                     "enabled": r.enabled,
-                    "last_triggered": r.last_triggered.isoformat() if r.last_triggered else None,
-                    "triggered_count": r.triggered_count
+                    "last_triggered": (
+                        r.last_triggered.isoformat() if r.last_triggered else None
+                    ),
+                    "triggered_count": r.triggered_count,
                 }
                 for r in self.alert_rules
-            ]
+            ],
         }
 
 
@@ -781,17 +779,17 @@ class RedisMonitoringService:
 # Example Alert Handlers
 # ============================================================================
 
-def console_alert_handler(message: str, severity: AlertSeverity, timestamp: str):
+
+def console_alert_handler(
+    message: str, severity: AlertSeverity, timestamp: str
+) -> None:
     """Simple console alert handler."""
     print(f"[{timestamp}] {severity.value.upper()}: {message}")
 
 
 async def webhook_alert_handler(
-    webhook_url: str,
-    message: str,
-    severity: AlertSeverity,
-    timestamp: str
-):
+    webhook_url: str, message: str, severity: AlertSeverity, timestamp: str
+) -> None:
     """Send alert to webhook endpoint."""
     import aiohttp
 
@@ -799,7 +797,7 @@ async def webhook_alert_handler(
         "message": message,
         "severity": severity.value,
         "timestamp": timestamp,
-        "service": "redis"
+        "service": "redis",
     }
 
     try:
@@ -813,7 +811,7 @@ async def webhook_alert_handler(
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> None:
         # Create monitoring service
         monitoring = RedisMonitoringService()
 

@@ -17,6 +17,7 @@ class DocumentSource:
     Represents a source document in query results.
     Contains relevance information and excerpt from the document.
     """
+
     document_id: int
     relevance_score: float
     excerpt: str
@@ -39,6 +40,7 @@ class CrossReference:
     Represents a cross-reference relationship between two documents.
     Used to show how documents relate to each other in query results.
     """
+
     source_doc_id: int
     target_doc_id: int
     relation_type: str  # "supports", "contradicts", "extends", "cites"
@@ -250,7 +252,8 @@ class MultiDocumentIndexModel:
             collection_id=row["collection_id"],
             index_path=row["index_path"],
             index_hash=row["index_hash"],
-            embedding_model=safe_get(row, "embedding_model") or "text-embedding-ada-002",
+            embedding_model=safe_get(row, "embedding_model")
+            or "text-embedding-ada-002",
             chunk_count=safe_get(row, "chunk_count"),
             created_at=created_at,
             metadata=metadata,
@@ -326,7 +329,7 @@ class CrossDocumentQueryModel:
         sources: list[DocumentSource],
         cross_references: list[CrossReference],
         processing_time_ms: int | None = None,
-        tokens_used: int | None = None
+        tokens_used: int | None = None,
     ) -> None:
         """Set successful query response."""
         self.response_text = answer
@@ -358,7 +361,9 @@ class CrossDocumentQueryModel:
         created_at_str = safe_get(row, "created_at")
         created_at = datetime.fromisoformat(created_at_str) if created_at_str else None
         completed_at_str = safe_get(row, "completed_at")
-        completed_at = datetime.fromisoformat(completed_at_str) if completed_at_str else None
+        completed_at = (
+            datetime.fromisoformat(completed_at_str) if completed_at_str else None
+        )
 
         # Parse sources from JSON
         sources_str = safe_get(row, "sources")
@@ -371,7 +376,7 @@ class CrossDocumentQueryModel:
                     relevance_score=s["relevance_score"],
                     excerpt=s["excerpt"],
                     page_number=s.get("page_number"),
-                    chunk_id=s.get("chunk_id")
+                    chunk_id=s.get("chunk_id"),
                 )
                 for s in sources_data
             ]
@@ -387,7 +392,7 @@ class CrossDocumentQueryModel:
                     target_doc_id=cr["target_doc_id"],
                     relation_type=cr["relation_type"],
                     confidence=cr.get("confidence", 0.5),
-                    description=cr.get("description")
+                    description=cr.get("description"),
                 )
                 for cr in cross_refs_data
             ]
@@ -416,28 +421,32 @@ class CrossDocumentQueryModel:
             Dictionary suitable for database operations
         """
         # Serialize sources to JSON
-        sources_json = json.dumps([
-            {
-                "document_id": s.document_id,
-                "relevance_score": s.relevance_score,
-                "excerpt": s.excerpt,
-                "page_number": s.page_number,
-                "chunk_id": s.chunk_id
-            }
-            for s in self.sources
-        ])
+        sources_json = json.dumps(
+            [
+                {
+                    "document_id": s.document_id,
+                    "relevance_score": s.relevance_score,
+                    "excerpt": s.excerpt,
+                    "page_number": s.page_number,
+                    "chunk_id": s.chunk_id,
+                }
+                for s in self.sources
+            ]
+        )
 
         # Serialize cross references to JSON
-        cross_refs_json = json.dumps([
-            {
-                "source_doc_id": cr.source_doc_id,
-                "target_doc_id": cr.target_doc_id,
-                "relation_type": cr.relation_type,
-                "confidence": cr.confidence,
-                "description": cr.description
-            }
-            for cr in self.cross_references
-        ])
+        cross_refs_json = json.dumps(
+            [
+                {
+                    "source_doc_id": cr.source_doc_id,
+                    "target_doc_id": cr.target_doc_id,
+                    "relation_type": cr.relation_type,
+                    "confidence": cr.confidence,
+                    "description": cr.description,
+                }
+                for cr in self.cross_references
+            ]
+        )
 
         return {
             "id": self.id,
@@ -453,7 +462,9 @@ class CrossDocumentQueryModel:
             "processing_time_ms": self.processing_time_ms,
             "tokens_used": self.tokens_used,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }
 
     def to_api_dict(self) -> dict[str, Any]:
@@ -475,7 +486,7 @@ class CrossDocumentQueryModel:
                     "relevance_score": s.relevance_score,
                     "excerpt": s.excerpt,
                     "page_number": s.page_number,
-                    "chunk_id": s.chunk_id
+                    "chunk_id": s.chunk_id,
                 }
                 for s in self.sources
             ],
@@ -485,7 +496,7 @@ class CrossDocumentQueryModel:
                     "target_doc_id": cr.target_doc_id,
                     "relation_type": cr.relation_type,
                     "confidence": cr.confidence,
-                    "description": cr.description
+                    "description": cr.description,
                 }
                 for cr in self.cross_references
             ],
@@ -494,5 +505,7 @@ class CrossDocumentQueryModel:
             "processing_time_ms": self.processing_time_ms,
             "tokens_used": self.tokens_used,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }

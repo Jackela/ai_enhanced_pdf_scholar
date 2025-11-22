@@ -65,7 +65,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         try:
             # Create placeholders for SQL IN clause
             placeholders = ",".join("?" * len(entity_ids))
-            query = f"SELECT * FROM documents WHERE id IN ({placeholders})"
+            query = f"SELECT * FROM documents WHERE id IN ({placeholders})"  # noqa: S608
             rows = self.db.fetch_all(query, tuple(entity_ids))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:
@@ -130,8 +130,35 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             logger.error(f"Failed to find document by content hash {content_hash}: {e}")
             raise
 
+    def _search_documents_with_total(
+        self, search_query: str, limit: int, offset: int
+    ) -> tuple[list[DocumentModel], int]:
+        """
+        Internal helper to execute the paginated LIKE query alongside the total count.
+        """
+        try:
+            search_pattern = f"%{search_query}%"
+            rows_query = """
+            SELECT * FROM documents
+            WHERE title LIKE ?
+            ORDER BY title
+            LIMIT ? OFFSET ?
+            """
+            count_query = """
+            SELECT COUNT(*) as total
+            FROM documents
+            WHERE title LIKE ?
+            """
+            rows = self.db.fetch_all(rows_query, (search_pattern, limit, offset))
+            total_row = self.db.fetch_one(count_query, (search_pattern,))
+            total = int(total_row["total"]) if total_row and total_row["total"] else 0
+            return [self.to_model(dict(row)) for row in rows], total
+        except Exception as e:
+            logger.error(f"Failed to search documents for query '{search_query}': {e}")
+            raise
+
     def search_by_title(
-        self, search_query: str, limit: int = 50
+        self, search_query: str, limit: int = 50, offset: int = 0
     ) -> list[DocumentModel]:
         """
         Search documents by title.
@@ -141,25 +168,14 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         Returns:
             List of matching documents
         """
-        try:
-            query = """
-            SELECT * FROM documents
-            WHERE title LIKE ?
-            ORDER BY title
-            LIMIT ?
-            """
-            search_pattern = f"%{search_query}%"
-            rows = self.db.fetch_all(query, (search_pattern, limit))
-            return [self.to_model(dict(row)) for row in rows]
-        except Exception as e:
-            logger.error(f"Failed to search documents by title '{search_query}': {e}")
-            raise
+        documents, _ = self._search_documents_with_total(search_query, limit, offset)
+        return documents
 
     def search(
         self, query: str, limit: int = 50, offset: int = 0
-    ) -> list[DocumentModel]:
-        """Interface method - search documents by query."""
-        return self.search_by_title(query, limit)
+    ) -> tuple[list[DocumentModel], int]:
+        """Interface method - search documents by query with pagination metadata."""
+        return self._search_documents_with_total(query, limit, offset)
 
     def get_all(
         self,
@@ -187,11 +203,11 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             safe_sort_order = valid_sort_orders.get(sort_order.lower(), "DESC")
 
             # Use parameterized query - build safe SQL using whitelisted values
-            query = f"""
-            SELECT * FROM documents
-            ORDER BY {safe_sort_by} {safe_sort_order}
-            LIMIT ? OFFSET ?
-            """
+            query = (
+                "SELECT * FROM documents "  # noqa: S608
+                f"ORDER BY {safe_sort_by} {safe_sort_order} "
+                "LIMIT ? OFFSET ?"
+            )
 
             # Log the safe query for security auditing
             logger.debug(
@@ -262,7 +278,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
             if not conditions:
                 return self.find_all()
             where_clause = " AND ".join(conditions)
-            query = f"SELECT * FROM documents WHERE {where_clause} ORDER BY file_size"
+            query = f"SELECT * FROM documents WHERE {where_clause} ORDER BY file_size"  # noqa: S608
             rows = self.db.fetch_all(query, tuple(params))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:
@@ -293,7 +309,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
                 return self.find_all()
             where_clause = " AND ".join(conditions)
             query = (
-                f"SELECT * FROM documents WHERE {where_clause} ORDER BY created_at DESC"
+                f"SELECT * FROM documents WHERE {where_clause} ORDER BY created_at DESC"  # noqa: S608
             )
             rows = self.db.fetch_all(query, tuple(params))
             return [self.to_model(dict(row)) for row in rows]
@@ -449,7 +465,7 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
                     continue
 
                 similar_docs = [doc1]
-                for j, doc2 in enumerate(all_docs[i + 1 :], i + 1):
+                for _, doc2 in enumerate(all_docs[i + 1 :], i + 1):
                     if doc2.id in processed_ids:
                         continue
 
@@ -506,6 +522,58 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
 
         return intersection / union if union > 0 else 0.0
 
+    def _build_advanced_search_query(
+        self,
+        title_contains: str | None,
+        min_size: int | None,
+        max_size: int | None,
+        min_pages: int | None,
+        max_pages: int | None,
+        created_after: datetime | None,
+        created_before: datetime | None,
+        has_vector_index: bool | None,
+        limit: int,
+    ) -> tuple[str, list[Any]]:
+        conditions: list[str] = []
+        params: list[Any] = []
+
+        if title_contains:
+            conditions.append("d.title LIKE ?")
+            params.append(f"%{title_contains}%")
+
+        if min_size is not None:
+            conditions.append("d.file_size >= ?")
+            params.append(min_size)
+        if max_size is not None:
+            conditions.append("d.file_size <= ?")
+            params.append(max_size)
+
+        if min_pages is not None:
+            conditions.append("d.page_count >= ?")
+            params.append(min_pages)
+        if max_pages is not None:
+            conditions.append("d.page_count <= ?")
+            params.append(max_pages)
+
+        if created_after is not None:
+            conditions.append("d.created_at >= ?")
+            params.append(created_after.isoformat())
+        if created_before is not None:
+            conditions.append("d.created_at <= ?")
+            params.append(created_before.isoformat())
+
+        base_query = "SELECT d.* FROM documents d"
+        if has_vector_index is not None:
+            base_query += " LEFT JOIN vector_indexes vi ON d.id = vi.document_id"
+            conditions.append(
+                "vi.id IS NOT NULL" if has_vector_index else "vi.id IS NULL"
+            )
+
+        where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+        query = f"{base_query}{where_clause} ORDER BY d.created_at DESC LIMIT ?"
+        params.append(limit)
+        return query, params
+
     def advanced_search(
         self,
         title_contains: str | None = None,
@@ -536,52 +604,21 @@ class DocumentRepository(BaseRepository[DocumentModel], IDocumentRepository):
         Returns:
             List of matching documents
         """
+        start_date_to_use = created_after or start_date
+        end_date_to_use = created_before or end_date
+
         try:
-            conditions: list[str] = []
-            params: list[Any] = []
-            # Title search
-            if title_contains:
-                conditions.append("d.title LIKE ?")
-                params.append(f"%{title_contains}%")
-            # Size range
-            if min_size is not None:
-                conditions.append("d.file_size >= ?")
-                params.append(min_size)
-            if max_size is not None:
-                conditions.append("d.file_size <= ?")
-                params.append(max_size)
-            # Page range
-            if min_pages is not None:
-                conditions.append("d.page_count >= ?")
-                params.append(min_pages)
-            if max_pages is not None:
-                conditions.append("d.page_count <= ?")
-                params.append(max_pages)
-            # Date range - prioritize new parameter names
-            start_date_to_use = created_after or start_date
-            end_date_to_use = created_before or end_date
-            if start_date_to_use is not None:
-                conditions.append("d.created_at >= ?")
-                params.append(start_date_to_use.isoformat())
-            if end_date_to_use is not None:
-                conditions.append("d.created_at <= ?")
-                params.append(end_date_to_use.isoformat())
-            # Vector index filter
-            base_query = "SELECT d.* FROM documents d"
-            if has_vector_index is not None:
-                base_query += " LEFT JOIN vector_indexes vi ON d.id = vi.document_id"
-                if has_vector_index:
-                    conditions.append("vi.id IS NOT NULL")
-                else:
-                    conditions.append("vi.id IS NULL")
-            # Build final query
-            if conditions:
-                where_clause = " WHERE " + " AND ".join(conditions)
-                query = base_query + where_clause
-            else:
-                query = base_query
-            query += " ORDER BY d.created_at DESC LIMIT ?"
-            params.append(limit)
+            query, params = self._build_advanced_search_query(
+                title_contains,
+                min_size,
+                max_size,
+                min_pages,
+                max_pages,
+                start_date_to_use,
+                end_date_to_use,
+                has_vector_index,
+                limit,
+            )
             rows = self.db.fetch_all(query, tuple(params))
             return [self.to_model(dict(row)) for row in rows]
         except Exception as e:

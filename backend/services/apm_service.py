@@ -33,8 +33,10 @@ logger = logging.getLogger(__name__)
 # APM Data Models
 # ============================================================================
 
+
 class TraceType(str, Enum):
     """Types of traces."""
+
     HTTP_REQUEST = "http_request"
     RAG_QUERY = "rag_query"
     DATABASE_QUERY = "database_query"
@@ -46,6 +48,7 @@ class TraceType(str, Enum):
 
 class SpanType(str, Enum):
     """Types of spans within traces."""
+
     ROOT = "root"
     DATABASE = "database"
     CACHE = "cache"
@@ -56,6 +59,7 @@ class SpanType(str, Enum):
 
 class PerformanceIssueType(str, Enum):
     """Types of performance issues."""
+
     HIGH_LATENCY = "high_latency"
     HIGH_ERROR_RATE = "high_error_rate"
     MEMORY_LEAK = "memory_leak"
@@ -68,22 +72,24 @@ class PerformanceIssueType(str, Enum):
 @dataclass
 class TraceContext:
     """Trace context for distributed tracing."""
+
     trace_id: str
     span_id: str
     parent_span_id: str | None = None
 
-    def child_context(self) -> 'TraceContext':
+    def child_context(self) -> "TraceContext":
         """Create a child trace context."""
         return TraceContext(
             trace_id=self.trace_id,
             span_id=str(uuid.uuid4()),
-            parent_span_id=self.span_id
+            parent_span_id=self.span_id,
         )
 
 
 @dataclass
 class Span:
     """Individual span within a trace."""
+
     trace_id: str
     span_id: str
     parent_span_id: str | None
@@ -92,12 +98,12 @@ class Span:
     start_time: datetime
     end_time: datetime | None = None
     duration_ms: float | None = None
-    tags: dict[str, Any] = field(default_factory=dict)
-    logs: list[dict[str, Any]] = field(default_factory=list)
+    tags: dict[str, Any] = field(default_factory=dict[str, Any])
+    logs: list[dict[str, Any]] = field(default_factory=list[Any])
     error: str | None = None
     status_code: int | None = None
 
-    def finish(self, error: Exception | None = None):
+    def finish(self, error: Exception | None = None) -> None:
         """Finish the span."""
         self.end_time = datetime.utcnow()
         if self.start_time:
@@ -106,28 +112,34 @@ class Span:
 
         if error:
             self.error = str(error)
-            self.tags['error'] = True
-            self.log_event('error', {
-                'message': str(error),
-                'type': type(error).__name__,
-                'traceback': traceback.format_exc()
-            })
+            self.tags["error"] = True
+            self.log_event(
+                "error",
+                {
+                    "message": str(error),
+                    "type": type(error).__name__,
+                    "traceback": traceback.format_exc(),
+                },
+            )
 
-    def log_event(self, event_type: str, fields: dict[str, Any]):
+    def log_event(self, event_type: str, fields: dict[str, Any]) -> None:
         """Log an event in the span."""
-        self.logs.append({
-            'timestamp': datetime.utcnow().isoformat(),
-            'event': event_type,
-            'fields': fields
-        })
+        self.logs.append(
+            {
+                "timestamp": datetime.utcnow().isoformat(),
+                "event": event_type,
+                "fields": fields,
+            }
+        )
 
 
 @dataclass
 class Trace:
     """Complete trace with all spans."""
+
     trace_id: str
     root_span: Span
-    spans: list[Span] = field(default_factory=list)
+    spans: list[Span] = field(default_factory=list[Any])
     trace_type: TraceType = TraceType.HTTP_REQUEST
     user_id: str | None = None
     session_id: str | None = None
@@ -151,15 +163,16 @@ class Trace:
 @dataclass
 class PerformanceAlert:
     """Performance alert/issue."""
+
     alert_id: str
     issue_type: PerformanceIssueType
     severity: str  # low, medium, high, critical
     title: str
     description: str
     timestamp: datetime
-    affected_components: list[str] = field(default_factory=list)
-    metrics: dict[str, Any] = field(default_factory=dict)
-    recommendations: list[str] = field(default_factory=list)
+    affected_components: list[str] = field(default_factory=list[Any])
+    metrics: dict[str, Any] = field(default_factory=dict[str, Any])
+    recommendations: list[str] = field(default_factory=list[Any])
     resolved: bool = False
     resolved_at: datetime | None = None
 
@@ -167,6 +180,7 @@ class PerformanceAlert:
 @dataclass
 class PerformanceSnapshot:
     """Point-in-time performance snapshot."""
+
     timestamp: datetime
 
     # Request metrics
@@ -202,6 +216,7 @@ class PerformanceSnapshot:
 # APM Service
 # ============================================================================
 
+
 class APMService:
     """
     Comprehensive Application Performance Monitoring service.
@@ -213,8 +228,8 @@ class APMService:
         metrics_service: MetricsService,
         max_traces: int = 10000,
         trace_retention_hours: int = 24,
-        sampling_rate: float = 1.0
-    ):
+        sampling_rate: float = 1.0,
+    ) -> None:
         """Initialize APM service."""
         self.cache_telemetry = cache_telemetry
         self.metrics_service = metrics_service
@@ -223,19 +238,23 @@ class APMService:
         self.sampling_rate = sampling_rate
 
         # Trace storage
-        self.traces: deque[Trace] = deque(maxlen=max_traces)
+        self.traces: deque[Trace] = deque[Any](maxlen=max_traces)
         self.active_spans: dict[str, Span] = {}  # span_id -> Span
         self.trace_contexts: dict[str, TraceContext] = {}  # thread_id -> context
 
         # Performance monitoring
-        self.performance_snapshots: deque[PerformanceSnapshot] = deque(maxlen=1440)  # 24h at 1min intervals
+        self.performance_snapshots: deque[PerformanceSnapshot] = deque[Any](
+            maxlen=1440
+        )  # 24h at 1min intervals
         self.alerts: list[PerformanceAlert] = []
-        self.alert_rules: list[Callable[[PerformanceSnapshot], PerformanceAlert | None]] = []
+        self.alert_rules: list[
+            Callable[[PerformanceSnapshot], PerformanceAlert | None]
+        ] = []
 
         # Real-time metrics
-        self.request_latencies: deque = deque(maxlen=1000)
+        self.request_latencies: deque[Any] = deque[Any](maxlen=1000)
         self.error_counts: dict[str, int] = defaultdict(int)
-        self.throughput_window: deque = deque(maxlen=60)  # 60 seconds
+        self.throughput_window: deque[Any] = deque[Any](maxlen=60)  # 60 seconds
 
         # Thread-local storage for trace contexts
         self._local = threading.local()
@@ -258,7 +277,7 @@ class APMService:
         trace_type: TraceType = TraceType.HTTP_REQUEST,
         user_id: str | None = None,
         session_id: str | None = None,
-        tags: dict[str, Any] | None = None
+        tags: dict[str, Any] | None = None,
     ) -> TraceContext:
         """Start a new trace."""
         # Check sampling
@@ -276,7 +295,7 @@ class APMService:
             operation_name=operation_name,
             span_type=SpanType.ROOT,
             start_time=datetime.utcnow(),
-            tags=tags or {}
+            tags=tags or {},
         )
 
         # Create trace
@@ -285,7 +304,7 @@ class APMService:
             root_span=root_span,
             trace_type=trace_type,
             user_id=user_id,
-            session_id=session_id
+            session_id=session_id,
         )
 
         # Store active span
@@ -305,7 +324,7 @@ class APMService:
         operation_name: str,
         span_type: SpanType = SpanType.COMPUTATION,
         parent_context: TraceContext | None = None,
-        tags: dict[str, Any] | None = None
+        tags: dict[str, Any] | None = None,
     ) -> TraceContext:
         """Start a new span within existing trace."""
         parent_context = parent_context or self._get_current_context()
@@ -323,7 +342,7 @@ class APMService:
             operation_name=operation_name,
             span_type=span_type,
             start_time=datetime.utcnow(),
-            tags=tags or {}
+            tags=tags or {},
         )
 
         # Store active span
@@ -346,8 +365,8 @@ class APMService:
         self,
         context: TraceContext | None = None,
         error: Exception | None = None,
-        tags: dict[str, Any] | None = None
-    ):
+        tags: dict[str, Any] | None = None,
+    ) -> None:
         """Finish a span."""
         context = context or self._get_current_context()
 
@@ -369,14 +388,16 @@ class APMService:
 
             # Record in metrics service
             self.metrics_service.record_http_request(
-                method=span.tags.get('http.method', 'GET'),
+                method=span.tags.get("http.method", "GET"),
                 endpoint=span.operation_name,
                 status_code=span.status_code or 200,
-                duration=span.duration_ms / 1000  # Convert to seconds
+                duration=span.duration_ms / 1000,  # Convert to seconds
             )
 
         if span.error:
-            error_key = f"{span.operation_name}:{type(error).__name__ if error else 'unknown'}"
+            error_key = (
+                f"{span.operation_name}:{type(error).__name__ if error else 'unknown'}"
+            )
             self.error_counts[error_key] += 1
 
         # Remove from active spans
@@ -385,8 +406,7 @@ class APMService:
         # Reset context to parent or clear
         if context.parent_span_id:
             parent_context = TraceContext(
-                trace_id=context.trace_id,
-                span_id=context.parent_span_id
+                trace_id=context.trace_id, span_id=context.parent_span_id
             )
             self._set_current_context(parent_context)
         else:
@@ -397,8 +417,8 @@ class APMService:
         self,
         operation_name: str,
         span_type: SpanType = SpanType.COMPUTATION,
-        tags: dict[str, Any] | None = None
-    ):
+        tags: dict[str, Any] | None = None,
+    ) -> None:
         """Context manager for tracing operations."""
         context = self.start_span(operation_name, span_type=span_type, tags=tags)
         try:
@@ -413,18 +433,20 @@ class APMService:
         self,
         operation_name: str | None = None,
         span_type: SpanType = SpanType.COMPUTATION,
-        tags: dict[str, Any] | None = None
-    ):
+        tags: dict[str, Any] | None = None,
+    ) -> Any:
         """Decorator for automatic tracing."""
-        def decorator(func: Callable) -> Callable:
+
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             op_name = operation_name or f"{func.__module__}.{func.__qualname__}"
 
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> Any:
                 with self.trace_operation(op_name, span_type=span_type, tags=tags):
                     return func(*args, **kwargs)
 
             return wrapper
+
         return decorator
 
     # ========================================================================
@@ -445,13 +467,16 @@ class APMService:
 
         # Request metrics from recent traces
         recent_traces = [
-            trace for trace in self.traces
-            if trace.root_span.end_time and
-            datetime.utcnow() - trace.root_span.end_time < timedelta(minutes=5)
+            trace
+            for trace in self.traces
+            if trace.root_span.end_time
+            and datetime.utcnow() - trace.root_span.end_time < timedelta(minutes=5)
         ]
 
         if recent_traces:
-            durations = [trace.duration_ms for trace in recent_traces if trace.duration_ms]
+            durations = [
+                trace.duration_ms for trace in recent_traces if trace.duration_ms
+            ]
             error_traces = [trace for trace in recent_traces if trace.has_errors]
 
             avg_response_time = sum(durations) / len(durations) if durations else 0
@@ -461,10 +486,16 @@ class APMService:
             p95_response_time = sorted_durations[int(len(sorted_durations) * 0.95)]
             p99_response_time = sorted_durations[int(len(sorted_durations) * 0.99)]
 
-            error_rate = (len(error_traces) / len(recent_traces)) * 100 if recent_traces else 0
-            requests_per_second = len(recent_traces) / 5 * 60  # 5 minute window to per minute
+            error_rate = (
+                (len(error_traces) / len(recent_traces)) * 100 if recent_traces else 0
+            )
+            requests_per_second = (
+                len(recent_traces) / 5 * 60
+            )  # 5 minute window to per minute
         else:
-            avg_response_time = p50_response_time = p95_response_time = p99_response_time = 0
+            avg_response_time = p50_response_time = p95_response_time = (
+                p99_response_time
+            ) = 0
             error_rate = requests_per_second = 0
 
         # Cache metrics from cache telemetry service
@@ -497,7 +528,7 @@ class APMService:
             db_connections_active=0,  # Would integrate with DB pool
             rag_queries_per_second=0,  # Would calculate from RAG traces
             vector_search_avg_time_ms=0,  # Would calculate from vector search traces
-            document_processing_queue_size=0  # Would integrate with processing queue
+            document_processing_queue_size=0,  # Would integrate with processing queue
         )
 
         # Store snapshot
@@ -508,7 +539,7 @@ class APMService:
 
         return snapshot
 
-    def _check_performance_alerts(self, snapshot: PerformanceSnapshot):
+    def _check_performance_alerts(self, snapshot: PerformanceSnapshot) -> None:
         """Check for performance issues and generate alerts."""
         for rule in self.alert_rules:
             alert = rule(snapshot)
@@ -516,7 +547,7 @@ class APMService:
                 self.alerts.append(alert)
                 logger.warning(f"Performance alert: {alert.title}")
 
-    def _setup_default_alert_rules(self):
+    def _setup_default_alert_rules(self) -> Any:
         """Setup default performance alert rules."""
 
         def high_latency_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
@@ -533,12 +564,14 @@ class APMService:
                     recommendations=[
                         "Check for slow database queries",
                         "Review cache hit rates",
-                        "Analyze resource usage"
-                    ]
+                        "Analyze resource usage",
+                    ],
                 )
             return None
 
-        def high_error_rate_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
+        def high_error_rate_rule(
+            snapshot: PerformanceSnapshot,
+        ) -> PerformanceAlert | None:
             if snapshot.error_rate_percent > 5:  # 5% error rate
                 return PerformanceAlert(
                     alert_id=str(uuid.uuid4()),
@@ -552,8 +585,8 @@ class APMService:
                     recommendations=[
                         "Review recent error logs",
                         "Check external service dependencies",
-                        "Verify system resources"
-                    ]
+                        "Verify system resources",
+                    ],
                 )
             return None
 
@@ -571,12 +604,14 @@ class APMService:
                     recommendations=[
                         "Identify CPU-intensive processes",
                         "Consider scaling resources",
-                        "Review algorithm efficiency"
-                    ]
+                        "Review algorithm efficiency",
+                    ],
                 )
             return None
 
-        def cache_miss_spike_rule(snapshot: PerformanceSnapshot) -> PerformanceAlert | None:
+        def cache_miss_spike_rule(
+            snapshot: PerformanceSnapshot,
+        ) -> PerformanceAlert | None:
             if snapshot.cache_miss_rate_percent > 70:  # 70% miss rate
                 return PerformanceAlert(
                     alert_id=str(uuid.uuid4()),
@@ -586,29 +621,34 @@ class APMService:
                     description=f"Cache miss rate is {snapshot.cache_miss_rate_percent:.1f}% (threshold: 70%)",
                     timestamp=snapshot.timestamp,
                     affected_components=["cache"],
-                    metrics={"cache_miss_rate_percent": snapshot.cache_miss_rate_percent},
+                    metrics={
+                        "cache_miss_rate_percent": snapshot.cache_miss_rate_percent
+                    },
                     recommendations=[
                         "Review cache TTL settings",
                         "Check cache key patterns",
-                        "Consider cache warming strategies"
-                    ]
+                        "Consider cache warming strategies",
+                    ],
                 )
             return None
 
-        self.alert_rules.extend([
-            high_latency_rule,
-            high_error_rate_rule,
-            high_cpu_rule,
-            cache_miss_spike_rule
-        ])
+        self.alert_rules.extend(
+            [
+                high_latency_rule,
+                high_error_rate_rule,
+                high_cpu_rule,
+                cache_miss_spike_rule,
+            ]
+        )
 
     # ========================================================================
     # Background Monitoring
     # ========================================================================
 
-    def _start_background_monitoring(self):
+    def _start_background_monitoring(self) -> None:
         """Start background monitoring thread."""
-        def monitor():
+
+        def monitor() -> None:
             while True:
                 try:
                     # Capture performance snapshot every minute
@@ -627,14 +667,14 @@ class APMService:
         thread.start()
         logger.info("Background monitoring thread started")
 
-    def _cleanup_old_traces(self):
+    def _cleanup_old_traces(self) -> None:
         """Clean up traces older than retention period."""
         cutoff_time = datetime.utcnow() - self.trace_retention
 
         # Count traces to remove
         traces_to_remove = 0
         for trace in self.traces:
-            if (trace.root_span.end_time and trace.root_span.end_time < cutoff_time):
+            if trace.root_span.end_time and trace.root_span.end_time < cutoff_time:
                 traces_to_remove += 1
             else:
                 break
@@ -652,34 +692,35 @@ class APMService:
 
     def _get_current_context(self) -> TraceContext | None:
         """Get current trace context for this thread."""
-        return getattr(self._local, 'context', None)
+        return getattr(self._local, "context", None)
 
-    def _set_current_context(self, context: TraceContext):
+    def _set_current_context(self, context: TraceContext) -> None:
         """Set current trace context for this thread."""
         self._local.context = context
 
-    def _clear_current_context(self):
+    def _clear_current_context(self) -> None:
         """Clear current trace context for this thread."""
-        if hasattr(self._local, 'context'):
-            delattr(self._local, 'context')
+        if hasattr(self._local, "context"):
+            delattr(self._local, "context")
 
     def _should_sample(self) -> bool:
         """Determine if trace should be sampled."""
         import random
-        return random.random() < self.sampling_rate
+
+        # Note: random is acceptable here for sampling (non-security)
+        return random.random() < self.sampling_rate  # nosec B311
 
     # ========================================================================
     # Analysis and Reporting
     # ========================================================================
 
     def get_slow_traces(
-        self,
-        threshold_ms: float = 1000,
-        limit: int = 50
+        self, threshold_ms: float = 1000, limit: int = 50
     ) -> list[Trace]:
         """Get slowest traces above threshold."""
         slow_traces = [
-            trace for trace in self.traces
+            trace
+            for trace in self.traces
             if trace.duration_ms and trace.duration_ms > threshold_ms
         ]
 
@@ -693,21 +734,16 @@ class APMService:
         error_traces = [trace for trace in self.traces if trace.has_errors]
 
         # Sort by timestamp descending (most recent first)
-        error_traces.sort(
-            key=lambda t: t.root_span.start_time,
-            reverse=True
-        )
+        error_traces.sort(key=lambda t: t.root_span.start_time, reverse=True)
 
         return error_traces[:limit]
 
-    def analyze_performance_trends(
-        self,
-        hours_back: int = 24
-    ) -> dict[str, Any]:
+    def analyze_performance_trends(self, hours_back: int = 24) -> dict[str, Any]:
         """Analyze performance trends over time."""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
         recent_snapshots = [
-            snapshot for snapshot in self.performance_snapshots
+            snapshot
+            for snapshot in self.performance_snapshots
             if snapshot.timestamp >= cutoff_time
         ]
 
@@ -727,7 +763,9 @@ class APMService:
             recent_avg = sum(values[-5:]) / min(5, len(values))
             older_avg = sum(values[:5]) / min(5, len(values))
 
-            change_percent = ((recent_avg - older_avg) / older_avg * 100) if older_avg > 0 else 0
+            change_percent = (
+                ((recent_avg - older_avg) / older_avg * 100) if older_avg > 0 else 0
+            )
 
             if change_percent > 10:
                 return "increasing"
@@ -743,25 +781,27 @@ class APMService:
                 "response_time": calculate_trend(response_times),
                 "error_rate": calculate_trend(error_rates),
                 "cpu_usage": calculate_trend(cpu_usage),
-                "memory_usage": calculate_trend(memory_usage)
+                "memory_usage": calculate_trend(memory_usage),
             },
             "averages": {
                 "avg_response_time_ms": sum(response_times) / len(response_times),
                 "avg_error_rate_percent": sum(error_rates) / len(error_rates),
                 "avg_cpu_percent": sum(cpu_usage) / len(cpu_usage),
-                "avg_memory_percent": sum(memory_usage) / len(memory_usage)
+                "avg_memory_percent": sum(memory_usage) / len(memory_usage),
             },
             "peaks": {
                 "max_response_time_ms": max(response_times) if response_times else 0,
                 "max_error_rate_percent": max(error_rates) if error_rates else 0,
                 "max_cpu_percent": max(cpu_usage) if cpu_usage else 0,
-                "max_memory_percent": max(memory_usage) if memory_usage else 0
-            }
+                "max_memory_percent": max(memory_usage) if memory_usage else 0,
+            },
         }
 
     def get_performance_summary(self) -> dict[str, Any]:
         """Get comprehensive performance summary."""
-        recent_snapshot = self.performance_snapshots[-1] if self.performance_snapshots else None
+        recent_snapshot = (
+            self.performance_snapshots[-1] if self.performance_snapshots else None
+        )
 
         if not recent_snapshot:
             return {"error": "No performance data available"}
@@ -771,27 +811,30 @@ class APMService:
 
         # Get top error types
         top_errors = sorted(
-            self.error_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
+            self.error_counts.items(), key=lambda x: x[1], reverse=True
         )[:10]
 
         # Calculate uptime (simplified)
-        uptime_hours = (datetime.utcnow() - datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds() / 3600
+        uptime_hours = (
+            datetime.utcnow()
+            - datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        ).total_seconds() / 3600
 
         return {
             "timestamp": datetime.utcnow().isoformat(),
             "current_performance": asdict(recent_snapshot),
             "active_alerts": [asdict(alert) for alert in active_alerts],
-            "top_errors": [{"error": error, "count": count} for error, count in top_errors],
+            "top_errors": [
+                {"error": error, "count": count} for error, count in top_errors
+            ],
             "system_health": {
                 "uptime_hours": uptime_hours,
                 "total_traces": len(self.traces),
                 "active_spans": len(self.active_spans),
-                "total_alerts": len(self.alerts)
+                "total_alerts": len(self.alerts),
             },
             "performance_trends": self.analyze_performance_trends(6),  # Last 6 hours
-            "cache_integration": self.cache_telemetry.get_dashboard_data()
+            "cache_integration": self.cache_telemetry.get_dashboard_data(),
         }
 
     # ========================================================================
@@ -802,13 +845,15 @@ class APMService:
         self,
         output_path: Path,
         format: str = "json",
-        filter_func: Callable[[Trace], bool] | None = None
-    ):
+        filter_func: Callable[[Trace], bool] | None = None,
+    ) -> None:
         """Export traces to file."""
         traces_to_export = self.traces
 
         if filter_func:
-            traces_to_export = [trace for trace in traces_to_export if filter_func(trace)]
+            traces_to_export = [
+                trace for trace in traces_to_export if filter_func(trace)
+            ]
 
         export_data = []
         for trace in traces_to_export:
@@ -820,11 +865,11 @@ class APMService:
                 "user_id": trace.user_id,
                 "session_id": trace.session_id,
                 "root_span": asdict(trace.root_span),
-                "spans": [asdict(span) for span in trace.spans]
+                "spans": [asdict(span) for span in trace.spans],
             }
             export_data.append(trace_data)
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             if format == "json":
                 json.dump(export_data, f, indent=2, default=str)
             else:
@@ -841,8 +886,9 @@ class APMService:
             otel_spans.append(self._convert_to_otel_format(trace.root_span))
 
             # Child spans
-            for span in trace.spans:
-                otel_spans.append(self._convert_to_otel_format(span))
+            otel_spans.extend(
+                self._convert_to_otel_format(span) for span in trace.spans
+            )
 
         return otel_spans
 
@@ -858,10 +904,7 @@ class APMService:
             "duration_us": span.duration_ms * 1000 if span.duration_ms else None,
             "tags": span.tags,
             "logs": span.logs,
-            "status": {
-                "code": "ERROR" if span.error else "OK",
-                "message": span.error
-            }
+            "status": {"code": "ERROR" if span.error else "OK", "message": span.error},
         }
 
 
@@ -869,14 +912,15 @@ class APMService:
 # Middleware and Decorators
 # ============================================================================
 
+
 class FastAPIAPMMiddleware:
     """FastAPI middleware for automatic APM integration."""
 
-    def __init__(self, app, apm_service: APMService):
+    def __init__(self, app, apm_service: APMService) -> None:
         self.app = app
         self.apm = apm_service
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope, receive, send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -900,17 +944,21 @@ class FastAPIAPMMiddleware:
                 "http.url": path,
                 "http.scheme": scope.get("scheme"),
                 "http.user_agent": next(
-                    (v.decode() for k, v in scope.get("headers", []) if k == b"user-agent"),
-                    None
-                )
-            }
+                    (
+                        v.decode()
+                        for k, v in scope.get("headers", [])
+                        if k == b"user-agent"
+                    ),
+                    None,
+                ),
+            },
         )
 
         status_code = 200
         error = None
 
         # Wrap send to capture response
-        async def send_wrapper(message):
+        async def send_wrapper(message) -> None:
             nonlocal status_code
             if message["type"] == "http.response.start":
                 status_code = message["status"]
@@ -925,26 +973,23 @@ class FastAPIAPMMiddleware:
         finally:
             # Finish trace
             self.apm.finish_span(
-                context,
-                error=error,
-                tags={"http.status_code": status_code}
+                context, error=error, tags={"http.status_code": status_code}
             )
 
 
 def apm_trace(
     operation_name: str | None = None,
     span_type: SpanType = SpanType.COMPUTATION,
-    tags: dict[str, Any] | None = None
-):
+    tags: dict[str, Any] | None = None,
+) -> Any:
     """Decorator for APM tracing."""
-    def decorator(func: Callable) -> Callable:
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # Import here to avoid circular imports
         from backend.services import apm_service_instance
 
         return apm_service_instance.trace_decorator(
-            operation_name=operation_name,
-            span_type=span_type,
-            tags=tags
+            operation_name=operation_name, span_type=span_type, tags=tags
         )(func)
 
     return decorator

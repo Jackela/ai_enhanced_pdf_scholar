@@ -476,7 +476,7 @@ class CitationService:
                 return {"pattern_count": 0}
 
             # Analyze relation types
-            relation_types = {}
+            relation_types: dict[str, Any] = {}
             confidence_distribution = {"high": 0, "medium": 0, "low": 0}
 
             for edge in edges:
@@ -497,11 +497,11 @@ class CitationService:
                 "pattern_count": len(edges),
                 "relation_types": relation_types,
                 "confidence_distribution": confidence_distribution,
-                "dominant_relation_type": max(
-                    relation_types.items(), key=lambda x: x[1]
-                )[0]
-                if relation_types
-                else "none",
+                "dominant_relation_type": (
+                    max(relation_types.items(), key=lambda x: x[1])[0]
+                    if relation_types
+                    else "none"
+                ),
             }
 
         except Exception as e:
@@ -542,7 +542,7 @@ class CitationService:
                 "earliest_document": earliest,
                 "latest_document": latest,
                 "date_coverage": f"{earliest} to {latest}",
-                "chronological_distribution": len(set(dates)),  # Unique dates
+                "chronological_distribution": len(set[str](dates)),  # Unique dates
             }
 
         except Exception as e:
@@ -589,10 +589,11 @@ class CitationService:
                     {"node_id": node_id, "centrality": centrality}
                     for node_id, centrality in most_central
                 ],
-                "avg_centrality": sum(degree_centrality.values())
-                / len(degree_centrality)
-                if degree_centrality
-                else 0.0,
+                "avg_centrality": (
+                    sum(degree_centrality.values()) / len(degree_centrality)
+                    if degree_centrality
+                    else 0.0
+                ),
             }
 
         except Exception as e:
@@ -676,7 +677,7 @@ class CitationService:
                 return []
 
             # Find other documents that cite the same papers
-            similar_docs = []
+            similar_docs: list[Any] = []
 
             # This is a placeholder for more sophisticated similarity calculation
             # In a full implementation, you would use techniques like:
@@ -717,9 +718,9 @@ class CitationService:
                 target_id = relation.target_document_id
 
                 if source_id not in adjacency:
-                    adjacency[source_id] = set()
+                    adjacency[source_id] = set[str]()
                 if target_id not in adjacency:
-                    adjacency[target_id] = set()
+                    adjacency[target_id] = set[str]()
 
                 adjacency[source_id].add(target_id)
                 adjacency[target_id].add(
@@ -727,22 +728,22 @@ class CitationService:
                 )  # Treat as undirected for clustering
 
             # Simple clustering algorithm (connected components)
-            visited = set()
-            clusters = []
+            visited = set[str]()
+            clusters: list[Any] = []
 
-            def dfs_cluster(node_id, current_cluster):
+            def dfs_cluster(node_id, current_cluster) -> None:
                 if node_id in visited:
                     return
                 visited.add(node_id)
                 current_cluster.append(node_id)
 
-                for neighbor in adjacency.get(node_id, set()):
+                for neighbor in adjacency.get(node_id, set[str]()):
                     if neighbor not in visited:
                         dfs_cluster(neighbor, current_cluster)
 
             for doc_id in adjacency:
                 if doc_id not in visited:
-                    cluster = []
+                    cluster: list[Any] = []
                     dfs_cluster(doc_id, cluster)
 
                     if len(cluster) >= min_cluster_size:
@@ -765,7 +766,7 @@ class CitationService:
             return []
 
     def _count_internal_connections(
-        self, cluster_docs: list[int], all_relations: list
+        self, cluster_docs: list[int], all_relations: list[Any]
     ) -> int:
         """
         Count internal connections within a cluster.
@@ -777,7 +778,7 @@ class CitationService:
         Returns:
             Number of internal connections
         """
-        cluster_set = set(cluster_docs)
+        cluster_set = set[str](cluster_docs)
         internal_count = 0
 
         for relation in all_relations:

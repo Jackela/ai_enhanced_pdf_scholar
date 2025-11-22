@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Add project root to path
@@ -34,16 +36,16 @@ class CIPerformanceCheck:
     # Performance thresholds for CI validation
     PERFORMANCE_THRESHOLDS = {
         "database_query_max_ms": 10.0,  # Database queries should be under 10ms
-        "file_io_min_mb_s": 1.0,        # File I/O should be at least 1 MB/s
+        "file_io_min_mb_s": 1.0,  # File I/O should be at least 1 MB/s
         "text_processing_min_chars_s": 1000000,  # Text processing at least 1M chars/s
-        "overall_max_ms": 100.0,        # No operation should exceed 100ms
+        "overall_max_ms": 100.0,  # No operation should exceed 100ms
         "regression_threshold_percent": 50.0,  # Alert on >50% performance degradation
     }
 
-    def __init__(self):
-        self.results = {}
-        self.violations = []
-        self.warnings = []
+    def __init__(self) -> None:
+        self.results: dict[str, Any] = {}
+        self.violations: list[Any] = []
+        self.warnings: list[Any] = []
 
     def run_quick_benchmarks(self) -> dict[str, Any]:
         """Run quick performance benchmarks suitable for CI"""
@@ -54,10 +56,10 @@ class CIPerformanceCheck:
             benchmark = SimpleBenchmark()
 
             # Override with smaller test counts for CI speed
-            results = {
+            results: Any = {
                 "database_queries": [],
                 "file_operations": [],
-                "text_processing": []
+                "text_processing": [],
             }
 
             # Quick database benchmark (10 runs instead of 50)
@@ -76,7 +78,7 @@ class CIPerformanceCheck:
             results["metadata"] = {
                 "timestamp": datetime.now().isoformat(),
                 "ci_mode": True,
-                "reduced_iterations": True
+                "reduced_iterations": True,
             }
 
             return results
@@ -117,7 +119,10 @@ class CIPerformanceCheck:
         if "text_processing" in results:
             for text_result in results["text_processing"]:
                 throughput = text_result.get("throughput_chars_per_sec", 0)
-                if throughput < self.PERFORMANCE_THRESHOLDS["text_processing_min_chars_s"]:
+                if (
+                    throughput
+                    < self.PERFORMANCE_THRESHOLDS["text_processing_min_chars_s"]
+                ):
                     self.violations.append(
                         f"Text processing '{text_result['operation']}' achieved {throughput:,.0f} chars/s "
                         f"(threshold: {self.PERFORMANCE_THRESHOLDS['text_processing_min_chars_s']:,} chars/s)"
@@ -130,7 +135,9 @@ class CIPerformanceCheck:
             if category in results:
                 for result in results[category]:
                     avg_time = result.get("avg_ms", 0)
-                    all_operations.append((result.get("operation", "unknown"), avg_time))
+                    all_operations.append(
+                        (result.get("operation", "unknown"), avg_time)
+                    )
 
         for operation, avg_time in all_operations:
             if avg_time > self.PERFORMANCE_THRESHOLDS["overall_max_ms"]:
@@ -156,7 +163,9 @@ class CIPerformanceCheck:
             regressions = detector.detect_regressions(
                 results,
                 category="system",
-                regression_threshold=self.PERFORMANCE_THRESHOLDS["regression_threshold_percent"]
+                regression_threshold=self.PERFORMANCE_THRESHOLDS[
+                    "regression_threshold_percent"
+                ],
             )
 
             if regressions:
@@ -167,7 +176,9 @@ class CIPerformanceCheck:
                         self.warnings.append(f"Performance regression: {regression}")
 
                 # Fail CI only on critical regressions
-                critical_regressions = [r for r in regressions if r.severity == "critical"]
+                critical_regressions = [
+                    r for r in regressions if r.severity == "critical"
+                ]
                 return len(critical_regressions) == 0
 
             return True
@@ -201,12 +212,14 @@ class CIPerformanceCheck:
                 "violations": self.violations,
                 "warnings": self.warnings,
                 "duration_seconds": end_time - start_time,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
             overall_passed = thresholds_passed and regressions_passed
 
-            logger.info(f"CI performance validation completed in {end_time - start_time:.2f} seconds")
+            logger.info(
+                f"CI performance validation completed in {end_time - start_time:.2f} seconds"
+            )
             logger.info(f"Result: {'PASSED' if overall_passed else 'FAILED'}")
 
             return overall_passed
@@ -216,15 +229,15 @@ class CIPerformanceCheck:
             self.results["error"] = str(e)
             return False
 
-    def print_ci_summary(self):
+    def print_ci_summary(self) -> None:
         """Print CI-friendly performance summary"""
         if "error" in self.results:
             print(f"❌ CI PERFORMANCE VALIDATION FAILED: {self.results['error']}")
             return
 
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("CI PERFORMANCE VALIDATION SUMMARY")
-        print("="*70)
+        print("=" * 70)
 
         # Basic metrics
         duration = self.results.get("duration_seconds", 0)
@@ -232,8 +245,12 @@ class CIPerformanceCheck:
         regressions_passed = self.results.get("regressions_passed", False)
 
         print(f"⏱️  Validation Time: {duration:.2f} seconds")
-        print(f"🎯 Threshold Check: {'✅ PASSED' if thresholds_passed else '❌ FAILED'}")
-        print(f"📈 Regression Check: {'✅ PASSED' if regressions_passed else '❌ FAILED'}")
+        print(
+            f"🎯 Threshold Check: {'✅ PASSED' if thresholds_passed else '❌ FAILED'}"
+        )
+        print(
+            f"📈 Regression Check: {'✅ PASSED' if regressions_passed else '❌ FAILED'}"
+        )
 
         # Violations
         violations = self.results.get("violations", [])
@@ -262,24 +279,26 @@ class CIPerformanceCheck:
             print("\n❌ OVERALL RESULT: FAILED")
             print("   Performance does not meet CI requirements")
 
-        print("="*70)
+        print("=" * 70)
 
-    def save_ci_results(self, filename: str = "ci_performance_results.json"):
+    def save_ci_results(self, filename: str = "ci_performance_results.json") -> None:
         """Save CI results for artifacts"""
         try:
-            with open(filename, 'w') as f:
+            with open(filename, "w") as f:
                 json.dump(self.results, f, indent=2, default=str)
             logger.info(f"CI results saved to {filename}")
         except Exception as e:
             logger.warning(f"Failed to save CI results: {e}")
 
 
-def main():
+def main() -> Any:
     """Main entry point for CI performance validation"""
     import argparse
 
     parser = argparse.ArgumentParser(description="CI Performance Validation")
-    parser.add_argument("--save-results", action="store_true", help="Save results to JSON file")
+    parser.add_argument(
+        "--save-results", action="store_true", help="Save results to JSON file"
+    )
     parser.add_argument("--quiet", action="store_true", help="Minimal output for CI")
     parser.add_argument("--thresholds", help="Custom thresholds JSON file")
 
@@ -324,7 +343,9 @@ def main():
                 # In quiet mode, still show critical information
                 violations = validator.results.get("violations", [])
                 if violations:
-                    print(f"Performance validation failed with {len(violations)} violations")
+                    print(
+                        f"Performance validation failed with {len(violations)} violations"
+                    )
             return 1
 
     except Exception as e:

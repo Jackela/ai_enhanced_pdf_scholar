@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Environment(str, Enum):
     """Application environments."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -29,6 +30,7 @@ class Environment(str, Enum):
 
 class DatabaseConfig(BaseModel):
     """Database configuration."""
+
     url: SecretStr | None = None
     host: str = Field(default="localhost")
     port: int = Field(default=5432)
@@ -84,6 +86,7 @@ class DatabaseConfig(BaseModel):
 
 class RedisConfig(BaseModel):
     """Redis configuration."""
+
     url: SecretStr | None = None
     host: str = Field(default="localhost")
     port: int = Field(default=6379)
@@ -121,16 +124,14 @@ class RedisConfig(BaseModel):
         # Build connection string
         scheme = "rediss" if self.ssl else "redis"
 
-        if self.password:
-            auth = f":{self.password.get_secret_value()}@"
-        else:
-            auth = ""
+        auth = f":{self.password.get_secret_value()}@" if self.password else ""
 
         return f"{scheme}://{auth}{self.host}:{self.port}/{self.database}"
 
 
 class JWTConfig(BaseModel):
     """JWT configuration."""
+
     private_key: SecretStr | None = None
     public_key: SecretStr | None = None
     algorithm: str = Field(default="RS256")
@@ -163,6 +164,7 @@ class JWTConfig(BaseModel):
 
 class APIKeysConfig(BaseModel):
     """API keys configuration."""
+
     gemini: SecretStr | None = None
     openai: SecretStr | None = None
     anthropic: SecretStr | None = None
@@ -175,7 +177,7 @@ class APIKeysConfig(BaseModel):
         config = {}
 
         # Get all API keys
-        api_services = ['gemini', 'openai', 'anthropic', 'cohere', 'huggingface']
+        api_services = ["gemini", "openai", "anthropic", "cohere", "huggingface"]
         for service in api_services:
             if api_key := secrets_manager.get_api_key(service):
                 config[service] = SecretStr(api_key)
@@ -190,6 +192,7 @@ class APIKeysConfig(BaseModel):
 
 class SMTPConfig(BaseModel):
     """SMTP configuration for email."""
+
     host: str = Field(default="localhost")
     port: int = Field(default=587)
     username: str | None = None
@@ -231,18 +234,23 @@ class SMTPConfig(BaseModel):
 
 class SecurityConfig(BaseModel):
     """Security configuration."""
+
     secret_key: SecretStr | None = None
     encryption_key: SecretStr | None = None
     allowed_hosts: list[str] = Field(default_factory=lambda: ["localhost", "127.0.0.1"])
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     cors_allow_credentials: bool = Field(default=True)
-    cors_allow_methods: list[str] = Field(default_factory=lambda: ["GET", "POST", "PUT", "DELETE"])
+    cors_allow_methods: list[str] = Field(
+        default_factory=lambda: ["GET", "POST", "PUT", "DELETE"]
+    )
     cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
     csrf_enabled: bool = Field(default=True)
     csrf_secret: SecretStr | None = None
 
     @classmethod
-    def from_secrets(cls, secrets_manager: SecretsManager, environment: Environment) -> "SecurityConfig":
+    def from_secrets(
+        cls, secrets_manager: SecretsManager, environment: Environment
+    ) -> "SecurityConfig":
         """Create security config from secrets manager."""
         config = {}
 
@@ -259,7 +267,10 @@ class SecurityConfig(BaseModel):
             config["allowed_hosts"] = ["api.ai-pdf-scholar.com", "ai-pdf-scholar.com"]
             config["cors_origins"] = ["https://ai-pdf-scholar.com"]
         elif environment == Environment.STAGING:
-            config["allowed_hosts"] = ["staging-api.ai-pdf-scholar.com", "staging.ai-pdf-scholar.com"]
+            config["allowed_hosts"] = [
+                "staging-api.ai-pdf-scholar.com",
+                "staging.ai-pdf-scholar.com",
+            ]
             config["cors_origins"] = ["https://staging.ai-pdf-scholar.com"]
 
         # Get allowed hosts from secrets
@@ -273,6 +284,7 @@ class SecurityConfig(BaseModel):
 
 class ApplicationConfig(BaseModel):
     """Main application configuration."""
+
     environment: Environment = Field(default=Environment.DEVELOPMENT)
     debug: bool = Field(default=False)
     testing: bool = Field(default=False)
@@ -296,7 +308,9 @@ class ApplicationConfig(BaseModel):
     max_file_size_mb: int = Field(default=100)
     allowed_file_types: list[str] = Field(default_factory=lambda: [".pdf"])
     upload_directory: Path = Field(default=Path.home() / ".ai_pdf_scholar" / "uploads")
-    documents_directory: Path = Field(default=Path.home() / ".ai_pdf_scholar" / "documents")
+    documents_directory: Path = Field(
+        default=Path.home() / ".ai_pdf_scholar" / "documents"
+    )
 
     # Performance settings
     workers: int = Field(default=4)
@@ -306,17 +320,21 @@ class ApplicationConfig(BaseModel):
 
     # Logging
     log_level: str = Field(default="INFO")
-    log_format: str = Field(default="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    log_format: str = Field(
+        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     log_file: Path | None = None
 
-    @field_validator('environment')
-    def validate_environment(cls, v):
+    @field_validator("environment")
+    def validate_environment(self, v) -> Any:
         if isinstance(v, str):
             return Environment(v)
         return v
 
     @classmethod
-    def from_env(cls, secrets_manager: SecretsManager | None = None) -> "ApplicationConfig":
+    def from_env(
+        cls, secrets_manager: SecretsManager | None = None
+    ) -> "ApplicationConfig":
         """Create configuration from environment and secrets."""
         if not secrets_manager:
             secrets_manager = get_secrets_manager()
@@ -403,7 +421,9 @@ class ApplicationConfig(BaseModel):
         errors = []
 
         # Check database configuration
-        if not self.database.url and not (self.database.host and self.database.database):
+        if not self.database.url and not (
+            self.database.host and self.database.database
+        ):
             errors.append("Database configuration is missing")
 
         # Check JWT keys in production
@@ -415,11 +435,9 @@ class ApplicationConfig(BaseModel):
                 errors.append("Secret key is required in production")
 
         # Check at least one API key is configured
-        if not any([
-            self.api_keys.gemini,
-            self.api_keys.openai,
-            self.api_keys.anthropic
-        ]):
+        if not any(
+            [self.api_keys.gemini, self.api_keys.openai, self.api_keys.anthropic]
+        ):
             errors.append("At least one AI API key must be configured")
 
         return errors
@@ -434,14 +452,20 @@ class ApplicationConfig(BaseModel):
         Returns:
             Configuration dictionary
         """
-        data = self.model_dump(mode='json')
+        data = self.model_dump(mode="json")
 
         if not include_secrets:
             # Redact secret values
-            def redact_secrets(obj):
+            def redact_secrets(obj) -> Any:
                 if isinstance(obj, dict):
                     for key, value in obj.items():
-                        if key in ['password', 'secret_key', 'private_key', 'api_key', 'token']:
+                        if key in [
+                            "password",
+                            "secret_key",
+                            "private_key",
+                            "api_key",
+                            "token",
+                        ]:
                             obj[key] = "***REDACTED***"
                         elif isinstance(value, dict):
                             redact_secrets(value)
@@ -470,7 +494,7 @@ def get_config() -> ApplicationConfig:
 
 def initialize_config(
     secrets_manager: SecretsManager | None = None,
-    override_config: dict[str, Any] | None = None
+    override_config: dict[str, Any] | None = None,
 ) -> ApplicationConfig:
     """
     Initialize the global configuration.

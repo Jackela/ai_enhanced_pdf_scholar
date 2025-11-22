@@ -1,31 +1,69 @@
 // Document types
+export interface DocumentLinks {
+  self: string | null
+  related?: Record<string, string> | null
+}
+
 export interface Document {
   id: number
   title: string
   file_path: string | null
   file_hash: string
-  file_size: number
+  file_size: number | null
   page_count: number | null
+  preview_url?: string | null
+  thumbnail_url?: string | null
   created_at: string
   updated_at: string
   last_accessed: string | null
   metadata: Record<string, unknown> | null
   is_file_available: boolean
+  content_hash?: string | null
+  _links?: DocumentLinks
 }
 
-export interface DocumentListResponse {
-  success: boolean
-  documents: Document[]
-  total: number
+export interface ApiErrorDetail {
+  code: string
+  message: string
+  field?: string
+  details?: Record<string, unknown>
+}
+
+export interface ApiMeta {
+  timestamp: string
+  version: string
+  request_id?: string | null
+}
+
+export interface PaginationMeta extends ApiMeta {
   page: number
   per_page: number
-  message?: string
+  total: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
 }
+
+export interface ApiResponse<T> {
+  success: boolean
+  data: T | null
+  meta: ApiMeta
+  errors: ApiErrorDetail[] | null
+}
+
+export type PaginatedResponse<T> = ApiResponse<T[]> & {
+  meta: PaginationMeta
+}
+
+export type DocumentResponse = ApiResponse<Document>
+
+export type DocumentListResponse = PaginatedResponse<Document>
 
 export interface DocumentImportRequest {
   title?: string
   check_duplicates?: boolean
   auto_build_index?: boolean
+  overwrite_duplicates?: boolean
 }
 
 // RAG types
@@ -43,6 +81,25 @@ export interface RAGQueryResponse {
   from_cache?: boolean
   processing_time_ms?: number
   message?: string
+}
+
+export interface QueryRequest {
+  query: string
+  include_sources?: boolean
+  use_cache?: boolean
+  streaming?: boolean
+}
+
+export type QueryResponse = ApiResponse<{
+  query: string
+  response: string
+  document_id?: number
+  sources?: DocumentSource[]
+}>
+
+export interface MultiDocumentQueryRequest extends QueryRequest {
+  document_ids: number[]
+  max_results?: number
 }
 
 export interface IndexStatus {

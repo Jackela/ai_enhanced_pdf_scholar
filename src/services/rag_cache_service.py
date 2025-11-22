@@ -251,7 +251,11 @@ class RAGCacheService:
             result = self.db.execute(
                 "DELETE FROM rag_query_cache WHERE document_id = ?", (document_id,)
             )
-            removed_count = result.rowcount if hasattr(result, "rowcount") and result.rowcount is not None else 0
+            removed_count = (
+                result.rowcount
+                if hasattr(result, "rowcount") and result.rowcount is not None
+                else 0
+            )
             logger.info(
                 f"Invalidated {removed_count} cache entries for document {document_id}"
             )
@@ -490,7 +494,11 @@ class RAGCacheService:
             result = self.db.execute(
                 "DELETE FROM rag_query_cache WHERE created_at < ?", (cutoff_str,)
             )
-            removed_count = result.rowcount if hasattr(result, "rowcount") and result.rowcount is not None else 0
+            removed_count = (
+                result.rowcount
+                if hasattr(result, "rowcount") and result.rowcount is not None
+                else 0
+            )
             if removed_count > 0:
                 logger.debug(f"Removed {removed_count} expired cache entries")
             return removed_count

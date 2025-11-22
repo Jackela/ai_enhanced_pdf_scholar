@@ -6,6 +6,7 @@ Central orchestrator for multi-layer caching system with monitoring integration.
 import asyncio
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -31,18 +32,20 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CacheOperationResult:
     """Result of a cache operation."""
+
     success: bool
     value: Any = None
     cache_level: str | None = None
     operation_time_ms: float = 0.0
     hit: bool = False
     source: str = ""
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 @dataclass
 class CacheStatistics:
     """Comprehensive cache statistics."""
+
     total_requests: int = 0
     total_hits: int = 0
     total_misses: int = 0
@@ -76,23 +79,44 @@ class CacheStatistics:
                 "hits": self.l1_hits,
                 "misses": self.l1_misses,
                 "size_bytes": self.l1_size_bytes,
-                "hit_rate": round((self.l1_hits / (self.l1_hits + self.l1_misses) * 100) if (self.l1_hits + self.l1_misses) > 0 else 0, 2)
+                "hit_rate": round(
+                    (
+                        (self.l1_hits / (self.l1_hits + self.l1_misses) * 100)
+                        if (self.l1_hits + self.l1_misses) > 0
+                        else 0
+                    ),
+                    2,
+                ),
             },
             "l2_cache": {
                 "hits": self.l2_hits,
                 "misses": self.l2_misses,
-                "hit_rate": round((self.l2_hits / (self.l2_hits + self.l2_misses) * 100) if (self.l2_hits + self.l2_misses) > 0 else 0, 2)
+                "hit_rate": round(
+                    (
+                        (self.l2_hits / (self.l2_hits + self.l2_misses) * 100)
+                        if (self.l2_hits + self.l2_misses) > 0
+                        else 0
+                    ),
+                    2,
+                ),
             },
             "l3_cache": {
                 "hits": self.l3_hits,
                 "misses": self.l3_misses,
-                "hit_rate": round((self.l3_hits / (self.l3_hits + self.l3_misses) * 100) if (self.l3_hits + self.l3_misses) > 0 else 0, 2)
+                "hit_rate": round(
+                    (
+                        (self.l3_hits / (self.l3_hits + self.l3_misses) * 100)
+                        if (self.l3_hits + self.l3_misses) > 0
+                        else 0
+                    ),
+                    2,
+                ),
             },
             "performance": {
                 "avg_response_time_ms": round(self.avg_response_time_ms, 2),
                 "coherency_operations": self.coherency_operations,
-                "warming_operations": self.warming_operations
-            }
+                "warming_operations": self.warming_operations,
+            },
         }
 
 
@@ -105,10 +129,8 @@ class IntegratedCacheManager:
     """
 
     def __init__(
-        self,
-        config: CachingConfig,
-        metrics: ApplicationMetrics | None = None
-    ):
+        self, config: CachingConfig, metrics: ApplicationMetrics | None = None
+    ) -> None:
         """Initialize integrated cache manager."""
         self.config = config
         self.metrics = metrics
@@ -132,9 +154,143 @@ class IntegratedCacheManager:
 
         # Operational state
         self._initialized = False
-        self._background_tasks: set[asyncio.Task] = set()
+        self._background_tasks: set[asyncio.Task[None]] = set[str]()
 
         logger.info("Integrated Cache Manager created")
+
+    def _record_request_duration(self, start_time: float) -> None:
+        """Track request duration for averages."""
+        self.statistics.total_requests += 1
+        duration = (time.time() - start_time) * 1000
+        self.response_times.append(duration)
+        if len(self.response_times) > 1000:
+            self.response_times.pop(0)
+
+    async def _write_to_l1(
+        self, prefixed_key: str, value: Any, ttl_seconds: int | None
+    ) -> bool:
+        if not self.l1_cache:
+            return False
+        self.l1_cache.set[str](prefixed_key, value, ttl_seconds=ttl_seconds)
+        logger.debug("Successfully wrote key %s to L1 cache", prefixed_key)
+        return True
+
+    async def _write_to_l2(
+        self, prefixed_key: str, value: Any, ttl_seconds: int | None
+    ) -> bool:
+        if not self.l2_cache:
+            return False
+        success = await self.l2_cache.set[str](prefixed_key, value, ttl_seconds)
+        if success:
+            logger.debug("Successfully wrote key %s to L2 cache", prefixed_key)
+        return success
+
+    async def _write_to_l3(self, key: str, value: Any, ttl_seconds: int | None) -> bool:
+        if not (self.l3_cache and isinstance(value, (str, bytes))):
+            logger.debug("Skipping L3 cache for non-serializable value: %s", key)
+            return False
+
+        content_data = value.encode() if isinstance(value, str) else value
+        cdn_url = await self.l3_cache.cache_content(
+            key, content_data, ContentType.API_RESPONSES, ttl_seconds
+        )
+        return cdn_url != key
+
+    async def _delete_from_l1(self, prefixed_key: str) -> bool:
+        if not self.l1_cache or not self.l1_cache.exists(prefixed_key):
+            return False
+        self.l1_cache.delete(prefixed_key)
+        return True
+
+    async def _delete_from_l2(self, prefixed_key: str) -> bool:
+        if not self.l2_cache:
+            return False
+        return await self.l2_cache.delete(prefixed_key)
+
+    async def _delete_from_l3(self, key: str) -> bool:
+        if not self.l3_cache:
+            return False
+        return await self.l3_cache.invalidate_cache([key])
+
+    async def _run_periodic_task(
+        self,
+        action: Callable[[], Awaitable[float]],
+        error_label: str,
+        error_backoff: float,
+    ) -> None:
+        while self._initialized:
+            try:
+                interval = await action()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error("Error in %s: %s", error_label, e)
+                await asyncio.sleep(error_backoff)
+                continue
+
+            await asyncio.sleep(interval)
+
+    async def _coherency_step(self) -> float:
+        if self.coherency_manager:
+            await self.coherency_manager.run_coherency_check()
+            self.statistics.coherency_operations += 1
+        return self.config.coherency.coherency_check_interval
+
+    async def _performance_step(self) -> float:
+        await self._collect_performance_metrics()
+        return self.config.metrics_collection_interval
+
+    async def _warming_step(self) -> float:
+        if self.warming_service and self.config.prefetch_popular_content:
+            # Placeholder for predictive warming cadence
+            return 300.0
+        return 600.0
+
+    async def _handle_cache_hit(
+        self,
+        value: Any,
+        level: str,
+        source: str,
+        start_time: float,
+    ) -> CacheOperationResult:
+        """Common bookkeeping for cache hits."""
+        operation_ms = (time.time() - start_time) * 1000
+        self.statistics.total_hits += 1
+        self.statistics.total_requests += 1
+
+        if level == "L1":
+            self.statistics.l1_hits += 1
+        elif level == "L2":
+            self.statistics.l2_hits += 1
+        elif level == "L3":
+            self.statistics.l3_hits += 1
+
+        await self._update_metrics("cache_hit", level, operation_ms)
+
+        return CacheOperationResult(
+            success=True,
+            value=value,
+            cache_level=level,
+            operation_time_ms=operation_ms,
+            hit=True,
+            source=source,
+        )
+
+    async def _handle_cache_miss(
+        self, start_time: float, default: Any = None
+    ) -> CacheOperationResult:
+        """Record cache miss stats and emit result."""
+        operation_ms = (time.time() - start_time) * 1000
+        self.statistics.total_misses += 1
+        await self._update_metrics("cache_miss", "ALL", operation_ms)
+        return CacheOperationResult(
+            success=False,
+            value=default,
+            cache_level=None,
+            operation_time_ms=operation_ms,
+            hit=False,
+            source="miss",
+        )
 
     async def initialize(self) -> bool:
         """Initialize all cache layers and services."""
@@ -159,13 +315,86 @@ class IntegratedCacheManager:
             self._initialized = True
             logger.info("Integrated cache system initialized successfully")
             return True
-
         except Exception as e:
-            logger.error(f"Failed to initialize cache system: {e}")
+            logger.error(f"Failed to initialize cache manager: {e}", exc_info=True)
             await self.shutdown()
             return False
 
-    async def _initialize_redis(self):
+    async def _try_l1_get(
+        self,
+        prefixed_key: str,
+        default: Any,
+        use_l1: bool,
+        start_time: float,
+    ) -> CacheOperationResult | None:
+        if not (use_l1 and self.l1_cache and self.l1_cache.exists(prefixed_key)):
+            return None
+
+        value = self.l1_cache.get(prefixed_key, default)
+        if value == default:
+            return None
+
+        return await self._handle_cache_hit(
+            value=value,
+            level="L1",
+            source="memory",
+            start_time=start_time,
+        )
+
+    async def _try_l2_get(
+        self,
+        prefixed_key: str,
+        default: Any,
+        use_l1: bool,
+        use_l2: bool,
+        start_time: float,
+    ) -> CacheOperationResult | None:
+        if not (use_l2 and self.l2_cache):
+            return None
+
+        value = await self.l2_cache.get(prefixed_key, default)
+        if value == default:
+            return None
+
+        if use_l1 and self.l1_cache:
+            self.l1_cache.set[str](prefixed_key, value)
+
+        return await self._handle_cache_hit(
+            value=value,
+            level="L2",
+            source="redis",
+            start_time=start_time,
+        )
+
+    async def _try_l3_get(
+        self,
+        prefixed_key: str,
+        original_key: str,
+        default: Any,
+        use_l3: bool,
+        start_time: float,
+    ) -> CacheOperationResult | None:
+        if not (use_l3 and self.l3_cache):
+            return None
+
+        try:
+            cdn_url = await self.l3_cache.get_cached_url(
+                original_key, ContentType.API_RESPONSES
+            )
+            if cdn_url == original_key:
+                return None
+
+            return await self._handle_cache_hit(
+                value=cdn_url,
+                level="L3",
+                source="cdn",
+                start_time=start_time,
+            )
+        except Exception as e:
+            logger.warning(f"Error retrieving CDN cache for {prefixed_key}: {e}")
+            return None
+
+    async def _initialize_redis(self) -> None:
         """Initialize Redis infrastructure."""
         if not self.config.redis_cluster.enabled:
             logger.info("Redis cluster disabled, skipping Redis initialization")
@@ -176,29 +405,42 @@ class IntegratedCacheManager:
 
         # Create Redis configuration
         redis_config = RedisConfig(
-            host=self.config.redis_cluster.nodes[0]["host"] if self.config.redis_cluster.nodes else "localhost",
-            port=self.config.redis_cluster.nodes[0]["port"] if self.config.redis_cluster.nodes else 6379,
+            host=(
+                self.config.redis_cluster.nodes[0]["host"]
+                if self.config.redis_cluster.nodes
+                else "localhost"
+            ),
+            port=(
+                self.config.redis_cluster.nodes[0]["port"]
+                if self.config.redis_cluster.nodes
+                else 6379
+            ),
             max_connections=self.config.redis_cluster.max_connections,
-            connection_timeout=self.config.redis_cluster.timeout_seconds
+            connection_timeout=self.config.redis_cluster.timeout_seconds,
         )
 
         # Initialize Redis cache service
         self.redis_cache = RedisCacheService(redis_config)
 
         # Initialize cluster manager if in cluster mode
-        if self.config.redis_cluster.cluster_mode == "cluster" and len(self.config.redis_cluster.nodes) > 1:
+        if (
+            self.config.redis_cluster.cluster_mode == "cluster"
+            and len(self.config.redis_cluster.nodes) > 1
+        ):
             cluster_config = ClusterManagerConfig(
                 nodes=self.config.redis_cluster.nodes,
-                replication_factor=self.config.redis_cluster.replication_factor
+                replication_factor=self.config.redis_cluster.replication_factor,
             )
             self.cluster_manager = RedisClusterManager(cluster_config)
 
             # Initialize cluster
             cluster_initialized = await self.cluster_manager.initialize()
             if not cluster_initialized:
-                logger.warning("Redis cluster initialization failed, falling back to single node")
+                logger.warning(
+                    "Redis cluster initialization failed, falling back to single node"
+                )
 
-    async def _initialize_cache_layers(self):
+    async def _initialize_cache_layers(self) -> None:
         """Initialize cache layers (L1, L2, L3)."""
 
         # Initialize L1 memory cache
@@ -208,9 +450,11 @@ class IntegratedCacheManager:
                 hot_data_size_mb=self.config.l1_cache.hot_data_size_mb,
                 warm_data_size_mb=self.config.l1_cache.warm_data_size_mb,
                 cold_data_size_mb=self.config.l1_cache.cold_data_size_mb,
-                default_ttl_seconds=self.config.l1_cache.ttl_seconds
+                default_ttl_seconds=self.config.l1_cache.ttl_seconds,
             )
-            logger.info(f"L1 cache initialized with {self.config.l1_cache.max_size_mb}MB")
+            logger.info(
+                f"L1 cache initialized with {self.config.l1_cache.max_size_mb}MB"
+            )
 
         # Initialize L2 Redis cache
         if self.config.l2_cache.enabled and self.redis_cache:
@@ -222,14 +466,14 @@ class IntegratedCacheManager:
                 compression_threshold_bytes=self.config.l2_cache.compression_threshold_bytes,
                 batch_size=self.config.l2_cache.batch_size,
                 enable_write_behind=self.config.l2_cache.write_behind_enabled,
-                write_behind_flush_interval_seconds=self.config.l2_cache.write_behind_flush_interval
+                write_behind_flush_interval_seconds=self.config.l2_cache.write_behind_flush_interval,
             )
 
             self.l2_cache = L2RedisCache(
                 redis_cache=self.redis_cache,
                 cluster_manager=self.cluster_manager,
                 l1_cache=self.l1_cache,
-                config=l2_config
+                config=l2_config,
             )
             logger.info("L2 Redis cache initialized")
 
@@ -245,13 +489,15 @@ class IntegratedCacheManager:
                 aws_region=self.config.l3_cdn.aws_region,
                 default_ttl_seconds=self.config.l3_cdn.default_ttl_seconds,
                 enable_compression=self.config.l3_cdn.enable_compression,
-                enable_ssl=self.config.l3_cdn.enable_ssl
+                enable_ssl=self.config.l3_cdn.enable_ssl,
             )
 
             self.l3_cache = L3CDNCache(cdn_config)
-            logger.info(f"L3 CDN cache initialized with provider: {self.config.l3_cdn.provider}")
+            logger.info(
+                f"L3 CDN cache initialized with provider: {self.config.l3_cdn.provider}"
+            )
 
-    async def _initialize_support_services(self):
+    async def _initialize_support_services(self) -> None:
         """Initialize support services."""
 
         # Initialize cache coherency manager
@@ -261,31 +507,34 @@ class IntegratedCacheManager:
                 consistency_level=self.config.coherency.consistency_level,
                 invalidation_strategy=self.config.coherency.invalidation_strategy,
                 max_write_delay_ms=self.config.coherency.max_write_delay_ms,
-                coherency_check_interval_seconds=self.config.coherency.coherency_check_interval
+                coherency_check_interval_seconds=self.config.coherency.coherency_check_interval,
             )
 
             self.coherency_manager = CacheCoherencyManager(
                 l1_cache=self.l1_cache,
                 l2_cache=self.l2_cache,
                 l3_cache=self.l3_cache,
-                config=coherency_config
+                config=coherency_config,
             )
             logger.info("Cache coherency manager initialized")
 
         # Initialize smart cache manager
-        if self.l2_cache:
+        if self.l2_cache and self.config.enable_ml_cache:
             self.smart_manager = SmartCacheManager(self.l2_cache)
             logger.info("Smart cache manager initialized")
+        elif not self.config.enable_ml_cache:
+            logger.info(
+                "Smart cache manager disabled via CACHE_ML_OPTIMIZATIONS_ENABLED=false"
+            )
 
         # Initialize cache warming service
         if self.config.enable_cache_warming and self.l2_cache:
             self.warming_service = CacheWarmingService(
-                redis_cache=self.redis_cache,
-                batch_size=self.config.warming_batch_size
+                redis_cache=self.redis_cache, batch_size=self.config.warming_batch_size
             )
             logger.info("Cache warming service initialized")
 
-    async def _start_background_tasks(self):
+    async def _start_background_tasks(self) -> None:
         """Start background monitoring and maintenance tasks."""
 
         # Start L2 cache write-behind if enabled
@@ -319,7 +568,7 @@ class IntegratedCacheManager:
         default: Any = None,
         use_l1: bool = True,
         use_l2: bool = True,
-        use_l3: bool = False
+        use_l3: bool = False,
     ) -> CacheOperationResult:
         """
         Get value from cache with intelligent layer selection.
@@ -328,97 +577,38 @@ class IntegratedCacheManager:
             await self.initialize()
 
         start_time = time.time()
-        result = CacheOperationResult(success=False, value=default)
-
         try:
-            # Add cache key prefix
             prefixed_key = self._add_key_prefix(key)
 
-            # Try L1 cache first
-            if use_l1 and self.l1_cache:
-                if self.l1_cache.exists(prefixed_key):
-                    value = self.l1_cache.get(prefixed_key, default)
-                    if value != default:
-                        result = CacheOperationResult(
-                            success=True,
-                            value=value,
-                            cache_level="L1",
-                            operation_time_ms=(time.time() - start_time) * 1000,
-                            hit=True,
-                            source="memory"
-                        )
-                        self.statistics.l1_hits += 1
-                        self.statistics.total_hits += 1
-                        await self._update_metrics("cache_hit", "L1", result.operation_time_ms)
-                        return result
-
-            # Try L2 cache
-            if use_l2 and self.l2_cache:
-                value = await self.l2_cache.get(prefixed_key, default)
-                if value != default:
-                    result = CacheOperationResult(
-                        success=True,
-                        value=value,
-                        cache_level="L2",
-                        operation_time_ms=(time.time() - start_time) * 1000,
-                        hit=True,
-                        source="redis"
-                    )
-                    self.statistics.l2_hits += 1
-                    self.statistics.total_hits += 1
-                    await self._update_metrics("cache_hit", "L2", result.operation_time_ms)
-
-                    # Promote to L1 if enabled
-                    if use_l1 and self.l1_cache:
-                        self.l1_cache.set(prefixed_key, value)
-
+            for handler in (
+                self._try_l1_get(prefixed_key, default, use_l1, start_time),
+                self._try_l2_get(
+                    prefixed_key,
+                    default,
+                    use_l1,
+                    use_l2,
+                    start_time,
+                ),
+                self._try_l3_get(
+                    prefixed_key,
+                    key,
+                    default,
+                    use_l3,
+                    start_time,
+                ),
+            ):
+                result = await handler
+                if result:
                     return result
 
-            # Try L3 CDN cache
-            if use_l3 and self.l3_cache:
-                try:
-                    cdn_url = await self.l3_cache.get_cached_url(
-                        key, ContentType.API_RESPONSES
-                    )
-                    if cdn_url != key:  # If CDN URL differs from original, it's cached
-                        result = CacheOperationResult(
-                            success=True,
-                            value=cdn_url,
-                            cache_level="L3",
-                            operation_time_ms=(time.time() - start_time) * 1000,
-                            hit=True,
-                            source="cdn"
-                        )
-                        self.statistics.l3_hits += 1
-                        self.statistics.total_hits += 1
-                        await self._update_metrics("cache_hit", "L3", result.operation_time_ms)
-                        return result
-                except Exception as e:
-                    logger.warning(f"L3 cache access failed for key {key}: {e}")
-
-            # Cache miss
-            result = CacheOperationResult(
-                success=False,
-                value=default,
-                operation_time_ms=(time.time() - start_time) * 1000,
-                hit=False
-            )
-            self.statistics.total_misses += 1
-            await self._update_metrics("cache_miss", "ALL", result.operation_time_ms)
-
-            return result
+            return await self._handle_cache_miss(start_time, default)
 
         except Exception as e:
             logger.error(f"Error getting key {key} from cache: {e}")
-            result.operation_time_ms = (time.time() - start_time) * 1000
-            await self._update_metrics("cache_error", "ALL", result.operation_time_ms)
-            return result
+            return await self._handle_cache_miss(start_time, default)
 
         finally:
-            self.statistics.total_requests += 1
-            self.response_times.append(result.operation_time_ms)
-            if len(self.response_times) > 1000:  # Keep last 1000 response times
-                self.response_times.pop(0)
+            self._record_request_duration(start_time)
 
     async def set(
         self,
@@ -427,113 +617,85 @@ class IntegratedCacheManager:
         ttl_seconds: int | None = None,
         write_to_l1: bool = True,
         write_to_l2: bool = True,
-        write_to_l3: bool = False
+        write_to_l3: bool = False,
     ) -> CacheOperationResult:
-        """
-        Set value in cache with multi-layer write strategy.
-        """
+        """Set value in cache with multi-layer write strategy."""
         if not self._initialized:
             await self.initialize()
 
         start_time = time.time()
-        result = CacheOperationResult(success=False)
+        prefixed_key = self._add_key_prefix(key)
+        success_count = 0
+        total_attempts = 0
 
-        try:
-            prefixed_key = self._add_key_prefix(key)
-            success_count = 0
-            total_attempts = 0
+        layer_operations = [
+            (
+                write_to_l1 and self.l1_cache,
+                "L1",
+                self._write_to_l1,
+                (prefixed_key, value, ttl_seconds),
+            ),
+            (
+                write_to_l2 and self.l2_cache,
+                "L2",
+                self._write_to_l2,
+                (prefixed_key, value, ttl_seconds),
+            ),
+            (
+                write_to_l3 and self.l3_cache,
+                "L3",
+                self._write_to_l3,
+                (key, value, ttl_seconds),
+            ),
+        ]
 
-            # Write to L1 cache
-            if write_to_l1 and self.l1_cache:
-                total_attempts += 1
-                try:
-                    self.l1_cache.set(prefixed_key, value, ttl_seconds=ttl_seconds)
+        for enabled, layer_name, writer, args in layer_operations:
+            if not enabled:
+                continue
+            total_attempts += 1
+            try:
+                if await writer(*args):
                     success_count += 1
-                    logger.debug(f"Successfully wrote key {key} to L1 cache")
-                except Exception as e:
-                    logger.warning(f"Failed to write key {key} to L1 cache: {e}")
-
-            # Write to L2 cache
-            if write_to_l2 and self.l2_cache:
-                total_attempts += 1
-                try:
-                    l2_success = await self.l2_cache.set(prefixed_key, value, ttl_seconds)
-                    if l2_success:
-                        success_count += 1
-                        logger.debug(f"Successfully wrote key {key} to L2 cache")
-                    else:
-                        logger.warning(f"Failed to write key {key} to L2 cache")
-                except Exception as e:
-                    logger.warning(f"Failed to write key {key} to L2 cache: {e}")
-
-            # Write to L3 CDN cache
-            if write_to_l3 and self.l3_cache:
-                total_attempts += 1
-                try:
-                    if isinstance(value, (str, bytes)):
-                        content_data = value.encode() if isinstance(value, str) else value
-                        cdn_url = await self.l3_cache.cache_content(
-                            key,
-                            content_data,
-                            ContentType.API_RESPONSES,
-                            ttl_seconds
-                        )
-                        if cdn_url != key:  # Successfully cached
-                            success_count += 1
-                            logger.debug(f"Successfully cached key {key} to L3 CDN")
-                        else:
-                            logger.warning(f"Failed to cache key {key} to L3 CDN")
-                    else:
-                        logger.debug(f"Skipping L3 cache for non-serializable value: {key}")
-                except Exception as e:
-                    logger.warning(f"Failed to write key {key} to L3 cache: {e}")
-
-            # Handle coherency
-            if self.coherency_manager and success_count > 0:
-                try:
-                    await self.coherency_manager.handle_write_operation(
-                        prefixed_key, value, ["L1", "L2", "L3"]
+                else:
+                    logger.warning(
+                        "Failed to write key %s to %s cache", key, layer_name
                     )
-                    self.statistics.coherency_operations += 1
-                except Exception as e:
-                    logger.warning(f"Cache coherency handling failed for key {key}: {e}")
+            except Exception as e:
+                logger.warning(
+                    "Failed to write key %s to %s cache: %s", key, layer_name, e
+                )
 
-            # Determine overall success
-            operation_success = success_count > 0
+        if self.coherency_manager and success_count > 0:
+            try:
+                await self.coherency_manager.handle_write_operation(
+                    prefixed_key, value, ["L1", "L2", "L3"]
+                )
+                self.statistics.coherency_operations += 1
+            except Exception as e:
+                logger.warning("Cache coherency handling failed for key %s: %s", key, e)
 
-            result = CacheOperationResult(
-                success=operation_success,
-                value=value,
-                cache_level=f"{success_count}/{total_attempts}",
-                operation_time_ms=(time.time() - start_time) * 1000,
-                hit=False,
-                source="write_operation",
-                metadata={
-                    "successful_layers": success_count,
-                    "total_layers": total_attempts
-                }
-            )
+        operation_success = success_count > 0
+        result = CacheOperationResult(
+            success=operation_success,
+            value=value,
+            cache_level=f"{success_count}/{total_attempts}",
+            operation_time_ms=(time.time() - start_time) * 1000,
+            metadata={
+                "successful_layers": success_count,
+                "total_layers": total_attempts,
+            },
+        )
 
-            await self._update_metrics("cache_set", "ALL", result.operation_time_ms)
-            logger.debug(f"Cache set operation for key {key}: {success_count}/{total_attempts} layers successful")
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Error setting key {key} in cache: {e}")
-            result = CacheOperationResult(
-                success=False,
-                operation_time_ms=(time.time() - start_time) * 1000
-            )
-            await self._update_metrics("cache_error", "ALL", result.operation_time_ms)
-            return result
+        metric = "cache_set" if operation_success else "cache_error"
+        await self._update_metrics(metric, "ALL", result.operation_time_ms)
+        return result
 
     async def delete(
         self,
         key: str,
         from_l1: bool = True,
         from_l2: bool = True,
-        from_l3: bool = False
+        from_l3: bool = False,
     ) -> CacheOperationResult:
         """
         Delete key from cache layers.
@@ -543,66 +705,44 @@ class IntegratedCacheManager:
 
         start_time = time.time()
         prefixed_key = self._add_key_prefix(key)
-        deleted_count = 0
+        deleted_layers = 0
 
-        try:
-            # Delete from L1
-            if from_l1 and self.l1_cache:
-                try:
-                    if self.l1_cache.exists(prefixed_key):
-                        self.l1_cache.delete(prefixed_key)
-                        deleted_count += 1
-                        logger.debug(f"Deleted key {key} from L1 cache")
-                except Exception as e:
-                    logger.warning(f"Failed to delete key {key} from L1 cache: {e}")
+        layer_deletes = [
+            (from_l1 and self.l1_cache, "L1", self._delete_from_l1, (prefixed_key,)),
+            (from_l2 and self.l2_cache, "L2", self._delete_from_l2, (prefixed_key,)),
+            (from_l3 and self.l3_cache, "L3", self._delete_from_l3, (key,)),
+        ]
 
-            # Delete from L2
-            if from_l2 and self.l2_cache:
-                try:
-                    deleted = await self.l2_cache.delete(prefixed_key)
-                    if deleted:
-                        deleted_count += 1
-                        logger.debug(f"Deleted key {key} from L2 cache")
-                except Exception as e:
-                    logger.warning(f"Failed to delete key {key} from L2 cache: {e}")
+        for enabled, layer_name, deleter, args in layer_deletes:
+            if not enabled:
+                continue
+            try:
+                if await deleter(*args):
+                    deleted_layers += 1
+                    logger.debug("Deleted key %s from %s cache", key, layer_name)
+            except Exception as e:
+                logger.warning(
+                    "Failed to delete key %s from %s cache: %s", key, layer_name, e
+                )
 
-            # Invalidate L3 CDN cache
-            if from_l3 and self.l3_cache:
-                try:
-                    invalidated = await self.l3_cache.invalidate_cache([key])
-                    if invalidated:
-                        deleted_count += 1
-                        logger.debug(f"Invalidated key {key} from L3 CDN cache")
-                except Exception as e:
-                    logger.warning(f"Failed to invalidate key {key} from L3 cache: {e}")
+        if self.coherency_manager and deleted_layers > 0:
+            try:
+                await self.coherency_manager.handle_delete_operation(
+                    prefixed_key, ["L1", "L2", "L3"]
+                )
+                self.statistics.coherency_operations += 1
+            except Exception as e:
+                logger.warning("Cache coherency handling failed for key %s: %s", key, e)
 
-            # Handle coherency
-            if self.coherency_manager and deleted_count > 0:
-                try:
-                    await self.coherency_manager.handle_delete_operation(
-                        prefixed_key, ["L1", "L2", "L3"]
-                    )
-                    self.statistics.coherency_operations += 1
-                except Exception as e:
-                    logger.warning(f"Cache coherency handling failed for key {key}: {e}")
+        result = CacheOperationResult(
+            success=deleted_layers > 0,
+            operation_time_ms=(time.time() - start_time) * 1000,
+            metadata={"deleted_from_layers": deleted_layers},
+        )
 
-            result = CacheOperationResult(
-                success=deleted_count > 0,
-                operation_time_ms=(time.time() - start_time) * 1000,
-                metadata={"deleted_from_layers": deleted_count}
-            )
-
-            await self._update_metrics("cache_delete", "ALL", result.operation_time_ms)
-            return result
-
-        except Exception as e:
-            logger.error(f"Error deleting key {key} from cache: {e}")
-            result = CacheOperationResult(
-                success=False,
-                operation_time_ms=(time.time() - start_time) * 1000
-            )
-            await self._update_metrics("cache_error", "ALL", result.operation_time_ms)
-            return result
+        metric = "cache_delete" if deleted_layers > 0 else "cache_error"
+        await self._update_metrics(metric, "ALL", result.operation_time_ms)
+        return result
 
     # ========================================================================
     # Batch Operations
@@ -613,7 +753,7 @@ class IntegratedCacheManager:
         keys: list[str],
         use_l1: bool = True,
         use_l2: bool = True,
-        use_l3: bool = False
+        use_l3: bool = False,
     ) -> dict[str, CacheOperationResult]:
         """Get multiple keys from cache."""
         results = {}
@@ -622,14 +762,15 @@ class IntegratedCacheManager:
         batch_size = self.config.l2_cache.batch_size if self.l2_cache else 50
 
         for i in range(0, len(keys), batch_size):
-            batch_keys = keys[i:i + batch_size]
-            batch_results = await asyncio.gather(*[
-                self.get(key, use_l1=use_l1, use_l2=use_l2, use_l3=use_l3)
-                for key in batch_keys
-            ])
+            batch_keys = keys[i : i + batch_size]
+            batch_results = await asyncio.gather(
+                *[
+                    self.get(key, use_l1=use_l1, use_l2=use_l2, use_l3=use_l3)
+                    for key in batch_keys
+                ]
+            )
 
-            for key, result in zip(batch_keys, batch_results, strict=False):
-                results[key] = result
+            results.update(dict[str, Any](zip(batch_keys, batch_results, strict=False)))
 
         return results
 
@@ -639,24 +780,31 @@ class IntegratedCacheManager:
         ttl_seconds: int | None = None,
         write_to_l1: bool = True,
         write_to_l2: bool = True,
-        write_to_l3: bool = False
+        write_to_l3: bool = False,
     ) -> dict[str, CacheOperationResult]:
         """Set multiple keys in cache."""
         results = {}
 
         # Process in batches
-        items = list(data.items())
+        items = list[Any](data.items())
         batch_size = self.config.l2_cache.batch_size if self.l2_cache else 50
 
         for i in range(0, len(items), batch_size):
-            batch_items = items[i:i + batch_size]
-            batch_results = await asyncio.gather(*[
-                self.set(key, value, ttl_seconds, write_to_l1, write_to_l2, write_to_l3)
-                for key, value in batch_items
-            ])
+            batch_items = items[i : i + batch_size]
+            batch_results = await asyncio.gather(
+                *[
+                    self.set[str](
+                        key, value, ttl_seconds, write_to_l1, write_to_l2, write_to_l3
+                    )
+                    for key, value in batch_items
+                ]
+            )
 
-            for (key, _), result in zip(batch_items, batch_results, strict=False):
-                results[key] = result
+            results.update(
+                dict[str, Any](
+                    zip([key for key, _ in batch_items], batch_results, strict=False)
+                )
+            )
 
         return results
 
@@ -673,7 +821,9 @@ class IntegratedCacheManager:
             if self.l1_cache:
                 l1_count = self.l1_cache.invalidate_pattern(pattern)
                 invalidated_count += l1_count
-                logger.debug(f"Invalidated {l1_count} keys from L1 cache matching pattern: {pattern}")
+                logger.debug(
+                    f"Invalidated {l1_count} keys from L1 cache matching pattern: {pattern}"
+                )
 
             # Invalidate from L2 (Redis pattern matching)
             if self.l2_cache and self.redis_cache:
@@ -686,16 +836,22 @@ class IntegratedCacheManager:
                     # Scan for matching keys
                     for key in redis_client.scan_iter(match=prefixed_pattern):
                         if isinstance(key, bytes):
-                            key = key.decode('utf-8')
-                        matching_keys.append(key.replace(self.config.cache_key_prefix, ''))
+                            key = key.decode("utf-8")
+                        matching_keys.append(
+                            key.replace(self.config.cache_key_prefix, "")
+                        )
 
                     # Delete matching keys
                     for key in matching_keys:
-                        result = await self.delete(key, from_l1=False, from_l2=True, from_l3=False)
+                        result = await self.delete(
+                            key, from_l1=False, from_l2=True, from_l3=False
+                        )
                         if result.success:
                             invalidated_count += 1
 
-                    logger.debug(f"Invalidated {len(matching_keys)} keys from L2 cache matching pattern: {pattern}")
+                    logger.debug(
+                        f"Invalidated {len(matching_keys)} keys from L2 cache matching pattern: {pattern}"
+                    )
 
             return invalidated_count
 
@@ -748,7 +904,9 @@ class IntegratedCacheManager:
         """Get comprehensive cache statistics."""
         # Update average response time
         if self.response_times:
-            self.statistics.avg_response_time_ms = sum(self.response_times) / len(self.response_times)
+            self.statistics.avg_response_time_ms = sum(self.response_times) / len(
+                self.response_times
+            )
 
         # Update L1 cache size
         if self.l1_cache:
@@ -767,10 +925,10 @@ class IntegratedCacheManager:
                 "l3_cache": self.l3_cache is not None,
                 "redis_cluster": self.cluster_manager is not None,
                 "coherency_manager": self.coherency_manager is not None,
-                "warming_service": self.warming_service is not None
+                "warming_service": self.warming_service is not None,
             },
             "background_tasks": len(self._background_tasks),
-            "statistics": self.get_statistics().to_dict()
+            "statistics": self.get_statistics().to_dict(),
         }
 
         # Check component health
@@ -797,19 +955,19 @@ class IntegratedCacheManager:
 
         return health
 
-    async def _update_metrics(self, operation: str, cache_level: str, duration_ms: float):
+    async def _update_metrics(
+        self, operation: str, cache_level: str, duration_ms: float
+    ) -> None:
         """Update Prometheus metrics if available."""
         if self.metrics:
             try:
                 # Update cache operation metrics
                 self.metrics.cache_operations_total.labels(
-                    operation=operation,
-                    cache_level=cache_level.lower()
+                    operation=operation, cache_level=cache_level.lower()
                 ).inc()
 
                 self.metrics.cache_operation_duration.labels(
-                    operation=operation,
-                    cache_level=cache_level.lower()
+                    operation=operation, cache_level=cache_level.lower()
                 ).observe(duration_ms / 1000)  # Convert to seconds
 
             except Exception as e:
@@ -819,48 +977,31 @@ class IntegratedCacheManager:
     # Background Tasks
     # ========================================================================
 
-    async def _coherency_monitoring_loop(self):
+    async def _coherency_monitoring_loop(self) -> None:
         """Background task for cache coherency monitoring."""
-        while self._initialized:
-            try:
-                if self.coherency_manager:
-                    await self.coherency_manager.run_coherency_check()
-                await asyncio.sleep(self.config.coherency.coherency_check_interval)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in coherency monitoring: {e}")
-                await asyncio.sleep(30)
+        await self._run_periodic_task(
+            self._coherency_step,
+            error_label="coherency monitoring",
+            error_backoff=30,
+        )
 
-    async def _performance_monitoring_loop(self):
+    async def _performance_monitoring_loop(self) -> None:
         """Background task for performance monitoring."""
-        while self._initialized:
-            try:
-                await self._collect_performance_metrics()
-                await asyncio.sleep(self.config.metrics_collection_interval)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in performance monitoring: {e}")
-                await asyncio.sleep(60)
+        await self._run_periodic_task(
+            self._performance_step,
+            error_label="performance monitoring",
+            error_backoff=60,
+        )
 
-    async def _cache_warming_loop(self):
+    async def _cache_warming_loop(self) -> None:
         """Background task for predictive cache warming."""
-        while self._initialized:
-            try:
-                if self.warming_service and self.config.prefetch_popular_content:
-                    # Get popular content identifiers and warm cache
-                    # This is a placeholder - in production, you'd analyze access patterns
-                    await asyncio.sleep(300)  # Run every 5 minutes
-                else:
-                    await asyncio.sleep(600)  # Check every 10 minutes
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in cache warming: {e}")
-                await asyncio.sleep(300)
+        await self._run_periodic_task(
+            self._warming_step,
+            error_label="cache warming",
+            error_backoff=300,
+        )
 
-    async def _collect_performance_metrics(self):
+    async def _collect_performance_metrics(self) -> None:
         """Collect and report performance metrics."""
         try:
             stats = self.get_statistics()
@@ -868,27 +1009,37 @@ class IntegratedCacheManager:
             # Update Prometheus metrics
             if self.metrics:
                 # Cache hit rates
-                self.metrics.cache_hit_rate.labels(cache_level="l1").set(
+                self.metrics.cache_hit_rate.labels(cache_level="l1").set[str](
                     (stats.l1_hits / (stats.l1_hits + stats.l1_misses) * 100)
-                    if (stats.l1_hits + stats.l1_misses) > 0 else 0
+                    if (stats.l1_hits + stats.l1_misses) > 0
+                    else 0
                 )
-                self.metrics.cache_hit_rate.labels(cache_level="l2").set(
+                self.metrics.cache_hit_rate.labels(cache_level="l2").set[str](
                     (stats.l2_hits / (stats.l2_hits + stats.l2_misses) * 100)
-                    if (stats.l2_hits + stats.l2_misses) > 0 else 0
+                    if (stats.l2_hits + stats.l2_misses) > 0
+                    else 0
                 )
-                self.metrics.cache_hit_rate.labels(cache_level="overall").set(stats.calculate_hit_rate())
+                self.metrics.cache_hit_rate.labels(cache_level="overall").set[str](
+                    stats.calculate_hit_rate()
+                )
 
                 # Cache sizes
                 if self.l1_cache:
-                    self.metrics.cache_size_bytes.labels(cache_level="l1").set(stats.l1_size_bytes)
+                    self.metrics.cache_size_bytes.labels(cache_level="l1").set[str](
+                        stats.l1_size_bytes
+                    )
 
                 # Response times
                 if self.response_times:
                     recent_times = self.response_times[-100:]  # Last 100 operations
                     avg_time = sum(recent_times) / len(recent_times)
-                    self.metrics.cache_response_time.labels(cache_level="overall").set(avg_time / 1000)
+                    self.metrics.cache_response_time.labels(cache_level="overall").set[
+                        str
+                    ](avg_time / 1000)
 
-            logger.debug(f"Performance metrics collected: hit_rate={stats.calculate_hit_rate():.1f}%")
+            logger.debug(
+                f"Performance metrics collected: hit_rate={stats.calculate_hit_rate():.1f}%"
+            )
 
         except Exception as e:
             logger.error(f"Error collecting performance metrics: {e}")
@@ -906,14 +1057,14 @@ class IntegratedCacheManager:
     def _remove_key_prefix(self, key: str) -> str:
         """Remove cache key prefix."""
         if key.startswith(self.config.cache_key_prefix):
-            return key[len(self.config.cache_key_prefix):]
+            return key[len(self.config.cache_key_prefix) :]
         return key
 
     # ========================================================================
     # Lifecycle Management
     # ========================================================================
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Shutdown cache manager and cleanup resources."""
         logger.info("Shutting down integrated cache manager...")
 
@@ -943,12 +1094,12 @@ class IntegratedCacheManager:
     # Context Manager Support
     # ========================================================================
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Async context manager entry."""
         await self.initialize()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.shutdown()
 
@@ -957,9 +1108,9 @@ class IntegratedCacheManager:
 # Factory Functions
 # ============================================================================
 
+
 async def create_integrated_cache_manager(
-    config: CachingConfig | None = None,
-    metrics: ApplicationMetrics | None = None
+    config: CachingConfig | None = None, metrics: ApplicationMetrics | None = None
 ) -> IntegratedCacheManager:
     """
     Create and initialize integrated cache manager.
@@ -973,6 +1124,7 @@ async def create_integrated_cache_manager(
     """
     if config is None:
         from ..config.caching_config import get_caching_config
+
         config = get_caching_config()
 
     manager = IntegratedCacheManager(config, metrics)
@@ -988,9 +1140,8 @@ async def create_integrated_cache_manager(
 
 @asynccontextmanager
 async def cache_manager_context(
-    config: CachingConfig | None = None,
-    metrics: ApplicationMetrics | None = None
-):
+    config: CachingConfig | None = None, metrics: ApplicationMetrics | None = None
+) -> None:
     """
     Async context manager for integrated cache manager.
 

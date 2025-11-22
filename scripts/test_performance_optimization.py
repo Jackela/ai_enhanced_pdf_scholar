@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Quick test script to validate database performance optimizations.
@@ -9,7 +11,9 @@ import tempfile
 from pathlib import Path
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 try:
@@ -25,7 +29,7 @@ except ImportError as e:
     exit(1)
 
 
-def test_migration_005():
+def test_migration_005() -> Any:
     """Test migration 005 performance optimization features."""
     logger.info("Testing migration 005 performance optimization...")
 
@@ -61,21 +65,27 @@ def test_migration_005():
             test_tables = [
                 "query_performance_log",
                 "index_usage_stats",
-                "performance_baselines"
+                "performance_baselines",
             ]
 
             for table in test_tables:
                 try:
                     result = db.fetch_one(f"SELECT COUNT(*) as count FROM {table}")
-                    logger.info(f"✅ Performance monitoring table '{table}' created (rows: {result['count'] if result else 0})")
+                    logger.info(
+                        f"✅ Performance monitoring table '{table}' created (rows: {result['count'] if result else 0})"
+                    )
                 except Exception as e:
-                    logger.error(f"❌ Performance monitoring table '{table}' not found: {e}")
+                    logger.error(
+                        f"❌ Performance monitoring table '{table}' not found: {e}"
+                    )
                     return False
 
             # Test advanced performance analysis functions
             try:
                 stats = migrator.get_performance_statistics()
-                logger.info(f"✅ Performance statistics available: {len(stats)} categories")
+                logger.info(
+                    f"✅ Performance statistics available: {len(stats)} categories"
+                )
             except Exception as e:
                 logger.error(f"❌ Performance statistics function failed: {e}")
                 return False
@@ -84,14 +94,18 @@ def test_migration_005():
             try:
                 index_analysis = migrator.analyze_index_effectiveness()
                 total_indexes = index_analysis.get("total_indexes", 0)
-                logger.info(f"✅ Index effectiveness analysis available: {total_indexes} indexes analyzed")
+                logger.info(
+                    f"✅ Index effectiveness analysis available: {total_indexes} indexes analyzed"
+                )
             except Exception as e:
                 logger.error(f"❌ Index effectiveness analysis failed: {e}")
                 return False
 
             return True
         else:
-            logger.error(f"❌ Migration 005 not applied. Current version: {final_version}")
+            logger.error(
+                f"❌ Migration 005 not applied. Current version: {final_version}"
+            )
             return False
 
     finally:
@@ -100,7 +114,7 @@ def test_migration_005():
         Path(db_path).unlink(missing_ok=True)
 
 
-def test_query_performance_analysis():
+def test_query_performance_analysis() -> Any:
     """Test query performance analysis features."""
     logger.info("Testing query performance analysis...")
 
@@ -132,20 +146,30 @@ def test_query_performance_analysis():
         test_queries = [
             ("simple_select", "SELECT * FROM documents LIMIT 5", ()),
             ("title_search", "SELECT * FROM documents WHERE title LIKE ?", ("%Test%",)),
-            ("size_filter", "SELECT * FROM documents WHERE file_size > ? ORDER BY file_size DESC", (5000,)),
+            (
+                "size_filter",
+                "SELECT * FROM documents WHERE file_size > ? ORDER BY file_size DESC",
+                (5000,),
+            ),
         ]
 
         for query_name, query, params in test_queries:
             try:
                 # Test execution plan analysis
                 execution_plan = migrator.get_query_execution_plan(query)
-                logger.info(f"✅ Execution plan for '{query_name}': {len(execution_plan)} steps")
+                logger.info(
+                    f"✅ Execution plan for '{query_name}': {len(execution_plan)} steps"
+                )
 
                 # Test advanced query analysis
                 analysis = migrator.get_advanced_query_analysis(query, params)
-                execution_time = analysis.get("performance_metrics", {}).get("execution_time_ms", 0)
+                execution_time = analysis.get("performance_metrics", {}).get(
+                    "execution_time_ms", 0
+                )
                 recommendations = len(analysis.get("optimization_recommendations", []))
-                logger.info(f"✅ Advanced analysis for '{query_name}': {execution_time:.2f}ms, {recommendations} recommendations")
+                logger.info(
+                    f"✅ Advanced analysis for '{query_name}': {execution_time:.2f}ms, {recommendations} recommendations"
+                )
 
             except Exception as e:
                 logger.error(f"❌ Query analysis failed for '{query_name}': {e}")
@@ -156,7 +180,9 @@ def test_query_performance_analysis():
             benchmark_results = migrator.benchmark_query_performance(test_queries)
             total_benchmarks = len(benchmark_results.get("benchmarks", []))
             fastest_query = benchmark_results.get("fastest_query", "unknown")
-            logger.info(f"✅ Query benchmarking: {total_benchmarks} queries tested, fastest: {fastest_query}")
+            logger.info(
+                f"✅ Query benchmarking: {total_benchmarks} queries tested, fastest: {fastest_query}"
+            )
         except Exception as e:
             logger.error(f"❌ Query benchmarking failed: {e}")
             return False
@@ -168,7 +194,7 @@ def test_query_performance_analysis():
         Path(db_path).unlink(missing_ok=True)
 
 
-def test_index_analysis():
+def test_index_analysis() -> Any:
     """Test index analysis and optimization features."""
     logger.info("Testing index analysis features...")
 
@@ -195,7 +221,9 @@ def test_index_analysis():
             effectiveness = migrator.analyze_index_effectiveness()
             total_indexes = effectiveness.get("total_indexes", 0)
             high_impact = len(effectiveness.get("high_impact", []))
-            logger.info(f"✅ Index effectiveness analysis: {total_indexes} total, {high_impact} high-impact")
+            logger.info(
+                f"✅ Index effectiveness analysis: {total_indexes} total, {high_impact} high-impact"
+            )
         except Exception as e:
             logger.error(f"❌ Index effectiveness analysis failed: {e}")
             return False
@@ -205,7 +233,9 @@ def test_index_analysis():
             slow_analysis = migrator.analyze_slow_queries()
             potential_slow = len(slow_analysis.get("potential_slow_queries", []))
             suggestions = len(slow_analysis.get("optimization_suggestions", []))
-            logger.info(f"✅ Slow query analysis: {potential_slow} potential issues, {suggestions} suggestions")
+            logger.info(
+                f"✅ Slow query analysis: {potential_slow} potential issues, {suggestions} suggestions"
+            )
         except Exception as e:
             logger.error(f"❌ Slow query analysis failed: {e}")
             return False
@@ -217,7 +247,7 @@ def test_index_analysis():
         Path(db_path).unlink(missing_ok=True)
 
 
-def test_database_optimization():
+def test_database_optimization() -> Any:
     """Test database optimization functions."""
     logger.info("Testing database optimization features...")
 
@@ -236,7 +266,9 @@ def test_database_optimization():
             optimization_results = migrator.optimize_database_performance()
             operations = len(optimization_results.get("operations_performed", []))
             success = optimization_results.get("success", False)
-            logger.info(f"✅ Database optimization: {operations} operations, success: {success}")
+            logger.info(
+                f"✅ Database optimization: {operations} operations, success: {success}"
+            )
         except Exception as e:
             logger.error(f"❌ Database optimization failed: {e}")
             return False
@@ -246,7 +278,9 @@ def test_database_optimization():
             perf_stats = migrator.get_performance_statistics()
             categories = len(perf_stats)
             db_size = perf_stats.get("database_info", {}).get("database_size_bytes", 0)
-            logger.info(f"✅ Performance statistics: {categories} categories, DB size: {db_size} bytes")
+            logger.info(
+                f"✅ Performance statistics: {categories} categories, DB size: {db_size} bytes"
+            )
         except Exception as e:
             logger.error(f"❌ Performance statistics failed: {e}")
             return False
@@ -258,7 +292,7 @@ def test_database_optimization():
         Path(db_path).unlink(missing_ok=True)
 
 
-def main():
+def main() -> Any:
     """Main test function."""
     logger.info("🚀 Starting database performance optimization tests...")
 
@@ -287,10 +321,14 @@ def main():
     logger.info(f"TEST RESULTS: {passed}/{total} tests passed")
 
     if passed == total:
-        logger.info("🎉 All tests passed! Database performance optimizations are working correctly.")
+        logger.info(
+            "🎉 All tests passed! Database performance optimizations are working correctly."
+        )
         return 0
     else:
-        logger.error(f"💥 {total - passed} tests failed. Please check the implementation.")
+        logger.error(
+            f"💥 {total - passed} tests failed. Please check the implementation."
+        )
         return 1
 
 

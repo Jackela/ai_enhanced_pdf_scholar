@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Enable Encryption for Data at Rest and in Transit
@@ -20,7 +22,9 @@ from backend.services.encryption_service import EncryptionService, TLSConfigurat
 from backend.services.secrets_manager import SecretsManagerService
 from src.database.connection import DatabaseConnection
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -29,14 +33,14 @@ class EncryptionSetup:
     Setup and manage encryption for the application.
     """
 
-    def __init__(self, environment: str = "production"):
+    def __init__(self, environment: str = "production") -> None:
         """Initialize encryption setup."""
         self.environment = environment
         self.project_root = Path(__file__).parent.parent
         self.config_file = self.project_root / ".encryption_config.json"
         self.status = self._load_status()
 
-    def _load_status(self) -> dict:
+    def _load_status(self) -> dict[str, Any]:
         """Load current encryption status."""
         if self.config_file.exists():
             with open(self.config_file) as f:
@@ -47,13 +51,13 @@ class EncryptionSetup:
             "field_encryption_enabled": False,
             "file_encryption_enabled": False,
             "key_rotation_enabled": False,
-            "last_updated": None
+            "last_updated": None,
         }
 
-    def _save_status(self):
+    def _save_status(self) -> None:
         """Save encryption status."""
         self.status["last_updated"] = datetime.utcnow().isoformat()
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, "w") as f:
             json.dump(self.status, f, indent=2)
 
     def setup_database_encryption(self) -> bool:
@@ -74,7 +78,10 @@ class EncryptionSetup:
                 return False
 
             # Backup database before encryption
-            backup_path = db_path.parent / f"documents_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+            backup_path = (
+                db_path.parent
+                / f"documents_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+            )
             shutil.copy2(db_path, backup_path)
             logger.info(f"Created database backup: {backup_path}")
 
@@ -148,7 +155,7 @@ class EncryptionSetup:
             logger.error(f"TLS setup failed: {e}")
             return False
 
-    def _update_web_server_config(self, cert_path: Path, key_path: Path):
+    def _update_web_server_config(self, cert_path: Path, key_path: Path) -> None:
         """Update web server configuration for TLS."""
         # Generate nginx configuration
         nginx_config = f"""
@@ -202,12 +209,12 @@ server {{
         nginx_config_path = self.project_root / "nginx" / "ai_pdf_scholar.conf"
         nginx_config_path.parent.mkdir(exist_ok=True)
 
-        with open(nginx_config_path, 'w') as f:
+        with open(nginx_config_path, "w") as f:
             f.write(nginx_config)
 
         logger.info(f"Generated nginx configuration: {nginx_config_path}")
 
-    def _update_app_tls_config(self, cert_path: Path, key_path: Path):
+    def _update_app_tls_config(self, cert_path: Path, key_path: Path) -> None:
         """Update application TLS configuration."""
         tls_config = {
             "enabled": True,
@@ -218,17 +225,17 @@ server {{
                 "ECDHE-ECDSA-AES128-GCM-SHA256",
                 "ECDHE-RSA-AES128-GCM-SHA256",
                 "ECDHE-ECDSA-AES256-GCM-SHA384",
-                "ECDHE-RSA-AES256-GCM-SHA384"
+                "ECDHE-RSA-AES256-GCM-SHA384",
             ],
             "prefer_server_ciphers": False,
             "session_timeout": 86400,
-            "session_tickets": False
+            "session_tickets": False,
         }
 
         # Update .env file
         env_file = self.project_root / ".env"
         if env_file.exists():
-            with open(env_file, 'a') as f:
+            with open(env_file, "a") as f:
                 f.write("\n# TLS Configuration\n")
                 f.write("SSL_ENABLED=true\n")
                 f.write(f"SSL_CERT_PATH={cert_path}\n")
@@ -236,7 +243,7 @@ server {{
 
         # Save TLS configuration
         tls_config_file = self.project_root / "tls_config.json"
-        with open(tls_config_file, 'w') as f:
+        with open(tls_config_file, "w") as f:
             json.dump(tls_config, f, indent=2)
 
         logger.info("Updated application TLS configuration")
@@ -257,7 +264,7 @@ server {{
             "users": ["email", "phone", "ssn", "credit_card"],
             "documents": ["content_hash", "metadata"],
             "api_keys": ["key", "secret"],
-            "audit_logs": ["ip_address", "user_agent"]
+            "audit_logs": ["ip_address", "user_agent"],
         }
 
         try:
@@ -308,7 +315,7 @@ server {{
                 return False
 
             # Count unencrypted files
-            pdf_files = list(doc_dir.glob("**/*.pdf"))
+            pdf_files = list[Any](doc_dir.glob("**/*.pdf"))
             unencrypted = [f for f in pdf_files if not Path(str(f) + ".enc").exists()]
 
             if unencrypted:
@@ -318,13 +325,17 @@ server {{
                 db_path = Path.home() / ".ai_pdf_scholar" / "documents.db"
                 db = DatabaseConnection(str(db_path))
                 secrets_manager = SecretsManagerService()
-                encryption_service = EncryptionService(db.get_session(), secrets_manager)
+                encryption_service = EncryptionService(
+                    db.get_session(), secrets_manager
+                )
 
                 # Encrypt each file
                 encrypted_count = 0
                 for file_path in unencrypted:
                     try:
-                        encrypted_path, metadata = encryption_service.encrypt_file(file_path)
+                        encrypted_path, metadata = encryption_service.encrypt_file(
+                            file_path
+                        )
 
                         # Optionally delete original (in production)
                         if self.environment == "production":
@@ -398,20 +409,22 @@ WantedBy=multi-user.target
             timer_file = systemd_dir / "ai-pdf-scholar-key-rotation.timer"
             service_file = systemd_dir / "ai-pdf-scholar-key-rotation.service"
 
-            with open(timer_file, 'w') as f:
+            with open(timer_file, "w") as f:
                 f.write(systemd_timer)
 
-            with open(service_file, 'w') as f:
+            with open(service_file, "w") as f:
                 f.write(systemd_service)
 
             logger.info(f"Generated systemd timer configuration: {timer_file}")
 
             # Create cron job (alternative)
-            cron_job = f"0 2 * * * /usr/bin/python3 {self.project_root}/scripts/rotate_keys.py"
+            cron_job = (
+                f"0 2 * * * /usr/bin/python3 {self.project_root}/scripts/rotate_keys.py"
+            )
             cron_file = self.project_root / "cron" / "key_rotation"
             cron_file.parent.mkdir(exist_ok=True)
 
-            with open(cron_file, 'w') as f:
+            with open(cron_file, "w") as f:
                 f.write(cron_job)
 
             logger.info(f"Generated cron job: {cron_file}")
@@ -447,7 +460,7 @@ WantedBy=multi-user.target
             ("TLS/SSL", self.status.get("tls_enabled", False)),
             ("Field Encryption", self.status.get("field_encryption_enabled", False)),
             ("File Encryption", self.status.get("file_encryption_enabled", False)),
-            ("Key Rotation", self.status.get("key_rotation_enabled", False))
+            ("Key Rotation", self.status.get("key_rotation_enabled", False)),
         ]
 
         for item, enabled in status_items:
@@ -486,49 +499,52 @@ WantedBy=multi-user.target
         report.append("## Compliance Readiness")
         report.append("")
 
-        all_enabled = all([
-            self.status.get("database_encrypted"),
-            self.status.get("tls_enabled"),
-            self.status.get("field_encryption_enabled"),
-            self.status.get("file_encryption_enabled"),
-            self.status.get("key_rotation_enabled")
-        ])
+        all_enabled = all(
+            [
+                self.status.get("database_encrypted"),
+                self.status.get("tls_enabled"),
+                self.status.get("field_encryption_enabled"),
+                self.status.get("file_encryption_enabled"),
+                self.status.get("key_rotation_enabled"),
+            ]
+        )
 
         if all_enabled:
-            report.append("✅ **Full encryption enabled** - Ready for compliance audits")
+            report.append(
+                "✅ **Full encryption enabled** - Ready for compliance audits"
+            )
             report.append("- GDPR Article 32: Technical measures implemented")
             report.append("- HIPAA §164.312(a)(2)(iv): Encryption and decryption")
             report.append("- PCI DSS 3.4: Strong cryptography")
         else:
-            report.append("⚠️  **Partial encryption** - Additional configuration needed for full compliance")
+            report.append(
+                "⚠️  **Partial encryption** - Additional configuration needed for full compliance"
+            )
 
         return "\n".join(report)
 
 
-def main():
+def main() -> None:
     """Main function to setup encryption."""
     parser = argparse.ArgumentParser(description="Setup encryption for AI PDF Scholar")
     parser.add_argument(
         "command",
         choices=["all", "database", "tls", "fields", "files", "rotation", "status"],
-        help="Encryption component to setup"
+        help="Encryption component to setup",
     )
     parser.add_argument(
         "--environment",
         default="production",
         choices=["development", "staging", "production"],
-        help="Target environment"
+        help="Target environment",
     )
     parser.add_argument(
         "--production-certs",
         action="store_true",
-        help="Use production SSL certificates"
+        help="Use production SSL certificates",
     )
     parser.add_argument(
-        "--rotation-days",
-        type=int,
-        default=90,
-        help="Days between key rotations"
+        "--rotation-days", type=int, default=90, help="Days between key rotations"
     )
 
     args = parser.parse_args()
@@ -544,7 +560,7 @@ def main():
 
         # Save report
         report_file = Path("ENCRYPTION_STATUS.md")
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             f.write(report)
         print(f"\nReport saved to: {report_file}")
 
@@ -554,9 +570,14 @@ def main():
         steps = [
             ("Database Encryption", setup.setup_database_encryption),
             ("TLS/SSL", lambda: setup.setup_tls(args.production_certs)),
-            ("Field Encryption", lambda: setup.setup_field_encryption(["users", "documents", "api_keys"])),
+            (
+                "Field Encryption",
+                lambda: setup.setup_field_encryption(
+                    ["users", "documents", "api_keys"]
+                ),
+            ),
             ("File Encryption", setup.setup_file_encryption),
-            ("Key Rotation", lambda: setup.setup_key_rotation(args.rotation_days))
+            ("Key Rotation", lambda: setup.setup_key_rotation(args.rotation_days)),
         ]
 
         for step_name, step_func in steps:
@@ -585,7 +606,9 @@ def main():
             success = setup.setup_key_rotation(args.rotation_days)
 
         if success:
-            print(f"\n✅ {args.command.title()} encryption setup completed successfully!")
+            print(
+                f"\n✅ {args.command.title()} encryption setup completed successfully!"
+            )
         else:
             print(f"\n❌ {args.command.title()} encryption setup failed")
             sys.exit(1)

@@ -1,0 +1,8 @@
+# Wave 2: Database & Services
+# Target: ~80 errors (database migrations and core services)
+
+src/database/migrations.py
+src/services/error_recovery.py
+backend/services/centralized_logging_service.py
+backend/services/metrics_service.py
+src/database/connection.py

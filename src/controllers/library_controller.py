@@ -128,11 +128,18 @@ class WebAPILibraryController(BaseLibraryController):
             )
             logger.debug("Library service created via ServiceFactory")
         else:
-            # Fallback to direct instantiation
+            # Fallback to direct instantiation with DI pattern
+            from src.repositories.document_repository import DocumentRepository
+            from src.services.content_hash_service import ContentHashService
+
+            doc_repo = DocumentRepository(db_connection)
+            hash_service = ContentHashService()
             library_service = DocumentLibraryService(
-                db_connection, managed_documents_dir
+                document_repository=doc_repo,
+                hash_service=hash_service,
+                documents_dir=managed_documents_dir,
             )
-            logger.debug("Library service created directly (fallback)")
+            logger.debug("Library service created directly with DI pattern (fallback)")
 
         super().__init__(library_service)
 

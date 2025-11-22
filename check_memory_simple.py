@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Simple Memory Check and Optimization
@@ -15,7 +17,7 @@ import psutil
 # Add project root to path
 sys.path.append('.')
 
-def check_memory_patterns():
+def check_memory_patterns() -> Any:
     """Check basic memory usage patterns."""
     print("🔍 Simple Memory Usage Check")
     print("=" * 40)
@@ -71,7 +73,7 @@ def check_memory_patterns():
         traceback.print_exc()
         return True  # Assume leak on error
 
-def apply_memory_optimizations():
+def apply_memory_optimizations() -> Any:
     """Apply basic memory optimizations."""
     print("\n🔧 Applying Memory Optimizations")
     print("=" * 40)
@@ -112,7 +114,7 @@ def apply_memory_optimizations():
         print(f"❌ Optimization failed: {e}")
         return False
 
-def create_memory_config():
+def create_memory_config() -> Any:
     """Create memory monitoring configuration."""
     print("\n📝 Creating Memory Configuration")
     print("=" * 40)
@@ -145,7 +147,7 @@ def create_memory_config():
         print(f"❌ Config creation failed: {e}")
         return False
 
-def main():
+def main() -> None:
     """Main function."""
     print("🚀 Simple Memory Check and Optimization")
     print("=" * 50)

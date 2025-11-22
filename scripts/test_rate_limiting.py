@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Rate Limiting Performance and Load Testing Script
 Tests rate limiting under high load conditions
@@ -21,6 +23,7 @@ sys.path.insert(0, str(project_root))
 @dataclass
 class TestResult:
     """Result of a rate limiting test."""
+
     endpoint: str
     total_requests: int
     success_requests: int
@@ -35,26 +38,28 @@ class TestResult:
 class RateLimitTester:
     """Rate limiting performance tester."""
 
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "http://localhost:8000") -> None:
         self.base_url = base_url
         self.session: aiohttp.ClientSession = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         self.session = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=30),
-            headers={"User-Agent": "rate-limit-tester"}
+            headers={"User-Agent": "rate-limit-tester"},
         )
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.session:
             await self.session.close()
 
-    async def make_request(self,
-                          endpoint: str,
-                          method: str = "GET",
-                          client_ip: str = None,
-                          data: dict = None) -> tuple[int, float]:
+    async def make_request(
+        self,
+        endpoint: str,
+        method: str = "GET",
+        client_ip: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> tuple[int, float]:
         """Make a single request and return (status_code, response_time)."""
         headers = {}
         if client_ip:
@@ -63,22 +68,28 @@ class RateLimitTester:
         start_time = time.time()
         try:
             if method.upper() == "GET":
-                async with self.session.get(f"{self.base_url}{endpoint}", headers=headers) as response:
+                async with self.session.get(
+                    f"{self.base_url}{endpoint}", headers=headers
+                ) as response:
                     await response.text()  # Read response body
                     return response.status, time.time() - start_time
             elif method.upper() == "POST":
-                async with self.session.post(f"{self.base_url}{endpoint}", headers=headers, json=data) as response:
+                async with self.session.post(
+                    f"{self.base_url}{endpoint}", headers=headers, json=data
+                ) as response:
                     await response.text()
                     return response.status, time.time() - start_time
         except Exception:
             return 0, time.time() - start_time  # Error status
 
-    async def burst_test(self,
-                        endpoint: str,
-                        num_requests: int,
-                        client_ip: str = "192.168.1.100",
-                        method: str = "GET",
-                        data: dict = None) -> TestResult:
+    async def burst_test(
+        self,
+        endpoint: str,
+        num_requests: int,
+        client_ip: str = "192.168.1.100",
+        method: str = "GET",
+        data: dict[str, Any] | None = None,
+    ) -> TestResult:
         """Test burst requests to an endpoint."""
         print(f"Testing {num_requests} burst requests to {endpoint}...")
 
@@ -111,16 +122,20 @@ class RateLimitTester:
             avg_response_time=statistics.mean(response_times),
             max_response_time=max(response_times),
             min_response_time=min(response_times),
-            requests_per_second=num_requests / total_time if total_time > 0 else 0
+            requests_per_second=num_requests / total_time if total_time > 0 else 0,
         )
 
-    async def sustained_load_test(self,
-                                 endpoint: str,
-                                 requests_per_second: int,
-                                 duration_seconds: int,
-                                 client_ip: str = "192.168.1.200") -> TestResult:
+    async def sustained_load_test(
+        self,
+        endpoint: str,
+        requests_per_second: int,
+        duration_seconds: int,
+        client_ip: str = "192.168.1.200",
+    ) -> TestResult:
         """Test sustained load over time."""
-        print(f"Testing sustained load: {requests_per_second} RPS for {duration_seconds}s on {endpoint}...")
+        print(
+            f"Testing sustained load: {requests_per_second} RPS for {duration_seconds}s on {endpoint}..."
+        )
 
         interval = 1.0 / requests_per_second
         total_requests = requests_per_second * duration_seconds
@@ -136,7 +151,9 @@ class RateLimitTester:
                 await asyncio.sleep(expected_time - current_time)
 
             # Make request
-            status, response_time = await self.make_request(endpoint, client_ip=f"{client_ip}{i % 5}")
+            status, response_time = await self.make_request(
+                endpoint, client_ip=f"{client_ip}{i % 5}"
+            )
             results.append((status, response_time))
 
             # Stop if we've exceeded duration
@@ -162,15 +179,16 @@ class RateLimitTester:
             avg_response_time=statistics.mean(response_times) if response_times else 0,
             max_response_time=max(response_times) if response_times else 0,
             min_response_time=min(response_times) if response_times else 0,
-            requests_per_second=len(results) / total_time if total_time > 0 else 0
+            requests_per_second=len(results) / total_time if total_time > 0 else 0,
         )
 
-    async def multi_ip_test(self,
-                           endpoint: str,
-                           num_ips: int,
-                           requests_per_ip: int) -> TestResult:
+    async def multi_ip_test(
+        self, endpoint: str, num_ips: int, requests_per_ip: int
+    ) -> TestResult:
         """Test multiple IPs to verify separate rate limiting."""
-        print(f"Testing {num_ips} IPs with {requests_per_ip} requests each on {endpoint}...")
+        print(
+            f"Testing {num_ips} IPs with {requests_per_ip} requests each on {endpoint}..."
+        )
 
         tasks = []
         start_time = time.time()
@@ -205,7 +223,7 @@ class RateLimitTester:
             avg_response_time=statistics.mean(response_times) if response_times else 0,
             max_response_time=max(response_times) if response_times else 0,
             min_response_time=min(response_times) if response_times else 0,
-            requests_per_second=total_requests / total_time if total_time > 0 else 0
+            requests_per_second=total_requests / total_time if total_time > 0 else 0,
         )
 
     async def test_endpoint_specific_limits(self) -> dict[str, TestResult]:
@@ -231,37 +249,62 @@ class RateLimitTester:
         return results
 
 
-def print_results(result: TestResult):
+def print_results(result: TestResult) -> None:
     """Print test results in a readable format."""
     print(f"\n{'='*60}")
     print(f"Results for {result.endpoint}")
     print(f"{'='*60}")
     print(f"Total Requests:       {result.total_requests}")
-    print(f"Successful (200):     {result.success_requests} ({result.success_requests/result.total_requests*100:.1f}%)")
-    print(f"Rate Limited (429):   {result.rate_limited_requests} ({result.rate_limited_requests/result.total_requests*100:.1f}%)")
-    print(f"Errors:               {result.error_requests} ({result.error_requests/result.total_requests*100:.1f}%)")
+    print(
+        f"Successful (200):     {result.success_requests} ({result.success_requests/result.total_requests*100:.1f}%)"
+    )
+    print(
+        f"Rate Limited (429):   {result.rate_limited_requests} ({result.rate_limited_requests/result.total_requests*100:.1f}%)"
+    )
+    print(
+        f"Errors:               {result.error_requests} ({result.error_requests/result.total_requests*100:.1f}%)"
+    )
     print(f"Avg Response Time:    {result.avg_response_time*1000:.1f}ms")
     print(f"Min Response Time:    {result.min_response_time*1000:.1f}ms")
     print(f"Max Response Time:    {result.max_response_time*1000:.1f}ms")
     print(f"Throughput:           {result.requests_per_second:.1f} requests/sec")
 
     # Rate limiting effectiveness
-    expected_rate_limited = max(0, result.total_requests - 60)  # Assuming 60 req/min default
+    expected_rate_limited = max(
+        0, result.total_requests - 60
+    )  # Assuming 60 req/min default
     if expected_rate_limited > 0:
         effectiveness = result.rate_limited_requests / expected_rate_limited * 100
         print(f"Rate Limit Effectiveness: {effectiveness:.1f}%")
 
 
-async def main():
+async def main() -> Any:
     """Main test runner."""
     parser = argparse.ArgumentParser(description="Rate Limiting Performance Tests")
-    parser.add_argument("--url", default="http://localhost:8000", help="Base URL for API")
-    parser.add_argument("--test", choices=["burst", "sustained", "multi-ip", "endpoints", "all"],
-                       default="all", help="Type of test to run")
-    parser.add_argument("--requests", type=int, default=100, help="Number of requests for burst test")
-    parser.add_argument("--rps", type=int, default=10, help="Requests per second for sustained test")
-    parser.add_argument("--duration", type=int, default=30, help="Duration in seconds for sustained test")
-    parser.add_argument("--ips", type=int, default=10, help="Number of IPs for multi-IP test")
+    parser.add_argument(
+        "--url", default="http://localhost:8000", help="Base URL for API"
+    )
+    parser.add_argument(
+        "--test",
+        choices=["burst", "sustained", "multi-ip", "endpoints", "all"],
+        default="all",
+        help="Type of test to run",
+    )
+    parser.add_argument(
+        "--requests", type=int, default=100, help="Number of requests for burst test"
+    )
+    parser.add_argument(
+        "--rps", type=int, default=10, help="Requests per second for sustained test"
+    )
+    parser.add_argument(
+        "--duration",
+        type=int,
+        default=30,
+        help="Duration in seconds for sustained test",
+    )
+    parser.add_argument(
+        "--ips", type=int, default=10, help="Number of IPs for multi-IP test"
+    )
 
     args = parser.parse_args()
 
@@ -285,7 +328,9 @@ async def main():
             print_results(result)
 
         if args.test in ["sustained", "all"]:
-            result = await tester.sustained_load_test("/api/documents", args.rps, args.duration)
+            result = await tester.sustained_load_test(
+                "/api/documents", args.rps, args.duration
+            )
             print_results(result)
 
         if args.test in ["multi-ip", "all"]:

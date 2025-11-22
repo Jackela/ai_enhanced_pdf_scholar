@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Local CI/CD Testing Script
@@ -13,7 +15,7 @@ from pathlib import Path
 
 
 class LocalCITester:
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str | None = None) -> None:
         self.project_root = Path(project_root or os.getcwd())
         self.workflows_dir = self.project_root / ".github" / "workflows"
         self.results = {
@@ -21,15 +23,15 @@ class LocalCITester:
             "tests_run": [],
             "issues_found": [],
             "fixes_applied": [],
-            "summary": {}
+            "summary": {},
         }
 
-    def log(self, message: str, level: str = "INFO"):
+    def log(self, message: str, level: str = "INFO") -> None:
         """Log a message with timestamp."""
         timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"[{timestamp}] {level}: {message}")
 
-    def run_command(self, cmd: list, timeout: int = 60) -> dict:
+    def run_command(self, cmd: list[Any], timeout: int = 60) -> dict[str, Any]:
         """Run a command and return result."""
         try:
             result = subprocess.run(
@@ -37,28 +39,23 @@ class LocalCITester:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
             )
             return {
                 "success": result.returncode == 0,
                 "stdout": result.stdout,
                 "stderr": result.stderr,
-                "returncode": result.returncode
+                "returncode": result.returncode,
             }
         except subprocess.TimeoutExpired:
             return {
                 "success": False,
                 "stdout": "",
                 "stderr": "Command timed out",
-                "returncode": -1
+                "returncode": -1,
             }
         except Exception as e:
-            return {
-                "success": False,
-                "stdout": "",
-                "stderr": str(e),
-                "returncode": -1
-            }
+            return {"success": False, "stdout": "", "stderr": str(e), "returncode": -1}
 
     def check_act_installation(self) -> bool:
         """Check if act CLI is installed."""
@@ -72,11 +69,13 @@ class LocalCITester:
             return True
         else:
             self.log("❌ act CLI not found or not working")
-            self.results["issues_found"].append({
-                "type": "missing_dependency",
-                "description": "act CLI not installed or not in PATH",
-                "fix": "Install act CLI: https://github.com/nektos/act"
-            })
+            self.results["issues_found"].append(
+                {
+                    "type": "missing_dependency",
+                    "description": "act CLI not installed or not in PATH",
+                    "fix": "Install act CLI: https://github.com/nektos/act",
+                }
+            )
             return False
 
     def check_docker_status(self) -> bool:
@@ -90,11 +89,13 @@ class LocalCITester:
             return True
         else:
             self.log("❌ Docker is not running or accessible")
-            self.results["issues_found"].append({
-                "type": "docker_issue",
-                "description": "Docker daemon not accessible",
-                "fix": "Start Docker Desktop or Docker daemon"
-            })
+            self.results["issues_found"].append(
+                {
+                    "type": "docker_issue",
+                    "description": "Docker daemon not accessible",
+                    "fix": "Start Docker Desktop or Docker daemon",
+                }
+            )
             return False
 
     def validate_workflows(self) -> bool:
@@ -105,23 +106,25 @@ class LocalCITester:
             self.log("❌ Workflows directory not found")
             return False
 
-        workflow_files = list(self.workflows_dir.glob("*.yml"))
+        workflow_files = list[Any](self.workflows_dir.glob("*.yml"))
         valid_count = 0
 
         for workflow_file in workflow_files:
             self.log(f"Checking {workflow_file.name}...")
-            result = self.run_command(["act", "--list", "-W", str(workflow_file)])
+            result = self.run_command(["act", "--list[Any]", "-W", str(workflow_file)])
 
             if result["success"]:
                 self.log(f"✅ {workflow_file.name} is valid")
                 valid_count += 1
             else:
                 self.log(f"❌ {workflow_file.name} has issues")
-                self.results["issues_found"].append({
-                    "type": "workflow_validation",
-                    "file": workflow_file.name,
-                    "error": result["stderr"]
-                })
+                self.results["issues_found"].append(
+                    {
+                        "type": "workflow_validation",
+                        "file": workflow_file.name,
+                        "error": result["stderr"],
+                    }
+                )
 
         self.results["tests_run"].append("workflow_validation")
         self.results["summary"]["total_workflows"] = len(workflow_files)
@@ -138,10 +141,9 @@ class LocalCITester:
             self.log("❌ Simple test workflow not found")
             return False
 
-        result = self.run_command([
-            "act", "-n", "workflow_dispatch",
-            "-W", str(simple_workflow)
-        ], timeout=120)
+        result = self.run_command(
+            ["act", "-n", "workflow_dispatch", "-W", str(simple_workflow)], timeout=120
+        )
 
         if result["success"]:
             self.log("✅ Simple workflow test passed")
@@ -149,11 +151,13 @@ class LocalCITester:
             return True
         else:
             self.log("❌ Simple workflow test failed")
-            self.results["issues_found"].append({
-                "type": "workflow_execution",
-                "file": "test-simple.yml",
-                "error": result["stderr"]
-            })
+            self.results["issues_found"].append(
+                {
+                    "type": "workflow_execution",
+                    "file": "test-simple.yml",
+                    "error": result["stderr"],
+                }
+            )
             return False
 
     def test_enhanced_ci_workflow(self) -> bool:
@@ -166,11 +170,18 @@ class LocalCITester:
             return False
 
         # Test just the change-detection job
-        result = self.run_command([
-            "act", "-n", "workflow_dispatch",
-            "-W", str(enhanced_workflow),
-            "-j", "change-detection"
-        ], timeout=180)
+        result = self.run_command(
+            [
+                "act",
+                "-n",
+                "workflow_dispatch",
+                "-W",
+                str(enhanced_workflow),
+                "-j",
+                "change-detection",
+            ],
+            timeout=180,
+        )
 
         if result["success"]:
             self.log("✅ Enhanced CI workflow structure test passed")
@@ -178,14 +189,16 @@ class LocalCITester:
             return True
         else:
             self.log("❌ Enhanced CI workflow test failed")
-            self.results["issues_found"].append({
-                "type": "workflow_execution",
-                "file": "ci-enhanced.yml",
-                "error": result["stderr"]
-            })
+            self.results["issues_found"].append(
+                {
+                    "type": "workflow_execution",
+                    "file": "ci-enhanced.yml",
+                    "error": result["stderr"],
+                }
+            )
             return False
 
-    def suggest_fixes(self):
+    def suggest_fixes(self) -> None:
         """Suggest fixes for found issues."""
         if not self.results["issues_found"]:
             self.log("🎉 No issues found! CI/CD pipeline is ready to run.")
@@ -194,9 +207,9 @@ class LocalCITester:
         self.log("🔧 Suggested fixes for found issues:")
         for i, issue in enumerate(self.results["issues_found"], 1):
             self.log(f"{i}. {issue['type']}: {issue['description']}")
-            if 'fix' in issue:
+            if "fix" in issue:
                 self.log(f"   Fix: {issue['fix']}")
-            if 'file' in issue:
+            if "file" in issue:
                 self.log(f"   File: {issue['file']}")
 
     def run_full_test(self) -> bool:
@@ -229,14 +242,15 @@ class LocalCITester:
 
         return self.results["summary"]["all_tests_passed"]
 
-    def save_results(self, filename: str = "ci_test_results.json"):
+    def save_results(self, filename: str = "ci_test_results.json") -> None:
         """Save test results to file."""
         results_file = self.project_root / filename
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(self.results, f, indent=2)
         self.log(f"📊 Results saved to {results_file}")
 
-def main():
+
+def main() -> None:
     """Main function."""
     tester = LocalCITester()
 
@@ -249,7 +263,9 @@ def main():
             print("\n🎉 All tests passed! CI/CD pipeline is ready.")
             sys.exit(0)
         else:
-            print(f"\n❌ Found {len(tester.results['issues_found'])} issues. Check the suggestions above.")
+            print(
+                f"\n❌ Found {len(tester.results['issues_found'])} issues. Check the suggestions above."
+            )
             sys.exit(1)
 
     except KeyboardInterrupt:
@@ -258,6 +274,7 @@ def main():
     except Exception as e:
         print(f"\n💥 Testing failed with error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

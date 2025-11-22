@@ -1,0 +1,70 @@
+[
+  {
+    "cell": null,
+    "code": "C901",
+    "end_location": {
+      "column": 23,
+      "row": 47
+    },
+    "filename": "/mnt/d/Code/ai_enhanced_pdf_scholar/backend/api/auth/dependencies.py",
+    "fix": null,
+    "location": {
+      "column": 15,
+      "row": 47
+    },
+    "message": "`__call__` is too complex (12 > 10)",
+    "noqa_row": 47,
+    "url": "https://docs.astral.sh/ruff/rules/complex-structure"
+  },
+  {
+    "cell": null,
+    "code": "PERF203",
+    "end_location": {
+      "column": 37,
+      "row": 168
+    },
+    "filename": "/mnt/d/Code/ai_enhanced_pdf_scholar/backend/api/auth/migration.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 163
+    },
+    "message": "`try`-`except` within a loop incurs performance overhead",
+    "noqa_row": 163,
+    "url": "https://docs.astral.sh/ruff/rules/try-except-in-loop"
+  },
+  {
+    "cell": null,
+    "code": "PERF203",
+    "end_location": {
+      "column": 76,
+      "row": 202
+    },
+    "filename": "/mnt/d/Code/ai_enhanced_pdf_scholar/backend/api/auth/migration.py",
+    "fix": null,
+    "location": {
+      "column": 17,
+      "row": 201
+    },
+    "message": "`try`-`except` within a loop incurs performance overhead",
+    "noqa_row": 201,
+    "url": "https://docs.astral.sh/ruff/rules/try-except-in-loop"
+  },
+  {
+    "cell": null,
+    "code": "C901",
+    "end_location": {
+      "column": 35,
+      "row": 145
+    },
+    "filename": "/mnt/d/Code/ai_enhanced_pdf_scholar/backend/api/auth/password_security.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 145
+    },
+    "message": "`validate_password_strength` is too complex (13 > 10)",
+    "noqa_row": 145,
+    "url": "https://docs.astral.sh/ruff/rules/complex-structure"
+  }
+]

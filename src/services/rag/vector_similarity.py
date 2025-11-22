@@ -6,7 +6,7 @@ and retrieval relevance analysis for RAG systems.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -16,18 +16,20 @@ logger = logging.getLogger(__name__)
 class VectorSimilarityCalculator:
     """Calculator for vector similarity metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the vector similarity calculator."""
-        self.supported_metrics = ['cosine', 'euclidean', 'manhattan', 'dot_product']
+        self.supported_metrics = ["cosine", "euclidean", "manhattan", "dot_product"]
 
-    def calculate_cosine_similarity(self, vector1: list[float], vector2: list[float]) -> float:
+    def calculate_cosine_similarity(
+        self, vector1: list[float], vector2: list[float]
+    ) -> float:
         """
         Calculate cosine similarity between two vectors.
-        
+
         Args:
             vector1: First vector
             vector2: Second vector
-            
+
         Returns:
             Cosine similarity score between 0 and 1
         """
@@ -48,33 +50,37 @@ class VectorSimilarityCalculator:
 
         return float(dot_product / (norm1 * norm2))
 
-    def calculate_euclidean_distance(self, vector1: list[float], vector2: list[float]) -> float:
+    def calculate_euclidean_distance(
+        self, vector1: list[float], vector2: list[float]
+    ) -> float:
         """
         Calculate Euclidean distance between two vectors.
-        
+
         Args:
             vector1: First vector
             vector2: Second vector
-            
+
         Returns:
             Euclidean distance
         """
         if not vector1 or not vector2:
-            return float('inf')
+            return float("inf")
 
         v1 = np.array(vector1)
         v2 = np.array(vector2)
 
         return float(np.linalg.norm(v1 - v2))
 
-    def calculate_dot_product(self, vector1: list[float], vector2: list[float]) -> float:
+    def calculate_dot_product(
+        self, vector1: list[float], vector2: list[float]
+    ) -> float:
         """
         Calculate dot product between two vectors.
-        
+
         Args:
             vector1: First vector
             vector2: Second vector
-            
+
         Returns:
             Dot product value
         """
@@ -86,30 +92,33 @@ class VectorSimilarityCalculator:
 
         return float(np.dot(v1, v2))
 
-    def batch_similarity(self, query_vector: list[float],
-                        candidate_vectors: list[list[float]],
-                        metric: str = 'cosine') -> list[float]:
+    def batch_similarity(
+        self,
+        query_vector: list[float],
+        candidate_vectors: list[list[float]],
+        metric: str = "cosine",
+    ) -> list[float]:
         """
         Calculate similarity between query vector and multiple candidates.
-        
+
         Args:
             query_vector: Query vector
             candidate_vectors: List of candidate vectors
             metric: Similarity metric to use
-            
+
         Returns:
             List of similarity scores
         """
         similarities = []
 
         for candidate in candidate_vectors:
-            if metric == 'cosine':
+            if metric == "cosine":
                 sim = self.calculate_cosine_similarity(query_vector, candidate)
-            elif metric == 'euclidean':
+            elif metric == "euclidean":
                 # Convert distance to similarity (lower distance = higher similarity)
                 distance = self.calculate_euclidean_distance(query_vector, candidate)
-                sim = 1.0 / (1.0 + distance) if distance != float('inf') else 0.0
-            elif metric == 'dot_product':
+                sim = 1.0 / (1.0 + distance) if distance != float("inf") else 0.0
+            elif metric == "dot_product":
                 sim = self.calculate_dot_product(query_vector, candidate)
             else:
                 sim = 0.0
@@ -122,28 +131,35 @@ class VectorSimilarityCalculator:
 class SemanticSearchOptimizer:
     """Optimizer for semantic search performance."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the semantic search optimizer."""
         self.similarity_calculator = VectorSimilarityCalculator()
-        self.optimization_strategies = ['threshold_tuning', 'reranking', 'query_expansion']
+        self.optimization_strategies = [
+            "threshold_tuning",
+            "reranking",
+            "query_expansion",
+        ]
 
-    def optimize_retrieval_threshold(self, query_vector: list[float],
-                                   candidate_vectors: list[list[float]],
-                                   relevance_scores: list[float]) -> float:
+    def optimize_retrieval_threshold(
+        self,
+        query_vector: list[float],
+        candidate_vectors: list[list[float]],
+        relevance_scores: list[float],
+    ) -> float:
         """
         Optimize similarity threshold for retrieval.
-        
+
         Args:
             query_vector: Query vector
             candidate_vectors: Candidate vectors
             relevance_scores: Known relevance scores
-            
+
         Returns:
             Optimal threshold value
         """
         # Calculate similarities
         similarities = self.similarity_calculator.batch_similarity(
-            query_vector, candidate_vectors, 'cosine'
+            query_vector, candidate_vectors, "cosine"
         )
 
         # Find optimal threshold by maximizing precision/recall balance
@@ -163,7 +179,11 @@ class SemanticSearchOptimizer:
             tp = sum(r and rel for r, rel in zip(retrieved, relevant, strict=False))
             precision = tp / sum(retrieved) if sum(retrieved) > 0 else 0
             recall = tp / sum(relevant) if sum(relevant) > 0 else 0
-            f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+            f1 = (
+                2 * precision * recall / (precision + recall)
+                if (precision + recall) > 0
+                else 0
+            )
 
             if f1 > best_f1:
                 best_f1 = f1
@@ -171,30 +191,35 @@ class SemanticSearchOptimizer:
 
         return best_threshold
 
-    def rerank_results(self, query_vector: list[float],
-                      candidate_vectors: list[list[float]],
-                      initial_scores: list[float],
-                      contexts: Optional[list[str]] = None) -> list[int]:
+    def rerank_results(
+        self,
+        query_vector: list[float],
+        candidate_vectors: list[list[float]],
+        initial_scores: list[float],
+        contexts: list[str] | None = None,
+    ) -> list[int]:
         """
         Rerank search results using multiple signals.
-        
+
         Args:
             query_vector: Query vector
             candidate_vectors: Candidate vectors
             initial_scores: Initial similarity scores
             contexts: Optional context information
-            
+
         Returns:
             List of reranked indices
         """
         # Calculate additional similarity metrics
         cosine_scores = self.similarity_calculator.batch_similarity(
-            query_vector, candidate_vectors, 'cosine'
+            query_vector, candidate_vectors, "cosine"
         )
 
         # Combine scores (weighted average)
         combined_scores = []
-        for i, (initial, cosine) in enumerate(zip(initial_scores, cosine_scores, strict=False)):
+        for i, (initial, cosine) in enumerate(
+            zip(initial_scores, cosine_scores, strict=False)
+        ):
             # Weight: 60% initial, 40% cosine similarity
             combined = 0.6 * initial + 0.4 * cosine
             combined_scores.append((combined, i))
@@ -208,11 +233,11 @@ class SemanticSearchOptimizer:
     def expand_query(self, original_query: str, similar_terms: list[str]) -> str:
         """
         Expand query with similar terms for better retrieval.
-        
+
         Args:
             original_query: Original query text
             similar_terms: List of similar terms
-            
+
         Returns:
             Expanded query
         """
@@ -224,27 +249,30 @@ class SemanticSearchOptimizer:
 class RetrievalRelevanceAnalyzer:
     """Analyzer for retrieval relevance and quality metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the retrieval relevance analyzer."""
         self.similarity_calculator = VectorSimilarityCalculator()
 
-    def analyze_retrieval_quality(self, query_vector: list[float],
-                                 retrieved_vectors: list[list[float]],
-                                 ground_truth_relevant: list[int]) -> dict[str, Any]:
+    def analyze_retrieval_quality(
+        self,
+        query_vector: list[float],
+        retrieved_vectors: list[list[float]],
+        ground_truth_relevant: list[int],
+    ) -> dict[str, Any]:
         """
         Analyze quality of retrieval results.
-        
+
         Args:
             query_vector: Query vector
             retrieved_vectors: Retrieved document vectors
             ground_truth_relevant: Indices of truly relevant documents
-            
+
         Returns:
             Quality metrics
         """
         # Calculate similarities
         similarities = self.similarity_calculator.batch_similarity(
-            query_vector, retrieved_vectors, 'cosine'
+            query_vector, retrieved_vectors, "cosine"
         )
 
         # Calculate metrics
@@ -253,13 +281,21 @@ class RetrievalRelevanceAnalyzer:
 
         # Assume documents with similarity > 0.7 are considered retrieved as relevant
         threshold = 0.7
-        predicted_relevant = [i for i, sim in enumerate(similarities) if sim >= threshold]
+        predicted_relevant = [
+            i for i, sim in enumerate(similarities) if sim >= threshold
+        ]
 
         # Calculate precision, recall, F1
         true_positives = len(set(predicted_relevant) & set(ground_truth_relevant))
-        precision = true_positives / len(predicted_relevant) if predicted_relevant else 0
+        precision = (
+            true_positives / len(predicted_relevant) if predicted_relevant else 0
+        )
         recall = true_positives / total_relevant if total_relevant > 0 else 0
-        f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+        f1_score = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall) > 0
+            else 0
+        )
 
         # Calculate average similarity
         avg_similarity = sum(similarities) / len(similarities) if similarities else 0
@@ -270,41 +306,45 @@ class RetrievalRelevanceAnalyzer:
         low_sim = sum(1 for s in similarities if s < 0.5)
 
         return {
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1_score,
-            'average_similarity': avg_similarity,
-            'total_retrieved': total_retrieved,
-            'total_relevant': total_relevant,
-            'true_positives': true_positives,
-            'similarity_distribution': {
-                'high': high_sim,
-                'medium': medium_sim,
-                'low': low_sim
-            }
+            "precision": precision,
+            "recall": recall,
+            "f1_score": f1_score,
+            "average_similarity": avg_similarity,
+            "total_retrieved": total_retrieved,
+            "total_relevant": total_relevant,
+            "true_positives": true_positives,
+            "similarity_distribution": {
+                "high": high_sim,
+                "medium": medium_sim,
+                "low": low_sim,
+            },
         }
 
-    def calculate_mrr(self, query_vector: list[float],
-                     retrieved_vectors: list[list[float]],
-                     relevant_indices: list[int]) -> float:
+    def calculate_mrr(
+        self,
+        query_vector: list[float],
+        retrieved_vectors: list[list[float]],
+        relevant_indices: list[int],
+    ) -> float:
         """
         Calculate Mean Reciprocal Rank (MRR).
-        
+
         Args:
             query_vector: Query vector
             retrieved_vectors: Retrieved document vectors in rank order
             relevant_indices: Indices of relevant documents
-            
+
         Returns:
             MRR score
         """
         similarities = self.similarity_calculator.batch_similarity(
-            query_vector, retrieved_vectors, 'cosine'
+            query_vector, retrieved_vectors, "cosine"
         )
 
         # Sort by similarity (descending) to get ranking
-        ranked_indices = sorted(range(len(similarities)),
-                              key=lambda i: similarities[i], reverse=True)
+        ranked_indices = sorted(
+            range(len(similarities)), key=lambda i: similarities[i], reverse=True
+        )
 
         # Find first relevant document rank
         for rank, doc_idx in enumerate(ranked_indices, 1):
@@ -313,28 +353,33 @@ class RetrievalRelevanceAnalyzer:
 
         return 0.0  # No relevant documents found
 
-    def calculate_ndcg(self, query_vector: list[float],
-                      retrieved_vectors: list[list[float]],
-                      relevance_scores: list[float],
-                      k: int = 10) -> float:
+    def calculate_ndcg(
+        self,
+        query_vector: list[float],
+        retrieved_vectors: list[list[float]],
+        relevance_scores: list[float],
+        k: int = 10,
+    ) -> float:
         """
         Calculate Normalized Discounted Cumulative Gain (NDCG@k).
-        
+
         Args:
             query_vector: Query vector
             retrieved_vectors: Retrieved document vectors
             relevance_scores: Ground truth relevance scores
             k: Number of top documents to consider
-            
+
         Returns:
             NDCG@k score
         """
         similarities = self.similarity_calculator.batch_similarity(
-            query_vector, retrieved_vectors, 'cosine'
+            query_vector, retrieved_vectors, "cosine"
         )
 
         # Sort by similarity (descending) to get ranking
-        ranked_items = sorted(zip(similarities, relevance_scores, strict=False), reverse=True)[:k]
+        ranked_items = sorted(
+            zip(similarities, relevance_scores, strict=False), reverse=True
+        )[:k]
 
         # Calculate DCG
         dcg = 0.0

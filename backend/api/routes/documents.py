@@ -1,778 +1,789 @@
 """
-Documents API Routes
-RESTful API endpoints for document management operations.
+Documents API v2 Routes
+RESTful endpoints for document management.
+
+Implements:
+- Resource-oriented design
+- Proper dependency injection
+- HATEOAS links
+- Standardized responses
+- Comprehensive error handling
+
+References:
+- ADR-001: V2.0 Architecture Principles
+- ADR-003: API Versioning Strategy
 """
 
-import asyncio
 import logging
-import tempfile
+import time
 from pathlib import Path
-from typing import Any
-from uuid import UUID
 
 from fastapi import (
     APIRouter,
     Depends,
     File,
-    Form,
     HTTPException,
     Query,
+    Response,
     UploadFile,
     status,
 )
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 
 from backend.api.dependencies import (
-    get_api_config,
-    get_library_controller,
-    get_upload_directory,
-    validate_document_access,
+    get_document_library_service,
+    get_document_preview_service,
+    get_document_repository,
+    get_documents_dir,
 )
-from backend.api.error_handling import (
-    ErrorTemplates,
-    SystemException,
-)
-from backend.api.models import (
-    BaseResponse,
-    DocumentImportResponse,
+from backend.api.models.responses import (
+    DocumentData,
     DocumentListResponse,
-    DocumentQueryParams,
     DocumentResponse,
-    DocumentUpdate,
-    IntegrityCheckResponse,
-    SecureFileUpload,
-    SecurityValidationError,
-    SecurityValidationErrorResponse,
+    Links,
+    PaginationMeta,
 )
-from backend.api.streaming_models import (
-    ChunkUploadResponse,
-    StreamingUploadRequest,
-    StreamingUploadResponse,
-    UploadCancellationRequest,
-    UploadMemoryStats,
-    UploadResumeRequest,
-    UploadStatus,
+from backend.api.utils.path_safety import build_safe_temp_path, is_within_allowed_roots
+from backend.config.application_config import get_application_config
+from backend.services.metrics_collector import get_metrics_collector
+from src.database.models import DocumentModel
+from src.exceptions import (
+    DocumentImportError,
+    DocumentValidationError,
+    DuplicateDocumentError,
 )
-from backend.api.websocket_manager import WebSocketManager
-from backend.services.streaming_pdf_service import StreamingPDFProcessor
-from backend.services.streaming_upload_service import StreamingUploadService
-from backend.services.streaming_validation_service import StreamingValidationService
-from backend.services.upload_resumption_service import UploadResumptionService
-from src.controllers.library_controller import LibraryController
-from src.services.document_library_service import DuplicateDocumentError
+from src.interfaces.repository_interfaces import IDocumentRepository
+from src.interfaces.service_interfaces import IDocumentLibraryService
+from src.services.document_preview_service import (
+    DocumentPreviewService,
+    PreviewContent,
+    PreviewDisabledError,
+    PreviewError,
+    PreviewNotFoundError,
+    PreviewUnsupportedError,
+)
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
 
-# Initialize streaming services (these should be dependency injected in production)
-_streaming_upload_service: StreamingUploadService | None = None
-_validation_service: StreamingValidationService | None = None
-_resumption_service: UploadResumptionService | None = None
-_pdf_processor: StreamingPDFProcessor | None = None
-_websocket_manager: WebSocketManager | None = None
+# Note: No prefix here because it's set in main.py when including the router
+router = APIRouter(tags=["documents"])
+_preview_metrics = None
 
 
-def get_streaming_upload_service(upload_dir: Path = Depends(get_upload_directory)) -> StreamingUploadService:
-    """Get streaming upload service dependency."""
-    global _streaming_upload_service
-    if _streaming_upload_service is None:
-        _streaming_upload_service = StreamingUploadService(
-            upload_dir=upload_dir,
-            max_concurrent_uploads=5,
-            memory_limit_mb=500.0,
-        )
-    return _streaming_upload_service
-
-
-def get_validation_service() -> StreamingValidationService:
-    """Get streaming validation service dependency."""
-    global _validation_service
-    if _validation_service is None:
-        _validation_service = StreamingValidationService()
-    return _validation_service
-
-
-def get_resumption_service(upload_dir: Path = Depends(get_upload_directory)) -> UploadResumptionService:
-    """Get upload resumption service dependency."""
-    global _resumption_service
-    if _resumption_service is None:
-        state_dir = upload_dir / "resume_states"
-        _resumption_service = UploadResumptionService(state_dir=state_dir)
-    return _resumption_service
-
-
-def get_pdf_processor() -> StreamingPDFProcessor:
-    """Get streaming PDF processor dependency."""
-    global _pdf_processor
-    if _pdf_processor is None:
-        _pdf_processor = StreamingPDFProcessor()
-    return _pdf_processor
-
-
-def get_websocket_manager() -> WebSocketManager:
-    """Get WebSocket manager dependency."""
-    global _websocket_manager
-    if _websocket_manager is None:
-        _websocket_manager = WebSocketManager()
-    return _websocket_manager
-
-
-def get_document_service():
-    """Get document service for compatibility with tests."""
-    # This is a compatibility function for unit tests
-    # In actual implementation, services are injected via dependencies
-    return None
-
-
-@router.get("/", response_model=DocumentListResponse)
-async def get_documents(
-    params: DocumentQueryParams = Depends(),
-    controller: LibraryController = Depends(get_library_controller),
-) -> DocumentListResponse:
-    """Get list of documents with optional filtering and pagination."""
+def _record_preview_metric(operation: str, result: str, duration: float | None) -> None:
+    """Record preview metrics when the collector is available."""
+    global _preview_metrics
     try:
-        # Use secure validated parameters
-        logger.info(f"Getting documents with secure params: sort_by={params.sort_by}, sort_order={params.sort_order}")
+        if _preview_metrics is None:
+            _preview_metrics = get_metrics_collector().metrics
+        if hasattr(_preview_metrics, "preview_requests_total"):
+            _preview_metrics.preview_requests_total.labels(
+                type=operation, result=result
+            ).inc()
+        if duration is not None and hasattr(
+            _preview_metrics, "preview_generation_seconds"
+        ):
+            _preview_metrics.preview_generation_seconds.labels(type=operation).observe(
+                duration
+            )
+    except Exception:
+        logger.debug("Preview metrics collector unavailable", exc_info=True)
 
-        # Get documents with secure parameters
-        documents = controller.get_documents(
-            search_query=params.search_query,
-            limit=params.per_page * params.page,  # Simple pagination for now
-            sort_by=params.sort_by,  # Enum inherits from str, so no .value needed
+
+def _build_preview_headers(
+    document_id: int, preview: "PreviewContent", ttl_seconds: int
+) -> dict[str, str]:
+    return {
+        "Cache-Control": f"private, max-age={ttl_seconds}",
+        "X-Document-Id": str(document_id),
+        "X-Preview-Page": str(preview.page),
+        "X-Preview-Cache": "hit" if preview.from_cache else "miss",
+    }
+
+
+def _handle_preview_exception(operation: str, exc: Exception) -> None:
+    if isinstance(exc, PreviewDisabledError):
+        _record_preview_metric(operation, "disabled", None)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, PreviewUnsupportedError):
+        _record_preview_metric(operation, "unsupported", None)
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, PreviewNotFoundError):
+        _record_preview_metric(operation, "not_found", None)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, PreviewError):
+        _record_preview_metric(operation, "error", None)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    _record_preview_metric(operation, "error", None)
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to generate preview",
+    ) from exc
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+
+def model_to_response_data(
+    document: DocumentModel, base_url: str = "/api"
+) -> DocumentData:
+    """
+    Convert DocumentModel to DocumentData response.
+
+    Args:
+        document: Database document model
+        base_url: Base URL for generating links
+
+    Returns:
+        DocumentData with HATEOAS links
+    """
+    # Check if file exists
+    file_exists = Path(document.file_path).exists() if document.file_path else False
+
+    # Generate HATEOAS links
+    links = Links(
+        self=f"{base_url}/documents/{document.id}",
+        related={
+            "download": f"{base_url}/documents/{document.id}/download",
+            "queries": f"{base_url}/documents/{document.id}/queries",
+            "indexes": f"{base_url}/documents/{document.id}/indexes",
+            "citations": f"{base_url}/documents/{document.id}/citations",
+            "preview": f"{base_url}/documents/{document.id}/preview",
+            "thumbnail": f"{base_url}/documents/{document.id}/thumbnail",
+        },
+    )
+
+    preview_url = None
+    thumbnail_url = None
+    try:
+        preview_config = get_application_config().preview
+        if preview_config and preview_config.enabled:
+            preview_url = f"{base_url}/documents/{document.id}/preview"
+            thumbnail_url = f"{base_url}/documents/{document.id}/thumbnail"
+    except Exception:
+        logger.debug("Preview configuration unavailable", exc_info=True)
+
+    return DocumentData(
+        id=document.id,
+        title=document.title,
+        file_path=document.file_path,
+        file_hash=document.file_hash,
+        file_size=document.file_size,
+        file_type=document.file_type,
+        page_count=document.page_count,
+        content_hash=document.content_hash,
+        created_at=document.created_at,
+        updated_at=document.updated_at,
+        is_file_available=file_exists,
+        preview_url=preview_url,
+        thumbnail_url=thumbnail_url,
+        _links=links,
+    )
+
+
+# ============================================================================
+# List Documents
+# ============================================================================
+
+
+@router.get(
+    "",
+    response_model=DocumentListResponse,
+    summary="List documents",
+    description="Get paginated list of documents with optional search and filtering",
+    responses={
+        200: {"description": "Documents retrieved successfully"},
+        400: {"description": "Invalid parameters"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def list_documents(
+    # Query parameters
+    query: str | None = Query(
+        None,
+        min_length=1,
+        max_length=500,
+        description="Search query text",
+    ),
+    page: int = Query(1, ge=1, le=1000, description="Page number"),
+    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: str = Query("created_at", description="Sort field"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
+    # Dependencies
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
+) -> DocumentListResponse:
+    """
+    List all documents with pagination and optional search.
+
+    This endpoint demonstrates:
+    - Proper dependency injection (doc_repo injected)
+    - Database-level pagination (LIMIT/OFFSET)
+    - Batch file existence check (no N+1 queries)
+    - HATEOAS links on each document
+    - Standardized response envelope
+    """
+    try:
+        # Calculate offset for pagination
+        offset = (page - 1) * per_page
+
+        # Get documents from repository
+        if query:
+            # Search mode with proper pagination + total count
+            documents, total = doc_repo.search(
+                query=query,
+                limit=per_page,
+                offset=offset,
+            )
+        else:
+            # List all mode
+            documents = doc_repo.get_all(
+                limit=per_page,
+                offset=offset,
+                sort_by=sort_by,
+                sort_order=sort_order,
+            )
+            total = doc_repo.count()
+
+        # Convert to response format with HATEOAS links
+        # Note: File availability is checked inside model_to_response_data
+        document_data = [model_to_response_data(doc) for doc in documents]
+
+        # Calculate pagination metadata
+        total_pages = (total + per_page - 1) // per_page
+        has_next = page < total_pages
+        has_prev = page > 1
+
+        meta = PaginationMeta(
+            page=page,
+            per_page=per_page,
+            total=total,
+            total_pages=total_pages,
+            has_next=has_next,
+            has_prev=has_prev,
         )
-
-        # Apply additional filters
-        if not params.show_missing:
-            documents = [doc for doc in documents if doc.is_file_available()]
-
-        # Simple pagination
-        start_idx = (params.page - 1) * params.per_page
-        end_idx = start_idx + params.per_page
-        paginated_docs = documents[start_idx:end_idx]
-
-        # Convert to response models
-        doc_responses = []
-        for doc in paginated_docs:
-            doc_dict = doc.to_api_dict()
-            doc_dict["is_file_available"] = doc.is_file_available()
-            doc_responses.append(DocumentResponse(**doc_dict))
 
         return DocumentListResponse(
-            documents=doc_responses,
-            total=len(documents),
-            page=params.page,
-            per_page=params.per_page
+            success=True,
+            data=document_data,
+            meta=meta,
+            errors=None,
         )
+
+    except ValueError as e:
+        logger.warning(f"Invalid parameters for list_documents: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
-        logger.error(f"Failed to get documents: {e}")
-        raise SystemException(
-            message="Failed to retrieve documents",
-            error_type="database"
+        logger.error(f"Failed to list documents: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve documents",
         ) from e
 
 
-@router.get("/{document_id}", response_model=DocumentResponse)
+# ============================================================================
+# Get Document by ID
+# ============================================================================
+
+
+@router.get(
+    "/{document_id}",
+    response_model=DocumentResponse,
+    summary="Get document",
+    description="Get document details by ID",
+    responses={
+        200: {"description": "Document retrieved successfully"},
+        404: {"description": "Document not found"},
+        500: {"description": "Internal server error"},
+    },
+)
 async def get_document(
-    document_id: int, controller: LibraryController = Depends(get_library_controller)
-) -> DocumentResponse:
-    """Get a specific document by ID."""
-    try:
-        document = validate_document_access(document_id, controller)
-        doc_dict = document.to_api_dict()
-        doc_dict["is_file_available"] = document.is_file_available()
-        return DocumentResponse(**doc_dict)
-    except HTTPException as e:
-        if e.status_code == 404:
-            raise ErrorTemplates.document_not_found(document_id) from e
-        raise
-
-
-@router.post("/upload", response_model=DocumentImportResponse)
-async def upload_document(
-    file: UploadFile = File(...),
-    title: str | None = None,
-    check_duplicates: bool = True,
-    auto_build_index: bool = False,
-    controller: LibraryController = Depends(get_library_controller),
-    upload_dir: Path = Depends(get_upload_directory),
-    config: dict[str, Any] = Depends(get_api_config),
-) -> DocumentImportResponse:
-    """Upload and import a new PDF document with comprehensive security validation."""
-    try:
-        # Enhanced security validation for file upload
-        try:
-            _ = SecureFileUpload(
-                filename=file.filename or "unknown.pdf",
-                content_type=file.content_type or "application/pdf",
-                file_size=0  # Will be calculated during streaming
-            )
-        except SecurityValidationError as e:
-            return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                content=SecurityValidationErrorResponse.from_security_error(e).dict()
-            )
-
-        # Validate file type (additional check)
-        filename = file.filename or ""
-        if not filename.lower().endswith(".pdf"):
-            raise ErrorTemplates.invalid_file_type(
-                provided_type=file.content_type or "unknown",
-                allowed_types=["application/pdf"]
-            )
-        # Validate file size
-        max_size = config["max_file_size_mb"] * 1024 * 1024
-        file_size = 0
-        # Create temporary file
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=".pdf", dir=upload_dir
-        ) as temp_file:
-            temp_path = temp_file.name
-            # Stream file content and check size
-            while True:
-                chunk = await file.read(8192)  # 8KB chunks
-                if not chunk:
-                    break
-                file_size += len(chunk)
-                if file_size > max_size:
-                    # Clean up temp file
-                    Path(temp_path).unlink(missing_ok=True)
-                    raise ErrorTemplates.file_too_large(file_size, max_size)
-                temp_file.write(chunk)
-        try:
-            # Import document (this will copy file to managed storage)
-            success = controller.import_document(
-                file_path=temp_path,
-                title=title or Path(filename or "uploaded_document").stem,
-                check_duplicates=check_duplicates,
-                auto_build_index=auto_build_index,
-            )
-            if not success:
-                raise SystemException(
-                    message="Document import operation failed",
-                    error_type="general"
-                )
-            # Clean up temp file after successful import
-            Path(temp_path).unlink(missing_ok=True)
-            # Get the imported document
-            # Note: This is a simplified approach - in production, you'd want to
-            # return the document ID from import_document method
-            documents = controller.get_documents(limit=1, sort_by="created_at")
-            if documents:
-                document = documents[0]
-                doc_dict = document.to_api_dict()
-                doc_dict["is_file_available"] = document.is_file_available()
-                return DocumentImportResponse(document=DocumentResponse(**doc_dict))
-            raise SystemException(
-                message="Document imported but could not retrieve details",
-                error_type="database"
-            )
-        except DuplicateDocumentError:
-            # Clean up temp file on duplicate error
-            Path(temp_path).unlink(missing_ok=True)
-            raise ErrorTemplates.duplicate_document(filename or "uploaded file") from None
-        except Exception:
-            # Clean up temp file on any error
-            Path(temp_path).unlink(missing_ok=True)
-            raise
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Document upload failed: {e}")
-        raise SystemException(
-            message="Document upload failed due to an unexpected error",
-            error_type="general") from e
-
-
-@router.post("/streaming/initiate", response_model=StreamingUploadResponse)
-async def initiate_streaming_upload(
-    request: StreamingUploadRequest,
-    streaming_service: StreamingUploadService = Depends(get_streaming_upload_service),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
-    config: dict[str, Any] = Depends(get_api_config),
-) -> StreamingUploadResponse:
-    """
-    Initiate a streaming upload session for large PDF files.
-
-    This endpoint starts a chunked upload process that allows:
-    - Memory-efficient processing of large files
-    - Real-time progress tracking via WebSocket
-    - Upload resumption after interruptions
-    - Concurrent upload management with backpressure
-    """
-    try:
-        # Validate file size against limits
-        max_size = config["max_file_size_mb"] * 1024 * 1024
-        if request.file_size > max_size:
-            raise ErrorTemplates.file_too_large(request.file_size, max_size)
-
-        # Initiate upload session
-        session = await streaming_service.initiate_upload(request, websocket_manager)
-
-        # Join WebSocket room for progress updates
-        await websocket_manager.join_upload_room(request.client_id, str(session.session_id))
-
-        # Create response
-        response = StreamingUploadResponse(
-            session_id=session.session_id,
-            upload_url=f"/api/documents/streaming/chunk/{session.session_id}",
-            chunk_size=session.chunk_size,
-            total_chunks=session.total_chunks,
-            expires_at=session.created_at.replace(hour=23, minute=59, second=59),
-            websocket_room=f"upload_{session.session_id}",
-        )
-
-        logger.info(
-            f"Streaming upload initiated: {session.session_id} "
-            f"({request.filename}, {request.file_size} bytes, {session.total_chunks} chunks)"
-        )
-
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to initiate streaming upload: {e}")
-        raise SystemException(
-            message="Failed to initiate streaming upload",
-            error_type="general") from e
-
-
-@router.post("/streaming/chunk/{session_id}", response_model=ChunkUploadResponse)
-async def upload_chunk(
-    session_id: UUID,
-    chunk_id: int = Form(...),
-    chunk_offset: int = Form(...),
-    is_final: bool = Form(default=False),
-    checksum: str | None = Form(None),
-    file: UploadFile = File(...),
-    streaming_service: StreamingUploadService = Depends(get_streaming_upload_service),
-    validation_service: StreamingValidationService = Depends(get_validation_service),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
-) -> ChunkUploadResponse:
-    """
-    Upload an individual chunk of a streaming upload.
-
-    This endpoint handles:
-    - Individual chunk validation and processing
-    - Real-time progress updates
-    - Memory-efficient chunk processing
-    - Error recovery and retry support
-    """
-    try:
-        # Read chunk data
-        chunk_data = await file.read()
-
-        # Validate chunk during upload
-        is_first_chunk = chunk_id == 0
-        chunk_valid, errors, warnings = await validation_service.validate_chunk_during_upload(
-            chunk_data, chunk_id, is_first_chunk
-        )
-
-        if not chunk_valid:
-            return ChunkUploadResponse(
-                success=False,
-                chunk_id=chunk_id,
-                upload_complete=False,
-                message=f"Chunk validation failed: {'; '.join(errors)}",
-                retry_after=5,
-            )
-
-        # Send warnings if any
-        if warnings and websocket_manager:
-            for warning in warnings:
-                await websocket_manager.send_upload_progress(
-                    "",  # Will be determined from session
-                    {"type": "warning", "message": warning}
-                )
-
-        # Process chunk
-        success, message = await streaming_service.process_chunk(
-            session_id=session_id,
-            chunk_id=chunk_id,
-            chunk_data=chunk_data,
-            chunk_offset=chunk_offset,
-            is_final=is_final,
-            expected_checksum=checksum,
-            websocket_manager=websocket_manager,
-        )
-
-        if not success:
-            return ChunkUploadResponse(
-                success=False,
-                chunk_id=chunk_id,
-                upload_complete=False,
-                message=message,
-                retry_after=5,
-            )
-
-        # Get session to check completion status
-        session = await streaming_service.get_session(session_id)
-        if not session:
-            return ChunkUploadResponse(
-                success=False,
-                chunk_id=chunk_id,
-                upload_complete=False,
-                message="Upload session not found",
-            )
-
-        upload_complete = session.status == UploadStatus.COMPLETED
-        next_chunk_id = None if upload_complete else chunk_id + 1
-
-        return ChunkUploadResponse(
-            success=True,
-            chunk_id=chunk_id,
-            next_chunk_id=next_chunk_id,
-            upload_complete=upload_complete,
-            message="Chunk uploaded successfully" if not upload_complete else "Upload completed successfully",
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to upload chunk {chunk_id} for session {session_id}: {e}")
-        return ChunkUploadResponse(
-            success=False,
-            chunk_id=chunk_id,
-            upload_complete=False,
-            message=f"Chunk upload failed: {str(e)}",
-            retry_after=10,
-        )
-
-
-@router.post("/streaming/complete/{session_id}", response_model=DocumentImportResponse)
-async def complete_streaming_upload(
-    session_id: UUID,
-    streaming_service: StreamingUploadService = Depends(get_streaming_upload_service),
-    pdf_processor: StreamingPDFProcessor = Depends(get_pdf_processor),
-    resumption_service: UploadResumptionService = Depends(get_resumption_service),
-    controller: LibraryController = Depends(get_library_controller),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
-) -> DocumentImportResponse:
-    """
-    Complete a streaming upload and import the document into the library.
-
-    This endpoint:
-    - Validates the complete uploaded file
-    - Processes PDF content with streaming approach
-    - Imports document into the library system
-    - Builds vector index if requested
-    - Cleans up temporary files
-    """
-    try:
-        # Get upload session
-        session = await streaming_service.get_session(session_id)
-        if not session:
-            raise ErrorTemplates.resource_not_found("upload session", str(session_id))
-
-        if session.status != UploadStatus.COMPLETED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Upload not completed. Current status: {session.status.value}"
-            )
-
-        # Validate uploaded file
-        if not session.temp_file_path or not Path(session.temp_file_path).exists():
-            raise SystemException(
-                message="Uploaded file not found",
-                error_type="file_system"
-            )
-
-        # Send processing status
-        await websocket_manager.send_upload_status(
-            session.client_id,
-            str(session_id),
-            "processing",
-            "Starting document import..."
-        )
-
-        try:
-            # Import document using the controller
-            # The temp file will be moved to permanent storage by the controller
-            document_title = session.metadata.get("title") or Path(session.filename).stem
-            check_duplicates = session.metadata.get("check_duplicates", True)
-            auto_build_index = session.metadata.get("auto_build_index", False)
-
-            success = controller.import_document(
-                file_path=session.temp_file_path,
-                title=document_title,
-                check_duplicates=check_duplicates,
-                auto_build_index=auto_build_index,
-            )
-
-            if not success:
-                raise SystemException(
-                    message="Document import operation failed",
-                    error_type="general"
-                )
-
-            # Clean up session and temporary files
-            await streaming_service.cancel_upload(session_id, "Import completed")
-            await resumption_service.delete_resumable_session(session_id)
-
-            # Get the imported document
-            documents = controller.get_documents(limit=1, sort_by="created_at")
-            if documents:
-                document = documents[0]
-                doc_dict = document.to_api_dict()
-                doc_dict["is_file_available"] = document.is_file_available()
-
-                # Send completion notification
-                await websocket_manager.send_upload_completed(
-                    session.client_id,
-                    str(session_id),
-                    doc_dict
-                )
-
-                # Leave upload room
-                await websocket_manager.leave_upload_room(session.client_id, str(session_id))
-
-                return DocumentImportResponse(document=DocumentResponse(**doc_dict))
-
-            raise SystemException(
-                message="Document imported but could not retrieve details",
-                error_type="database"
-            )
-
-        except DuplicateDocumentError:
-            # Clean up on duplicate error
-            await streaming_service.cancel_upload(session_id, "Duplicate document")
-            await resumption_service.delete_resumable_session(session_id)
-            raise ErrorTemplates.duplicate_document(session.filename) from None
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to complete streaming upload {session_id}: {e}")
-
-        # Send error notification
-        if websocket_manager and session:
-            await websocket_manager.send_upload_error(
-                session.client_id,
-                str(session_id),
-                f"Import failed: {str(e)}"
-            )
-
-        raise SystemException(
-            message="Failed to complete document import",
-            error_type="general") from e
-
-
-@router.post("/streaming/cancel/{session_id}", response_model=BaseResponse)
-async def cancel_streaming_upload(
-    session_id: UUID,
-    request: UploadCancellationRequest,
-    streaming_service: StreamingUploadService = Depends(get_streaming_upload_service),
-    resumption_service: UploadResumptionService = Depends(get_resumption_service),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
-) -> BaseResponse:
-    """Cancel an active streaming upload."""
-    try:
-        # Get session for client ID
-        session = await streaming_service.get_session(session_id)
-
-        # Cancel upload
-        success = await streaming_service.cancel_upload(session_id, request.reason or "User cancelled")
-
-        if success:
-            # Clean up resumption data
-            await resumption_service.delete_resumable_session(session_id)
-
-            # Notify client
-            if session and websocket_manager:
-                await websocket_manager.send_upload_status(
-                    session.client_id,
-                    str(session_id),
-                    "cancelled",
-                    request.reason or "Upload cancelled"
-                )
-                await websocket_manager.leave_upload_room(session.client_id, str(session_id))
-
-            return BaseResponse(message=f"Upload {session_id} cancelled successfully")
-        else:
-            raise ErrorTemplates.resource_not_found("upload session", str(session_id))
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to cancel streaming upload {session_id}: {e}")
-        raise SystemException(
-            message="Failed to cancel upload",
-            error_type="general") from e
-
-
-@router.post("/streaming/resume", response_model=StreamingUploadResponse)
-async def resume_streaming_upload(
-    request: UploadResumeRequest,
-    resumption_service: UploadResumptionService = Depends(get_resumption_service),
-    streaming_service: StreamingUploadService = Depends(get_streaming_upload_service),
-    websocket_manager: WebSocketManager = Depends(get_websocket_manager),
-) -> StreamingUploadResponse:
-    """Resume an interrupted streaming upload."""
-    try:
-        # Resume session
-        session = await resumption_service.resume_upload_session(request)
-
-        if not session:
-            raise ErrorTemplates.resource_not_found("resumable upload session", str(request.session_id))
-
-        # Re-register with streaming service
-        streaming_service.active_sessions[session.session_id] = session
-        streaming_service.session_locks[session.session_id] = asyncio.Lock()
-
-        # Join WebSocket room
-        await websocket_manager.join_upload_room(request.client_id, str(session.session_id))
-
-        # Send resume notification
-        await websocket_manager.send_upload_status(
-            request.client_id,
-            str(session.session_id),
-            "resumed",
-            f"Upload resumed from chunk {session.uploaded_chunks}"
-        )
-
-        response = StreamingUploadResponse(
-            session_id=session.session_id,
-            upload_url=f"/api/documents/streaming/chunk/{session.session_id}",
-            chunk_size=session.chunk_size,
-            total_chunks=session.total_chunks,
-            expires_at=session.created_at.replace(hour=23, minute=59, second=59),
-            websocket_room=f"upload_{session.session_id}",
-        )
-
-        logger.info(f"Streaming upload resumed: {session.session_id} from chunk {session.uploaded_chunks}")
-
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to resume streaming upload: {e}")
-        raise SystemException(
-            message="Failed to resume upload",
-            error_type="general") from e
-
-
-@router.get("/streaming/resumable", response_model=list[dict])
-async def get_resumable_uploads(
-    client_id: str | None = Query(None),
-    resumption_service: UploadResumptionService = Depends(get_resumption_service),
-) -> list[dict]:
-    """Get list of resumable upload sessions."""
-    try:
-        resumable_sessions = await resumption_service.get_resumable_sessions(client_id)
-        return resumable_sessions
-    except Exception as e:
-        logger.error(f"Failed to get resumable uploads: {e}")
-        raise SystemException(
-            message="Failed to retrieve resumable uploads",
-            error_type="general") from e
-
-
-@router.get("/streaming/memory-stats", response_model=UploadMemoryStats)
-async def get_upload_memory_stats(
-    streaming_service: StreamingUploadService = Depends(get_streaming_upload_service),
-) -> UploadMemoryStats:
-    """Get current memory usage statistics for upload operations."""
-    try:
-        return await streaming_service.get_memory_stats()
-    except Exception as e:
-        logger.error(f"Failed to get memory stats: {e}")
-        raise SystemException(
-            message="Failed to retrieve memory statistics",
-            error_type="general") from e
-
-
-@router.put("/{document_id}", response_model=DocumentResponse)
-async def update_document(
     document_id: int,
-    update_data: DocumentUpdate,
-    controller: LibraryController = Depends(get_library_controller),
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
 ) -> DocumentResponse:
-    """Update document metadata."""
-    document = validate_document_access(document_id, controller)
-    try:
-        # Update document fields
-        if update_data.title is not None:
-            document.title = update_data.title
-        if update_data.metadata is not None:
-            if document.metadata is None:
-                document.metadata = {}
-            document.metadata.update(update_data.metadata)
-        # Save changes (this would need to be implemented in the controller)
-        # For now, we'll return the document as-is
-        doc_dict = document.to_api_dict()
-        doc_dict["is_file_available"] = document.is_file_available()
-        return DocumentResponse(**doc_dict)
-    except Exception as e:
-        logger.error(f"Failed to update document {document_id}: {e}")
-        raise SystemException(
-            message="Document update failed",
-            error_type="database") from e
+    """
+    Get a specific document by ID.
 
+    Args:
+        document_id: Document ID
+        doc_repo: Document repository (injected)
 
-@router.delete("/{document_id}", response_model=BaseResponse)
-async def delete_document(
-    document_id: int, controller: LibraryController = Depends(get_library_controller)
-) -> BaseResponse:
-    """Delete a document."""
-    validate_document_access(document_id, controller)
+    Returns:
+        DocumentResponse with document data and HATEOAS links
+
+    Raises:
+        HTTPException: 404 if document not found
+    """
     try:
-        success = controller.delete_document(document_id)
-        if success:
-            return BaseResponse(message=f"Document {document_id} deleted successfully")
-        else:
-            raise SystemException(
-                message="Document deletion failed",
-                error_type="database"
+        # Get document from repository
+        document = doc_repo.get_by_id(document_id)
+
+        if document is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document {document_id} not found",
             )
+
+        # Convert to response format
+        document_data = model_to_response_data(document)
+
+        return DocumentResponse(
+            success=True,
+            data=document_data,
+            errors=None,
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to delete document {document_id}: {e}")
-        raise SystemException(
-            message="Document deletion failed due to an unexpected error",
-            error_type="general") from e
+        logger.error(f"Failed to get document {document_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve document",
+        ) from e
 
 
-@router.get("/{document_id}/download")
-async def download_document(
-    document_id: int, controller: LibraryController = Depends(get_library_controller)
-) -> FileResponse:
-    """Download the original PDF file."""
-    document = validate_document_access(document_id, controller)
-    if not document.file_path or not Path(document.file_path).exists():
-        raise ErrorTemplates.file_not_found(document.file_path or "document file")
+@router.get(
+    "/{document_id}/preview",
+    summary="Get document page preview",
+    responses={
+        200: {
+            "content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}
+        },
+        400: {"description": "Invalid parameters"},
+        404: {"description": "Document/page not found"},
+        415: {"description": "Unsupported media type"},
+        503: {"description": "Previews disabled"},
+    },
+)
+async def get_document_preview(
+    document_id: int,
+    page: int = Query(1, ge=1, le=1000, description="One-based page number"),
+    width: int | None = Query(
+        None,
+        ge=64,
+        le=2000,
+        description="Target width in pixels (auto-clamped to configured limits)",
+    ),
+    preview_service: DocumentPreviewService = Depends(get_document_preview_service),
+) -> Response:
+    """Return a rendered PNG preview for the requested page."""
+    start = time.perf_counter()
     try:
+        preview = preview_service.get_page_preview(document_id, page, width)
+        duration = time.perf_counter() - start
+        _record_preview_metric("preview", "success", duration)
+        headers = _build_preview_headers(
+            document_id, preview, preview_service.settings.cache_ttl_seconds
+        )
+        return Response(
+            content=preview.content, media_type=preview.content_type, headers=headers
+        )
+    except Exception as exc:  # noqa: BLE001
+        _handle_preview_exception("preview", exc)
+
+
+@router.get(
+    "/{document_id}/thumbnail",
+    summary="Get document thumbnail",
+    responses={
+        200: {
+            "content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}
+        },
+        404: {"description": "Document not found"},
+        415: {"description": "Unsupported media type"},
+        503: {"description": "Previews disabled"},
+    },
+)
+async def get_document_thumbnail(
+    document_id: int,
+    preview_service: DocumentPreviewService = Depends(get_document_preview_service),
+) -> Response:
+    """Return the cached thumbnail (first page) for a document."""
+    start = time.perf_counter()
+    try:
+        preview = preview_service.get_thumbnail(document_id)
+        duration = time.perf_counter() - start
+        _record_preview_metric("thumbnail", "success", duration)
+        headers = _build_preview_headers(
+            document_id, preview, preview_service.settings.cache_ttl_seconds
+        )
+        return Response(
+            content=preview.content, media_type=preview.content_type, headers=headers
+        )
+    except Exception as exc:  # noqa: BLE001
+        _handle_preview_exception("thumbnail", exc)
+
+
+# ============================================================================
+# Upload Document
+# ============================================================================
+
+
+def _validate_file_upload(file: UploadFile | None) -> None:
+    """
+    Validate uploaded file type and presence.
+
+    Args:
+        file: Uploaded file to validate
+
+    Raises:
+        HTTPException(400): File is None
+        HTTPException(415): File is not PDF
+    """
+    if file is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is required",
+        )
+    if not file.content_type == "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Only PDF files are supported",
+        )
+
+
+async def _save_uploaded_file(
+    file: UploadFile,
+    documents_dir: Path,
+    max_size_mb: int = 50,
+) -> tuple[Path, int]:
+    """
+    Save uploaded file to temporary location with size validation.
+
+    Args:
+        file: Uploaded file
+        documents_dir: Base documents directory
+        max_size_mb: Maximum file size in MB
+
+    Returns:
+        (temp_path, file_size_bytes)
+
+    Raises:
+        HTTPException(413): File exceeds size limit
+    """
+    MAX_SIZE = max_size_mb * 1024 * 1024
+    file_size = 0
+    temp_path = build_safe_temp_path(documents_dir, file.filename)
+
+    with open(temp_path, "wb") as f:
+        while chunk := await file.read(8192):  # 8KB chunks
+            file_size += len(chunk)
+            if file_size > MAX_SIZE:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"File too large (max {max_size_mb}MB)",
+                )
+            f.write(chunk)
+
+    return temp_path, file_size
+
+
+def _import_and_build_response(
+    temp_path: Path,
+    title: str | None,
+    check_duplicates: bool,
+    overwrite_duplicates: bool,
+    library_service: IDocumentLibraryService,
+) -> DocumentResponse:
+    """
+    Import document via service and build response.
+
+    Args:
+        temp_path: Temporary file path
+        title: Optional document title
+        check_duplicates: Whether to check for duplicates
+        overwrite_duplicates: Whether to overwrite duplicates
+        library_service: Document library service
+
+    Returns:
+        DocumentResponse with imported document data
+    """
+    document = library_service.import_document(
+        file_path=str(temp_path),
+        title=title,
+        check_duplicates=check_duplicates,
+        overwrite_duplicates=overwrite_duplicates,
+    )
+
+    document_data = model_to_response_data(document)
+
+    return DocumentResponse(
+        success=True,
+        data=document_data,
+        errors=None,
+    )
+
+
+def _map_document_import_error(exc: Exception) -> HTTPException:
+    """
+    Map domain exceptions to HTTP exceptions.
+
+    Args:
+        exc: Exception from document import
+
+    Returns:
+        HTTPException with appropriate status code and message
+    """
+    if isinstance(exc, HTTPException):
+        return exc
+    if isinstance(exc, DuplicateDocumentError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=exc.user_message,
+        )
+    if isinstance(exc, DocumentValidationError):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.user_message,
+        )
+    if isinstance(exc, DocumentImportError):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.user_message,
+        )
+    if isinstance(exc, ValueError):
+        if "duplicate" in str(exc).lower():
+            return HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=str(exc),
+            )
+        else:
+            return HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            )
+
+    # Generic error
+    logger.error(f"Failed to upload document: {exc}", exc_info=True)
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to upload document",
+    )
+
+
+@router.post(
+    "",
+    response_model=DocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload document",
+    description="Upload a new PDF document to the library",
+    responses={
+        201: {"description": "Document uploaded successfully"},
+        400: {"description": "Invalid file or parameters"},
+        409: {"description": "Duplicate document exists"},
+        413: {"description": "File too large"},
+        415: {"description": "Unsupported media type (must be PDF)"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def upload_document(
+    # File upload (multipart/form-data)
+    file: UploadFile = File(..., description="PDF file to upload"),
+    # Optional metadata
+    title: str | None = Query(
+        None, description="Document title (defaults to filename)"
+    ),
+    check_duplicates: bool = Query(True, description="Check for duplicates"),
+    overwrite_duplicates: bool = Query(
+        False, description="Overwrite if duplicate found"
+    ),
+    # Dependencies
+    library_service: IDocumentLibraryService = Depends(get_document_library_service),
+    documents_dir: Path = Depends(get_documents_dir),
+) -> DocumentResponse:
+    """Upload a new document to the library with validation and duplicate handling."""
+    try:
+        # Validate file type and presence
+        _validate_file_upload(file)
+
+        # Save file with size validation
+        temp_path, _ = await _save_uploaded_file(file, documents_dir)
+
+        try:
+            # Import document and build response
+            return _import_and_build_response(
+                temp_path,
+                title,
+                check_duplicates,
+                overwrite_duplicates,
+                library_service,
+            )
+        finally:
+            # Clean up temp file
+            if temp_path.exists():
+                temp_path.unlink()
+
+    except Exception as e:
+        raise _map_document_import_error(e) from e
+
+
+# ============================================================================
+# Download Document
+# ============================================================================
+
+
+@router.get(
+    "/{document_id}/download",
+    response_class=FileResponse,
+    summary="Download document",
+    description="Download the PDF file for a document",
+    responses={
+        200: {"description": "File download"},
+        404: {"description": "Document or file not found"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def download_document(
+    document_id: int,
+    doc_repo: IDocumentRepository = Depends(get_document_repository),
+    documents_dir: Path = Depends(get_documents_dir),
+) -> FileResponse:
+    """
+    Download document file.
+
+    This endpoint demonstrates:
+    - Path traversal prevention (validate_file_path)
+    - Secure file serving
+    - Proper content-type headers
+
+    Args:
+        document_id: Document ID
+        doc_repo: Document repository (injected)
+        documents_dir: Documents storage directory (injected)
+
+    Returns:
+        FileResponse with PDF file
+
+    Raises:
+        HTTPException: 404 if document or file not found
+    """
+    try:
+        # Get document from repository
+        document = doc_repo.get_by_id(document_id)
+
+        if document is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document {document_id} not found",
+            )
+
+        if not document.file_path:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document file path is missing",
+            )
+
+        # Validate file path (prevent path traversal)
+        file_path = Path(document.file_path).expanduser().resolve()
+
+        # Allow per-document storage root overrides tracked in metadata
+        allowed_roots = [documents_dir.resolve()]
+        storage_root = (document.metadata or {}).get("storage_root")
+        if storage_root:
+            allowed_roots.insert(0, Path(storage_root))
+
+        if not is_within_allowed_roots(file_path, allowed_roots):
+            logger.error(
+                f"Path traversal attempt blocked: {file_path} not in allowed roots {allowed_roots}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid file path",
+            )
+
+        # Check if file exists
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Document file not found on disk",
+            )
+
+        # Return file
         return FileResponse(
-            path=document.file_path,
+            path=file_path,
             filename=f"{document.title}.pdf",
             media_type="application/pdf",
         )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to serve document file: {e}")
-        raise SystemException(
-            message="Failed to serve document file",
-            error_type="general") from e
+        logger.error(f"Failed to download document {document_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to download document",
+        ) from e
 
 
-@router.get("/{document_id}/integrity", response_model=IntegrityCheckResponse)
-async def check_document_integrity(
-    document_id: int, controller: LibraryController = Depends(get_library_controller)
-) -> IntegrityCheckResponse:
-    """Check document and index integrity."""
-    validate_document_access(document_id, controller)
+# ============================================================================
+# Delete Document
+# ============================================================================
+
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete document",
+    description="Delete a document and optionally its vector index",
+    responses={
+        204: {"description": "Document deleted successfully"},
+        404: {"description": "Document not found"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def delete_document(
+    document_id: int,
+    remove_index: bool = Query(True, description="Also remove vector index"),
+    library_service: IDocumentLibraryService = Depends(get_document_library_service),
+) -> None:
+    """
+    Delete a document from the library.
+
+    Args:
+        document_id: Document ID
+        remove_index: Whether to also remove vector index
+        library_service: Document library service (injected)
+
+    Raises:
+        HTTPException: 404 if document not found
+    """
     try:
-        integrity = controller.verify_document_integrity(document_id)
-        return IntegrityCheckResponse(
+        # Delete document using service
+        success = library_service.delete_document(
             document_id=document_id,
-            exists=integrity.get("exists", False),
-            file_exists=integrity.get("file_exists", False),
-            file_accessible=integrity.get("file_accessible", False),
-            hash_matches=integrity.get("hash_matches", False),
-            vector_index_exists=integrity.get("vector_index_exists", False),
-            vector_index_valid=integrity.get("vector_index_valid", False),
-            is_healthy=integrity.get("is_healthy", False),
-            errors=integrity.get("errors", []),
-            warnings=integrity.get("warnings", []),
+            remove_vector_index=remove_index,
         )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document {document_id} not found",
+            )
+
+        # 204 No Content - no response body
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to check integrity for document {document_id}: {e}")
-        raise SystemException(
-            message="Document integrity check failed",
-            error_type="general") from e
+        logger.error(f"Failed to delete document {document_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete document",
+        ) from e

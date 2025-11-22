@@ -5,30 +5,35 @@ RAG functionality, and real-time features.
 """
 
 import asyncio
+import importlib
 import json
 import logging
 import os
 import sys
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 import uvicorn
-from fastapi import (
-    FastAPI,
-    HTTPException,
-    WebSocket,
-    WebSocketDisconnect,
-)
+from dotenv import load_dotenv
+
+# Load .env file BEFORE any other imports that use env vars
+# CRITICAL: Use override=True to override shell environment variables
+env_path = Path(__file__).parent.parent.parent / ".env"
+load_dotenv(dotenv_path=env_path, override=True)
+print(f"[DEBUG] Loaded .env from: {env_path}")
+print(f"[DEBUG] CORS_ORIGINS from env: {os.getenv('CORS_ORIGINS', 'NOT SET')}")
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 from backend.api.cors_config import get_cors_config
-from backend.api.dependencies import get_db, get_enhanced_rag, get_library_controller
 from backend.api.middleware.error_handling import setup_comprehensive_error_handling
 from backend.api.middleware.rate_limiting import RateLimitMiddleware
 from backend.api.middleware.security_headers import (
@@ -38,7 +43,7 @@ from backend.api.middleware.security_headers import (
 from backend.api.rate_limit_config import get_env_override_config, get_rate_limit_config
 
 # Models are used in individual route modules
-from backend.api.routes import settings
+# from backend.api.routes import settings  # TODO: Re-implement settings route
 from backend.api.websocket_manager import WebSocketManager
 from src.database import DatabaseMigrator
 from src.database.connection import DatabaseConnection
@@ -58,7 +63,7 @@ security_headers_config = SecurityHeadersConfig()
 rate_limit_config = get_env_override_config(get_rate_limit_config())
 
 
-async def _deferred_initialization(db_path: Path):
+async def _deferred_initialization(db_path: Path) -> None:
     """
     Handle non-essential initializations after server startup.
     This runs in the background to avoid blocking the server from accepting connections.
@@ -78,19 +83,33 @@ async def _deferred_initialization(db_path: Path):
         try:
             logger.info("Security headers configuration:")
             logger.info(f"  - Environment: {security_headers_config.environment.value}")
-            logger.info(f"  - CSP: {'Enabled' if security_headers_config.csp_enabled else 'Disabled'}")
-            logger.info(f"  - CSP Mode: {'Report-Only' if security_headers_config.csp_report_only else 'Enforcing'}")
-            logger.info(f"  - HSTS: {'Enabled' if security_headers_config.strict_transport_security_enabled else 'Disabled'}")
-            logger.info(f"  - Nonce-based CSP: {'Enabled' if security_headers_config.nonce_enabled else 'Disabled'}")
+            logger.info(
+                f"  - CSP: {'Enabled' if security_headers_config.csp_enabled else 'Disabled'}"
+            )
+            logger.info(
+                f"  - CSP Mode: {'Report-Only' if security_headers_config.csp_report_only else 'Enforcing'}"
+            )
+            logger.info(
+                f"  - HSTS: {'Enabled' if security_headers_config.strict_transport_security_enabled else 'Disabled'}"
+            )
+            logger.info(
+                f"  - Nonce-based CSP: {'Enabled' if security_headers_config.nonce_enabled else 'Disabled'}"
+            )
         except Exception as e:
             logger.warning(f"Failed to log security headers config: {e}")
 
         # Log rate limiting configuration
         try:
             logger.info("Rate limiting configuration:")
-            logger.info(f"  - Default limit: {rate_limit_config.default_limit.requests} requests/{rate_limit_config.default_limit.window}s")
-            logger.info(f"  - Global IP limit: {rate_limit_config.global_ip_limit.requests} requests/{rate_limit_config.global_ip_limit.window}s")
-            logger.info(f"  - Storage backend: {'Redis' if rate_limit_config.redis_url else 'In-Memory'}")
+            logger.info(
+                f"  - Default limit: {rate_limit_config.default_limit.requests} requests/{rate_limit_config.default_limit.window}s"
+            )
+            logger.info(
+                f"  - Global IP limit: {rate_limit_config.global_ip_limit.requests} requests/{rate_limit_config.global_ip_limit.window}s"
+            )
+            logger.info(
+                f"  - Storage backend: {'Redis' if rate_limit_config.redis_url else 'In-Memory'}"
+            )
             logger.info(f"  - Environment: {os.getenv('ENVIRONMENT', 'development')}")
         except Exception as e:
             logger.warning(f"Failed to log rate limit config: {e}")
@@ -112,10 +131,18 @@ async def _deferred_initialization(db_path: Path):
 
         # Initialize cache system (lazy loading)
         try:
-            from backend.services.cache_service_integration import (
-                initialize_application_cache,
-            )
+            importlib.import_module("backend.services.cache_service_integration")
             logger.info("Cache system ready for initialization on first request")
+        except ModuleNotFoundError as e:
+            if e.name == "sklearn":
+                logger.warning(
+                    "Cache system preparation skipped: scikit-learn is not installed. "
+                    "Install optional ML cache dependencies "
+                    '(`pip install -r requirements-scaling.txt` or `pip install ".[cache-ml]"`) '
+                    "or set CACHE_ML_OPTIMIZATIONS_ENABLED=false."
+                )
+            else:
+                logger.warning(f"Cache system preparation failed: {e}")
         except Exception as e:
             logger.warning(f"Cache system preparation failed: {e}")
 
@@ -128,9 +155,9 @@ async def _deferred_initialization(db_path: Path):
 
 # Define lifespan context manager for proper ASGI lifespan handling
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan context manager for startup and shutdown events.
-    
+
     REFACTORED: Minimized startup time by deferring non-essential initializations.
     Only critical database setup happens during startup. All logging and cache
     initialization are deferred to background tasks after server starts.
@@ -165,14 +192,12 @@ async def lifespan(app: FastAPI):
 
     # Shutdown cache system
     try:
-        from backend.services.cache_service_integration import (
-            shutdown_application_cache,
-        )
         logger.info("Cache system shutdown completed")
     except Exception as cache_error:
         logger.warning(f"Cache system shutdown error: {cache_error}")
 
     logger.info("API shutdown completed")
+
 
 # Create FastAPI app with lifespan
 app = FastAPI(
@@ -203,38 +228,26 @@ from backend.services.metrics_service import FastAPIMetricsMiddleware
 
 # Note: add_middleware passes the app automatically as the first argument
 # We only need to pass additional arguments as keyword arguments
-app.add_middleware(FastAPIMetricsMiddleware, metrics_service=metrics_collector.metrics_service)
-
-# WebSocket manager
-websocket_manager = WebSocketManager()
-# Include API routes
-from backend.api.auth import routes as auth_routes
-from backend.api.routes import (
-    cache_admin,
-    documents,
-    library,
-    multi_document,
-    rag,
-    rate_limit_admin,
-    system,
+app.add_middleware(
+    FastAPIMetricsMiddleware, metrics_service=metrics_collector.metrics_service
 )
 
-app.include_router(auth_routes.router, prefix="/api", tags=["authentication"])
-app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
-app.include_router(rag.router, prefix="/api/rag", tags=["rag"])
-app.include_router(library.router, prefix="/api/library", tags=["library"])
-app.include_router(multi_document.router, prefix="/api/multi-document", tags=["multi-document"])
-app.include_router(system.router, prefix="/api/system", tags=["system"])
-app.include_router(settings.router, prefix="/api")
-app.include_router(rate_limit_admin.router, prefix="/api/admin", tags=["rate-limiting"])
-app.include_router(cache_admin.router, prefix="/api/admin", tags=["cache-admin"])
+# WebSocket manager
+websocket_manager: WebSocketManager = WebSocketManager()
+# Include API routes (only available v2 routes)
+from backend.api.routes import api_router
+
+# TODO: Re-implement missing routes (auth, library, multi_document, system, rate_limit_admin, cache_admin)
+# Single source of truth for public APIs lives under /api
+app.include_router(api_router, prefix="/api")
 
 # ============================================================================
 # Monitoring Endpoints
 # ============================================================================
 
+
 @app.get("/metrics")
-async def get_metrics():
+async def get_metrics() -> Response:
     """Prometheus metrics endpoint."""
     try:
         metrics_data, content_type = metrics_collector.get_metrics_response()
@@ -243,53 +256,64 @@ async def get_metrics():
         logger.error(f"Failed to generate metrics: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate metrics") from e
 
+
 @app.get("/")
-async def root():
+async def root() -> dict[str, Any]:
     """Root endpoint for basic connectivity test."""
     return {
         "message": "AI Enhanced PDF Scholar API is running",
         "version": "2.0.0",
-        "docs": "/api/docs"
+        "docs": "/api/docs",
     }
 
+
 @app.get("/ping")
-async def ping():
+async def ping() -> dict[str, bool]:
     """Simple ping endpoint for connectivity test."""
     return {"pong": True}
 
+
 @app.get("/health")
-async def basic_health_check():
+@app.get(
+    "/api/system/health"
+)  # Alias for frontend compatibility (Vite proxy expects /api prefix)
+async def basic_health_check() -> dict[str, Any]:
     """Basic health check endpoint - no dependencies."""
     return {
         "status": "healthy",
         "service": "AI Enhanced PDF Scholar API",
         "version": "2.0.0",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
+
 @app.get("/health/detailed")
-async def detailed_health_check():
+async def detailed_health_check() -> dict[str, Any]:
     """Comprehensive health check endpoint."""
     try:
         health_status = await metrics_collector.check_comprehensive_health()
-        return health_status
+        return cast(dict[str, Any], health_status)
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {
             "healthy": False,
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
+
 @app.get("/metrics/dashboard")
-async def get_dashboard_metrics():
+async def get_dashboard_metrics() -> dict[str, Any]:
     """Get formatted metrics for custom dashboard."""
     try:
         dashboard_data = metrics_collector.get_dashboard_metrics()
-        return dashboard_data
+        return cast(dict[str, Any], dashboard_data)
     except Exception as e:
         logger.error(f"Failed to get dashboard metrics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get dashboard metrics") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to get dashboard metrics"
+        ) from e
+
 
 # Serve static files for frontend
 frontend_dist = project_root / "frontend" / "dist"
@@ -298,7 +322,6 @@ if frontend_dist.exists():
 
 
 # WebSocket endpoint for real-time communication
-@app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
     """WebSocket endpoint for real-time communication."""
     await websocket_manager.connect(websocket, client_id)
@@ -324,32 +347,25 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str) -> None:
         logger.info(f"WebSocket client {client_id} disconnected")
 
 
+app.add_api_websocket_route("/ws/{client_id}", websocket_endpoint)
+
+
 async def handle_rag_query_websocket(
     query: str, document_id: int, client_id: str
 ) -> None:
     """Handle RAG query via WebSocket."""
     try:
-        # Get services using dependency injection
-        db = next(get_db())
-        enhanced_rag = get_enhanced_rag(db)
-        controller = get_library_controller(db, enhanced_rag)
-        # Send progress update
-        await websocket_manager.send_personal_message(
-            json.dumps(
-                {"type": "rag_progress", "message": "正在分析文档并生成回答..."}
-            ),
-            client_id,
+        # TODO: Reimplement with v2 architecture - WebSocket RAG queries currently disabled
+        # For now, redirect users to REST API
+        logger.info(
+            f"WebSocket RAG query received but disabled - document_id: {document_id}"
         )
-        # Perform query
-        response = controller.query_document(document_id, query)
-        # Send result
+        # Inform client to use REST API instead
         await websocket_manager.send_personal_message(
             json.dumps(
                 {
-                    "type": "rag_response",
-                    "query": query,
-                    "response": response,
-                    "document_id": document_id,
+                    "type": "rag_info",
+                    "message": f"WebSocket RAG queries are temporarily disabled. Please use REST API: POST /api/documents/{document_id}/query",
                 }
             ),
             client_id,
@@ -365,4 +381,15 @@ async def handle_rag_query_websocket(
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    # Fix 1: Correct module path for ASGI
+    # Fix 2: Exclude .trunk directory to prevent watchfiles filesystem loop error
+    server_host = os.getenv("API_SERVER_HOST", "127.0.0.1")
+    server_port = int(os.getenv("API_SERVER_PORT", "8000"))
+    uvicorn.run(
+        "backend.api.main:app",
+        host=server_host,
+        port=server_port,
+        reload=True,
+        reload_excludes=[".trunk/**", "node_modules/**", ".git/**"],
+        log_level="info",
+    )

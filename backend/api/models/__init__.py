@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 API Models Package
 ==================
@@ -67,20 +69,64 @@ from backend.api.models.multi_document_models import (
 )
 
 # Get the path to models.py in the parent directory
-models_path = os.path.join(os.path.dirname(__file__), '..', 'models.py')
+models_path = os.path.join(os.path.dirname(__file__), "..", "models.py")
 if os.path.exists(models_path):
     # Load the module directly
     import importlib.util
-    spec = importlib.util.spec_from_file_location("backend_api_models_main", models_path)
+
+    spec = importlib.util.spec_from_file_location(
+        "backend_api_models_main", models_path
+    )
     models_main = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(models_main)
     SystemHealthResponse = models_main.SystemHealthResponse
+    SystemInfoResponse = models_main.SystemInfoResponse
     SearchFilter = models_main.SearchFilter
-    DocumentQueryParams = models_main.DocumentQueryParams  # Import from main models.py with security validation
-    DocumentListResponse = models_main.DocumentListResponse  # Import from main models.py with correct structure
+    DocumentQueryParams = (
+        models_main.DocumentQueryParams
+    )  # Import from main models.py with security validation
+    DocumentListResponse = (
+        models_main.DocumentListResponse
+    )  # Import from main models.py with correct structure
+
+    # CRITICAL: Import RAG models from main models.py (has document_id field)
+    # The multi_document_models version has user_id/session_id instead
+    RAGQueryRequest = models_main.RAGQueryRequest  # Override multi_document import
+    RAGQueryResponse = models_main.RAGQueryResponse  # Override multi_document import
+    IndexBuildRequest = models_main.IndexBuildRequest  # Override multi_document import
+    IndexBuildResponse = (
+        models_main.IndexBuildResponse
+    )  # Override multi_document import
+    IndexStatusResponse = (
+        models_main.IndexStatusResponse
+    )  # Override multi_document import
+    CacheStatsResponse = (
+        models_main.CacheStatsResponse
+    )  # Override multi_document import
+    CacheClearResponse = (
+        models_main.CacheClearResponse
+    )  # Override multi_document import
+
+    # CRITICAL: Import system models from main models.py (correct field names)
+    # multi_document_models.ConfigurationResponse has config/environment fields
+    # main models.py ConfigurationResponse has features/limits/version fields
+    ConfigurationResponse = (
+        models_main.ConfigurationResponse
+    )  # Override multi_document import
+
+    # CRITICAL: Import library models from main models.py (correct field names)
+    # multi_document_models has different fields (removed_count vs orphaned_removed, etc.)
+    CleanupResponse = models_main.CleanupResponse  # Override multi_document import
+    DuplicatesResponse = (
+        models_main.DuplicatesResponse
+    )  # Override multi_document import
+    DuplicateGroup = models_main.DuplicateGroup  # Override multi_document import
+
     sanitize_html_content = models_main.sanitize_html_content
     validate_filename = models_main.validate_filename
     validate_file_content_type = models_main.validate_file_content_type
+    ValidationErrorResponse = models_main.ValidationErrorResponse
+    SecurityValidationErrorResponse = models_main.SecurityValidationErrorResponse
 else:
     # Fallback - use the one from multi_document_models (not ideal but prevents errors)
     # Create a basic SearchFilter fallback
@@ -106,6 +152,7 @@ else:
     def sanitize_html_content(value: str) -> str:
         """Fallback HTML sanitization"""
         import html
+
         return html.escape(value, quote=True) if value else value
 
     def validate_filename(filename: str) -> str:
@@ -116,61 +163,97 @@ else:
         """Fallback content type validation"""
         return content_type
 
+    class ValidationErrorResponse(ErrorResponse):
+        """Fallback validation error response."""
+
+        message: str = "Validation Error"
+        errors: list[dict[str, str]] = []
+
+        @classmethod
+        def from_pydantic_error(cls, error) -> Any:
+            error_items = []
+            try:
+                error_items = error.errors()
+            except Exception:
+                error_items = []
+            return cls(
+                message="Validation Error",
+                error_code="VALIDATION_ERROR",
+                details={"errors": error_items},
+            )
+
+    class SecurityValidationErrorResponse(ErrorResponse):
+        """Fallback security validation response."""
+
+        error_code: str = "SECURITY_VALIDATION_ERROR"
+        field: str | None = None
+        pattern: str | None = None
+
+        @classmethod
+        def from_security_error(cls, error) -> Any:
+            return cls(
+                message=str(error),
+                field=getattr(error, "field", None),
+                pattern=getattr(error, "pattern", None),
+                error_code="SECURITY_VALIDATION_ERROR",
+            )
+
+
 __all__ = [
-    'DANGEROUS_SQL_PATTERNS',
-    'XSS_PATTERNS',
-    'ALLOWED_MIME_TYPES',
-    'MAX_FILENAME_LENGTH',
-    'BaseResponse',
-    'ErrorResponse',
-    'CacheClearResponse',
-    'CacheStatsResponse',
-    'CleanupRequest',
-    'CleanupResponse',
-    'ConfigurationResponse',
-    'ConfigurationUpdate',
-    'DocumentBase',
-    'DocumentCreate',
-    'DocumentResponse',
-    'DocumentImportResponse',
-    'DocumentQueryParams',
-    'DocumentSortField',
-    'DocumentUpdate',
-    'IndexBuildRequest',
-    'IndexBuildResponse',
-    'IndexStatusResponse',
-    'IntegrityCheckResponse',
-    'SecureFileUpload',
-    'SecurityValidationErrorResponse',
-    'DocumentUploadResponse',
-    'CrossDocumentQueryRequest',
-    'MultiDocumentQueryResponse',
-    'DocumentListResponse',
-    'DocumentMetadata',
-    'QueryResult',
-    'CrossDocumentInsight',
-    'DocumentReference',
-    'DocumentDeleteResponse',
-    'DuplicateGroup',
-    'DuplicatesResponse',
-    'LibraryInitRequest',
-    'LibraryStatsResponse',
-    'RAGQueryRequest',
-    'RAGQueryResponse',
-    'SessionInfoResponse',
-    'SessionQueryResponse',
-    'SessionStartRequest',
-    'SortOrder',
-    'CollectionStatisticsResponse',
-    'DocumentStats',
-    'SystemHealthResponse',  # Now imported correctly from models.py
-    'HealthStatus',
-    'ComponentHealth',
-    'SecurityValidationError',
-    'SearchFilter',
-    'log_security_event',
-    'validate_against_patterns',
-    'sanitize_html_content',
-    'validate_filename',
-    'validate_file_content_type'
+    "DANGEROUS_SQL_PATTERNS",
+    "XSS_PATTERNS",
+    "ALLOWED_MIME_TYPES",
+    "MAX_FILENAME_LENGTH",
+    "BaseResponse",
+    "ErrorResponse",
+    "CacheClearResponse",
+    "CacheStatsResponse",
+    "CleanupRequest",
+    "CleanupResponse",
+    "ConfigurationResponse",
+    "ConfigurationUpdate",
+    "DocumentBase",
+    "DocumentCreate",
+    "DocumentResponse",
+    "DocumentImportResponse",
+    "DocumentQueryParams",
+    "DocumentSortField",
+    "DocumentUpdate",
+    "IndexBuildRequest",
+    "IndexBuildResponse",
+    "IndexStatusResponse",
+    "IntegrityCheckResponse",
+    "SecureFileUpload",
+    "SecurityValidationErrorResponse",
+    "DocumentUploadResponse",
+    "CrossDocumentQueryRequest",
+    "MultiDocumentQueryResponse",
+    "DocumentListResponse",
+    "DocumentMetadata",
+    "QueryResult",
+    "CrossDocumentInsight",
+    "DocumentReference",
+    "DocumentDeleteResponse",
+    "DuplicateGroup",
+    "DuplicatesResponse",
+    "LibraryInitRequest",
+    "LibraryStatsResponse",
+    "RAGQueryRequest",
+    "RAGQueryResponse",
+    "SessionInfoResponse",
+    "SessionQueryResponse",
+    "SessionStartRequest",
+    "SortOrder",
+    "CollectionStatisticsResponse",
+    "DocumentStats",
+    "SystemHealthResponse",  # Now imported correctly from models.py
+    "HealthStatus",
+    "ComponentHealth",
+    "SecurityValidationError",
+    "SearchFilter",
+    "log_security_event",
+    "validate_against_patterns",
+    "sanitize_html_content",
+    "validate_filename",
+    "validate_file_content_type",
 ]

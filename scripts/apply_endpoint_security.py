@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Apply Security to All API Endpoints
@@ -10,42 +12,40 @@ from pathlib import Path
 # Endpoint security mapping
 ENDPOINT_SECURITY_MAP = {
     # Document endpoints
-    "get_documents": ("document", "list", False),
+    "get_documents": ("document", "list[Any]", False),
     "get_document": ("document", "read", False),
     "upload_document": ("document", "create", False),
     "update_document": ("document", "update", False),
     "delete_document": ("document", "delete", False),
     "download_document": ("document", "read", False),
     "export_document": ("document", "export", False),
-
     # Library endpoints
     "get_library": ("library", "read", False),
     "update_library": ("library", "update", False),
     "search_library": ("library", "read", False),
     "get_library_stats": ("library", "read", True),  # Allow anonymous for stats
-
     # RAG endpoints
     "query_document": ("rag", "execute", False),
     "query_library": ("rag", "execute", False),
     "get_rag_history": ("rag", "read", False),
-
     # User endpoints
     "get_user_profile": ("user", "read", False),
     "update_user_profile": ("user", "update", False),
     "delete_user": ("user", "delete", False),
-    "list_users": ("user", "list", False),
-
+    "list_users": ("user", "list[Any]", False),
     # Settings endpoints
     "get_settings": ("settings", "read", False),
     "update_settings": ("settings", "update", False),
-
     # System endpoints
     "get_system_info": ("system", "read", True),  # Allow anonymous for health checks
     "get_system_stats": ("system", "read", False),
     "perform_maintenance": ("system", "execute", False),
-
     # Admin endpoints
-    "admin_": ("system", "execute", False),  # All admin endpoints require system:execute
+    "admin_": (
+        "system",
+        "execute",
+        False,
+    ),  # All admin endpoints require system:execute
 }
 
 # Routes that should remain public
@@ -61,7 +61,7 @@ PUBLIC_ROUTES = [
 ]
 
 
-def analyze_route_file(file_path: Path) -> list[dict]:
+def analyze_route_file(file_path: Path) -> list[dict[str, Any]]:
     """
     Analyze a route file to find all endpoints.
 
@@ -77,7 +77,9 @@ def analyze_route_file(file_path: Path) -> list[dict]:
         content = f.read()
 
     # Find all route decorators
-    route_pattern = r'@router\.(get|post|put|patch|delete|head|options)\s*\(\s*["\']([^"\']+)["\']'
+    route_pattern = (
+        r'@router\.(get|post|put|patch|delete|head|options)\s*\(\s*["\']([^"\']+)["\']'
+    )
     matches = re.finditer(route_pattern, content)
 
     for match in matches:
@@ -85,29 +87,31 @@ def analyze_route_file(file_path: Path) -> list[dict]:
         path = match.group(2)
 
         # Find the function name
-        func_pattern = r'async\s+def\s+(\w+)\s*\('
-        func_match = re.search(func_pattern, content[match.end():match.end() + 500])
+        func_pattern = r"async\s+def\s+(\w+)\s*\("
+        func_match = re.search(func_pattern, content[match.end() : match.end() + 500])
 
         if func_match:
             func_name = func_match.group(1)
 
             # Check if it already has security
-            has_auth = "get_current_user" in content[match.end():match.end() + 1000]
-            has_rbac = "require_permission" in content[match.end():match.end() + 1000]
+            has_auth = "get_current_user" in content[match.end() : match.end() + 1000]
+            has_rbac = "require_permission" in content[match.end() : match.end() + 1000]
 
-            endpoints.append({
-                "method": method,
-                "path": path,
-                "function": func_name,
-                "has_auth": has_auth,
-                "has_rbac": has_rbac,
-                "file": str(file_path),
-            })
+            endpoints.append(
+                {
+                    "method": method,
+                    "path": path,
+                    "function": func_name,
+                    "has_auth": has_auth,
+                    "has_rbac": has_rbac,
+                    "file": str(file_path),
+                }
+            )
 
     return endpoints
 
 
-def get_security_requirements(endpoint: dict) -> tuple[str, str, bool] | None:
+def get_security_requirements(endpoint: dict[str, Any]) -> tuple[str, str, bool] | None:
     """
     Get security requirements for an endpoint.
 
@@ -145,7 +149,9 @@ def get_security_requirements(endpoint: dict) -> tuple[str, str, bool] | None:
     return ("resource", "read", False)  # Default to read permission
 
 
-def generate_security_update(endpoint: dict, requirements: tuple[str, str, bool]) -> str:
+def generate_security_update(
+    endpoint: dict[str, Any], requirements: tuple[str, str, bool]
+) -> str:
     """
     Generate code to add security to an endpoint.
 
@@ -168,8 +174,12 @@ def generate_security_update(endpoint: dict, requirements: tuple[str, str, bool]
         parameters.append("current_user: User = Depends(get_current_user)")
 
     # Add RBAC
-    imports.append("from backend.api.auth.rbac import require_permission, ResourceTypes, Actions")
-    decorators.append(f"@require_permission(ResourceTypes.{resource.upper()}, Actions.{action.upper()})")
+    imports.append(
+        "from backend.api.auth.rbac import require_permission, ResourceTypes, Actions"
+    )
+    decorators.append(
+        f"@require_permission(ResourceTypes.{resource.upper()}, Actions.{action.upper()})"
+    )
 
     # Add database dependency if needed
     if not endpoint["has_rbac"]:
@@ -193,7 +203,7 @@ def generate_security_update(endpoint: dict, requirements: tuple[str, str, bool]
     }
 
 
-def update_route_file(file_path: Path, updates: list[dict]):
+def update_route_file(file_path: Path, updates: list[dict[str, Any]]) -> None:
     """
     Update a route file with security enhancements.
 
@@ -243,11 +253,11 @@ from backend.api.security.endpoint_protection import secure_endpoint
                 break
 
     # Write updated file
-    with open(file_path, 'w') as f:
+    with open(file_path, "w") as f:
         f.writelines(lines)
 
 
-def generate_security_report(all_endpoints: list[dict]) -> str:
+def generate_security_report(all_endpoints: list[dict[str, Any]]) -> str:
     """
     Generate a security report for all endpoints.
 
@@ -298,7 +308,9 @@ def generate_security_report(all_endpoints: list[dict]) -> str:
     report.append("## Security Recommendations")
     report.append("")
 
-    unprotected = [e for e in all_endpoints if not e.get("has_auth") and not e.get("is_public")]
+    unprotected = [
+        e for e in all_endpoints if not e.get("has_auth") and not e.get("is_public")
+    ]
     if unprotected:
         report.append("### Unprotected Endpoints (Action Required)")
         for endpoint in unprotected:
@@ -316,7 +328,7 @@ def generate_security_report(all_endpoints: list[dict]) -> str:
     return "\n".join(report)
 
 
-def main():
+def main() -> None:
     """Main function to apply security to all endpoints."""
     print("🔒 Applying Security to API Endpoints")
     print("=" * 50)
@@ -331,7 +343,7 @@ def main():
 
     # Analyze all route files
     all_endpoints = []
-    route_files = list(routes_dir.glob("*.py"))
+    route_files = list[Any](routes_dir.glob("*.py"))
 
     print(f"📁 Found {len(route_files)} route files")
     print("")
@@ -370,13 +382,15 @@ def main():
     report = generate_security_report(all_endpoints)
     report_file = project_root / "SECURITY_AUDIT_REPORT.md"
 
-    with open(report_file, 'w') as f:
+    with open(report_file, "w") as f:
         f.write(report)
 
     print(f"📊 Security report generated: {report_file}")
 
     # Ask for confirmation before applying updates
-    unprotected = [e for e in all_endpoints if not e.get("has_auth") and not e.get("is_public")]
+    unprotected = [
+        e for e in all_endpoints if not e.get("has_auth") and not e.get("is_public")
+    ]
 
     if unprotected:
         print("")
@@ -391,7 +405,7 @@ def main():
             print("🔧 Applying security updates...")
 
             # Group endpoints by file
-            updates_by_file = {}
+            updates_by_file: dict[str, Any] = {}
             for endpoint in unprotected:
                 file_path = endpoint["file"]
                 if file_path not in updates_by_file:

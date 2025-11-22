@@ -1,10 +1,12 @@
+from typing import Any
+
 """
 Playwright Configuration for AI Enhanced PDF Scholar Web UI Tests
 """
 
 
 # Playwright pytest configuration
-def pytest_configure(config):
+def pytest_configure(config) -> None:
     """Pytest configuration hook."""
     config.addinivalue_line(
         "markers", "e2e: mark test as end-to-end browser test"

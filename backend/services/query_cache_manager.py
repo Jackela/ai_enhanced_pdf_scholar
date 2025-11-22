@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +40,17 @@ except ImportError as e:
 
 class CacheEvictionPolicy(Enum):
     """Cache eviction policies."""
-    LRU = "lru"           # Least Recently Used
-    LFU = "lfu"           # Least Frequently Used
-    TTL = "ttl"           # Time To Live
-    HYBRID = "hybrid"     # Combination of LRU and frequency
+
+    LRU = "lru"  # Least Recently Used
+    LFU = "lfu"  # Least Frequently Used
+    TTL = "ttl"  # Time To Live
+    HYBRID = "hybrid"  # Combination of LRU and frequency
 
 
 @dataclass
 class CacheEntry:
     """Represents a cached query result."""
+
     query_hash: str
     query_text: str
     parameters_hash: str
@@ -76,6 +78,7 @@ class CacheEntry:
 @dataclass
 class CacheStats:
     """Cache statistics."""
+
     total_entries: int
     total_size_bytes: int
     hit_count: int
@@ -110,8 +113,8 @@ class IntelligentQueryCacheManager:
         max_memory_mb: int = DEFAULT_MAX_MEMORY_MB,
         eviction_policy: CacheEvictionPolicy = CacheEvictionPolicy.HYBRID,
         enable_compression: bool = True,
-        enable_warming: bool = True
-    ):
+        enable_warming: bool = True,
+    ) -> None:
         """
         Initialize the Intelligent Query Cache Manager.
 
@@ -162,7 +165,8 @@ class IntelligentQueryCacheManager:
         """Initialize cache infrastructure including persistent storage if needed."""
         try:
             # Create cache monitoring table
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS query_cache_stats (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     query_hash TEXT NOT NULL,
@@ -173,17 +177,22 @@ class IntelligentQueryCacheManager:
                     avg_response_time_ms REAL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_cache_stats_hash
                 ON query_cache_stats(query_hash)
-            """)
+            """
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_cache_stats_last_access
                 ON query_cache_stats(last_access DESC)
-            """)
+            """
+            )
 
             logger.info("Query cache infrastructure initialized")
 
@@ -194,27 +203,25 @@ class IntelligentQueryCacheManager:
         """Start background tasks for cache maintenance and warming."""
         # Cleanup task
         self._cleanup_thread = threading.Thread(
-            target=self._cleanup_worker,
-            daemon=True,
-            name="QueryCacheCleanup"
+            target=self._cleanup_worker, daemon=True, name="QueryCacheCleanup"
         )
         self._cleanup_thread.start()
 
         # Cache warming task
         if self.enable_warming:
             self._warming_thread = threading.Thread(
-                target=self._warming_worker,
-                daemon=True,
-                name="QueryCacheWarming"
+                target=self._warming_worker, daemon=True, name="QueryCacheWarming"
             )
             self._warming_thread.start()
 
         logger.info("Cache background tasks started")
 
-    def _generate_cache_key(self, query: str, parameters: tuple[Any, ...] | None = None) -> str:
+    def _generate_cache_key(
+        self, query: str, parameters: tuple[Any, ...] | None = None
+    ) -> str:
         """Generate a unique cache key for a query and its parameters."""
         # Normalize query
-        normalized_query = ' '.join(query.strip().split())
+        normalized_query = " ".join(query.strip().split())
 
         # Create hash from query and parameters
         content = normalized_query
@@ -229,6 +236,7 @@ class IntelligentQueryCacheManager:
             return pickle.dumps(data)
 
         import zlib
+
         pickled_data = pickle.dumps(data)
         return zlib.compress(pickled_data, level=6)  # Good balance of speed/compression
 
@@ -238,6 +246,7 @@ class IntelligentQueryCacheManager:
             return pickle.loads(compressed_data)
 
         import zlib
+
         pickled_data = zlib.decompress(compressed_data)
         return pickle.loads(pickled_data)
 
@@ -245,7 +254,7 @@ class IntelligentQueryCacheManager:
         self,
         query: str,
         parameters: tuple[Any, ...] | None = None,
-        tags: set[str] | None = None
+        tags: set[str] | None = None,
     ) -> Any | None:
         """
         Get cached query result.
@@ -292,7 +301,7 @@ class IntelligentQueryCacheManager:
         parameters: tuple[Any, ...] | None = None,
         ttl_seconds: int | None = None,
         tags: set[str] | None = None,
-        invalidation_triggers: set[str] | None = None
+        invalidation_triggers: set[str] | None = None,
     ) -> bool:
         """
         Store query result in cache.
@@ -324,7 +333,9 @@ class IntelligentQueryCacheManager:
             entry = CacheEntry(
                 query_hash=cache_key,
                 query_text=query,
-                parameters_hash=self._generate_cache_key("", parameters) if parameters else "",
+                parameters_hash=(
+                    self._generate_cache_key("", parameters) if parameters else ""
+                ),
                 result_data=compressed_data,
                 created_at=datetime.now(),
                 last_accessed=datetime.now(),
@@ -332,7 +343,7 @@ class IntelligentQueryCacheManager:
                 ttl_seconds=ttl_seconds or self.DEFAULT_TTL_SECONDS,
                 size_bytes=size_bytes,
                 tags=tags or set(),
-                invalidation_triggers=invalidation_triggers or set()
+                invalidation_triggers=invalidation_triggers or set(),
             )
 
             with self._cache_lock:
@@ -343,7 +354,9 @@ class IntelligentQueryCacheManager:
                 self._cache[cache_key] = entry
 
                 # Update invalidation tracking
-                self._update_invalidation_tracking(cache_key, invalidation_triggers or set())
+                self._update_invalidation_tracking(
+                    cache_key, invalidation_triggers or set()
+                )
 
             # Track query pattern for warming
             self._track_query_pattern(query, parameters)
@@ -363,7 +376,10 @@ class IntelligentQueryCacheManager:
         """Make space in cache by evicting entries based on policy."""
         current_size = sum(entry.size_bytes for entry in self._cache.values())
 
-        if current_size + required_bytes <= self.max_memory_bytes and len(self._cache) < self.max_entries:
+        if (
+            current_size + required_bytes <= self.max_memory_bytes
+            and len(self._cache) < self.max_entries
+        ):
             return
 
         # Collect eviction candidates
@@ -378,10 +394,12 @@ class IntelligentQueryCacheManager:
         else:  # HYBRID
             # Combine access time and frequency
             now = datetime.now()
-            candidates.sort(key=lambda x: (
-                x[1].access_count * 0.3 +
-                (now - x[1].last_accessed).total_seconds() / 3600 * 0.7
-            ))
+            candidates.sort(
+                key=lambda x: (
+                    x[1].access_count * 0.3
+                    + (now - x[1].last_accessed).total_seconds() / 3600 * 0.7
+                )
+            )
 
         # Evict entries until we have enough space
         bytes_to_free = (current_size + required_bytes) - self.max_memory_bytes
@@ -405,7 +423,9 @@ class IntelligentQueryCacheManager:
             with self._stats_lock:
                 self._stats.eviction_count += evicted_count
 
-            logger.debug(f"Evicted {evicted_count} cache entries, freed {freed_bytes} bytes")
+            logger.debug(
+                f"Evicted {evicted_count} cache entries, freed {freed_bytes} bytes"
+            )
 
     def _update_invalidation_tracking(self, cache_key: str, triggers: set[str]) -> None:
         """Update invalidation tracking for a cache entry."""
@@ -434,7 +454,9 @@ class IntelligentQueryCacheManager:
         invalidated_count = 0
 
         with self._invalidation_lock:
-            cache_keys_to_invalidate = self._table_watchers.get(table_name, set()).copy()
+            cache_keys_to_invalidate = self._table_watchers.get(
+                table_name, set()
+            ).copy()
 
         with self._cache_lock:
             for cache_key in cache_keys_to_invalidate:
@@ -443,7 +465,9 @@ class IntelligentQueryCacheManager:
                     invalidated_count += 1
 
         if invalidated_count > 0:
-            logger.info(f"Invalidated {invalidated_count} cache entries for table {table_name}")
+            logger.info(
+                f"Invalidated {invalidated_count} cache entries for table {table_name}"
+            )
 
         return invalidated_count
 
@@ -471,7 +495,9 @@ class IntelligentQueryCacheManager:
                 invalidated_count += 1
 
         if invalidated_count > 0:
-            logger.info(f"Invalidated {invalidated_count} cache entries by tags: {tags}")
+            logger.info(
+                f"Invalidated {invalidated_count} cache entries by tags: {tags}"
+            )
 
         return invalidated_count
 
@@ -492,7 +518,9 @@ class IntelligentQueryCacheManager:
         logger.info(f"Cleared all {count} cache entries")
         return count
 
-    def _track_query_pattern(self, query: str, parameters: tuple[Any, ...] | None = None) -> None:
+    def _track_query_pattern(
+        self, query: str, parameters: tuple[Any, ...] | None = None
+    ) -> None:
         """Track query patterns for cache warming."""
         if not self.enable_warming:
             return
@@ -502,17 +530,17 @@ class IntelligentQueryCacheManager:
         with self._pattern_lock:
             if query_hash not in self._query_patterns:
                 self._query_patterns[query_hash] = {
-                    'query': query,
-                    'parameters': parameters,
-                    'access_count': 0,
-                    'last_access': datetime.now(),
-                    'avg_execution_time': 0.0,
-                    'warming_priority': 0.0
+                    "query": query,
+                    "parameters": parameters,
+                    "access_count": 0,
+                    "last_access": datetime.now(),
+                    "avg_execution_time": 0.0,
+                    "warming_priority": 0.0,
                 }
 
             pattern = self._query_patterns[query_hash]
-            pattern['access_count'] += 1
-            pattern['last_access'] = datetime.now()
+            pattern["access_count"] += 1
+            pattern["last_access"] = datetime.now()
 
     def _record_hit(self, cache_key: str, query: str) -> None:
         """Record cache hit statistics."""
@@ -521,17 +549,23 @@ class IntelligentQueryCacheManager:
 
         # Update persistent statistics
         try:
-            self.db.execute("""
+            self.db.execute(
+                """
                 INSERT OR IGNORE INTO query_cache_stats
                 (query_hash, query_text, hit_count, last_access)
                 VALUES (?, ?, 0, ?)
-            """, (cache_key, query, datetime.now().isoformat()))
+            """,
+                (cache_key, query, datetime.now().isoformat()),
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 UPDATE query_cache_stats
                 SET hit_count = hit_count + 1, last_access = ?
                 WHERE query_hash = ?
-            """, (datetime.now().isoformat(), cache_key))
+            """,
+                (datetime.now().isoformat(), cache_key),
+            )
         except Exception as e:
             logger.debug(f"Failed to update hit statistics: {e}")
 
@@ -542,17 +576,23 @@ class IntelligentQueryCacheManager:
 
         # Update persistent statistics
         try:
-            self.db.execute("""
+            self.db.execute(
+                """
                 INSERT OR IGNORE INTO query_cache_stats
                 (query_hash, query_text, miss_count, last_access)
                 VALUES (?, ?, 0, ?)
-            """, (cache_key, query, datetime.now().isoformat()))
+            """,
+                (cache_key, query, datetime.now().isoformat()),
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 UPDATE query_cache_stats
                 SET miss_count = miss_count + 1, last_access = ?
                 WHERE query_hash = ?
-            """, (datetime.now().isoformat(), cache_key))
+            """,
+                (datetime.now().isoformat(), cache_key),
+            )
         except Exception as e:
             logger.debug(f"Failed to update miss statistics: {e}")
 
@@ -596,21 +636,21 @@ class IntelligentQueryCacheManager:
             warming_candidates = []
 
             for query_hash, pattern in self._query_patterns.items():
-                if pattern['access_count'] >= self.DEFAULT_CACHE_WARMING_THRESHOLD:
+                if pattern["access_count"] >= self.DEFAULT_CACHE_WARMING_THRESHOLD:
                     # Check if already cached
                     with self._cache_lock:
                         if query_hash not in self._cache:
                             warming_candidates.append(pattern)
 
             # Sort by access count (most accessed first)
-            warming_candidates.sort(key=lambda x: x['access_count'], reverse=True)
+            warming_candidates.sort(key=lambda x: x["access_count"], reverse=True)
 
         # Warm cache with top candidates
         warmed_count = 0
         for pattern in warming_candidates[:10]:  # Limit to top 10
             try:
-                query = pattern['query']
-                parameters = pattern['parameters']
+                query = pattern["query"]
+                parameters = pattern["parameters"]
 
                 # Execute query to warm cache
                 start_time = time.time()
@@ -625,12 +665,15 @@ class IntelligentQueryCacheManager:
                     query=query,
                     result=result,
                     parameters=parameters,
-                    tags={'warmed'},
-                    ttl_seconds=self.DEFAULT_TTL_SECONDS * 2  # Longer TTL for warmed queries
+                    tags={"warmed"},
+                    ttl_seconds=self.DEFAULT_TTL_SECONDS
+                    * 2,  # Longer TTL for warmed queries
                 )
 
                 warmed_count += 1
-                logger.debug(f"Warmed cache for query: {query[:50]}... ({execution_time:.2f}ms)")
+                logger.debug(
+                    f"Warmed cache for query: {query[:50]}... ({execution_time:.2f}ms)"
+                )
 
             except Exception as e:
                 logger.warning(f"Failed to warm cache for query: {e}")
@@ -661,18 +704,18 @@ class IntelligentQueryCacheManager:
         try:
             # Serialize entry for Redis
             entry_data = {
-                'query_text': entry.query_text,
-                'result_data': entry.result_data.hex(),  # Store as hex string
-                'created_at': entry.created_at.isoformat(),
-                'ttl_seconds': entry.ttl_seconds,
-                'tags': list(entry.tags)
+                "query_text": entry.query_text,
+                "result_data": entry.result_data.hex(),  # Store as hex string
+                "created_at": entry.created_at.isoformat(),
+                "ttl_seconds": entry.ttl_seconds,
+                "tags": list(entry.tags),
             }
 
             # Store with TTL
             self.redis_service.set(
                 f"query_cache:{cache_key}",
                 json.dumps(entry_data),
-                expire_time=entry.ttl_seconds
+                expire_time=entry.ttl_seconds,
             )
 
         except Exception as e:
@@ -691,7 +734,7 @@ class IntelligentQueryCacheManager:
                 eviction_count=self._stats.eviction_count,
                 hit_rate=self._stats.hit_rate,
                 avg_response_time_ms=self._stats.avg_response_time_ms,
-                memory_usage_mb=self._stats.memory_usage_mb
+                memory_usage_mb=self._stats.memory_usage_mb,
             )
 
     def get_cache_info(self) -> dict[str, Any]:
@@ -699,8 +742,8 @@ class IntelligentQueryCacheManager:
         stats = self.get_statistics()
 
         with self._cache_lock:
-            entries_by_age = {}
-            entries_by_size = {}
+            entries_by_age: dict[str, Any] = {}
+            entries_by_size: dict[str, Any] = {}
 
             now = datetime.now()
             for entry in self._cache.values():
@@ -708,22 +751,26 @@ class IntelligentQueryCacheManager:
                 age_bucket = f"{int(age_hours)}h"
                 entries_by_age[age_bucket] = entries_by_age.get(age_bucket, 0) + 1
 
-                size_bucket = f"{entry.size_bytes // 1024}KB" if entry.size_bytes < 1024*1024 else f"{entry.size_bytes // (1024*1024)}MB"
+                size_bucket = (
+                    f"{entry.size_bytes // 1024}KB"
+                    if entry.size_bytes < 1024 * 1024
+                    else f"{entry.size_bytes // (1024*1024)}MB"
+                )
                 entries_by_size[size_bucket] = entries_by_size.get(size_bucket, 0) + 1
 
         return {
-            'statistics': stats.__dict__,
-            'configuration': {
-                'max_entries': self.max_entries,
-                'max_memory_mb': self.max_memory_mb,
-                'eviction_policy': self.eviction_policy.value,
-                'enable_compression': self.enable_compression,
-                'enable_warming': self.enable_warming
+            "statistics": stats.__dict__,
+            "configuration": {
+                "max_entries": self.max_entries,
+                "max_memory_mb": self.max_memory_mb,
+                "eviction_policy": self.eviction_policy.value,
+                "enable_compression": self.enable_compression,
+                "enable_warming": self.enable_warming,
             },
-            'distribution': {
-                'entries_by_age': entries_by_age,
-                'entries_by_size': entries_by_size
-            }
+            "distribution": {
+                "entries_by_age": entries_by_age,
+                "entries_by_size": entries_by_size,
+            },
         }
 
     def shutdown(self) -> None:
@@ -740,7 +787,7 @@ class IntelligentQueryCacheManager:
         logger.info("Query cache manager shut down")
 
 
-def main():
+def main() -> Any:
     """CLI interface for the Query Cache Manager."""
     import argparse
     import json
@@ -749,8 +796,12 @@ def main():
     parser.add_argument("--db-path", required=True, help="Database file path")
     parser.add_argument("--stats", action="store_true", help="Show cache statistics")
     parser.add_argument("--clear", action="store_true", help="Clear all cache entries")
-    parser.add_argument("--invalidate-table", help="Invalidate cache for specific table")
-    parser.add_argument("--info", action="store_true", help="Show detailed cache information")
+    parser.add_argument(
+        "--invalidate-table", help="Invalidate cache for specific table"
+    )
+    parser.add_argument(
+        "--info", action="store_true", help="Show detailed cache information"
+    )
     parser.add_argument("--output", help="Output file for results (JSON)")
 
     args = parser.parse_args()
@@ -764,7 +815,7 @@ def main():
 
         if args.stats:
             stats = cache_manager.get_statistics()
-            results['statistics'] = stats.__dict__
+            results["statistics"] = stats.__dict__
 
             print("Cache Statistics:")
             print(f"Total Entries: {stats.total_entries}")
@@ -776,10 +827,10 @@ def main():
 
         if args.info:
             info = cache_manager.get_cache_info()
-            results['cache_info'] = info
+            results["cache_info"] = info
 
             print("Cache Configuration:")
-            config = info['configuration']
+            config = info["configuration"]
             print(f"Max Entries: {config['max_entries']}")
             print(f"Max Memory: {config['max_memory_mb']} MB")
             print(f"Eviction Policy: {config['eviction_policy']}")
@@ -788,17 +839,19 @@ def main():
 
         if args.clear:
             cleared = cache_manager.clear_all()
-            results['cleared_entries'] = cleared
+            results["cleared_entries"] = cleared
             print(f"Cleared {cleared} cache entries")
 
         if args.invalidate_table:
             invalidated = cache_manager.invalidate_by_table(args.invalidate_table)
-            results['invalidated_entries'] = invalidated
-            print(f"Invalidated {invalidated} cache entries for table {args.invalidate_table}")
+            results["invalidated_entries"] = invalidated
+            print(
+                f"Invalidated {invalidated} cache entries for table {args.invalidate_table}"
+            )
 
         # Save results if requested
         if args.output and results:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 json.dump(results, f, indent=2, default=str)
             print(f"Results saved to {args.output}")
 

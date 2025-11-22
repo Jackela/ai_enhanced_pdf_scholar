@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Monitoring Integration Service
 
@@ -6,6 +8,7 @@ infrastructure including WebSocket manager and performance monitor.
 """
 
 import asyncio
+import contextlib
 import logging
 
 from backend.api.websocket_manager import WebSocketManager
@@ -24,23 +27,22 @@ class MonitoringIntegrationService:
     def __init__(
         self,
         websocket_manager: WebSocketManager | None = None,
-        integrated_monitor: IntegratedPerformanceMonitor | None = None
-    ):
+        integrated_monitor: IntegratedPerformanceMonitor | None = None,
+    ) -> None:
         self.websocket_manager = websocket_manager
         self.integrated_monitor = integrated_monitor
 
         # Initialize metrics collector with existing services
         self.metrics_collector = RealTimeMetricsCollector(
-            websocket_manager=websocket_manager,
-            integrated_monitor=integrated_monitor
+            websocket_manager=websocket_manager, integrated_monitor=integrated_monitor
         )
 
-        self._integration_task: asyncio.Task | None = None
+        self._integration_task: asyncio.Task[None] | None = None
         self._running = False
 
         logger.info("MonitoringIntegrationService initialized")
 
-    async def start_integrated_monitoring(self):
+    async def start_integrated_monitoring(self) -> None:
         """Start integrated monitoring with all services."""
         if self._running:
             logger.warning("Integrated monitoring already running")
@@ -66,7 +68,7 @@ class MonitoringIntegrationService:
             await self.stop_integrated_monitoring()
             raise
 
-    async def stop_integrated_monitoring(self):
+    async def stop_integrated_monitoring(self) -> None:
         """Stop integrated monitoring."""
         if not self._running:
             return
@@ -77,10 +79,8 @@ class MonitoringIntegrationService:
             # Stop integration bridge
             if self._integration_task and not self._integration_task.done():
                 self._integration_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._integration_task
-                except asyncio.CancelledError:
-                    pass
 
             # Stop metrics collector
             await self.metrics_collector.stop_collection()
@@ -94,7 +94,7 @@ class MonitoringIntegrationService:
         except Exception as e:
             logger.error(f"Error stopping integrated monitoring: {e}")
 
-    async def _integration_bridge(self):
+    async def _integration_bridge(self) -> None:
         """Bridge between different monitoring services."""
         while self._running:
             try:
@@ -114,110 +114,119 @@ class MonitoringIntegrationService:
                 logger.error(f"Error in integration bridge: {e}")
                 await asyncio.sleep(10)  # Back off on error
 
-    async def _integrate_websocket_metrics(self):
+    async def _integrate_websocket_metrics(self) -> None:
         """Integrate WebSocket metrics with enhanced functionality."""
         try:
             # Get WebSocket stats
             ws_stats = self.websocket_manager.get_stats()
 
             # Enhanced RAG task metrics
-            if ws_stats.get('rag_streaming'):
-                rag_metrics = ws_stats['rag_streaming']
+            if ws_stats.get("rag_streaming"):
+                rag_metrics = ws_stats["rag_streaming"]
 
                 # Detect potential issues
-                pending_tasks = rag_metrics.get('pending_tasks', 0)
-                failed_tasks = rag_metrics.get('failed_tasks', 0)
+                pending_tasks = rag_metrics.get("pending_tasks", 0)
+                failed_tasks = rag_metrics.get("failed_tasks", 0)
 
                 # Alert on high queue buildup
                 if pending_tasks > 10:
                     await self._send_alert(
-                        'websocket',
-                        'warning',
-                        f'High RAG task queue: {pending_tasks} pending tasks',
+                        "websocket",
+                        "warning",
+                        f"High RAG task queue: {pending_tasks} pending tasks",
                         value=pending_tasks,
-                        threshold=10
+                        threshold=10,
                     )
 
                 # Alert on high failure rate
-                total_tasks = rag_metrics.get('total_tasks', 0)
+                total_tasks = rag_metrics.get("total_tasks", 0)
                 if total_tasks > 0:
                     failure_rate = (failed_tasks / total_tasks) * 100
                     if failure_rate > 10:
                         await self._send_alert(
-                            'websocket',
-                            'error',
-                            f'High RAG task failure rate: {failure_rate:.1f}%',
+                            "websocket",
+                            "error",
+                            f"High RAG task failure rate: {failure_rate:.1f}%",
                             value=failure_rate,
-                            threshold=10
+                            threshold=10,
                         )
 
                 # Connection monitoring
-                active_connections = ws_stats.get('active_connections', 0)
+                active_connections = ws_stats.get("active_connections", 0)
                 if active_connections > 50:
                     await self._send_alert(
-                        'websocket',
-                        'warning',
-                        f'High WebSocket connection count: {active_connections}',
+                        "websocket",
+                        "warning",
+                        f"High WebSocket connection count: {active_connections}",
                         value=active_connections,
-                        threshold=50
+                        threshold=50,
                     )
 
         except Exception as e:
             logger.error(f"Error integrating WebSocket metrics: {e}")
 
-    async def _integrate_performance_monitor(self):
+    async def _integrate_performance_monitor(self) -> None:
         """Integrate with performance monitor for enhanced metrics."""
         try:
             # Get comprehensive performance data
             _ = self.integrated_monitor.get_real_time_metrics()
 
             # Integrate cache telemetry
-            if hasattr(self.integrated_monitor, 'cache_telemetry'):
-                cache_data = self.integrated_monitor.cache_telemetry.get_dashboard_data()
+            if hasattr(self.integrated_monitor, "cache_telemetry"):
+                cache_data = (
+                    self.integrated_monitor.cache_telemetry.get_dashboard_data()
+                )
 
                 # Monitor cache hit rates
-                for layer, metrics in cache_data.get('layer_metrics', {}).items():
-                    hit_rate = metrics.get('hit_ratio', 0)
+                for layer, metrics in cache_data.get("layer_metrics", {}).items():
+                    hit_rate = metrics.get("hit_ratio", 0)
                     if hit_rate < 70:
                         await self._send_alert(
-                            'cache',
-                            'warning',
-                            f'Low cache hit rate in {layer}: {hit_rate:.1f}%',
+                            "cache",
+                            "warning",
+                            f"Low cache hit rate in {layer}: {hit_rate:.1f}%",
                             value=hit_rate,
-                            threshold=70
+                            threshold=70,
                         )
 
             # Integrate APM data
-            if hasattr(self.integrated_monitor, 'apm_service'):
+            if hasattr(self.integrated_monitor, "apm_service"):
                 apm_data = self.integrated_monitor.amp.get_performance_summary()
 
                 # Monitor slow operations
-                if apm_data.get('avg_response_time_ms', 0) > 1000:
+                if apm_data.get("avg_response_time_ms", 0) > 1000:
                     await self._send_alert(
-                        'api',
-                        'warning',
+                        "api",
+                        "warning",
                         f'Slow API responses: {apm_data["avg_response_time_ms"]:.1f}ms',
-                        value=apm_data['avg_response_time_ms'],
-                        threshold=1000
+                        value=apm_data["avg_response_time_ms"],
+                        threshold=1000,
                     )
 
         except Exception as e:
             logger.error(f"Error integrating performance monitor: {e}")
 
-    async def _send_alert(self, alert_type: str, severity: str, message: str, value: float = None, threshold: float = None):
+    async def _send_alert(
+        self,
+        alert_type: str,
+        severity: str,
+        message: str,
+        value: float | None = None,
+        threshold: float | None = None,
+    ) -> None:
         """Send alert through WebSocket channels."""
         try:
             if self.websocket_manager:
                 alert_data = {
-                    'type': 'system_alert',
-                    'alert': {
-                        'type': alert_type,
-                        'severity': severity,
-                        'message': message,
-                        'timestamp': asyncio.get_event_loop().time(),
-                        'value': value,
-                        'threshold': threshold
-                    }
+                    "type": "system_alert",
+                    "alert": {
+                        "type": alert_type,
+                        "severity": severity,
+                        "message": message,
+                        "timestamp": asyncio.get_event_loop().time(),
+                        "value": value,
+                        "threshold": threshold,
+                    },
                 }
 
                 await self.websocket_manager.broadcast_json(alert_data)
@@ -229,21 +238,25 @@ class MonitoringIntegrationService:
         """Get the metrics collector instance."""
         return self.metrics_collector
 
-    def get_integration_status(self) -> dict:
+    def get_integration_status(self) -> dict[str, Any]:
         """Get status of monitoring integration."""
         return {
-            'running': self._running,
-            'metrics_collector_active': self.metrics_collector is not None,
-            'websocket_manager_active': self.websocket_manager is not None,
-            'performance_monitor_active': self.integrated_monitor is not None,
-            'services_status': {
-                'metrics_collection': 'running' if self._running else 'stopped',
-                'websocket_integration': 'enabled' if self.websocket_manager else 'disabled',
-                'performance_integration': 'enabled' if self.integrated_monitor else 'disabled'
-            }
+            "running": self._running,
+            "metrics_collector_active": self.metrics_collector is not None,
+            "websocket_manager_active": self.websocket_manager is not None,
+            "performance_monitor_active": self.integrated_monitor is not None,
+            "services_status": {
+                "metrics_collection": "running" if self._running else "stopped",
+                "websocket_integration": (
+                    "enabled" if self.websocket_manager else "disabled"
+                ),
+                "performance_integration": (
+                    "enabled" if self.integrated_monitor else "disabled"
+                ),
+            },
         }
 
-    async def trigger_manual_collection(self) -> dict:
+    async def trigger_manual_collection(self) -> dict[str, Any]:
         """Manually trigger metrics collection and return current state."""
         try:
             current_metrics = self.metrics_collector.get_current_metrics()
@@ -253,23 +266,25 @@ class MonitoringIntegrationService:
             additional_data = {}
 
             if self.websocket_manager:
-                additional_data['websocket_stats'] = self.websocket_manager.get_stats()
+                additional_data["websocket_stats"] = self.websocket_manager.get_stats()
 
             if self.integrated_monitor:
-                additional_data['performance_status'] = self.integrated_monitor.get_service_health_status()
+                additional_data["performance_status"] = (
+                    self.integrated_monitor.get_service_health_status()
+                )
 
             return {
-                'current_metrics': current_metrics,
-                'health_summary': health_summary,
-                'integration_status': self.get_integration_status(),
-                'additional_data': additional_data
+                "current_metrics": current_metrics,
+                "health_summary": health_summary,
+                "integration_status": self.get_integration_status(),
+                "additional_data": additional_data,
             }
 
         except Exception as e:
             logger.error(f"Error in manual collection: {e}")
             return {
-                'error': str(e),
-                'integration_status': self.get_integration_status()
+                "error": str(e),
+                "integration_status": self.get_integration_status(),
             }
 
 
@@ -279,14 +294,13 @@ integration_service: MonitoringIntegrationService | None = None
 
 def initialize_monitoring_integration(
     websocket_manager: WebSocketManager | None = None,
-    integrated_monitor: IntegratedPerformanceMonitor | None = None
+    integrated_monitor: IntegratedPerformanceMonitor | None = None,
 ) -> MonitoringIntegrationService:
     """Initialize the monitoring integration service."""
     global integration_service
 
     integration_service = MonitoringIntegrationService(
-        websocket_manager=websocket_manager,
-        integrated_monitor=integrated_monitor
+        websocket_manager=websocket_manager, integrated_monitor=integrated_monitor
     )
 
     logger.info("Monitoring integration service initialized globally")

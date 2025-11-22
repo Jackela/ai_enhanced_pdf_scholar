@@ -33,6 +33,7 @@ import requests
 @dataclass
 class LoadTestResult:
     """Results from a single load test request."""
+
     url: str
     status_code: int
     response_time_ms: float
@@ -40,7 +41,7 @@ class LoadTestResult:
     error: str | None = None
     timestamp: datetime = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.now(timezone.utc)
 
@@ -48,6 +49,7 @@ class LoadTestResult:
 @dataclass
 class SystemResourceSnapshot:
     """System resource usage snapshot."""
+
     timestamp: datetime
     memory_mb: float
     cpu_percent: float
@@ -61,7 +63,7 @@ class SystemResourceSnapshot:
 class LightweightLoadTester:
     """Lightweight concurrent load testing framework."""
 
-    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+    def __init__(self, base_url: str = "http://127.0.0.1:8000") -> None:
         self.base_url = base_url
         self.project_root = Path(__file__).parent.parent
         self.api_process = None
@@ -70,34 +72,38 @@ class LightweightLoadTester:
 
         # Test scenarios
         self.scenarios = {
-            'basic': {'users': 10, 'duration': 30, 'requests_per_user': 20},
-            'moderate': {'users': 25, 'duration': 45, 'requests_per_user': 30},
-            'stress': {'users': 50, 'duration': 60, 'requests_per_user': 40}
+            "basic": {"users": 10, "duration": 30, "requests_per_user": 20},
+            "moderate": {"users": 25, "duration": 45, "requests_per_user": 30},
+            "stress": {"users": 50, "duration": 60, "requests_per_user": 40},
         }
 
         # API endpoints to test
         self.endpoints = [
-            '/api/system/health',
-            '/api/documents/',
-            '/api/library/stats',
-            '/api/settings'
+            "/api/system/health",
+            "/api/documents/",
+            "/api/library/stats",
+            "/api/settings",
         ]
 
-    def run_load_test(self, scenario: str = 'basic') -> dict[str, Any]:
+    def run_load_test(self, scenario: str = "basic") -> dict[str, Any]:
         """Run load test for specified scenario."""
         if scenario not in self.scenarios:
-            raise ValueError(f"Unknown scenario: {scenario}. Available: {list(self.scenarios.keys())}")
+            raise ValueError(
+                f"Unknown scenario: {scenario}. Available: {list(self.scenarios.keys())}"
+            )
 
         config = self.scenarios[scenario]
 
-        print(f"🔥 Load Test: {scenario.title()} Scenario ({config['users']} users, {config['duration']}s)")
+        print(
+            f"🔥 Load Test: {scenario.title()} Scenario ({config['users']} users, {config['duration']}s)"
+        )
 
         # Start API server
         self._start_api_server()
 
         try:
             # Start resource monitoring
-            self._start_resource_monitoring(config['duration'])
+            self._start_resource_monitoring(config["duration"])
 
             # Run load test
             test_results = self._execute_load_test(config)
@@ -118,13 +124,23 @@ class LightweightLoadTester:
 
         try:
             # Use a different port for load testing
-            self.api_process = subprocess.Popen([
-                'python', '-m', 'uvicorn',
-                'backend.api.main:app',
-                '--host', '127.0.0.1',
-                '--port', '8002',  # Different port for load testing
-                '--log-level', 'error'
-            ], cwd=self.project_root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.api_process = subprocess.Popen(
+                [
+                    "python",
+                    "-m",
+                    "uvicorn",
+                    "backend.api.main:app",
+                    "--host",
+                    "127.0.0.1",
+                    "--port",
+                    "8002",  # Different port for load testing
+                    "--log-level",
+                    "error",
+                ],
+                cwd=self.project_root,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
 
             # Update base URL for load testing port
             self.base_url = "http://127.0.0.1:8002"
@@ -133,7 +149,9 @@ class LightweightLoadTester:
             for attempt in range(15):  # 15 seconds timeout
                 time.sleep(1)
                 try:
-                    response = requests.get(f"{self.base_url}/api/system/health", timeout=2)
+                    response = requests.get(
+                        f"{self.base_url}/api/system/health", timeout=2
+                    )
                     if response.status_code == 200:
                         print("   ✅ API server ready")
                         return
@@ -157,7 +175,8 @@ class LightweightLoadTester:
 
     def _start_resource_monitoring(self, duration: int) -> None:
         """Start background resource monitoring."""
-        def monitor_resources():
+
+        def monitor_resources() -> None:
             start_time = time.time()
             process = psutil.Process()
 
@@ -177,10 +196,18 @@ class LightweightLoadTester:
                         memory_mb=process_memory,
                         cpu_percent=cpu_percent,
                         memory_percent=memory_info.percent,
-                        disk_io_read_mb=disk_io.read_bytes / 1024 / 1024 if disk_io else 0,
-                        disk_io_write_mb=disk_io.write_bytes / 1024 / 1024 if disk_io else 0,
-                        network_sent_mb=network_io.bytes_sent / 1024 / 1024 if network_io else 0,
-                        network_recv_mb=network_io.bytes_recv / 1024 / 1024 if network_io else 0
+                        disk_io_read_mb=(
+                            disk_io.read_bytes / 1024 / 1024 if disk_io else 0
+                        ),
+                        disk_io_write_mb=(
+                            disk_io.write_bytes / 1024 / 1024 if disk_io else 0
+                        ),
+                        network_sent_mb=(
+                            network_io.bytes_sent / 1024 / 1024 if network_io else 0
+                        ),
+                        network_recv_mb=(
+                            network_io.bytes_recv / 1024 / 1024 if network_io else 0
+                        ),
                     )
 
                     self.resource_snapshots.append(snapshot)
@@ -197,9 +224,9 @@ class LightweightLoadTester:
 
     def _execute_load_test(self, config: dict[str, Any]) -> dict[str, Any]:
         """Execute the load test with specified configuration."""
-        users = config['users']
-        duration = config['duration']
-        requests_per_user = config['requests_per_user']
+        users = config["users"]
+        duration = config["duration"]
+        requests_per_user = config["requests_per_user"]
 
         results = []
         start_time = time.time()
@@ -210,10 +237,7 @@ class LightweightLoadTester:
             futures = []
             for user_id in range(users):
                 future = executor.submit(
-                    self._simulate_user_behavior,
-                    user_id,
-                    duration,
-                    requests_per_user
+                    self._simulate_user_behavior, user_id, duration, requests_per_user
                 )
                 futures.append(future)
 
@@ -228,15 +252,17 @@ class LightweightLoadTester:
         total_time = time.time() - start_time
 
         return {
-            'total_requests': len(results),
-            'successful_requests': sum(1 for r in results if r.status_code == 200),
-            'failed_requests': sum(1 for r in results if r.status_code != 200),
-            'total_time_s': total_time,
-            'requests_per_second': len(results) / total_time if total_time > 0 else 0,
-            'results': results
+            "total_requests": len(results),
+            "successful_requests": sum(1 for r in results if r.status_code == 200),
+            "failed_requests": sum(1 for r in results if r.status_code != 200),
+            "total_time_s": total_time,
+            "requests_per_second": len(results) / total_time if total_time > 0 else 0,
+            "results": results,
         }
 
-    def _simulate_user_behavior(self, user_id: int, duration: int, requests_per_user: int) -> list[LoadTestResult]:
+    def _simulate_user_behavior(
+        self, user_id: int, duration: int, requests_per_user: int
+    ) -> list[LoadTestResult]:
         """Simulate realistic user behavior with requests to various endpoints."""
         user_results = []
         start_time = time.time()
@@ -246,16 +272,16 @@ class LightweightLoadTester:
         while time.time() - start_time < duration and request_count < requests_per_user:
             # Choose endpoint (weighted towards common endpoints)
             import random
+
             endpoint_weights = {
-                '/api/system/health': 0.1,     # 10% - health checks
-                '/api/documents/': 0.4,        # 40% - main functionality
-                '/api/library/stats': 0.3,     # 30% - dashboard views
-                '/api/settings': 0.2           # 20% - settings access
+                "/api/system/health": 0.1,  # 10% - health checks
+                "/api/documents/": 0.4,  # 40% - main functionality
+                "/api/library/stats": 0.3,  # 30% - dashboard views
+                "/api/settings": 0.2,  # 20% - settings access
             }
 
             endpoint = random.choices(
-                list(endpoint_weights.keys()),
-                weights=list(endpoint_weights.values())
+                list(endpoint_weights.keys()), weights=list(endpoint_weights.values())
             )[0]
 
             # Make request
@@ -282,7 +308,7 @@ class LightweightLoadTester:
                 url=url,
                 status_code=response.status_code,
                 response_time_ms=(end_time - start_time) * 1000,
-                content_length=len(response.content)
+                content_length=len(response.content),
             )
 
         except requests.exceptions.RequestException as e:
@@ -293,12 +319,14 @@ class LightweightLoadTester:
                 status_code=0,
                 response_time_ms=(end_time - start_time) * 1000,
                 content_length=0,
-                error=str(e)
+                error=str(e),
             )
 
-    def _generate_load_test_report(self, scenario: str, test_results: dict[str, Any]) -> dict[str, Any]:
+    def _generate_load_test_report(
+        self, scenario: str, test_results: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generate comprehensive load test report."""
-        results = test_results['results']
+        results = test_results["results"]
         successful_results = [r for r in results if r.status_code == 200]
 
         # Response time analysis
@@ -307,12 +335,12 @@ class LightweightLoadTester:
         response_stats = {}
         if response_times:
             response_stats = {
-                'avg_ms': statistics.mean(response_times),
-                'median_ms': statistics.median(response_times),
-                'p95_ms': self._percentile(response_times, 95),
-                'p99_ms': self._percentile(response_times, 99),
-                'min_ms': min(response_times),
-                'max_ms': max(response_times)
+                "avg_ms": statistics.mean(response_times),
+                "median_ms": statistics.median(response_times),
+                "p95_ms": self._percentile(response_times, 95),
+                "p99_ms": self._percentile(response_times, 99),
+                "min_ms": min(response_times),
+                "max_ms": max(response_times),
             }
 
         # Memory leak detection
@@ -323,21 +351,31 @@ class LightweightLoadTester:
 
         # Generate report
         report = {
-            'scenario': scenario,
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'test_summary': {
-                'total_requests': test_results['total_requests'],
-                'successful_requests': test_results['successful_requests'],
-                'failed_requests': test_results['failed_requests'],
-                'success_rate_percent': (test_results['successful_requests'] / test_results['total_requests'] * 100) if test_results['total_requests'] > 0 else 0,
-                'requests_per_second': test_results['requests_per_second'],
-                'total_duration_s': test_results['total_time_s']
+            "scenario": scenario,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "test_summary": {
+                "total_requests": test_results["total_requests"],
+                "successful_requests": test_results["successful_requests"],
+                "failed_requests": test_results["failed_requests"],
+                "success_rate_percent": (
+                    (
+                        test_results["successful_requests"]
+                        / test_results["total_requests"]
+                        * 100
+                    )
+                    if test_results["total_requests"] > 0
+                    else 0
+                ),
+                "requests_per_second": test_results["requests_per_second"],
+                "total_duration_s": test_results["total_time_s"],
             },
-            'performance_metrics': response_stats,
-            'system_resources': self._analyze_system_resources(),
-            'memory_analysis': memory_analysis,
-            'error_analysis': error_analysis,
-            'pass_criteria': self._evaluate_pass_criteria(response_stats, memory_analysis, error_analysis)
+            "performance_metrics": response_stats,
+            "system_resources": self._analyze_system_resources(),
+            "memory_analysis": memory_analysis,
+            "error_analysis": error_analysis,
+            "pass_criteria": self._evaluate_pass_criteria(
+                response_stats, memory_analysis, error_analysis
+            ),
         }
 
         # Print report
@@ -351,7 +389,7 @@ class LightweightLoadTester:
     def _analyze_memory_pattern(self) -> dict[str, Any]:
         """Analyze memory usage patterns for leak detection."""
         if not self.resource_snapshots:
-            return {'error': 'No memory data collected'}
+            return {"error": "No memory data collected"}
 
         memory_values = [s.memory_mb for s in self.resource_snapshots]
 
@@ -367,7 +405,11 @@ class LightweightLoadTester:
             sum_xx = sum(x * x for x in x_values)
 
             # Slope calculation (memory growth rate)
-            slope = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x) if (n * sum_xx - sum_x * sum_x) != 0 else 0
+            slope = (
+                (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x)
+                if (n * sum_xx - sum_x * sum_x) != 0
+                else 0
+            )
             memory_growth_rate_mb_per_sample = slope
 
             # Convert to MB/hour (assuming 1-second sampling)
@@ -376,40 +418,49 @@ class LightweightLoadTester:
             memory_growth_rate_mb_per_hour = 0
 
         return {
-            'initial_memory_mb': memory_values[0] if memory_values else 0,
-            'final_memory_mb': memory_values[-1] if memory_values else 0,
-            'peak_memory_mb': max(memory_values) if memory_values else 0,
-            'memory_growth_mb': (memory_values[-1] - memory_values[0]) if len(memory_values) >= 2 else 0,
-            'memory_growth_rate_mb_per_hour': memory_growth_rate_mb_per_hour,
-            'memory_stable': abs(memory_growth_rate_mb_per_hour) < 5,  # Stable if growth <5MB/hour
-            'samples_count': len(memory_values)
+            "initial_memory_mb": memory_values[0] if memory_values else 0,
+            "final_memory_mb": memory_values[-1] if memory_values else 0,
+            "peak_memory_mb": max(memory_values) if memory_values else 0,
+            "memory_growth_mb": (
+                (memory_values[-1] - memory_values[0]) if len(memory_values) >= 2 else 0
+            ),
+            "memory_growth_rate_mb_per_hour": memory_growth_rate_mb_per_hour,
+            "memory_stable": abs(memory_growth_rate_mb_per_hour)
+            < 5,  # Stable if growth <5MB/hour
+            "samples_count": len(memory_values),
         }
 
     def _analyze_system_resources(self) -> dict[str, Any]:
         """Analyze system resource utilization."""
         if not self.resource_snapshots:
-            return {'error': 'No resource data collected'}
+            return {"error": "No resource data collected"}
 
         cpu_values = [s.cpu_percent for s in self.resource_snapshots]
         memory_percent_values = [s.memory_percent for s in self.resource_snapshots]
 
         return {
-            'cpu_usage': {
-                'avg_percent': statistics.mean(cpu_values) if cpu_values else 0,
-                'peak_percent': max(cpu_values) if cpu_values else 0
+            "cpu_usage": {
+                "avg_percent": statistics.mean(cpu_values) if cpu_values else 0,
+                "peak_percent": max(cpu_values) if cpu_values else 0,
             },
-            'system_memory': {
-                'avg_percent': statistics.mean(memory_percent_values) if memory_percent_values else 0,
-                'peak_percent': max(memory_percent_values) if memory_percent_values else 0
+            "system_memory": {
+                "avg_percent": (
+                    statistics.mean(memory_percent_values)
+                    if memory_percent_values
+                    else 0
+                ),
+                "peak_percent": (
+                    max(memory_percent_values) if memory_percent_values else 0
+                ),
             },
-            'monitoring_duration_s': len(self.resource_snapshots)
+            "monitoring_duration_s": len(self.resource_snapshots),
         }
 
     def _analyze_errors(self, results: list[LoadTestResult]) -> dict[str, Any]:
         """Analyze error patterns and types."""
         errors = [r for r in results if r.status_code != 200 or r.error]
 
-        error_types = {}
+        error_types: dict[str, Any] = {}
         for result in errors:
             if result.error:
                 error_types[result.error] = error_types.get(result.error, 0) + 1
@@ -418,41 +469,56 @@ class LightweightLoadTester:
                 error_types[status_key] = error_types.get(status_key, 0) + 1
 
         return {
-            'total_errors': len(errors),
-            'error_rate_percent': (len(errors) / len(results) * 100) if results else 0,
-            'error_types': error_types,
-            'timeout_errors': sum(1 for r in results if 'timeout' in (r.error or '').lower()),
-            'connection_errors': sum(1 for r in results if 'connection' in (r.error or '').lower()),
-            'server_errors': sum(1 for r in results if r.status_code >= 500)
+            "total_errors": len(errors),
+            "error_rate_percent": (len(errors) / len(results) * 100) if results else 0,
+            "error_types": error_types,
+            "timeout_errors": sum(
+                1 for r in results if "timeout" in (r.error or "").lower()
+            ),
+            "connection_errors": sum(
+                1 for r in results if "connection" in (r.error or "").lower()
+            ),
+            "server_errors": sum(1 for r in results if r.status_code >= 500),
         }
 
-    def _evaluate_pass_criteria(self, response_stats: dict[str, Any], memory_analysis: dict[str, Any], error_analysis: dict[str, Any]) -> dict[str, Any]:
+    def _evaluate_pass_criteria(
+        self,
+        response_stats: dict[str, Any],
+        memory_analysis: dict[str, Any],
+        error_analysis: dict[str, Any],
+    ) -> dict[str, Any]:
         """Evaluate whether the load test meets pass criteria."""
         criteria = {
-            'response_time_acceptable': True,
-            'error_rate_acceptable': True,
-            'memory_stable': True,
-            'overall_pass': True
+            "response_time_acceptable": True,
+            "error_rate_acceptable": True,
+            "memory_stable": True,
+            "overall_pass": True,
         }
 
         # Response time criteria
-        if response_stats and 'p95_ms' in response_stats:
-            criteria['response_time_acceptable'] = response_stats['p95_ms'] < 1000  # 1 second p95
+        if response_stats and "p95_ms" in response_stats:
+            criteria["response_time_acceptable"] = (
+                response_stats["p95_ms"] < 1000
+            )  # 1 second p95
 
         # Error rate criteria
-        if 'error_rate_percent' in error_analysis:
-            criteria['error_rate_acceptable'] = error_analysis['error_rate_percent'] < 5  # <5% error rate
+        if "error_rate_percent" in error_analysis:
+            criteria["error_rate_acceptable"] = (
+                error_analysis["error_rate_percent"] < 5
+            )  # <5% error rate
 
         # Memory stability criteria
-        if 'memory_stable' in memory_analysis:
-            criteria['memory_stable'] = memory_analysis['memory_stable']
+        if "memory_stable" in memory_analysis:
+            criteria["memory_stable"] = memory_analysis["memory_stable"]
 
         # Overall pass
-        criteria['overall_pass'] = all([
-            criteria['response_time_acceptable'],
-            criteria['error_rate_acceptable'],
-            criteria['memory_stable']
-        ])
+        criteria["overall_pass"] = all(
+            [
+                criteria["response_time_acceptable"],
+                criteria["error_rate_acceptable"],
+                criteria["memory_stable"],
+            ]
+        )
 
         return criteria
 
@@ -469,31 +535,35 @@ class LightweightLoadTester:
         """Print formatted load test report."""
         print("📊 Test Results:")
 
-        summary = report['test_summary']
+        summary = report["test_summary"]
         print(f"  - Total Requests: {summary['total_requests']}")
-        print(f"  - Successful: {summary['successful_requests']} ({summary['success_rate_percent']:.1f}%)")
+        print(
+            f"  - Successful: {summary['successful_requests']} ({summary['success_rate_percent']:.1f}%)"
+        )
         print(f"  - Failed: {summary['failed_requests']}")
         print(f"  - Requests/sec: {summary['requests_per_second']:.1f}")
 
-        perf = report.get('performance_metrics', {})
+        perf = report.get("performance_metrics", {})
         if perf:
             print(f"  - Average Response Time: {perf.get('avg_ms', 0):.0f} ms")
             print(f"  - 95th Percentile: {perf.get('p95_ms', 0):.0f} ms")
             print(f"  - Max Response Time: {perf.get('max_ms', 0):.0f} ms")
 
-        memory = report.get('memory_analysis', {})
-        if memory and 'error' not in memory:
-            growth = memory.get('memory_growth_mb', 0)
-            growth_rate = memory.get('memory_growth_rate_mb_per_hour', 0)
-            stable = memory.get('memory_stable', False)
+        memory = report.get("memory_analysis", {})
+        if memory and "error" not in memory:
+            growth = memory.get("memory_growth_mb", 0)
+            growth_rate = memory.get("memory_growth_rate_mb_per_hour", 0)
+            stable = memory.get("memory_stable", False)
 
             print("📊 System Resources:")
-            print(f"  - Memory Usage: Start {memory.get('initial_memory_mb', 0):.0f}MB → "
-                  f"Peak {memory.get('peak_memory_mb', 0):.0f}MB → End {memory.get('final_memory_mb', 0):.0f}MB")
+            print(
+                f"  - Memory Usage: Start {memory.get('initial_memory_mb', 0):.0f}MB → "
+                f"Peak {memory.get('peak_memory_mb', 0):.0f}MB → End {memory.get('final_memory_mb', 0):.0f}MB"
+            )
             print(f"  - Memory Growth: {growth:+.1f}MB ({growth_rate:+.1f}MB/hour)")
             print(f"  - Memory Stability: {'✅ Stable' if stable else '⚠️ Growing'}")
 
-        errors = report.get('error_analysis', {})
+        errors = report.get("error_analysis", {})
         if errors:
             print("📊 Error Analysis:")
             print(f"  - Timeout errors: {errors.get('timeout_errors', 0)}")
@@ -501,10 +571,12 @@ class LightweightLoadTester:
             print(f"  - Server errors: {errors.get('server_errors', 0)}")
 
         # Pass criteria
-        criteria = report.get('pass_criteria', {})
-        overall_pass = criteria.get('overall_pass', False)
+        criteria = report.get("pass_criteria", {})
+        overall_pass = criteria.get("overall_pass", False)
 
-        print(f"✅ Load test completed {'successfully' if overall_pass else 'with issues'}")
+        print(
+            f"✅ Load test completed {'successfully' if overall_pass else 'with issues'}"
+        )
 
     def _save_load_test_results(self, scenario: str, report: dict[str, Any]) -> None:
         """Save load test results to file."""
@@ -515,19 +587,24 @@ class LightweightLoadTester:
         filename = f"load_test_{scenario}_{timestamp}.json"
 
         results_file = results_dir / filename
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(report, f, indent=2, default=str)
 
         print(f"💾 Results saved to: {results_file}")
 
 
-def main():
+def main() -> Any:
     """Main load testing function with CLI interface."""
     parser = argparse.ArgumentParser(description="Lightweight Load Testing")
-    parser.add_argument("--scenario", choices=['basic', 'moderate', 'stress'],
-                       default='basic', help="Load test scenario to run")
-    parser.add_argument("--url", default="http://127.0.0.1:8000",
-                       help="Base URL for load testing")
+    parser.add_argument(
+        "--scenario",
+        choices=["basic", "moderate", "stress"],
+        default="basic",
+        help="Load test scenario to run",
+    )
+    parser.add_argument(
+        "--url", default="http://127.0.0.1:8000", help="Base URL for load testing"
+    )
 
     args = parser.parse_args()
 
@@ -536,8 +613,8 @@ def main():
         results = tester.run_load_test(args.scenario)
 
         # Exit with appropriate code
-        pass_criteria = results.get('pass_criteria', {})
-        if pass_criteria.get('overall_pass', False):
+        pass_criteria = results.get("pass_criteria", {})
+        if pass_criteria.get("overall_pass", False):
             print("✅ Load test passed all criteria")
             return 0
         else:

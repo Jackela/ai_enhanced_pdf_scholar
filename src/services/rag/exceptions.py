@@ -8,7 +8,7 @@ and recovery suggestions for robust error handling.
 from typing import Any
 
 
-class RAGBaseException(Exception):
+class RAGBaseError(Exception):
     """Base exception for all RAG-related errors."""
 
     def __init__(
@@ -17,7 +17,7 @@ class RAGBaseException(Exception):
         error_code: str | None = None,
         details: dict[str, Any] | None = None,
         suggestions: list[str] | None = None,
-    ):
+    ) -> None:
         self.message = message
         self.error_code = error_code or self.__class__.__name__
         self.details = details or {}
@@ -38,91 +38,91 @@ class RAGBaseException(Exception):
 # Processing Exceptions
 
 
-class RAGProcessingError(RAGBaseException):
+class RAGProcessingError(RAGBaseError):
     """Raised when document processing fails."""
 
     pass
 
 
-class RAGIndexError(RAGBaseException):
+class RAGIndexError(RAGBaseError):
     """Raised when index operations fail."""
 
     pass
 
 
-class RAGQueryError(RAGBaseException):
+class RAGQueryError(RAGBaseError):
     """Raised when query processing fails."""
 
     pass
 
 
-class RAGRecoveryError(RAGBaseException):
+class RAGRecoveryError(RAGBaseError):
     """Raised when recovery operations fail."""
 
     pass
 
 
-class RAGFileError(RAGBaseException):
+class RAGFileError(RAGBaseError):
     """Raised when file operations fail."""
 
     pass
 
 
-class RAGStorageError(RAGBaseException):
+class RAGStorageError(RAGBaseError):
     """Raised when storage operations fail."""
 
     pass
 
 
-class RAGVectorError(RAGBaseException):
+class RAGVectorError(RAGBaseError):
     """Raised when vector operations fail."""
 
     pass
 
 
-class RAGQualityError(RAGBaseException):
+class RAGQualityError(RAGBaseError):
     """Raised when quality assessment fails."""
 
     pass
 
 
-class RAGPerformanceError(RAGBaseException):
+class RAGPerformanceError(RAGBaseError):
     """Raised when performance issues detected."""
 
     pass
 
 
-class RAGMemoryError(RAGBaseException):
+class RAGMemoryError(RAGBaseError):
     """Raised when memory-related issues occur."""
 
     pass
 
 
-class RAGTimeoutError(RAGBaseException):
+class RAGTimeoutError(RAGBaseError):
     """Raised when operations timeout."""
 
     pass
 
 
-class RAGConfigurationError(RAGBaseException):
+class RAGConfigurationError(RAGBaseError):
     """Raised when configuration is invalid."""
 
     pass
 
 
-class RAGValidationError(RAGBaseException):
+class RAGValidationError(RAGBaseError):
     """Raised when input validation fails."""
 
     pass
 
 
-class RAGAuthenticationError(RAGBaseException):
+class RAGAuthenticationError(RAGBaseError):
     """Raised when authentication fails."""
 
     pass
 
 
-class RAGAuthorizationError(RAGBaseException):
+class RAGAuthorizationError(RAGBaseError):
     """Raised when authorization fails."""
 
     pass
@@ -134,7 +134,9 @@ class RAGAuthorizationError(RAGBaseException):
 class DocumentProcessingError(RAGProcessingError):
     """Raised when document processing fails."""
 
-    def __init__(self, document_id: int, stage: str, message: str, **kwargs):
+    def __init__(
+        self, document_id: int, stage: str, message: str, **kwargs: Any
+    ) -> None:
         self.document_id = document_id
         self.stage = stage
         details = {
@@ -153,7 +155,7 @@ class DocumentProcessingError(RAGProcessingError):
 class IndexBuildError(RAGIndexError):
     """Raised when index building fails."""
 
-    def __init__(self, document_id: int, message: str, **kwargs):
+    def __init__(self, document_id: int, message: str, **kwargs: Any) -> None:
         self.document_id = document_id
         details = {"document_id": document_id, **kwargs.get("details", {})}
         suggestions = [
@@ -168,8 +170,12 @@ class QueryProcessingError(RAGQueryError):
     """Raised when query processing fails."""
 
     def __init__(
-        self, query: str, document_id: int | None = None, message: str = "", **kwargs
-    ):
+        self,
+        query: str,
+        document_id: int | None = None,
+        message: str = "",
+        **kwargs: Any,
+    ) -> None:
         self.query = query
         self.document_id = document_id
         details = {
@@ -192,7 +198,7 @@ class QueryProcessingError(RAGQueryError):
 class VectorStoreError(RAGVectorError):
     """Raised when vector store operations fail."""
 
-    def __init__(self, operation: str, message: str, **kwargs):
+    def __init__(self, operation: str, message: str, **kwargs: Any) -> None:
         self.operation = operation
         details = {"operation": operation, **kwargs.get("details", {})}
         suggestions = [
@@ -203,10 +209,10 @@ class VectorStoreError(RAGVectorError):
         super().__init__(message, details=details, suggestions=suggestions)
 
 
-class LLMServiceError(RAGBaseException):
+class LLMServiceError(RAGBaseError):
     """Raised when LLM service interactions fail."""
 
-    def __init__(self, service: str, message: str, **kwargs):
+    def __init__(self, service: str, message: str, **kwargs: Any) -> None:
         self.service = service
         details = {"service": service, **kwargs.get("details", {})}
         suggestions = [
@@ -217,10 +223,10 @@ class LLMServiceError(RAGBaseException):
         super().__init__(message, details=details, suggestions=suggestions)
 
 
-class ContextBuildError(RAGBaseException):
+class ContextBuildError(RAGBaseError):
     """Raised when context building fails."""
 
-    def __init__(self, context_type: str, message: str, **kwargs):
+    def __init__(self, context_type: str, message: str, **kwargs: Any) -> None:
         self.context_type = context_type
         details = {"context_type": context_type, **kwargs.get("details", {})}
         suggestions = [
@@ -237,7 +243,9 @@ class ContextBuildError(RAGBaseException):
 class FileOperationError(RAGFileError):
     """Raised when file operations fail."""
 
-    def __init__(self, operation: str, file_path: str, message: str, **kwargs):
+    def __init__(
+        self, operation: str, file_path: str, message: str, **kwargs: Any
+    ) -> None:
         self.operation = operation
         self.file_path = file_path
         details = {
@@ -256,7 +264,7 @@ class FileOperationError(RAGFileError):
 class StorageQuotaExceededError(RAGStorageError):
     """Raised when storage quota is exceeded."""
 
-    def __init__(self, current_usage: int, quota_limit: int, **kwargs):
+    def __init__(self, current_usage: int, quota_limit: int, **kwargs: Any) -> None:
         self.current_usage = current_usage
         self.quota_limit = quota_limit
         details = {
@@ -282,7 +290,9 @@ class StorageQuotaExceededError(RAGStorageError):
 class PerformanceDegradationError(RAGPerformanceError):
     """Raised when significant performance degradation detected."""
 
-    def __init__(self, metric: str, current_value: float, threshold: float, **kwargs):
+    def __init__(
+        self, metric: str, current_value: float, threshold: float, **kwargs: Any
+    ) -> None:
         self.metric = metric
         self.current_value = current_value
         self.threshold = threshold
@@ -305,7 +315,7 @@ class PerformanceDegradationError(RAGPerformanceError):
 class QualityAssessmentError(RAGQualityError):
     """Raised when quality assessment fails."""
 
-    def __init__(self, assessment_type: str, message: str, **kwargs):
+    def __init__(self, assessment_type: str, message: str, **kwargs: Any) -> None:
         self.assessment_type = assessment_type
         details = {"assessment_type": assessment_type, **kwargs.get("details", {})}
         suggestions = [
@@ -319,7 +329,9 @@ class QualityAssessmentError(RAGQualityError):
 class HallucinationDetectedError(RAGQualityError):
     """Raised when potential hallucination is detected in responses."""
 
-    def __init__(self, confidence: float, fabricated_claims: list[str], **kwargs):
+    def __init__(
+        self, confidence: float, fabricated_claims: list[str], **kwargs: Any
+    ) -> None:
         self.confidence = confidence
         self.fabricated_claims = fabricated_claims
         details = {
@@ -342,7 +354,7 @@ class HallucinationDetectedError(RAGQualityError):
 class MemoryLimitExceededError(RAGMemoryError):
     """Raised when memory limits are exceeded."""
 
-    def __init__(self, current_usage: int, memory_limit: int, **kwargs):
+    def __init__(self, current_usage: int, memory_limit: int, **kwargs: Any) -> None:
         self.current_usage = current_usage
         self.memory_limit = memory_limit
         details = {
@@ -362,10 +374,12 @@ class MemoryLimitExceededError(RAGMemoryError):
         super().__init__(message, details=details, suggestions=suggestions)
 
 
-class ConcurrencyLimitError(RAGBaseException):
+class ConcurrencyLimitError(RAGBaseError):
     """Raised when concurrency limits are exceeded."""
 
-    def __init__(self, active_operations: int, max_concurrent: int, **kwargs):
+    def __init__(
+        self, active_operations: int, max_concurrent: int, **kwargs: Any
+    ) -> None:
         self.active_operations = active_operations
         self.max_concurrent = max_concurrent
         details = {
@@ -409,7 +423,7 @@ def create_query_error(
     )
 
 
-def is_retriable_error(exception: RAGBaseException) -> bool:
+def is_retriable_error(exception: RAGBaseError) -> bool:
     """Check if an exception represents a retriable error."""
     retriable_types = [
         RAGTimeoutError,
@@ -420,7 +434,7 @@ def is_retriable_error(exception: RAGBaseException) -> bool:
     return any(isinstance(exception, error_type) for error_type in retriable_types)
 
 
-def get_error_recovery_strategy(exception: RAGBaseException) -> dict[str, Any]:
+def get_error_recovery_strategy(exception: RAGBaseError) -> dict[str, Any]:
     """Get recovery strategy for an exception."""
     if isinstance(exception, MemoryLimitExceededError):
         return {
@@ -451,7 +465,7 @@ def get_error_recovery_strategy(exception: RAGBaseException) -> dict[str, Any]:
 
 # Export all exceptions
 __all__ = [
-    "RAGBaseException",
+    "RAGBaseError",
     "RAGProcessingError",
     "RAGIndexError",
     "RAGQueryError",

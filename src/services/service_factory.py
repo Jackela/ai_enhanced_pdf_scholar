@@ -216,7 +216,7 @@ class DefaultServiceFactory(ServiceFactory):
             return dependency_map[dependency_name]
 
         # Try to resolve as a service dependency
-        for service_type in self._service_configs.keys():
+        for service_type in self._service_configs:
             if dependency_name == service_type.__name__.lower():
                 return self.create_service(service_type)
 
@@ -245,7 +245,7 @@ class DefaultServiceFactory(ServiceFactory):
                 for service_type, config in self._service_configs.items()
             },
             "active_singletons": [
-                service_type.__name__ for service_type in self._services.keys()
+                service_type.__name__ for service_type in self._services
             ],
             "factory_config": self.config,
         }

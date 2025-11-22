@@ -1188,3 +1188,10 @@ class TestServiceContracts:
 
 *Last Updated: 2025-01-21*
 *Version: 2.1.0*
+# Document Preview Smoke Test
+
+Before or after deployments that touch preview endpoints, follow the [Document Preview Validation Playbook](docs/operations/preview_validation_playbook.md). It describes how to:
+- Toggle `PREVIEWS_ENABLED` and related env vars
+- Hit `/api/documents/{id}/preview` and `/thumbnail` with curl
+- Verify headers, metrics (`preview_requests_total`, `preview_generation_seconds`), and cache behaviour
+- Troubleshoot cache or file-system issues

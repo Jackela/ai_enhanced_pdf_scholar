@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Production Validation Master Test Runner
 Orchestrates all Agent A4 testing suites and generates final production readiness certification.
@@ -34,11 +36,11 @@ from tests.security.test_xss_comprehensive import test_complete_xss_protection
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('production_validation.log')
-    ]
+        logging.FileHandler("production_validation.log"),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -49,10 +51,10 @@ class ProductionValidationOrchestrator:
     Runs tests in optimal order and handles dependencies.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize validation orchestrator."""
         self.start_time = None
-        self.validation_results = {}
+        self.validation_results: dict[str, Any] = {}
         self.overall_success = False
 
         # Define test execution plan with dependencies
@@ -63,7 +65,7 @@ class ProductionValidationOrchestrator:
                 "function": self._run_production_readiness_tests,
                 "critical": True,
                 "timeout_minutes": 10,
-                "prerequisites": []
+                "prerequisites": [],
             },
             {
                 "name": "security_sql_injection",
@@ -71,7 +73,7 @@ class ProductionValidationOrchestrator:
                 "function": self._run_sql_injection_tests,
                 "critical": True,
                 "timeout_minutes": 15,
-                "prerequisites": ["production_readiness"]
+                "prerequisites": ["production_readiness"],
             },
             {
                 "name": "security_xss_protection",
@@ -79,7 +81,7 @@ class ProductionValidationOrchestrator:
                 "function": self._run_xss_protection_tests,
                 "critical": True,
                 "timeout_minutes": 15,
-                "prerequisites": ["production_readiness"]
+                "prerequisites": ["production_readiness"],
             },
             {
                 "name": "performance_regression",
@@ -87,7 +89,7 @@ class ProductionValidationOrchestrator:
                 "function": self._run_performance_regression_tests,
                 "critical": True,
                 "timeout_minutes": 20,
-                "prerequisites": ["production_readiness"]
+                "prerequisites": ["production_readiness"],
             },
             {
                 "name": "fault_tolerance",
@@ -95,7 +97,7 @@ class ProductionValidationOrchestrator:
                 "function": self._run_fault_tolerance_tests,
                 "critical": False,
                 "timeout_minutes": 18,
-                "prerequisites": ["production_readiness", "performance_regression"]
+                "prerequisites": ["production_readiness", "performance_regression"],
             },
             {
                 "name": "load_testing",
@@ -103,7 +105,11 @@ class ProductionValidationOrchestrator:
                 "function": self._run_load_testing,
                 "critical": False,
                 "timeout_minutes": 25,
-                "prerequisites": ["production_readiness", "performance_regression", "security_sql_injection"]
+                "prerequisites": [
+                    "production_readiness",
+                    "performance_regression",
+                    "security_sql_injection",
+                ],
             },
             {
                 "name": "system_integration",
@@ -111,11 +117,15 @@ class ProductionValidationOrchestrator:
                 "function": self._run_system_integration_tests,
                 "critical": True,
                 "timeout_minutes": 30,
-                "prerequisites": ["production_readiness", "security_sql_injection", "security_xss_protection"]
-            }
+                "prerequisites": [
+                    "production_readiness",
+                    "security_sql_injection",
+                    "security_xss_protection",
+                ],
+            },
         ]
 
-    async def _run_production_readiness_tests(self):
+    async def _run_production_readiness_tests(self) -> Any:
         """Run production readiness tests."""
         logger.info("🔄 Running production readiness tests...")
 
@@ -127,41 +137,42 @@ class ProductionValidationOrchestrator:
         from tests.production.test_production_readiness import (
             test_complete_production_readiness,
         )
+
         results = await test_complete_production_readiness(test_suite)
 
         return results
 
-    async def _run_sql_injection_tests(self):
+    async def _run_sql_injection_tests(self) -> Any:
         """Run SQL injection protection tests."""
         logger.info("🔄 Running SQL injection protection tests...")
         return await test_complete_sql_injection_protection()
 
-    async def _run_xss_protection_tests(self):
+    async def _run_xss_protection_tests(self) -> Any:
         """Run XSS protection tests."""
         logger.info("🔄 Running XSS protection tests...")
         return await test_complete_xss_protection()
 
-    async def _run_performance_regression_tests(self):
+    async def _run_performance_regression_tests(self) -> Any:
         """Run performance regression tests."""
         logger.info("🔄 Running performance regression tests...")
         return await test_complete_performance_regression()
 
-    async def _run_fault_tolerance_tests(self):
+    async def _run_fault_tolerance_tests(self) -> Any:
         """Run fault tolerance tests."""
         logger.info("🔄 Running fault tolerance tests...")
         return await test_complete_fault_tolerance_suite()
 
-    async def _run_load_testing(self):
+    async def _run_load_testing(self) -> Any:
         """Run load testing."""
         logger.info("🔄 Running load testing...")
         return await test_complete_load_testing_suite()
 
-    async def _run_system_integration_tests(self):
+    async def _run_system_integration_tests(self) -> Any:
         """Run system integration tests."""
         logger.info("🔄 Running system integration tests...")
         return await test_complete_system_integration_suite()
 
-    def _check_prerequisites(self, test_config):
+    def _check_prerequisites(self, test_config: Any) -> Any:
         """Check if test prerequisites are met."""
         for prereq in test_config["prerequisites"]:
             if prereq not in self.validation_results:
@@ -173,7 +184,7 @@ class ProductionValidationOrchestrator:
 
         return True, "Prerequisites met"
 
-    async def _run_single_test_suite(self, test_config):
+    async def _run_single_test_suite(self, test_config: Any) -> Any:
         """Run a single test suite with error handling and timeout."""
         test_name = test_config["name"]
         logger.info("=" * 60)
@@ -188,7 +199,7 @@ class ProductionValidationOrchestrator:
                 "success": False,
                 "skipped": True,
                 "reason": prereq_msg,
-                "duration_seconds": 0
+                "duration_seconds": 0,
             }
 
         start_time = time.time()
@@ -211,20 +222,26 @@ class ProductionValidationOrchestrator:
                     "skipped": False,
                     "duration_seconds": duration,
                     "result_data": result,
-                    "critical": test_config["critical"]
+                    "critical": test_config["critical"],
                 }
 
                 if success:
-                    logger.info(f"✅ {test_config['description']} PASSED ({duration:.1f}s)")
+                    logger.info(
+                        f"✅ {test_config['description']} PASSED ({duration:.1f}s)"
+                    )
                 else:
-                    logger.error(f"❌ {test_config['description']} FAILED ({duration:.1f}s)")
+                    logger.error(
+                        f"❌ {test_config['description']} FAILED ({duration:.1f}s)"
+                    )
 
                 return test_result
 
             except asyncio.TimeoutError:
                 test_task.cancel()
                 duration = time.time() - start_time
-                logger.error(f"⏰ {test_config['description']} TIMED OUT ({duration:.1f}s)")
+                logger.error(
+                    f"⏰ {test_config['description']} TIMED OUT ({duration:.1f}s)"
+                )
 
                 return {
                     "success": False,
@@ -232,22 +249,24 @@ class ProductionValidationOrchestrator:
                     "timeout": True,
                     "duration_seconds": duration,
                     "critical": test_config["critical"],
-                    "error": f"Test timed out after {test_config['timeout_minutes']} minutes"
+                    "error": f"Test timed out after {test_config['timeout_minutes']} minutes",
                 }
 
         except Exception as e:
             duration = time.time() - start_time
-            logger.error(f"💥 {test_config['description']} ERROR: {e} ({duration:.1f}s)")
+            logger.error(
+                f"💥 {test_config['description']} ERROR: {e} ({duration:.1f}s)"
+            )
 
             return {
                 "success": False,
                 "skipped": False,
                 "duration_seconds": duration,
                 "critical": test_config["critical"],
-                "error": str(e)
+                "error": str(e),
             }
 
-    def _determine_test_success(self, result, test_name):
+    def _determine_test_success(self, result: Any, test_name: Any) -> Any:
         """Determine if test was successful based on result structure."""
         if isinstance(result, bool):
             return result
@@ -259,7 +278,7 @@ class ProductionValidationOrchestrator:
                 "overall_protection_rate",
                 "performance_score",
                 "overall_success",
-                "production_ready"
+                "production_ready",
             ]
 
             for indicator in success_indicators:
@@ -282,7 +301,7 @@ class ProductionValidationOrchestrator:
         # Default: assume success if no explicit failure
         return True
 
-    async def run_complete_production_validation(self):
+    async def run_complete_production_validation(self) -> Any:
         """Run complete production validation test suite."""
         self.start_time = time.time()
 
@@ -301,18 +320,27 @@ class ProductionValidationOrchestrator:
             # If critical test fails, consider stopping
             if test_config["critical"] and not test_result["success"]:
                 if not test_result.get("skipped", False):
-                    logger.error(f"💀 Critical test {test_config['name']} failed - continuing with remaining tests")
+                    logger.error(
+                        f"💀 Critical test {test_config['name']} failed - continuing with remaining tests"
+                    )
 
         # Calculate overall results
         total_duration = time.time() - self.start_time
 
         total_tests = len(self.validation_results)
-        successful_tests = len([r for r in self.validation_results.values() if r["success"]])
-        critical_tests = len([r for r in self.validation_results.values() if r.get("critical", False)])
-        successful_critical_tests = len([
-            r for r in self.validation_results.values()
-            if r.get("critical", False) and r["success"]
-        ])
+        successful_tests = len(
+            [r for r in self.validation_results.values() if r["success"]]
+        )
+        critical_tests = len(
+            [r for r in self.validation_results.values() if r.get("critical", False)]
+        )
+        successful_critical_tests = len(
+            [
+                r
+                for r in self.validation_results.values()
+                if r.get("critical", False) and r["success"]
+            ]
+        )
 
         # Overall success requires all critical tests to pass
         self.overall_success = successful_critical_tests == critical_tests
@@ -320,7 +348,8 @@ class ProductionValidationOrchestrator:
         # Generate summary
         summary = {
             "overall_success": self.overall_success,
-            "production_ready": self.overall_success and (successful_tests / total_tests) >= 0.8,
+            "production_ready": self.overall_success
+            and (successful_tests / total_tests) >= 0.8,
             "total_tests": total_tests,
             "successful_tests": successful_tests,
             "critical_tests": critical_tests,
@@ -328,18 +357,28 @@ class ProductionValidationOrchestrator:
             "success_rate": (successful_tests / total_tests) * 100,
             "total_duration_seconds": total_duration,
             "validation_timestamp": datetime.utcnow().isoformat(),
-            "test_results": self.validation_results
+            "test_results": self.validation_results,
         }
 
         # Log summary
         logger.info("=" * 70)
         logger.info("📊 PRODUCTION VALIDATION SUMMARY")
         logger.info("=" * 70)
-        logger.info(f"Overall Success: {'✅ YES' if summary['overall_success'] else '❌ NO'}")
-        logger.info(f"Production Ready: {'✅ YES' if summary['production_ready'] else '❌ NO'}")
-        logger.info(f"Success Rate: {summary['success_rate']:.1f}% ({successful_tests}/{total_tests})")
-        logger.info(f"Critical Tests: {successful_critical_tests}/{critical_tests} passed")
-        logger.info(f"Total Duration: {total_duration:.1f} seconds ({total_duration/60:.1f} minutes)")
+        logger.info(
+            f"Overall Success: {'✅ YES' if summary['overall_success'] else '❌ NO'}"
+        )
+        logger.info(
+            f"Production Ready: {'✅ YES' if summary['production_ready'] else '❌ NO'}"
+        )
+        logger.info(
+            f"Success Rate: {summary['success_rate']:.1f}% ({successful_tests}/{total_tests})"
+        )
+        logger.info(
+            f"Critical Tests: {successful_critical_tests}/{critical_tests} passed"
+        )
+        logger.info(
+            f"Total Duration: {total_duration:.1f} seconds ({total_duration/60:.1f} minutes)"
+        )
         logger.info("=" * 70)
 
         # Log individual test results
@@ -351,11 +390,13 @@ class ProductionValidationOrchestrator:
                 status = "⏰ TIMEOUT"
 
             critical_marker = " [CRITICAL]" if result.get("critical") else ""
-            logger.info(f"  {status} {test_name}{critical_marker} ({result['duration_seconds']:.1f}s)")
+            logger.info(
+                f"  {status} {test_name}{critical_marker} ({result['duration_seconds']:.1f}s)"
+            )
 
         return summary
 
-    async def generate_final_certification(self, validation_summary):
+    async def generate_final_certification(self, validation_summary: Any) -> Any:
         """Generate final production readiness certification."""
         logger.info("📜 Generating Production Readiness Certification...")
 
@@ -368,9 +409,13 @@ class ProductionValidationOrchestrator:
                 logger.info("=" * 70)
                 logger.info("🏆 PRODUCTION READINESS CERTIFICATION")
                 logger.info("=" * 70)
-                logger.info(f"Certification Level: {cert_summary['certification_level'].replace('_', ' ')}")
+                logger.info(
+                    f"Certification Level: {cert_summary['certification_level'].replace('_', ' ')}"
+                )
                 logger.info(f"Overall Score: {cert_summary['overall_score']:.1f}%")
-                logger.info(f"Production Ready: {'YES' if cert_summary['production_ready'] else 'NO'}")
+                logger.info(
+                    f"Production Ready: {'YES' if cert_summary['production_ready'] else 'NO'}"
+                )
                 logger.info(f"Valid Until: {cert_summary['valid_until']}")
                 logger.info(f"Critical Issues: {cert_summary['critical_issues_count']}")
                 logger.info("=" * 70)
@@ -385,7 +430,7 @@ class ProductionValidationOrchestrator:
             return None
 
 
-async def main():
+async def main() -> Any:
     """Main function to run complete production validation."""
     print("🚀 AI Enhanced PDF Scholar - Production Validation Suite")
     print("=" * 70)
@@ -401,7 +446,9 @@ async def main():
         validation_summary = await orchestrator.run_complete_production_validation()
 
         # Generate final certification
-        certification_report = await orchestrator.generate_final_certification(validation_summary)
+        certification_report = await orchestrator.generate_final_certification(
+            validation_summary
+        )
 
         # Final status
         if validation_summary["overall_success"]:
@@ -413,13 +460,17 @@ async def main():
 
         # Show certification level if available
         if certification_report:
-            cert_level = certification_report["certification_summary"]["certification_level"]
+            cert_level = certification_report["certification_summary"][
+                "certification_level"
+            ]
             cert_score = certification_report["certification_summary"]["overall_score"]
             print(f"🏆 Certification Level: {cert_level.replace('_', ' ')}")
             print(f"📊 Overall Score: {cert_score:.1f}%")
 
         print("\n📁 Results saved to: performance_results/")
-        print(f"⏱️ Total time: {validation_summary['total_duration_seconds']:.1f} seconds")
+        print(
+            f"⏱️ Total time: {validation_summary['total_duration_seconds']:.1f} seconds"
+        )
 
         return validation_summary["overall_success"]
 

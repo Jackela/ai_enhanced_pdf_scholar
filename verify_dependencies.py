@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Dependency Verification Script
@@ -14,7 +16,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-def load_configuration():
+def load_configuration() -> Any:
     """Load application configuration."""
     try:
         # Load environment variables from .env file
@@ -37,7 +39,7 @@ def load_configuration():
         print(f"FAILURE: Configuration loading FAILED - {e}")
         return False
 
-def test_postgresql_connection():
+def test_postgresql_connection() -> None:
     """Test PostgreSQL database connection."""
     try:
         # Import PostgreSQL adapter
@@ -83,7 +85,7 @@ def test_postgresql_connection():
     except Exception as e:
         print(f"FAILURE: Database connection FAILED - {e}")
 
-def test_redis_connection():
+def test_redis_connection() -> None:
     """Test Redis server connection."""
     try:
         # Import Redis
@@ -130,7 +132,7 @@ def test_redis_connection():
     except Exception as e:
         print(f"FAILURE: Redis connection FAILED - {e}")
 
-def main():
+def main() -> None:
     """Main dependency verification function."""
     # Suppress all logging to keep output clean
     logging.getLogger().setLevel(logging.CRITICAL)

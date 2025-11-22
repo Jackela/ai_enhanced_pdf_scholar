@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Optimized test runner for AI Enhanced PDF Scholar backend tests.
@@ -19,7 +21,7 @@ from pathlib import Path
 class TestRunner:
     """Optimized test runner with CI integration."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path) -> None:
         self.project_root = project_root
         self.test_dir = project_root / "tests"
         self.coverage_dir = project_root / "coverage_html"
@@ -30,7 +32,7 @@ class TestRunner:
             "errors": 0,
             "skipped": 0,
             "coverage": 0.0,
-            "duration": 0.0
+            "duration": 0.0,
         }
 
     def setup_environment(self) -> None:
@@ -53,7 +55,9 @@ class TestRunner:
         print("🧪 Running unit tests...")
 
         cmd = [
-            sys.executable, "-m", "pytest",
+            sys.executable,
+            "-m",
+            "pytest",
             str(self.test_dir),
             "-v",
             "--tb=short",
@@ -65,23 +69,29 @@ class TestRunner:
             "--cov-fail-under=60",
             "--cov-branch",
             "--maxfail=10",
-            "-n", "auto",
+            "-n",
+            "auto",
             "--dist=loadfile",
-            "-m", "not slow and not e2e and not performance"
+            "-m",
+            "not slow and not e2e and not performance",
         ]
 
         if test_selection:
             cmd.extend(["-k", test_selection])
 
         # Exclude problematic test files temporarily
-        cmd.extend([
-            "--ignore=tests/services/test_enhanced_rag_service.py",
-            "--ignore=tests/services/test_document_library_service.py",
-            "--ignore=tests/services/test_rag_cache_service.py"
-        ])
+        cmd.extend(
+            [
+                "--ignore=tests/services/test_enhanced_rag_service.py",
+                "--ignore=tests/services/test_document_library_service.py",
+                "--ignore=tests/services/test_rag_cache_service.py",
+            ]
+        )
 
         start_time = time.time()
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.project_root)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=self.project_root
+        )
         self.results["duration"] = time.time() - start_time
 
         self._parse_test_output(result.stdout)
@@ -100,18 +110,23 @@ class TestRunner:
         print("🔗 Running integration tests...")
 
         cmd = [
-            sys.executable, "-m", "pytest",
+            sys.executable,
+            "-m",
+            "pytest",
             str(self.project_root / "test_comprehensive.py"),
             str(self.project_root / "test_complete_workflow.py"),
             "-v",
             "--tb=short",
             "--timeout=120",
             "--maxfail=5",
-            "-n", "2",
-            "--dist=loadfile"
+            "-n",
+            "2",
+            "--dist=loadfile",
         ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.project_root)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=self.project_root
+        )
 
         if result.returncode == 0:
             print("✅ Integration tests passed!")
@@ -127,17 +142,20 @@ class TestRunner:
         print("📊 Generating coverage report...")
 
         # Generate JSON coverage for programmatic access
-        subprocess.run([
-            sys.executable, "-m", "coverage", "json",
-            "-o", "coverage.json"
-        ], cwd=self.project_root)
+        subprocess.run(
+            [sys.executable, "-m", "coverage", "json", "-o", "coverage.json"],
+            cwd=self.project_root,
+        )
 
         # Extract coverage percentage
         try:
             import json
+
             with open(self.project_root / "coverage.json") as f:
                 coverage_data = json.load(f)
-                self.results["coverage"] = coverage_data.get("totals", {}).get("percent_covered", 0.0)
+                self.results["coverage"] = coverage_data.get("totals", {}).get(
+                    "percent_covered", 0.0
+                )
         except Exception:
             self.results["coverage"] = 0.0
 
@@ -145,37 +163,35 @@ class TestRunner:
 
     def _parse_test_output(self, output: str) -> None:
         """Parse pytest output to extract test statistics."""
-        lines = output.split('\n')
+        lines = output.split("\n")
         for line in lines:
             if "failed" in line and "passed" in line:
                 # Parse line like: "22 failed, 145 passed, 83 warnings, 5 errors"
                 parts = line.split()
                 for i, part in enumerate(parts):
                     if part == "failed" and i > 0:
-                        self.results["failed"] = int(parts[i-1])
+                        self.results["failed"] = int(parts[i - 1])
                     elif part == "passed" and i > 0:
-                        self.results["passed"] = int(parts[i-1])
+                        self.results["passed"] = int(parts[i - 1])
                     elif part == "errors" and i > 0:
-                        self.results["errors"] = int(parts[i-1])
+                        self.results["errors"] = int(parts[i - 1])
 
         self.results["total_tests"] = (
-            self.results["passed"] +
-            self.results["failed"] +
-            self.results["errors"]
+            self.results["passed"] + self.results["failed"] + self.results["errors"]
         )
 
     def print_summary(self) -> None:
         """Print test execution summary."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🎯 TEST EXECUTION SUMMARY")
-        print("="*60)
+        print("=" * 60)
         print(f"Total Tests:    {self.results['total_tests']}")
         print(f"✅ Passed:      {self.results['passed']}")
         print(f"❌ Failed:      {self.results['failed']}")
         print(f"🚨 Errors:      {self.results['errors']}")
         print(f"📊 Coverage:    {self.results['coverage']:.1f}%")
         print(f"⏱️  Duration:    {self.results['duration']:.2f}s")
-        print("="*60)
+        print("=" * 60)
 
     def run_all_tests(self, skip_integration: bool = False) -> bool:
         """Run complete test suite."""
@@ -200,7 +216,7 @@ class TestRunner:
         return unit_success and integration_success
 
 
-def main():
+def main() -> None:
     """Main test runner entry point."""
     project_root = Path(__file__).parent.parent
     runner = TestRunner(project_root)

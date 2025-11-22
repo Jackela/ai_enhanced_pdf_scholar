@@ -26,8 +26,10 @@ logger = logging.getLogger(__name__)
 # Cache Warming Configuration
 # ============================================================================
 
+
 class WarmingStrategy(str, Enum):
     """Cache warming strategies."""
+
     SCHEDULED = "scheduled"  # Time-based warming
     PREDICTIVE = "predictive"  # ML-based prediction warming
     PATTERN_BASED = "pattern_based"  # Access pattern based
@@ -38,6 +40,7 @@ class WarmingStrategy(str, Enum):
 
 class WarmingPriority(str, Enum):
     """Priority levels for cache warming."""
+
     CRITICAL = "critical"  # Must warm immediately
     HIGH = "high"  # Warm soon
     MEDIUM = "medium"  # Warm when convenient
@@ -47,6 +50,7 @@ class WarmingPriority(str, Enum):
 @dataclass
 class WarmingTask:
     """A cache warming task."""
+
     key: str
     priority: WarmingPriority
     strategy: WarmingStrategy
@@ -57,14 +61,14 @@ class WarmingTask:
     ttl: int | None = None
 
     # Dependencies
-    dependencies: list[str] = field(default_factory=list)
-    dependent_keys: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list[Any])
+    dependent_keys: list[str] = field(default_factory=list[Any])
 
     # Metadata
     estimated_load_time_ms: float = 100.0
     estimated_size_bytes: int = 1024
     access_probability: float = 0.5
-    user_groups: list[str] = field(default_factory=list)
+    user_groups: list[str] = field(default_factory=list[Any])
 
     # State tracking
     created_at: datetime = field(default_factory=datetime.utcnow)
@@ -88,7 +92,7 @@ class WarmingTask:
 
         # Exponential backoff on retries
         if self.last_attempt:
-            backoff_minutes = 2 ** self.attempts  # 2, 4, 8 minutes
+            backoff_minutes = 2**self.attempts  # 2, 4, 8 minutes
             backoff_time = self.last_attempt + timedelta(minutes=backoff_minutes)
             if current_time < backoff_time:
                 return False
@@ -101,7 +105,7 @@ class WarmingTask:
             WarmingPriority.CRITICAL: 0,
             WarmingPriority.HIGH: 100,
             WarmingPriority.MEDIUM: 200,
-            WarmingPriority.LOW: 300
+            WarmingPriority.LOW: 300,
         }
 
         base_order = priority_order[self.priority]
@@ -118,6 +122,7 @@ class WarmingTask:
 @dataclass
 class WarmingStatistics:
     """Statistics for cache warming operations."""
+
     total_tasks: int = 0
     completed_tasks: int = 0
     failed_tasks: int = 0
@@ -126,13 +131,15 @@ class WarmingStatistics:
     total_bytes_warmed: int = 0
 
     # Strategy effectiveness
-    strategy_success_rates: dict[str, float] = field(default_factory=dict)
-    strategy_performance: dict[str, float] = field(default_factory=dict)
+    strategy_success_rates: dict[str, float] = field(default_factory=dict[str, Any])
+    strategy_performance: dict[str, float] = field(default_factory=dict[str, Any])
 
     # Time-based analysis
-    hourly_effectiveness: dict[int, float] = field(default_factory=dict)
+    hourly_effectiveness: dict[int, float] = field(default_factory=dict[str, Any])
 
-    def update_completion(self, task: WarmingTask, success: bool, duration_ms: float):
+    def update_completion(
+        self, task: WarmingTask, success: bool, duration_ms: float
+    ) -> None:
         """Update statistics with task completion."""
         self.total_tasks += 1
 
@@ -142,9 +149,8 @@ class WarmingStatistics:
 
             # Update average warm time
             self.average_warm_time_ms = (
-                (self.average_warm_time_ms * (self.completed_tasks - 1) + duration_ms)
-                / self.completed_tasks
-            )
+                self.average_warm_time_ms * (self.completed_tasks - 1) + duration_ms
+            ) / self.completed_tasks
         else:
             self.failed_tasks += 1
 
@@ -156,17 +162,22 @@ class WarmingStatistics:
 
         # Simple moving average for success rate
         current_rate = self.strategy_success_rates[strategy_name]
-        self.strategy_success_rates[strategy_name] = current_rate * 0.9 + (1.0 if success else 0.0) * 0.1
+        self.strategy_success_rates[strategy_name] = (
+            current_rate * 0.9 + (1.0 if success else 0.0) * 0.1
+        )
 
         # Performance metric (lower is better)
         if success:
             current_perf = self.strategy_performance[strategy_name]
-            self.strategy_performance[strategy_name] = current_perf * 0.9 + duration_ms * 0.1
+            self.strategy_performance[strategy_name] = (
+                current_perf * 0.9 + duration_ms * 0.1
+            )
 
 
 # ============================================================================
 # Cache Warming Service
 # ============================================================================
+
 
 class CacheWarmingService:
     """
@@ -177,8 +188,8 @@ class CacheWarmingService:
         self,
         redis_cache: RedisCacheService,
         smart_cache: SmartCacheManager | None = None,
-        metrics_service: MetricsService | None = None
-    ):
+        metrics_service: MetricsService | None = None,
+    ) -> None:
         """Initialize cache warming service."""
         self.redis_cache = redis_cache
         self.smart_cache = smart_cache
@@ -187,17 +198,17 @@ class CacheWarmingService:
         # Task management
         self.warming_tasks: dict[str, WarmingTask] = {}
         self.task_queue: list[WarmingTask] = []
-        self.completed_tasks: deque = deque(maxlen=1000)
+        self.completed_tasks: deque[Any] = deque[Any](maxlen=1000)
 
         # Statistics
         self.stats = WarmingStatistics()
 
         # Loader registry
-        self.data_loaders: dict[str, Callable] = {}
+        self.data_loaders: dict[str, Callable[..., Any]] = {}
 
         # Background processing
         self.is_running = False
-        self.worker_tasks: list[asyncio.Task] = []
+        self.worker_tasks: list[asyncio.Task[None]] = []
         self.max_workers = 3
 
         # Configuration
@@ -207,7 +218,7 @@ class CacheWarmingService:
             "batch_size": 10,
             "prediction_window_hours": 24,
             "warming_threshold_probability": 0.3,
-            "max_warming_time_minutes": 30
+            "max_warming_time_minutes": 30,
         }
 
         logger.info("Cache Warming Service initialized")
@@ -216,12 +227,12 @@ class CacheWarmingService:
     # Data Loader Registration
     # ========================================================================
 
-    def register_loader(self, pattern: str, loader_func: Callable):
+    def register_loader(self, pattern: str, loader_func: Callable[..., Any]) -> None:
         """Register a data loader for a key pattern."""
         self.data_loaders[pattern] = loader_func
         logger.info(f"Registered data loader for pattern: {pattern}")
 
-    def get_loader(self, key: str) -> Callable | None:
+    def get_loader(self, key: str) -> Callable[..., Any] | None:
         """Get appropriate loader for a key."""
         # Find matching pattern
         for pattern, loader in self.data_loaders.items():
@@ -242,10 +253,7 @@ class CacheWarmingService:
         # Check if key starts and ends with the pattern parts
         if pattern_parts[0] and not key.startswith(pattern_parts[0]):
             return False
-        if pattern_parts[-1] and not key.endswith(pattern_parts[-1]):
-            return False
-
-        return True
+        return not (pattern_parts[-1] and not key.endswith(pattern_parts[-1]))
 
     # ========================================================================
     # Task Management
@@ -256,13 +264,13 @@ class CacheWarmingService:
         key: str,
         priority: WarmingPriority = WarmingPriority.MEDIUM,
         strategy: WarmingStrategy = WarmingStrategy.PREDICTIVE,
-        loader_func: Callable | None = None,
+        loader_func: Callable[..., Any] | None = None,
         scheduled_time: datetime | None = None,
         ttl: int | None = None,
         dependencies: list[str] | None = None,
         user_groups: list[str] | None = None,
         estimated_load_time_ms: float = 100.0,
-        estimated_size_bytes: int = 1024
+        estimated_size_bytes: int = 1024,
     ) -> bool:
         """Add a cache warming task."""
         # Check if key already exists in cache
@@ -288,7 +296,7 @@ class CacheWarmingService:
             dependencies=dependencies or [],
             user_groups=user_groups or [],
             estimated_load_time_ms=estimated_load_time_ms,
-            estimated_size_bytes=estimated_size_bytes
+            estimated_size_bytes=estimated_size_bytes,
         )
 
         # Estimate access probability if smart cache is available
@@ -304,13 +312,13 @@ class CacheWarmingService:
         logger.debug(f"Added warming task for key: {key} (priority: {priority})")
         return True
 
-    def _enqueue_task(self, task: WarmingTask):
+    def _enqueue_task(self, task: WarmingTask) -> None:
         """Add task to execution queue with proper ordering."""
         # Check queue size limit
         if len(self.task_queue) >= self.config["max_queue_size"]:
             # Remove lowest priority tasks
             self.task_queue.sort(key=lambda t: t.get_execution_order())
-            self.task_queue = self.task_queue[:self.config["max_queue_size"] - 1]
+            self.task_queue = self.task_queue[: self.config["max_queue_size"] - 1]
 
         self.task_queue.append(task)
 
@@ -323,7 +331,7 @@ class CacheWarmingService:
             # Remove from active queue
             self.task_queue = [t for t in self.task_queue if t.key != key]
 
-            # Remove from tasks dict
+            # Remove from tasks dict[str, Any]
             del self.warming_tasks[key]
 
             logger.debug(f"Removed warming task for key: {key}")
@@ -335,47 +343,49 @@ class CacheWarmingService:
     # Predictive Warming
     # ========================================================================
 
-    async def predict_and_schedule_warming(self):
+    async def predict_and_schedule_warming(self) -> None:
         """Predict which keys should be warmed and schedule tasks."""
         if not self.smart_cache:
             logger.info("Smart cache not available for predictive warming")
             return
 
-        _ = datetime.utcnow() + timedelta(
-            hours=self.config["prediction_window_hours"]
-        )
+        _ = datetime.utcnow() + timedelta(hours=self.config["prediction_window_hours"])
 
         # Analyze access patterns for prediction
         predictions = await self._analyze_access_patterns()
 
         # Schedule warming tasks for high-probability keys
         for key, probability in predictions.items():
-            if probability >= self.config["warming_threshold_probability"]:
-                if key not in self.warming_tasks and not self.redis_cache.exists(key):
+            if (
+                probability >= self.config["warming_threshold_probability"]
+                and key not in self.warming_tasks
+                and not self.redis_cache.exists(key)
+            ):
+                # Determine priority based on probability
+                if probability >= 0.8:
+                    priority = WarmingPriority.HIGH
+                elif probability >= 0.5:
+                    priority = WarmingPriority.MEDIUM
+                else:
+                    priority = WarmingPriority.LOW
 
-                    # Determine priority based on probability
-                    if probability >= 0.8:
-                        priority = WarmingPriority.HIGH
-                    elif probability >= 0.5:
-                        priority = WarmingPriority.MEDIUM
-                    else:
-                        priority = WarmingPriority.LOW
+                # Schedule for near future
+                schedule_time = datetime.utcnow() + timedelta(minutes=5)
 
-                    # Schedule for near future
-                    schedule_time = datetime.utcnow() + timedelta(minutes=5)
+                self.add_warming_task(
+                    key=key,
+                    priority=priority,
+                    strategy=WarmingStrategy.PREDICTIVE,
+                    scheduled_time=schedule_time,
+                )
 
-                    self.add_warming_task(
-                        key=key,
-                        priority=priority,
-                        strategy=WarmingStrategy.PREDICTIVE,
-                        scheduled_time=schedule_time
-                    )
-
-        logger.info(f"Scheduled {len([p for p in predictions.values() if p >= self.config['warming_threshold_probability']])} predictive warming tasks")
+        logger.info(
+            f"Scheduled {len([p for p in predictions.values() if p >= self.config['warming_threshold_probability']])} predictive warming tasks"
+        )
 
     async def _analyze_access_patterns(self) -> dict[str, float]:
         """Analyze access patterns to predict future cache needs."""
-        predictions = {}
+        predictions: dict[str, Any] = {}
 
         if not self.smart_cache:
             return predictions
@@ -397,14 +407,18 @@ class CacheWarmingService:
             # Pattern-based adjustments
             if profile.access_pattern == AccessPattern.HOTSPOT:
                 probability += 0.2  # Hot keys likely to be accessed again
-            elif profile.access_pattern == AccessPattern.TEMPORAL:
-                # Check if we're in a typical access time window
-                if self._in_typical_access_window(profile, current_time):
-                    probability += 0.3
-            elif profile.access_pattern == AccessPattern.SEASONAL:
-                # Seasonal pattern prediction
-                if self._predict_seasonal_access(profile, current_time):
-                    probability += 0.25
+            elif (
+                profile.access_pattern == AccessPattern.TEMPORAL
+                and self._in_typical_access_window(profile, current_time)
+            ):
+                # In typical access time window - boost probability
+                probability += 0.3
+            elif (
+                profile.access_pattern == AccessPattern.SEASONAL
+                and self._predict_seasonal_access(profile, current_time)
+            ):
+                # Seasonal pattern prediction indicates access likely
+                probability += 0.25
 
             # Frequency and recency adjustments
             probability += min(profile.frequency_score * 0.1, 0.2)
@@ -428,7 +442,7 @@ class CacheWarmingService:
         current_hour = current_time.hour
 
         # Check if current hour is common for this key
-        hour_counts = defaultdict(int)
+        hour_counts: Any = defaultdict(int)
         for hour in hours:
             hour_counts[hour] += 1
 
@@ -440,20 +454,19 @@ class CacheWarmingService:
     def _predict_seasonal_access(self, profile, current_time: datetime) -> bool:
         """Predict if seasonal pattern indicates access is likely."""
         # Simple implementation - would be more sophisticated in production
-        if profile.seasonality_score > 0.7:  # High seasonality
-            # Check day-of-week pattern
-            if profile.access_times:
-                days = [t.weekday() for t in profile.access_times]
-                current_day = current_time.weekday()
+        # Check day-of-week pattern (high seasonality with access times)
+        if profile.seasonality_score > 0.7 and profile.access_times:
+            days = [t.weekday() for t in profile.access_times]
+            current_day = current_time.weekday()
 
-                day_counts = defaultdict(int)
-                for day in days:
-                    day_counts[day] += 1
+            day_counts: Any = defaultdict(int)
+            for day in days:
+                day_counts[day] += 1
 
-                total_accesses = len(days)
-                current_day_ratio = day_counts[current_day] / total_accesses
+            total_accesses = len(days)
+            current_day_ratio = day_counts[current_day] / total_accesses
 
-                return current_day_ratio > 0.3  # More than 30% of accesses on this day
+            return current_day_ratio > 0.3  # More than 30% of accesses on this day
 
         return False
 
@@ -461,13 +474,13 @@ class CacheWarmingService:
     # Pattern-based Warming
     # ========================================================================
 
-    async def schedule_pattern_based_warming(self):
+    async def schedule_pattern_based_warming(self) -> None:
         """Schedule warming based on detected access patterns."""
         if not self.smart_cache:
             return
 
         # Group keys by access patterns
-        pattern_groups = defaultdict(list)
+        pattern_groups: Any = defaultdict(list[Any])
         for key, profile in self.smart_cache.key_profiles.items():
             if not self.redis_cache.exists(key):
                 pattern_groups[profile.access_pattern].append((key, profile))
@@ -476,7 +489,9 @@ class CacheWarmingService:
         for pattern, keys in pattern_groups.items():
             await self._schedule_pattern_group(pattern, keys)
 
-    async def _schedule_pattern_group(self, pattern: AccessPattern, keys: list[tuple[str, Any]]):
+    async def _schedule_pattern_group(
+        self, pattern: AccessPattern, keys: list[tuple[str, Any]]
+    ) -> None:
         """Schedule warming for a group of keys with the same pattern."""
         if pattern == AccessPattern.HOTSPOT:
             # Warm hotspot keys with high priority
@@ -485,7 +500,7 @@ class CacheWarmingService:
                     self.add_warming_task(
                         key=key,
                         priority=WarmingPriority.HIGH,
-                        strategy=WarmingStrategy.PATTERN_BASED
+                        strategy=WarmingStrategy.PATTERN_BASED,
                     )
 
         elif pattern == AccessPattern.TEMPORAL:
@@ -496,58 +511,69 @@ class CacheWarmingService:
                         key=key,
                         priority=WarmingPriority.MEDIUM,
                         strategy=WarmingStrategy.PATTERN_BASED,
-                        scheduled_time=datetime.utcnow() + timedelta(minutes=2)
+                        scheduled_time=datetime.utcnow() + timedelta(minutes=2),
                     )
 
         elif pattern == AccessPattern.SEQUENTIAL:
             # Warm sequential keys in batches
             sorted_keys = sorted(keys, key=lambda x: x[0])  # Sort by key name
-            for i, (key, profile) in enumerate(sorted_keys[:5]):  # Batch of 5
+            for i, (key, _profile) in enumerate(sorted_keys[:5]):  # Batch of 5
                 self.add_warming_task(
                     key=key,
                     priority=WarmingPriority.LOW,
                     strategy=WarmingStrategy.PATTERN_BASED,
-                    scheduled_time=datetime.utcnow() + timedelta(minutes=i)
+                    scheduled_time=datetime.utcnow() + timedelta(minutes=i),
                 )
 
     # ========================================================================
     # Reactive Warming
     # ========================================================================
 
-    async def handle_cache_miss(self, key: str, user_id: str | None = None):
+    async def handle_cache_miss(self, key: str, user_id: str | None = None) -> None:
         """Handle cache miss with reactive warming."""
         # Add immediate warming task for missed key
         self.add_warming_task(
             key=key,
             priority=WarmingPriority.CRITICAL,
-            strategy=WarmingStrategy.REACTIVE
+            strategy=WarmingStrategy.REACTIVE,
         )
 
         # Look for related keys that might also be accessed
         related_keys = await self._find_related_keys(key)
 
         for related_key in related_keys:
-            if not self.redis_cache.exists(related_key) and related_key not in self.warming_tasks:
+            if (
+                not self.redis_cache.exists(related_key)
+                and related_key not in self.warming_tasks
+            ):
                 self.add_warming_task(
                     key=related_key,
                     priority=WarmingPriority.HIGH,
                     strategy=WarmingStrategy.REACTIVE,
-                    scheduled_time=datetime.utcnow() + timedelta(seconds=30)
+                    scheduled_time=datetime.utcnow() + timedelta(seconds=30),
                 )
 
-        logger.info(f"Reactive warming triggered for {key} and {len(related_keys)} related keys")
+        logger.info(
+            f"Reactive warming triggered for {key} and {len(related_keys)} related keys"
+        )
 
     async def _find_related_keys(self, key: str) -> list[str]:
         """Find keys related to the given key."""
-        related_keys = []
+        related_keys: list[Any] = []
 
         if not self.smart_cache:
             return related_keys
 
         # Find keys with similar patterns or common prefixes
-        key_prefix = key.split(':')[0] if ':' in key else key[:key.rfind('_')] if '_' in key else key
+        key_prefix = (
+            key.split(":")[0]
+            if ":" in key
+            else key[: key.rfind("_")]
+            if "_" in key
+            else key
+        )
 
-        for other_key, profile in self.smart_cache.key_profiles.items():
+        for other_key, _profile in self.smart_cache.key_profiles:
             if other_key == key:
                 continue
 
@@ -565,7 +591,7 @@ class CacheWarmingService:
     # Task Execution
     # ========================================================================
 
-    async def start_warming_workers(self):
+    async def start_warming_workers(self) -> None:
         """Start background workers for cache warming."""
         if self.is_running:
             return
@@ -579,7 +605,7 @@ class CacheWarmingService:
 
         logger.info(f"Started {self.max_workers} cache warming workers")
 
-    async def stop_warming_workers(self):
+    async def stop_warming_workers(self) -> None:
         """Stop background workers."""
         if not self.is_running:
             return
@@ -596,7 +622,7 @@ class CacheWarmingService:
 
         logger.info("Stopped cache warming workers")
 
-    async def _warming_worker(self, worker_id: str):
+    async def _warming_worker(self, worker_id: str) -> None:
         """Background worker for processing warming tasks."""
         logger.info(f"Cache warming worker {worker_id} started")
 
@@ -635,7 +661,7 @@ class CacheWarmingService:
 
         return None
 
-    async def _execute_warming_task(self, task: WarmingTask, worker_id: str):
+    async def _execute_warming_task(self, task: WarmingTask, worker_id: str) -> None:
         """Execute a single warming task."""
         start_time = time.time()
 
@@ -643,7 +669,9 @@ class CacheWarmingService:
             task.attempts += 1
             task.last_attempt = datetime.utcnow()
 
-            logger.debug(f"Worker {worker_id} executing warming task for key: {task.key}")
+            logger.debug(
+                f"Worker {worker_id} executing warming task for key: {task.key}"
+            )
 
             # Load data
             if asyncio.iscoroutinefunction(task.loader_func):
@@ -652,7 +680,7 @@ class CacheWarmingService:
                 data = await asyncio.to_thread(task.loader_func)
 
             # Store in cache
-            success = self.redis_cache.set(task.key, data, ttl=task.ttl)
+            success = self.redis_cache.set[str](task.key, data, ttl=task.ttl)
 
             if success:
                 task.completed = True
@@ -670,10 +698,12 @@ class CacheWarmingService:
                         operation="warm",
                         cache_type="redis",
                         hit=True,
-                        duration=duration_ms / 1000
+                        duration=duration_ms / 1000,
                     )
 
-                logger.debug(f"Successfully warmed cache for key: {task.key} in {duration_ms:.1f}ms")
+                logger.debug(
+                    f"Successfully warmed cache for key: {task.key} in {duration_ms:.1f}ms"
+                )
             else:
                 raise Exception("Failed to store data in cache")
 
@@ -694,15 +724,16 @@ class CacheWarmingService:
 
         finally:
             # Clean up from active tasks
-            if task.key in self.warming_tasks:
-                if task.completed or task.attempts >= 3:
-                    del self.warming_tasks[task.key]
+            if task.key in self.warming_tasks and (
+                task.completed or task.attempts >= 3
+            ):
+                del self.warming_tasks[task.key]
 
     # ========================================================================
     # Scheduled Warming
     # ========================================================================
 
-    async def schedule_periodic_warming(self):
+    async def schedule_periodic_warming(self) -> None:
         """Schedule periodic warming based on time patterns."""
         current_time = datetime.utcnow()
 
@@ -718,7 +749,7 @@ class CacheWarmingService:
         elif current_time.hour == 17:  # 5 PM
             await self._schedule_evening_warming()
 
-    async def _schedule_business_hours_warming(self):
+    async def _schedule_business_hours_warming(self) -> None:
         """Schedule warming for business hours."""
         if not self.smart_cache:
             return
@@ -727,18 +758,16 @@ class CacheWarmingService:
         business_hour_keys = []
 
         for key, profile in self.smart_cache.key_profiles.items():
-            if not self.redis_cache.exists(key):
-                # Check if key is commonly accessed during business hours
-                if profile.access_times:
-                    business_accesses = [
-                        t for t in profile.access_times
-                        if 9 <= t.hour <= 17
-                    ]
+            # Check if key is not cached and commonly accessed during business hours
+            if not self.redis_cache.exists(key) and profile.access_times:
+                business_accesses = [
+                    t for t in profile.access_times if 9 <= t.hour <= 17
+                ]
 
-                    business_ratio = len(business_accesses) / len(profile.access_times)
+                business_ratio = len(business_accesses) / len(profile.access_times)
 
-                    if business_ratio > 0.6:  # 60% of accesses during business hours
-                        business_hour_keys.append(key)
+                if business_ratio > 0.6:  # 60% of accesses during business hours
+                    business_hour_keys.append(key)
 
         # Schedule warming
         for key in business_hour_keys[:20]:  # Limit to top 20
@@ -746,17 +775,19 @@ class CacheWarmingService:
                 key=key,
                 priority=WarmingPriority.MEDIUM,
                 strategy=WarmingStrategy.SCHEDULED,
-                scheduled_time=datetime.utcnow() + timedelta(minutes=30)
+                scheduled_time=datetime.utcnow() + timedelta(minutes=30),
             )
 
-        logger.info(f"Scheduled {len(business_hour_keys)} keys for business hours warming")
+        logger.info(
+            f"Scheduled {len(business_hour_keys)} keys for business hours warming"
+        )
 
-    async def _schedule_lunch_time_warming(self):
+    async def _schedule_lunch_time_warming(self) -> None:
         """Schedule warming for lunch time patterns."""
         # Similar logic for lunch time patterns
         pass
 
-    async def _schedule_evening_warming(self):
+    async def _schedule_evening_warming(self) -> None:
         """Schedule warming for evening patterns."""
         # Similar logic for evening patterns
         pass
@@ -779,12 +810,13 @@ class CacheWarmingService:
                 "failed_tasks": self.stats.failed_tasks,
                 "success_rate": (
                     (self.stats.completed_tasks / self.stats.total_tasks * 100)
-                    if self.stats.total_tasks > 0 else 0
+                    if self.stats.total_tasks > 0
+                    else 0
                 ),
                 "average_warm_time_ms": self.stats.average_warm_time_ms,
-                "total_bytes_warmed": self.stats.total_bytes_warmed
+                "total_bytes_warmed": self.stats.total_bytes_warmed,
             },
-            "strategy_performance": dict(self.stats.strategy_success_rates),
+            "strategy_performance": dict[str, Any](self.stats.strategy_success_rates),
             "current_tasks": [
                 {
                     "key": task.key,
@@ -792,12 +824,11 @@ class CacheWarmingService:
                     "strategy": task.strategy.value,
                     "attempts": task.attempts,
                     "scheduled_time": (
-                        task.scheduled_time.isoformat()
-                        if task.scheduled_time else None
-                    )
+                        task.scheduled_time.isoformat() if task.scheduled_time else None
+                    ),
                 }
-                for task in list(self.task_queue)[:10]  # Top 10 tasks
-            ]
+                for task in list[Any](self.task_queue)[:10]  # Top 10 tasks
+            ],
         }
 
     def get_warming_recommendations(self) -> list[dict[str, Any]]:
@@ -807,50 +838,56 @@ class CacheWarmingService:
         # Analyze strategy performance
         if self.stats.strategy_success_rates:
             best_strategy = max(
-                self.stats.strategy_success_rates.items(),
-                key=lambda x: x[1]
+                self.stats.strategy_success_rates.items(), key=lambda x: x[1]
             )
             worst_strategy = min(
-                self.stats.strategy_success_rates.items(),
-                key=lambda x: x[1]
+                self.stats.strategy_success_rates.items(), key=lambda x: x[1]
             )
 
             if best_strategy[1] > 0.8:
-                recommendations.append({
-                    "type": "strategy_optimization",
-                    "message": f"Strategy '{best_strategy[0]}' has high success rate ({best_strategy[1]:.1%}). Consider using it more.",
-                    "priority": "medium"
-                })
+                recommendations.append(
+                    {
+                        "type": "strategy_optimization",
+                        "message": f"Strategy '{best_strategy[0]}' has high success rate ({best_strategy[1]:.1%}). Consider using it more.",
+                        "priority": "medium",
+                    }
+                )
 
             if worst_strategy[1] < 0.5:
-                recommendations.append({
-                    "type": "strategy_optimization",
-                    "message": f"Strategy '{worst_strategy[0]}' has low success rate ({worst_strategy[1]:.1%}). Consider tuning or reducing usage.",
-                    "priority": "high"
-                })
+                recommendations.append(
+                    {
+                        "type": "strategy_optimization",
+                        "message": f"Strategy '{worst_strategy[0]}' has low success rate ({worst_strategy[1]:.1%}). Consider tuning or reducing usage.",
+                        "priority": "high",
+                    }
+                )
 
         # Queue size recommendations
         if len(self.task_queue) > self.config["max_queue_size"] * 0.8:
-            recommendations.append({
-                "type": "capacity",
-                "message": "Warming queue is near capacity. Consider increasing workers or reducing task frequency.",
-                "priority": "high"
-            })
+            recommendations.append(
+                {
+                    "type": "capacity",
+                    "message": "Warming queue is near capacity. Consider increasing workers or reducing task frequency.",
+                    "priority": "high",
+                }
+            )
 
         # Performance recommendations
         if self.stats.average_warm_time_ms > 5000:  # 5 seconds
-            recommendations.append({
-                "type": "performance",
-                "message": f"Average warming time is high ({self.stats.average_warm_time_ms:.0f}ms). Consider optimizing data loaders.",
-                "priority": "medium"
-            })
+            recommendations.append(
+                {
+                    "type": "performance",
+                    "message": f"Average warming time is high ({self.stats.average_warm_time_ms:.0f}ms). Consider optimizing data loaders.",
+                    "priority": "medium",
+                }
+            )
 
         return recommendations
 
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> Any:
         from .redis_cache_service import RedisCacheService, RedisConfig
 
         # Create services
@@ -859,7 +896,7 @@ if __name__ == "__main__":
         warming_service = CacheWarmingService(redis_cache)
 
         # Register a simple loader
-        def load_user_data(user_id: str):
+        def load_user_data(user_id: str) -> Any:
             return {"id": user_id, "name": f"User {user_id}", "data": "sample"}
 
         warming_service.register_loader("user:*", lambda: load_user_data("123"))
@@ -868,7 +905,7 @@ if __name__ == "__main__":
         warming_service.add_warming_task(
             "user:123",
             priority=WarmingPriority.HIGH,
-            strategy=WarmingStrategy.PREDICTIVE
+            strategy=WarmingStrategy.PREDICTIVE,
         )
 
         # Start workers

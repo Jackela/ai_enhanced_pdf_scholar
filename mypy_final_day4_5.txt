@@ -1,0 +1,2 @@
+backend/services/cache_coherency_manager.py:181: error: Type parameter lists are only supported in Python 3.12 and greater  [syntax]
+Found 1 error in 1 file (errors prevented further checking)

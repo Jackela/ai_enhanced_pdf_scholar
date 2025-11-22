@@ -11,7 +11,7 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Union
+from typing import Any
 
 from redis import ConnectionPool, Redis
 from redis.exceptions import RedisError
@@ -24,8 +24,10 @@ logger = logging.getLogger(__name__)
 # Cache Configuration
 # ============================================================================
 
+
 class CacheStrategy(str, Enum):
     """Cache invalidation strategies."""
+
     TTL = "ttl"  # Time-based expiration
     LRU = "lru"  # Least Recently Used
     LFU = "lfu"  # Least Frequently Used
@@ -35,6 +37,7 @@ class CacheStrategy(str, Enum):
 
 class CacheLevel(str, Enum):
     """Cache levels for multi-tier caching."""
+
     L1_MEMORY = "l1_memory"  # In-memory cache (process local)
     L2_REDIS = "l2_redis"  # Redis cache (distributed)
     L3_DATABASE = "l3_database"  # Database cache
@@ -43,7 +46,7 @@ class CacheLevel(str, Enum):
 class RedisConfig:
     """Redis configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Redis configuration from environment."""
         import os
 
@@ -59,7 +62,7 @@ class RedisConfig:
         self.socket_timeout = int(os.getenv("REDIS_SOCKET_TIMEOUT", "5"))
         self.socket_connect_timeout = int(os.getenv("REDIS_CONNECT_TIMEOUT", "5"))
         self.socket_keepalive = True
-        self.socket_keepalive_options = {}
+        self.socket_keepalive_options: dict[str, Any] = {}
 
         # Cluster settings
         self.cluster_enabled = os.getenv("REDIS_CLUSTER", "false").lower() == "true"
@@ -73,50 +76,56 @@ class RedisConfig:
         # Cache settings
         self.default_ttl = int(os.getenv("CACHE_DEFAULT_TTL", "3600"))  # 1 hour
         self.max_ttl = int(os.getenv("CACHE_MAX_TTL", "86400"))  # 24 hours
-        self.compression_threshold = int(os.getenv("CACHE_COMPRESSION_THRESHOLD", "1000"))  # bytes
+        self.compression_threshold = int(
+            os.getenv("CACHE_COMPRESSION_THRESHOLD", "1000")
+        )  # bytes
 
 
 # ============================================================================
 # Redis Cache Service
 # ============================================================================
 
+
 class RedisCacheService:
     """
     Comprehensive Redis cache service with intelligent caching strategies.
     """
 
-    def __init__(self, config: RedisConfig | None = None):
+    def __init__(self, config: RedisConfig | None = None) -> None:
         """Initialize Redis cache service."""
         self.config = config or RedisConfig()
         self._redis_client = None
         self._connection_pool = None
-        self._local_cache = {}  # L1 memory cache
+        self._local_cache: dict[str, Any] = {}  # L1 memory cache
         self._cache_stats = {
             "hits": 0,
             "misses": 0,
             "sets": 0,
             "deletes": 0,
-            "errors": 0
+            "errors": 0,
         }
 
         # Initialize Redis connection
         self._init_redis()
 
-    def _init_redis(self):
+    def _init_redis(self) -> None:
         """Initialize Redis connection."""
         try:
             if self.config.sentinel_enabled:
                 # Use Redis Sentinel for high availability
                 sentinels = [
                     (host.split(":")[0], int(host.split(":")[1]))
-                    for host in self.config.sentinel_hosts if host
+                    for host in self.config.sentinel_hosts
+                    if host
                 ]
-                sentinel = Sentinel(sentinels, socket_timeout=self.config.socket_timeout)
+                sentinel = Sentinel(
+                    sentinels, socket_timeout=self.config.socket_timeout
+                )
                 self._redis_client = sentinel.master_for(
                     self.config.sentinel_service,
                     socket_timeout=self.config.socket_timeout,
                     password=self.config.password,
-                    db=self.config.db
+                    db=self.config.db,
                 )
             else:
                 # Standard Redis connection
@@ -130,7 +139,7 @@ class RedisCacheService:
                     socket_connect_timeout=self.config.socket_connect_timeout,
                     socket_keepalive=self.config.socket_keepalive,
                     socket_keepalive_options=self.config.socket_keepalive_options,
-                    decode_responses=False  # Handle encoding ourselves
+                    decode_responses=False,  # Handle encoding ourselves
                 )
                 self._redis_client = Redis(connection_pool=self._connection_pool)
 
@@ -146,12 +155,7 @@ class RedisCacheService:
     # Core Cache Operations
     # ========================================================================
 
-    def get(
-        self,
-        key: str,
-        default: Any = None,
-        deserialize: bool = True
-    ) -> Any:
+    def get(self, key: str, default: Any = None, deserialize: bool = True) -> Any:
         """
         Get value from cache.
 
@@ -202,7 +206,7 @@ class RedisCacheService:
         ttl: int | None = None,
         serialize: bool = True,
         nx: bool = False,
-        xx: bool = False
+        xx: bool = False,
     ) -> bool:
         """
         Set value in cache.
@@ -212,8 +216,8 @@ class RedisCacheService:
             value: Value to cache
             ttl: Time to live in seconds
             serialize: Whether to serialize the value
-            nx: Only set if key doesn't exist
-            xx: Only set if key exists
+            nx: Only set[str] if key doesn't exist
+            xx: Only set[str] if key exists
 
         Returns:
             Success status
@@ -233,22 +237,19 @@ class RedisCacheService:
                 ttl = self.config.max_ttl
 
             # Set in Redis
-            result = self._redis_client.set(
-                key, value,
-                ex=ttl if ttl > 0 else None,
-                nx=nx,
-                xx=xx
+            result = self._redis_client.set[str](
+                key, value, ex=ttl if ttl > 0 else None, nx=nx, xx=xx
             )
 
             if result:
-                # Also set in L1 cache
+                # Also set[str] in L1 cache
                 self._local_cache[key] = value
                 self._cache_stats["sets"] += 1
 
             return bool(result)
 
         except RedisError as e:
-            logger.error(f"Redis set error for key {key}: {e}")
+            logger.error(f"Redis set[str] error for key {key}: {e}")
             self._cache_stats["errors"] += 1
             return False
 
@@ -374,7 +375,9 @@ class RedisCacheService:
             if not keys:
                 return {}
 
-            return self.mget([key.decode() if isinstance(key, bytes) else key for key in keys])
+            return self.mget(
+                [key.decode() if isinstance(key, bytes) else key for key in keys]
+            )
 
         except RedisError as e:
             logger.error(f"Redis pattern get error: {e}")
@@ -390,7 +393,9 @@ class RedisCacheService:
             if not keys:
                 return 0
 
-            return self.delete(*[key.decode() if isinstance(key, bytes) else key for key in keys])
+            return self.delete(
+                *[key.decode() if isinstance(key, bytes) else key for key in keys]
+            )
 
         except RedisError as e:
             logger.error(f"Redis pattern delete error: {e}")
@@ -416,7 +421,7 @@ class RedisCacheService:
             return None
 
     def add_to_set(self, key: str, *values: Any) -> int:
-        """Add values to a set."""
+        """Add values to a set[str]."""
         if not self._redis_client:
             return 0
 
@@ -428,19 +433,19 @@ class RedisCacheService:
             return 0
 
     def get_set_members(self, key: str) -> builtins.set[Any]:
-        """Get all members of a set."""
+        """Get all members of a set[str]."""
         if not self._redis_client:
-            return set()
+            return set[str]()
 
         try:
             members = self._redis_client.smembers(key)
             return {self._deserialize(m) for m in members}
         except RedisError as e:
             logger.error(f"Redis smembers error for key {key}: {e}")
-            return set()
+            return set[str]()
 
     def add_to_sorted_set(self, key: str, mapping: dict[Any, float]) -> int:
-        """Add values to a sorted set with scores."""
+        """Add values to a sorted set[str] with scores."""
         if not self._redis_client:
             return 0
 
@@ -458,17 +463,21 @@ class RedisCacheService:
         start: int = 0,
         end: int = -1,
         withscores: bool = False,
-        reverse: bool = False
-    ) -> Union[list[Any], list[tuple]]:
-        """Get range from sorted set."""
+        reverse: bool = False,
+    ) -> list[Any] | list[tuple]:
+        """Get range from sorted set[str]."""
         if not self._redis_client:
             return []
 
         try:
             if reverse:
-                result = self._redis_client.zrevrange(key, start, end, withscores=withscores)
+                result = self._redis_client.zrevrange(
+                    key, start, end, withscores=withscores
+                )
             else:
-                result = self._redis_client.zrange(key, start, end, withscores=withscores)
+                result = self._redis_client.zrange(
+                    key, start, end, withscores=withscores
+                )
 
             if withscores:
                 return [(self._deserialize(item), score) for item, score in result]
@@ -487,10 +496,10 @@ class RedisCacheService:
         self,
         ttl: int | None = None,
         key_prefix: str = "",
-        key_func: Callable | None = None,
+        key_func: Callable[..., Any] | None = None,
         tags: list[str] | None = None,
-        condition: Callable | None = None
-    ):
+        condition: Callable[..., Any] | None = None,
+    ) -> Any:
         """
         Decorator for caching function results.
 
@@ -506,9 +515,10 @@ class RedisCacheService:
             def get_user(user_id: int):
                 return db.query(User).get(user_id)
         """
-        def decorator(func: Callable) -> Callable:
+
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs) -> Any:
                 # Generate cache key
                 if key_func:
                     cache_key = key_func(*args, **kwargs)
@@ -537,24 +547,25 @@ class RedisCacheService:
                     return result
 
                 # Cache the result
-                self.set(cache_key, result, ttl=ttl)
+                self.set[str](cache_key, result, ttl=ttl)
 
                 return result
 
             # Add cache management methods
             wrapper.invalidate = lambda *args, **kwargs: self.delete(
-                key_func(*args, **kwargs) if key_func else
-                ":".join([key_prefix or func.__name__] + [str(arg) for arg in args])
+                key_func(*args, **kwargs)
+                if key_func
+                else ":".join(
+                    [key_prefix or func.__name__] + [str(arg) for arg in args]
+                )
             )
 
             return wrapper
+
         return decorator
 
     def cache_aside(
-        self,
-        key: str,
-        loader: Callable,
-        ttl: int | None = None
+        self, key: str, loader: Callable[..., Any], ttl: int | None = None
     ) -> Any:
         """
         Cache-aside pattern implementation.
@@ -577,7 +588,7 @@ class RedisCacheService:
 
         # Store in cache
         if value is not None:
-            self.set(key, value, ttl=ttl)
+            self.set[str](key, value, ttl=ttl)
 
         return value
 
@@ -585,7 +596,7 @@ class RedisCacheService:
     # Cache Warming and Preloading
     # ========================================================================
 
-    def warm_cache(self, data: dict[str, Any], ttl: int | None = None):
+    def warm_cache(self, data: dict[str, Any], ttl: int | None = None) -> Any:
         """Warm cache with pre-computed data."""
         return self.mset(data, ttl=ttl)
 
@@ -593,9 +604,9 @@ class RedisCacheService:
         self,
         pattern_template: str,
         ids: list[Any],
-        loader: Callable,
-        ttl: int | None = None
-    ):
+        loader: Callable[..., Any],
+        ttl: int | None = None,
+    ) -> None:
         """
         Preload cache for a pattern of keys.
 
@@ -625,7 +636,9 @@ class RedisCacheService:
 
         # Calculate hit rate
         total_requests = stats["hits"] + stats["misses"]
-        stats["hit_rate"] = (stats["hits"] / total_requests * 100) if total_requests > 0 else 0
+        stats["hit_rate"] = (
+            (stats["hits"] / total_requests * 100) if total_requests > 0 else 0
+        )
 
         # Get Redis info
         if self._redis_client:
@@ -638,19 +651,19 @@ class RedisCacheService:
                     "keyspace_hits": redis_info.get("keyspace_hits"),
                     "keyspace_misses": redis_info.get("keyspace_misses"),
                 }
-            except:
+            except Exception:
                 pass
 
         return stats
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         """Reset cache statistics."""
         self._cache_stats = {
             "hits": 0,
             "misses": 0,
             "sets": 0,
             "deletes": 0,
-            "errors": 0
+            "errors": 0,
         }
 
     def flush_all(self) -> bool:
@@ -679,6 +692,7 @@ class RedisCacheService:
         # Compress if above threshold
         if len(serialized) > self.config.compression_threshold:
             import zlib
+
             serialized = b"COMPRESSED:" + zlib.compress(serialized)
 
         return serialized
@@ -687,11 +701,12 @@ class RedisCacheService:
         """Deserialize value from storage."""
         if value.startswith(b"COMPRESSED:"):
             import zlib
+
             value = zlib.decompress(value[11:])
 
         return pickle.loads(value)
 
-    def close(self):
+    def close(self) -> None:
         """Close Redis connection."""
         if self._redis_client:
             self._redis_client.close()
@@ -703,16 +718,17 @@ class RedisCacheService:
 # Intelligent Cache Strategy
 # ============================================================================
 
+
 class IntelligentCacheStrategy:
     """
     Intelligent caching strategy with adaptive TTL and invalidation.
     """
 
-    def __init__(self, cache_service: RedisCacheService):
+    def __init__(self, cache_service: RedisCacheService) -> None:
         """Initialize intelligent cache strategy."""
         self.cache = cache_service
-        self.access_patterns = {}  # Track access patterns
-        self.ttl_adjustments = {}  # Dynamic TTL adjustments
+        self.access_patterns: dict[str, Any] = {}  # Track access patterns
+        self.ttl_adjustments: dict[str, Any] = {}  # Dynamic TTL adjustments
 
     def adaptive_ttl(self, key: str, base_ttl: int = 3600) -> int:
         """
@@ -741,7 +757,7 @@ class IntelligentCacheStrategy:
             # Rarely accessed
             return base_ttl
 
-    def smart_invalidation(self, entity_type: str, entity_id: Any):
+    def smart_invalidation(self, entity_type: str, entity_id: Any) -> None:
         """
         Smart cache invalidation based on entity relationships.
 
@@ -754,31 +770,26 @@ class IntelligentCacheStrategy:
             "user": [
                 f"user:{entity_id}:*",
                 f"documents:user:{entity_id}:*",
-                f"permissions:user:{entity_id}:*"
+                f"permissions:user:{entity_id}:*",
             ],
             "document": [
                 f"document:{entity_id}:*",
                 f"rag:document:{entity_id}:*",
-                f"search:*{entity_id}*"
+                f"search:*{entity_id}*",
             ],
-            "permission": [
-                "permissions:*",
-                "rbac:*"
-            ]
+            "permission": ["permissions:*", "rbac:*"],
         }
 
-        patterns = invalidation_patterns.get(entity_type, [f"{entity_type}:{entity_id}:*"])
+        patterns = invalidation_patterns.get(
+            entity_type, [f"{entity_type}:{entity_id}:*"]
+        )
 
         for pattern in patterns:
             deleted = self.cache.delete_by_pattern(pattern)
             logger.info(f"Invalidated {deleted} cache entries for pattern: {pattern}")
 
     def cache_document_query(
-        self,
-        document_id: int,
-        query: str,
-        result: Any,
-        ttl: int | None = None
+        self, document_id: int, query: str, result: Any, ttl: int | None = None
     ) -> str:
         """
         Cache document query result with intelligent key generation.
@@ -801,17 +812,17 @@ class IntelligentCacheStrategy:
             ttl = self.adaptive_ttl(cache_key, base_ttl=7200)  # 2 hours base
 
         # Cache result
-        self.cache.set(cache_key, result, ttl=ttl)
+        self.cache.set[str](cache_key, result, ttl=ttl)
 
         # Track access pattern
         self._track_access(cache_key)
 
-        # Add to document's query set for invalidation
+        # Add to document's query set[str] for invalidation
         self.cache.add_to_set(f"document:{document_id}:queries", cache_key)
 
         return cache_key
 
-    def _track_access(self, key: str):
+    def _track_access(self, key: str) -> None:
         """Track access pattern for a key."""
         if key not in self.access_patterns:
             self.access_patterns[key] = {"count": 0}

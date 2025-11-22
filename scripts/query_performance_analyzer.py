@@ -31,6 +31,7 @@ except ImportError as e:
 @dataclass
 class QueryExecutionStats:
     """Statistics for a single query execution."""
+
     query_id: str
     query_text: str
     parameters: tuple[Any, ...] | None
@@ -47,6 +48,7 @@ class QueryExecutionStats:
 @dataclass
 class QueryAnalysisResult:
     """Result of query analysis with optimization recommendations."""
+
     query_id: str
     query_text: str
     avg_execution_time: float
@@ -77,10 +79,12 @@ class QueryPerformanceAnalyzer:
 
     # Collection settings
     SLOW_QUERY_THRESHOLD = 100.0  # Log queries slower than this
-    MAX_QUERY_HISTORY = 10000     # Maximum queries to keep in memory
-    ANALYSIS_BATCH_SIZE = 100     # Queries to analyze in one batch
+    MAX_QUERY_HISTORY = 10000  # Maximum queries to keep in memory
+    ANALYSIS_BATCH_SIZE = 100  # Queries to analyze in one batch
 
-    def __init__(self, db_connection: DatabaseConnection, enable_monitoring: bool = True):
+    def __init__(
+        self, db_connection: DatabaseConnection, enable_monitoring: bool = True
+    ) -> None:
         """
         Initialize the Query Performance Analyzer.
 
@@ -107,7 +111,8 @@ class QueryPerformanceAnalyzer:
         """Initialize tables for query performance monitoring."""
         try:
             # Create query performance monitoring table
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS query_performance_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     query_id TEXT NOT NULL,
@@ -120,23 +125,30 @@ class QueryPerformanceAnalyzer:
                     thread_id INTEGER,
                     parameters TEXT
                 )
-            """)
+            """
+            )
 
             # Create index for efficient querying
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_query_perf_timestamp
                 ON query_performance_log(timestamp DESC)
-            """)
+            """
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_query_perf_query_id
                 ON query_performance_log(query_id)
-            """)
+            """
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_query_perf_execution_time
                 ON query_performance_log(execution_time_ms DESC)
-            """)
+            """
+            )
 
             logger.info("Query performance monitoring tables initialized")
 
@@ -147,8 +159,9 @@ class QueryPerformanceAnalyzer:
     def _generate_query_id(self, query_text: str) -> str:
         """Generate a consistent ID for a query pattern."""
         import hashlib
+
         # Normalize query by removing extra whitespace and converting to lowercase
-        normalized = ' '.join(query_text.lower().split())
+        normalized = " ".join(query_text.lower().split())
         return hashlib.sha256(normalized.encode()).hexdigest()[:12]
 
     def record_query_execution(
@@ -158,7 +171,7 @@ class QueryPerformanceAnalyzer:
         parameters: tuple[Any, ...] | None = None,
         rows_affected: int = 0,
         rows_returned: int = 0,
-        execution_plan: list[dict[str, Any]] | None = None
+        execution_plan: list[dict[str, Any]] | None = None,
     ) -> None:
         """
         Record a query execution for performance analysis.
@@ -187,7 +200,7 @@ class QueryPerformanceAnalyzer:
                 rows_returned=rows_returned,
                 execution_plan=execution_plan or [],
                 timestamp=datetime.now(),
-                thread_id=threading.get_ident()
+                thread_id=threading.get_ident(),
             )
 
             with self._lock:
@@ -226,24 +239,29 @@ class QueryPerformanceAnalyzer:
         """Persist query statistics to database."""
         try:
             params_json = json.dumps(stats.parameters) if stats.parameters else None
-            plan_json = json.dumps(stats.execution_plan) if stats.execution_plan else None
+            plan_json = (
+                json.dumps(stats.execution_plan) if stats.execution_plan else None
+            )
 
-            self.db.execute("""
+            self.db.execute(
+                """
                 INSERT INTO query_performance_log
                 (query_id, query_text, execution_time_ms, rows_affected, rows_returned,
                  execution_plan, timestamp, thread_id, parameters)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                stats.query_id,
-                stats.query_text,
-                stats.execution_time_ms,
-                stats.rows_affected,
-                stats.rows_returned,
-                plan_json,
-                stats.timestamp.isoformat(),
-                stats.thread_id,
-                params_json
-            ))
+            """,
+                (
+                    stats.query_id,
+                    stats.query_text,
+                    stats.execution_time_ms,
+                    stats.rows_affected,
+                    stats.rows_returned,
+                    plan_json,
+                    stats.timestamp.isoformat(),
+                    stats.thread_id,
+                    params_json,
+                ),
+            )
 
         except Exception as e:
             logger.debug(f"Failed to persist query stats: {e}")
@@ -252,7 +270,7 @@ class QueryPerformanceAnalyzer:
         self,
         threshold_ms: float | None = None,
         limit: int = 50,
-        time_window_hours: int | None = None
+        time_window_hours: int | None = None,
     ) -> list[QueryAnalysisResult]:
         """
         Get slow queries with analysis.
@@ -301,17 +319,19 @@ class QueryPerformanceAnalyzer:
             results = []
             for row in slow_queries:
                 analysis = self._analyze_query_pattern(
-                    row['query_id'],
-                    row['query_text'],
-                    row['avg_time'],
-                    row['max_time'],
-                    row['min_time'],
-                    row['execution_count'],
-                    row['total_time']
+                    row["query_id"],
+                    row["query_text"],
+                    row["avg_time"],
+                    row["max_time"],
+                    row["min_time"],
+                    row["execution_count"],
+                    row["total_time"],
                 )
                 results.append(analysis)
 
-            logger.info(f"Found {len(results)} slow queries above {threshold_ms}ms threshold")
+            logger.info(
+                f"Found {len(results)} slow queries above {threshold_ms}ms threshold"
+            )
             return results
 
         except Exception as e:
@@ -326,7 +346,7 @@ class QueryPerformanceAnalyzer:
         max_time: float,
         min_time: float,
         execution_count: int,
-        total_time: float
+        total_time: float,
     ) -> QueryAnalysisResult:
         """Analyze a specific query pattern and generate recommendations."""
         # Determine performance rating
@@ -348,7 +368,7 @@ class QueryPerformanceAnalyzer:
             min_execution_time=min_time,
             execution_count=execution_count,
             total_time=total_time,
-            performance_rating=rating
+            performance_rating=rating,
         )
 
         # Analyze bottlenecks and generate recommendations
@@ -363,33 +383,40 @@ class QueryPerformanceAnalyzer:
         query_text_lower = analysis.query_text.lower()
 
         # Table scan indicators
-        if 'select * from' in query_text_lower:
+        if "select * from" in query_text_lower:
             analysis.bottlenecks.append("Full table scan - SELECT * detected")
 
         # Missing WHERE clause on large operations
-        if any(op in query_text_lower for op in ['delete from', 'update']) and 'where' not in query_text_lower:
+        if (
+            any(op in query_text_lower for op in ["delete from", "update"])
+            and "where" not in query_text_lower
+        ):
             analysis.bottlenecks.append("Bulk operation without WHERE clause")
 
         # Complex JOINs
-        join_count = query_text_lower.count(' join ')
+        join_count = query_text_lower.count(" join ")
         if join_count >= 3:
             analysis.bottlenecks.append(f"Complex query with {join_count} JOINs")
 
         # Subqueries
-        subquery_count = query_text_lower.count('select')
+        subquery_count = query_text_lower.count("select")
         if subquery_count > 1:
-            analysis.bottlenecks.append(f"Query contains {subquery_count - 1} subqueries")
+            analysis.bottlenecks.append(
+                f"Query contains {subquery_count - 1} subqueries"
+            )
 
         # LIKE operations that can't use indexes
-        if 'like ?' in query_text_lower or "like '%'" in query_text_lower:
+        if "like ?" in query_text_lower or "like '%'" in query_text_lower:
             analysis.bottlenecks.append("LIKE operation with leading wildcard")
 
         # ORDER BY without LIMIT
-        if 'order by' in query_text_lower and 'limit' not in query_text_lower:
-            analysis.bottlenecks.append("ORDER BY without LIMIT may sort entire result set")
+        if "order by" in query_text_lower and "limit" not in query_text_lower:
+            analysis.bottlenecks.append(
+                "ORDER BY without LIMIT may sort entire result set"
+            )
 
         # Functions in WHERE clause
-        if any(func in query_text_lower for func in ['lower(', 'upper(', 'substr(']):
+        if any(func in query_text_lower for func in ["lower(", "upper(", "substr("]):
             analysis.bottlenecks.append("Functions in WHERE clause prevent index usage")
 
     def _generate_recommendations(self, analysis: QueryAnalysisResult) -> None:
@@ -398,43 +425,73 @@ class QueryPerformanceAnalyzer:
 
         # Recommendations based on bottlenecks
         if "Full table scan" in str(analysis.bottlenecks):
-            analysis.recommendations.append("Replace SELECT * with specific column names")
-            analysis.recommendations.append("Add appropriate WHERE clause to filter results")
+            analysis.recommendations.append(
+                "Replace SELECT * with specific column names"
+            )
+            analysis.recommendations.append(
+                "Add appropriate WHERE clause to filter results"
+            )
 
         if "Bulk operation without WHERE clause" in str(analysis.bottlenecks):
             analysis.recommendations.append("Add WHERE clause to limit affected rows")
             analysis.recommendations.append("Consider batching large operations")
 
         if "Complex query" in str(analysis.bottlenecks):
-            analysis.recommendations.append("Consider breaking complex JOINs into simpler queries")
+            analysis.recommendations.append(
+                "Consider breaking complex JOINs into simpler queries"
+            )
             analysis.recommendations.append("Review if all JOINs are necessary")
-            analysis.recommendations.append("Ensure proper indexes exist on JOIN columns")
+            analysis.recommendations.append(
+                "Ensure proper indexes exist on JOIN columns"
+            )
 
         if "subqueries" in str(analysis.bottlenecks):
-            analysis.recommendations.append("Consider converting subqueries to JOINs where possible")
-            analysis.recommendations.append("Evaluate if Common Table Expressions (CTEs) would be clearer")
+            analysis.recommendations.append(
+                "Consider converting subqueries to JOINs where possible"
+            )
+            analysis.recommendations.append(
+                "Evaluate if Common Table Expressions (CTEs) would be clearer"
+            )
 
         if "LIKE operation" in str(analysis.bottlenecks):
-            analysis.recommendations.append("Consider Full-Text Search (FTS) for text searches")
-            analysis.recommendations.append("Use prefix matching (LIKE 'value%') when possible")
+            analysis.recommendations.append(
+                "Consider Full-Text Search (FTS) for text searches"
+            )
+            analysis.recommendations.append(
+                "Use prefix matching (LIKE 'value%') when possible"
+            )
 
         if "ORDER BY without LIMIT" in str(analysis.bottlenecks):
-            analysis.recommendations.append("Add LIMIT clause if you don't need all results")
+            analysis.recommendations.append(
+                "Add LIMIT clause if you don't need all results"
+            )
             analysis.recommendations.append("Consider pagination for large result sets")
 
         if "Functions in WHERE clause" in str(analysis.bottlenecks):
-            analysis.recommendations.append("Consider storing computed values in indexed columns")
+            analysis.recommendations.append(
+                "Consider storing computed values in indexed columns"
+            )
             analysis.recommendations.append("Use functional indexes if available")
 
         # General recommendations based on performance
         if analysis.performance_rating == "poor":
-            analysis.recommendations.append("Review query execution plan for inefficiencies")
-            analysis.recommendations.append("Consider adding database indexes on filtered columns")
-            analysis.recommendations.append("Analyze table statistics with ANALYZE command")
+            analysis.recommendations.append(
+                "Review query execution plan for inefficiencies"
+            )
+            analysis.recommendations.append(
+                "Consider adding database indexes on filtered columns"
+            )
+            analysis.recommendations.append(
+                "Analyze table statistics with ANALYZE command"
+            )
 
         if analysis.execution_count > 1000:
-            analysis.recommendations.append("High-frequency query - consider caching results")
-            analysis.recommendations.append("Review if query can be optimized at application level")
+            analysis.recommendations.append(
+                "High-frequency query - consider caching results"
+            )
+            analysis.recommendations.append(
+                "Review if query can be optimized at application level"
+            )
 
     def _analyze_index_usage(self, analysis: QueryAnalysisResult) -> None:
         """Analyze index usage for the query."""
@@ -447,7 +504,7 @@ class QueryPerformanceAnalyzer:
                 "uses_index": False,
                 "index_names": [],
                 "table_scans": 0,
-                "plan_details": []
+                "plan_details": [],
             }
 
             for row in plan_rows:
@@ -471,11 +528,18 @@ class QueryPerformanceAnalyzer:
             analysis.index_usage = index_info
 
             # Add index-related recommendations
-            if not index_info["uses_index"] and analysis.performance_rating in ["poor", "fair"]:
-                analysis.recommendations.append("Query does not use indexes - consider adding appropriate indexes")
+            if not index_info["uses_index"] and analysis.performance_rating in [
+                "poor",
+                "fair",
+            ]:
+                analysis.recommendations.append(
+                    "Query does not use indexes - consider adding appropriate indexes"
+                )
 
             if index_info["table_scans"] > 0:
-                analysis.recommendations.append(f"Query performs {index_info['table_scans']} table scans")
+                analysis.recommendations.append(
+                    f"Query performs {index_info['table_scans']} table scans"
+                )
 
         except Exception as e:
             logger.debug(f"Failed to analyze index usage: {e}")
@@ -507,31 +571,30 @@ class QueryPerformanceAnalyzer:
                 WHERE timestamp >= ?
             """
 
-            stats = self.db.fetch_one(stats_query, (self.FAIR_THRESHOLD, cutoff_time.isoformat()))
+            stats = self.db.fetch_one(
+                stats_query, (self.FAIR_THRESHOLD, cutoff_time.isoformat())
+            )
 
             # Get query distribution by performance rating
-            distribution = {
-                "excellent": 0,
-                "good": 0,
-                "fair": 0,
-                "poor": 0
-            }
+            distribution = {"excellent": 0, "good": 0, "fair": 0, "poor": 0}
 
-            if stats and stats['total_queries'] > 0:
+            if stats and stats["total_queries"] > 0:
                 # Count queries by performance rating
                 for threshold, rating in [
                     (self.EXCELLENT_THRESHOLD, "excellent"),
                     (self.GOOD_THRESHOLD, "good"),
-                    (self.FAIR_THRESHOLD, "fair")
+                    (self.FAIR_THRESHOLD, "fair"),
                 ]:
                     count_query = """
                         SELECT COUNT(*) as count
                         FROM query_performance_log
                         WHERE timestamp >= ? AND execution_time_ms <= ?
                     """
-                    result = self.db.fetch_one(count_query, (cutoff_time.isoformat(), threshold))
+                    result = self.db.fetch_one(
+                        count_query, (cutoff_time.isoformat(), threshold)
+                    )
                     if result:
-                        distribution[rating] = result['count']
+                        distribution[rating] = result["count"]
 
                 # Poor queries are everything above fair threshold
                 poor_query = """
@@ -539,38 +602,46 @@ class QueryPerformanceAnalyzer:
                     FROM query_performance_log
                     WHERE timestamp >= ? AND execution_time_ms > ?
                 """
-                result = self.db.fetch_one(poor_query, (cutoff_time.isoformat(), self.FAIR_THRESHOLD))
+                result = self.db.fetch_one(
+                    poor_query, (cutoff_time.isoformat(), self.FAIR_THRESHOLD)
+                )
                 if result:
-                    distribution["poor"] = result['count']
+                    distribution["poor"] = result["count"]
 
                 # Adjust counts (subtract lower ratings from higher ones)
                 distribution["fair"] -= distribution["poor"]
-                distribution["good"] -= (distribution["fair"] + distribution["poor"])
-                distribution["excellent"] -= (distribution["good"] + distribution["fair"] + distribution["poor"])
+                distribution["good"] -= distribution["fair"] + distribution["poor"]
+                distribution["excellent"] -= (
+                    distribution["good"] + distribution["fair"] + distribution["poor"]
+                )
 
             # Calculate performance score
-            total_queries = stats['total_queries'] if stats else 0
+            total_queries = stats["total_queries"] if stats else 0
             if total_queries > 0:
                 score = (
-                    distribution["excellent"] * 4 +
-                    distribution["good"] * 3 +
-                    distribution["fair"] * 2 +
-                    distribution["poor"] * 1
-                ) / (total_queries * 4) * 100
+                    (
+                        distribution["excellent"] * 4
+                        + distribution["good"] * 3
+                        + distribution["fair"] * 2
+                        + distribution["poor"] * 1
+                    )
+                    / (total_queries * 4)
+                    * 100
+                )
             else:
                 score = 0
 
             return {
                 "time_window_hours": time_window_hours,
                 "total_queries": total_queries,
-                "avg_execution_time_ms": stats['avg_time'] if stats else 0,
-                "max_execution_time_ms": stats['max_time'] if stats else 0,
-                "min_execution_time_ms": stats['min_time'] if stats else 0,
-                "total_time_ms": stats['total_time'] if stats else 0,
-                "slow_queries_count": stats['slow_queries'] if stats else 0,
+                "avg_execution_time_ms": stats["avg_time"] if stats else 0,
+                "max_execution_time_ms": stats["max_time"] if stats else 0,
+                "min_execution_time_ms": stats["min_time"] if stats else 0,
+                "total_time_ms": stats["total_time"] if stats else 0,
+                "slow_queries_count": stats["slow_queries"] if stats else 0,
                 "performance_distribution": distribution,
                 "overall_performance_score": round(score, 2),
-                "performance_rating": self._get_rating_from_score(score)
+                "performance_rating": self._get_rating_from_score(score),
             }
 
         except Exception as e:
@@ -605,24 +676,32 @@ class QueryPerformanceAnalyzer:
             optimizations_applied = []
 
             # Optimization 1: Replace SELECT * with specific columns (if we can determine them)
-            if 'select *' in query_lower:
+            if "select *" in query_lower:
                 # This would need table introspection - for now just flag it
-                optimizations_applied.append("Flag: Replace SELECT * with specific columns")
+                optimizations_applied.append(
+                    "Flag: Replace SELECT * with specific columns"
+                )
 
             # Optimization 2: Add LIMIT if ORDER BY is present but no LIMIT
-            if 'order by' in query_lower and 'limit' not in query_lower:
+            if "order by" in query_lower and "limit" not in query_lower:
                 # Suggest adding LIMIT
-                optimizations_applied.append("Suggestion: Add LIMIT clause to ORDER BY query")
+                optimizations_applied.append(
+                    "Suggestion: Add LIMIT clause to ORDER BY query"
+                )
 
             # Optimization 3: Suggest indexes based on WHERE conditions
             where_columns = self._extract_where_columns(query_text)
             if where_columns:
                 for column in where_columns:
-                    optimizations_applied.append(f"Suggestion: Consider index on column '{column}'")
+                    optimizations_applied.append(
+                        f"Suggestion: Consider index on column '{column}'"
+                    )
 
             # Optimization 4: Rewrite LIKE with leading wildcard
             if "like '%%" in query_lower or "like '%" in query_lower:
-                optimizations_applied.append("Suggestion: Consider Full-Text Search for wildcard searches")
+                optimizations_applied.append(
+                    "Suggestion: Consider Full-Text Search for wildcard searches"
+                )
 
             return {
                 "original_query": original_query,
@@ -641,8 +720,11 @@ class QueryPerformanceAnalyzer:
             import re
 
             # Find WHERE clause
-            where_match = re.search(r'\bwhere\b(.+?)(?:\bgroup\b|\border\b|\bhaving\b|\blimit\b|$)',
-                                  query_text, re.IGNORECASE | re.DOTALL)
+            where_match = re.search(
+                r"\bwhere\b(.+?)(?:\bgroup\b|\border\b|\bhaving\b|\blimit\b|$)",
+                query_text,
+                re.IGNORECASE | re.DOTALL,
+            )
 
             if not where_match:
                 return []
@@ -650,12 +732,25 @@ class QueryPerformanceAnalyzer:
             where_clause = where_match.group(1)
 
             # Extract column names (basic pattern matching)
-            column_pattern = r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*[=<>!]'
+            column_pattern = r"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*[=<>!]"
             matches = re.findall(column_pattern, where_clause, re.IGNORECASE)
 
             # Filter out common SQL keywords
-            sql_keywords = {'and', 'or', 'not', 'in', 'like', 'between', 'is', 'null', 'true', 'false'}
-            columns = [match.lower() for match in matches if match.lower() not in sql_keywords]
+            sql_keywords = {
+                "and",
+                "or",
+                "not",
+                "in",
+                "like",
+                "between",
+                "is",
+                "null",
+                "true",
+                "false",
+            }
+            columns = [
+                match.lower() for match in matches if match.lower() not in sql_keywords
+            ]
 
             return list(set(columns))  # Remove duplicates
 
@@ -676,17 +771,21 @@ class QueryPerformanceAnalyzer:
         try:
             cutoff_date = datetime.now() - timedelta(days=days_to_keep)
 
-            result = self.db.execute("""
+            result = self.db.execute(
+                """
                 DELETE FROM query_performance_log
                 WHERE timestamp < ?
-            """, (cutoff_date.isoformat(),))
+            """,
+                (cutoff_date.isoformat(),),
+            )
 
             deleted_count = self.db.get_last_change_count()
 
             # Also clear in-memory data
             with self._lock:
                 self._query_history = [
-                    stats for stats in self._query_history
+                    stats
+                    for stats in self._query_history
                     if stats.timestamp >= cutoff_date
                 ]
 
@@ -705,15 +804,19 @@ class QueryPerformanceAnalyzer:
             return 0
 
 
-def main():
+def main() -> Any:
     """CLI interface for the Query Performance Analyzer."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Query Performance Analyzer")
     parser.add_argument("--db-path", required=True, help="Database file path")
     parser.add_argument("--analyze", action="store_true", help="Analyze slow queries")
-    parser.add_argument("--summary", action="store_true", help="Show performance summary")
-    parser.add_argument("--threshold", type=float, default=50.0, help="Slow query threshold in ms")
+    parser.add_argument(
+        "--summary", action="store_true", help="Show performance summary"
+    )
+    parser.add_argument(
+        "--threshold", type=float, default=50.0, help="Slow query threshold in ms"
+    )
     parser.add_argument("--hours", type=int, default=24, help="Time window in hours")
     parser.add_argument("--clear-old", type=int, help="Clear data older than N days")
     parser.add_argument("--output", help="Output file for results (JSON)")
@@ -729,26 +832,30 @@ def main():
 
         if args.summary:
             print("Getting performance summary...")
-            results['summary'] = analyzer.get_performance_summary(args.hours)
+            results["summary"] = analyzer.get_performance_summary(args.hours)
 
-            summary = results['summary']
+            summary = results["summary"]
             print(f"\nPerformance Summary ({args.hours}h window):")
             print(f"Total Queries: {summary['total_queries']}")
             print(f"Average Time: {summary['avg_execution_time_ms']:.2f}ms")
             print(f"Slow Queries: {summary['slow_queries_count']}")
-            print(f"Performance Score: {summary['overall_performance_score']}/100 ({summary['performance_rating']})")
+            print(
+                f"Performance Score: {summary['overall_performance_score']}/100 ({summary['performance_rating']})"
+            )
 
         if args.analyze:
             print(f"Analyzing slow queries (threshold: {args.threshold}ms)...")
-            slow_queries = analyzer.get_slow_queries(args.threshold, time_window_hours=args.hours)
-            results['slow_queries'] = [
+            slow_queries = analyzer.get_slow_queries(
+                args.threshold, time_window_hours=args.hours
+            )
+            results["slow_queries"] = [
                 {
-                    'query_id': q.query_id,
-                    'avg_time': q.avg_execution_time,
-                    'execution_count': q.execution_count,
-                    'rating': q.performance_rating,
-                    'bottlenecks': q.bottlenecks,
-                    'recommendations': q.recommendations
+                    "query_id": q.query_id,
+                    "avg_time": q.avg_execution_time,
+                    "execution_count": q.execution_count,
+                    "rating": q.performance_rating,
+                    "bottlenecks": q.bottlenecks,
+                    "recommendations": q.recommendations,
                 }
                 for q in slow_queries
             ]
@@ -760,17 +867,19 @@ def main():
                 print(f"    Executions: {query.execution_count}")
                 print(f"    Rating: {query.performance_rating}")
                 if query.recommendations:
-                    print(f"    Recommendations: {', '.join(query.recommendations[:2])}")
+                    print(
+                        f"    Recommendations: {', '.join(query.recommendations[:2])}"
+                    )
                 print()
 
         if args.clear_old:
             deleted = analyzer.clear_old_data(args.clear_old)
             print(f"Cleared {deleted} old performance records")
-            results['cleared_records'] = deleted
+            results["cleared_records"] = deleted
 
         # Save results if requested
         if args.output and results:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 json.dump(results, f, indent=2, default=str)
             print(f"Results saved to {args.output}")
 

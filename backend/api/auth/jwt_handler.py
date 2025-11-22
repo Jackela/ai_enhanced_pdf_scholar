@@ -16,9 +16,12 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import BaseModel
 
+from backend.api.auth.constants import TokenType, normalize_token_type
+
 
 class TokenPayload(BaseModel):
     """JWT Token payload structure."""
+
     sub: str  # Subject (user_id)
     username: str
     role: str
@@ -32,6 +35,7 @@ class TokenPayload(BaseModel):
 
 class JWTConfig:
     """JWT Configuration."""
+
     # Token expiration times
     ACCESS_TOKEN_EXPIRE_MINUTES = 15  # 15 minutes
     REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days
@@ -63,23 +67,21 @@ class JWTConfig:
         if not cls.PRIVATE_KEY_PATH.exists() or not cls.PUBLIC_KEY_PATH.exists():
             # Generate new RSA key pair
             private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=cls.KEY_SIZE,
-                backend=default_backend()
+                public_exponent=65537, key_size=cls.KEY_SIZE, backend=default_backend()
             )
 
             # Serialize private key
             private_key_bytes = private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
+                encryption_algorithm=serialization.NoEncryption(),
             )
 
             # Get public key
             public_key = private_key.public_key()
             public_key_bytes = public_key.public_bytes(
                 encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
 
             # Save keys with secure permissions
@@ -87,7 +89,7 @@ class JWTConfig:
             cls.PUBLIC_KEY_PATH.write_bytes(public_key_bytes)
 
             # Set restrictive permissions on private key (Unix-like systems)
-            if os.name != 'nt':  # Not Windows
+            if os.name != "nt":  # Not Windows
                 os.chmod(cls.PRIVATE_KEY_PATH, 0o600)
 
             return private_key_bytes, public_key_bytes
@@ -105,7 +107,7 @@ class JWTHandler:
     Uses RS256 (RSA with SHA-256) for asymmetric signing.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize JWT handler with RSA keys."""
         self.private_key, self.public_key = JWTConfig.ensure_keys_exist()
         self.config = JWTConfig()
@@ -116,7 +118,7 @@ class JWTHandler:
         username: str,
         role: str,
         version: int = 0,
-        custom_claims: dict[str, Any] | None = None
+        custom_claims: dict[str, Any] | None = None,
     ) -> str:
         """
         Create a new access token.
@@ -141,7 +143,7 @@ class JWTHandler:
             "exp": expires,
             "iat": now,
             "jti": str(uuid.uuid4()),
-            "token_type": "access",
+            "token_type": TokenType.ACCESS.value,
             "version": version,
             "iss": self.config.ISSUER,
             "aud": self.config.AUDIENCE,
@@ -150,11 +152,7 @@ class JWTHandler:
         if custom_claims:
             payload.update(custom_claims)
 
-        token = jwt.encode(
-            payload,
-            self.private_key,
-            algorithm=self.config.ALGORITHM
-        )
+        token = jwt.encode(payload, self.private_key, algorithm=self.config.ALGORITHM)
 
         return token
 
@@ -164,7 +162,7 @@ class JWTHandler:
         username: str,
         role: str,
         version: int = 0,
-        token_family: str | None = None
+        token_family: str | None = None,
     ) -> tuple[str, str, datetime]:
         """
         Create a new refresh token with rotation support.
@@ -193,18 +191,14 @@ class JWTHandler:
             "exp": expires,
             "iat": now,
             "jti": jti,
-            "token_type": "refresh",
+            "token_type": TokenType.REFRESH.value,
             "token_family": token_family,
             "version": version,
             "iss": self.config.ISSUER,
             "aud": self.config.AUDIENCE,
         }
 
-        token = jwt.encode(
-            payload,
-            self.private_key,
-            algorithm=self.config.ALGORITHM
-        )
+        token = jwt.encode(payload, self.private_key, algorithm=self.config.ALGORITHM)
 
         return token, jti, expires
 
@@ -212,7 +206,7 @@ class JWTHandler:
         self,
         token: str,
         verify_exp: bool = True,
-        token_type: str | None = None
+        token_type: TokenType | str | None = None,
     ) -> TokenPayload | None:
         """
         Decode and validate a JWT token.
@@ -232,11 +226,12 @@ class JWTHandler:
                 algorithms=[self.config.ALGORITHM],
                 issuer=self.config.ISSUER,
                 audience=self.config.AUDIENCE,
-                options={"verify_exp": verify_exp}
+                options={"verify_exp": verify_exp},
             )
 
             # Verify token type if specified
-            if token_type and payload.get("token_type") != token_type:
+            expected_type = normalize_token_type(token_type) if token_type else None
+            if expected_type and payload.get("token_type") != expected_type:
                 return None
 
             # Convert datetime fields
@@ -258,8 +253,8 @@ class JWTHandler:
     def verify_token(
         self,
         token: str,
-        token_type: str = "access",
-        user_version: int | None = None
+        token_type: TokenType | str = TokenType.ACCESS,
+        user_version: int | None = None,
     ) -> TokenPayload | None:
         """
         Verify a token with additional security checks.
@@ -303,16 +298,12 @@ class JWTHandler:
             "exp": expires,
             "iat": now,
             "jti": str(uuid.uuid4()),
-            "token_type": "email_verification",
+            "token_type": TokenType.EMAIL_VERIFICATION.value,
             "iss": self.config.ISSUER,
             "aud": self.config.AUDIENCE,
         }
 
-        token = jwt.encode(
-            payload,
-            self.private_key,
-            algorithm=self.config.ALGORITHM
-        )
+        token = jwt.encode(payload, self.private_key, algorithm=self.config.ALGORITHM)
 
         return token
 
@@ -339,24 +330,18 @@ class JWTHandler:
             "exp": expires,
             "iat": now,
             "jti": str(uuid.uuid4()),
-            "token_type": "password_reset",
+            "token_type": TokenType.PASSWORD_RESET.value,
             "salt": salt,
             "iss": self.config.ISSUER,
             "aud": self.config.AUDIENCE,
         }
 
-        token = jwt.encode(
-            payload,
-            self.private_key,
-            algorithm=self.config.ALGORITHM
-        )
+        token = jwt.encode(payload, self.private_key, algorithm=self.config.ALGORITHM)
 
         return token
 
     def decode_verification_token(
-        self,
-        token: str,
-        token_type: str
+        self, token: str, token_type: TokenType | str
     ) -> dict[str, Any] | None:
         """
         Decode a verification token (email or password reset).
@@ -374,10 +359,11 @@ class JWTHandler:
                 self.public_key,
                 algorithms=[self.config.ALGORITHM],
                 issuer=self.config.ISSUER,
-                audience=self.config.AUDIENCE
+                audience=self.config.AUDIENCE,
             )
 
-            if payload.get("token_type") != token_type:
+            expected_type = normalize_token_type(token_type)
+            if payload.get("token_type") != expected_type:
                 return None
 
             return payload

@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Isolated Server Startup Verifier
@@ -21,7 +23,7 @@ import psutil
 import requests
 
 
-def kill_process_tree(pid):
+def kill_process_tree(pid) -> None:
     """Kill a process and all its children."""
     try:
         parent = psutil.Process(pid)
@@ -61,10 +63,10 @@ def kill_process_tree(pid):
         print(f"Error killing process tree: {e}", file=sys.stderr)
 
 
-def verify_server_startup():
+def verify_server_startup() -> Any:
     """
     Verify that the API server starts up correctly.
-    
+
     Returns:
         bool: True if server started successfully, False otherwise
     """
@@ -177,7 +179,7 @@ def verify_server_startup():
                 print(f"Error terminating server: {e}", file=sys.stderr)
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     success = verify_server_startup()
     sys.exit(0 if success else 1)

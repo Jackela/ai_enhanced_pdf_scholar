@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Streaming Upload Performance Benchmark
@@ -20,45 +22,47 @@ from backend.services.streaming_validation_service import StreamingValidationSer
 class MemoryMonitor:
     """Monitor memory usage during operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.process = psutil.Process()
         self.baseline_memory = self.get_current_memory()
         self.peak_memory = self.baseline_memory
-        self.samples = []
+        self.samples: list[Any] = []
 
     def get_current_memory(self) -> float:
         """Get current memory usage in MB."""
         return self.process.memory_info().rss / (1024 * 1024)
 
-    def sample(self, label: str = ""):
+    def sample(self, label: str = "") -> Any:
         """Take a memory usage sample."""
         current = self.get_current_memory()
         self.peak_memory = max(self.peak_memory, current)
         self.samples.append((time.time(), current, label))
         return current
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get memory statistics."""
         current = self.get_current_memory()
         return {
-            'baseline_mb': self.baseline_memory,
-            'current_mb': current,
-            'peak_mb': self.peak_memory,
-            'peak_increase_mb': self.peak_memory - self.baseline_memory,
-            'current_increase_mb': current - self.baseline_memory,
+            "baseline_mb": self.baseline_memory,
+            "current_mb": current,
+            "peak_mb": self.peak_memory,
+            "peak_increase_mb": self.peak_memory - self.baseline_memory,
+            "current_increase_mb": current - self.baseline_memory,
         }
 
 
 class MockWebSocketManager:
     """Mock WebSocket manager for benchmarking."""
 
-    def __init__(self):
-        self.progress_updates = []
+    def __init__(self) -> None:
+        self.progress_updates: list[Any] = []
 
-    async def send_upload_progress(self, client_id: str, progress_data: dict):
+    async def send_upload_progress(
+        self, client_id: str, progress_data: dict[str, Any]
+    ) -> None:
         self.progress_updates.append((time.time(), progress_data))
 
-    async def join_upload_room(self, client_id: str, session_id: str):
+    async def join_upload_room(self, client_id: str, session_id: str) -> None:
         pass
 
 
@@ -72,10 +76,10 @@ def create_test_file(size_mb: int, filename: str) -> Path:
     chunk_size = 1024 * 1024  # 1MB chunks
     pattern = b"A" * 1000 + b"B" * 24  # Simple pattern
 
-    with open(file_path, 'wb') as f:
+    with open(file_path, "wb") as f:
         for i in range(size_mb):
             # Vary pattern slightly to prevent excessive compression
-            varied_pattern = pattern + str(i % 100).encode().ljust(24, b'X')
+            varied_pattern = pattern + str(i % 100).encode().ljust(24, b"X")
             f.write(varied_pattern * (chunk_size // len(varied_pattern)))
 
             # Write remainder if needed
@@ -86,7 +90,9 @@ def create_test_file(size_mb: int, filename: str) -> Path:
     return file_path
 
 
-async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMonitor) -> dict:
+async def benchmark_traditional_upload(
+    file_path: Path, memory_monitor: MemoryMonitor
+) -> dict[str, Any]:
     """Benchmark traditional upload (loading entire file into memory)."""
     print("\n=== Traditional Upload Benchmark ===")
 
@@ -94,7 +100,7 @@ async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMo
     memory_monitor.sample("Traditional upload start")
 
     # Simulate traditional upload by reading entire file
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         file_data = f.read()  # Load entire file into memory
         file_size = len(file_data)
 
@@ -104,10 +110,11 @@ async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMo
         await asyncio.sleep(0.1)
 
         # Simulate validation
-        is_pdf = file_data.startswith(b'%PDF-')
+        is_pdf = file_data.startswith(b"%PDF-")
 
         # Calculate hash (simulating integrity check)
         import hashlib
+
         file_hash = hashlib.sha256(file_data).hexdigest()
 
         memory_monitor.sample("Processing complete")
@@ -115,11 +122,11 @@ async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMo
     end_time = time.time()
 
     stats = {
-        'method': 'traditional',
-        'duration_seconds': end_time - start_time,
-        'file_size_mb': file_size / (1024 * 1024),
-        'memory_stats': memory_monitor.get_stats(),
-        'throughput_mbps': (file_size / (1024 * 1024)) / (end_time - start_time),
+        "method": "traditional",
+        "duration_seconds": end_time - start_time,
+        "file_size_mb": file_size / (1024 * 1024),
+        "memory_stats": memory_monitor.get_stats(),
+        "throughput_mbps": (file_size / (1024 * 1024)) / (end_time - start_time),
     }
 
     print("Traditional upload completed:")
@@ -130,7 +137,9 @@ async def benchmark_traditional_upload(file_path: Path, memory_monitor: MemoryMo
     return stats
 
 
-async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMonitor) -> dict:
+async def benchmark_streaming_upload(
+    file_path: Path, memory_monitor: MemoryMonitor
+) -> dict[str, Any]:
     """Benchmark streaming upload with chunked processing."""
     print("\n=== Streaming Upload Benchmark ===")
 
@@ -168,7 +177,7 @@ async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMoni
         chunk_size = session.chunk_size
         chunks_processed = 0
 
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             chunk_id = 0
             offset = 0
 
@@ -218,14 +227,14 @@ async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMoni
         await streaming_service.cleanup()
 
     stats = {
-        'method': 'streaming',
-        'duration_seconds': end_time - start_time,
-        'file_size_mb': file_size / (1024 * 1024),
-        'chunks_processed': chunks_processed,
-        'chunk_size_mb': chunk_size / (1024 * 1024),
-        'memory_stats': memory_monitor.get_stats(),
-        'throughput_mbps': (file_size / (1024 * 1024)) / (end_time - start_time),
-        'progress_updates': len(mock_websocket.progress_updates),
+        "method": "streaming",
+        "duration_seconds": end_time - start_time,
+        "file_size_mb": file_size / (1024 * 1024),
+        "chunks_processed": chunks_processed,
+        "chunk_size_mb": chunk_size / (1024 * 1024),
+        "memory_stats": memory_monitor.get_stats(),
+        "throughput_mbps": (file_size / (1024 * 1024)) / (end_time - start_time),
+        "progress_updates": len(mock_websocket.progress_updates),
     }
 
     print("Streaming upload completed:")
@@ -238,18 +247,20 @@ async def benchmark_streaming_upload(file_path: Path, memory_monitor: MemoryMoni
     return stats
 
 
-def print_comparison(traditional_stats: dict, streaming_stats: dict):
+def print_comparison(
+    traditional_stats: dict[str, Any], streaming_stats: dict[str, Any]
+) -> None:
     """Print comparison between traditional and streaming methods."""
     print(f"\n{'='*60}")
     print("PERFORMANCE COMPARISON")
     print(f"{'='*60}")
 
-    file_size_mb = traditional_stats['file_size_mb']
+    file_size_mb = traditional_stats["file_size_mb"]
     print(f"File size: {file_size_mb:.1f} MB")
 
     print("\nMemory Usage:")
-    trad_memory = traditional_stats['memory_stats']['peak_increase_mb']
-    stream_memory = streaming_stats['memory_stats']['peak_increase_mb']
+    trad_memory = traditional_stats["memory_stats"]["peak_increase_mb"]
+    stream_memory = streaming_stats["memory_stats"]["peak_increase_mb"]
     memory_reduction = ((trad_memory - stream_memory) / trad_memory) * 100
 
     print(f"  Traditional: {trad_memory:.1f} MB")
@@ -260,7 +271,9 @@ def print_comparison(traditional_stats: dict, streaming_stats: dict):
     print(f"  Traditional: {traditional_stats['throughput_mbps']:.1f} MB/s")
     print(f"  Streaming:   {streaming_stats['throughput_mbps']:.1f} MB/s")
 
-    throughput_ratio = streaming_stats['throughput_mbps'] / traditional_stats['throughput_mbps']
+    throughput_ratio = (
+        streaming_stats["throughput_mbps"] / traditional_stats["throughput_mbps"]
+    )
     if throughput_ratio > 1:
         print(f"  Streaming is {throughput_ratio:.1f}x faster")
     else:
@@ -283,10 +296,10 @@ def print_comparison(traditional_stats: dict, streaming_stats: dict):
         print("❌ Poor memory efficiency")
 
 
-async def run_benchmark_suite():
+async def run_benchmark_suite() -> Any:
     """Run comprehensive benchmark suite."""
     print("Streaming Upload Performance Benchmark")
-    print("="*60)
+    print("=" * 60)
 
     # Test different file sizes
     test_sizes = [10, 25, 50, 100]  # MB
@@ -314,11 +327,13 @@ async def run_benchmark_suite():
             # Compare results
             print_comparison(trad_stats, stream_stats)
 
-            results.append({
-                'file_size_mb': size_mb,
-                'traditional': trad_stats,
-                'streaming': stream_stats,
-            })
+            results.append(
+                {
+                    "file_size_mb": size_mb,
+                    "traditional": trad_stats,
+                    "streaming": stream_stats,
+                }
+            )
 
         finally:
             # Clean up test file
@@ -334,32 +349,43 @@ async def run_benchmark_suite():
     print("-" * 50)
 
     for result in results:
-        size = result['file_size_mb']
-        trad_mem = result['traditional']['memory_stats']['peak_increase_mb']
-        stream_mem = result['streaming']['memory_stats']['peak_increase_mb']
-        mem_reduction = ((trad_mem - stream_mem) / trad_mem) * 100 if trad_mem > 0 else 0
+        size = result["file_size_mb"]
+        trad_mem = result["traditional"]["memory_stats"]["peak_increase_mb"]
+        stream_mem = result["streaming"]["memory_stats"]["peak_increase_mb"]
+        mem_reduction = (
+            ((trad_mem - stream_mem) / trad_mem) * 100 if trad_mem > 0 else 0
+        )
 
-        trad_throughput = result['traditional']['throughput_mbps']
-        stream_throughput = result['streaming']['throughput_mbps']
-        throughput_ratio = stream_throughput / trad_throughput if trad_throughput > 0 else 1
+        trad_throughput = result["traditional"]["throughput_mbps"]
+        stream_throughput = result["streaming"]["throughput_mbps"]
+        throughput_ratio = (
+            stream_throughput / trad_throughput if trad_throughput > 0 else 1
+        )
 
         print(f"{size:<10} {mem_reduction:>6.1f}%{'':<11} {throughput_ratio:>6.2f}x")
 
     # Calculate averages
     avg_memory_reduction = sum(
-        ((r['traditional']['memory_stats']['peak_increase_mb'] -
-          r['streaming']['memory_stats']['peak_increase_mb']) /
-         r['traditional']['memory_stats']['peak_increase_mb']) * 100
+        (
+            (
+                r["traditional"]["memory_stats"]["peak_increase_mb"]
+                - r["streaming"]["memory_stats"]["peak_increase_mb"]
+            )
+            / r["traditional"]["memory_stats"]["peak_increase_mb"]
+        )
+        * 100
         for r in results
     ) / len(results)
 
     avg_throughput_ratio = sum(
-        r['streaming']['throughput_mbps'] / r['traditional']['throughput_mbps']
+        r["streaming"]["throughput_mbps"] / r["traditional"]["throughput_mbps"]
         for r in results
     ) / len(results)
 
     print("-" * 50)
-    print(f"{'Average':<10} {avg_memory_reduction:>6.1f}%{'':<11} {avg_throughput_ratio:>6.2f}x")
+    print(
+        f"{'Average':<10} {avg_memory_reduction:>6.1f}%{'':<11} {avg_throughput_ratio:>6.2f}x"
+    )
 
     print("\n🎯 Key Findings:")
     print(f"   • Average memory reduction: {avg_memory_reduction:.1f}%")
@@ -373,7 +399,9 @@ async def run_benchmark_suite():
 if __name__ == "__main__":
     # Check if running in appropriate environment
     if psutil.virtual_memory().available < 500 * 1024 * 1024:  # 500MB
-        print("Warning: Less than 500MB available memory. Benchmark may not be accurate.")
+        print(
+            "Warning: Less than 500MB available memory. Benchmark may not be accurate."
+        )
 
     # Run benchmarks
     asyncio.run(run_benchmark_suite())

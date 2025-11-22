@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Test simple server startup.
@@ -15,7 +17,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 
-def main():
+def main() -> Any:
     """Test simple server."""
     print("Starting simple API server...")
 

@@ -1,34 +1,34 @@
 import type {
   Document,
   DocumentListResponse,
+  DocumentResponse,
   DocumentImportRequest,
-  RAGQueryRequest,
-  RAGQueryResponse,
-  IndexStatus,
-  IndexBuildRequest,
-  LibraryStats,
-  DuplicatesResponse,
-  SystemHealth,
-  Configuration,
   SearchFilters,
-  BaseResponse,
+  QueryRequest,
+  QueryResponse,
+  MultiDocumentQueryRequest,
+  ApiResponse,
   DocumentCollection,
+  CollectionListResponse,
   CreateCollectionRequest,
   UpdateCollectionRequest,
-  CollectionListResponse,
+  CollectionStatistics,
   CrossDocumentQueryRequest,
   MultiDocumentQueryResponse,
-  QueryHistoryResponse,
-  CollectionStatistics,
+  SystemHealth,
 } from '../types'
 
-const API_BASE_URL = '/api'
+const envBaseUrl =
+  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE_URL
 
-class ApiError extends Error {
+const API_BASE_URL = envBaseUrl ? `${envBaseUrl}/api` : '/api'
+
+export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public statusText: string
+    public statusText: string,
+    public body?: string
   ) {
     super(message)
     this.name = 'ApiError'
@@ -39,55 +39,54 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorText = await response.text()
     throw new ApiError(
-      `API Error: ${response.status} ${response.statusText} - ${errorText}`,
+      `API Error: ${response.status} ${response.statusText}`,
       response.status,
-      response.statusText
+      response.statusText,
+      errorText
     )
+  }
+
+  if (response.status === 204 || response.status === 205) {
+    return undefined as T
   }
 
   const contentType = response.headers.get('content-type')
   if (contentType && contentType.includes('application/json')) {
-    return response.json()
+    return response.json() as Promise<T>
   }
 
-  return response.text() as unknown as T
+  return (response.text() as unknown) as T
 }
 
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
 
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
+  const headers = new Headers(options.headers ?? {})
+  if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
   }
 
   const config: RequestInit = {
     ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
+    headers,
   }
 
-  try {
-    const response = await fetch(url, config)
-    return handleResponse<T>(response)
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error
-    }
-    throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  const response = await fetch(url, config)
+  return handleResponse<T>(response)
+}
+
+function ensureData<T>(response: ApiResponse<T>): T {
+  if (response.data === null || response.data === undefined) {
+    throw new ApiError('API response did not include data', 500, 'Missing data')
   }
+  return response.data as T
 }
 
 export const api = {
-  // Document operations
   async getDocuments(filters?: SearchFilters): Promise<DocumentListResponse> {
     const params = new URLSearchParams()
 
     if (filters?.query) params.append('query', filters.query)
-    if (filters?.show_missing_files !== undefined) {
-      params.append('show_missing_files', filters.show_missing_files.toString())
-    }
     if (filters?.sort_by) params.append('sort_by', filters.sort_by)
     if (filters?.sort_order) params.append('sort_order', filters.sort_order)
     if (filters?.page) params.append('page', filters.page.toString())
@@ -100,103 +99,39 @@ export const api = {
   },
 
   async getDocument(id: number): Promise<Document> {
-    return apiRequest<Document>(`/documents/${id}`)
+    const response = await apiRequest<DocumentResponse>(`/documents/${id}`)
+    return ensureData<Document>(response)
   },
 
-  async uploadDocument(file: File, options?: DocumentImportRequest): Promise<BaseResponse> {
+  async uploadDocument(file: File, options?: DocumentImportRequest): Promise<Document> {
     const formData = new FormData()
     formData.append('file', file)
 
-    if (options?.title) formData.append('title', options.title)
+    const params = new URLSearchParams()
+    if (options?.title) params.append('title', options.title)
     if (options?.check_duplicates !== undefined) {
-      formData.append('check_duplicates', options.check_duplicates.toString())
+      params.append('check_duplicates', String(options.check_duplicates))
     }
-    if (options?.auto_build_index !== undefined) {
-      formData.append('auto_build_index', options.auto_build_index.toString())
+    if (options?.overwrite_duplicates !== undefined) {
+      params.append('overwrite_duplicates', String(options.overwrite_duplicates))
     }
 
-    return apiRequest<BaseResponse>('/documents/upload', {
+    const endpointParams = params.toString()
+    const endpoint = endpointParams ? `/documents?${endpointParams}` : '/documents'
+    const response = await apiRequest<DocumentResponse>(endpoint, {
       method: 'POST',
-      headers: {}, // Let browser set Content-Type for FormData
       body: formData,
     })
+
+    return ensureData<Document>(response)
   },
 
-  async updateDocument(id: number, updates: Partial<Document>): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>(`/documents/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(updates),
-    })
-  },
-
-  async deleteDocument(id: number): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>(`/documents/${id}`, {
+  async deleteDocument(id: number): Promise<void> {
+    await apiRequest<void>(`/documents/${id}`, {
       method: 'DELETE',
     })
   },
 
-  // RAG operations
-  async queryDocument(request: RAGQueryRequest): Promise<RAGQueryResponse> {
-    return apiRequest<RAGQueryResponse>('/rag/query', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    })
-  },
-
-  async getIndexStatus(documentId: number): Promise<IndexStatus> {
-    return apiRequest<IndexStatus>(`/rag/index/${documentId}/status`)
-  },
-
-  async buildIndex(request: IndexBuildRequest): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>('/rag/index/build', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    })
-  },
-
-  async deleteIndex(documentId: number): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>(`/rag/index/${documentId}`, {
-      method: 'DELETE',
-    })
-  },
-
-  // Library management
-  async getLibraryStats(): Promise<LibraryStats> {
-    return apiRequest<LibraryStats>('/library/stats')
-  },
-
-  async findDuplicates(): Promise<DuplicatesResponse> {
-    return apiRequest<DuplicatesResponse>('/library/duplicates')
-  },
-
-  async cleanupLibrary(): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>('/library/cleanup', {
-      method: 'POST',
-    })
-  },
-
-  async rebuildAllIndexes(): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>('/library/rebuild-indexes', {
-      method: 'POST',
-    })
-  },
-
-  // System operations
-  async getSystemHealth(): Promise<SystemHealth> {
-    return apiRequest<SystemHealth>('/system/health')
-  },
-
-  async getConfiguration(): Promise<Configuration> {
-    return apiRequest<Configuration>('/system/config')
-  },
-
-  async initializeSystem(): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>('/system/initialize', {
-      method: 'POST',
-    })
-  },
-
-  // File operations
   async downloadDocument(id: number): Promise<Blob> {
     const response = await fetch(`${API_BASE_URL}/documents/${id}/download`)
     if (!response.ok) {
@@ -209,75 +144,112 @@ export const api = {
     return response.blob()
   },
 
-  async getDocumentContent(id: number): Promise<string> {
-    return apiRequest<string>(`/documents/${id}/content`)
-  },
-
-  // Multi-Document Collection operations
-  async getCollections(page: number = 1, limit: number = 20): Promise<CollectionListResponse> {
-    return apiRequest<CollectionListResponse>(`/multi-document/collections?page=${page}&limit=${limit}`)
-  },
-
-  async getCollection(id: number): Promise<DocumentCollection> {
-    return apiRequest<DocumentCollection>(`/multi-document/collections/${id}`)
-  },
-
-  async createCollection(request: CreateCollectionRequest): Promise<DocumentCollection> {
-    return apiRequest<DocumentCollection>('/multi-document/collections', {
+  async queryDocument(documentId: number, payload: QueryRequest): Promise<QueryResponse> {
+    return apiRequest<QueryResponse>(`/queries/document/${documentId}`, {
       method: 'POST',
-      body: JSON.stringify(request),
+      body: JSON.stringify(payload),
     })
   },
 
-  async updateCollection(id: number, updates: UpdateCollectionRequest): Promise<DocumentCollection> {
-    return apiRequest<DocumentCollection>(`/multi-document/collections/${id}`, {
+  async queryAcrossDocuments(payload: MultiDocumentQueryRequest): Promise<QueryResponse> {
+    return apiRequest<QueryResponse>('/queries/multi-document', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async fetchDocumentPreview(
+    documentId: number,
+    params?: { page?: number; width?: number }
+  ): Promise<Blob> {
+    const search = new URLSearchParams()
+    if (params?.page) search.set('page', params.page.toString())
+    if (params?.width) search.set('width', params.width.toString())
+    const queryString = search.toString()
+    const endpoint = queryString
+      ? `/documents/${documentId}/preview?${queryString}`
+      : `/documents/${documentId}/preview`
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        Accept: 'image/png',
+      },
+    })
+    if (!response.ok) {
+      throw new ApiError(
+        `Failed to load preview: ${response.statusText}`,
+        response.status,
+        response.statusText,
+        await response.text()
+      )
+    }
+    return response.blob()
+  },
+
+  async getCollections(page = 1, limit = 20): Promise<CollectionListResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    })
+    return apiRequest<CollectionListResponse>(`/collections?${params.toString()}`)
+  },
+
+  async createCollection(payload: CreateCollectionRequest): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>('/collections', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async updateCollection(
+    collectionId: number,
+    payload: UpdateCollectionRequest
+  ): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/collections/${collectionId}`, {
       method: 'PUT',
-      body: JSON.stringify(updates),
+      body: JSON.stringify(payload),
     })
   },
 
-  async deleteCollection(id: number): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>(`/multi-document/collections/${id}`, {
+  async deleteCollection(collectionId: number): Promise<void> {
+    await apiRequest(`/collections/${collectionId}`, {
       method: 'DELETE',
     })
   },
 
-  async addDocumentToCollection(collectionId: number, documentId: number): Promise<DocumentCollection> {
-    return apiRequest<DocumentCollection>(`/multi-document/collections/${collectionId}/documents`, {
-      method: 'POST',
-      body: JSON.stringify({ document_id: documentId }),
-    })
+  async createCollectionIndex(collectionId: number): Promise<{ message: string; collection_id?: number }> {
+    return apiRequest<{ message: string; collection_id?: number }>(
+      `/collections/${collectionId}/index`,
+      {
+        method: 'POST',
+      }
+    )
   },
 
-  async removeDocumentFromCollection(collectionId: number, documentId: number): Promise<DocumentCollection> {
-    return apiRequest<DocumentCollection>(`/multi-document/collections/${collectionId}/documents/${documentId}`, {
+  async removeDocumentFromCollection(
+    collectionId: number,
+    documentId: number
+  ): Promise<DocumentCollection> {
+    return apiRequest<DocumentCollection>(`/collections/${collectionId}/documents/${documentId}`, {
       method: 'DELETE',
-    })
-  },
-
-  async createCollectionIndex(collectionId: number): Promise<BaseResponse> {
-    return apiRequest<BaseResponse>(`/multi-document/collections/${collectionId}/index`, {
-      method: 'POST',
     })
   },
 
   async getCollectionStatistics(collectionId: number): Promise<CollectionStatistics> {
-    return apiRequest<CollectionStatistics>(`/multi-document/collections/${collectionId}/statistics`)
+    return apiRequest<CollectionStatistics>(`/collections/${collectionId}/statistics`)
   },
 
-  async queryCollection(collectionId: number, request: CrossDocumentQueryRequest): Promise<MultiDocumentQueryResponse> {
-    return apiRequest<MultiDocumentQueryResponse>(`/multi-document/collections/${collectionId}/query`, {
+  async queryCollection(
+    collectionId: number,
+    payload: CrossDocumentQueryRequest
+  ): Promise<MultiDocumentQueryResponse> {
+    return apiRequest<MultiDocumentQueryResponse>(`/collections/${collectionId}/query`, {
       method: 'POST',
-      body: JSON.stringify(request),
+      body: JSON.stringify(payload),
     })
   },
 
-  async getQueryHistory(collectionId: number, page: number = 1, limit: number = 20, userId?: string): Promise<QueryHistoryResponse> {
-    const params = new URLSearchParams()
-    params.append('page', page.toString())
-    params.append('limit', limit.toString())
-    if (userId) params.append('user_id', userId)
-    
-    return apiRequest<QueryHistoryResponse>(`/multi-document/collections/${collectionId}/queries?${params.toString()}`)
+  async getSystemHealth(): Promise<SystemHealth> {
+    return apiRequest<SystemHealth>('/system/health')
   },
 }

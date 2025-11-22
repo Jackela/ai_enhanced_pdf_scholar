@@ -6,6 +6,7 @@ and automated cache management strategies for all cache layers.
 """
 
 import asyncio
+import contextlib
 import logging
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -25,8 +26,10 @@ logger = logging.getLogger(__name__)
 # Cache Optimization Models
 # ============================================================================
 
+
 class OptimizationStrategy(str, Enum):
     """Cache optimization strategies."""
+
     PREDICTIVE_WARMING = "predictive_warming"
     INTELLIGENT_EVICTION = "intelligent_eviction"
     TTL_OPTIMIZATION = "ttl_optimization"
@@ -37,58 +40,63 @@ class OptimizationStrategy(str, Enum):
 
 class WarmingPriority(str, Enum):
     """Cache warming priority levels."""
-    CRITICAL = "critical"      # Immediate warming
-    HIGH = "high"              # Warm within 5 minutes
-    MEDIUM = "medium"          # Warm within 30 minutes
-    LOW = "low"                # Warm during off-peak hours
+
+    CRITICAL = "critical"  # Immediate warming
+    HIGH = "high"  # Warm within 5 minutes
+    MEDIUM = "medium"  # Warm within 30 minutes
+    LOW = "low"  # Warm during off-peak hours
 
 
 @dataclass
 class CachePattern:
     """Identified cache access pattern."""
+
     pattern_id: str
-    pattern_template: str      # e.g., "user:{id}:profile"
+    pattern_template: str  # e.g., "user:{id}:profile"
     cache_layer: CacheLayer
-    frequency_score: float     # How often this pattern is accessed
-    hit_rate: float           # Current hit rate for this pattern
-    avg_access_time: float    # Average time between accesses
+    frequency_score: float  # How often this pattern is accessed
+    hit_rate: float  # Current hit rate for this pattern
+    avg_access_time: float  # Average time between accesses
     last_seen: datetime
-    sample_keys: list[str] = field(default_factory=list)
+    sample_keys: list[str] = field(default_factory=list[Any])
     predictable: bool = False  # Whether access pattern is predictable
 
 
 @dataclass
 class WarmingCandidate:
     """Cache warming candidate."""
+
     candidate_id: str
     cache_layer: CacheLayer
     key: str
     key_pattern: str
     priority: WarmingPriority
     estimated_hit_improvement: float
-    warming_cost: float        # Cost to warm (computation, I/O, etc.)
+    warming_cost: float  # Cost to warm (computation, I/O, etc.)
     predicted_access_time: datetime | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 @dataclass
 class OptimizationRecommendation:
     """Cache optimization recommendation."""
+
     recommendation_id: str
     strategy: OptimizationStrategy
     cache_layer: CacheLayer
     title: str
     description: str
-    impact_score: float        # 0-100, higher is better
-    implementation_effort: str # "low", "medium", "high"
+    impact_score: float  # 0-100, higher is better
+    implementation_effort: str  # "low", "medium", "high"
     estimated_improvement: dict[str, float]  # metric -> improvement %
-    action_items: list[str] = field(default_factory=list)
-    prerequisites: list[str] = field(default_factory=list)
+    action_items: list[str] = field(default_factory=list[Any])
+    prerequisites: list[str] = field(default_factory=list[Any])
 
 
 @dataclass
 class WarmingJob:
     """Cache warming job."""
+
     job_id: str
     cache_layer: CacheLayer
     keys_to_warm: list[str]
@@ -97,14 +105,15 @@ class WarmingJob:
     scheduled_for: datetime | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
-    status: str = "pending"    # pending, running, completed, failed
-    progress: int = 0          # 0-100
-    results: dict[str, Any] = field(default_factory=dict)
+    status: str = "pending"  # pending, running, completed, failed
+    progress: int = 0  # 0-100
+    results: dict[str, Any] = field(default_factory=dict[str, Any])
 
 
 # ============================================================================
 # Cache Optimization Service
 # ============================================================================
+
 
 class CacheOptimizationService:
     """
@@ -115,8 +124,8 @@ class CacheOptimizationService:
         self,
         cache_telemetry: CacheTelemetryService,
         redis_cache: RedisCacheService,
-        rag_cache: RAGCacheService
-    ):
+        rag_cache: RAGCacheService,
+    ) -> None:
         self.telemetry = cache_telemetry
         self.redis_cache = redis_cache
         self.rag_cache = rag_cache
@@ -128,10 +137,12 @@ class CacheOptimizationService:
 
         # Warming job management
         self.warming_jobs: dict[str, WarmingJob] = {}
-        self.active_jobs: set[str] = set()
+        self.active_jobs: set[str] = set[str]()
 
         # Learning and prediction
-        self.access_history: dict[str, list[tuple[datetime, str]]] = defaultdict(list)
+        self.access_history: dict[str, list[tuple[datetime, str]]] = defaultdict(
+            list[Any]
+        )
         self.pattern_models: dict[str, dict[str, Any]] = {}
 
         # Configuration
@@ -142,8 +153,8 @@ class CacheOptimizationService:
 
         # Background tasks
         self._running = False
-        self._analysis_task: asyncio.Task | None = None
-        self._warming_task: asyncio.Task | None = None
+        self._analysis_task: asyncio.Task[None] | None = None
+        self._warming_task: asyncio.Task[None] | None = None
 
         logger.info("Cache optimization service initialized")
 
@@ -151,7 +162,7 @@ class CacheOptimizationService:
     # Service Lifecycle
     # ========================================================================
 
-    async def start_optimization(self):
+    async def start_optimization(self) -> None:
         """Start background optimization tasks."""
         if not self._running:
             self._running = True
@@ -159,23 +170,19 @@ class CacheOptimizationService:
             self._warming_task = asyncio.create_task(self._warming_loop())
             logger.info("Cache optimization service started")
 
-    async def stop_optimization(self):
+    async def stop_optimization(self) -> None:
         """Stop background optimization tasks."""
         self._running = False
 
         if self._analysis_task:
             self._analysis_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._analysis_task
-            except asyncio.CancelledError:
-                pass
 
         if self._warming_task:
             self._warming_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._warming_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Cache optimization service stopped")
 
@@ -183,7 +190,7 @@ class CacheOptimizationService:
     # Pattern Analysis
     # ========================================================================
 
-    async def _analysis_loop(self):
+    async def _analysis_loop(self) -> None:
         """Background loop for pattern analysis and optimization."""
         while self._running:
             try:
@@ -206,7 +213,7 @@ class CacheOptimizationService:
                 logger.error(f"Error in optimization analysis loop: {e}")
                 await asyncio.sleep(300)
 
-    async def _analyze_access_patterns(self):
+    async def _analyze_access_patterns(self) -> None:
         """Analyze cache access patterns to identify optimization opportunities."""
         try:
             # Analyze patterns for each cache layer
@@ -221,12 +228,13 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error analyzing access patterns: {e}")
 
-    async def _analyze_layer_patterns(self, layer: CacheLayer):
+    async def _analyze_layer_patterns(self, layer: CacheLayer) -> None:
         """Analyze access patterns for a specific cache layer."""
         # Get recent events from telemetry
         cutoff_time = datetime.utcnow() - timedelta(hours=2)
         recent_events = [
-            event for event in self.telemetry.events
+            event
+            for event in self.telemetry.events
             if event.cache_layer == layer and event.timestamp >= cutoff_time
         ]
 
@@ -234,45 +242,57 @@ class CacheOptimizationService:
             return
 
         # Group events by pattern
-        pattern_stats = defaultdict(lambda: {
-            'keys': set(),
-            'hits': 0,
-            'misses': 0,
-            'total_latency': 0.0,
-            'access_times': []
-        })
+        pattern_stats: Any = defaultdict(
+            lambda: {
+                "keys": set[str](),
+                "hits": 0,
+                "misses": 0,
+                "total_latency": 0.0,
+                "access_times": [],
+            }
+        )
 
         for event in recent_events:
             pattern = event.key_pattern
             stats = pattern_stats[pattern]
 
-            stats['keys'].add(event.key)
-            stats['access_times'].append(event.timestamp)
-            stats['total_latency'] += event.latency_ms
+            stats["keys"].add(event.key)
+            stats["access_times"].append(event.timestamp)
+            stats["total_latency"] += event.latency_ms
 
             if event.status.value == "hit":
-                stats['hits'] += 1
+                stats["hits"] += 1
             elif event.status.value == "miss":
-                stats['misses'] += 1
+                stats["misses"] += 1
 
         # Analyze each pattern
         for pattern_template, stats in pattern_stats.items():
-            total_accesses = stats['hits'] + stats['misses']
+            total_accesses = stats["hits"] + stats["misses"]
 
             if total_accesses < self.min_pattern_frequency:
                 continue
 
-            hit_rate = (stats['hits'] / total_accesses) * 100 if total_accesses > 0 else 0
+            hit_rate = (
+                (stats["hits"] / total_accesses) * 100 if total_accesses > 0 else 0
+            )
 
             # Calculate access frequency (accesses per hour)
-            time_span = max(1, (max(stats['access_times']) - min(stats['access_times'])).total_seconds() / 3600)
+            time_span = max(
+                1,
+                (
+                    max(stats["access_times"]) - min(stats["access_times"])
+                ).total_seconds()
+                / 3600,
+            )
             frequency_score = total_accesses / time_span
 
             # Calculate average time between accesses
-            if len(stats['access_times']) > 1:
+            if len(stats["access_times"]) > 1:
                 intervals = [
-                    (stats['access_times'][i] - stats['access_times'][i-1]).total_seconds()
-                    for i in range(1, len(stats['access_times']))
+                    (
+                        stats["access_times"][i] - stats["access_times"][i - 1]
+                    ).total_seconds()
+                    for i in range(1, len(stats["access_times"]))
                 ]
                 avg_access_time = mean(intervals)
             else:
@@ -288,9 +308,9 @@ class CacheOptimizationService:
                 frequency_score=frequency_score,
                 hit_rate=hit_rate,
                 avg_access_time=avg_access_time,
-                last_seen=max(stats['access_times']),
-                sample_keys=list(stats['keys'])[:10],
-                predictable=self._is_pattern_predictable(stats['access_times'])
+                last_seen=max(stats["access_times"]),
+                sample_keys=list[Any](stats["keys"])[:10],
+                predictable=self._is_pattern_predictable(stats["access_times"]),
             )
 
     def _is_pattern_predictable(self, access_times: list[datetime]) -> bool:
@@ -300,17 +320,15 @@ class CacheOptimizationService:
 
         # Calculate intervals between accesses
         intervals = [
-            (access_times[i] - access_times[i-1]).total_seconds()
+            (access_times[i] - access_times[i - 1]).total_seconds()
             for i in range(1, len(access_times))
         ]
 
-        # Check for regular patterns
-        if len(intervals) >= 3:
-            # Calculate coefficient of variation
-            if mean(intervals) > 0:
-                cv = (stdev(intervals) / mean(intervals)) if len(intervals) > 1 else 0
-                # Lower CV indicates more regular pattern
-                return cv < 0.5
+        # Check for regular patterns (calculate coefficient of variation)
+        if len(intervals) >= 3 and mean(intervals) > 0:
+            cv = (stdev(intervals) / mean(intervals)) if len(intervals) > 1 else 0
+            # Lower CV indicates more regular pattern
+            return cv < 0.5
 
         return False
 
@@ -318,7 +336,7 @@ class CacheOptimizationService:
     # Predictive Models
     # ========================================================================
 
-    async def _update_pattern_models(self):
+    async def _update_pattern_models(self) -> None:
         """Update predictive models for cache access patterns."""
         try:
             for pattern_id, pattern in self.access_patterns.items():
@@ -333,12 +351,17 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error updating pattern models: {e}")
 
-    def _build_simple_prediction_model(self, pattern: CachePattern) -> dict[str, Any] | None:
+    def _build_simple_prediction_model(
+        self, pattern: CachePattern
+    ) -> dict[str, Any] | None:
         """Build simple prediction model for cache access pattern."""
         try:
             # Get historical access data
-            pattern_keys = [key for key in self.access_history.keys()
-                          if self._extract_pattern(key) == pattern.pattern_template]
+            pattern_keys = [
+                key
+                for key in self.access_history
+                if self._extract_pattern(key) == pattern.pattern_template
+            ]
 
             if not pattern_keys:
                 return None
@@ -355,14 +378,16 @@ class CacheOptimizationService:
             all_accesses.sort(key=lambda x: x[0])
 
             # Extract hourly access patterns
-            hourly_counts = defaultdict(int)
+            hourly_counts: Any = defaultdict(int)
             for timestamp, _ in all_accesses:
                 hour = timestamp.hour
                 hourly_counts[hour] += 1
 
             # Find peak hours
             if hourly_counts:
-                peak_hours = sorted(hourly_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+                peak_hours = sorted(
+                    hourly_counts.items(), key=lambda x: x[1], reverse=True
+                )[:3]
                 peak_hours = [hour for hour, count in peak_hours]
             else:
                 peak_hours = []
@@ -371,8 +396,10 @@ class CacheOptimizationService:
                 "pattern_type": "hourly",
                 "peak_hours": peak_hours,
                 "avg_interval_seconds": pattern.avg_access_time,
-                "confidence": min(len(all_accesses) / 100, 1.0),  # Confidence based on data volume
-                "last_updated": datetime.utcnow()
+                "confidence": min(
+                    len(all_accesses) / 100, 1.0
+                ),  # Confidence based on data volume
+                "last_updated": datetime.utcnow(),
             }
 
         except Exception as e:
@@ -385,16 +412,16 @@ class CacheOptimizationService:
         import re
 
         # Replace numeric IDs
-        pattern = re.sub(r'\d+', '{id}', key)
+        pattern = re.sub(r"\d+", "{id}", key)
 
         # Replace hash-like strings
-        pattern = re.sub(r'[a-f0-9]{8,}', '{hash}', pattern)
+        pattern = re.sub(r"[a-f0-9]{8,}", "{hash}", pattern)
 
         # Replace UUIDs
         pattern = re.sub(
-            r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
-            '{uuid}',
-            pattern
+            r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}",
+            "{uuid}",
+            pattern,
         )
 
         return pattern
@@ -403,32 +430,37 @@ class CacheOptimizationService:
     # Cache Warming
     # ========================================================================
 
-    async def _identify_warming_candidates(self):
+    async def _identify_warming_candidates(self) -> None:
         """Identify candidates for predictive cache warming."""
         try:
             candidates = []
 
-            for pattern_id, pattern in self.access_patterns.items():
+            for _pattern_id, pattern in self.access_patterns.values():
                 if pattern.hit_rate < 70:  # Focus on patterns with poor hit rates
-                    warming_candidates = await self._generate_warming_candidates_for_pattern(pattern)
+                    warming_candidates = (
+                        await self._generate_warming_candidates_for_pattern(pattern)
+                    )
                     candidates.extend(warming_candidates)
 
             # Sort by priority and potential impact
-            candidates.sort(key=lambda c: (c.priority.value, -c.estimated_hit_improvement))
+            candidates.sort(
+                key=lambda c: (c.priority.value, -c.estimated_hit_improvement)
+            )
 
             self.warming_candidates = candidates[:100]  # Keep top 100 candidates
 
-            logger.debug(f"Identified {len(self.warming_candidates)} warming candidates")
+            logger.debug(
+                f"Identified {len(self.warming_candidates)} warming candidates"
+            )
 
         except Exception as e:
             logger.error(f"Error identifying warming candidates: {e}")
 
     async def _generate_warming_candidates_for_pattern(
-        self,
-        pattern: CachePattern
+        self, pattern: CachePattern
     ) -> list[WarmingCandidate]:
         """Generate warming candidates for a specific pattern."""
-        candidates = []
+        candidates: list[Any] = []
 
         try:
             # Use pattern model to predict future accesses
@@ -450,7 +482,9 @@ class CacheOptimizationService:
             for key in pattern.sample_keys[:20]:  # Limit to prevent overwhelming
                 # Estimate hit improvement
                 current_hit_rate = pattern.hit_rate
-                estimated_improvement = min(30, 80 - current_hit_rate)  # Cap at 30% improvement
+                estimated_improvement = min(
+                    30, 80 - current_hit_rate
+                )  # Cap at 30% improvement
 
                 # Calculate warming cost (simplified)
                 warming_cost = 1.0  # Base cost
@@ -468,7 +502,9 @@ class CacheOptimizationService:
 
                 # Predict next access time
                 if pattern.avg_access_time > 0:
-                    predicted_access = datetime.utcnow() + timedelta(seconds=pattern.avg_access_time)
+                    predicted_access = datetime.utcnow() + timedelta(
+                        seconds=pattern.avg_access_time
+                    )
                 else:
                     predicted_access = None
 
@@ -484,18 +520,20 @@ class CacheOptimizationService:
                     metadata={
                         "pattern_frequency": pattern.frequency_score,
                         "current_hit_rate": pattern.hit_rate,
-                        "model_confidence": model.get("confidence", 0.5)
-                    }
+                        "model_confidence": model.get("confidence", 0.5),
+                    },
                 )
 
                 candidates.append(candidate)
 
         except Exception as e:
-            logger.error(f"Error generating warming candidates for pattern {pattern.pattern_id}: {e}")
+            logger.error(
+                f"Error generating warming candidates for pattern {pattern.pattern_id}: {e}"
+            )
 
         return candidates
 
-    async def _warming_loop(self):
+    async def _warming_loop(self) -> None:
         """Background loop for executing cache warming jobs."""
         while self._running:
             try:
@@ -513,16 +551,19 @@ class CacheOptimizationService:
                 logger.error(f"Error in warming loop: {e}")
                 await asyncio.sleep(60)
 
-    async def _execute_warming_jobs(self):
+    async def _execute_warming_jobs(self) -> None:
         """Execute pending warming jobs."""
         try:
             # Find jobs ready for execution
             now = datetime.utcnow()
             ready_jobs = [
-                job for job in self.warming_jobs.values()
-                if (job.status == "pending" and
-                    (job.scheduled_for is None or job.scheduled_for <= now) and
-                    job.job_id not in self.active_jobs)
+                job
+                for job in self.warming_jobs.values()
+                if (
+                    job.status == "pending"
+                    and (job.scheduled_for is None or job.scheduled_for <= now)
+                    and job.job_id not in self.active_jobs
+                )
             ]
 
             # Sort by priority
@@ -530,12 +571,14 @@ class CacheOptimizationService:
                 WarmingPriority.CRITICAL: 0,
                 WarmingPriority.HIGH: 1,
                 WarmingPriority.MEDIUM: 2,
-                WarmingPriority.LOW: 3
+                WarmingPriority.LOW: 3,
             }
             ready_jobs.sort(key=lambda j: priority_order.get(j.priority, 4))
 
             # Execute jobs up to concurrent limit
-            jobs_to_start = ready_jobs[:self.max_concurrent_jobs - len(self.active_jobs)]
+            jobs_to_start = ready_jobs[
+                : self.max_concurrent_jobs - len(self.active_jobs)
+            ]
 
             for job in jobs_to_start:
                 asyncio.create_task(self._execute_single_warming_job(job))
@@ -543,7 +586,7 @@ class CacheOptimizationService:
         except Exception as e:
             logger.error(f"Error executing warming jobs: {e}")
 
-    async def _execute_single_warming_job(self, job: WarmingJob):
+    async def _execute_single_warming_job(self, job: WarmingJob) -> None:
         """Execute a single cache warming job."""
         job_id = job.job_id
         self.active_jobs.add(job_id)
@@ -552,7 +595,9 @@ class CacheOptimizationService:
             job.status = "running"
             job.started_at = datetime.utcnow()
 
-            logger.info(f"Starting warming job {job_id} for {len(job.keys_to_warm)} keys")
+            logger.info(
+                f"Starting warming job {job_id} for {len(job.keys_to_warm)} keys"
+            )
 
             successful_warms = 0
             failed_warms = 0
@@ -583,7 +628,7 @@ class CacheOptimizationService:
                 "successful_warms": successful_warms,
                 "failed_warms": failed_warms,
                 "total_keys": len(job.keys_to_warm),
-                "duration_seconds": (job.completed_at - job.started_at).total_seconds()
+                "duration_seconds": (job.completed_at - job.started_at).total_seconds(),
             }
 
             logger.info(
@@ -663,7 +708,7 @@ class CacheOptimizationService:
     # Optimization Recommendations
     # ========================================================================
 
-    async def _generate_optimization_recommendations(self):
+    async def _generate_optimization_recommendations(self) -> None:
         """Generate cache optimization recommendations."""
         try:
             recommendations = []
@@ -672,7 +717,9 @@ class CacheOptimizationService:
             layer_metrics = self.telemetry.get_all_layer_metrics()
 
             for layer, metrics in layer_metrics.items():
-                layer_recommendations = await self._generate_layer_recommendations(layer, metrics)
+                layer_recommendations = await self._generate_layer_recommendations(
+                    layer, metrics
+                )
                 recommendations.extend(layer_recommendations)
 
             # Sort by impact score
@@ -680,104 +727,121 @@ class CacheOptimizationService:
 
             self.optimization_recommendations = recommendations[:20]  # Keep top 20
 
-            logger.debug(f"Generated {len(self.optimization_recommendations)} optimization recommendations")
+            logger.debug(
+                f"Generated {len(self.optimization_recommendations)} optimization recommendations"
+            )
 
         except Exception as e:
             logger.error(f"Error generating optimization recommendations: {e}")
 
-    async def _generate_layer_recommendations(self, layer: CacheLayer, metrics) -> list[OptimizationRecommendation]:
+    async def _generate_layer_recommendations(
+        self, layer: CacheLayer, metrics
+    ) -> list[OptimizationRecommendation]:
         """Generate optimization recommendations for a specific cache layer."""
         recommendations = []
 
         try:
             # Low hit rate recommendation
             if metrics.hit_rate_percent < 70:
-                recommendations.append(OptimizationRecommendation(
-                    recommendation_id=f"{layer.value}_improve_hit_rate",
-                    strategy=OptimizationStrategy.PREDICTIVE_WARMING,
-                    cache_layer=layer,
-                    title=f"Improve {layer.value} Hit Rate",
-                    description=f"Hit rate is {metrics.hit_rate_percent:.1f}%. Implement predictive warming for frequently accessed patterns.",
-                    impact_score=90 - metrics.hit_rate_percent,
-                    implementation_effort="medium",
-                    estimated_improvement={
-                        "hit_rate_increase": min(20, 80 - metrics.hit_rate_percent),
-                        "latency_reduction": 15,
-                        "cost_reduction": 10
-                    },
-                    action_items=[
-                        "Analyze access patterns to identify warming candidates",
-                        "Implement background warming jobs for hot keys",
-                        "Monitor warming effectiveness and adjust strategies"
-                    ],
-                    prerequisites=["Pattern analysis data", "Background job system"]
-                ))
+                recommendations.append(
+                    OptimizationRecommendation(
+                        recommendation_id=f"{layer.value}_improve_hit_rate",
+                        strategy=OptimizationStrategy.PREDICTIVE_WARMING,
+                        cache_layer=layer,
+                        title=f"Improve {layer.value} Hit Rate",
+                        description=f"Hit rate is {metrics.hit_rate_percent:.1f}%. Implement predictive warming for frequently accessed patterns.",
+                        impact_score=90 - metrics.hit_rate_percent,
+                        implementation_effort="medium",
+                        estimated_improvement={
+                            "hit_rate_increase": min(20, 80 - metrics.hit_rate_percent),
+                            "latency_reduction": 15,
+                            "cost_reduction": 10,
+                        },
+                        action_items=[
+                            "Analyze access patterns to identify warming candidates",
+                            "Implement background warming jobs for hot keys",
+                            "Monitor warming effectiveness and adjust strategies",
+                        ],
+                        prerequisites=[
+                            "Pattern analysis data",
+                            "Background job system",
+                        ],
+                    )
+                )
 
             # High latency recommendation
             if metrics.avg_latency_ms > 50:
-                recommendations.append(OptimizationRecommendation(
-                    recommendation_id=f"{layer.value}_reduce_latency",
-                    strategy=OptimizationStrategy.SIZE_OPTIMIZATION,
-                    cache_layer=layer,
-                    title=f"Reduce {layer.value} Latency",
-                    description=f"Average latency is {metrics.avg_latency_ms:.1f}ms. Consider optimizing cache entry sizes and access patterns.",
-                    impact_score=min(80, metrics.avg_latency_ms),
-                    implementation_effort="high",
-                    estimated_improvement={
-                        "latency_reduction": min(50, metrics.avg_latency_ms * 0.3),
-                        "throughput_increase": 15
-                    },
-                    action_items=[
-                        "Analyze cache entry sizes and optimize large entries",
-                        "Implement compression for large cache values",
-                        "Consider cache key restructuring for better access patterns"
-                    ]
-                ))
+                recommendations.append(
+                    OptimizationRecommendation(
+                        recommendation_id=f"{layer.value}_reduce_latency",
+                        strategy=OptimizationStrategy.SIZE_OPTIMIZATION,
+                        cache_layer=layer,
+                        title=f"Reduce {layer.value} Latency",
+                        description=f"Average latency is {metrics.avg_latency_ms:.1f}ms. Consider optimizing cache entry sizes and access patterns.",
+                        impact_score=min(80, metrics.avg_latency_ms),
+                        implementation_effort="high",
+                        estimated_improvement={
+                            "latency_reduction": min(50, metrics.avg_latency_ms * 0.3),
+                            "throughput_increase": 15,
+                        },
+                        action_items=[
+                            "Analyze cache entry sizes and optimize large entries",
+                            "Implement compression for large cache values",
+                            "Consider cache key restructuring for better access patterns",
+                        ],
+                    )
+                )
 
             # Memory usage recommendation
             if metrics.total_size_mb > 500:
-                recommendations.append(OptimizationRecommendation(
-                    recommendation_id=f"{layer.value}_optimize_memory",
-                    strategy=OptimizationStrategy.INTELLIGENT_EVICTION,
-                    cache_layer=layer,
-                    title=f"Optimize {layer.value} Memory Usage",
-                    description=f"Cache is using {metrics.total_size_mb:.1f}MB. Implement intelligent eviction policies.",
-                    impact_score=min(70, metrics.total_size_mb / 10),
-                    implementation_effort="medium",
-                    estimated_improvement={
-                        "memory_reduction": 25,
-                        "eviction_efficiency": 40
-                    },
-                    action_items=[
-                        "Implement LFU (Least Frequently Used) eviction policy",
-                        "Set appropriate TTL values based on access patterns",
-                        "Monitor cache entry lifecycle and adjust policies"
-                    ]
-                ))
+                recommendations.append(
+                    OptimizationRecommendation(
+                        recommendation_id=f"{layer.value}_optimize_memory",
+                        strategy=OptimizationStrategy.INTELLIGENT_EVICTION,
+                        cache_layer=layer,
+                        title=f"Optimize {layer.value} Memory Usage",
+                        description=f"Cache is using {metrics.total_size_mb:.1f}MB. Implement intelligent eviction policies.",
+                        impact_score=min(70, metrics.total_size_mb / 10),
+                        implementation_effort="medium",
+                        estimated_improvement={
+                            "memory_reduction": 25,
+                            "eviction_efficiency": 40,
+                        },
+                        action_items=[
+                            "Implement LFU (Least Frequently Used) eviction policy",
+                            "Set appropriate TTL values based on access patterns",
+                            "Monitor cache entry lifecycle and adjust policies",
+                        ],
+                    )
+                )
 
             # Pattern-based recommendations
-            layer_patterns = [p for p in self.access_patterns.values() if p.cache_layer == layer]
+            layer_patterns = [
+                p for p in self.access_patterns.values() if p.cache_layer == layer
+            ]
             if layer_patterns:
                 low_hit_patterns = [p for p in layer_patterns if p.hit_rate < 50]
                 if low_hit_patterns:
-                    recommendations.append(OptimizationRecommendation(
-                        recommendation_id=f"{layer.value}_pattern_optimization",
-                        strategy=OptimizationStrategy.PATTERN_BASED_PRELOADING,
-                        cache_layer=layer,
-                        title=f"Optimize {layer.value} Access Patterns",
-                        description=f"Found {len(low_hit_patterns)} patterns with low hit rates. Implement pattern-based preloading.",
-                        impact_score=60,
-                        implementation_effort="high",
-                        estimated_improvement={
-                            "pattern_hit_rate": 35,
-                            "overall_performance": 20
-                        },
-                        action_items=[
-                            "Implement pattern-based cache preloading",
-                            "Group related cache keys for batch operations",
-                            "Optimize cache key structure for better locality"
-                        ]
-                    ))
+                    recommendations.append(
+                        OptimizationRecommendation(
+                            recommendation_id=f"{layer.value}_pattern_optimization",
+                            strategy=OptimizationStrategy.PATTERN_BASED_PRELOADING,
+                            cache_layer=layer,
+                            title=f"Optimize {layer.value} Access Patterns",
+                            description=f"Found {len(low_hit_patterns)} patterns with low hit rates. Implement pattern-based preloading.",
+                            impact_score=60,
+                            implementation_effort="high",
+                            estimated_improvement={
+                                "pattern_hit_rate": 35,
+                                "overall_performance": 20,
+                            },
+                            action_items=[
+                                "Implement pattern-based cache preloading",
+                                "Group related cache keys for batch operations",
+                                "Optimize cache key structure for better locality",
+                            ],
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error generating recommendations for layer {layer}: {e}")
@@ -793,7 +857,7 @@ class CacheOptimizationService:
         cache_layer: CacheLayer,
         keys: list[str],
         priority: WarmingPriority = WarmingPriority.MEDIUM,
-        scheduled_for: datetime | None = None
+        scheduled_for: datetime | None = None,
     ) -> str:
         """Schedule a cache warming job."""
         job_id = f"warming_{cache_layer.value}_{datetime.utcnow().timestamp()}"
@@ -804,7 +868,7 @@ class CacheOptimizationService:
             keys_to_warm=keys,
             priority=priority,
             created_at=datetime.utcnow(),
-            scheduled_for=scheduled_for
+            scheduled_for=scheduled_for,
         )
 
         self.warming_jobs[job_id] = job
@@ -813,9 +877,7 @@ class CacheOptimizationService:
         return job_id
 
     def get_warming_candidates(
-        self,
-        cache_layer: CacheLayer | None = None,
-        limit: int = 50
+        self, cache_layer: CacheLayer | None = None, limit: int = 50
     ) -> list[dict[str, Any]]:
         """Get current cache warming candidates."""
         candidates = self.warming_candidates
@@ -826,14 +888,15 @@ class CacheOptimizationService:
         return [asdict(candidate) for candidate in candidates[:limit]]
 
     def get_optimization_recommendations(
-        self,
-        cache_layer: CacheLayer | None = None
+        self, cache_layer: CacheLayer | None = None
     ) -> list[dict[str, Any]]:
         """Get current optimization recommendations."""
         recommendations = self.optimization_recommendations
 
         if cache_layer:
-            recommendations = [r for r in recommendations if r.cache_layer == cache_layer]
+            recommendations = [
+                r for r in recommendations if r.cache_layer == cache_layer
+            ]
 
         return [asdict(rec) for rec in recommendations]
 
@@ -843,12 +906,10 @@ class CacheOptimizationService:
         return asdict(job) if job else None
 
     def get_access_patterns(
-        self,
-        cache_layer: CacheLayer | None = None,
-        limit: int = 100
+        self, cache_layer: CacheLayer | None = None, limit: int = 100
     ) -> list[dict[str, Any]]:
         """Get identified access patterns."""
-        patterns = list(self.access_patterns.values())
+        patterns = list[Any](self.access_patterns.values())
 
         if cache_layer:
             patterns = [p for p in patterns if p.cache_layer == cache_layer]
@@ -869,7 +930,7 @@ class CacheOptimizationService:
             return {
                 "status": "triggered",
                 "message": "Immediate analysis and optimization triggered",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         except Exception as e:
@@ -877,16 +938,17 @@ class CacheOptimizationService:
             return {
                 "status": "error",
                 "message": str(e),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
-    async def _cleanup_completed_jobs(self):
+    async def _cleanup_completed_jobs(self) -> None:
         """Clean up old completed warming jobs."""
         try:
             cutoff_time = datetime.utcnow() - timedelta(hours=24)
 
             jobs_to_remove = [
-                job_id for job_id, job in self.warming_jobs.items()
+                job_id
+                for job_id, job in self.warming_jobs.items()
                 if job.completed_at and job.completed_at < cutoff_time
             ]
 
@@ -913,12 +975,12 @@ class CacheOptimizationService:
                     "pattern": pattern.pattern_template,
                     "layer": pattern.cache_layer.value,
                     "hit_rate": pattern.hit_rate,
-                    "frequency": pattern.frequency_score
+                    "frequency": pattern.frequency_score,
                 }
                 for pattern in sorted(
                     self.access_patterns.values(),
                     key=lambda p: p.frequency_score,
-                    reverse=True
+                    reverse=True,
                 )[:5]
             ],
             "top_recommendations": [
@@ -926,8 +988,8 @@ class CacheOptimizationService:
                     "title": rec.title,
                     "layer": rec.cache_layer.value,
                     "impact_score": rec.impact_score,
-                    "strategy": rec.strategy.value
+                    "strategy": rec.strategy.value,
                 }
                 for rec in self.optimization_recommendations[:5]
-            ]
+            ],
         }

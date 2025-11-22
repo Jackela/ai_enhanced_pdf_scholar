@@ -46,7 +46,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
     try {
       setIsLoadingDocuments(true)
       const response = await api.getDocuments({ per_page: 100 })
-      setAvailableDocuments(response.documents)
+      setAvailableDocuments(response.data ?? [])
     } catch (err) {
       toast({
         title: 'Error',
@@ -60,7 +60,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!name.trim()) {
       toast({
         title: 'Error',
@@ -86,7 +86,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
         description: description.trim() || undefined,
         document_ids: selectedDocuments,
       }
-      
+
       const collection = await api.createCollection(request)
       onCreate(collection)
     } catch (err) {
@@ -102,7 +102,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   }
 
   const toggleDocument = (documentId: number) => {
-    setSelectedDocuments(prev => 
+    setSelectedDocuments(prev =>
       prev.includes(documentId)
         ? prev.filter(id => id !== documentId)
         : [...prev, documentId]
@@ -110,7 +110,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   }
 
   const filteredDocuments = availableDocuments.filter(doc =>
-    searchQuery === '' || 
+    searchQuery === '' ||
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
@@ -162,7 +162,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Select Documents * ({selectedDocuments.length} selected)
             </label>
-            
+
             {/* Search Documents */}
             <div className="mb-4">
               <Input

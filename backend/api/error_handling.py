@@ -8,8 +8,8 @@ import logging
 import traceback
 import uuid
 from datetime import datetime
-from enum import Enum
-from typing import Any, Union
+from enum import Enum, auto
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -33,50 +33,57 @@ class ErrorCategory(str, Enum):
     EXTERNAL_SERVICE = "external_service"
 
 
-class ErrorCode(str, Enum):
+class _AutoStrEnum(str, Enum):
+    """Enum helper that sets value equal to the member name."""
+
+    def _generate_next_value_(self, start, count, last_values) -> Any:
+        return self
+
+
+class ErrorCode(_AutoStrEnum):
     """Standardized error codes for API responses."""
 
     # Validation Errors (400)
-    VALIDATION_ERROR = "VALIDATION_ERROR"
-    MALFORMED_REQUEST = "MALFORMED_REQUEST"
-    INVALID_FILE_TYPE = "INVALID_FILE_TYPE"
-    FILE_TOO_LARGE = "FILE_TOO_LARGE"
-    INVALID_FIELD_FORMAT = "INVALID_FIELD_FORMAT"
+    VALIDATION_ERROR = auto()
+    MALFORMED_REQUEST = auto()
+    INVALID_FILE_TYPE = auto()
+    FILE_TOO_LARGE = auto()
+    INVALID_FIELD_FORMAT = auto()
 
     # Authentication Errors (401)
-    AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
-    INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
-    TOKEN_EXPIRED = "TOKEN_EXPIRED"
+    AUTHENTICATION_REQUIRED = auto()
+    INVALID_CREDENTIALS = auto()
+    TOKEN_EXPIRED = auto()
 
     # Authorization Errors (403)
-    PERMISSION_DENIED = "PERMISSION_DENIED"
-    INSUFFICIENT_PRIVILEGES = "INSUFFICIENT_PRIVILEGES"
+    PERMISSION_DENIED = auto()
+    INSUFFICIENT_PRIVILEGES = auto()
 
     # Not Found Errors (404)
-    RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
-    DOCUMENT_NOT_FOUND = "DOCUMENT_NOT_FOUND"
-    FILE_NOT_FOUND = "FILE_NOT_FOUND"
-    ENDPOINT_NOT_FOUND = "ENDPOINT_NOT_FOUND"
+    RESOURCE_NOT_FOUND = auto()
+    DOCUMENT_NOT_FOUND = auto()
+    FILE_NOT_FOUND = auto()
+    ENDPOINT_NOT_FOUND = auto()
 
     # Conflict Errors (409)
-    RESOURCE_CONFLICT = "RESOURCE_CONFLICT"
-    DUPLICATE_RESOURCE = "DUPLICATE_RESOURCE"
-    VERSION_CONFLICT = "VERSION_CONFLICT"
+    RESOURCE_CONFLICT = auto()
+    DUPLICATE_RESOURCE = auto()
+    VERSION_CONFLICT = auto()
 
     # Unprocessable Entity (422)
-    BUSINESS_RULE_VIOLATION = "BUSINESS_RULE_VIOLATION"
-    INVALID_OPERATION = "INVALID_OPERATION"
-    DEPENDENCY_CONSTRAINT = "DEPENDENCY_CONSTRAINT"
+    BUSINESS_RULE_VIOLATION = auto()
+    INVALID_OPERATION = auto()
+    DEPENDENCY_CONSTRAINT = auto()
 
     # Rate Limiting (429)
-    RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
-    QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
+    RATE_LIMIT_EXCEEDED = auto()
+    QUOTA_EXCEEDED = auto()
 
     # System Errors (500)
-    INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"
-    DATABASE_ERROR = "DATABASE_ERROR"
-    EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR"
-    CONFIGURATION_ERROR = "CONFIGURATION_ERROR"
+    INTERNAL_SERVER_ERROR = auto()
+    DATABASE_ERROR = auto()
+    EXTERNAL_SERVICE_ERROR = auto()
+    CONFIGURATION_ERROR = auto()
 
     # Security Errors
     SECURITY_VIOLATION = "SECURITY_VIOLATION"
@@ -90,16 +97,22 @@ class ErrorDetail(BaseModel):
 
     field: str | None = Field(None, description="Field that caused the error")
     constraint: str | None = Field(None, description="Constraint that was violated")
-    provided_value: str | None = Field(None, description="Value that caused the error (sanitized)")
+    provided_value: str | None = Field(
+        None, description="Value that caused the error (sanitized)"
+    )
     expected_format: str | None = Field(None, description="Expected format or value")
-    help_text: str | None = Field(None, description="Helpful guidance for fixing the error")
+    help_text: str | None = Field(
+        None, description="Helpful guidance for fixing the error"
+    )
 
 
 class ErrorContext(BaseModel):
     """Additional context information for debugging and monitoring."""
 
     request_id: str = Field(..., description="Unique request identifier")
-    timestamp: datetime = Field(default_factory=datetime.now, description="Error timestamp")
+    timestamp: datetime = Field(
+        default_factory=datetime.now, description="Error timestamp"
+    )
     endpoint: str | None = Field(None, description="API endpoint where error occurred")
     method: str | None = Field(None, description="HTTP method")
     user_agent: str | None = Field(None, description="Client user agent")
@@ -121,10 +134,10 @@ class StandardErrorResponse(BaseModel):
         category: ErrorCategory,
         status_code: int,
         correlation_id: str | None = None,
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        details: ErrorDetail | list[ErrorDetail] | None = None,
         context: ErrorContext | None = None,
         help_url: str | None = None,
-        localization: dict[str, str] | None = None
+        localization: dict[str, str] | None = None,
     ) -> "StandardErrorResponse":
         """Create a standardized error response."""
 
@@ -137,7 +150,7 @@ class StandardErrorResponse(BaseModel):
             "category": category.value,
             "status_code": status_code,
             "correlation_id": correlation_id,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         if details:
@@ -167,10 +180,10 @@ class APIException(HTTPException):
         message: str,
         category: ErrorCategory,
         status_code: int,
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
+        details: ErrorDetail | list[ErrorDetail] | None = None,
         correlation_id: str | None = None,
-        help_url: str | None = None
-    ):
+        help_url: str | None = None,
+    ) -> None:
         self.code = code
         self.message = message
         self.category = category
@@ -187,9 +200,9 @@ class ValidationException(APIException):
     def __init__(
         self,
         message: str = "Request validation failed",
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
-        correlation_id: str | None = None
-    ):
+        details: ErrorDetail | list[ErrorDetail] | None = None,
+        correlation_id: str | None = None,
+    ) -> None:
         super().__init__(
             code=ErrorCode.VALIDATION_ERROR,
             message=message,
@@ -197,7 +210,7 @@ class ValidationException(APIException):
             status_code=status.HTTP_400_BAD_REQUEST,
             details=details,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/errors/validation"
+            help_url="https://docs.api.com/errors/validation",
         )
 
 
@@ -208,14 +221,14 @@ class SecurityException(APIException):
         self,
         message: str = "Security validation failed",
         security_type: str = "general",
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
-        correlation_id: str | None = None
-    ):
+        details: ErrorDetail | list[ErrorDetail] | None = None,
+        correlation_id: str | None = None,
+    ) -> None:
         code_mapping = {
             "sql_injection": ErrorCode.SQL_INJECTION_ATTEMPT,
             "xss_attempt": ErrorCode.XSS_ATTEMPT,
             "path_traversal": ErrorCode.PATH_TRAVERSAL_ATTEMPT,
-            "general": ErrorCode.SECURITY_VIOLATION
+            "general": ErrorCode.SECURITY_VIOLATION,
         }
 
         super().__init__(
@@ -225,7 +238,7 @@ class SecurityException(APIException):
             status_code=status.HTTP_400_BAD_REQUEST,
             details=details,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/security/validation"
+            help_url="https://docs.api.com/security/validation",
         )
 
 
@@ -235,15 +248,15 @@ class AuthenticationException(APIException):
     def __init__(
         self,
         message: str = "Authentication required",
-        correlation_id: str | None = None
-    ):
+        correlation_id: str | None = None,
+    ) -> None:
         super().__init__(
             code=ErrorCode.AUTHENTICATION_REQUIRED,
             message=message,
             category=ErrorCategory.AUTHENTICATION,
             status_code=status.HTTP_401_UNAUTHORIZED,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/auth/getting-started"
+            help_url="https://docs.api.com/auth/getting-started",
         )
 
 
@@ -251,17 +264,15 @@ class AuthorizationException(APIException):
     """Authorization failed exception (403 Forbidden)."""
 
     def __init__(
-        self,
-        message: str = "Permission denied",
-        correlation_id: str | None = None
-    ):
+        self, message: str = "Permission denied", correlation_id: str | None = None
+    ) -> None:
         super().__init__(
             code=ErrorCode.PERMISSION_DENIED,
             message=message,
             category=ErrorCategory.AUTHORIZATION,
             status_code=status.HTTP_403_FORBIDDEN,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/auth/permissions"
+            help_url="https://docs.api.com/auth/permissions",
         )
 
 
@@ -273,8 +284,8 @@ class ResourceNotFoundException(APIException):
         resource_type: str = "resource",
         resource_id: str | None = None,
         message: str | None = None,
-        correlation_id: str | None = None
-    ):
+        correlation_id: str | None = None,
+    ) -> None:
         if message is None:
             if resource_id:
                 message = f"{resource_type.title()} with ID '{resource_id}' not found"
@@ -284,7 +295,7 @@ class ResourceNotFoundException(APIException):
         code_mapping = {
             "document": ErrorCode.DOCUMENT_NOT_FOUND,
             "file": ErrorCode.FILE_NOT_FOUND,
-            "endpoint": ErrorCode.ENDPOINT_NOT_FOUND
+            "endpoint": ErrorCode.ENDPOINT_NOT_FOUND,
         }
 
         super().__init__(
@@ -293,7 +304,7 @@ class ResourceNotFoundException(APIException):
             category=ErrorCategory.NOT_FOUND,
             status_code=status.HTTP_404_NOT_FOUND,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/errors/not-found"
+            help_url="https://docs.api.com/errors/not-found",
         )
 
 
@@ -305,11 +316,11 @@ class ConflictException(APIException):
         message: str = "Resource conflict detected",
         resource_type: str = "resource",
         conflict_type: str = "duplicate",
-        correlation_id: str | None = None
-    ):
+        correlation_id: str | None = None,
+    ) -> None:
         code_mapping = {
             "duplicate": ErrorCode.DUPLICATE_RESOURCE,
-            "version": ErrorCode.VERSION_CONFLICT
+            "version": ErrorCode.VERSION_CONFLICT,
         }
 
         super().__init__(
@@ -318,7 +329,7 @@ class ConflictException(APIException):
             category=ErrorCategory.BUSINESS_LOGIC,
             status_code=status.HTTP_409_CONFLICT,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/errors/conflicts"
+            help_url="https://docs.api.com/errors/conflicts",
         )
 
 
@@ -329,13 +340,13 @@ class BusinessLogicException(APIException):
         self,
         message: str = "Business rule violation",
         rule_type: str = "general",
-        details: Union[ErrorDetail, list[ErrorDetail]] | None = None,
-        correlation_id: str | None = None
-    ):
+        details: ErrorDetail | list[ErrorDetail] | None = None,
+        correlation_id: str | None = None,
+    ) -> None:
         code_mapping = {
             "invalid_operation": ErrorCode.INVALID_OPERATION,
             "dependency": ErrorCode.DEPENDENCY_CONSTRAINT,
-            "general": ErrorCode.BUSINESS_RULE_VIOLATION
+            "general": ErrorCode.BUSINESS_RULE_VIOLATION,
         }
 
         super().__init__(
@@ -345,7 +356,7 @@ class BusinessLogicException(APIException):
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             details=details,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/errors/business-rules"
+            help_url="https://docs.api.com/errors/business-rules",
         )
 
 
@@ -356,15 +367,15 @@ class RateLimitException(APIException):
         self,
         message: str = "Rate limit exceeded",
         retry_after: int | None = None,
-        correlation_id: str | None = None
-    ):
+        correlation_id: str | None = None,
+    ) -> None:
         super().__init__(
             code=ErrorCode.RATE_LIMIT_EXCEEDED,
             message=message,
             category=ErrorCategory.RATE_LIMITING,
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/rate-limiting"
+            help_url="https://docs.api.com/rate-limiting",
         )
 
         if retry_after:
@@ -379,13 +390,13 @@ class SystemException(APIException):
         message: str = "An internal server error occurred",
         error_type: str = "general",
         correlation_id: str | None = None,
-        include_traceback: bool = False
-    ):
+        include_traceback: bool = False,
+    ) -> None:
         code_mapping = {
             "database": ErrorCode.DATABASE_ERROR,
             "external_service": ErrorCode.EXTERNAL_SERVICE_ERROR,
             "configuration": ErrorCode.CONFIGURATION_ERROR,
-            "general": ErrorCode.INTERNAL_SERVER_ERROR
+            "general": ErrorCode.INTERNAL_SERVER_ERROR,
         }
 
         details = None
@@ -393,7 +404,7 @@ class SystemException(APIException):
             details = ErrorDetail(
                 field="traceback",
                 provided_value=traceback.format_exc(),
-                help_text="This information is only included in development mode"
+                help_text="This information is only included in development mode",
             )
 
         super().__init__(
@@ -403,7 +414,7 @@ class SystemException(APIException):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             details=details,
             correlation_id=correlation_id,
-            help_url="https://docs.api.com/errors/system-errors"
+            help_url="https://docs.api.com/errors/system-errors",
         )
 
 
@@ -412,65 +423,80 @@ class ErrorLogger:
 
     @staticmethod
     def log_error(
-        exception: Union[APIException, Exception],
+        exception: APIException | Exception,
         request: Request | None = None,
-        extra_context: dict[str, Any] | None = None
-    ):
+        extra_context: dict[str, Any] | None = None,
+    ) -> None:
         """Log error with structured information and correlation ID."""
 
-        correlation_id = getattr(exception, 'correlation_id', str(uuid.uuid4()))
+        correlation_id = getattr(exception, "correlation_id", str(uuid.uuid4()))
 
         log_data = {
             "correlation_id": correlation_id,
             "timestamp": datetime.now().isoformat(),
             "exception_type": type(exception).__name__,
-            "error_message": str(exception)
+            "error_message": str(exception),
         }
 
         if isinstance(exception, APIException):
-            log_data.update({
-                "error_code": exception.code.value,
-                "category": exception.category.value,
-                "status_code": exception.status_code
-            })
+            log_data.update(
+                {
+                    "error_code": exception.code.value,
+                    "category": exception.category.value,
+                    "status_code": exception.status_code,
+                }
+            )
 
         if request:
             # Handle WebSocket objects which don't have a method attribute
-            if hasattr(request, 'method'):
-                log_data.update({
-                    "method": request.method,
-                    "url": str(request.url),
-                    "client_ip": request.client.host if request.client else None,
-                    "user_agent": request.headers.get("user-agent")
-                })
+            if hasattr(request, "method"):
+                log_data.update(
+                    {
+                        "method": request.method,
+                        "url": str(request.url),
+                        "client_ip": request.client.host if request.client else None,
+                        "user_agent": request.headers.get("user-agent"),
+                    }
+                )
             else:
                 # WebSocket objects
-                log_data.update({
-                    "method": "WEBSOCKET",
-                    "url": str(request.url),
-                    "client_ip": request.client.host if request.client else None,
-                    "user_agent": request.headers.get("user-agent") if hasattr(request, 'headers') else None
-                })
+                log_data.update(
+                    {
+                        "method": "WEBSOCKET",
+                        "url": str(request.url),
+                        "client_ip": request.client.host if request.client else None,
+                        "user_agent": (
+                            request.headers.get("user-agent")
+                            if hasattr(request, "headers")
+                            else None
+                        ),
+                    }
+                )
 
         if extra_context:
             log_data["extra_context"] = extra_context
 
         # Log with appropriate level based on error type
         if isinstance(exception, APIException):
-            if exception.category in [ErrorCategory.SYSTEM, ErrorCategory.EXTERNAL_SERVICE]:
+            if exception.category in [
+                ErrorCategory.SYSTEM,
+                ErrorCategory.EXTERNAL_SERVICE,
+            ]:
                 error_logger.error("System error occurred", extra=log_data)
             elif exception.category == ErrorCategory.SECURITY:
                 error_logger.warning("Security violation detected", extra=log_data)
             else:
                 error_logger.info("Client error occurred", extra=log_data)
         else:
-            error_logger.error("Unhandled exception occurred", extra=log_data, exc_info=True)
+            error_logger.error(
+                "Unhandled exception occurred", extra=log_data, exc_info=True
+            )
 
 
 def create_error_response(
-    exception: Union[APIException, HTTPException, Exception],
+    exception: APIException | HTTPException | Exception,
     request: Request | None = None,
-    include_debug_info: bool = False
+    include_debug_info: bool = False,
 ) -> JSONResponse:
     """Create a standardized error response from any exception."""
 
@@ -487,13 +513,13 @@ def create_error_response(
             status_code=exception.status_code,
             correlation_id=exception.correlation_id,
             details=exception.details,
-            help_url=exception.help_url
+            help_url=exception.help_url,
         )
 
         return JSONResponse(
             status_code=exception.status_code,
             content=error_response.dict(),
-            headers=getattr(exception, 'headers', None)
+            headers=getattr(exception, "headers", None),
         )
 
     # Handle FastAPI HTTPException
@@ -532,13 +558,13 @@ def create_error_response(
             message=exception.detail,
             category=category,
             status_code=status_code,
-            correlation_id=correlation_id
+            correlation_id=correlation_id,
         )
 
         return JSONResponse(
             status_code=status_code,
             content=error_response.dict(),
-            headers=exception.headers
+            headers=exception.headers,
         )
 
     # Handle unexpected exceptions
@@ -554,7 +580,7 @@ def create_error_response(
             details = ErrorDetail(
                 field="exception_details",
                 provided_value=type(exception).__name__,
-                help_text="This detailed information is only available in debug mode"
+                help_text="This detailed information is only available in debug mode",
             )
 
         error_response = StandardErrorResponse.create(
@@ -563,12 +589,12 @@ def create_error_response(
             category=ErrorCategory.SYSTEM,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             correlation_id=correlation_id,
-            details=details
+            details=details,
         )
 
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=error_response.dict()
+            content=error_response.dict(),
         )
 
 
@@ -577,12 +603,12 @@ class ErrorTemplates:
     """Pre-configured error templates for common scenarios."""
 
     @staticmethod
-    def document_not_found(document_id: Union[int, str]) -> ResourceNotFoundException:
+    def document_not_found(document_id: int | str) -> ResourceNotFoundException:
         """Document not found error."""
         return ResourceNotFoundException(
             resource_type="document",
             resource_id=str(document_id),
-            message=f"Document with ID '{document_id}' was not found"
+            message=f"Document with ID '{document_id}' was not found",
         )
 
     @staticmethod
@@ -591,7 +617,7 @@ class ErrorTemplates:
         return ResourceNotFoundException(
             resource_type="file",
             resource_id=filename,
-            message=f"File '{filename}' was not found or is not accessible"
+            message=f"File '{filename}' was not found or is not accessible",
         )
 
     @staticmethod
@@ -600,11 +626,13 @@ class ErrorTemplates:
         return ConflictException(
             message=f"Document '{filename}' already exists in the library",
             resource_type="document",
-            conflict_type="duplicate"
+            conflict_type="duplicate",
         )
 
     @staticmethod
-    def invalid_file_type(provided_type: str, allowed_types: list[str]) -> ValidationException:
+    def invalid_file_type(
+        provided_type: str, allowed_types: list[str]
+    ) -> ValidationException:
         """Invalid file type error."""
         return ValidationException(
             message=f"File type '{provided_type}' is not allowed",
@@ -612,8 +640,8 @@ class ErrorTemplates:
                 field="content_type",
                 provided_value=provided_type,
                 expected_format=f"One of: {', '.join(allowed_types)}",
-                help_text="Only PDF files are currently supported"
-            )
+                help_text="Only PDF files are currently supported",
+            ),
         )
 
     @staticmethod
@@ -625,8 +653,8 @@ class ErrorTemplates:
                 field="file_size",
                 provided_value=f"{file_size} bytes",
                 expected_format=f"Maximum {max_size} bytes",
-                help_text="Try compressing your PDF or splitting it into smaller files"
-            )
+                help_text="Try compressing your PDF or splitting it into smaller files",
+            ),
         )
 
     @staticmethod
@@ -634,15 +662,14 @@ class ErrorTemplates:
         """Missing API key configuration error."""
         return SystemException(
             message="RAG service is not available due to missing API key configuration",
-            error_type="configuration"
+            error_type="configuration",
         )
 
     @staticmethod
     def database_error(operation: str) -> SystemException:
         """Database operation error."""
         return SystemException(
-            message=f"Database operation failed: {operation}",
-            error_type="database"
+            message=f"Database operation failed: {operation}", error_type="database"
         )
 
     @staticmethod
@@ -654,6 +681,6 @@ class ErrorTemplates:
             details=ErrorDetail(
                 field="document_id",
                 provided_value=str(document_id),
-                help_text="Build the vector index first before querying this document"
-            )
+                help_text="Build the vector index first before querying this document",
+            ),
         )

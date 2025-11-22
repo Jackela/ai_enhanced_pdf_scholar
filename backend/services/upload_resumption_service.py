@@ -1,9 +1,12 @@
+from typing import Any
+
 """
 Upload Resumption Service
 Service for handling interrupted upload resumption with persistent state tracking.
 """
 
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -39,7 +42,7 @@ class UploadResumptionService:
         state_dir: Path,
         max_resume_age_hours: int = 24,
         cleanup_interval_minutes: int = 60,
-    ):
+    ) -> None:
         self.state_dir = Path(state_dir)
         self.state_dir.mkdir(exist_ok=True, parents=True)
 
@@ -47,18 +50,18 @@ class UploadResumptionService:
         self.cleanup_interval_minutes = cleanup_interval_minutes
 
         # In-memory cache of resumable sessions
-        self.resumable_sessions: dict[UUID, dict] = {}
+        self.resumable_sessions: dict[UUID, dict[str, Any]] = {}
 
         # Cleanup task
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._start_cleanup_task()
 
-    def _start_cleanup_task(self):
+    def _start_cleanup_task(self) -> None:
         """Start background cleanup task."""
         if self._cleanup_task is None or self._cleanup_task.done():
             self._cleanup_task = asyncio.create_task(self._cleanup_stale_sessions())
 
-    async def _cleanup_stale_sessions(self):
+    async def _cleanup_stale_sessions(self) -> None:
         """Periodically clean up stale resumable sessions."""
         while True:
             try:
@@ -69,7 +72,7 @@ class UploadResumptionService:
             except Exception as e:
                 logger.error(f"Error in resumption cleanup task: {e}")
 
-    async def save_session_state(self, session: UploadSession):
+    async def save_session_state(self, session: UploadSession) -> None:
         """
         Save upload session state for potential resumption.
 
@@ -81,26 +84,26 @@ class UploadResumptionService:
 
             # Create resumption state
             state = {
-                'session_id': str(session.session_id),
-                'filename': session.filename,
-                'content_type': session.content_type,
-                'total_size': session.total_size,
-                'chunk_size': session.chunk_size,
-                'total_chunks': session.total_chunks,
-                'uploaded_chunks': session.uploaded_chunks,
-                'status': session.status.value,
-                'created_at': session.created_at.isoformat(),
-                'updated_at': session.updated_at.isoformat(),
-                'temp_file_path': session.temp_file_path,
-                'expected_hash': session.expected_hash,
-                'actual_hash': session.actual_hash,
-                'metadata': session.metadata,
-                'error_message': session.error_message,
-                'save_timestamp': time.time(),
+                "session_id": str(session.session_id),
+                "filename": session.filename,
+                "content_type": session.content_type,
+                "total_size": session.total_size,
+                "chunk_size": session.chunk_size,
+                "total_chunks": session.total_chunks,
+                "uploaded_chunks": session.uploaded_chunks,
+                "status": session.status.value,
+                "created_at": session.created_at.isoformat(),
+                "updated_at": session.updated_at.isoformat(),
+                "temp_file_path": session.temp_file_path,
+                "expected_hash": session.expected_hash,
+                "actual_hash": session.actual_hash,
+                "metadata": session.metadata,
+                "error_message": session.error_message,
+                "save_timestamp": time.time(),
             }
 
             # Save to file
-            async with aiofiles.open(state_file, 'w') as f:
+            async with aiofiles.open(state_file, "w") as f:
                 await f.write(json.dumps(state, indent=2))
 
             # Cache in memory
@@ -111,7 +114,7 @@ class UploadResumptionService:
         except Exception as e:
             logger.error(f"Failed to save session state {session.session_id}: {e}")
 
-    async def load_session_state(self, session_id: UUID) -> dict | None:
+    async def load_session_state(self, session_id: UUID) -> dict[str, Any] | None:
         """
         Load saved session state for resumption.
 
@@ -136,7 +139,7 @@ class UploadResumptionService:
                 state = json.loads(content)
 
             # Validate state age
-            save_time = state.get('save_timestamp', 0)
+            save_time = state.get("save_timestamp", 0)
             age_hours = (time.time() - save_time) / 3600
 
             if age_hours > self.max_resume_age_hours:
@@ -169,25 +172,27 @@ class UploadResumptionService:
             return False
 
         # Check if temp file still exists
-        temp_file_path = state.get('temp_file_path')
+        temp_file_path = state.get("temp_file_path")
         if not temp_file_path or not Path(temp_file_path).exists():
             logger.info(f"Temp file missing for session {session_id}")
             return False
 
         # Check if session was in progress
-        status = state.get('status')
-        if status not in ['uploading', 'paused', 'failed']:
+        status = state.get("status")
+        if status not in ["uploading", "paused", "failed"]:
             return False
 
         # Check file integrity
         try:
             temp_file = Path(temp_file_path)
-            expected_size = state.get('uploaded_chunks', 0) * state.get('chunk_size', 0)
+            expected_size = state.get("uploaded_chunks", 0) * state.get("chunk_size", 0)
             actual_size = temp_file.stat().st_size
 
             # Allow some variance for the last chunk
-            if actual_size < expected_size - state.get('chunk_size', 0):
-                logger.warning(f"Temp file size mismatch for session {session_id}: {actual_size} < {expected_size}")
+            if actual_size < expected_size - state.get("chunk_size", 0):
+                logger.warning(
+                    f"Temp file size mismatch for session {session_id}: {actual_size} < {expected_size}"
+                )
                 return False
 
         except Exception as e:
@@ -197,8 +202,7 @@ class UploadResumptionService:
         return True
 
     async def resume_upload_session(
-        self,
-        resume_request: UploadResumeRequest
+        self, resume_request: UploadResumeRequest
     ) -> UploadSession | None:
         """
         Resume an interrupted upload session.
@@ -223,34 +227,36 @@ class UploadResumptionService:
             # Validate chunk consistency if specified
             if resume_request.last_chunk_id is not None:
                 expected_chunks = resume_request.last_chunk_id + 1
-                if expected_chunks != state.get('uploaded_chunks', 0):
+                if expected_chunks != state.get("uploaded_chunks", 0):
                     logger.warning(
                         f"Chunk count mismatch in resume request: "
                         f"expected {expected_chunks}, saved {state.get('uploaded_chunks', 0)}"
                     )
                     # Use the minimum to be safe
-                    state['uploaded_chunks'] = min(expected_chunks, state.get('uploaded_chunks', 0))
+                    state["uploaded_chunks"] = min(
+                        expected_chunks, state.get("uploaded_chunks", 0)
+                    )
 
             # Validate and potentially truncate temp file
             await self._validate_and_fix_temp_file(state)
 
             # Recreate upload session
             session = UploadSession(
-                session_id=UUID(state['session_id']),
-                filename=state['filename'],
-                content_type=state['content_type'],
-                total_size=state['total_size'],
-                chunk_size=state['chunk_size'],
-                total_chunks=state['total_chunks'],
-                uploaded_chunks=state['uploaded_chunks'],
+                session_id=UUID(state["session_id"]),
+                filename=state["filename"],
+                content_type=state["content_type"],
+                total_size=state["total_size"],
+                chunk_size=state["chunk_size"],
+                total_chunks=state["total_chunks"],
+                uploaded_chunks=state["uploaded_chunks"],
                 client_id=resume_request.client_id,  # Use new client ID
                 status=UploadStatus.UPLOADING,  # Reset to uploading
-                created_at=datetime.fromisoformat(state['created_at']),
+                created_at=datetime.fromisoformat(state["created_at"]),
                 updated_at=datetime.utcnow(),
-                temp_file_path=state['temp_file_path'],
-                expected_hash=state.get('expected_hash'),
-                actual_hash=state.get('actual_hash'),
-                metadata=state.get('metadata', {}),
+                temp_file_path=state["temp_file_path"],
+                expected_hash=state.get("expected_hash"),
+                actual_hash=state.get("actual_hash"),
+                metadata=state.get("metadata", {}),
                 error_message=None,  # Clear previous error
             )
 
@@ -262,10 +268,12 @@ class UploadResumptionService:
             return session
 
         except Exception as e:
-            logger.error(f"Failed to resume upload session {resume_request.session_id}: {e}")
+            logger.error(
+                f"Failed to resume upload session {resume_request.session_id}: {e}"
+            )
             return None
 
-    async def _validate_and_fix_temp_file(self, state: dict):
+    async def _validate_and_fix_temp_file(self, state: dict[str, Any]) -> None:
         """
         Validate temporary file and fix if needed.
 
@@ -273,14 +281,14 @@ class UploadResumptionService:
             state: Session state dictionary
         """
         try:
-            temp_file_path = state['temp_file_path']
+            temp_file_path = state["temp_file_path"]
             if not temp_file_path or not Path(temp_file_path).exists():
                 raise ValueError("Temporary file not found")
 
             temp_file = Path(temp_file_path)
             current_size = temp_file.stat().st_size
-            uploaded_chunks = state['uploaded_chunks']
-            chunk_size = state['chunk_size']
+            uploaded_chunks = state["uploaded_chunks"]
+            chunk_size = state["chunk_size"]
 
             # Calculate expected size
             expected_size = uploaded_chunks * chunk_size
@@ -292,7 +300,7 @@ class UploadResumptionService:
                     f"for session {state['session_id']}"
                 )
 
-                async with aiofiles.open(temp_file_path, 'r+b') as f:
+                async with aiofiles.open(temp_file_path, "r+b") as f:
                     await f.truncate(expected_size)
 
             # If file is smaller, adjust chunk count
@@ -303,15 +311,19 @@ class UploadResumptionService:
                     f"Adjusting chunk count from {uploaded_chunks} to {actual_chunks} "
                     f"for session {state['session_id']}"
                 )
-                state['uploaded_chunks'] = actual_chunks
+                state["uploaded_chunks"] = actual_chunks
 
         except Exception as e:
-            logger.error(f"Failed to validate temp file for session {state['session_id']}: {e}")
+            logger.error(
+                f"Failed to validate temp file for session {state['session_id']}: {e}"
+            )
             raise
 
-    async def get_resumable_sessions(self, client_id: str | None = None) -> list[dict]:
+    async def get_resumable_sessions(
+        self, client_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """
-        Get list of resumable sessions, optionally filtered by client.
+        Get list[Any] of resumable sessions, optionally filtered by client.
 
         Args:
             client_id: Optional client ID filter
@@ -332,15 +344,21 @@ class UploadResumptionService:
                         if state:
                             # Create resume info
                             resume_info = {
-                                'session_id': state['session_id'],
-                                'filename': state['filename'],
-                                'total_size': state['total_size'],
-                                'uploaded_chunks': state['uploaded_chunks'],
-                                'total_chunks': state['total_chunks'],
-                                'progress_percentage': (state['uploaded_chunks'] / state['total_chunks']) * 100,
-                                'created_at': state['created_at'],
-                                'updated_at': state['updated_at'],
-                                'age_hours': (time.time() - state.get('save_timestamp', 0)) / 3600,
+                                "session_id": state["session_id"],
+                                "filename": state["filename"],
+                                "total_size": state["total_size"],
+                                "uploaded_chunks": state["uploaded_chunks"],
+                                "total_chunks": state["total_chunks"],
+                                "progress_percentage": (
+                                    state["uploaded_chunks"] / state["total_chunks"]
+                                )
+                                * 100,
+                                "created_at": state["created_at"],
+                                "updated_at": state["updated_at"],
+                                "age_hours": (
+                                    time.time() - state.get("save_timestamp", 0)
+                                )
+                                / 3600,
                             }
                             resumable.append(resume_info)
 
@@ -353,7 +371,7 @@ class UploadResumptionService:
 
         return resumable
 
-    async def _cleanup_session_state(self, session_id: UUID):
+    async def _cleanup_session_state(self, session_id: UUID) -> None:
         """
         Clean up state files and data for a specific session.
 
@@ -375,7 +393,7 @@ class UploadResumptionService:
         except Exception as e:
             logger.error(f"Failed to cleanup session state {session_id}: {e}")
 
-    async def _cleanup_expired_resume_data(self):
+    async def _cleanup_expired_resume_data(self) -> None:
         """Clean up expired resumption data."""
         try:
             current_time = time.time()
@@ -388,7 +406,7 @@ class UploadResumptionService:
                         content = await f.read()
                         state = json.loads(content)
 
-                    save_time = state.get('save_timestamp', 0)
+                    save_time = state.get("save_timestamp", 0)
                     age_hours = (current_time - save_time) / 3600
 
                     if age_hours > self.max_resume_age_hours:
@@ -396,13 +414,17 @@ class UploadResumptionService:
                         expired_sessions.append(session_id)
 
                         # Also clean up temp file if it exists
-                        temp_file_path = state.get('temp_file_path')
+                        temp_file_path = state.get("temp_file_path")
                         if temp_file_path and Path(temp_file_path).exists():
                             try:
                                 Path(temp_file_path).unlink()
-                                logger.info(f"Cleaned up expired temp file: {temp_file_path}")
+                                logger.info(
+                                    f"Cleaned up expired temp file: {temp_file_path}"
+                                )
                             except Exception as e:
-                                logger.error(f"Failed to remove temp file {temp_file_path}: {e}")
+                                logger.error(
+                                    f"Failed to remove temp file {temp_file_path}: {e}"
+                                )
 
                 except Exception as e:
                     logger.debug(f"Error processing state file {state_file}: {e}")
@@ -444,15 +466,13 @@ class UploadResumptionService:
             logger.error(f"Failed to delete resumable session {session_id}: {e}")
             return False
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up all resources and stop background tasks."""
         # Cancel cleanup task
         if self._cleanup_task and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         # Clear memory cache
         self.resumable_sessions.clear()

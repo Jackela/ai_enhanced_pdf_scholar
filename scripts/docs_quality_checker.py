@@ -23,6 +23,7 @@ from typing import Any
 @dataclass
 class QualityMetric:
     """Represents a single quality metric."""
+
     name: str
     score: float  # 0.0 to 1.0
     max_score: float = 1.0
@@ -30,7 +31,7 @@ class QualityMetric:
     details: dict[str, Any] = None
     issues: list[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.details is None:
             self.details = {}
         if self.issues is None:
@@ -48,6 +49,7 @@ class QualityMetric:
 @dataclass
 class DocumentAnalysis:
     """Analysis results for a single document."""
+
     file_path: str
     title: str
     word_count: int
@@ -68,7 +70,7 @@ class DocumentAnalysis:
             self.completeness_score,
             self.consistency_score,
             self.structure_score,
-            self.link_score
+            self.link_score,
         ]
         return statistics.mean(scores)
 
@@ -76,6 +78,7 @@ class DocumentAnalysis:
 @dataclass
 class QualityReport:
     """Complete quality assessment report."""
+
     overall_score: float
     metrics: dict[str, QualityMetric]
     documents: list[DocumentAnalysis]
@@ -85,32 +88,27 @@ class QualityReport:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            'overall_score': self.overall_score,
-            'metrics': {k: asdict(v) for k, v in self.metrics.items()},
-            'documents': [asdict(doc) for doc in self.documents],
-            'summary': self.summary,
-            'recommendations': self.recommendations,
-            'generated_at': self.generated_at
+            "overall_score": self.overall_score,
+            "metrics": {k: asdict(v) for k, v in self.metrics.items()},
+            "documents": [asdict(doc) for doc in self.documents],
+            "summary": self.summary,
+            "recommendations": self.recommendations,
+            "generated_at": self.generated_at,
         }
 
 
 class DocumentationQualityChecker:
     """Comprehensive documentation quality assessment tool."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path) -> None:
         self.project_root = Path(project_root)
         self.docs_dir = self.project_root / "docs"
 
         # Quality thresholds
-        self.thresholds = {
-            'excellent': 0.9,
-            'good': 0.75,
-            'fair': 0.6,
-            'poor': 0.4
-        }
+        self.thresholds = {"excellent": 0.9, "good": 0.75, "fair": 0.6, "poor": 0.4}
 
         # Word lists for analysis
-        self.technical_terms = set()
+        self.technical_terms: set[Any] = set()
         self.load_technical_terms()
 
         # Readability parameters
@@ -121,21 +119,56 @@ class DocumentationQualityChecker:
         print(f"   Project: {self.project_root}")
         print(f"   Docs Dir: {self.docs_dir}")
 
-    def load_technical_terms(self):
+    def load_technical_terms(self) -> None:
         """Load project-specific technical terms for analysis."""
         terms = {
             # AI/ML terms
-            'rag', 'llm', 'embedding', 'vector', 'semantic', 'neural', 'transformer',
-            'attention', 'inference', 'training', 'model', 'prompt', 'completion',
-
+            "rag",
+            "llm",
+            "embedding",
+            "vector",
+            "semantic",
+            "neural",
+            "transformer",
+            "attention",
+            "inference",
+            "training",
+            "model",
+            "prompt",
+            "completion",
             # Technical terms
-            'api', 'rest', 'endpoint', 'json', 'yaml', 'http', 'https', 'websocket',
-            'kubernetes', 'docker', 'container', 'microservice', 'database', 'sql',
-            'cache', 'redis', 'postgresql', 'sqlite', 'fastapi', 'uvicorn',
-
+            "api",
+            "rest",
+            "endpoint",
+            "json",
+            "yaml",
+            "http",
+            "https",
+            "websocket",
+            "kubernetes",
+            "docker",
+            "container",
+            "microservice",
+            "database",
+            "sql",
+            "cache",
+            "redis",
+            "postgresql",
+            "sqlite",
+            "fastapi",
+            "uvicorn",
             # PDF/Document terms
-            'pdf', 'document', 'citation', 'reference', 'bibliography', 'metadata',
-            'extraction', 'parsing', 'ocr', 'text', 'annotation'
+            "pdf",
+            "document",
+            "citation",
+            "reference",
+            "bibliography",
+            "metadata",
+            "extraction",
+            "parsing",
+            "ocr",
+            "text",
+            "annotation",
         }
         self.technical_terms.update(terms)
 
@@ -178,16 +211,18 @@ class DocumentationQualityChecker:
             documents=document_analyses,
             summary=summary,
             recommendations=recommendations,
-            generated_at=datetime.now().isoformat()
+            generated_at=datetime.now().isoformat(),
         )
 
-        print(f"✅ Quality analysis completed. Overall score: {overall_score:.2f} ({self.get_quality_grade(overall_score)})")
+        print(
+            f"✅ Quality analysis completed. Overall score: {overall_score:.2f} ({self.get_quality_grade(overall_score)})"
+        )
 
         return report
 
     def analyze_document(self, file_path: Path) -> DocumentAnalysis:
         """Analyze quality metrics for a single document."""
-        with open(file_path, encoding='utf-8') as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         # Extract metadata
@@ -203,8 +238,8 @@ class DocumentationQualityChecker:
         links = self.analyze_links(content, file_path)
 
         # Count special elements
-        code_examples = len(re.findall(r'```[\s\S]*?```', content))
-        diagrams = len(re.findall(r'```mermaid[\s\S]*?```', content))
+        code_examples = len(re.findall(r"```[\s\S]*?```", content))
+        diagrams = len(re.findall(r"```mermaid[\s\S]*?```", content))
 
         # Collect issues
         issues = []
@@ -215,12 +250,14 @@ class DocumentationQualityChecker:
         if consistency < 0.8:
             issues.append("Inconsistent formatting or terminology")
         if structure < 0.7:
-            issues.append("Poor document structure - consider adding headers and organization")
+            issues.append(
+                "Poor document structure - consider adding headers and organization"
+            )
         if links < 0.9:
             issues.append("Broken or problematic links detected")
         if word_count < 100:
             issues.append("Document is very short - consider adding more detail")
-        if code_examples == 0 and 'api' in str(file_path).lower():
+        if code_examples == 0 and "api" in str(file_path).lower():
             issues.append("API documentation lacks code examples")
 
         return DocumentAnalysis(
@@ -235,18 +272,18 @@ class DocumentationQualityChecker:
             code_example_count=code_examples,
             diagram_count=diagrams,
             last_modified=last_modified,
-            issues=issues
+            issues=issues,
         )
 
     def analyze_readability(self, content: str) -> float:
         """Analyze document readability using multiple metrics."""
         # Remove code blocks and markdown syntax for analysis
-        clean_content = re.sub(r'```[\s\S]*?```', '', content)
-        clean_content = re.sub(r'`[^`]*`', '', clean_content)
-        clean_content = re.sub(r'#{1,6}\s+', '', clean_content)
-        clean_content = re.sub(r'\[([^\]]*)\]\([^\)]*\)', r'\1', clean_content)
+        clean_content = re.sub(r"```[\s\S]*?```", "", content)
+        clean_content = re.sub(r"`[^`]*`", "", clean_content)
+        clean_content = re.sub(r"#{1,6}\s+", "", clean_content)
+        clean_content = re.sub(r"\[([^\]]*)\]\([^\)]*\)", r"\1", clean_content)
 
-        sentences = [s.strip() for s in re.split(r'[.!?]+', clean_content) if s.strip()]
+        sentences = [s.strip() for s in re.split(r"[.!?]+", clean_content) if s.strip()]
         if not sentences:
             return 0.5
 
@@ -263,22 +300,30 @@ class DocumentationQualityChecker:
         complex_word_ratio = complex_words / len(words)
 
         # Simplified Flesch Reading Ease approximation
-        flesch_score = 206.835 - (1.015 * avg_sentence_length) - (84.6 * avg_word_length / 4.7)
+        flesch_score = (
+            206.835 - (1.015 * avg_sentence_length) - (84.6 * avg_word_length / 4.7)
+        )
         flesch_normalized = max(0, min(100, flesch_score)) / 100
 
         # Technical writing adjustments
-        technical_term_ratio = sum(1 for word in words if word.lower() in self.technical_terms) / len(words)
-        technical_bonus = min(0.2, technical_term_ratio * 0.5)  # Bonus for appropriate technical terms
+        technical_term_ratio = sum(
+            1 for word in words if word.lower() in self.technical_terms
+        ) / len(words)
+        technical_bonus = min(
+            0.2, technical_term_ratio * 0.5
+        )  # Bonus for appropriate technical terms
 
         # Sentence length score (penalize very long sentences)
-        sentence_length_score = max(0, 1 - (max(0, avg_sentence_length - self.avg_sentence_length_target) / 30))
+        sentence_length_score = max(
+            0, 1 - (max(0, avg_sentence_length - self.avg_sentence_length_target) / 30)
+        )
 
         # Combine metrics
         readability_score = (
-            flesch_normalized * 0.4 +
-            sentence_length_score * 0.3 +
-            (1 - complex_word_ratio) * 0.2 +
-            technical_bonus * 0.1
+            flesch_normalized * 0.4
+            + sentence_length_score * 0.3
+            + (1 - complex_word_ratio) * 0.2
+            + technical_bonus * 0.1
         )
 
         return max(0, min(1, readability_score))
@@ -289,7 +334,7 @@ class DocumentationQualityChecker:
         if len(word) <= 3:
             return 1
 
-        vowels = 'aeiouy'
+        vowels = "aeiouy"
         syllable_count = 0
         prev_was_vowel = False
 
@@ -300,7 +345,7 @@ class DocumentationQualityChecker:
             prev_was_vowel = is_vowel
 
         # Handle silent 'e'
-        if word.endswith('e') and syllable_count > 1:
+        if word.endswith("e") and syllable_count > 1:
             syllable_count -= 1
 
         return max(1, syllable_count)
@@ -312,60 +357,60 @@ class DocumentationQualityChecker:
         # Define expected sections for different document types
         expected_sections = {}
 
-        if 'readme' in file_name:
+        if "readme" in file_name:
             expected_sections = {
-                'installation': 0.2,
-                'usage': 0.2,
-                'features': 0.15,
-                'getting started': 0.15,
-                'documentation': 0.1,
-                'contributing': 0.1,
-                'license': 0.08
+                "installation": 0.2,
+                "usage": 0.2,
+                "features": 0.15,
+                "getting started": 0.15,
+                "documentation": 0.1,
+                "contributing": 0.1,
+                "license": 0.08,
             }
-        elif 'api' in file_name:
+        elif "api" in file_name:
             expected_sections = {
-                'endpoints': 0.25,
-                'authentication': 0.15,
-                'parameters': 0.15,
-                'responses': 0.15,
-                'examples': 0.15,
-                'error': 0.1,
-                'rate limit': 0.05
+                "endpoints": 0.25,
+                "authentication": 0.15,
+                "parameters": 0.15,
+                "responses": 0.15,
+                "examples": 0.15,
+                "error": 0.1,
+                "rate limit": 0.05,
             }
-        elif 'getting-started' in file_name or 'quick-start' in file_name:
+        elif "getting-started" in file_name or "quick-start" in file_name:
             expected_sections = {
-                'prerequisites': 0.2,
-                'installation': 0.25,
-                'configuration': 0.2,
-                'first steps': 0.2,
-                'examples': 0.15
+                "prerequisites": 0.2,
+                "installation": 0.25,
+                "configuration": 0.2,
+                "first steps": 0.2,
+                "examples": 0.15,
             }
-        elif 'deployment' in file_name:
+        elif "deployment" in file_name:
             expected_sections = {
-                'requirements': 0.15,
-                'configuration': 0.2,
-                'deployment': 0.25,
-                'monitoring': 0.15,
-                'troubleshooting': 0.15,
-                'security': 0.1
+                "requirements": 0.15,
+                "configuration": 0.2,
+                "deployment": 0.25,
+                "monitoring": 0.15,
+                "troubleshooting": 0.15,
+                "security": 0.1,
             }
-        elif 'architecture' in file_name:
+        elif "architecture" in file_name:
             expected_sections = {
-                'overview': 0.2,
-                'components': 0.2,
-                'data flow': 0.15,
-                'security': 0.15,
-                'scalability': 0.15,
-                'diagrams': 0.15
+                "overview": 0.2,
+                "components": 0.2,
+                "data flow": 0.15,
+                "security": 0.15,
+                "scalability": 0.15,
+                "diagrams": 0.15,
             }
         else:
             # Generic documentation expectations
             expected_sections = {
-                'introduction': 0.2,
-                'usage': 0.3,
-                'examples': 0.2,
-                'configuration': 0.15,
-                'troubleshooting': 0.15
+                "introduction": 0.2,
+                "usage": 0.3,
+                "examples": 0.2,
+                "configuration": 0.15,
+                "troubleshooting": 0.15,
             }
 
         # Score based on section presence
@@ -375,13 +420,15 @@ class DocumentationQualityChecker:
         for section, weight in expected_sections.items():
             # Look for section headers or keywords
             section_patterns = [
-                f'#{1,6}.*{section}',
-                f'## {section}',
-                f'{section}:',
-                f'{section} section'
+                f"#{1,6}.*{section}",
+                f"## {section}",
+                f"{section}:",
+                f"{section} section",
             ]
 
-            found = any(re.search(pattern, content_lower) for pattern in section_patterns)
+            found = any(
+                re.search(pattern, content_lower) for pattern in section_patterns
+            )
             if found:
                 total_score += weight
 
@@ -405,45 +452,49 @@ class DocumentationQualityChecker:
         issues = []
 
         # Check header consistency
-        headers = re.findall(r'^(#{1,6})\s+(.+)$', content, re.MULTILINE)
+        headers = re.findall(r"^(#{1,6})\s+(.+)$", content, re.MULTILINE)
         if headers:
             # Check for consistent header formatting
-            header_styles = Counter()
+            header_styles: Any = Counter()
             for level, text in headers:
                 # Check title case consistency
                 is_title_case = text.strip().istitle()
-                is_sentence_case = text.strip()[0].isupper() and not text.strip().istitle()
+                is_sentence_case = (
+                    text.strip()[0].isupper() and not text.strip().istitle()
+                )
 
                 if is_title_case:
-                    header_styles['title'] += 1
+                    header_styles["title"] += 1
                 elif is_sentence_case:
-                    header_styles['sentence'] += 1
+                    header_styles["sentence"] += 1
                 else:
-                    header_styles['mixed'] += 1
+                    header_styles["mixed"] += 1
 
             # Penalize if mixed styles
             if len(header_styles) > 1:
                 issues.append("Inconsistent header capitalization")
 
         # Check link formatting consistency
-        links = re.findall(r'\[([^\]]*)\]\(([^\)]*)\)', content)
-        relative_links = [link for _, link in links if not link.startswith(('http', 'mailto:'))]
+        links = re.findall(r"\[([^\]]*)\]\(([^\)]*)\)", content)
+        relative_links = [
+            link for _, link in links if not link.startswith(("http", "mailto:"))
+        ]
         if relative_links:
             # Check for consistent relative link patterns
             link_patterns = set()
             for link in relative_links:
-                if link.startswith('./'):
-                    link_patterns.add('relative_dot')
-                elif link.startswith('/'):
-                    link_patterns.add('absolute')
+                if link.startswith("./"):
+                    link_patterns.add("relative_dot")
+                elif link.startswith("/"):
+                    link_patterns.add("absolute")
                 else:
-                    link_patterns.add('relative')
+                    link_patterns.add("relative")
 
             if len(link_patterns) > 1:
                 issues.append("Inconsistent link formatting")
 
         # Check code block consistency
-        code_blocks = re.findall(r'```(\w*)\n', content)
+        code_blocks = re.findall(r"```(\w*)\n", content)
         if code_blocks:
             # Check for language specification consistency
             with_lang = sum(1 for lang in code_blocks if lang.strip())
@@ -453,7 +504,7 @@ class DocumentationQualityChecker:
                 issues.append("Inconsistent code block language specification")
 
         # Check list formatting consistency
-        bullet_lists = re.findall(r'^[\s]*[-*+]\s', content, re.MULTILINE)
+        bullet_lists = re.findall(r"^[\s]*[-*+]\s", content, re.MULTILINE)
         if bullet_lists:
             bullet_types = set(match.strip()[-1] for match in bullet_lists)
             if len(bullet_types) > 1:
@@ -461,32 +512,40 @@ class DocumentationQualityChecker:
 
         # Check terminology consistency (case sensitivity)
         technical_terms_found = []
-        words = re.findall(r'\b\w+\b', content.lower())
+        words = re.findall(r"\b\w+\b", content.lower())
         for word in set(words):
             if word in self.technical_terms:
                 # Find all instances of this term with their original case
-                instances = re.findall(r'\b' + re.escape(word) + r'\b', content, re.IGNORECASE)
+                instances = re.findall(
+                    r"\b" + re.escape(word) + r"\b", content, re.IGNORECASE
+                )
                 if len(set(instances)) > 1:  # Multiple different capitalizations
                     technical_terms_found.append(word)
 
         if technical_terms_found:
-            issues.append(f"Inconsistent capitalization of terms: {', '.join(technical_terms_found[:3])}")
+            issues.append(
+                f"Inconsistent capitalization of terms: {', '.join(technical_terms_found[:3])}"
+            )
 
         # Calculate consistency score
-        consistency_score = 1.0 - (len(issues) * 0.15)  # Each issue reduces score by 15%
+        consistency_score = 1.0 - (
+            len(issues) * 0.15
+        )  # Each issue reduces score by 15%
         return max(0, min(1, consistency_score))
 
     def analyze_structure(self, content: str) -> float:
         """Analyze document structure and organization."""
-        lines = content.split('\n')
+        lines = content.split("\n")
 
         # Check for table of contents
-        has_toc = any(re.search(r'table of contents|toc', line, re.IGNORECASE) for line in lines)
+        has_toc = any(
+            re.search(r"table of contents|toc", line, re.IGNORECASE) for line in lines
+        )
 
         # Analyze header hierarchy
         headers = []
         for line in lines:
-            match = re.match(r'^(#{1,6})\s+(.+)$', line)
+            match = re.match(r"^(#{1,6})\s+(.+)$", line)
             if match:
                 level = len(match.group(1))
                 text = match.group(2)
@@ -520,12 +579,18 @@ class DocumentationQualityChecker:
 
         # Check for introduction section
         first_section = headers[0][1].lower() if headers else ""
-        if any(keyword in first_section for keyword in ['overview', 'introduction', 'about']):
+        if any(
+            keyword in first_section
+            for keyword in ["overview", "introduction", "about"]
+        ):
             structure_score += 0.1
 
         # Check for conclusion or summary
         last_section = headers[-1][1].lower() if headers else ""
-        if any(keyword in last_section for keyword in ['conclusion', 'summary', 'next steps']):
+        if any(
+            keyword in last_section
+            for keyword in ["conclusion", "summary", "next steps"]
+        ):
             structure_score += 0.1
 
         # Bonus for table of contents
@@ -536,7 +601,7 @@ class DocumentationQualityChecker:
 
     def analyze_links(self, content: str, file_path: Path) -> float:
         """Analyze link quality and validity."""
-        links = re.findall(r'\[([^\]]*)\]\(([^\)]*)\)', content)
+        links = re.findall(r"\[([^\]]*)\]\(([^\)]*)\)", content)
 
         if not links:
             return 1.0  # No links to break
@@ -553,18 +618,18 @@ class DocumentationQualityChecker:
     def is_valid_link(self, url: str, file_path: Path) -> bool:
         """Check if a link is valid (simplified validation)."""
         # Skip external URLs (assume valid)
-        if url.startswith(('http://', 'https://', 'mailto:')):
+        if url.startswith(("http://", "https://", "mailto:")):
             return True
 
         # Skip anchors (assume valid)
-        if url.startswith('#'):
+        if url.startswith("#"):
             return True
 
         # Check relative file links
-        if url.startswith('./') or not url.startswith('/'):
+        if url.startswith("./") or not url.startswith("/"):
             target_path = file_path.parent / url
         else:
-            target_path = self.project_root / url.lstrip('/')
+            target_path = self.project_root / url.lstrip("/")
 
         try:
             return target_path.exists()
@@ -573,29 +638,31 @@ class DocumentationQualityChecker:
 
     def extract_title(self, content: str) -> str:
         """Extract document title from content."""
-        lines = content.split('\n')
+        lines = content.split("\n")
 
         # Look for first h1 header
         for line in lines:
-            match = re.match(r'^#\s+(.+)$', line)
+            match = re.match(r"^#\s+(.+)$", line)
             if match:
                 return match.group(1).strip()
 
         # Look for title in front matter
-        if content.startswith('---'):
+        if content.startswith("---"):
             try:
-                front_matter_end = content.find('---', 3)
+                front_matter_end = content.find("---", 3)
                 if front_matter_end != -1:
                     front_matter = content[3:front_matter_end]
-                    for line in front_matter.split('\n'):
-                        if line.startswith('title:'):
-                            return line.split(':', 1)[1].strip().strip('"\'')
+                    for line in front_matter.split("\n"):
+                        if line.startswith("title:"):
+                            return line.split(":", 1)[1].strip().strip("\"'")
             except:
                 pass
 
         return "Untitled Document"
 
-    def calculate_overall_metrics(self, documents: list[DocumentAnalysis]) -> dict[str, QualityMetric]:
+    def calculate_overall_metrics(
+        self, documents: list[DocumentAnalysis]
+    ) -> dict[str, QualityMetric]:
         """Calculate overall quality metrics across all documents."""
         if not documents:
             return {}
@@ -614,76 +681,85 @@ class DocumentationQualityChecker:
         total_issues = sum(len(doc.issues) for doc in documents)
 
         metrics = {
-            'readability': QualityMetric(
-                name='Readability',
+            "readability": QualityMetric(
+                name="Readability",
                 score=statistics.mean(readability_scores),
                 weight=1.2,
                 details={
-                    'average_score': statistics.mean(readability_scores),
-                    'best_score': max(readability_scores),
-                    'worst_score': min(readability_scores),
-                    'distribution': self.score_distribution(readability_scores)
-                }
+                    "average_score": statistics.mean(readability_scores),
+                    "best_score": max(readability_scores),
+                    "worst_score": min(readability_scores),
+                    "distribution": self.score_distribution(readability_scores),
+                },
             ),
-            'completeness': QualityMetric(
-                name='Completeness',
+            "completeness": QualityMetric(
+                name="Completeness",
                 score=statistics.mean(completeness_scores),
                 weight=1.5,
                 details={
-                    'average_score': statistics.mean(completeness_scores),
-                    'incomplete_docs': sum(1 for score in completeness_scores if score < 0.7)
-                }
+                    "average_score": statistics.mean(completeness_scores),
+                    "incomplete_docs": sum(
+                        1 for score in completeness_scores if score < 0.7
+                    ),
+                },
             ),
-            'consistency': QualityMetric(
-                name='Consistency',
+            "consistency": QualityMetric(
+                name="Consistency",
                 score=statistics.mean(consistency_scores),
                 weight=1.0,
                 details={
-                    'average_score': statistics.mean(consistency_scores),
-                    'inconsistent_docs': sum(1 for score in consistency_scores if score < 0.8)
-                }
+                    "average_score": statistics.mean(consistency_scores),
+                    "inconsistent_docs": sum(
+                        1 for score in consistency_scores if score < 0.8
+                    ),
+                },
             ),
-            'structure': QualityMetric(
-                name='Structure',
+            "structure": QualityMetric(
+                name="Structure",
                 score=statistics.mean(structure_scores),
                 weight=1.0,
                 details={
-                    'average_score': statistics.mean(structure_scores),
-                    'poorly_structured_docs': sum(1 for score in structure_scores if score < 0.6)
-                }
+                    "average_score": statistics.mean(structure_scores),
+                    "poorly_structured_docs": sum(
+                        1 for score in structure_scores if score < 0.6
+                    ),
+                },
             ),
-            'links': QualityMetric(
-                name='Link Quality',
+            "links": QualityMetric(
+                name="Link Quality",
                 score=statistics.mean(link_scores),
                 weight=0.8,
                 details={
-                    'average_score': statistics.mean(link_scores),
-                    'broken_link_docs': sum(1 for score in link_scores if score < 1.0)
-                }
+                    "average_score": statistics.mean(link_scores),
+                    "broken_link_docs": sum(1 for score in link_scores if score < 1.0),
+                },
             ),
-            'comprehensiveness': QualityMetric(
-                name='Comprehensiveness',
+            "comprehensiveness": QualityMetric(
+                name="Comprehensiveness",
                 score=self.calculate_comprehensiveness_score(
                     total_words, total_code_examples, total_diagrams, len(documents)
                 ),
                 weight=1.0,
                 details={
-                    'total_words': total_words,
-                    'total_code_examples': total_code_examples,
-                    'total_diagrams': total_diagrams,
-                    'documents_count': len(documents)
-                }
+                    "total_words": total_words,
+                    "total_code_examples": total_code_examples,
+                    "total_diagrams": total_diagrams,
+                    "documents_count": len(documents),
+                },
             ),
-            'maintainability': QualityMetric(
-                name='Maintainability',
-                score=1.0 - min(1.0, total_issues / (len(documents) * 3)),  # Max 3 issues per doc before score drops
+            "maintainability": QualityMetric(
+                name="Maintainability",
+                score=1.0
+                - min(
+                    1.0, total_issues / (len(documents) * 3)
+                ),  # Max 3 issues per doc before score drops
                 weight=1.0,
                 details={
-                    'total_issues': total_issues,
-                    'average_issues_per_doc': total_issues / len(documents),
-                    'docs_with_issues': sum(1 for doc in documents if doc.issues)
-                }
-            )
+                    "total_issues": total_issues,
+                    "average_issues_per_doc": total_issues / len(documents),
+                    "docs_with_issues": sum(1 for doc in documents if doc.issues),
+                },
+            ),
         }
 
         return metrics
@@ -698,28 +774,32 @@ class DocumentationQualityChecker:
 
         # Code examples score
         examples_per_doc = code_examples / doc_count if doc_count > 0 else 0
-        examples_score = max(0, min(1, examples_per_doc / 3))  # Target: 3 examples per doc
+        examples_score = max(
+            0, min(1, examples_per_doc / 3)
+        )  # Target: 3 examples per doc
 
         # Diagrams score
         diagrams_per_doc = diagrams / doc_count if doc_count > 0 else 0
-        diagrams_score = max(0, min(1, diagrams_per_doc / 1))  # Target: 1 diagram per doc
+        diagrams_score = max(
+            0, min(1, diagrams_per_doc / 1)
+        )  # Target: 1 diagram per doc
 
         # Weighted combination
-        return (words_score * 0.5 + examples_score * 0.3 + diagrams_score * 0.2)
+        return words_score * 0.5 + examples_score * 0.3 + diagrams_score * 0.2
 
     def score_distribution(self, scores: list[float]) -> dict[str, int]:
         """Calculate distribution of scores across quality grades."""
-        distribution = {'excellent': 0, 'good': 0, 'fair': 0, 'poor': 0}
+        distribution = {"excellent": 0, "good": 0, "fair": 0, "poor": 0}
 
         for score in scores:
-            if score >= self.thresholds['excellent']:
-                distribution['excellent'] += 1
-            elif score >= self.thresholds['good']:
-                distribution['good'] += 1
-            elif score >= self.thresholds['fair']:
-                distribution['fair'] += 1
+            if score >= self.thresholds["excellent"]:
+                distribution["excellent"] += 1
+            elif score >= self.thresholds["good"]:
+                distribution["good"] += 1
+            elif score >= self.thresholds["fair"]:
+                distribution["fair"] += 1
             else:
-                distribution['poor'] += 1
+                distribution["poor"] += 1
 
         return distribution
 
@@ -731,31 +811,31 @@ class DocumentationQualityChecker:
 
         # Overall score recommendations
         overall_score = statistics.mean([m.score for m in metrics.values()])
-        if overall_score < self.thresholds['good']:
+        if overall_score < self.thresholds["good"]:
             recommendations.append(
                 "📈 Overall documentation quality needs improvement. Focus on the lowest-scoring areas first."
             )
 
         # Specific metric recommendations
         for metric_name, metric in metrics.items():
-            if metric.score < self.thresholds['fair']:
-                if metric_name == 'readability':
+            if metric.score < self.thresholds["fair"]:
+                if metric_name == "readability":
                     recommendations.append(
                         "📖 Improve readability by shortening sentences, using simpler words, and adding more examples."
                     )
-                elif metric_name == 'completeness':
+                elif metric_name == "completeness":
                     recommendations.append(
                         "📋 Add missing essential sections. Review document templates for your document types."
                     )
-                elif metric_name == 'consistency':
+                elif metric_name == "consistency":
                     recommendations.append(
                         "🎯 Establish and follow consistent formatting guidelines for headers, links, and terminology."
                     )
-                elif metric_name == 'structure':
+                elif metric_name == "structure":
                     recommendations.append(
                         "🏗️ Improve document structure with clear hierarchical headers and table of contents."
                     )
-                elif metric_name == 'links':
+                elif metric_name == "links":
                     recommendations.append(
                         "🔗 Fix broken links and ensure all internal references are valid."
                     )
@@ -767,13 +847,21 @@ class DocumentationQualityChecker:
                 f"📝 {len(short_docs)} document(s) are very short. Consider adding more detail and examples."
             )
 
-        docs_without_examples = [doc for doc in documents if doc.code_example_count == 0 and 'api' in doc.file_path.lower()]
+        docs_without_examples = [
+            doc
+            for doc in documents
+            if doc.code_example_count == 0 and "api" in doc.file_path.lower()
+        ]
         if docs_without_examples:
             recommendations.append(
                 f"💻 {len(docs_without_examples)} API document(s) lack code examples. Add practical usage examples."
             )
 
-        docs_without_diagrams = [doc for doc in documents if doc.diagram_count == 0 and 'architecture' in doc.file_path.lower()]
+        docs_without_diagrams = [
+            doc
+            for doc in documents
+            if doc.diagram_count == 0 and "architecture" in doc.file_path.lower()
+        ]
         if docs_without_diagrams:
             recommendations.append(
                 f"📊 {len(docs_without_diagrams)} architecture document(s) lack diagrams. Add visual representations."
@@ -787,10 +875,14 @@ class DocumentationQualityChecker:
             )
 
         # Positive reinforcement
-        if overall_score >= self.thresholds['excellent']:
-            recommendations.append("🎉 Excellent documentation quality! Keep maintaining these high standards.")
-        elif overall_score >= self.thresholds['good']:
-            recommendations.append("👍 Good documentation quality! Focus on minor improvements to reach excellence.")
+        if overall_score >= self.thresholds["excellent"]:
+            recommendations.append(
+                "🎉 Excellent documentation quality! Keep maintaining these high standards."
+            )
+        elif overall_score >= self.thresholds["good"]:
+            recommendations.append(
+                "👍 Good documentation quality! Focus on minor improvements to reach excellence."
+            )
 
         return recommendations[:10]  # Limit to top 10 recommendations
 
@@ -802,62 +894,83 @@ class DocumentationQualityChecker:
         total_issues = sum(len(doc.issues) for doc in documents)
 
         return {
-            'total_documents': len(documents),
-            'total_words': total_words,
-            'average_words_per_document': total_words / len(documents) if documents else 0,
-            'total_code_examples': sum(doc.code_example_count for doc in documents),
-            'total_diagrams': sum(doc.diagram_count for doc in documents),
-            'total_issues': total_issues,
-            'documents_with_issues': sum(1 for doc in documents if doc.issues),
-            'quality_grade': self.get_quality_grade(statistics.mean([m.score for m in metrics.values()])),
-            'best_document': max(documents, key=lambda d: d.overall_score).file_path if documents else None,
-            'worst_document': min(documents, key=lambda d: d.overall_score).file_path if documents else None,
-            'metric_scores': {name: round(metric.score, 3) for name, metric in metrics.items()}
+            "total_documents": len(documents),
+            "total_words": total_words,
+            "average_words_per_document": (
+                total_words / len(documents) if documents else 0
+            ),
+            "total_code_examples": sum(doc.code_example_count for doc in documents),
+            "total_diagrams": sum(doc.diagram_count for doc in documents),
+            "total_issues": total_issues,
+            "documents_with_issues": sum(1 for doc in documents if doc.issues),
+            "quality_grade": self.get_quality_grade(
+                statistics.mean([m.score for m in metrics.values()])
+            ),
+            "best_document": (
+                max(documents, key=lambda d: d.overall_score).file_path
+                if documents
+                else None
+            ),
+            "worst_document": (
+                min(documents, key=lambda d: d.overall_score).file_path
+                if documents
+                else None
+            ),
+            "metric_scores": {
+                name: round(metric.score, 3) for name, metric in metrics.items()
+            },
         }
 
     def get_quality_grade(self, score: float) -> str:
         """Convert numeric score to quality grade."""
-        if score >= self.thresholds['excellent']:
-            return 'Excellent'
-        elif score >= self.thresholds['good']:
-            return 'Good'
-        elif score >= self.thresholds['fair']:
-            return 'Fair'
+        if score >= self.thresholds["excellent"]:
+            return "Excellent"
+        elif score >= self.thresholds["good"]:
+            return "Good"
+        elif score >= self.thresholds["fair"]:
+            return "Fair"
         else:
-            return 'Poor'
+            return "Poor"
 
-    def export_report(self, report: QualityReport, format_type: str = 'json', output_path: Path | None = None) -> None:
+    def export_report(
+        self,
+        report: QualityReport,
+        format_type: str = "json",
+        output_path: Path | None = None,
+    ) -> None:
         """Export quality report in specified format."""
         if not output_path:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            output_path = self.project_root / f"docs_quality_report_{timestamp}.{format_type}"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = (
+                self.project_root / f"docs_quality_report_{timestamp}.{format_type}"
+            )
 
-        if format_type == 'json':
+        if format_type == "json":
             self._export_json(report, output_path)
-        elif format_type == 'html':
+        elif format_type == "html":
             self._export_html(report, output_path)
-        elif format_type == 'text':
+        elif format_type == "text":
             self._export_text(report, output_path)
         else:
             raise ValueError(f"Unsupported format: {format_type}")
 
     def _export_json(self, report: QualityReport, output_path: Path) -> None:
         """Export report as JSON."""
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
         print(f"📄 JSON report saved to: {output_path}")
 
     def _export_html(self, report: QualityReport, output_path: Path) -> None:
         """Export report as HTML."""
         html_content = self._generate_html_report(report)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
         print(f"🌐 HTML report saved to: {output_path}")
 
     def _export_text(self, report: QualityReport, output_path: Path) -> None:
         """Export report as plain text."""
         text_content = self._generate_text_report(report)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(text_content)
         print(f"📝 Text report saved to: {output_path}")
 
@@ -982,7 +1095,8 @@ class DocumentationQualityChecker:
         cards = []
         for name, metric in metrics.items():
             score_percent = metric.percentage
-            cards.append(f"""
+            cards.append(
+                f"""
                 <div class="metric-card">
                     <h3>{metric.name}</h3>
                     <div class="score">{score_percent:.1f}%</div>
@@ -990,15 +1104,17 @@ class DocumentationQualityChecker:
                         <div class="score-fill" style="width: {score_percent}%"></div>
                     </div>
                 </div>
-            """)
-        return ''.join(cards)
+            """
+            )
+        return "".join(cards)
 
     def _generate_document_rows_html(self, documents: list[DocumentAnalysis]) -> str:
         """Generate HTML table rows for documents."""
         rows = []
         for doc in sorted(documents, key=lambda d: d.overall_score, reverse=True):
             grade = self.get_quality_grade(doc.overall_score).lower()
-            rows.append(f"""
+            rows.append(
+                f"""
                 <tr>
                     <td>{doc.file_path}</td>
                     <td>{doc.overall_score:.1%}</td>
@@ -1007,8 +1123,9 @@ class DocumentationQualityChecker:
                     <td>{len(doc.issues)}</td>
                     <td><span class="grade grade-{grade}">{grade.title()}</span></td>
                 </tr>
-            """)
-        return ''.join(rows)
+            """
+            )
+        return "".join(rows)
 
     def _generate_text_report(self, report: QualityReport) -> str:
         """Generate plain text report content."""
@@ -1020,50 +1137,56 @@ class DocumentationQualityChecker:
             f"Overall Score: {report.overall_score:.1%} ({self.get_quality_grade(report.overall_score)})",
             "",
             "QUALITY METRICS",
-            "-" * 20
+            "-" * 20,
         ]
 
         for name, metric in report.metrics.items():
             lines.append(f"{metric.name}: {metric.percentage:.1f}%")
 
-        lines.extend([
-            "",
-            "SUMMARY STATISTICS",
-            "-" * 20,
-            f"Total Documents: {report.summary['total_documents']}",
-            f"Total Words: {report.summary['total_words']:,}",
-            f"Code Examples: {report.summary['total_code_examples']}",
-            f"Diagrams: {report.summary['total_diagrams']}",
-            f"Issues Found: {report.summary['total_issues']}",
-            "",
-            "RECOMMENDATIONS",
-            "-" * 20
-        ])
+        lines.extend(
+            [
+                "",
+                "SUMMARY STATISTICS",
+                "-" * 20,
+                f"Total Documents: {report.summary['total_documents']}",
+                f"Total Words: {report.summary['total_words']:,}",
+                f"Code Examples: {report.summary['total_code_examples']}",
+                f"Diagrams: {report.summary['total_diagrams']}",
+                f"Issues Found: {report.summary['total_issues']}",
+                "",
+                "RECOMMENDATIONS",
+                "-" * 20,
+            ]
+        )
 
         for rec in report.recommendations:
             lines.append(f"• {rec}")
 
-        lines.extend([
-            "",
-            "DOCUMENT ANALYSIS",
-            "-" * 20
-        ])
+        lines.extend(["", "DOCUMENT ANALYSIS", "-" * 20])
 
-        for doc in sorted(report.documents, key=lambda d: d.overall_score, reverse=True):
-            lines.extend([
-                f"{doc.file_path}",
-                f"  Score: {doc.overall_score:.1%} | Words: {doc.word_count:,} | Issues: {len(doc.issues)}",
-                ""
-            ])
+        for doc in sorted(
+            report.documents, key=lambda d: d.overall_score, reverse=True
+        ):
+            lines.extend(
+                [
+                    f"{doc.file_path}",
+                    f"  Score: {doc.overall_score:.1%} | Words: {doc.word_count:,} | Issues: {len(doc.issues)}",
+                    "",
+                ]
+            )
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     """Main entry point for documentation quality checker."""
     parser = argparse.ArgumentParser(description="Documentation Quality Checker")
-    parser.add_argument("--format", choices=['json', 'html', 'text'], default='html',
-                       help="Output format (default: html)")
+    parser.add_argument(
+        "--format",
+        choices=["json", "html", "text"],
+        default="html",
+        help="Output format (default: html)",
+    )
     parser.add_argument("--output", help="Output file path")
     parser.add_argument("--project-root", default=".", help="Project root directory")
 
@@ -1083,7 +1206,9 @@ def main():
 
         # Print summary to console
         print("\n📊 Quality Assessment Summary:")
-        print(f"   Overall Score: {report.overall_score:.1%} ({checker.get_quality_grade(report.overall_score)})")
+        print(
+            f"   Overall Score: {report.overall_score:.1%} ({checker.get_quality_grade(report.overall_score)})"
+        )
         print(f"   Documents: {len(report.documents)}")
         print(f"   Total Issues: {report.summary['total_issues']}")
 

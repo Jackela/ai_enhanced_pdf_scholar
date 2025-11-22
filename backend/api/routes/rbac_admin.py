@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 RBAC Administration API Routes
 Endpoints for managing roles, permissions, and user access control.
@@ -34,8 +36,10 @@ router = APIRouter(prefix="/rbac", tags=["rbac-admin"])
 # Request/Response Models
 # ============================================================================
 
+
 class RoleAssignmentRequest(BaseModel):
     """Request model for role assignment."""
+
     user_id: int
     role_name: str
     expires_in_hours: int | None = Field(None, description="Hours until role expires")
@@ -44,6 +48,7 @@ class RoleAssignmentRequest(BaseModel):
 
 class RoleCreationRequest(BaseModel):
     """Request model for creating custom roles."""
+
     name: str = Field(..., min_length=3, max_length=100)
     description: str = Field(..., max_length=500)
     permissions: list[str] = Field(..., description="List of permission names")
@@ -52,14 +57,18 @@ class RoleCreationRequest(BaseModel):
 
 class PermissionGrantRequest(BaseModel):
     """Request model for direct permission grants."""
+
     user_id: int
     permission_name: str
-    expires_in_hours: int | None = Field(None, description="Hours until permission expires")
+    expires_in_hours: int | None = Field(
+        None, description="Hours until permission expires"
+    )
     reason: str = Field(..., max_length=500, description="Reason for direct grant")
 
 
 class RoleResponse(BaseModel):
     """Response model for role information."""
+
     id: int
     name: str
     description: str
@@ -73,6 +82,7 @@ class RoleResponse(BaseModel):
 
 class PermissionResponse(BaseModel):
     """Response model for permission information."""
+
     id: int
     name: str
     resource: str
@@ -84,6 +94,7 @@ class PermissionResponse(BaseModel):
 
 class UserPermissionsResponse(BaseModel):
     """Response model for user permissions."""
+
     user_id: int
     email: str
     roles: list[str]
@@ -94,6 +105,7 @@ class UserPermissionsResponse(BaseModel):
 
 class ResourcePolicyRequest(BaseModel):
     """Request model for resource policies."""
+
     resource_type: str
     resource_id: str
     policy_type: str = Field(..., description="e.g., 'owner', 'department', 'project'")
@@ -102,6 +114,7 @@ class ResourcePolicyRequest(BaseModel):
 
 class AuditLogResponse(BaseModel):
     """Response model for RBAC audit logs."""
+
     id: int
     timestamp: datetime
     action: str
@@ -109,7 +122,7 @@ class AuditLogResponse(BaseModel):
     actor_email: str
     target_id: int | None
     target_email: str | None
-    details: dict
+    details: dict[str, Any]
     ip_address: str | None
 
 
@@ -117,14 +130,15 @@ class AuditLogResponse(BaseModel):
 # Role Management Endpoints
 # ============================================================================
 
+
 @router.get("/roles", response_model=list[RoleResponse])
 @require_permission(ResourceTypes.SYSTEM, Actions.READ)
 async def list_roles(
     include_system: bool = Query(True, description="Include system roles"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     List all available roles.
     Requires system:read permission.
@@ -132,13 +146,12 @@ async def list_roles(
     query = db.query(Role)
 
     if not include_system:
-        query = query.filter(Role.is_system_role == False)
+        query = query.filter(not Role.is_system_role)
 
     roles = query.order_by(Role.priority, Role.name).all()
 
-    response = []
-    for role in roles:
-        response.append(RoleResponse(
+    response = [
+        RoleResponse(
             id=role.id,
             name=role.name,
             description=role.description,
@@ -147,8 +160,10 @@ async def list_roles(
             permissions=[f"{p.resource}:{p.action}" for p in role.permissions],
             user_count=len(role.users),
             created_at=role.created_at,
-            parent_role=role.parent_role.name if role.parent_role else None
-        ))
+            parent_role=role.parent_role.name if role.parent_role else None,
+        )
+        for role in roles
+    ]
 
     logger.info(f"User {current_user.email} listed {len(response)} roles")
     return response
@@ -160,8 +175,8 @@ async def create_role(
     request: RoleCreationRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     Create a new custom role.
     Requires admin role.
@@ -172,7 +187,7 @@ async def create_role(
             description=request.description,
             permissions=request.permissions,
             created_by=current_user,
-            parent_role=request.parent_role
+            parent_role=request.parent_role,
         )
 
         return RoleResponse(
@@ -184,13 +199,12 @@ async def create_role(
             permissions=[f"{p.resource}:{p.action}" for p in role.permissions],
             user_count=0,
             created_at=role.created_at,
-            parent_role=role.parent_role.name if role.parent_role else None
+            parent_role=role.parent_role.name if role.parent_role else None,
         )
     except Exception as e:
         logger.error(f"Failed to create role: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
         ) from e
 
 
@@ -199,8 +213,8 @@ async def create_role(
 async def delete_role(
     role_name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+    current_user: User = Depends(get_current_user),
+) -> None:
     """
     Delete a custom role.
     Cannot delete system roles.
@@ -210,20 +224,18 @@ async def delete_role(
 
     if not role:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Role {role_name} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Role {role_name} not found"
         )
 
     if role.is_system_role:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete system roles"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete system roles"
         )
 
     if role.users:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot delete role with {len(role.users)} assigned users"
+            detail=f"Cannot delete role with {len(role.users)} assigned users",
         )
 
     db.delete(role)
@@ -236,14 +248,15 @@ async def delete_role(
 # User Role Assignment Endpoints
 # ============================================================================
 
+
 @router.post("/assign-role", status_code=status.HTTP_200_OK)
 @require_permission(ResourceTypes.USER, Actions.UPDATE)
 async def assign_role_to_user(
     request: RoleAssignmentRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     Assign a role to a user.
     Requires user:update permission.
@@ -253,7 +266,7 @@ async def assign_role_to_user(
     if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User {request.user_id} not found"
+            detail=f"User {request.user_id} not found",
         )
 
     expires_at = None
@@ -265,25 +278,24 @@ async def assign_role_to_user(
             user=target_user,
             role_name=request.role_name,
             assigned_by=current_user,
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
         if success:
             logger.info(
                 f"Role {request.role_name} assigned to user {target_user.email} "
                 f"by {current_user.email}",
-                extra={"reason": request.reason, "expires_at": expires_at}
+                extra={"reason": request.reason, "expires_at": expires_at},
             )
             return {
                 "message": f"Role {request.role_name} assigned successfully",
                 "user_id": request.user_id,
-                "expires_at": expires_at
+                "expires_at": expires_at,
             }
     except Exception as e:
         logger.error(f"Failed to assign role: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
         ) from e
 
 
@@ -295,8 +307,8 @@ async def revoke_role_from_user(
     reason: str | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     Revoke a role from a user.
     Requires user:update permission.
@@ -305,37 +317,33 @@ async def revoke_role_from_user(
 
     if not target_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User {user_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
         )
 
     try:
         success = rbac.revoke_role(
-            user=target_user,
-            role_name=role_name,
-            revoked_by=current_user
+            user=target_user, role_name=role_name, revoked_by=current_user
         )
 
         if success:
             logger.info(
                 f"Role {role_name} revoked from user {target_user.email} "
                 f"by {current_user.email}",
-                extra={"reason": reason}
+                extra={"reason": reason},
             )
             return {
                 "message": f"Role {role_name} revoked successfully",
-                "user_id": user_id
+                "user_id": user_id,
             }
         else:
             return {
                 "message": f"User does not have role {role_name}",
-                "user_id": user_id
+                "user_id": user_id,
             }
     except Exception as e:
         logger.error(f"Failed to revoke role: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
         ) from e
 
 
@@ -343,13 +351,14 @@ async def revoke_role_from_user(
 # Permission Management Endpoints
 # ============================================================================
 
+
 @router.get("/permissions", response_model=list[PermissionResponse])
 @require_permission(ResourceTypes.SYSTEM, Actions.READ)
 async def list_permissions(
     resource: str | None = Query(None, description="Filter by resource type"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+    current_user: User = Depends(get_current_user),
+) -> Any:
     """
     List all available permissions.
     Requires system:read permission.
@@ -361,17 +370,18 @@ async def list_permissions(
 
     permissions = query.order_by(Permission.resource, Permission.action).all()
 
-    response = []
-    for permission in permissions:
-        response.append(PermissionResponse(
+    response = [
+        PermissionResponse(
             id=permission.id,
             name=permission.name,
             resource=permission.resource,
             action=permission.action,
             description=permission.description,
             is_system_permission=permission.is_system_permission,
-            role_count=len(permission.roles)
-        ))
+            role_count=len(permission.roles),
+        )
+        for permission in permissions
+    ]
 
     return response
 
@@ -382,8 +392,8 @@ async def grant_direct_permission(
     request: PermissionGrantRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     Grant a direct permission to a user.
     Direct permissions bypass role assignments.
@@ -394,7 +404,7 @@ async def grant_direct_permission(
     if not target_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User {request.user_id} not found"
+            detail=f"User {request.user_id} not found",
         )
 
     expires_at = None
@@ -407,25 +417,24 @@ async def grant_direct_permission(
             permission_name=request.permission_name,
             granted_by=current_user,
             expires_at=expires_at,
-            reason=request.reason
+            reason=request.reason,
         )
 
         if success:
             logger.info(
                 f"Permission {request.permission_name} granted to user {target_user.email} "
                 f"by {current_user.email}",
-                extra={"reason": request.reason, "expires_at": expires_at}
+                extra={"reason": request.reason, "expires_at": expires_at},
             )
             return {
                 "message": f"Permission {request.permission_name} granted successfully",
                 "user_id": request.user_id,
-                "expires_at": expires_at
+                "expires_at": expires_at,
             }
     except Exception as e:
         logger.error(f"Failed to grant permission: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
         ) from e
 
 
@@ -433,14 +442,15 @@ async def grant_direct_permission(
 # User Permissions Query Endpoints
 # ============================================================================
 
+
 @router.get("/users/{user_id}/permissions", response_model=UserPermissionsResponse)
 @require_permission(ResourceTypes.USER, Actions.READ)
 async def get_user_permissions(
     user_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     Get all permissions for a specific user.
     Includes roles, direct grants, and effective permissions.
@@ -450,15 +460,14 @@ async def get_user_permissions(
 
     if not target_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User {user_id} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User {user_id} not found"
         )
 
     # Get user's roles
     roles = [role.name for role in target_user.roles]
 
     # Get direct permissions (would need to be implemented)
-    direct_permissions = []  # This would query the user_permissions table
+    direct_permissions: list[Any] = []  # This would query the user_permissions table
 
     # Get all effective permissions
     effective_permissions = rbac.get_user_permissions(target_user)
@@ -469,7 +478,7 @@ async def get_user_permissions(
         roles=roles,
         direct_permissions=direct_permissions,
         effective_permissions=effective_permissions,
-        permission_count=len(effective_permissions)
+        permission_count=len(effective_permissions),
     )
 
 
@@ -477,13 +486,13 @@ async def get_user_permissions(
 async def get_my_permissions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     Get current user's permissions.
     """
     roles = [role.name for role in current_user.roles]
-    direct_permissions = []  # This would query the user_permissions table
+    direct_permissions: list[Any] = []  # This would query the user_permissions table
     effective_permissions = rbac.get_user_permissions(current_user)
 
     return UserPermissionsResponse(
@@ -492,34 +501,31 @@ async def get_my_permissions(
         roles=roles,
         direct_permissions=direct_permissions,
         effective_permissions=effective_permissions,
-        permission_count=len(effective_permissions)
+        permission_count=len(effective_permissions),
     )
 
 
-@router.post("/check-permission", response_model=dict)
+@router.post("/check-permission", response_model=dict[str, Any])
 async def check_permission(
     resource: str,
     action: str,
     resource_id: str | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    rbac: RBACService = Depends(get_rbac_service)
-):
+    rbac: RBACService = Depends(get_rbac_service),
+) -> Any:
     """
     Check if current user has a specific permission.
     """
     result = rbac.check_permission(
-        user=current_user,
-        resource=resource,
-        action=action,
-        resource_id=resource_id
+        user=current_user, resource=resource, action=action, resource_id=resource_id
     )
 
     return {
         "allowed": result.allowed,
         "reason": result.reason,
         "context": result.context,
-        "cached": result.cached
+        "cached": result.cached,
     }
 
 
@@ -527,13 +533,14 @@ async def check_permission(
 # Resource Policy Endpoints
 # ============================================================================
 
+
 @router.post("/resource-policies", status_code=status.HTTP_201_CREATED)
 @require_permission(ResourceTypes.SYSTEM, Actions.UPDATE)
 async def create_resource_policy(
     request: ResourcePolicyRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+    current_user: User = Depends(get_current_user),
+) -> Any:
     """
     Create a resource-level access policy.
     Requires system:update permission.
@@ -545,7 +552,7 @@ async def create_resource_policy(
         resource_id=request.resource_id,
         policy_type=request.policy_type,
         policy_value=request.policy_value,
-        created_by=current_user.id
+        created_by=current_user.id,
     )
 
     db.add(policy)
@@ -556,15 +563,13 @@ async def create_resource_policy(
         f"by {current_user.email}"
     )
 
-    return {
-        "message": "Resource policy created successfully",
-        "policy_id": policy.id
-    }
+    return {"message": "Resource policy created successfully", "policy_id": policy.id}
 
 
 # ============================================================================
 # Audit Log Endpoints
 # ============================================================================
+
 
 @router.get("/audit-logs", response_model=list[AuditLogResponse])
 @require_permission(ResourceTypes.AUDIT, Actions.READ)
@@ -576,14 +581,14 @@ async def get_rbac_audit_logs(
     action: str | None = Query(None),
     limit: int = Query(100, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+    current_user: User = Depends(get_current_user),
+) -> Any:
     """
     Get RBAC audit logs.
     Requires audit:read permission.
     """
     # This would query an audit log table
-    # For now, return empty list as placeholder
+    # For now, return empty list[Any] as placeholder
     logger.info(f"User {current_user.email} accessed RBAC audit logs")
     return []
 
@@ -592,12 +597,12 @@ async def get_rbac_audit_logs(
 # Statistics Endpoints
 # ============================================================================
 
-@router.get("/stats", response_model=dict)
+
+@router.get("/stats", response_model=dict[str, Any])
 @require_permission(ResourceTypes.SYSTEM, Actions.READ)
 async def get_rbac_statistics(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> Any:
     """
     Get RBAC system statistics.
     Requires system:read permission.
@@ -619,7 +624,7 @@ async def get_rbac_statistics(
         "system_roles": db.query(Role).filter_by(is_system_role=True).count(),
         "custom_roles": db.query(Role).filter_by(is_system_role=False).count(),
         "role_distribution": role_distribution,
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.utcnow(),
     }
 
 

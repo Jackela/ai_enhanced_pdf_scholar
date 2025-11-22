@@ -36,6 +36,9 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 }
 ```
 
+**字段说明**:
+- `file_type`: 规范化的文件类型/扩展名（例如 `.pdf`），可用于前端过滤和指标统计。
+
 ### 错误响应格式
 
 ```json
@@ -171,6 +174,7 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
       "title": "研究论文.pdf",
       "file_path": "/path/to/file.pdf",
       "file_size": 1024000,
+      "file_type": ".pdf",
       "page_count": 20,
       "created_at": "2023-01-01T00:00:00",
       "updated_at": "2023-01-01T00:00:00",
@@ -186,6 +190,9 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
   "per_page": 50
 }
 ```
+**字段补充**:
+- `preview_url`：指向 `/api/documents/{id}/preview` 的快捷链接，可携带 `page`、`width` 参数。
+- `thumbnail_url`：指向 `/api/documents/{id}/thumbnail` 的快捷链接，用于展示列表缩略图。
 
 #### 2.2 文档详情
 
@@ -193,7 +200,40 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 
 获取特定文档的详细信息。
 
-#### 2.3 文档上传
+#### 2.3 文档预览
+
+**GET** `/api/documents/{document_id}/preview`
+
+返回指定页面的 PNG 预览图。
+
+**查询参数**:
+- `page` (int, optional, default=1): 页面编号（从 1 开始）
+- `width` (int, optional): 目标宽度（像素），自动在配置范围内裁剪
+
+**响应**:
+- `200` `image/png`: 预览图片
+- `400`: 参数错误或超出限制
+- `404`: 文档或页面不存在
+- `415`: 非支持文件类型
+- `503`: 预览功能被禁用
+
+**说明**:
+- 响应头包含 `X-Document-Id`, `X-Preview-Page`, `X-Preview-Cache`。
+- `Cache-Control` 默认为 `private`，值由 `PREVIEW_CACHE_TTL_SECONDS` 控制。
+
+#### 2.4 文档缩略图
+
+**GET** `/api/documents/{document_id}/thumbnail`
+
+返回首页面缩略图（默认 256px），命中缓存时可快速展示。
+
+**响应**:
+- `200` `image/png`: 缩略图
+- `404`: 文档不存在
+- `415`: 非支持文件类型
+- `503`: 预览功能被禁用
+
+#### 2.5 文档上传
 
 **POST** `/api/documents/upload`
 
@@ -216,6 +256,7 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
     "title": "AI辅助项目完成模式",
     "file_path": "C:\\Users\\user\\.ai_pdf_scholar\\documents\\fe4086dc.pdf",
     "file_size": 151676,
+    "file_type": ".pdf",
     "page_count": 3,
     "file_hash": "fe4086dc365fc6a2",
     "created_at": "2025-07-14T06:14:12.019558",
@@ -237,7 +278,7 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 - `409`: 文档重复
 - `413`: 文件过大
 
-#### 2.4 更新文档
+#### 2.6 更新文档
 
 **PUT** `/api/documents/{document_id}`
 
@@ -254,19 +295,19 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 }
 ```
 
-#### 2.5 删除文档
+#### 2.7 删除文档
 
 **DELETE** `/api/documents/{document_id}`
 
 删除文档及其相关数据。
 
-#### 2.6 下载文档
+#### 2.8 下载文档
 
 **GET** `/api/documents/{document_id}/download`
 
 下载原始 PDF 文件。
 
-#### 2.7 完整性检查
+#### 2.9 完整性检查
 
 **GET** `/api/documents/{document_id}/integrity`
 

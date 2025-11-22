@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class UATOrchestrator:
     """Orchestrate complete UAT execution"""
 
-    def __init__(self, args):
+    def __init__(self, args) -> None:
         self.args = args
         self.start_time = datetime.now()
         self.results: dict[str, Any] = {
@@ -239,7 +239,7 @@ class UATOrchestrator:
             logger.error(f"Failed to start API server: {e}")
             return False
 
-    def stop_api_server(self):
+    def stop_api_server(self) -> None:
         """Stop API server"""
         if self.api_server_process:
             logger.info("Stopping API server...")
@@ -447,7 +447,7 @@ class UATOrchestrator:
             }
         }
 
-    async def run_complete_uat_suite(self):
+    async def run_complete_uat_suite(self) -> Any:
         """Run the complete UAT suite"""
         print("🚀 Multi-Document RAG System - Complete UAT Suite")
         print("=" * 60)
@@ -513,7 +513,7 @@ class UATOrchestrator:
             # Always clean up
             self.stop_api_server()
 
-    def display_final_summary(self, report: dict[str, Any]):
+    def display_final_summary(self, report: dict[str, Any]) -> None:
         """Display final UAT summary"""
         print("\n" + "=" * 60)
         print("🎯 COMPLETE UAT SUMMARY")
@@ -566,7 +566,7 @@ class UATOrchestrator:
         print("\nDetailed report saved to: complete_uat_report.json")
         print("=" * 60)
 
-def parse_arguments():
+def parse_arguments() -> Any:
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
         description="Complete UAT for Multi-Document RAG System",
@@ -599,7 +599,7 @@ def parse_arguments():
 
     return parser.parse_args()
 
-async def main():
+async def main() -> Any:
     """Main UAT orchestration function"""
     args = parse_arguments()
 

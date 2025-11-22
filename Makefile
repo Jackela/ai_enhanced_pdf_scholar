@@ -7,6 +7,9 @@
 PYTHON := python
 PIP := $(PYTHON) -m pip
 PYTEST := $(PYTHON) -m pytest
+RUFF := $(PYTHON) -m ruff
+MYPY := $(PYTHON) -m mypy
+CI_LINT_BASE ?= origin/main
 
 # Directories
 SRC_DIR := src
@@ -21,7 +24,7 @@ YELLOW := \033[0;33m
 BLUE := \033[0;34m
 NC := \033[0m # No Color
 
-.PHONY: help install install-dev install-prod clean test lint format security audit performance benchmark all
+.PHONY: help install install-dev install-prod clean test lint lint-full lint-staged format security audit performance benchmark all ci-local pre-commit pre-commit-install
 
 # Default target
 help: ## Show this help message
@@ -65,17 +68,48 @@ clean: ## Clean build artifacts and cache
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov
 	@echo "$(GREEN)✓ Build artifacts cleaned$(NC)"
 
-format: ## Format code with ruff
+format: ## Format code with Ruff (includes src/tests/backend/scripts)
 	@echo "$(BLUE)Formatting code...$(NC)"
-	$(PYTHON) -m ruff format $(SRC_DIR) $(TEST_DIR)
-	$(PYTHON) -m ruff check --fix $(SRC_DIR) $(TEST_DIR)
+	$(RUFF) format $(SRC_DIR) $(TEST_DIR) backend scripts
+	$(RUFF) check --fix $(SRC_DIR) $(TEST_DIR) backend scripts
 	@echo "$(GREEN)✓ Code formatted$(NC)"
 
-lint: ## Run comprehensive linting
-	@echo "$(BLUE)Running linting...$(NC)"
-	$(PYTHON) -m ruff check $(SRC_DIR) $(TEST_DIR)
-	$(PYTHON) -m mypy $(SRC_DIR)
-	@echo "$(GREEN)✓ Linting completed$(NC)"
+lint-full: ## Run full-repo linting (Ruff + MyPy) to gauge baseline debt
+	@echo "$(BLUE)Running full linting (Ruff + MyPy)...$(NC)"
+	$(RUFF) check $(SRC_DIR) $(TEST_DIR) backend scripts
+	PYTHONPATH=. $(MYPY) $(SRC_DIR) backend
+	@echo "$(GREEN)✓ Full linting finished$(NC)"
+
+lint: lint-full ## Alias for backwards compatibility (full lint)
+
+lint-staged: ## Run Ruff only on files changed vs. origin/main
+	@echo "$(BLUE)Running lint on changed files...$(NC)"
+	$(PYTHON) scripts/lint_staged.py
+	@echo "$(GREEN)✓ Staged linting completed$(NC)"
+
+lint-ci: ## Match the CI workflow (Black + Ruff + MyPy on changed files)
+	@echo "$(BLUE)CI lint: resolving changed Python files vs. $(CI_LINT_BASE)...$(NC)"
+	@CHANGED_FILES="$$( $(PYTHON) scripts/lint_staged.py --base $(CI_LINT_BASE) --list-files )"; \
+	if [ -z "$$CHANGED_FILES" ]; then \
+		echo "No Python files changed. Formatting and lint skipped."; \
+	else \
+		echo "Checking formatting with Black..."; \
+		$(PYTHON) -m black --check --diff $$CHANGED_FILES || exit 1; \
+		echo "Running Ruff on changed files..."; \
+		$(PYTHON) scripts/lint_staged.py --base $(CI_LINT_BASE) -- --output-format=full || exit 1; \
+	fi
+	@echo "Running targeted MyPy..."
+	@COUNT_FILE=$$(mktemp); \
+	if $(PYTHON) scripts/mypy_changed.py --base $(CI_LINT_BASE) --count-file $$COUNT_FILE \
+		--allow-prefix backend/api/main.py \
+		--allow-prefix backend/api/middleware/error_handling.py \
+		--allow-prefix backend/api/dependencies.py; then \
+		echo "MyPy completed cleanly."; \
+	else \
+		ERRS=$$(cat $$COUNT_FILE 2>/dev/null || echo "unknown"); \
+		echo "MyPy reported $$ERRS issues."; \
+		exit 1; \
+	fi
 
 # ============================================================================
 # Testing Targets
@@ -173,3 +207,16 @@ dev-setup: install-dev ## Complete development environment setup
 
 pre-commit: format lint test-fast ## Quick pre-commit checks
 	@echo "$(GREEN)✓ Pre-commit checks passed$(NC)"
+
+pre-commit-install: ## Install git hooks defined in .pre-commit-config.yaml
+	@echo "$(BLUE)Installing pre-commit hooks...$(NC)"
+	pre-commit install --install-hooks
+	pre-commit install --hook-type pre-push || true
+	@echo "$(GREEN)✓ Pre-commit hooks installed$(NC)"
+
+ci-local: ## Run the full CI gate locally (lint + backend + frontend tests)
+	@echo "$(BLUE)Running full CI parity suite...$(NC)"
+	$(MAKE) lint-ci
+	$(PYTEST) -q
+	cd frontend && npm run test -- --run
+	@echo "$(GREEN)✓ CI parity suite completed$(NC)"

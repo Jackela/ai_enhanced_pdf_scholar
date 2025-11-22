@@ -103,14 +103,14 @@ if "DatabaseMigrator" not in globals():
         """
         Set database schema version.
         Args:
-            version: Version number to set
+            version: Version number to set[str]
         """
         try:
             self.db.execute(f"PRAGMA user_version = {version}")
-            logger.info(f"Database version set to {version}")
+            logger.info(f"Database version set[str] to {version}")
         except Exception as e:
-            logger.error(f"Failed to set database version: {e}")
-            raise MigrationError(f"Cannot set database version: {e}") from e
+            logger.error(f"Failed to set[str] database version: {e}")
+            raise MigrationError(f"Cannot set[str] database version: {e}") from e
 
     def needs_migration(self) -> bool:
         """
@@ -719,7 +719,7 @@ if "DatabaseMigrator" not in globals():
             for table in tables:
                 try:
                     count_result = self.db.fetch_one(
-                        f"SELECT COUNT(*) as count FROM {table}"
+                        f"SELECT COUNT(*) as count FROM {table}"  # noqa: S608 - migration DDL, no user input
                     )
                     count = count_result["count"] if count_result else 0
                     baselines.append(
@@ -847,7 +847,7 @@ if "DatabaseMigrator" not in globals():
                 ]
                 # Get row count
                 count_result = self.db.fetch_one(
-                    f"SELECT COUNT(*) as count FROM {table_name}"
+                    f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - migration DDL, no user input
                 )
                 row_count = count_result["count"] if count_result else 0
                 info["tables"].append(
@@ -923,13 +923,13 @@ if "DatabaseMigrator" not in globals():
                 try:
                     # Row count
                     count_result = self.db.fetch_one(
-                        f"SELECT COUNT(*) as count FROM {table_name}"
+                        f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - migration DDL, no user input
                     )
                     row_count = count_result["count"] if count_result else 0
 
                     # Table size estimation
                     dbstat_result = self.db.fetch_one(
-                        f"SELECT SUM(pgsize) as size FROM dbstat WHERE name = '{table_name}'"
+                        f"SELECT SUM(pgsize) as size FROM dbstat WHERE name = '{table_name}'"  # noqa: S608 - migration DDL, no user input
                     )
                     table_size = (
                         dbstat_result["size"]
@@ -942,9 +942,9 @@ if "DatabaseMigrator" not in globals():
                             "table_name": table_name,
                             "row_count": row_count,
                             "estimated_size_bytes": table_size,
-                            "avg_row_size_bytes": table_size / row_count
-                            if row_count > 0
-                            else 0,
+                            "avg_row_size_bytes": (
+                                table_size / row_count if row_count > 0 else 0
+                            ),
                         }
                     )
 
@@ -976,7 +976,7 @@ if "DatabaseMigrator" not in globals():
                     # Index size and page count (if dbstat is available)
                     try:
                         size_result = self.db.fetch_one(
-                            f"SELECT COUNT(*) as pages, SUM(pgsize) as size FROM dbstat WHERE name = '{index_name}'"
+                            f"SELECT COUNT(*) as pages, SUM(pgsize) as size FROM dbstat WHERE name = '{index_name}'"  # noqa: S608 - migration DDL, no user input
                         )
                         pages = size_result["pages"] if size_result else 0
                         size_bytes = size_result["size"] if size_result else 0
@@ -1006,7 +1006,7 @@ if "DatabaseMigrator" not in globals():
 
     def _get_query_performance_hints(self) -> dict[str, Any]:
         """Get query performance analysis and hints."""
-        hints = {
+        hints: Any = {
             "recommendations": [],
             "slow_query_patterns": [],
             "optimization_opportunities": [],
@@ -1025,11 +1025,11 @@ if "DatabaseMigrator" not in globals():
                 ("citation_relations", "target_citation_id", "citations"),
             ]
 
-            for table, column, ref_table in tables_with_fks:
+            for table, column, _ref_table in tables_with_fks:
                 try:
                     # Check if index exists for this foreign key
                     index_check = self.db.fetch_all(
-                        f"SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='{table}' AND sql LIKE '%{column}%'"
+                        f"SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='{table}' AND sql LIKE '%{column}%'"  # noqa: S608 - migration DDL, no user input
                     )
 
                     if not index_check:
@@ -1049,7 +1049,7 @@ if "DatabaseMigrator" not in globals():
                 for table_row in large_tables:
                     table_name = table_row["name"]
                     count_result = self.db.fetch_one(
-                        f"SELECT COUNT(*) as count FROM {table_name}"
+                        f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - migration DDL, no user input
                     )
                     row_count = count_result["count"] if count_result else 0
 
@@ -1260,7 +1260,7 @@ if "DatabaseMigrator" not in globals():
         Returns:
             Dictionary with slow query analysis and recommendations
         """
-        analysis = {
+        analysis: Any = {
             "potential_slow_queries": [],
             "optimization_suggestions": [],
             "index_recommendations": [],
@@ -1438,10 +1438,10 @@ if "DatabaseMigrator" not in globals():
             matches = re.findall(pattern, plan_text, re.IGNORECASE)
             indexes_used.extend(matches)
 
-        return list(set(indexes_used))  # Remove duplicates
+        return list[Any](set[str](indexes_used))  # Remove duplicates
 
     def _generate_query_optimization_recommendations(
-        self, query: str, execution_plan: list, execution_time: float
+        self, query: str, execution_plan: list[Any], execution_time: float
     ) -> list[str]:
         """Generate optimization recommendations based on query analysis."""
         recommendations = []
@@ -1461,12 +1461,11 @@ if "DatabaseMigrator" not in globals():
                 "Table scan detected. Consider adding appropriate indexes."
             )
 
-        # LIKE pattern optimization
-        if "like" in query_lower and "%" in query:
-            if query.count("%") >= 2:  # Leading and trailing wildcards
-                recommendations.append(
-                    "LIKE with leading wildcards can't use indexes efficiently. Consider FTS if full-text search is needed."
-                )
+        # LIKE pattern optimization (leading and trailing wildcards)
+        if "like" in query_lower and "%" in query and query.count("%") >= 2:
+            recommendations.append(
+                "LIKE with leading wildcards can't use indexes efficiently. Consider FTS if full-text search is needed."
+            )
 
         # ORDER BY without index
         if "order by" in query_lower and "using index" not in plan_text.lower():
@@ -1493,7 +1492,7 @@ if "DatabaseMigrator" not in globals():
         return recommendations
 
     def _analyze_query_cost(
-        self, query: str, execution_plan: list, rows_returned: int
+        self, query: str, execution_plan: list[Any], rows_returned: int
     ) -> dict[str, Any]:
         """Analyze the cost characteristics of a query."""
         cost_analysis = {
@@ -1553,7 +1552,7 @@ if "DatabaseMigrator" not in globals():
         Returns:
             Dictionary with benchmark results and comparisons
         """
-        benchmark_results = {
+        benchmark_results: Any = {
             "benchmarks": [],
             "fastest_query": None,
             "slowest_query": None,
@@ -1594,9 +1593,9 @@ if "DatabaseMigrator" not in globals():
                         "min_time_ms": min_time,
                         "max_time_ms": max_time,
                         "rows_returned": len(results) if "results" in locals() else 0,
-                        "consistency": "high"
-                        if (max_time - min_time) < avg_time * 0.2
-                        else "low",
+                        "consistency": (
+                            "high" if (max_time - min_time) < avg_time * 0.2 else "low"
+                        ),
                     }
 
                     benchmark_results["benchmarks"].append(benchmark_result)
@@ -1621,10 +1620,11 @@ if "DatabaseMigrator" not in globals():
                 benchmark_results["performance_summary"] = {
                     "total_queries_tested": len(benchmark_results["benchmarks"]),
                     "performance_range_ms": f"{fastest['average_time_ms']:.2f} - {slowest['average_time_ms']:.2f}",
-                    "performance_variance": slowest["average_time_ms"]
-                    / fastest["average_time_ms"]
-                    if fastest["average_time_ms"] > 0
-                    else 0,
+                    "performance_variance": (
+                        slowest["average_time_ms"] / fastest["average_time_ms"]
+                        if fastest["average_time_ms"] > 0
+                        else 0
+                    ),
                 }
 
         except Exception as e:
@@ -1633,7 +1633,9 @@ if "DatabaseMigrator" not in globals():
 
         return benchmark_results
 
-    def analyze_index_effectiveness(self) -> dict[str, Any]:
+    def analyze_index_effectiveness(
+        self,
+    ) -> dict[str, Any]:  # noqa: C901 - Index analysis algorithm with multi-branch decision tree
         """
         Analyze the effectiveness of all indexes in the database.
         Returns:
@@ -1674,7 +1676,7 @@ if "DatabaseMigrator" not in globals():
                     # Get index size if dbstat is available
                     try:
                         size_result = self.db.fetch_one(
-                            f"SELECT COUNT(*) as pages, SUM(pgsize) as size FROM dbstat WHERE name = '{index_name}'"
+                            f"SELECT COUNT(*) as pages, SUM(pgsize) as size FROM dbstat WHERE name = '{index_name}'"  # noqa: S608 - migration DDL, no user input
                         )
                         if size_result and size_result["size"]:
                             index_analysis["size_estimate"] = size_result["size"]
@@ -1742,10 +1744,11 @@ if "DatabaseMigrator" not in globals():
                 "total_indexes": analysis["total_indexes"],
                 "high_impact_indexes": len(analysis["high_impact"]),
                 "potentially_unused_indexes": len(analysis["potentially_unused"]),
-                "index_effectiveness_ratio": len(analysis["high_impact"])
-                / analysis["total_indexes"]
-                if analysis["total_indexes"] > 0
-                else 0,
+                "index_effectiveness_ratio": (
+                    len(analysis["high_impact"]) / analysis["total_indexes"]
+                    if analysis["total_indexes"] > 0
+                    else 0
+                ),
             }
 
         except Exception as e:
@@ -1912,12 +1915,14 @@ if "DatabaseMigrator" not in globals():
         if not default_password:
             # Generate a secure random password if not provided
             alphabet = string.ascii_letters + string.digits + string.punctuation
-            default_password = ''.join(secrets.choice(alphabet) for _ in range(16))
+            default_password = "".join(secrets.choice(alphabet) for _ in range(16))
             logger.warning(
-                "No DEFAULT_ADMIN_PASSWORD environment variable set. "
+                "No DEFAULT_ADMIN_PASSWORD environment variable set[str]. "
                 f"Generated temporary password: {default_password}"
             )
-            logger.warning("IMPORTANT: Please change this password immediately after first login!")
+            logger.warning(
+                "IMPORTANT: Please change this password immediately after first login!"
+            )
 
         password_hash = bcrypt.hashpw(
             default_password.encode("utf-8"), bcrypt.gensalt(rounds=12)

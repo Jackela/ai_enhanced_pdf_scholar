@@ -19,9 +19,11 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 from pathlib import Path
-from typing import Any, Union
+from random import SystemRandom
+from typing import Any
 
 logger = logging.getLogger(__name__)
+_JITTER_RNG = SystemRandom()
 
 
 class RecoveryError(Exception):
@@ -30,10 +32,14 @@ class RecoveryError(Exception):
     pass
 
 
-class RetryExhaustedException(RecoveryError):
+class RetryExhaustedError(RecoveryError):
     """Raised when retry attempts are exhausted."""
 
     pass
+
+
+# Backwards compatibility alias
+RetryExhaustedException = RetryExhaustedError
 
 
 class CircuitBreakerOpenError(RecoveryError):
@@ -90,26 +96,28 @@ class RecoveryMetrics:
     cleanup_operations: int = 0
     last_failure_time: datetime | None = None
     last_success_time: datetime | None = None
-    error_types: dict[str, int] = field(default_factory=dict)
+    error_types: dict[str, int] = field(default_factory=dict[str, Any])
 
 
 class RetryMechanism:
     """Retry mechanism with exponential backoff and jitter."""
 
-    def __init__(self, config: RetryConfig):
+    def __init__(self, config: RetryConfig) -> None:
         self.config = config
         self.metrics = RecoveryMetrics()
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Decorator for retry functionality."""
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return self._execute_with_retry(func, *args, **kwargs)
 
         return wrapper
 
-    def _execute_with_retry(self, func: Callable, *args, **kwargs) -> Any:
+    def _execute_with_retry(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute function with retry logic."""
         last_exception = None
         delay = self.config.initial_delay
@@ -156,9 +164,7 @@ class RetryMechanism:
                 # Apply jitter if enabled
                 actual_delay = delay
                 if self.config.jitter:
-                    import random
-
-                    actual_delay = delay * (0.5 + random.random() * 0.5)
+                    actual_delay = delay * (0.5 + _JITTER_RNG.random() * 0.5)
 
                 time.sleep(actual_delay)
 
@@ -175,7 +181,7 @@ class RetryMechanism:
 class CircuitBreaker:
     """Circuit breaker pattern implementation."""
 
-    def __init__(self, config: CircuitBreakerConfig):
+    def __init__(self, config: CircuitBreakerConfig) -> None:
         self.config = config
         self.state = CircuitBreakerState.CLOSED
         self.failure_count = 0
@@ -184,16 +190,18 @@ class CircuitBreaker:
         self.metrics = RecoveryMetrics()
         self._lock = threading.Lock()
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Decorator for circuit breaker functionality."""
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return self._execute_with_circuit_breaker(func, *args, **kwargs)
 
         return wrapper
 
-    def _execute_with_circuit_breaker(self, func: Callable, *args, **kwargs) -> Any:
+    def _execute_with_circuit_breaker(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute function with circuit breaker protection."""
         with self._lock:
             if self.state == CircuitBreakerState.OPEN:
@@ -287,14 +295,14 @@ class CircuitBreaker:
 class ResourceCleanupManager:
     """Manages cleanup of resources with automatic tracking."""
 
-    def __init__(self):
-        self.cleanup_handlers: list[Callable] = []
+    def __init__(self) -> None:
+        self.cleanup_handlers: list[Callable[..., Any]] = []
         self.cleanup_paths: list[Path] = []
         self.metrics = RecoveryMetrics()
         self._lock = threading.Lock()
 
     @contextmanager
-    def cleanup_scope(self, description: str = ""):
+    def cleanup_scope(self, description: str = "") -> None:
         """Context manager for automatic cleanup."""
         logger.debug(f"Entering cleanup scope: {description}")
         try:
@@ -305,12 +313,14 @@ class ResourceCleanupManager:
         finally:
             self.cleanup_all()
 
-    def add_cleanup_handler(self, handler: Callable, *args, **kwargs) -> None:
+    def add_cleanup_handler(
+        self, handler: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
         """Add a cleanup handler function."""
         with self._lock:
             self.cleanup_handlers.append(lambda: handler(*args, **kwargs))
 
-    def add_cleanup_path(self, path: Union[str, Path]) -> None:
+    def add_cleanup_path(self, path: str | Path) -> None:
         """Add a path for cleanup."""
         with self._lock:
             self.cleanup_paths.append(Path(path))
@@ -358,12 +368,12 @@ class ResourceCleanupManager:
 class TransactionManager:
     """Manages database transactions with automatic rollback."""
 
-    def __init__(self, db_connection):
+    def __init__(self, db_connection: Any) -> None:
         self.db = db_connection
         self.metrics = RecoveryMetrics()
 
     @contextmanager
-    def transaction_scope(self, savepoint_name: str | None = None):
+    def transaction_scope(self, savepoint_name: str | None = None) -> None:
         """Context manager for transactional operations with rollback."""
         try:
             with self.db.transaction(savepoint_name):
@@ -385,11 +395,11 @@ class TransactionManager:
 class HealthChecker:
     """Health checking and system recovery verification."""
 
-    def __init__(self):
-        self.checks: dict[str, Callable] = {}
+    def __init__(self) -> None:
+        self.checks: dict[str, Callable[..., Any]] = {}
         self.metrics = RecoveryMetrics()
 
-    def add_health_check(self, name: str, check_func: Callable) -> None:
+    def add_health_check(self, name: str, check_func: Callable[..., Any]) -> None:
         """Add a health check function."""
         self.checks[name] = check_func
 
@@ -423,7 +433,7 @@ class HealthChecker:
 class RecoveryOrchestrator:
     """Orchestrates complex recovery operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.retry = RetryMechanism(RetryConfig())
         self.circuit_breaker = CircuitBreaker(CircuitBreakerConfig())
         self.cleanup_manager = ResourceCleanupManager()
@@ -432,19 +442,16 @@ class RecoveryOrchestrator:
 
     def with_recovery(
         self,
-        operation: Callable,
-        cleanup_paths: list[Union[str, Path]] | None = None,
-        cleanup_handlers: list[Callable] | None = None,
+        operation: Callable[..., Any],
+        cleanup_paths: list[str | Path] | None = None,
+        cleanup_handlers: list[Callable[..., Any]] | None = None,
         retry_config: RetryConfig | None = None,
         circuit_breaker_config: CircuitBreakerConfig | None = None,
     ) -> Any:
         """Execute operation with full recovery support."""
 
         # Setup custom configurations if provided
-        if retry_config:
-            retry_mechanism = RetryMechanism(retry_config)
-        else:
-            retry_mechanism = self.retry
+        retry_mechanism = RetryMechanism(retry_config) if retry_config else self.retry
 
         if circuit_breaker_config:
             circuit_breaker = CircuitBreaker(circuit_breaker_config)
@@ -490,12 +497,16 @@ class RecoveryOrchestrator:
                 "successful_recoveries": self.metrics.successful_recoveries,
                 "failed_recoveries": self.metrics.failed_recoveries,
                 "error_types": self.metrics.error_types,
-                "last_success": self.metrics.last_success_time.isoformat()
-                if self.metrics.last_success_time
-                else None,
-                "last_failure": self.metrics.last_failure_time.isoformat()
-                if self.metrics.last_failure_time
-                else None,
+                "last_success": (
+                    self.metrics.last_success_time.isoformat()
+                    if self.metrics.last_success_time
+                    else None
+                ),
+                "last_failure": (
+                    self.metrics.last_failure_time.isoformat()
+                    if self.metrics.last_failure_time
+                    else None
+                ),
             },
             "retry": {
                 "total_attempts": self.retry.metrics.total_attempts,
@@ -507,9 +518,11 @@ class RecoveryOrchestrator:
                 "state": self.circuit_breaker.get_state().value,
                 "failure_count": self.circuit_breaker.failure_count,
                 "trips": self.circuit_breaker.metrics.circuit_breaker_trips,
-                "last_failure": self.circuit_breaker.last_failure_time.isoformat()
-                if self.circuit_breaker.last_failure_time
-                else None,
+                "last_failure": (
+                    self.circuit_breaker.last_failure_time.isoformat()
+                    if self.circuit_breaker.last_failure_time
+                    else None
+                ),
             },
             "cleanup": {
                 "operations": self.cleanup_manager.metrics.cleanup_operations,
@@ -524,7 +537,7 @@ def with_retry(
     initial_delay: float = 1.0,
     exponential_base: float = 2.0,
     retryable_exceptions: tuple = (Exception,),
-):
+) -> Any:
     """Decorator for retry with common settings."""
     config = RetryConfig(
         max_attempts=max_attempts,
@@ -539,7 +552,7 @@ def with_circuit_breaker(
     failure_threshold: int = 5,
     recovery_timeout: float = 60.0,
     expected_exception: type[Exception] = Exception,
-):
+) -> Any:
     """Decorator for circuit breaker with common settings."""
     config = CircuitBreakerConfig(
         failure_threshold=failure_threshold,

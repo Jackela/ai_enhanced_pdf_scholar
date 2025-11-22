@@ -10,7 +10,7 @@ import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import sqlalchemy as sa
@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DatabasePerformanceConfig:
     """Database performance optimization configuration."""
+
     # Connection pool configuration
     pool_size: int = 20
     max_overflow: int = 30
@@ -42,13 +43,15 @@ class DatabasePerformanceConfig:
     # Connection management
     connect_timeout: int = 10
     command_timeout: int = 30
-    server_settings: dict[str, str] = field(default_factory=lambda: {
-        'application_name': 'ai_pdf_scholar_prod',
-        'timezone': 'UTC',
-        'statement_timeout': '30s',
-        'idle_in_transaction_session_timeout': '60s',
-        'lock_timeout': '10s'
-    })
+    server_settings: dict[str, str] = field(
+        default_factory=lambda: {
+            "application_name": "ai_pdf_scholar_prod",
+            "timezone": "UTC",
+            "statement_timeout": "30s",
+            "idle_in_transaction_session_timeout": "60s",
+            "lock_timeout": "10s",
+        }
+    )
 
     # Performance tuning
     echo: bool = False
@@ -58,7 +61,7 @@ class DatabasePerformanceConfig:
 
     # Read/write splitting
     enable_read_write_split: bool = False
-    read_replica_urls: list[str] = field(default_factory=list)
+    read_replica_urls: list[str] = field(default_factory=list[Any])
     read_weight: float = 0.7  # 70% reads go to replicas
 
     # Monitoring
@@ -70,6 +73,7 @@ class DatabasePerformanceConfig:
 @dataclass
 class DatabaseConnectionStats:
     """Database connection statistics."""
+
     total_connections: int = 0
     active_connections: int = 0
     idle_connections: int = 0
@@ -77,7 +81,7 @@ class DatabaseConnectionStats:
     slow_queries: int = 0
     total_queries: int = 0
     avg_query_time: float = 0.0
-    connection_errors: list[str] = field(default_factory=list)
+    connection_errors: list[str] = field(default_factory=list[Any])
 
 
 class ProductionDatabaseManager:
@@ -90,8 +94,8 @@ class ProductionDatabaseManager:
         self,
         database_url: str,
         performance_config: DatabasePerformanceConfig | None = None,
-        metrics_service: MetricsService | None = None
-    ):
+        metrics_service: MetricsService | None = None,
+    ) -> None:
         """Initialize production database manager."""
         self.database_url = database_url
         self.performance_config = performance_config or DatabasePerformanceConfig()
@@ -118,8 +122,10 @@ class ProductionDatabaseManager:
             await self._create_master_engine()
 
             # Create read replica engines if configured
-            if (self.performance_config.enable_read_write_split and
-                self.performance_config.read_replica_urls):
+            if (
+                self.performance_config.enable_read_write_split
+                and self.performance_config.read_replica_urls
+            ):
                 await self._create_read_engines()
 
             # Create session factory
@@ -149,7 +155,10 @@ class ProductionDatabaseManager:
         }
 
         # Add SSL configuration for production
-        if parsed_url.scheme == "postgresql+asyncpg" and "sslmode" not in self.database_url:
+        if (
+            parsed_url.scheme == "postgresql+asyncpg"
+            and "sslmode" not in self.database_url
+        ):
             connect_args["ssl"] = "require"
 
         # Create engine with optimized pool configuration
@@ -166,7 +175,7 @@ class ProductionDatabaseManager:
             echo_pool=self.performance_config.echo_pool,
             future=True,
             # Use asyncpg for best performance
-            module=asyncpg_dialect.AsyncAdapt_asyncpg_dialect
+            module=asyncpg_dialect.AsyncAdapt_asyncpg_dialect,
         )
 
         # Set up connection event listeners
@@ -183,8 +192,8 @@ class ProductionDatabaseManager:
                     "command_timeout": self.performance_config.command_timeout,
                     "server_settings": {
                         **self.performance_config.server_settings,
-                        'default_transaction_read_only': 'on'  # Ensure read-only
-                    }
+                        "default_transaction_read_only": "on",  # Ensure read-only
+                    },
                 }
 
                 # Create read engine with smaller pool
@@ -198,7 +207,7 @@ class ProductionDatabaseManager:
                     pool_pre_ping=self.performance_config.pool_pre_ping,
                     connect_args=connect_args,
                     echo=self.performance_config.echo,
-                    future=True
+                    future=True,
                 )
 
                 # Set up monitoring for read replicas
@@ -218,7 +227,7 @@ class ProductionDatabaseManager:
             class_=AsyncSession,
             expire_on_commit=False,
             autoflush=True,
-            autocommit=False
+            autocommit=False,
         )
 
         logger.info("Database session factory created")
@@ -229,34 +238,31 @@ class ProductionDatabaseManager:
             return
 
         @sa.event.listens_for(engine.sync_engine, "connect")
-        def on_connect(dbapi_connection, connection_record):
+        def on_connect(dbapi_connection, connection_record) -> None:
             """Handle new database connection."""
             self.connection_stats.total_connections += 1
             if self.metrics_service:
                 self.metrics_service.record_db_query(
-                    operation="connect",
-                    table="connection",
-                    duration=0,
-                    success=True
+                    operation="connect", table="connection", duration=0, success=True
                 )
             logger.debug(f"New connection established to {engine_name}")
 
         @sa.event.listens_for(engine.sync_engine, "checkout")
-        def on_checkout(dbapi_connection, connection_record, connection_proxy):
+        def on_checkout(dbapi_connection, connection_record, connection_proxy) -> None:
             """Handle connection checkout from pool."""
             self.connection_stats.active_connections += 1
             if self.connection_stats.idle_connections > 0:
                 self.connection_stats.idle_connections -= 1
 
         @sa.event.listens_for(engine.sync_engine, "checkin")
-        def on_checkin(dbapi_connection, connection_record):
+        def on_checkin(dbapi_connection, connection_record) -> None:
             """Handle connection checkin to pool."""
             if self.connection_stats.active_connections > 0:
                 self.connection_stats.active_connections -= 1
             self.connection_stats.idle_connections += 1
 
         @sa.event.listens_for(engine.sync_engine, "invalidate")
-        def on_invalidate(dbapi_connection, connection_record, exception):
+        def on_invalidate(dbapi_connection, connection_record, exception) -> None:
             """Handle connection invalidation."""
             self.connection_stats.failed_connections += 1
             error_msg = f"Connection invalidated: {str(exception)}"
@@ -269,11 +275,14 @@ class ProductionDatabaseManager:
             return
 
         # Update connection metrics
-        def update_connection_metrics():
-            self.metrics_service.update_db_connections("postgresql", self.connection_stats.total_connections)
+        def update_connection_metrics() -> None:
+            self.metrics_service.update_db_connections(
+                "postgresql", self.connection_stats.total_connections
+            )
 
         # Schedule periodic metrics updates
         import asyncio
+
         asyncio.create_task(self._periodic_metrics_update())
 
     async def _periodic_metrics_update(self) -> None:
@@ -288,15 +297,19 @@ class ProductionDatabaseManager:
                         "checked_in": pool.checkedin(),
                         "checked_out": pool.checkedout(),
                         "overflow": pool.overflow(),
-                        "total": pool.size() + pool.overflow()
+                        "total": pool.size() + pool.overflow(),
                     }
 
                     # Update metrics
-                    self.metrics_service.update_db_connections("postgresql", pool_status["total"])
+                    self.metrics_service.update_db_connections(
+                        "postgresql", pool_status["total"]
+                    )
 
                     # Calculate and update performance metrics
                     if self.query_times:
-                        avg_query_time = sum(self.query_times[-100:]) / len(self.query_times[-100:])
+                        avg_query_time = sum(self.query_times[-100:]) / len(
+                            self.query_times[-100:]
+                        )
                         self.connection_stats.avg_query_time = avg_query_time
 
                         # Clear old query times to prevent memory growth
@@ -337,7 +350,9 @@ class ProductionDatabaseManager:
     # ========================================================================
 
     @asynccontextmanager
-    async def get_session(self, read_only: bool = False) -> AsyncGenerator[AsyncSession, None]:
+    async def get_session(
+        self, read_only: bool = False
+    ) -> AsyncGenerator[AsyncSession, None]:
         """
         Get database session with automatic cleanup.
 
@@ -353,9 +368,7 @@ class ProductionDatabaseManager:
         # Create session factory for chosen engine if needed
         if engine != self.master_engine:
             session_factory = async_sessionmaker(
-                bind=engine,
-                class_=AsyncSession,
-                expire_on_commit=False
+                bind=engine, class_=AsyncSession, expire_on_commit=False
             )
         else:
             session_factory = self.session_factory
@@ -384,13 +397,17 @@ class ProductionDatabaseManager:
 
     def _choose_engine(self, read_only: bool = False) -> AsyncEngine:
         """Choose appropriate engine based on read/write requirements."""
-        if (read_only and
-            self.performance_config.enable_read_write_split and
-            self.read_engines):
+        if (
+            read_only
+            and self.performance_config.enable_read_write_split
+            and self.read_engines
+        ):
             # Use read replica based on weight
             import random
-            if random.random() < self.performance_config.read_weight:
-                return random.choice(self.read_engines)
+
+            # Note: random is acceptable here for load balancing (non-security)
+            if random.random() < self.performance_config.read_weight:  # nosec B311
+                return random.choice(self.read_engines)  # nosec B311
 
         return self.master_engine
 
@@ -400,9 +417,9 @@ class ProductionDatabaseManager:
 
     async def execute_query(
         self,
-        query: Union[str, sa.text],
+        query: str | sa.text,
         parameters: dict[str, Any] | None = None,
-        read_only: bool = False
+        read_only: bool = False,
     ) -> Any:
         """
         Execute query with performance monitoring.
@@ -436,12 +453,14 @@ class ProductionDatabaseManager:
                         operation="select" if read_only else "write",
                         table="unknown",
                         duration=duration,
-                        success=True
+                        success=True,
                     )
 
                 # Log slow queries
                 if duration > self.performance_config.slow_query_threshold:
-                    logger.warning(f"Slow query ({duration:.2f}s): {str(query)[:100]}...")
+                    logger.warning(
+                        f"Slow query ({duration:.2f}s): {str(query)[:100]}..."
+                    )
 
                 return result
 
@@ -454,7 +473,7 @@ class ProductionDatabaseManager:
                         operation="select" if read_only else "write",
                         table="unknown",
                         duration=duration,
-                        success=False
+                        success=False,
                     )
 
                 logger.error(f"Query execution failed ({duration:.2f}s): {e}")
@@ -471,7 +490,7 @@ class ProductionDatabaseManager:
             "timestamp": time.time(),
             "connections": {},
             "performance": {},
-            "configuration": {}
+            "configuration": {},
         }
 
         try:
@@ -483,7 +502,7 @@ class ProductionDatabaseManager:
 
             health_status["connections"]["master"] = {
                 "status": "healthy",
-                "latency_ms": round(master_latency * 1000, 2)
+                "latency_ms": round(master_latency * 1000, 2),
             }
 
             # Check read replicas
@@ -495,23 +514,23 @@ class ProductionDatabaseManager:
                         await conn.execute(sa.text("SELECT 1"))
                     replica_latency = time.time() - start_time
 
-                    replica_health.append({
-                        "replica_id": i,
-                        "status": "healthy",
-                        "latency_ms": round(replica_latency * 1000, 2)
-                    })
+                    replica_health.append(
+                        {
+                            "replica_id": i,
+                            "status": "healthy",
+                            "latency_ms": round(replica_latency * 1000, 2),
+                        }
+                    )
                 except Exception as e:
-                    replica_health.append({
-                        "replica_id": i,
-                        "status": "unhealthy",
-                        "error": str(e)
-                    })
+                    replica_health.append(
+                        {"replica_id": i, "status": "unhealthy", "error": str(e)}
+                    )
                     health_status["status"] = "degraded"
 
             health_status["connections"]["replicas"] = replica_health
 
             # Connection pool statistics
-            if self.master_engine and hasattr(self.master_engine, 'pool'):
+            if self.master_engine and hasattr(self.master_engine, "pool"):
                 pool = self.master_engine.pool
                 health_status["connections"]["pool"] = {
                     "size": pool.size(),
@@ -520,7 +539,7 @@ class ProductionDatabaseManager:
                     "overflow": pool.overflow(),
                     "utilization_percent": round(
                         (pool.checkedout() / (pool.size() + pool.overflow())) * 100, 2
-                    )
+                    ),
                 }
 
             # Performance statistics
@@ -528,10 +547,17 @@ class ProductionDatabaseManager:
                 "total_queries": self.connection_stats.total_queries,
                 "slow_queries": self.connection_stats.slow_queries,
                 "failed_connections": self.connection_stats.failed_connections,
-                "avg_query_time_ms": round(self.connection_stats.avg_query_time * 1000, 2),
+                "avg_query_time_ms": round(
+                    self.connection_stats.avg_query_time * 1000, 2
+                ),
                 "slow_query_rate": round(
-                    (self.connection_stats.slow_queries / max(self.connection_stats.total_queries, 1)) * 100, 2
-                )
+                    (
+                        self.connection_stats.slow_queries
+                        / max(self.connection_stats.total_queries, 1)
+                    )
+                    * 100,
+                    2,
+                ),
             }
 
             # Configuration info
@@ -540,7 +566,7 @@ class ProductionDatabaseManager:
                 "read_replicas_count": len(self.read_engines),
                 "pool_size": self.performance_config.pool_size,
                 "max_overflow": self.performance_config.max_overflow,
-                "connection_timeout": self.performance_config.connect_timeout
+                "connection_timeout": self.performance_config.connect_timeout,
             }
 
         except Exception as e:
@@ -560,22 +586,24 @@ class ProductionDatabaseManager:
             "total_queries": self.connection_stats.total_queries,
             "slow_queries": self.connection_stats.slow_queries,
             "avg_query_time": self.connection_stats.avg_query_time,
-            "recent_errors": self.connection_stats.connection_errors[-10:],  # Last 10 errors
+            "recent_errors": self.connection_stats.connection_errors[
+                -10:
+            ],  # Last 10 errors
             "performance_config": {
                 "pool_size": self.performance_config.pool_size,
                 "max_overflow": self.performance_config.max_overflow,
                 "pool_timeout": self.performance_config.pool_timeout,
-                "slow_query_threshold": self.performance_config.slow_query_threshold
-            }
+                "slow_query_threshold": self.performance_config.slow_query_threshold,
+            },
         }
 
-        if self.master_engine and hasattr(self.master_engine, 'pool'):
+        if self.master_engine and hasattr(self.master_engine, "pool"):
             pool = self.master_engine.pool
             stats["pool_status"] = {
                 "size": pool.size(),
                 "checked_in": pool.checkedin(),
                 "checked_out": pool.checkedout(),
-                "overflow": pool.overflow()
+                "overflow": pool.overflow(),
             }
 
         return stats
@@ -610,9 +638,9 @@ class ProductionDatabaseManager:
 # Factory Functions and Integration
 # ============================================================================
 
+
 def create_production_database_manager(
-    production_config: ProductionConfig,
-    metrics_service: MetricsService | None = None
+    production_config: ProductionConfig, metrics_service: MetricsService | None = None
 ) -> ProductionDatabaseManager:
     """
     Create production database manager with optimized configuration.
@@ -634,7 +662,7 @@ def create_production_database_manager(
         connect_timeout=production_config.database.connection_timeout,
         enable_read_write_split=production_config.database.enable_read_write_split,
         read_replica_urls=production_config.database.read_replica_urls,
-        echo=production_config.database.echo
+        echo=production_config.database.echo,
     )
 
     # Get optimized database URL
@@ -643,13 +671,12 @@ def create_production_database_manager(
     return ProductionDatabaseManager(
         database_url=database_url,
         performance_config=perf_config,
-        metrics_service=metrics_service
+        metrics_service=metrics_service,
     )
 
 
 async def initialize_production_database(
-    production_config: ProductionConfig,
-    metrics_service: MetricsService | None = None
+    production_config: ProductionConfig, metrics_service: MetricsService | None = None
 ) -> ProductionDatabaseManager:
     """
     Initialize production database with full configuration.

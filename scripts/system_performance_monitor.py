@@ -5,7 +5,9 @@ Comprehensive performance analysis for AI Enhanced PDF Scholar
 Includes memory monitoring, concurrent load testing, and reliability assessment
 """
 
+import builtins
 import concurrent.futures
+import contextlib
 import json
 import logging
 import os
@@ -23,7 +25,9 @@ from typing import Any
 import psutil
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Add project root to path
@@ -39,6 +43,7 @@ except ImportError as e:
 @dataclass
 class SystemMetrics:
     """System resource usage metrics"""
+
     cpu_percent: float
     memory_percent: float
     memory_used_mb: float
@@ -54,6 +59,7 @@ class SystemMetrics:
 @dataclass
 class DatabaseMetrics:
     """Database performance metrics"""
+
     query_count: int
     avg_query_time_ms: float
     min_query_time_ms: float
@@ -68,6 +74,7 @@ class DatabaseMetrics:
 @dataclass
 class MemoryLeakTest:
     """Memory leak test results"""
+
     initial_memory_mb: float
     peak_memory_mb: float
     final_memory_mb: float
@@ -81,6 +88,7 @@ class MemoryLeakTest:
 @dataclass
 class ConcurrentLoadTest:
     """Concurrent load test results"""
+
     concurrent_users: int
     total_operations: int
     successful_operations: int
@@ -96,6 +104,7 @@ class ConcurrentLoadTest:
 @dataclass
 class ReliabilityTest:
     """System reliability test results"""
+
     test_name: str
     iterations: int
     successful_iterations: int
@@ -109,9 +118,9 @@ class ReliabilityTest:
 class SystemPerformanceMonitor:
     """Comprehensive system performance monitoring and testing"""
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str | None = None) -> None:
         self.db_path = db_path or "E:\\Code\\ai_enhanced_pdf_scholar\\data\\library.db"
-        self.results = {}
+        self.results: dict[str, Any] = {}
         self.start_time = time.time()
 
     def get_system_metrics(self) -> SystemMetrics:
@@ -140,10 +149,12 @@ class SystemPerformanceMonitor:
             network_sent_mb=network_sent_mb,
             network_recv_mb=network_recv_mb,
             process_count=len(psutil.pids()),
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
-    def monitor_system_resources(self, duration_seconds: int = 60, interval_seconds: int = 1) -> dict[str, Any]:
+    def monitor_system_resources(
+        self, duration_seconds: int = 60, interval_seconds: int = 1
+    ) -> dict[str, Any]:
         """Monitor system resources over time"""
         logger.info(f"Monitoring system resources for {duration_seconds} seconds...")
 
@@ -156,9 +167,9 @@ class SystemPerformanceMonitor:
             time.sleep(interval_seconds)
 
         # Calculate statistics
-        cpu_values = [m['cpu_percent'] for m in metrics_history]
-        memory_values = [m['memory_percent'] for m in metrics_history]
-        memory_used_values = [m['memory_used_mb'] for m in metrics_history]
+        cpu_values = [m["cpu_percent"] for m in metrics_history]
+        memory_values = [m["memory_percent"] for m in metrics_history]
+        memory_used_values = [m["memory_used_mb"] for m in metrics_history]
 
         summary = {
             "monitoring_duration_seconds": duration_seconds,
@@ -167,19 +178,21 @@ class SystemPerformanceMonitor:
                 "avg_percent": statistics.mean(cpu_values),
                 "min_percent": min(cpu_values),
                 "max_percent": max(cpu_values),
-                "std_dev": statistics.stdev(cpu_values) if len(cpu_values) > 1 else 0
+                "std_dev": statistics.stdev(cpu_values) if len(cpu_values) > 1 else 0,
             },
             "memory_stats": {
                 "avg_percent": statistics.mean(memory_values),
                 "min_percent": min(memory_values),
                 "max_percent": max(memory_values),
                 "avg_used_mb": statistics.mean(memory_used_values),
-                "peak_used_mb": max(memory_used_values)
+                "peak_used_mb": max(memory_used_values),
             },
-            "raw_metrics": metrics_history
+            "raw_metrics": metrics_history,
         }
 
-        logger.info(f"Resource monitoring complete. Average CPU: {summary['cpu_stats']['avg_percent']:.1f}%, Peak Memory: {summary['memory_stats']['peak_used_mb']:.0f}MB")
+        logger.info(
+            f"Resource monitoring complete. Average CPU: {summary['cpu_stats']['avg_percent']:.1f}%, Peak Memory: {summary['memory_stats']['peak_used_mb']:.0f}MB"
+        )
 
         return summary
 
@@ -197,11 +210,15 @@ class SystemPerformanceMonitor:
             "SELECT COUNT(*) FROM vector_indexes",
             "SELECT id, title FROM documents LIMIT 10",
             "SELECT * FROM documents ORDER BY created_at DESC LIMIT 5",
-            "SELECT d.id, d.title, v.chunk_count FROM documents d LEFT JOIN vector_indexes v ON d.id = v.document_id LIMIT 10"
+            "SELECT d.id, d.title, v.chunk_count FROM documents d LEFT JOIN vector_indexes v ON d.id = v.document_id LIMIT 10",
         ]
 
         try:
-            db_size = os.path.getsize(self.db_path) / (1024 * 1024) if os.path.exists(self.db_path) else 0
+            db_size = (
+                os.path.getsize(self.db_path) / (1024 * 1024)
+                if os.path.exists(self.db_path)
+                else 0
+            )
         except:
             db_size = 0
 
@@ -237,22 +254,34 @@ class SystemPerformanceMonitor:
                 errors=error_count,
                 concurrent_connections=1,
                 database_size_mb=db_size,
-                timestamp=time.time()
+                timestamp=time.time(),
             )
         else:
             metrics = DatabaseMetrics(
-                query_count=0, avg_query_time_ms=0, min_query_time_ms=0,
-                max_query_time_ms=0, total_time_ms=total_time, errors=error_count,
-                concurrent_connections=1, database_size_mb=db_size, timestamp=time.time()
+                query_count=0,
+                avg_query_time_ms=0,
+                min_query_time_ms=0,
+                max_query_time_ms=0,
+                total_time_ms=total_time,
+                errors=error_count,
+                concurrent_connections=1,
+                database_size_mb=db_size,
+                timestamp=time.time(),
             )
 
-        logger.info(f"Database performance test complete. Avg query time: {metrics.avg_query_time_ms:.2f}ms, Errors: {error_count}")
+        logger.info(
+            f"Database performance test complete. Avg query time: {metrics.avg_query_time_ms:.2f}ms, Errors: {error_count}"
+        )
 
         return metrics
 
-    def test_memory_leak(self, operations: int = 1000, operation_type: str = "database") -> MemoryLeakTest:
+    def test_memory_leak(
+        self, operations: int = 1000, operation_type: str = "database"
+    ) -> MemoryLeakTest:
         """Test for memory leaks during repeated operations"""
-        logger.info(f"Testing for memory leaks with {operations} {operation_type} operations...")
+        logger.info(
+            f"Testing for memory leaks with {operations} {operation_type} operations..."
+        )
 
         process = psutil.Process()
         initial_memory = process.memory_info().rss / (1024 * 1024)  # MB
@@ -270,7 +299,7 @@ class SystemPerformanceMonitor:
 
                 elif operation_type == "file_io":
                     # Create and delete temporary files
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+                    with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
                         f.write("test data " * 100)
                         temp_path = f.name
                     os.unlink(temp_path)
@@ -307,22 +336,28 @@ class SystemPerformanceMonitor:
             operations_performed=operations,
             duration_seconds=duration,
             leak_detected=leak_detected,
-            growth_rate_mb_per_operation=growth_rate
+            growth_rate_mb_per_operation=growth_rate,
         )
 
-        logger.info(f"Memory leak test complete. Growth: {memory_growth:.2f}MB, Leak detected: {leak_detected}")
+        logger.info(
+            f"Memory leak test complete. Growth: {memory_growth:.2f}MB, Leak detected: {leak_detected}"
+        )
 
         return test_result
 
-    def test_concurrent_load(self, concurrent_users: int = 10, operations_per_user: int = 50) -> ConcurrentLoadTest:
+    def test_concurrent_load(
+        self, concurrent_users: int = 10, operations_per_user: int = 50
+    ) -> ConcurrentLoadTest:
         """Test system performance under concurrent load"""
-        logger.info(f"Testing concurrent load: {concurrent_users} users, {operations_per_user} operations each...")
+        logger.info(
+            f"Testing concurrent load: {concurrent_users} users, {operations_per_user} operations each..."
+        )
 
         results = []
         errors = []
         start_time = time.time()
 
-        def user_operations(user_id: int):
+        def user_operations(user_id: int) -> Any:
             """Simulate operations for a single user"""
             user_results = []
             user_errors = []
@@ -337,11 +372,17 @@ class SystemPerformanceMonitor:
                         if i % 4 == 0:
                             conn.execute("SELECT COUNT(*) FROM documents").fetchone()
                         elif i % 4 == 1:
-                            conn.execute("SELECT id, title FROM documents LIMIT 5").fetchall()
+                            conn.execute(
+                                "SELECT id, title FROM documents LIMIT 5"
+                            ).fetchall()
                         elif i % 4 == 2:
-                            conn.execute("SELECT COUNT(*) FROM vector_indexes").fetchone()
+                            conn.execute(
+                                "SELECT COUNT(*) FROM vector_indexes"
+                            ).fetchone()
                         else:
-                            conn.execute("SELECT d.title, v.chunk_count FROM documents d LEFT JOIN vector_indexes v ON d.id = v.document_id LIMIT 3").fetchall()
+                            conn.execute(
+                                "SELECT d.title, v.chunk_count FROM documents d LEFT JOIN vector_indexes v ON d.id = v.document_id LIMIT 3"
+                            ).fetchall()
 
                     op_time = (time.time() - op_start) * 1000
                     user_results.append(op_time)
@@ -354,7 +395,10 @@ class SystemPerformanceMonitor:
 
         # Execute concurrent operations
         with ThreadPoolExecutor(max_workers=concurrent_users) as executor:
-            futures = [executor.submit(user_operations, user_id) for user_id in range(concurrent_users)]
+            futures = [
+                executor.submit(user_operations, user_id)
+                for user_id in range(concurrent_users)
+            ]
 
             for future in concurrent.futures.as_completed(futures):
                 try:
@@ -377,8 +421,11 @@ class SystemPerformanceMonitor:
                 min_response_time_ms=min(results),
                 max_response_time_ms=max(results),
                 operations_per_second=len(results) / total_time,
-                error_rate_percent=(len(errors) / (concurrent_users * operations_per_user)) * 100,
-                duration_seconds=total_time
+                error_rate_percent=(
+                    len(errors) / (concurrent_users * operations_per_user)
+                )
+                * 100,
+                duration_seconds=total_time,
             )
         else:
             load_test = ConcurrentLoadTest(
@@ -391,10 +438,12 @@ class SystemPerformanceMonitor:
                 max_response_time_ms=0,
                 operations_per_second=0,
                 error_rate_percent=100,
-                duration_seconds=total_time
+                duration_seconds=total_time,
             )
 
-        logger.info(f"Concurrent load test complete. Success rate: {100 - load_test.error_rate_percent:.1f}%, Avg response: {load_test.avg_response_time_ms:.2f}ms")
+        logger.info(
+            f"Concurrent load test complete. Success rate: {100 - load_test.error_rate_percent:.1f}%, Avg response: {load_test.avg_response_time_ms:.2f}ms"
+        )
 
         return load_test
 
@@ -428,16 +477,20 @@ class SystemPerformanceMonitor:
                 failed += 1
                 errors.append(str(e))
 
-        reliability_tests.append(ReliabilityTest(
-            test_name=test_name,
-            iterations=iterations,
-            successful_iterations=successful,
-            failed_iterations=failed,
-            avg_recovery_time_ms=statistics.mean(recovery_times) if recovery_times else 0,
-            max_recovery_time_ms=max(recovery_times) if recovery_times else 0,
-            reliability_score=successful / iterations,
-            error_messages=list(set(errors))  # Unique errors only
-        ))
+        reliability_tests.append(
+            ReliabilityTest(
+                test_name=test_name,
+                iterations=iterations,
+                successful_iterations=successful,
+                failed_iterations=failed,
+                avg_recovery_time_ms=(
+                    statistics.mean(recovery_times) if recovery_times else 0
+                ),
+                max_recovery_time_ms=max(recovery_times) if recovery_times else 0,
+                reliability_score=successful / iterations,
+                error_messages=list[Any](set[str](errors)),  # Unique errors only
+            )
+        )
 
         # Test 2: Resource exhaustion recovery
         test_name = "resource_exhaustion_recovery"
@@ -470,28 +523,32 @@ class SystemPerformanceMonitor:
                 except Exception as conn_error:
                     # Cleanup any remaining connections
                     for conn in connections:
-                        try:
+                        with contextlib.suppress(builtins.BaseException):
                             conn.close()
-                        except:
-                            pass
                     raise conn_error
 
             except Exception as e:
                 failed += 1
                 errors.append(str(e))
 
-        reliability_tests.append(ReliabilityTest(
-            test_name=test_name,
-            iterations=iterations,
-            successful_iterations=successful,
-            failed_iterations=failed,
-            avg_recovery_time_ms=statistics.mean(recovery_times) if recovery_times else 0,
-            max_recovery_time_ms=max(recovery_times) if recovery_times else 0,
-            reliability_score=successful / iterations,
-            error_messages=list(set(errors))
-        ))
+        reliability_tests.append(
+            ReliabilityTest(
+                test_name=test_name,
+                iterations=iterations,
+                successful_iterations=successful,
+                failed_iterations=failed,
+                avg_recovery_time_ms=(
+                    statistics.mean(recovery_times) if recovery_times else 0
+                ),
+                max_recovery_time_ms=max(recovery_times) if recovery_times else 0,
+                reliability_score=successful / iterations,
+                error_messages=list[Any](set[str](errors)),
+            )
+        )
 
-        logger.info(f"System reliability tests complete. {len(reliability_tests)} tests performed.")
+        logger.info(
+            f"System reliability tests complete. {len(reliability_tests)} tests performed."
+        )
 
         return reliability_tests
 
@@ -504,7 +561,9 @@ class SystemPerformanceMonitor:
         try:
             # 1. System resource monitoring (30 seconds)
             logger.info("Phase 1: System resource monitoring...")
-            resource_metrics = self.monitor_system_resources(duration_seconds=30, interval_seconds=2)
+            resource_metrics = self.monitor_system_resources(
+                duration_seconds=30, interval_seconds=2
+            )
 
             # 2. Database performance testing
             logger.info("Phase 2: Database performance testing...")
@@ -512,15 +571,27 @@ class SystemPerformanceMonitor:
 
             # 3. Memory leak testing
             logger.info("Phase 3: Memory leak testing...")
-            memory_leak_db = self.test_memory_leak(operations=500, operation_type="database")
-            memory_leak_file = self.test_memory_leak(operations=300, operation_type="file_io")
-            memory_leak_text = self.test_memory_leak(operations=1000, operation_type="text_processing")
+            memory_leak_db = self.test_memory_leak(
+                operations=500, operation_type="database"
+            )
+            memory_leak_file = self.test_memory_leak(
+                operations=300, operation_type="file_io"
+            )
+            memory_leak_text = self.test_memory_leak(
+                operations=1000, operation_type="text_processing"
+            )
 
             # 4. Concurrent load testing (multiple scenarios)
             logger.info("Phase 4: Concurrent load testing...")
-            load_test_light = self.test_concurrent_load(concurrent_users=5, operations_per_user=20)
-            load_test_moderate = self.test_concurrent_load(concurrent_users=10, operations_per_user=30)
-            load_test_heavy = self.test_concurrent_load(concurrent_users=20, operations_per_user=25)
+            load_test_light = self.test_concurrent_load(
+                concurrent_users=5, operations_per_user=20
+            )
+            load_test_moderate = self.test_concurrent_load(
+                concurrent_users=10, operations_per_user=30
+            )
+            load_test_heavy = self.test_concurrent_load(
+                concurrent_users=20, operations_per_user=25
+            )
 
             # 5. System reliability testing
             logger.info("Phase 5: System reliability testing...")
@@ -536,28 +607,33 @@ class SystemPerformanceMonitor:
                     "timestamp": datetime.now().isoformat(),
                     "database_path": self.db_path,
                     "system_platform": sys.platform,
-                    "python_version": sys.version
+                    "python_version": sys.version,
                 },
                 "system_resource_monitoring": resource_metrics,
                 "database_performance": asdict(db_metrics),
                 "memory_leak_tests": {
                     "database_operations": asdict(memory_leak_db),
                     "file_operations": asdict(memory_leak_file),
-                    "text_processing": asdict(memory_leak_text)
+                    "text_processing": asdict(memory_leak_text),
                 },
                 "concurrent_load_tests": {
                     "light_load": asdict(load_test_light),
                     "moderate_load": asdict(load_test_moderate),
-                    "heavy_load": asdict(load_test_heavy)
+                    "heavy_load": asdict(load_test_heavy),
                 },
                 "reliability_tests": [asdict(test) for test in reliability_tests],
                 "performance_summary": self.generate_performance_summary(
-                    resource_metrics, db_metrics, [memory_leak_db, memory_leak_file, memory_leak_text],
-                    [load_test_light, load_test_moderate, load_test_heavy], reliability_tests
-                )
+                    resource_metrics,
+                    db_metrics,
+                    [memory_leak_db, memory_leak_file, memory_leak_text],
+                    [load_test_light, load_test_moderate, load_test_heavy],
+                    reliability_tests,
+                ),
             }
 
-            logger.info(f"Comprehensive assessment completed in {assessment_duration:.2f} seconds")
+            logger.info(
+                f"Comprehensive assessment completed in {assessment_duration:.2f} seconds"
+            )
 
             return assessment_results
 
@@ -566,21 +642,30 @@ class SystemPerformanceMonitor:
             return {
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
-                "assessment_duration_seconds": time.time() - assessment_start
+                "assessment_duration_seconds": time.time() - assessment_start,
             }
 
-    def generate_performance_summary(self, resource_metrics: dict, db_metrics: DatabaseMetrics,
-                                    memory_tests: list[MemoryLeakTest], load_tests: list[ConcurrentLoadTest],
-                                    reliability_tests: list[ReliabilityTest]) -> dict[str, Any]:
+    def generate_performance_summary(
+        self,
+        resource_metrics: dict[str, Any],
+        db_metrics: DatabaseMetrics,
+        memory_tests: list[MemoryLeakTest],
+        load_tests: list[ConcurrentLoadTest],
+        reliability_tests: list[ReliabilityTest],
+    ) -> dict[str, Any]:
         """Generate performance summary and assessment"""
 
         # System performance score (0-100)
-        cpu_score = max(0, 100 - resource_metrics['cpu_stats']['avg_percent'])
-        memory_score = max(0, 100 - resource_metrics['memory_stats']['avg_percent'])
+        cpu_score = max(0, 100 - resource_metrics["cpu_stats"]["avg_percent"])
+        memory_score = max(0, 100 - resource_metrics["memory_stats"]["avg_percent"])
         system_score = (cpu_score + memory_score) / 2
 
         # Database performance score
-        db_score = 100 if db_metrics.avg_query_time_ms < 1 else max(0, 100 - (db_metrics.avg_query_time_ms * 2))
+        db_score = (
+            100
+            if db_metrics.avg_query_time_ms < 1
+            else max(0, 100 - (db_metrics.avg_query_time_ms * 2))
+        )
 
         # Memory leak assessment
         memory_leaks_detected = sum(1 for test in memory_tests if test.leak_detected)
@@ -597,10 +682,17 @@ class SystemPerformanceMonitor:
         avg_load_score = statistics.mean(load_scores) if load_scores else 0
 
         # Reliability score
-        reliability_score = statistics.mean([test.reliability_score for test in reliability_tests]) * 100 if reliability_tests else 0
+        reliability_score = (
+            statistics.mean([test.reliability_score for test in reliability_tests])
+            * 100
+            if reliability_tests
+            else 0
+        )
 
         # Overall performance score
-        overall_score = statistics.mean([system_score, db_score, memory_score, avg_load_score, reliability_score])
+        overall_score = statistics.mean(
+            [system_score, db_score, memory_score, avg_load_score, reliability_score]
+        )
 
         # Performance rating
         if overall_score >= 90:
@@ -624,7 +716,7 @@ class SystemPerformanceMonitor:
             production_issues.append("High error rate under load (>5%)")
         if any(test.reliability_score < 0.95 for test in reliability_tests):
             production_issues.append("Reliability issues detected (<95% success rate)")
-        if resource_metrics['memory_stats']['peak_used_mb'] > 2048:
+        if resource_metrics["memory_stats"]["peak_used_mb"] > 2048:
             production_issues.append("High memory usage (>2GB)")
 
         production_ready = len(production_issues) == 0
@@ -637,25 +729,35 @@ class SystemPerformanceMonitor:
                 "database_performance": round(db_score, 2),
                 "memory_management": round(memory_score, 2),
                 "concurrent_load": round(avg_load_score, 2),
-                "reliability": round(reliability_score, 2)
+                "reliability": round(reliability_score, 2),
             },
             "production_readiness": {
                 "ready": production_ready,
                 "issues": production_issues,
-                "recommendations": self.generate_recommendations(production_issues, overall_score)
+                "recommendations": self.generate_recommendations(
+                    production_issues, overall_score
+                ),
             },
             "key_metrics": {
                 "avg_query_time_ms": db_metrics.avg_query_time_ms,
-                "peak_memory_mb": resource_metrics['memory_stats']['peak_used_mb'],
-                "max_concurrent_users_supported": self.estimate_max_concurrent_users(load_tests),
-                "system_reliability_percent": round(reliability_score, 1)
-            }
+                "peak_memory_mb": resource_metrics["memory_stats"]["peak_used_mb"],
+                "max_concurrent_users_supported": self.estimate_max_concurrent_users(
+                    load_tests
+                ),
+                "system_reliability_percent": round(reliability_score, 1),
+            },
         }
 
-    def estimate_max_concurrent_users(self, load_tests: list[ConcurrentLoadTest]) -> int:
+    def estimate_max_concurrent_users(
+        self, load_tests: list[ConcurrentLoadTest]
+    ) -> int:
         """Estimate maximum concurrent users based on load test results"""
         # Find the highest successful user count with acceptable performance
-        successful_tests = [test for test in load_tests if test.error_rate_percent < 5 and test.avg_response_time_ms < 100]
+        successful_tests = [
+            test
+            for test in load_tests
+            if test.error_rate_percent < 5 and test.avg_response_time_ms < 100
+        ]
 
         if successful_tests:
             return max(test.concurrent_users for test in successful_tests)
@@ -663,43 +765,67 @@ class SystemPerformanceMonitor:
             # Conservative estimate if all tests had issues
             return min(test.concurrent_users for test in load_tests) // 2
 
-    def generate_recommendations(self, production_issues: list[str], overall_score: float) -> list[str]:
+    def generate_recommendations(
+        self, production_issues: list[str], overall_score: float
+    ) -> list[str]:
         """Generate performance optimization recommendations"""
         recommendations = []
 
         if overall_score < 60:
-            recommendations.append("System requires immediate performance optimization before production deployment")
+            recommendations.append(
+                "System requires immediate performance optimization before production deployment"
+            )
 
         if any("Database queries too slow" in issue for issue in production_issues):
-            recommendations.append("Optimize database queries, add indexes for frequently accessed data")
-            recommendations.append("Consider connection pooling for high-concurrency scenarios")
+            recommendations.append(
+                "Optimize database queries, add indexes for frequently accessed data"
+            )
+            recommendations.append(
+                "Consider connection pooling for high-concurrency scenarios"
+            )
 
         if any("Memory leaks detected" in issue for issue in production_issues):
-            recommendations.append("Investigate and fix memory leaks in application code")
-            recommendations.append("Implement proper resource cleanup in all code paths")
+            recommendations.append(
+                "Investigate and fix memory leaks in application code"
+            )
+            recommendations.append(
+                "Implement proper resource cleanup in all code paths"
+            )
 
         if any("High error rate under load" in issue for issue in production_issues):
-            recommendations.append("Implement proper error handling and retry mechanisms")
-            recommendations.append("Consider implementing circuit breaker patterns for external dependencies")
+            recommendations.append(
+                "Implement proper error handling and retry mechanisms"
+            )
+            recommendations.append(
+                "Consider implementing circuit breaker patterns for external dependencies"
+            )
 
         if any("Reliability issues detected" in issue for issue in production_issues):
-            recommendations.append("Improve error recovery and system resilience mechanisms")
+            recommendations.append(
+                "Improve error recovery and system resilience mechanisms"
+            )
 
         if any("High memory usage" in issue for issue in production_issues):
-            recommendations.append("Optimize memory usage, consider implementing data streaming for large files")
-            recommendations.append("Monitor memory usage in production and set up alerts")
+            recommendations.append(
+                "Optimize memory usage, consider implementing data streaming for large files"
+            )
+            recommendations.append(
+                "Monitor memory usage in production and set[str] up alerts"
+            )
 
         # General recommendations
-        recommendations.extend([
-            "Set up comprehensive monitoring and alerting for production deployment",
-            "Implement health check endpoints for load balancer integration",
-            "Consider implementing caching layers for frequently accessed data",
-            "Establish performance baselines and regression testing in CI/CD pipeline"
-        ])
+        recommendations.extend(
+            [
+                "Set up comprehensive monitoring and alerting for production deployment",
+                "Implement health check endpoints for load balancer integration",
+                "Consider implementing caching layers for frequently accessed data",
+                "Establish performance baselines and regression testing in CI/CD pipeline",
+            ]
+        )
 
         return recommendations
 
-    def save_results(self, filename: str = None) -> str:
+    def save_results(self, filename: str | None = None) -> str:
         """Save assessment results to JSON file"""
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -708,18 +834,20 @@ class SystemPerformanceMonitor:
         output_path = Path("performance_results") / filename
         output_path.parent.mkdir(exist_ok=True)
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(self.results, f, indent=2, default=str)
 
         logger.info(f"Performance assessment results saved to: {output_path}")
         return str(output_path)
 
 
-def main():
+def main() -> Any:
     """Main entry point for system performance monitoring"""
     import argparse
 
-    parser = argparse.ArgumentParser(description="System Performance Monitor for AI Enhanced PDF Scholar")
+    parser = argparse.ArgumentParser(
+        description="System Performance Monitor for AI Enhanced PDF Scholar"
+    )
     parser.add_argument("--db-path", help="Path to database file")
     parser.add_argument("--save", action="store_true", help="Save results to JSON file")
     parser.add_argument("--output-file", help="Output filename for results")
@@ -732,16 +860,20 @@ def main():
         monitor.results = results
 
         # Print summary
-        print("\n" + "="*100)
+        print("\n" + "=" * 100)
         print("SYSTEM PERFORMANCE ASSESSMENT SUMMARY")
-        print("="*100)
+        print("=" * 100)
 
         if "error" in results:
             print(f"❌ ASSESSMENT FAILED: {results['error']}")
         else:
             summary = results.get("performance_summary", {})
-            print(f"📊 Overall Performance Score: {summary.get('overall_score', 0)}/100")
-            print(f"🎯 Performance Rating: {summary.get('performance_rating', 'Unknown')}")
+            print(
+                f"📊 Overall Performance Score: {summary.get('overall_score', 0)}/100"
+            )
+            print(
+                f"🎯 Performance Rating: {summary.get('performance_rating', 'Unknown')}"
+            )
 
             # Component scores
             component_scores = summary.get("component_scores", {})
@@ -752,23 +884,33 @@ def main():
             # Key metrics
             key_metrics = summary.get("key_metrics", {})
             print("\n🔑 Key Metrics:")
-            print(f"   • Average Query Time: {key_metrics.get('avg_query_time_ms', 0):.2f}ms")
-            print(f"   • Peak Memory Usage: {key_metrics.get('peak_memory_mb', 0):.0f}MB")
-            print(f"   • Max Concurrent Users: {key_metrics.get('max_concurrent_users_supported', 0)}")
-            print(f"   • System Reliability: {key_metrics.get('system_reliability_percent', 0):.1f}%")
+            print(
+                f"   • Average Query Time: {key_metrics.get('avg_query_time_ms', 0):.2f}ms"
+            )
+            print(
+                f"   • Peak Memory Usage: {key_metrics.get('peak_memory_mb', 0):.0f}MB"
+            )
+            print(
+                f"   • Max Concurrent Users: {key_metrics.get('max_concurrent_users_supported', 0)}"
+            )
+            print(
+                f"   • System Reliability: {key_metrics.get('system_reliability_percent', 0):.1f}%"
+            )
 
             # Production readiness
             readiness = summary.get("production_readiness", {})
             ready = readiness.get("ready", False)
             issues = readiness.get("issues", [])
 
-            print(f"\n🚀 Production Readiness: {'✅ READY' if ready else '❌ NOT READY'}")
+            print(
+                f"\n🚀 Production Readiness: {'✅ READY' if ready else '❌ NOT READY'}"
+            )
             if issues:
                 print("   Issues to address:")
                 for issue in issues:
                     print(f"   • {issue}")
 
-        print("\n" + "="*100)
+        print("\n" + "=" * 100)
 
         # Save results if requested
         if args.save:

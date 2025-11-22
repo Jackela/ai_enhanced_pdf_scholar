@@ -1,3 +1,5 @@
+from typing import Any
+
 """
 Authentication Dependencies
 FastAPI dependency injection for authentication and authorization.
@@ -9,6 +11,7 @@ from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from backend.api.auth.constants import BEARER_TOKEN_SCHEME, TokenType
 from backend.api.auth.jwt_handler import jwt_handler
 from backend.api.auth.models import UserModel, UserRole
 from backend.api.auth.service import AuthenticationService
@@ -29,8 +32,8 @@ class AuthenticationRequired:
     def __init__(
         self,
         required_roles: list[UserRole] | None = None,
-        allow_unverified: bool = False
-    ):
+        allow_unverified: bool = False,
+    ) -> None:
         """
         Initialize authentication requirement.
 
@@ -41,29 +44,24 @@ class AuthenticationRequired:
         self.required_roles = required_roles
         self.allow_unverified = allow_unverified
 
-    async def __call__(
+    def _extract_token(
         self,
-        request: Request,
-        credentials: HTTPAuthorizationCredentials | None = Depends(security),
-        access_token_cookie: str | None = Cookie(None, alias="access_token"),
-        db: Session = Depends(get_db)
-    ) -> UserModel:
+        credentials: HTTPAuthorizationCredentials | None,
+        access_token_cookie: str | None,
+    ) -> str:
         """
-        Validate authentication and return current user.
+        Extract token from header or cookie.
 
         Args:
-            request: FastAPI request object
             credentials: Authorization header credentials
             access_token_cookie: Access token from cookie (fallback)
-            db: Database session
 
         Returns:
-            Authenticated user model
+            Extracted token string
 
         Raises:
-            HTTPException: If authentication fails
+            HTTPException: If no token found
         """
-        # Extract token from header or cookie
         token = None
 
         if credentials and credentials.credentials:
@@ -75,20 +73,51 @@ class AuthenticationRequired:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication required",
-                headers={"WWW-Authenticate": "Bearer"},
+                headers={"WWW-Authenticate": BEARER_TOKEN_SCHEME},
             )
 
-        # Decode and validate token
-        payload = jwt_handler.decode_token(token, token_type="access")
+        return token
+
+    def _validate_token(self, token: str) -> Any:
+        """
+        Decode and validate JWT token.
+
+        Args:
+            token: JWT token string
+
+        Returns:
+            Decoded token payload
+
+        Raises:
+            HTTPException: If token is invalid or expired
+        """
+        payload = jwt_handler.decode_token(token, token_type=TokenType.ACCESS)
 
         if not payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
-                headers={"WWW-Authenticate": "Bearer"},
+                headers={"WWW-Authenticate": BEARER_TOKEN_SCHEME},
             )
 
-        # Get user from database
+        return payload
+
+    def _fetch_and_validate_user(
+        self, payload: Any, db: Session
+    ) -> tuple[UserModel, AuthenticationService]:
+        """
+        Fetch user from database and validate account status.
+
+        Args:
+            payload: Decoded JWT payload
+            db: Database session
+
+        Returns:
+            Tuple of (user model, auth service)
+
+        Raises:
+            HTTPException: If user not found or account status invalid
+        """
         auth_service = AuthenticationService(db)
         user = auth_service.get_user_by_id(int(payload.sub))
 
@@ -96,7 +125,7 @@ class AuthenticationRequired:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
+                headers={"WWW-Authenticate": BEARER_TOKEN_SCHEME},
             )
 
         # Check if user is active
@@ -125,9 +154,28 @@ class AuthenticationRequired:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has been invalidated",
-                headers={"WWW-Authenticate": "Bearer"},
+                headers={"WWW-Authenticate": BEARER_TOKEN_SCHEME},
             )
 
+        return user, auth_service
+
+    def _finalize_authentication(
+        self, user: UserModel, auth_service: AuthenticationService, request: Request
+    ) -> UserModel:
+        """
+        Finalize authentication by checking permissions and updating activity.
+
+        Args:
+            user: Authenticated user model
+            auth_service: Authentication service instance
+            request: FastAPI request object
+
+        Returns:
+            Authenticated user model
+
+        Raises:
+            HTTPException: If user lacks required permissions
+        """
         # Check role requirements
         if self.required_roles:
             user_role = UserRole(user.role)
@@ -138,19 +186,52 @@ class AuthenticationRequired:
                 )
 
         # Update user activity
-        auth_service.update_user_activity(user.id)
+        auth_service.update_user_activity(int(user.id))
 
         # Store user in request state for logging/auditing
         request.state.current_user = user
 
         return user
 
+    async def __call__(
+        self,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+        access_token_cookie: str | None = Cookie(None, alias="access_token"),
+        db: Session = Depends(get_db),
+    ) -> UserModel:
+        """
+        Validate authentication and return current user.
+
+        Args:
+            request: FastAPI request object
+            credentials: Authorization header credentials
+            access_token_cookie: Access token from cookie (fallback)
+            db: Database session
+
+        Returns:
+            Authenticated user model
+
+        Raises:
+            HTTPException: If authentication fails
+        """
+        # Extract token from header or cookie
+        token = self._extract_token(credentials, access_token_cookie)
+
+        # Decode and validate token
+        payload = self._validate_token(token)
+
+        # Get user from database and validate account status
+        user, auth_service = self._fetch_and_validate_user(payload, db)
+
+        # Finalize authentication with role checks and activity update
+        return self._finalize_authentication(user, auth_service, request)
+
 
 # Convenience dependencies for common use cases
 
-def get_current_user(
-    user: UserModel = Depends(AuthenticationRequired())
-) -> UserModel:
+
+def get_current_user(user: UserModel = Depends(AuthenticationRequired())) -> UserModel:
     """
     Get current authenticated user.
 
@@ -161,7 +242,7 @@ def get_current_user(
 
 
 def get_current_active_user(
-    user: UserModel = Depends(AuthenticationRequired(allow_unverified=False))
+    user: UserModel = Depends(AuthenticationRequired(allow_unverified=False)),
 ) -> UserModel:
     """
     Get current authenticated and verified user.
@@ -173,7 +254,7 @@ def get_current_active_user(
 
 
 def get_admin_user(
-    user: UserModel = Depends(AuthenticationRequired(required_roles=[UserRole.ADMIN]))
+    user: UserModel = Depends(AuthenticationRequired(required_roles=[UserRole.ADMIN])),
 ) -> UserModel:
     """
     Get current authenticated admin user.
@@ -188,7 +269,7 @@ def get_optional_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
     access_token_cookie: str | None = Cookie(None, alias="access_token"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> UserModel | None:
     """
     Get current user if authenticated, None otherwise.
@@ -209,7 +290,7 @@ def get_optional_user(
         return None
 
     # Try to decode token
-    payload = jwt_handler.decode_token(token, token_type="access")
+    payload = jwt_handler.decode_token(token, token_type=TokenType.ACCESS)
 
     if not payload:
         return None
@@ -226,7 +307,7 @@ def get_optional_user(
         return None
 
     # Update user activity
-    auth_service.update_user_activity(user.id)
+    auth_service.update_user_activity(int(user.id))
 
     # Store user in request state
     request.state.current_user = user
@@ -240,7 +321,7 @@ class RateLimitByUser:
     Falls back to IP address for anonymous users.
     """
 
-    def __init__(self, max_requests: int = 100, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 100, window_seconds: int = 60) -> None:
         """
         Initialize rate limiter.
 
@@ -252,9 +333,7 @@ class RateLimitByUser:
         self.window_seconds = window_seconds
 
     async def __call__(
-        self,
-        request: Request,
-        user: UserModel | None = Depends(get_optional_user)
+        self, request: Request, user: UserModel | None = Depends(get_optional_user)
     ) -> str:
         """
         Get rate limit key for the current request.
@@ -267,16 +346,17 @@ class RateLimitByUser:
             Rate limit key (user_id or IP address)
         """
         if user:
-            return f"user:{user.id}"
-        else:
-            # Get client IP address
-            client_ip = request.client.host
-            if "x-forwarded-for" in request.headers:
-                client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
-            elif "x-real-ip" in request.headers:
-                client_ip = request.headers["x-real-ip"]
+            return f"user:{int(user.id)}"
 
-            return f"ip:{client_ip}"
+        # Get client IP address (account for missing client info)
+        client = request.client
+        client_ip = client.host if client else "unknown"
+        if "x-forwarded-for" in request.headers:
+            client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
+        elif "x-real-ip" in request.headers:
+            client_ip = request.headers["x-real-ip"]
+
+        return f"ip:{client_ip}"
 
 
 class PermissionChecker:
@@ -284,7 +364,7 @@ class PermissionChecker:
     Fine-grained permission checking for resources.
     """
 
-    def __init__(self, resource_type: str, action: str):
+    def __init__(self, resource_type: str, action: str) -> None:
         """
         Initialize permission checker.
 
@@ -298,7 +378,7 @@ class PermissionChecker:
     async def __call__(
         self,
         user: UserModel = Depends(get_current_user),
-        resource_id: int | None = None
+        resource_id: int | None = None,
     ) -> bool:
         """
         Check if user has permission for the action.
@@ -355,9 +435,8 @@ class PermissionChecker:
 
 # Decorator for protecting routes
 def require_auth(
-    roles: list[UserRole] | None = None,
-    allow_unverified: bool = False
-):
+    roles: list[UserRole] | None = None, allow_unverified: bool = False
+) -> Any:
     """
     Decorator for protecting FastAPI routes.
 
@@ -371,11 +450,13 @@ def require_auth(
         async def protected_route(user: UserModel = Depends(get_current_user)):
             return {"message": f"Hello {user.username}"}
     """
-    def decorator(func):
+
+    def decorator(func) -> Any:
         # This is a placeholder for route decoration logic
         # In practice, use Dependencies directly in route definitions
         func._auth_required = True
         func._required_roles = roles
         func._allow_unverified = allow_unverified
         return func
+
     return decorator

@@ -7,7 +7,8 @@ error logging, monitoring, and response standardization.
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import HTTPException, RequestValidationError
@@ -38,7 +39,11 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.include_debug_info = include_debug_info
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         """Process request and handle any exceptions that occur."""
         start_time = time.time()
 
@@ -64,14 +69,14 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             logger.error(
                 f"Unhandled exception in middleware: {request.method} {request.url} "
                 f"-> {type(exc).__name__}: {str(exc)} ({processing_time:.3f}s)",
-                exc_info=True
+                exc_info=True,
             )
 
             # Create standardized error response
             return create_error_response(
                 exception=exc,
                 request=request,
-                include_debug_info=self.include_debug_info
+                include_debug_info=self.include_debug_info,
             )
 
 
@@ -79,7 +84,9 @@ class ValidationErrorHandler:
     """Handler for Pydantic validation errors."""
 
     @staticmethod
-    def handle_request_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+    def handle_request_validation_error(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
         """Handle FastAPI request validation errors."""
 
         # Convert Pydantic errors to our standardized format
@@ -92,20 +99,22 @@ class ValidationErrorHandler:
                 constraint=error.get("type", ""),
                 provided_value=str(error.get("input", ""))[:100],  # Limit length
                 expected_format=error.get("msg", ""),
-                help_text=ValidationErrorHandler._get_help_text(error.get("type", ""))
+                help_text=ValidationErrorHandler._get_help_text(error.get("type", "")),
             )
             error_details.append(error_detail)
 
         # Create validation exception
         validation_exc = ValidationException(
             message=f"Request validation failed with {len(error_details)} error(s)",
-            details=error_details
+            details=error_details,
         )
 
         return create_error_response(validation_exc, request)
 
     @staticmethod
-    def handle_pydantic_validation_error(request: Request, exc: ValidationError) -> JSONResponse:
+    def handle_pydantic_validation_error(
+        request: Request, exc: ValidationError
+    ) -> JSONResponse:
         """Handle Pydantic model validation errors."""
 
         error_details = []
@@ -117,25 +126,29 @@ class ValidationErrorHandler:
                 constraint=error.get("type", ""),
                 provided_value=str(error.get("input", ""))[:100],
                 expected_format=error.get("msg", ""),
-                help_text=ValidationErrorHandler._get_help_text(error.get("type", ""))
+                help_text=ValidationErrorHandler._get_help_text(error.get("type", "")),
             )
             error_details.append(error_detail)
 
         validation_exc = ValidationException(
             message=f"Data validation failed with {len(error_details)} error(s)",
-            details=error_details
+            details=error_details,
         )
 
         return create_error_response(validation_exc, request)
 
     @staticmethod
-    def handle_security_validation_error(request: Request, exc: SecurityValidationError) -> JSONResponse:
+    def handle_security_validation_error(
+        request: Request, exc: SecurityValidationError
+    ) -> JSONResponse:
         """Handle custom security validation errors."""
 
         error_detail = ErrorDetail(
             field=exc.field,
             constraint="Security validation failed",
-            help_text="Please ensure your input doesn't contain potentially dangerous patterns"
+            provided_value=None,
+            expected_format=None,
+            help_text="Please ensure your input doesn't contain potentially dangerous patterns",
         )
 
         # Determine security violation type from the error message
@@ -148,9 +161,7 @@ class ValidationErrorHandler:
             security_type = "path_traversal"
 
         security_exc = SecurityException(
-            message=str(exc),
-            security_type=security_type,
-            details=error_detail
+            message=str(exc), security_type=security_type, details=error_detail
         )
 
         return create_error_response(security_exc, request)
@@ -171,37 +182,49 @@ class ValidationErrorHandler:
             "less_than_equal": "The value must be less than or equal to the maximum",
             "string_pattern_mismatch": "The value doesn't match the required format",
             "enum": "The value must be one of the allowed options",
-            "json_invalid": "The provided JSON is not valid"
+            "json_invalid": "The provided JSON is not valid",
         }
 
-        return help_texts.get(error_type, "Please check the provided value and try again")
+        return help_texts.get(
+            error_type, "Please check the provided value and try again"
+        )
 
 
 def setup_error_handlers(app: FastAPI) -> None:
     """Set up all error handlers for the FastAPI application."""
 
     @app.exception_handler(APIException)
-    async def api_exception_handler(request: Request, exc: APIException) -> JSONResponse:
+    async def api_exception_handler(
+        request: Request, exc: APIException
+    ) -> JSONResponse:
         """Handle custom API exceptions."""
         return create_error_response(exc, request)
 
     @app.exception_handler(HTTPException)
-    async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    async def http_exception_handler(
+        request: Request, exc: HTTPException
+    ) -> JSONResponse:
         """Handle FastAPI HTTP exceptions."""
         return create_error_response(exc, request)
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
         """Handle request validation errors."""
         return ValidationErrorHandler.handle_request_validation_error(request, exc)
 
     @app.exception_handler(ValidationError)
-    async def pydantic_validation_exception_handler(request: Request, exc: ValidationError) -> JSONResponse:
+    async def pydantic_validation_exception_handler(
+        request: Request, exc: ValidationError
+    ) -> JSONResponse:
         """Handle Pydantic validation errors."""
         return ValidationErrorHandler.handle_pydantic_validation_error(request, exc)
 
     @app.exception_handler(SecurityValidationError)
-    async def security_validation_exception_handler(request: Request, exc: SecurityValidationError) -> JSONResponse:
+    async def security_validation_exception_handler(
+        request: Request, exc: SecurityValidationError
+    ) -> JSONResponse:
         """Handle security validation errors."""
         return ValidationErrorHandler.handle_security_validation_error(request, exc)
 
@@ -217,13 +240,18 @@ def setup_error_handlers(app: FastAPI) -> None:
             message=f"Invalid value provided: {str(exc)}",
             details=ErrorDetail(
                 constraint="Invalid value",
-                help_text="Please check the provided value and ensure it meets the requirements"
-            )
+                field=None,
+                provided_value=None,
+                expected_format=None,
+                help_text="Please check the provided value and ensure it meets the requirements",
+            ),
         )
         return create_error_response(validation_exc, request)
 
     @app.exception_handler(Exception)
-    async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    async def general_exception_handler(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
         """Handle all other unhandled exceptions."""
         return create_error_response(exc, request, include_debug_info=False)
 
@@ -231,17 +259,16 @@ def setup_error_handlers(app: FastAPI) -> None:
 class ErrorMetricsCollector:
     """Collect error metrics for monitoring and alerting."""
 
-    def __init__(self):
-        self.error_counts = {}
-        self.error_rates = {}
+    def __init__(self) -> None:
+        self.error_counts: dict[str, int] = {}
         self.start_time = time.time()
 
-    def record_error(self, error_code: str, category: str, status_code: int):
+    def record_error(self, error_code: str, category: str, status_code: int) -> None:
         """Record an error occurrence."""
         key = f"{error_code}:{category}:{status_code}"
         self.error_counts[key] = self.error_counts.get(key, 0) + 1
 
-    def get_error_summary(self) -> dict:
+    def get_error_summary(self) -> dict[str, Any]:
         """Get error summary for monitoring."""
         uptime = time.time() - self.start_time
 
@@ -249,10 +276,12 @@ class ErrorMetricsCollector:
             "uptime_seconds": uptime,
             "total_errors": sum(self.error_counts.values()),
             "error_breakdown": self.error_counts,
-            "error_rate_per_hour": sum(self.error_counts.values()) / (uptime / 3600) if uptime > 0 else 0
+            "error_rate_per_hour": (
+                sum(self.error_counts.values()) / (uptime / 3600) if uptime > 0 else 0
+            ),
         }
 
-    def reset_metrics(self):
+    def reset_metrics(self) -> None:
         """Reset error metrics."""
         self.error_counts.clear()
         self.start_time = time.time()
@@ -265,32 +294,32 @@ error_metrics = ErrorMetricsCollector()
 class ErrorMonitoringMiddleware(BaseHTTPMiddleware):
     """Middleware for collecting error metrics and monitoring."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         """Process request and collect error metrics."""
 
         try:
             response = await call_next(request)
 
             # Record error metrics for 4xx and 5xx responses
-            if response.status_code >= 400:
-                # Try to extract error information from response
-                if hasattr(response, 'body'):
-                    try:
-                        body = json.loads(response.body.decode())
-                        if 'error' in body:
-                            error_info = body['error']
-                            error_metrics.record_error(
-                                error_info.get('code', 'UNKNOWN'),
-                                error_info.get('category', 'unknown'),
-                                response.status_code
-                            )
-                    except (json.JSONDecodeError, AttributeError):
-                        # Fallback for non-JSON responses
+            if response.status_code >= 400 and hasattr(response, "body"):
+                try:
+                    body = json.loads(response.body.decode())
+                    if "error" in body:
+                        error_info = body["error"]
                         error_metrics.record_error(
-                            'HTTP_ERROR',
-                            'unknown',
-                            response.status_code
+                            error_info.get("code", "UNKNOWN"),
+                            error_info.get("category", "unknown"),
+                            response.status_code,
                         )
+                except (json.JSONDecodeError, AttributeError):
+                    # Fallback for non-JSON responses
+                    error_metrics.record_error(
+                        "HTTP_ERROR", "unknown", response.status_code
+                    )
 
             return response
 
@@ -298,16 +327,10 @@ class ErrorMonitoringMiddleware(BaseHTTPMiddleware):
             # Record exception metrics
             if isinstance(exc, APIException):
                 error_metrics.record_error(
-                    exc.code.value,
-                    exc.category.value,
-                    exc.status_code
+                    exc.code.value, exc.category.value, exc.status_code
                 )
             else:
-                error_metrics.record_error(
-                    'UNHANDLED_EXCEPTION',
-                    'system',
-                    500
-                )
+                error_metrics.record_error("UNHANDLED_EXCEPTION", "system", 500)
 
             raise  # Re-raise for normal error handling
 
@@ -316,25 +339,29 @@ def add_error_monitoring_endpoint(app: FastAPI) -> None:
     """Add endpoint for retrieving error metrics."""
 
     @app.get("/admin/error-metrics")
-    async def get_error_metrics():
+    async def get_error_metrics() -> dict[str, Any]:
         """Get current error metrics (admin only)."""
         return error_metrics.get_error_summary()
 
     @app.post("/admin/error-metrics/reset")
-    async def reset_error_metrics():
+    async def reset_error_metrics() -> dict[str, str]:
         """Reset error metrics (admin only)."""
         error_metrics.reset_metrics()
         return {"message": "Error metrics reset successfully"}
 
 
-def setup_comprehensive_error_handling(app: FastAPI, include_debug_info: bool = False) -> None:
+def setup_comprehensive_error_handling(
+    app: FastAPI, include_debug_info: bool = False
+) -> None:
     """Set up comprehensive error handling for the application."""
 
     # Add error handling middleware
-    app.add_middleware(ErrorHandlingMiddleware, include_debug_info=include_debug_info)
+    app.add_middleware(
+        cast(Any, ErrorHandlingMiddleware), include_debug_info=include_debug_info
+    )
 
     # Add error monitoring middleware
-    app.add_middleware(ErrorMonitoringMiddleware)
+    app.add_middleware(cast(Any, ErrorMonitoringMiddleware))
 
     # Set up exception handlers
     setup_error_handlers(app)

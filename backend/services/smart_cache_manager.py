@@ -4,6 +4,7 @@ Intelligent caching strategies using machine learning for access pattern predict
 """
 
 import asyncio
+import contextlib
 import hashlib
 import json
 import logging
@@ -16,9 +17,20 @@ from enum import Enum
 from typing import Any
 
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
+
+try:
+    from sklearn.cluster import KMeans
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.preprocessing import StandardScaler
+
+    SKLEARN_AVAILABLE = True
+    SKLEARN_IMPORT_ERROR: Exception | None = None
+except Exception as import_error:  # pragma: no cover - optional dependency
+    KMeans = None
+    RandomForestRegressor = None
+    StandardScaler = None
+    SKLEARN_AVAILABLE = False
+    SKLEARN_IMPORT_ERROR = import_error
 
 from .metrics_service import MetricsService
 
@@ -32,8 +44,10 @@ logger = logging.getLogger(__name__)
 # Data Classes for ML-driven Caching
 # ============================================================================
 
+
 class AccessPattern(str, Enum):
     """Types of access patterns."""
+
     SEQUENTIAL = "sequential"
     RANDOM = "random"
     HOTSPOT = "hotspot"
@@ -43,6 +57,7 @@ class AccessPattern(str, Enum):
 
 class CacheStrategy(str, Enum):
     """Cache replacement strategies."""
+
     LRU = "lru"  # Least Recently Used
     LFU = "lfu"  # Least Frequently Used
     ARC = "arc"  # Adaptive Replacement Cache
@@ -53,6 +68,7 @@ class CacheStrategy(str, Enum):
 @dataclass
 class AccessRecord:
     """Record of a cache access event."""
+
     key: str
     timestamp: datetime
     hit: bool
@@ -69,10 +85,10 @@ class AccessRecord:
 
         features = [
             hour_of_day / 24.0,  # Normalized hour
-            day_of_week / 7.0,   # Normalized day of week
+            day_of_week / 7.0,  # Normalized day of week
             self.response_size / 1024.0,  # Size in KB
             self.processing_time_ms / 1000.0,  # Time in seconds
-            1.0 if self.hit else 0.0  # Hit indicator
+            1.0 if self.hit else 0.0,  # Hit indicator
         ]
 
         # Add hash-based features for key
@@ -85,6 +101,7 @@ class AccessRecord:
 @dataclass
 class CacheKeyProfile:
     """Profile of a cache key's access patterns."""
+
     key: str
     first_access: datetime
     last_access: datetime
@@ -93,8 +110,8 @@ class CacheKeyProfile:
     miss_count: int = 0
 
     # Access timing
-    access_times: deque = field(default_factory=lambda: deque(maxlen=100))
-    inter_arrival_times: list[float] = field(default_factory=list)
+    access_times: deque[Any] = field(default_factory=lambda: deque[Any](maxlen=100))
+    inter_arrival_times: list[float] = field(default_factory=list[Any])
 
     # Size and performance
     avg_response_size: float = 0.0
@@ -110,7 +127,13 @@ class CacheKeyProfile:
     predicted_next_access: datetime | None = None
     access_probability_score: float = 0.0
 
-    def update_access(self, access_time: datetime, hit: bool, response_size: int = 0, processing_time: float = 0.0):
+    def update_access(
+        self,
+        access_time: datetime,
+        hit: bool,
+        response_size: int = 0,
+        processing_time: float = 0.0,
+    ) -> None:
         """Update profile with new access."""
         # Update counters
         self.access_count += 1
@@ -131,13 +154,13 @@ class CacheKeyProfile:
 
         # Update averages
         self.avg_response_size = (
-            (self.avg_response_size * (self.access_count - 1) + response_size) / self.access_count
-        )
+            self.avg_response_size * (self.access_count - 1) + response_size
+        ) / self.access_count
         self.avg_processing_time = (
-            (self.avg_processing_time * (self.access_count - 1) + processing_time) / self.access_count
-        )
+            self.avg_processing_time * (self.access_count - 1) + processing_time
+        ) / self.access_count
 
-    def calculate_scores(self):
+    def calculate_scores(self) -> None:
         """Calculate various scoring metrics."""
         now = datetime.utcnow()
 
@@ -148,12 +171,14 @@ class CacheKeyProfile:
         # Frequency score
         total_time = (self.last_access - self.first_access).total_seconds()
         if total_time > 0:
-            self.frequency_score = self.access_count / (total_time / 3600)  # Accesses per hour
+            self.frequency_score = self.access_count / (
+                total_time / 3600
+            )  # Accesses per hour
 
         # Pattern detection
         self._detect_access_pattern()
 
-    def _detect_access_pattern(self):
+    def _detect_access_pattern(self) -> None:
         """Detect access pattern from historical data."""
         if len(self.inter_arrival_times) < 5:
             return
@@ -162,7 +187,11 @@ class CacheKeyProfile:
 
         # Calculate coefficient of variation
         if len(intervals) > 1:
-            cv = np.std(intervals) / np.mean(intervals) if np.mean(intervals) > 0 else float('inf')
+            cv = (
+                np.std(intervals) / np.mean(intervals)
+                if np.mean(intervals) > 0
+                else float("inf")
+            )
 
             # Pattern classification based on interval regularity
             if cv < 0.3:  # Low variation - regular access
@@ -194,21 +223,33 @@ class CacheKeyProfile:
 # ML Models for Cache Prediction
 # ============================================================================
 
+
 class CacheMLPredictor:
     """Machine learning predictor for cache access patterns."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize ML models."""
-        # Access probability predictor
-        self.access_predictor = RandomForestRegressor(
-            n_estimators=50,
-            max_depth=10,
-            random_state=42
-        )
+        self.ml_enabled = SKLEARN_AVAILABLE
+        self.access_predictor: RandomForestRegressor | None = None
+        self.key_clusterer: KMeans | None = None
+        self.feature_scaler: StandardScaler | None = None
 
-        # Key clustering for pattern recognition
-        self.key_clusterer = KMeans(n_clusters=10, random_state=42)
-        self.feature_scaler = StandardScaler()
+        if self.ml_enabled:
+            # Access probability predictor
+            self.access_predictor = RandomForestRegressor(
+                n_estimators=50, max_depth=10, random_state=42
+            )
+
+            # Key clustering for pattern recognition
+            self.key_clusterer = KMeans(n_clusters=10, random_state=42)
+            self.feature_scaler = StandardScaler()
+        else:
+            logger.warning(
+                "scikit-learn is not installed; disabling ML-driven cache optimizations. "
+                "Install scikit-learn to enable predictive caching."
+            )
+            if SKLEARN_IMPORT_ERROR:
+                logger.debug("Smart cache ML import error: %s", SKLEARN_IMPORT_ERROR)
 
         # Training data
         self.training_data: list[tuple[list[float], float]] = []
@@ -216,21 +257,29 @@ class CacheMLPredictor:
         self.last_training = None
         self.training_interval_hours = 6  # Retrain every 6 hours
 
-        logger.info("Cache ML Predictor initialized")
+        if self.ml_enabled:
+            logger.info("Cache ML Predictor initialized (scikit-learn backend)")
 
-    def add_training_sample(self, access_record: AccessRecord, key_profile: CacheKeyProfile):
+    def add_training_sample(
+        self, access_record: AccessRecord, key_profile: CacheKeyProfile
+    ) -> None:
         """Add a training sample for the ML model."""
+        if not self.ml_enabled:
+            return
+
         # Create feature vector
         features = access_record.to_feature_vector()
 
         # Add key profile features
-        features.extend([
-            key_profile.frequency_score,
-            key_profile.recency_score,
-            key_profile.seasonality_score,
-            key_profile.avg_response_size / 1024.0,
-            key_profile.avg_processing_time / 1000.0
-        ])
+        features.extend(
+            [
+                key_profile.frequency_score,
+                key_profile.recency_score,
+                key_profile.seasonality_score,
+                key_profile.avg_response_size / 1024.0,
+                key_profile.avg_processing_time / 1000.0,
+            ]
+        )
 
         # Target: probability of future access (1.0 for hit, 0.0 for miss)
         target = 1.0 if access_record.hit else 0.0
@@ -241,8 +290,11 @@ class CacheMLPredictor:
         if len(self.training_data) > 10000:
             self.training_data = self.training_data[-5000:]  # Keep recent half
 
-    async def train_models(self):
+    async def train_models(self) -> Any:
         """Train ML models with collected data."""
+        if not self.ml_enabled:
+            return False
+
         if len(self.training_data) < 100:
             logger.info("Insufficient training data for ML models")
             return False
@@ -271,21 +323,25 @@ class CacheMLPredictor:
             logger.error(f"Failed to train ML models: {e}")
             return False
 
-    def predict_access_probability(self, access_record: AccessRecord, key_profile: CacheKeyProfile) -> float:
+    def predict_access_probability(
+        self, access_record: AccessRecord, key_profile: CacheKeyProfile
+    ) -> float:
         """Predict probability of future access for a key."""
-        if not self.is_trained:
+        if not self.ml_enabled or not self.is_trained:
             return 0.5  # Default probability
 
         try:
             # Create feature vector
             features = access_record.to_feature_vector()
-            features.extend([
-                key_profile.frequency_score,
-                key_profile.recency_score,
-                key_profile.seasonality_score,
-                key_profile.avg_response_size / 1024.0,
-                key_profile.avg_processing_time / 1000.0
-            ])
+            features.extend(
+                [
+                    key_profile.frequency_score,
+                    key_profile.recency_score,
+                    key_profile.seasonality_score,
+                    key_profile.avg_response_size / 1024.0,
+                    key_profile.avg_processing_time / 1000.0,
+                ]
+            )
 
             # Scale features
             X = np.array([features])
@@ -299,20 +355,24 @@ class CacheMLPredictor:
             logger.error(f"Error predicting access probability: {e}")
             return 0.5
 
-    def get_key_cluster(self, access_record: AccessRecord, key_profile: CacheKeyProfile) -> int:
+    def get_key_cluster(
+        self, access_record: AccessRecord, key_profile: CacheKeyProfile
+    ) -> int:
         """Get cluster ID for a key based on its features."""
-        if not self.is_trained:
+        if not self.ml_enabled or not self.is_trained:
             return 0
 
         try:
             features = access_record.to_feature_vector()
-            features.extend([
-                key_profile.frequency_score,
-                key_profile.recency_score,
-                key_profile.seasonality_score,
-                key_profile.avg_response_size / 1024.0,
-                key_profile.avg_processing_time / 1000.0
-            ])
+            features.extend(
+                [
+                    key_profile.frequency_score,
+                    key_profile.recency_score,
+                    key_profile.seasonality_score,
+                    key_profile.avg_response_size / 1024.0,
+                    key_profile.avg_processing_time / 1000.0,
+                ]
+            )
 
             X = np.array([features])
             X_scaled = self.feature_scaler.transform(X)
@@ -326,19 +386,25 @@ class CacheMLPredictor:
 
     def needs_retraining(self) -> bool:
         """Check if models need retraining."""
+        if not self.ml_enabled:
+            return False
+
         if not self.is_trained:
             return len(self.training_data) >= 100
 
         if not self.last_training:
             return True
 
-        hours_since_training = (datetime.utcnow() - self.last_training).total_seconds() / 3600
+        hours_since_training = (
+            datetime.utcnow() - self.last_training
+        ).total_seconds() / 3600
         return hours_since_training >= self.training_interval_hours
 
 
 # ============================================================================
 # Smart Cache Manager
 # ============================================================================
+
 
 class SmartCacheManager:
     """
@@ -348,8 +414,8 @@ class SmartCacheManager:
     def __init__(
         self,
         redis_cache: RedisCacheService,
-        metrics_service: MetricsService | None = None
-    ):
+        metrics_service: MetricsService | None = None,
+    ) -> None:
         """Initialize smart cache manager."""
         self.redis_cache = redis_cache
         self.metrics_service = metrics_service
@@ -359,7 +425,7 @@ class SmartCacheManager:
 
         # Key profiles and access tracking
         self.key_profiles: dict[str, CacheKeyProfile] = {}
-        self.access_history: deque = deque(maxlen=10000)
+        self.access_history: deque[Any] = deque[Any](maxlen=10000)
 
         # Cache strategy configuration
         self.default_strategy = CacheStrategy.ML_PREDICT
@@ -368,7 +434,7 @@ class SmartCacheManager:
             AccessPattern.TEMPORAL: CacheStrategy.LRU,
             AccessPattern.SEQUENTIAL: CacheStrategy.SLRU,
             AccessPattern.RANDOM: CacheStrategy.ARC,
-            AccessPattern.SEASONAL: CacheStrategy.ML_PREDICT
+            AccessPattern.SEASONAL: CacheStrategy.ML_PREDICT,
         }
 
         # Performance tracking
@@ -379,11 +445,11 @@ class SmartCacheManager:
             "ml_predictions_made": 0,
             "ml_prediction_accuracy": 0.0,
             "eviction_decisions": 0,
-            "prefetch_actions": 0
+            "prefetch_actions": 0,
         }
 
         # Background tasks
-        self.optimization_task: asyncio.Task | None = None
+        self.optimization_task: asyncio.Task[None] | None = None
         self.is_optimizing = False
 
         logger.info("Smart Cache Manager initialized")
@@ -398,7 +464,7 @@ class SmartCacheManager:
         default: Any = None,
         user_id: str | None = None,
         session_id: str | None = None,
-        request_type: str | None = None
+        request_type: str | None = None,
     ) -> Any:
         """Intelligent cache get with access tracking."""
         start_time = time.time()
@@ -417,7 +483,7 @@ class SmartCacheManager:
             user_id=user_id,
             session_id=session_id,
             request_type=request_type,
-            processing_time_ms=processing_time
+            processing_time_ms=processing_time,
         )
 
         await self._record_access(access_record)
@@ -441,16 +507,14 @@ class SmartCacheManager:
         value: Any,
         ttl: int | None = None,
         user_id: str | None = None,
-        force_eviction: bool = False
+        force_eviction: bool = False,
     ) -> bool:
-        """Intelligent cache set with ML-driven TTL optimization."""
+        """Intelligent cache set[str] with ML-driven TTL optimization."""
         # Get or create key profile
         profile = self.key_profiles.get(key)
         if not profile:
             profile = CacheKeyProfile(
-                key=key,
-                first_access=datetime.utcnow(),
-                last_access=datetime.utcnow()
+                key=key, first_access=datetime.utcnow(), last_access=datetime.utcnow()
             )
             self.key_profiles[key] = profile
 
@@ -464,7 +528,7 @@ class SmartCacheManager:
 
         # Store in cache
         response_size = len(pickle.dumps(value)) if value else 0
-        success = self.redis_cache.set(key, value, ttl=ttl)
+        success = self.redis_cache.set[str](key, value, ttl=ttl)
 
         # Record access for ML training
         access_record = AccessRecord(
@@ -472,7 +536,7 @@ class SmartCacheManager:
             timestamp=datetime.utcnow(),
             hit=False,  # Set operation is always a miss
             user_id=user_id,
-            response_size=response_size
+            response_size=response_size,
         )
 
         await self._record_access(access_record)
@@ -493,7 +557,7 @@ class SmartCacheManager:
     # Access Tracking and Analysis
     # ========================================================================
 
-    async def _record_access(self, access_record: AccessRecord):
+    async def _record_access(self, access_record: AccessRecord) -> None:
         """Record access for ML training and analysis."""
         self.access_history.append(access_record)
 
@@ -503,7 +567,7 @@ class SmartCacheManager:
             profile = CacheKeyProfile(
                 key=access_record.key,
                 first_access=access_record.timestamp,
-                last_access=access_record.timestamp
+                last_access=access_record.timestamp,
             )
             self.key_profiles[access_record.key] = profile
 
@@ -511,7 +575,7 @@ class SmartCacheManager:
             access_record.timestamp,
             access_record.hit,
             access_record.response_size,
-            access_record.processing_time_ms
+            access_record.processing_time_ms,
         )
 
         # Update profile scores
@@ -522,8 +586,8 @@ class SmartCacheManager:
 
         # Update access probability prediction
         if self.ml_predictor.is_trained:
-            profile.access_probability_score = self.ml_predictor.predict_access_probability(
-                access_record, profile
+            profile.access_probability_score = (
+                self.ml_predictor.predict_access_probability(access_record, profile)
             )
 
         # Report metrics
@@ -532,7 +596,7 @@ class SmartCacheManager:
                 operation="access",
                 cache_type="smart",
                 hit=access_record.hit,
-                duration=access_record.processing_time_ms / 1000.0
+                duration=access_record.processing_time_ms / 1000.0,
             )
 
     # ========================================================================
@@ -562,17 +626,17 @@ class SmartCacheManager:
             multiplier = 1.0
 
         # Adjust for frequency and recency
-        multiplier *= (1.0 + profile.frequency_score * 0.5)
-        multiplier *= (1.0 + profile.recency_score * 0.3)
+        multiplier *= 1.0 + profile.frequency_score * 0.5
+        multiplier *= 1.0 + profile.recency_score * 0.3
 
         # ML prediction adjustment
         if self.ml_predictor.is_trained and profile.access_probability_score > 0:
-            multiplier *= (1.0 + profile.access_probability_score)
+            multiplier *= 1.0 + profile.access_probability_score
 
         optimal_ttl = int(base_ttl * multiplier)
         return min(optimal_ttl, 86400)  # Max 24 hours
 
-    async def _intelligent_eviction(self):
+    async def _intelligent_eviction(self) -> None:
         """Perform intelligent cache eviction using ML predictions."""
         if not self.key_profiles:
             return
@@ -599,7 +663,7 @@ class SmartCacheManager:
         num_to_evict = max(1, len(eviction_candidates) // 10)
 
         evicted_keys = []
-        for key, score, profile in eviction_candidates[:num_to_evict]:
+        for key, _score, _profile in eviction_candidates[:num_to_evict]:
             if self.redis_cache.delete(key) > 0:
                 evicted_keys.append(key)
                 self.key_profiles.pop(key, None)
@@ -624,7 +688,7 @@ class SmartCacheManager:
             AccessPattern.TEMPORAL: 1.0,
             AccessPattern.SEASONAL: 1.2,
             AccessPattern.SEQUENTIAL: 0.8,
-            AccessPattern.RANDOM: 0.5
+            AccessPattern.RANDOM: 0.5,
         }
         base_score += pattern_bonus.get(profile.access_pattern, 1.0)
 
@@ -638,7 +702,9 @@ class SmartCacheManager:
 
         return base_score
 
-    async def _intelligent_prefetch(self, accessed_key: str, access_record: AccessRecord):
+    async def _intelligent_prefetch(
+        self, accessed_key: str, access_record: AccessRecord
+    ) -> None:
         """Perform intelligent prefetching based on access patterns."""
         if not self.ml_predictor.is_trained:
             return
@@ -657,11 +723,7 @@ class SmartCacheManager:
                 continue
 
             # Create dummy access record for cluster prediction
-            dummy_access = AccessRecord(
-                key=key,
-                timestamp=datetime.utcnow(),
-                hit=False
-            )
+            dummy_access = AccessRecord(key=key, timestamp=datetime.utcnow(), hit=False)
 
             key_cluster = self.ml_predictor.get_key_cluster(dummy_access, key_profile)
 
@@ -673,14 +735,16 @@ class SmartCacheManager:
             prefetch_keys = sorted(
                 related_keys,
                 key=lambda k: self.key_profiles[k].access_probability_score,
-                reverse=True
+                reverse=True,
             )[:3]
 
             # Check which keys are not in cache and could benefit from prefetching
             for key in prefetch_keys:
                 if not self.redis_cache.exists(key):
                     # This would trigger application-level prefetching
-                    logger.debug(f"Prefetch candidate: {key} (probability: {self.key_profiles[key].access_probability_score:.2f})")
+                    logger.debug(
+                        f"Prefetch candidate: {key} (probability: {self.key_profiles[key].access_probability_score:.2f})"
+                    )
                     self.performance_stats["prefetch_actions"] += 1
 
     async def _should_evict_for_space(self) -> bool:
@@ -695,14 +759,14 @@ class SmartCacheManager:
                 return False  # Let Redis handle its own memory management for now
 
             return False
-        except:
+        except Exception:
             return False
 
     # ========================================================================
     # Background Optimization
     # ========================================================================
 
-    async def start_optimization(self, interval_minutes: int = 30):
+    async def start_optimization(self, interval_minutes: int = 30) -> None:
         """Start background optimization tasks."""
         if self.is_optimizing:
             return
@@ -712,9 +776,11 @@ class SmartCacheManager:
             self._optimization_loop(interval_minutes)
         )
 
-        logger.info(f"Started smart cache optimization (interval: {interval_minutes}min)")
+        logger.info(
+            f"Started smart cache optimization (interval: {interval_minutes}min)"
+        )
 
-    async def stop_optimization(self):
+    async def stop_optimization(self) -> None:
         """Stop background optimization."""
         if not self.is_optimizing:
             return
@@ -723,45 +789,40 @@ class SmartCacheManager:
 
         if self.optimization_task:
             self.optimization_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.optimization_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Stopped smart cache optimization")
 
-    async def _optimization_loop(self, interval_minutes: int):
+    async def _run_optimization_cycle(self) -> None:
+        if self.ml_predictor.needs_retraining():
+            await self.ml_predictor.train_models()
+
+        await self._cleanup_old_profiles()
+        await self._analyze_access_patterns()
+        await self._update_performance_metrics()
+
+    async def _optimization_loop(self, interval_minutes: int) -> None:
         """Main optimization loop."""
         while self.is_optimizing:
             try:
-                # Train ML models if needed
-                if self.ml_predictor.needs_retraining():
-                    await self.ml_predictor.train_models()
-
-                # Clean up old profiles
-                await self._cleanup_old_profiles()
-
-                # Analyze access patterns
-                await self._analyze_access_patterns()
-
-                # Update performance metrics
-                await self._update_performance_metrics()
-
-                # Wait for next cycle
-                await asyncio.sleep(interval_minutes * 60)
-
+                await self._run_optimization_cycle()
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Error in optimization loop: {e}")
-                await asyncio.sleep(60)  # Short delay on error
+                await asyncio.sleep(60)
+                continue
 
-    async def _cleanup_old_profiles(self):
+            await asyncio.sleep(interval_minutes * 60)
+
+    async def _cleanup_old_profiles(self) -> None:
         """Clean up old and unused key profiles."""
         cutoff_time = datetime.utcnow() - timedelta(days=7)
 
         old_keys = [
-            key for key, profile in self.key_profiles.items()
+            key
+            for key, profile in self.key_profiles.items()
             if profile.last_access < cutoff_time
         ]
 
@@ -771,14 +832,15 @@ class SmartCacheManager:
         if old_keys:
             logger.info(f"Cleaned up {len(old_keys)} old key profiles")
 
-    async def _analyze_access_patterns(self):
+    async def _analyze_access_patterns(self) -> None:
         """Analyze overall access patterns for insights."""
         if not self.access_history:
             return
 
         # Analyze recent access patterns
         recent_accesses = [
-            record for record in self.access_history
+            record
+            for record in self.access_history
             if (datetime.utcnow() - record.timestamp).total_seconds() < 3600
         ]
 
@@ -790,17 +852,17 @@ class SmartCacheManager:
         hit_rate = hits / len(recent_accesses) if recent_accesses else 0
 
         # Pattern distribution
-        pattern_counts = defaultdict(int)
-        for key, profile in self.key_profiles.items():
+        pattern_counts: Any = defaultdict(int)
+        for profile in self.key_profiles.values():
             pattern_counts[profile.access_pattern] += 1
 
         logger.info(
             f"Cache analysis - Hit rate: {hit_rate:.2f}, "
-            f"Patterns: {dict(pattern_counts)}, "
+            f"Patterns: {dict[str, Any](pattern_counts)}, "
             f"Active keys: {len(self.key_profiles)}"
         )
 
-    async def _update_performance_metrics(self):
+    async def _update_performance_metrics(self) -> None:
         """Update performance metrics for monitoring."""
         if not self.metrics_service:
             return
@@ -811,9 +873,7 @@ class SmartCacheManager:
             if total > 0:
                 hit_rate = (self.performance_stats["cache_hits"] / total) * 100
                 self.metrics_service.record_cache_operation(
-                    operation="performance_check",
-                    cache_type="smart",
-                    hit=hit_rate > 80
+                    operation="performance_check", cache_type="smart", hit=hit_rate > 80
                 )
 
             # Report ML prediction accuracy if available
@@ -834,25 +894,22 @@ class SmartCacheManager:
         total_requests = self.performance_stats["total_requests"]
         hit_rate = (
             (self.performance_stats["cache_hits"] / total_requests * 100)
-            if total_requests > 0 else 0
+            if total_requests > 0
+            else 0
         )
 
         # Access pattern distribution
-        pattern_distribution = defaultdict(int)
+        pattern_distribution: Any = defaultdict(int)
         for profile in self.key_profiles.values():
             pattern_distribution[profile.access_pattern.value] += 1
 
         # Top keys by various metrics
         top_frequent = sorted(
-            self.key_profiles.values(),
-            key=lambda p: p.frequency_score,
-            reverse=True
+            self.key_profiles.values(), key=lambda p: p.frequency_score, reverse=True
         )[:10]
 
         top_recent = sorted(
-            self.key_profiles.values(),
-            key=lambda p: p.recency_score,
-            reverse=True
+            self.key_profiles.values(), key=lambda p: p.recency_score, reverse=True
         )[:10]
 
         return {
@@ -864,16 +921,17 @@ class SmartCacheManager:
                 "ml_model_trained": self.ml_predictor.is_trained,
                 "last_training": (
                     self.ml_predictor.last_training.isoformat()
-                    if self.ml_predictor.last_training else None
-                )
+                    if self.ml_predictor.last_training
+                    else None
+                ),
             },
-            "access_patterns": dict(pattern_distribution),
+            "access_patterns": dict[str, Any](pattern_distribution),
             "top_keys": {
                 "most_frequent": [
                     {
                         "key": p.key,
                         "frequency_score": round(p.frequency_score, 3),
-                        "access_count": p.access_count
+                        "access_count": p.access_count,
                     }
                     for p in top_frequent
                 ],
@@ -881,11 +939,11 @@ class SmartCacheManager:
                     {
                         "key": p.key,
                         "recency_score": round(p.recency_score, 3),
-                        "last_access": p.last_access.isoformat()
+                        "last_access": p.last_access.isoformat(),
                     }
                     for p in top_recent
-                ]
-            }
+                ],
+            },
         }
 
     def get_key_profile(self, key: str) -> dict[str, Any] | None:
@@ -900,19 +958,23 @@ class SmartCacheManager:
                 "total_accesses": profile.access_count,
                 "hit_count": profile.hit_count,
                 "miss_count": profile.miss_count,
-                "hit_rate": (profile.hit_count / profile.access_count * 100) if profile.access_count > 0 else 0
+                "hit_rate": (
+                    (profile.hit_count / profile.access_count * 100)
+                    if profile.access_count > 0
+                    else 0
+                ),
             },
             "timing": {
                 "first_access": profile.first_access.isoformat(),
                 "last_access": profile.last_access.isoformat(),
-                "avg_processing_time_ms": round(profile.avg_processing_time, 2)
+                "avg_processing_time_ms": round(profile.avg_processing_time, 2),
             },
             "pattern_analysis": {
                 "access_pattern": profile.access_pattern.value,
                 "frequency_score": round(profile.frequency_score, 3),
                 "recency_score": round(profile.recency_score, 3),
                 "seasonality_score": round(profile.seasonality_score, 3),
-                "access_probability": round(profile.access_probability_score, 3)
+                "access_probability": round(profile.access_probability_score, 3),
             },
             "resource_usage": {
                 "avg_response_size_bytes": int(profile.avg_response_size)
@@ -920,15 +982,16 @@ class SmartCacheManager:
             "predictions": {
                 "predicted_next_access": (
                     profile.predicted_next_access.isoformat()
-                    if profile.predicted_next_access else None
+                    if profile.predicted_next_access
+                    else None
                 )
-            }
+            },
         }
 
 
 if __name__ == "__main__":
     # Example usage
-    async def main():
+    async def main() -> None:
         from .redis_cache_service import RedisCacheService, RedisConfig
 
         # Create Redis cache service
@@ -946,10 +1009,10 @@ if __name__ == "__main__":
             key = f"test_key_{i % 5}"  # Create some repeated patterns
 
             # Set operation
-            await smart_cache.set(key, f"value_{i}", user_id="user123")
+            await smart_cache.set[str](key, f"value_{i}", user_id="user123")
 
             # Get operation
-            value = await smart_cache.get(key, user_id="user123")
+            await smart_cache.get(key, user_id="user123")
 
             await asyncio.sleep(0.1)  # Small delay
 

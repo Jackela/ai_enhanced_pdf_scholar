@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Web UI Entry Point for AI Enhanced PDF Scholar
@@ -27,7 +29,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def parse_arguments():
+def parse_arguments() -> Any:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="AI Enhanced PDF Scholar - Web Interface",
@@ -69,7 +71,7 @@ Examples:
     return parser.parse_args()
 
 
-def main():
+def main() -> Any:
     """Main entry point for web application."""
     args = parse_arguments()
 

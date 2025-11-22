@@ -1,0 +1,5 @@
+- [x] Audit `src/services` to list the highest-risk modules (EnhancedRAGService recovery, DocumentLibraryService import, cache managers, retry/circuit breaker helpers) and map required fixtures/stubs.
+- [x] Build pytest fixtures for stub repositories/cache providers so services can run without external dependencies.
+- [x] Add tests that drive EnhancedRAGService recovery paths (partial repair, verification repair, cache info metrics) and assert metrics/log emissions.
+- [x] Add tests for DocumentLibraryService import/duplicate flows, including temp path cleanup and error propagation.
+- [x] Cover cache maintenance/integrated manager helpers to ensure cleanup & metrics hooks are invoked; validate via `pytest -q` and updated coverage reports.

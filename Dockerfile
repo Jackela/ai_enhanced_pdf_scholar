@@ -32,6 +32,8 @@ FROM python:3.11-slim AS python-deps
 
 LABEL stage=python-deps
 LABEL description="Install Python dependencies"
+ARG ENABLE_CACHE_ML=false
+ENV ENABLE_CACHE_ML=${ENABLE_CACHE_ML}
 
 # Install system dependencies for PDF processing and build tools
 RUN apt-get update && apt-get install -y \
@@ -47,11 +49,12 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY requirements.txt requirements-scaling.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    if [ "$ENABLE_CACHE_ML" = "true" ]; then pip install --no-cache-dir -r requirements-scaling.txt; fi
 
 # ============================================================================
 # Stage 3: Production Image

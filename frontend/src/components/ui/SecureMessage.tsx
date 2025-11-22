@@ -1,9 +1,9 @@
 /**
  * SecureMessage Component
- * 
+ *
  * A security-hardened component for rendering user and AI messages with
  * comprehensive XSS protection, content sanitization, and safe HTML rendering.
- * 
+ *
  * @security This component provides XSS-protected message rendering
  * @author AI Enhanced PDF Scholar Security Team
  * @version 2.1.0
@@ -12,6 +12,7 @@
 import React, { memo } from 'react'
 import { clsx } from 'clsx'
 import { useChatMessageSecurity, useSecurityMonitoring } from '../../hooks/useSecurity'
+import { detectXSSAttempt } from '../../utils/security'
 import { AlertTriangle, Shield, User, Bot } from 'lucide-react'
 
 interface SecureMessageProps {
@@ -34,13 +35,13 @@ export const SecureMessage = memo<SecureMessageProps>(({
   showSecurityInfo = false,
   id
 }) => {
-  const { 
-    displayContent, 
-    shouldRenderAsHTML, 
-    hasXSSRisk, 
+  const {
+    displayContent,
+    shouldRenderAsHTML,
+    hasXSSRisk,
     xssInfo
   } = useChatMessageSecurity(content, role)
-  
+
   const { logSecurityEvent } = useSecurityMonitoring()
 
   // Log XSS attempts for monitoring
@@ -74,11 +75,11 @@ export const SecureMessage = memo<SecureMessageProps>(({
       // User message styles
       'bg-blue-600 text-white': role === 'user' && !hasXSSRisk,
       'bg-red-600 text-white border-2 border-red-400': role === 'user' && hasXSSRisk,
-      
-      // Assistant message styles  
-      'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white': 
+
+      // Assistant message styles
+      'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white':
         role === 'assistant' && !hasXSSRisk,
-      'bg-red-200 dark:bg-red-900 text-red-900 dark:text-red-100 border-2 border-red-400': 
+      'bg-red-200 dark:bg-red-900 text-red-900 dark:text-red-100 border-2 border-red-400':
         role === 'assistant' && hasXSSRisk,
     },
     className
@@ -100,7 +101,7 @@ export const SecureMessage = memo<SecureMessageProps>(({
           <Bot size={12} className="text-white" />
         </div>
       )}
-      
+
       <div className={messageClasses}>
         {/* Security warning banner */}
         {hasXSSRisk && (
@@ -122,13 +123,13 @@ export const SecureMessage = memo<SecureMessageProps>(({
         {/* Message content */}
         <div className="message-content">
           {shouldRenderAsHTML && !hasXSSRisk ? (
-            <div 
+            <div
               className="whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: displayContent }}
               data-testid="secure-html-content"
             />
           ) : (
-            <p 
+            <p
               className="whitespace-pre-wrap"
               data-testid="secure-text-content"
             >
@@ -142,26 +143,26 @@ export const SecureMessage = memo<SecureMessageProps>(({
           <span>
             {formatTimestamp(timestamp)}
           </span>
-          
+
           {/* Security status indicator */}
           <div className="flex items-center gap-1">
             {hasXSSRisk ? (
-              <AlertTriangle 
-                size={12} 
-                className="text-red-400" 
+              <AlertTriangle
+                size={12}
+                className="text-red-400"
                 data-testid="xss-warning-icon"
               />
             ) : (
-              <Shield 
-                size={12} 
-                className="text-green-400" 
+              <Shield
+                size={12}
+                className="text-green-400"
                 data-testid="secure-content-icon"
               />
             )}
-            
+
             {/* Show content type indicator in development */}
             {process.env.NODE_ENV === 'development' && (
-              <span 
+              <span
                 className="text-xs opacity-50"
                 title={shouldRenderAsHTML ? 'Rendered as HTML' : 'Rendered as text'}
               >
@@ -210,7 +211,7 @@ export const SecureMessageList = memo<SecureMessageListProps>(({
   // Monitor for bulk XSS attempts
   React.useEffect(() => {
     const xssCount = messages.filter(msg => {
-      const { isDetected } = require('../../utils/security').detectXSSAttempt(msg.content)
+      const { isDetected } = detectXSSAttempt(msg.content)
       return isDetected
     }).length
 
@@ -218,9 +219,9 @@ export const SecureMessageList = memo<SecureMessageListProps>(({
       logSecurityEvent(
         'BULK_XSS_DETECTION',
         xssCount > 3 ? 'high' : 'medium',
-        { 
-          totalMessages: messages.length, 
-          xssAttempts: xssCount 
+        {
+          totalMessages: messages.length,
+          xssAttempts: xssCount
         }
       )
     }
@@ -264,7 +265,7 @@ export const SecurityStatus = memo<SecurityStatusProps>(({ className }) => {
   }, [getSecurityEvents])
 
   const recentEvents = events.slice(-5) // Show last 5 events
-  const hasHighSeverityEvents = events.some(e => 
+  const hasHighSeverityEvents = events.some(e =>
     e.severity === 'high' || e.severity === 'critical'
   )
 
@@ -281,7 +282,7 @@ export const SecurityStatus = memo<SecurityStatusProps>(({ className }) => {
         <Shield size={16} />
         <h4 className="font-medium text-sm">Security Status</h4>
       </div>
-      
+
       <div className="space-y-1">
         {recentEvents.map((event, index) => (
           <div key={index} className="text-xs opacity-75">

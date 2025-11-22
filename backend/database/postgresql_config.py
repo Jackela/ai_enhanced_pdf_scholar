@@ -3,10 +3,11 @@ PostgreSQL Database Configuration and Migration
 Production-ready PostgreSQL setup with connection pooling and optimization.
 """
 
+import builtins
 import logging
 import os
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from typing import Any
 
@@ -41,10 +42,11 @@ Base = declarative_base()
 # PostgreSQL Configuration
 # ============================================================================
 
+
 class PostgreSQLConfig:
     """PostgreSQL database configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize PostgreSQL configuration from environment."""
         # Connection parameters
         self.host = os.getenv("POSTGRES_HOST", "localhost")
@@ -60,21 +62,31 @@ class PostgreSQLConfig:
         self.pool_recycle = int(os.getenv("POSTGRES_POOL_RECYCLE", "3600"))
 
         # Performance settings
-        self.statement_timeout = int(os.getenv("POSTGRES_STATEMENT_TIMEOUT", "30000"))  # ms
+        self.statement_timeout = int(
+            os.getenv("POSTGRES_STATEMENT_TIMEOUT", "30000")
+        )  # ms
         self.lock_timeout = int(os.getenv("POSTGRES_LOCK_TIMEOUT", "10000"))  # ms
-        self.idle_in_transaction_timeout = int(os.getenv("POSTGRES_IDLE_TIMEOUT", "60000"))  # ms
+        self.idle_in_transaction_timeout = int(
+            os.getenv("POSTGRES_IDLE_TIMEOUT", "60000")
+        )  # ms
 
         # Read replica configuration
         self.read_replica_host = os.getenv("POSTGRES_READ_REPLICA_HOST", self.host)
-        self.read_replica_port = int(os.getenv("POSTGRES_READ_REPLICA_PORT", str(self.port)))
+        self.read_replica_port = int(
+            os.getenv("POSTGRES_READ_REPLICA_PORT", str(self.port))
+        )
 
         # SSL configuration
-        self.ssl_mode = os.getenv("POSTGRES_SSL_MODE", "prefer")  # disable, allow, prefer, require
+        self.ssl_mode = os.getenv(
+            "POSTGRES_SSL_MODE", "prefer"
+        )  # disable, allow, prefer, require
         self.ssl_cert = os.getenv("POSTGRES_SSL_CERT")
         self.ssl_key = os.getenv("POSTGRES_SSL_KEY")
         self.ssl_ca = os.getenv("POSTGRES_SSL_CA")
 
-    def get_connection_url(self, async_mode: bool = False, read_only: bool = False) -> str:
+    def get_connection_url(
+        self, async_mode: bool = False, read_only: bool = False
+    ) -> str:
         """Get PostgreSQL connection URL."""
         if read_only:
             host = self.read_replica_host
@@ -123,12 +135,13 @@ class PostgreSQLConfig:
 # Connection Pool Manager
 # ============================================================================
 
+
 class PostgreSQLConnectionPool:
     """
     PostgreSQL connection pool manager with read/write splitting.
     """
 
-    def __init__(self, config: PostgreSQLConfig):
+    def __init__(self, config: PostgreSQLConfig) -> None:
         """Initialize connection pools."""
         self.config = config
 
@@ -136,14 +149,14 @@ class PostgreSQLConnectionPool:
         self.write_pool = psycopg2.pool.ThreadedConnectionPool(
             minconn=5,
             maxconn=config.pool_size,
-            **config.get_connection_params(read_only=False)
+            **config.get_connection_params(read_only=False),
         )
 
         # Create read pool (replica)
         self.read_pool = psycopg2.pool.ThreadedConnectionPool(
             minconn=5,
             maxconn=config.pool_size,
-            **config.get_connection_params(read_only=True)
+            **config.get_connection_params(read_only=True),
         )
 
         logger.info("PostgreSQL connection pools initialized")
@@ -161,7 +174,7 @@ class PostgreSQLConnectionPool:
             if conn:
                 pool.putconn(conn)
 
-    def close_all(self):
+    def close_all(self) -> None:
         """Close all connections in pools."""
         self.write_pool.closeall()
         self.read_pool.closeall()
@@ -172,6 +185,7 @@ class PostgreSQLConnectionPool:
 # SQLAlchemy Engine Factory
 # ============================================================================
 
+
 class PostgreSQLEngineFactory:
     """
     Factory for creating optimized SQLAlchemy engines.
@@ -179,9 +193,7 @@ class PostgreSQLEngineFactory:
 
     @staticmethod
     def create_engine(
-        config: PostgreSQLConfig,
-        read_only: bool = False,
-        async_mode: bool = False
+        config: PostgreSQLConfig, read_only: bool = False, async_mode: bool = False
     ) -> Engine:
         """Create optimized SQLAlchemy engine."""
         url = config.get_connection_url(async_mode, read_only)
@@ -207,7 +219,7 @@ class PostgreSQLEngineFactory:
         connect_args = {
             "server_settings": {
                 "application_name": "ai_pdf_scholar",
-                "jit": "off"  # Disable JIT for consistent performance
+                "jit": "off",  # Disable JIT for consistent performance
             },
             "command_timeout": config.statement_timeout / 1000,  # Convert to seconds
         }
@@ -215,11 +227,7 @@ class PostgreSQLEngineFactory:
         if not async_mode:
             connect_args["options"] = f"-c statement_timeout={config.statement_timeout}"
 
-        engine = create_engine(
-            url,
-            connect_args=connect_args,
-            **engine_config
-        )
+        engine = create_engine(url, connect_args=connect_args, **engine_config)
 
         # Add event listeners for optimization
         PostgreSQLEngineFactory._setup_engine_events(engine, config)
@@ -227,17 +235,22 @@ class PostgreSQLEngineFactory:
         return engine
 
     @staticmethod
-    def _setup_engine_events(engine: Engine, config: PostgreSQLConfig):
+    def _setup_engine_events(engine: Engine, config: PostgreSQLConfig) -> None:
         """Setup engine event listeners for optimization."""
 
         @event.listens_for(engine, "connect")
-        def set_postgresql_params(dbapi_conn, connection_record):
+        def set_postgresql_params(dbapi_conn, connection_record) -> None:
             """Set PostgreSQL session parameters on connect."""
             with dbapi_conn.cursor() as cursor:
                 # Set performance parameters
-                cursor.execute("SET statement_timeout = %s", (config.statement_timeout,))
+                cursor.execute(
+                    "SET statement_timeout = %s", (config.statement_timeout,)
+                )
                 cursor.execute("SET lock_timeout = %s", (config.lock_timeout,))
-                cursor.execute("SET idle_in_transaction_session_timeout = %s", (config.idle_in_transaction_timeout,))
+                cursor.execute(
+                    "SET idle_in_transaction_session_timeout = %s",
+                    (config.idle_in_transaction_timeout,),
+                )
 
                 # Set work_mem for better query performance
                 cursor.execute("SET work_mem = '256MB'")
@@ -249,12 +262,16 @@ class PostgreSQLEngineFactory:
                 cursor.execute("SET random_page_cost = 1.1")
 
         @event.listens_for(engine, "before_cursor_execute")
-        def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        def before_cursor_execute(
+            conn, cursor, statement, parameters, context, executemany
+        ) -> None:
             """Log slow queries."""
             conn.info.setdefault("query_start_time", []).append(datetime.utcnow())
 
         @event.listens_for(engine, "after_cursor_execute")
-        def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        def after_cursor_execute(
+            conn, cursor, statement, parameters, context, executemany
+        ) -> None:
             """Log query execution time."""
             total_time = datetime.utcnow() - conn.info["query_start_time"].pop(-1)
 
@@ -270,6 +287,7 @@ class PostgreSQLEngineFactory:
 # Database Migration
 # ============================================================================
 
+
 class SQLiteToPostgresMigration:
     """
     Migrate data from SQLite to PostgreSQL.
@@ -279,8 +297,8 @@ class SQLiteToPostgresMigration:
         self,
         sqlite_path: str,
         postgres_config: PostgreSQLConfig,
-        batch_size: int = 1000
-    ):
+        batch_size: int = 1000,
+    ) -> None:
         """Initialize migration."""
         self.sqlite_path = sqlite_path
         self.postgres_config = postgres_config
@@ -290,7 +308,7 @@ class SQLiteToPostgresMigration:
         self.sqlite_engine = create_engine(f"sqlite:///{sqlite_path}")
         self.postgres_engine = PostgreSQLEngineFactory.create_engine(postgres_config)
 
-    def migrate_schema(self):
+    def migrate_schema(self) -> None:
         """Migrate database schema to PostgreSQL."""
         logger.info("Starting schema migration...")
 
@@ -312,11 +330,7 @@ class SQLiteToPostgresMigration:
                 columns.append(pg_column)
 
             # Create table
-            pg_table = Table(
-                table_name,
-                postgres_metadata,
-                *columns
-            )
+            pg_table = Table(table_name, postgres_metadata, *columns)
 
             # Add indexes
             for index in sqlite_table.indexes:
@@ -327,7 +341,7 @@ class SQLiteToPostgresMigration:
 
         logger.info("Schema migration completed")
 
-    def migrate_data(self):
+    def migrate_data(self) -> None:
         """Migrate data from SQLite to PostgreSQL."""
         logger.info("Starting data migration...")
 
@@ -343,7 +357,7 @@ class SQLiteToPostgresMigration:
                 logger.info(f"Migrating table: {table_name}")
 
                 # Count records
-                count_query = text(f"SELECT COUNT(*) FROM {table_name}")
+                count_query = text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 total_records = sqlite_session.execute(count_query).scalar()
 
                 if total_records == 0:
@@ -354,7 +368,7 @@ class SQLiteToPostgresMigration:
                 while offset < total_records:
                     # Read batch from SQLite
                     select_query = text(
-                        f"SELECT * FROM {table_name} "
+                        f"SELECT * FROM {table_name} "  # noqa: S608 - safe SQL construction
                         f"LIMIT {self.batch_size} OFFSET {offset}"
                     )
                     rows = sqlite_session.execute(select_query).fetchall()
@@ -369,7 +383,9 @@ class SQLiteToPostgresMigration:
 
                     # Log progress
                     progress = min(100, (offset / total_records) * 100)
-                    logger.info(f"  {table_name}: {progress:.1f}% ({offset}/{total_records})")
+                    logger.info(
+                        f"  {table_name}: {progress:.1f}% ({offset}/{total_records})"
+                    )
 
                 # Update sequences for auto-increment columns
                 self._update_sequences(postgres_session, table_name)
@@ -395,7 +411,7 @@ class SQLiteToPostgresMigration:
         results = {
             "tables": {},
             "total_records": {"sqlite": 0, "postgres": 0},
-            "success": True
+            "success": True,
         }
 
         try:
@@ -405,17 +421,17 @@ class SQLiteToPostgresMigration:
             for table_name in metadata.tables:
                 # Count records in both databases
                 sqlite_count = sqlite_session.execute(
-                    text(f"SELECT COUNT(*) FROM {table_name}")
+                    text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 ).scalar()
 
                 postgres_count = postgres_session.execute(
-                    text(f"SELECT COUNT(*) FROM {table_name}")
+                    text(f"SELECT COUNT(*) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 ).scalar()
 
                 results["tables"][table_name] = {
                     "sqlite": sqlite_count,
                     "postgres": postgres_count,
-                    "match": sqlite_count == postgres_count
+                    "match": sqlite_count == postgres_count,
                 }
 
                 results["total_records"]["sqlite"] += sqlite_count
@@ -428,7 +444,9 @@ class SQLiteToPostgresMigration:
                         f"SQLite={sqlite_count}, PostgreSQL={postgres_count}"
                     )
 
-            logger.info(f"Migration verification: {'PASSED' if results['success'] else 'FAILED'}")
+            logger.info(
+                f"Migration verification: {'PASSED' if results['success'] else 'FAILED'}"
+            )
 
         finally:
             sqlite_session.close()
@@ -436,7 +454,7 @@ class SQLiteToPostgresMigration:
 
         return results
 
-    def _convert_column(self, sqlite_column):
+    def _convert_column(self, sqlite_column) -> Any:
         """Convert SQLite column to PostgreSQL column."""
 
         # Map SQLite types to PostgreSQL types
@@ -462,38 +480,34 @@ class SQLiteToPostgresMigration:
             nullable=sqlite_column.nullable,
             unique=sqlite_column.unique,
             default=sqlite_column.default,
-            autoincrement=sqlite_column.autoincrement
+            autoincrement=sqlite_column.autoincrement,
         )
 
         return pg_column
 
-    def _create_index(self, table, sqlite_index):
+    def _create_index(self, table, sqlite_index) -> None:
         """Create PostgreSQL index from SQLite index."""
         columns = [table.c[col.name] for col in sqlite_index.columns]
 
-        Index(
-            sqlite_index.name,
-            *columns,
-            unique=sqlite_index.unique
-        )
+        Index(sqlite_index.name, *columns, unique=sqlite_index.unique)
 
-    def _insert_batch(self, session, table_name: str, rows):
+    def _insert_batch(self, session, table_name: str, rows) -> None:
         """Insert batch of rows into PostgreSQL."""
         if not rows:
             return
 
         # Convert rows to dictionaries
-        row_dicts = [dict(row) for row in rows]
+        row_dicts = [dict[str, Any](row) for row in rows]
 
         # Use PostgreSQL COPY for better performance
         insert_query = text(
-            f"INSERT INTO {table_name} ({','.join(row_dicts[0].keys())}) "
-            f"VALUES ({','.join([':' + k for k in row_dicts[0].keys()])})"
+            f"INSERT INTO {table_name} ({','.join(row_dicts[0].keys())}) "  # noqa: S608 - safe SQL construction
+            f"VALUES ({','.join([':' + k for k in row_dicts[0]])})"
         )
 
         session.execute(insert_query, row_dicts)
 
-    def _update_sequences(self, session, table_name: str):
+    def _update_sequences(self, session, table_name: str) -> None:
         """Update PostgreSQL sequences for auto-increment columns."""
         try:
             # Find primary key column
@@ -502,7 +516,7 @@ class SQLiteToPostgresMigration:
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_name = :table_name AND column_default LIKE 'nextval%'"
                 ),
-                {"table_name": table_name}
+                {"table_name": table_name},
             ).fetchone()
 
             if result:
@@ -510,7 +524,7 @@ class SQLiteToPostgresMigration:
 
                 # Get max value
                 max_value = session.execute(
-                    text(f"SELECT MAX({column_name}) FROM {table_name}")
+                    text(f"SELECT MAX({column_name}) FROM {table_name}")  # noqa: S608 - safe SQL construction
                 ).scalar()
 
                 if max_value:
@@ -529,23 +543,21 @@ class SQLiteToPostgresMigration:
 # Database Optimization
 # ============================================================================
 
+
 class PostgreSQLOptimizer:
     """
     PostgreSQL database optimization utilities.
     """
 
-    def __init__(self, engine: Engine):
+    def __init__(self, engine: Engine) -> None:
         """Initialize optimizer."""
         self.engine = engine
 
-    def analyze_tables(self):
+    def analyze_tables(self) -> None:
         """Run ANALYZE on all tables to update statistics."""
         with self.engine.connect() as conn:
             tables = conn.execute(
-                text(
-                    "SELECT tablename FROM pg_tables "
-                    "WHERE schemaname = 'public'"
-                )
+                text("SELECT tablename FROM pg_tables " "WHERE schemaname = 'public'")
             ).fetchall()
 
             for table in tables:
@@ -553,21 +565,18 @@ class PostgreSQLOptimizer:
                 conn.execute(text(f"ANALYZE {table[0]}"))
                 logger.info(f"Analyzed table: {table[0]}")
 
-    def create_missing_indexes(self):
+    def create_missing_indexes(self) -> None:
         """Create recommended indexes based on query patterns."""
         recommended_indexes = [
             # User tables
             ("users", ["email"], True),
             ("users", ["created_at"], False),
-
             # Document tables
             ("documents", ["user_id", "created_at"], False),
             ("documents", ["content_hash"], True),
-
             # Audit tables
             ("audit_logs", ["user_id", "timestamp"], False),
             ("audit_logs", ["event_type", "timestamp"], False),
-
             # Session tables
             ("sessions", ["token"], True),
             ("sessions", ["user_id", "expires_at"], False),
@@ -579,11 +588,8 @@ class PostgreSQLOptimizer:
 
                 # Check if index exists
                 exists = conn.execute(
-                    text(
-                        "SELECT 1 FROM pg_indexes "
-                        "WHERE indexname = :index_name"
-                    ),
-                    {"index_name": index_name}
+                    text("SELECT 1 FROM pg_indexes " "WHERE indexname = :index_name"),
+                    {"index_name": index_name},
                 ).fetchone()
 
                 if not exists:
@@ -600,16 +606,15 @@ class PostgreSQLOptimizer:
 
                     logger.info(f"Created index: {index_name}")
 
-    def vacuum_analyze(self):
+    def vacuum_analyze(self) -> None:
         """Run VACUUM ANALYZE on all tables."""
         with self.engine.connect() as conn:
-            conn.execute(text("SET statement_timeout = 0"))  # No timeout for maintenance
+            conn.execute(
+                text("SET statement_timeout = 0")
+            )  # No timeout for maintenance
 
             tables = conn.execute(
-                text(
-                    "SELECT tablename FROM pg_tables "
-                    "WHERE schemaname = 'public'"
-                )
+                text("SELECT tablename FROM pg_tables " "WHERE schemaname = 'public'")
             ).fetchall()
 
             for table in tables:
@@ -617,14 +622,12 @@ class PostgreSQLOptimizer:
                 conn.execute(text(f"VACUUM ANALYZE {table[0]}"))
                 logger.info(f"Vacuumed and analyzed table: {table[0]}")
 
-    def get_slow_queries(self, min_duration_ms: int = 1000) -> list[dict]:
+    def get_slow_queries(self, min_duration_ms: int = 1000) -> list[dict[str, Any]]:
         """Get slow queries from pg_stat_statements."""
         with self.engine.connect() as conn:
             # Enable pg_stat_statements if not already enabled
-            try:
+            with suppress(builtins.BaseException):
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_stat_statements"))
-            except:
-                pass
 
             # Get slow queries
             result = conn.execute(
@@ -643,7 +646,7 @@ class PostgreSQLOptimizer:
                     LIMIT 20
                     """
                 ),
-                {"min_duration": min_duration_ms}
+                {"min_duration": min_duration_ms},
             ).fetchall()
 
             return [
@@ -653,7 +656,7 @@ class PostgreSQLOptimizer:
                     "total_time": row[2],
                     "mean_time": row[3],
                     "stddev_time": row[4],
-                    "rows": row[5]
+                    "rows": row[5],
                 }
                 for row in result
             ]

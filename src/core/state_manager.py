@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class StateChangeType(Enum):
     """Types of state changes for granular observation."""
 
-    SET = "set"
+    SET = "set[str]"
     UPDATE = "update"
     DELETE = "delete"
     RESET = "reset"
@@ -54,7 +54,7 @@ class StateManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize state manager with default application state."""
         if hasattr(self, "_initialized"):
             return
@@ -95,8 +95,8 @@ class StateManager:
                 "cache_info": {},
             },
         }
-        # Observer registry: path -> list of callbacks
-        self._observers: dict[str, list[Callable]] = {}
+        # Observer registry: path -> list[Any] of callbacks
+        self._observers: dict[str, list[Callable[..., Any]]] = {}
         # State change history for debugging
         self._change_history: list[dict[str, Any]] = []
         self._initialized = True
@@ -128,11 +128,11 @@ class StateManager:
         """
         Set state value at the specified path with optional change notification.
         Args:
-            path: Dot-separated state path to set
-            value: Value to set at the path
+            path: Dot-separated state path to set[str]
+            value: Value to set[str] at the path
             notify: Whether to notify observers of the change
         Returns:
-            True if state was successfully set, False otherwise
+            True if state was successfully set[str], False otherwise
         Examples:
             set_state('app.rag_mode', True) -> Enable RAG mode
             set_state('chat.is_ai_responding', False) -> Stop AI response indicator
@@ -153,13 +153,13 @@ class StateManager:
             # Keep history limited to last MAX_HISTORY_SIZE changes
             if len(self._change_history) > self.MAX_HISTORY_SIZE:
                 self._change_history.pop(0)
-            logger.debug(f"State set: {path} = {value}")
+            logger.debug(f"State set[str]: {path} = {value}")
             # Notify observers if requested
             if notify:
                 self._notify_observers(path, value, old_value, StateChangeType.SET)
             return True
         except Exception as e:
-            logger.error(f"Failed to set state at path '{path}': {e}")
+            logger.error(f"Failed to set[str] state at path '{path}': {e}")
             return False
 
     def update_state(
@@ -231,7 +231,7 @@ class StateManager:
         self._observers[path].append(callback)
         logger.debug(f"Added observer for path '{path}': {callback.__name__}")
 
-    def unsubscribe(self, path: str, callback: Callable) -> None:
+    def unsubscribe(self, path: str, callback: Callable[..., Any]) -> None:
         """
         Unsubscribe from state changes at a specific path.
         Args:
@@ -247,7 +247,7 @@ class StateManager:
         keys = path.split(".")
         current = state_dict
         for key in keys:
-            if isinstance(current, dict) and key in current:
+            if isinstance(current, dict[str, Any]) and key in current:
                 current = current[key]
             else:
                 return None
@@ -394,6 +394,6 @@ class StateManager:
         return {
             "total_observers": sum(len(obs) for obs in self._observers.values()),
             "change_history_size": len(self._change_history),
-            "state_sections": list(self._state.keys()),
+            "state_sections": list[Any](self._state.keys()),
             "last_changes": self.get_change_history(5),
         }

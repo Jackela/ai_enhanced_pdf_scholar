@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Citation Network Analysis Demo Script
@@ -21,7 +23,9 @@ from src.repositories.document_repository import DocumentRepository
 from src.services.citation_service import CitationService
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -48,32 +52,32 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             "title": "Attention Is All You Need",
             "authors": "Vaswani et al.",
             "year": 2017,
-            "description": "Seminal transformer architecture paper"
+            "description": "Seminal transformer architecture paper",
         },
         {
             "title": "BERT: Pre-training Deep Bidirectional Transformers",
             "authors": "Devlin et al.",
             "year": 2018,
-            "description": "BERT language model"
+            "description": "BERT language model",
         },
         {
             "title": "Language Models are Few-Shot Learners",
             "authors": "Brown et al.",
             "year": 2020,
-            "description": "GPT-3 paper"
+            "description": "GPT-3 paper",
         },
         {
             "title": "Training Language Models to Follow Instructions",
             "authors": "Ouyang et al.",
             "year": 2022,
-            "description": "InstructGPT paper"
+            "description": "InstructGPT paper",
         },
         {
             "title": "Constitutional AI: Harmlessness from AI Feedback",
             "authors": "Bai et al.",
             "year": 2022,
-            "description": "Constitutional AI paper"
-        }
+            "description": "Constitutional AI paper",
+        },
     ]
 
     doc_ids = {}
@@ -88,7 +92,7 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             file_size=1024000 + i * 100000,
             content_hash=f"content_hash_{i+1}",
             page_count=10 + i * 2,
-            _from_database=False
+            _from_database=False,
         )
 
         # Insert document
@@ -96,13 +100,22 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             INSERT INTO documents (title, file_path, file_hash, file_size, content_hash, page_count, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
         """
-        db_connection.execute(insert_sql, (
-            document.title, document.file_path, document.file_hash,
-            document.file_size, document.content_hash, document.page_count
-        ))
+        db_connection.execute(
+            insert_sql,
+            (
+                document.title,
+                document.file_path,
+                document.file_hash,
+                document.file_size,
+                document.content_hash,
+                document.page_count,
+            ),
+        )
 
         # Get generated ID
-        row = db_connection.fetch_one("SELECT id FROM documents WHERE file_hash = ?", (document.file_hash,))
+        row = db_connection.fetch_one(
+            "SELECT id FROM documents WHERE file_hash = ?", (document.file_hash,)
+        )
         if row:
             document.id = row["id"]
             doc_ids[doc_info["title"]] = document.id
@@ -118,16 +131,18 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             "title": "Deep learning",
             "publication_year": 2015,
             "journal_or_venue": "Nature",
-            "citation_type": "journal"
+            "citation_type": "journal",
         },
         # BERT paper citations
         {
-            "document_id": doc_ids["BERT: Pre-training Deep Bidirectional Transformers"],
+            "document_id": doc_ids[
+                "BERT: Pre-training Deep Bidirectional Transformers"
+            ],
             "raw_text": "Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is all you need.",
             "authors": "Vaswani, A.",
             "title": "Attention is all you need",
             "publication_year": 2017,
-            "citation_type": "conference"
+            "citation_type": "conference",
         },
         # GPT-3 paper citations
         {
@@ -136,7 +151,7 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             "authors": "Vaswani, A.",
             "title": "Attention is all you need",
             "publication_year": 2017,
-            "citation_type": "conference"
+            "citation_type": "conference",
         },
         {
             "document_id": doc_ids["Language Models are Few-Shot Learners"],
@@ -144,7 +159,7 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             "authors": "Devlin, J.",
             "title": "BERT: Pre-training of Deep Bidirectional Transformers",
             "publication_year": 2018,
-            "citation_type": "preprint"
+            "citation_type": "preprint",
         },
         # InstructGPT citations
         {
@@ -153,7 +168,7 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             "authors": "Brown, T.",
             "title": "Language models are few-shot learners",
             "publication_year": 2020,
-            "citation_type": "conference"
+            "citation_type": "conference",
         },
         # Constitutional AI citations
         {
@@ -162,8 +177,8 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             "authors": "Ouyang, L.",
             "title": "Training language models to follow instructions with human feedback",
             "publication_year": 2022,
-            "citation_type": "preprint"
-        }
+            "citation_type": "preprint",
+        },
     ]
 
     citation_ids = {}
@@ -178,7 +193,7 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             publication_year=cit_data.get("publication_year"),
             journal_or_venue=cit_data.get("journal_or_venue"),
             citation_type=cit_data.get("citation_type", "unknown"),
-            confidence_score=0.9
+            confidence_score=0.9,
         )
 
         created_citation = citation_repo.create(citation)
@@ -192,35 +207,35 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             "source_doc": "BERT: Pre-training Deep Bidirectional Transformers",
             "target_doc": "Attention Is All You Need",
             "relation_type": "cites",
-            "confidence": 0.95
+            "confidence": 0.95,
         },
         # GPT-3 cites both Transformer and BERT
         {
             "source_doc": "Language Models are Few-Shot Learners",
             "target_doc": "Attention Is All You Need",
             "relation_type": "cites",
-            "confidence": 0.90
+            "confidence": 0.90,
         },
         {
             "source_doc": "Language Models are Few-Shot Learners",
             "target_doc": "BERT: Pre-training Deep Bidirectional Transformers",
             "relation_type": "cites",
-            "confidence": 0.85
+            "confidence": 0.85,
         },
         # InstructGPT cites GPT-3
         {
             "source_doc": "Training Language Models to Follow Instructions",
             "target_doc": "Language Models are Few-Shot Learners",
             "relation_type": "builds_on",
-            "confidence": 0.95
+            "confidence": 0.95,
         },
         # Constitutional AI cites InstructGPT
         {
             "source_doc": "Constitutional AI: Harmlessness from AI Feedback",
             "target_doc": "Training Language Models to Follow Instructions",
             "relation_type": "extends",
-            "confidence": 0.90
-        }
+            "confidence": 0.90,
+        },
     ]
 
     # Create citation relations
@@ -237,16 +252,20 @@ def create_demo_data(db_connection: DatabaseConnection) -> dict[str, int]:
             source_citation_id=source_citation_id,
             target_document_id=target_id,
             relation_type=rel_data["relation_type"],
-            confidence_score=rel_data["confidence"]
+            confidence_score=rel_data["confidence"],
         )
 
         relation_repo.create(relation)
 
-    logger.info(f"Created {len(documents)} documents with {len(citation_data)} citations and {len(relations)} relations")
+    logger.info(
+        f"Created {len(documents)} documents with {len(citation_data)} citations and {len(relations)} relations"
+    )
     return doc_ids
 
 
-def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dict[str, int]):
+def demonstrate_network_analysis(
+    citation_service: CitationService, doc_ids: dict[str, int]
+) -> None:
     """
     Demonstrate various citation network analysis features.
 
@@ -257,7 +276,9 @@ def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dic
     logger.info("=== Citation Network Analysis Demo ===")
 
     # Demo 1: Build comprehensive citation network
-    print("\\n1. Building Citation Network for 'Language Models are Few-Shot Learners' (GPT-3)")
+    print(
+        "\\n1. Building Citation Network for 'Language Models are Few-Shot Learners' (GPT-3)"
+    )
     print("-" * 70)
 
     gpt3_id = doc_ids["Language Models are Few-Shot Learners"]
@@ -269,27 +290,29 @@ def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dic
     print(f"  • Network Depth: {network['depth']}")
 
     # Show analytics
-    if 'analytics' in network:
-        analytics = network['analytics']
+    if "analytics" in network:
+        analytics = network["analytics"]
         print("\\nNetwork Analytics:")
         print(f"  • Density: {analytics.get('density', 0):.3f}")
         print(f"  • Average Degree: {analytics.get('avg_degree', 0):.2f}")
 
-        if 'citation_patterns' in analytics:
-            patterns = analytics['citation_patterns']
-            print(f"  • Citation Patterns: {patterns.get('pattern_count', 0)} connections")
-            if 'relation_types' in patterns:
+        if "citation_patterns" in analytics:
+            patterns = analytics["citation_patterns"]
+            print(
+                f"  • Citation Patterns: {patterns.get('pattern_count', 0)} connections"
+            )
+            if "relation_types" in patterns:
                 print(f"  • Relation Types: {patterns['relation_types']}")
 
     # Demo 2: Identify influential documents
     print("\\n2. Most Influential Documents in Network")
     print("-" * 70)
 
-    if 'influential_documents' in network:
-        influential = network['influential_documents'][:3]  # Top 3
+    if "influential_documents" in network:
+        influential = network["influential_documents"][:3]  # Top 3
         for i, doc in enumerate(influential, 1):
-            doc_id = doc.get('document_id')
-            title = doc.get('title', f'Document {doc_id}')
+            doc_id = doc.get("document_id")
+            title = doc.get("title", f"Document {doc_id}")
             print(f"{i}. {title}")
             print(f"   Influence Score: {doc.get('influence_score', 0):.1f}")
             print(f"   Times Cited: {doc.get('times_cited', 0)}")
@@ -326,30 +349,34 @@ def demonstrate_network_analysis(citation_service: CitationService, doc_ids: dic
     print("\\n5. Edge Analysis")
     print("-" * 70)
 
-    if 'edge_metrics' in network:
-        edge_metrics = network['edge_metrics']
+    if "edge_metrics" in network:
+        edge_metrics = network["edge_metrics"]
         print("Edge Confidence Statistics:")
         print(f"  • Average Confidence: {edge_metrics.get('avg_confidence', 0):.3f}")
         print(f"  • Min Confidence: {edge_metrics.get('min_confidence', 0):.3f}")
         print(f"  • Max Confidence: {edge_metrics.get('max_confidence', 0):.3f}")
-        print(f"  • High Confidence Edges (≥0.8): {edge_metrics.get('high_confidence_count', 0)}")
+        print(
+            f"  • High Confidence Edges (≥0.8): {edge_metrics.get('high_confidence_count', 0)}"
+        )
 
     # Demo 6: Centrality measures
     print("\\n6. Node Centrality Analysis")
     print("-" * 70)
 
-    if 'analytics' in network and 'centrality_measures' in network['analytics']:
-        centrality = network['analytics']['centrality_measures']
-        if centrality.get('centrality_calculated'):
+    if "analytics" in network and "centrality_measures" in network["analytics"]:
+        centrality = network["analytics"]["centrality_measures"]
+        if centrality.get("centrality_calculated"):
             print(f"Average Centrality: {centrality.get('avg_centrality', 0):.3f}")
 
-            most_central = centrality.get('most_central_nodes', [])[:3]
+            most_central = centrality.get("most_central_nodes", [])[:3]
             print("Most Central Nodes:")
             for i, node in enumerate(most_central, 1):
-                print(f"  {i}. Node {node.get('node_id')}: {node.get('centrality', 0):.3f}")
+                print(
+                    f"  {i}. Node {node.get('node_id')}: {node.get('centrality', 0):.3f}"
+                )
 
 
-def export_network_data(network: dict, output_file: str):
+def export_network_data(network: dict[str, Any], output_file: str) -> None:
     """
     Export network data to JSON for visualization.
 
@@ -362,25 +389,25 @@ def export_network_data(network: dict, output_file: str):
     # Prepare data for export (make it JSON serializable)
     export_data = {
         "metadata": {
-            "total_nodes": network.get('total_nodes', 0),
-            "total_edges": network.get('total_edges', 0),
-            "center_document": network.get('center_document'),
-            "depth": network.get('depth', 1)
+            "total_nodes": network.get("total_nodes", 0),
+            "total_edges": network.get("total_edges", 0),
+            "center_document": network.get("center_document"),
+            "depth": network.get("depth", 1),
         },
-        "nodes": network.get('nodes', []),
-        "edges": network.get('edges', []),
-        "analytics": network.get('analytics', {}),
-        "influential_documents": network.get('influential_documents', [])
+        "nodes": network.get("nodes", []),
+        "edges": network.get("edges", []),
+        "analytics": network.get("analytics", {}),
+        "influential_documents": network.get("influential_documents", []),
     }
 
-    with open(output_file, 'w', encoding='utf-8') as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(export_data, f, indent=2, default=str)
 
     print(f"\\n📁 Network data exported to: {output_file}")
     print("   This file can be used for network visualization tools")
 
 
-def main():
+def main() -> None:
     """Main demo execution."""
     logger.info("Starting Citation Network Analysis Demo")
 
@@ -412,9 +439,9 @@ def main():
     export_file = output_dir / "citation_network_sample.json"
     export_network_data(network, str(export_file))
 
-    print("\\n" + "="*70)
+    print("\\n" + "=" * 70)
     print("🎉 Citation Network Analysis Demo Complete!")
-    print("="*70)
+    print("=" * 70)
     print("\\nFeatures demonstrated:")
     print("✅ Enhanced network building with metrics")
     print("✅ Influential document identification")

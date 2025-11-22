@@ -8,9 +8,9 @@ import logging
 import os
 import time
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -20,6 +20,7 @@ from starlette.types import ASGIApp
 # Optional monitoring import
 try:
     from .rate_limit_monitor import record_rate_limit_event
+
     MONITORING_AVAILABLE = True
 except ImportError:
     MONITORING_AVAILABLE = False
@@ -27,10 +28,11 @@ except ImportError:
 try:
     import redis
     import redis.asyncio as aioredis
+
     REDIS_AVAILABLE = True
 except ImportError:
-    redis = None
-    aioredis = None
+    redis = cast(Any, None)
+    aioredis = cast(Any, None)
     REDIS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -39,51 +41,60 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RateLimitRule:
     """Rate limit rule configuration."""
+
     requests: int  # Number of requests allowed
-    window: int    # Time window in seconds
+    window: int  # Time window in seconds
     burst: int | None = None  # Burst capacity (if different from requests)
 
 
 @dataclass
 class RateLimitConfig:
     """Rate limiting configuration."""
+
     # Default limits
-    default_limit: RateLimitRule = field(default_factory=lambda: RateLimitRule(60, 60))  # 60 req/min
+    default_limit: RateLimitRule = field(
+        default_factory=lambda: RateLimitRule(60, 60)
+    )  # 60 req/min
 
     # Endpoint-specific limits
-    endpoint_limits: dict[str, RateLimitRule] = field(default_factory=lambda: {
-        # Upload endpoints - strict limits
-        "/api/documents/upload": RateLimitRule(10, 60),           # 10 uploads/min
-        "/api/library/upload": RateLimitRule(10, 60),             # 10 uploads/min
-
-        # Query endpoints - moderate limits
-        "/api/rag/query": RateLimitRule(100, 60),                 # 100 queries/min
-        "/api/rag/chat": RateLimitRule(100, 60),                  # 100 chat/min
-        "/api/documents/query": RateLimitRule(100, 60),           # 100 doc queries/min
-
-        # Admin endpoints - higher limits
-        "/api/system": RateLimitRule(200, 60),                    # 200 admin/min
-        "/api/system/health": RateLimitRule(1000, 60),            # Health checks unrestricted
-
-        # Library operations
-        "/api/library": RateLimitRule(120, 60),                   # 120 library ops/min
-        "/api/documents": RateLimitRule(120, 60),                 # 120 doc ops/min
-    })
+    endpoint_limits: dict[str, RateLimitRule] = field(
+        default_factory=lambda: {
+            # Upload endpoints - strict limits
+            "/api/documents/upload": RateLimitRule(10, 60),  # 10 uploads/min
+            "/api/library/upload": RateLimitRule(10, 60),  # 10 uploads/min
+            # Query endpoints - moderate limits
+            "/api/rag/query": RateLimitRule(100, 60),  # 100 queries/min
+            "/api/rag/chat": RateLimitRule(100, 60),  # 100 chat/min
+            "/api/documents/query": RateLimitRule(100, 60),  # 100 doc queries/min
+            # Admin endpoints - higher limits
+            "/api/system": RateLimitRule(200, 60),  # 200 admin/min
+            "/api/system/health": RateLimitRule(1000, 60),  # Health checks unrestricted
+            # Library operations
+            "/api/library": RateLimitRule(120, 60),  # 120 library ops/min
+            "/api/documents": RateLimitRule(120, 60),  # 120 doc ops/min
+        }
+    )
 
     # Global limits (applied before endpoint-specific)
-    global_ip_limit: RateLimitRule = field(default_factory=lambda: RateLimitRule(1000, 3600))  # 1000/hour
+    global_ip_limit: RateLimitRule = field(
+        default_factory=lambda: RateLimitRule(1000, 3600)
+    )  # 1000/hour
 
     # Redis configuration
     redis_url: str | None = None
     redis_key_prefix: str = "rate_limit:"
 
     # Environment-specific multipliers
-    dev_multiplier: float = 10.0     # 10x limits in development
-    test_multiplier: float = 100.0   # 100x limits in testing
+    dev_multiplier: float = 10.0  # 10x limits in development
+    test_multiplier: float = 100.0  # 100x limits in testing
 
     # Bypass configuration
-    bypass_ips: set = field(default_factory=lambda: {"127.0.0.1", "::1"})  # localhost bypass
-    bypass_user_agents: set = field(default_factory=lambda: {"health-check", "monitor"})
+    bypass_ips: set[str] = field(
+        default_factory=lambda: {"127.0.0.1", "::1"}
+    )  # localhost bypass
+    bypass_user_agents: set[str] = field(
+        default_factory=lambda: {"health-check", "monitor"}
+    )
 
     # Response configuration
     include_headers: bool = True
@@ -97,7 +108,7 @@ class RateLimitConfig:
 class InMemoryStore:
     """In-memory rate limiting store with automatic cleanup."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._data: dict[str, dict[str, Any]] = defaultdict(dict)
         self._cleanup_interval = 300  # 5 minutes
         self._last_cleanup = time.time()
@@ -110,7 +121,7 @@ class InMemoryStore:
 
         expired_keys = []
         for key, data in self._data.items():
-            if data.get('expires', 0) < current_time:
+            if data.get("expires", 0) < current_time:
                 expired_keys.append(key)
 
         for key in expired_keys:
@@ -126,7 +137,7 @@ class InMemoryStore:
 
     async def set(self, key: str, data: dict[str, Any], ttl: int) -> None:
         """Set rate limit data with TTL."""
-        data['expires'] = time.time() + ttl
+        data["expires"] = time.time() + ttl
         self._data[key] = data
 
     async def incr(self, key: str, window: int) -> tuple[int, int]:
@@ -136,35 +147,35 @@ class InMemoryStore:
 
         if key not in self._data:
             self._data[key] = {
-                'count': 1,
-                'window_start': current_time,
-                'expires': current_time + window
+                "count": 1,
+                "window_start": current_time,
+                "expires": current_time + window,
             }
             return 1, window
 
         data = self._data[key]
 
         # Check if we're in a new window
-        if current_time - data['window_start'] >= window:
-            data['count'] = 1
-            data['window_start'] = current_time
-            data['expires'] = current_time + window
+        if current_time - data["window_start"] >= window:
+            data["count"] = 1
+            data["window_start"] = current_time
+            data["expires"] = current_time + window
             return 1, window
         else:
-            data['count'] += 1
-            remaining_ttl = int(data['expires'] - current_time)
-            return data['count'], remaining_ttl
+            data["count"] += 1
+            remaining_ttl = int(data["expires"] - current_time)
+            return data["count"], remaining_ttl
 
 
 class RedisStore:
     """Redis-based rate limiting store."""
 
-    def __init__(self, redis_url: str, key_prefix: str = "rate_limit:"):
+    def __init__(self, redis_url: str, key_prefix: str = "rate_limit:") -> None:
         self.redis_url = redis_url
         self.key_prefix = key_prefix
-        self._redis = None
+        self._redis: Any = None
 
-    async def _get_redis(self):
+    async def _get_redis(self) -> Any:
         """Get or create Redis connection."""
         if self._redis is None:
             self._redis = aioredis.from_url(self.redis_url, decode_responses=True)
@@ -184,11 +195,7 @@ class RedisStore:
         """Set rate limit data with TTL."""
         try:
             redis_client = await self._get_redis()
-            await redis_client.setex(
-                f"{self.key_prefix}{key}",
-                ttl,
-                json.dumps(data)
-            )
+            await redis_client.setex(f"{self.key_prefix}{key}", ttl, json.dumps(data))
         except Exception as e:
             logger.warning(f"Redis set failed: {e}")
 
@@ -253,7 +260,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         logger.info(f"Rate limiting initialized with {type(self._store).__name__}")
 
-    def _init_store(self):
+    def _init_store(self) -> InMemoryStore | RedisStore:
         """Initialize storage backend (Redis with in-memory fallback)."""
         redis_url = self.config.redis_url or os.getenv("REDIS_URL")
 
@@ -261,7 +268,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             try:
                 return RedisStore(redis_url, self.config.redis_key_prefix)
             except Exception as e:
-                logger.warning(f"Redis initialization failed: {e}, falling back to in-memory")
+                logger.warning(
+                    f"Redis initialization failed: {e}, falling back to in-memory"
+                )
 
         return InMemoryStore()
 
@@ -277,13 +286,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         if multiplier > 1.0:
             # Apply multiplier to all limits
-            self.config.default_limit.requests = int(self.config.default_limit.requests * multiplier)
-            self.config.global_ip_limit.requests = int(self.config.global_ip_limit.requests * multiplier)
+            self.config.default_limit.requests = int(
+                self.config.default_limit.requests * multiplier
+            )
+            self.config.global_ip_limit.requests = int(
+                self.config.global_ip_limit.requests * multiplier
+            )
 
-            for endpoint, rule in self.config.endpoint_limits.items():
+            for _endpoint, rule in self.config.endpoint_limits.values():
                 rule.requests = int(rule.requests * multiplier)
 
-            logger.info(f"Applied {multiplier}x rate limit multiplier for {env} environment")
+            logger.info(
+                f"Applied {multiplier}x rate limit multiplier for {env} environment"
+            )
 
     def _should_bypass(self, request: Request) -> bool:
         """Check if request should bypass rate limiting."""
@@ -295,9 +310,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if cache_key in self._bypass_cache:
             return self._bypass_cache[cache_key]
 
-        bypass = (
-            client_ip in self.config.bypass_ips or
-            any(ua in user_agent for ua in self.config.bypass_user_agents)
+        bypass = client_ip in self.config.bypass_ips or any(
+            ua in user_agent for ua in self.config.bypass_user_agents
         )
 
         self._bypass_cache[cache_key] = bypass
@@ -331,21 +345,21 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         return self.config.default_limit
 
-    def _create_rate_limit_response(self,
-                                  limit: int,
-                                  remaining: int,
-                                  reset_time: int,
-                                  retry_after: int) -> JSONResponse:
+    def _create_rate_limit_response(
+        self, limit: int, remaining: int, reset_time: int, retry_after: int
+    ) -> JSONResponse:
         """Create rate limit exceeded response."""
         headers = {}
 
         if self.config.include_headers:
-            headers.update({
-                "X-RateLimit-Limit": str(limit),
-                "X-RateLimit-Remaining": str(remaining),
-                "X-RateLimit-Reset": str(reset_time),
-                "Retry-After": str(retry_after)
-            })
+            headers.update(
+                {
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": str(remaining),
+                    "X-RateLimit-Reset": str(reset_time),
+                    "Retry-After": str(retry_after),
+                }
+            )
 
         return JSONResponse(
             status_code=429,
@@ -356,12 +370,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 "retry_after": retry_after,
                 "limit": limit,
                 "remaining": remaining,
-                "reset": reset_time
-            }
+                "reset": reset_time,
+            },
         )
 
-    def _record_event(self, request: Request, response: Response, response_time: float,
-                     limit_type: str = None, limit_value: int = None, remaining: int = None):
+    def _record_event(
+        self,
+        request: Request,
+        response: Response,
+        response_time: float,
+        limit_type: str | None = None,
+        limit_value: int | None = None,
+        remaining: int | None = None,
+    ) -> None:
         """Record monitoring event if enabled."""
         if not (self.config.enable_monitoring and MONITORING_AVAILABLE):
             return
@@ -378,12 +399,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 user_agent=user_agent,
                 limit_type=limit_type,
                 limit_value=limit_value,
-                remaining=remaining
+                remaining=remaining,
             )
         except Exception as e:
             logger.debug(f"Failed to record monitoring event: {e}")
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self,
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Response]],
+    ) -> Response:
         """Process request through rate limiting."""
         start_time = time.time()
 
@@ -399,18 +424,23 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check global IP limit first
         global_key = f"global_ip:{client_ip}"
         try:
-            count, ttl = await self._store.incr(global_key, self.config.global_ip_limit.window)
+            count, ttl = await self._store.incr(
+                global_key, self.config.global_ip_limit.window
+            )
 
             if count > self.config.global_ip_limit.requests:
                 reset_time = int(time.time() + ttl)
                 response = self._create_rate_limit_response(
+                    self.config.global_ip_limit.requests, 0, reset_time, ttl
+                )
+                self._record_event(
+                    request,
+                    response,
+                    time.time() - start_time,
+                    "global",
                     self.config.global_ip_limit.requests,
                     0,
-                    reset_time,
-                    ttl
                 )
-                self._record_event(request, response, time.time() - start_time,
-                                 "global", self.config.global_ip_limit.requests, 0)
                 return response
         except Exception as e:
             logger.error(f"Global rate limit check failed: {e}")
@@ -426,13 +456,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if count > rule.requests:
                 reset_time = int(time.time() + ttl)
                 response = self._create_rate_limit_response(
+                    rule.requests, 0, reset_time, ttl
+                )
+                self._record_event(
+                    request,
+                    response,
+                    time.time() - start_time,
+                    "endpoint",
                     rule.requests,
                     0,
-                    reset_time,
-                    ttl
                 )
-                self._record_event(request, response, time.time() - start_time,
-                                 "endpoint", rule.requests, 0)
                 return response
 
             # Process request
@@ -440,7 +473,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             # Add rate limit headers to successful responses
             remaining = max(0, rule.requests - count)
-            if self.config.include_headers and hasattr(response, 'headers'):
+            if self.config.include_headers and hasattr(response, "headers"):
                 reset_time = int(time.time() + ttl)
 
                 response.headers["X-RateLimit-Limit"] = str(rule.requests)
@@ -448,8 +481,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 response.headers["X-RateLimit-Reset"] = str(reset_time)
 
             # Record successful event
-            self._record_event(request, response, time.time() - start_time,
-                             "endpoint", rule.requests, remaining)
+            self._record_event(
+                request,
+                response,
+                time.time() - start_time,
+                "endpoint",
+                rule.requests,
+                remaining,
+            )
 
             return response
 
@@ -467,7 +506,7 @@ def create_development_config() -> RateLimitConfig:
     return RateLimitConfig(
         dev_multiplier=10.0,
         redis_url=os.getenv("REDIS_URL", None),
-        bypass_ips={"127.0.0.1", "::1", "localhost"}
+        bypass_ips={"127.0.0.1", "::1", "localhost"},
     )
 
 
@@ -476,7 +515,7 @@ def create_production_config() -> RateLimitConfig:
     return RateLimitConfig(
         redis_url=os.getenv("REDIS_URL"),
         bypass_ips=set(),  # No bypasses in production
-        include_headers=True
+        include_headers=True,
     )
 
 
@@ -485,5 +524,5 @@ def create_testing_config() -> RateLimitConfig:
     return RateLimitConfig(
         test_multiplier=100.0,
         redis_url=None,  # Use in-memory for tests
-        bypass_ips={"127.0.0.1", "::1", "localhost", "testclient"}
+        bypass_ips={"127.0.0.1", "::1", "localhost", "testclient"},
     )

@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Optimized Security Scanning Script for CI/CD
@@ -16,17 +18,19 @@ from pathlib import Path
 class SecurityScanner:
     """Optimized security scanner with timeout management."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path) -> None:
         self.project_root = project_root
         self.results = {
             "python_dependencies": {"status": "pending", "issues": 0, "duration": 0},
             "frontend_dependencies": {"status": "pending", "issues": 0, "duration": 0},
             "code_analysis": {"status": "pending", "issues": 0, "duration": 0},
-            "total_duration": 0
+            "total_duration": 0,
         }
         self.start_time = time.time()
 
-    def run_command_with_timeout(self, cmd: list[str], timeout: int = 60, cwd: Path | None = None) -> tuple[bool, str, str]:
+    def run_command_with_timeout(
+        self, cmd: list[str], timeout: int = 60, cwd: Path | None = None
+    ) -> tuple[bool, str, str]:
         """Run command with timeout and error handling."""
         try:
             result = subprocess.run(
@@ -34,7 +38,7 @@ class SecurityScanner:
                 timeout=timeout,
                 capture_output=True,
                 text=True,
-                cwd=cwd or self.project_root
+                cwd=cwd or self.project_root,
             )
             return result.returncode == 0, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
@@ -48,9 +52,7 @@ class SecurityScanner:
         start_time = time.time()
 
         # Use lightweight scanning approach
-        cmd = [
-            sys.executable, "-m", "pip", "list", "--format=json"
-        ]
+        cmd = [sys.executable, "-m", "pip", "list", "--format=json"]
 
         success, stdout, stderr = self.run_command_with_timeout(cmd, timeout=30)
 
@@ -65,8 +67,12 @@ class SecurityScanner:
 
             # Quick safety check with timeout (updated for safety 3.x)
             safety_cmd = [
-                sys.executable, "-m", "safety", "check",
-                "--save-json", "safety-report.json"
+                sys.executable,
+                "-m",
+                "safety",
+                "check",
+                "--save-json",
+                "safety-report.json",
             ]
 
             success, _, stderr = self.run_command_with_timeout(safety_cmd, timeout=45)
@@ -102,10 +108,7 @@ class SecurityScanner:
             return True
 
         # Quick npm audit with limited output
-        cmd = [
-            "npm", "audit", "--audit-level=moderate",
-            "--json", "--production"
-        ]
+        cmd = ["npm", "audit", "--audit-level=moderate", "--json", "--production"]
 
         success, stdout, stderr = self.run_command_with_timeout(
             cmd, timeout=60, cwd=frontend_dir
@@ -114,7 +117,9 @@ class SecurityScanner:
         try:
             if stdout:
                 audit_data = json.loads(stdout)
-                vulnerabilities = audit_data.get("metadata", {}).get("vulnerabilities", {})
+                vulnerabilities = audit_data.get("metadata", {}).get(
+                    "vulnerabilities", {}
+                )
                 total_vulns = sum(vulnerabilities.values()) if vulnerabilities else 0
 
                 print(f"📦 Frontend audit found {total_vulns} vulnerabilities")
@@ -148,12 +153,18 @@ class SecurityScanner:
 
         # Use optimized bandit configuration
         cmd = [
-            sys.executable, "-m", "bandit",
-            "-c", ".bandit",
-            "-f", "json",
-            "-o", "bandit-report.json",
+            sys.executable,
+            "-m",
+            "bandit",
+            "-c",
+            ".bandit",
+            "-f",
+            "json",
+            "-o",
+            "bandit-report.json",
             "-ll",  # Low severity threshold for speed
-            "src/", "backend/"
+            "src/",
+            "backend/",
         ]
 
         success, stdout, stderr = self.run_command_with_timeout(cmd, timeout=45)
@@ -197,7 +208,7 @@ class SecurityScanner:
             futures = {
                 executor.submit(self.scan_python_dependencies): "python_deps",
                 executor.submit(self.scan_frontend_dependencies): "frontend_deps",
-                executor.submit(self.scan_code_security): "code_analysis"
+                executor.submit(self.scan_code_security): "code_analysis",
             }
 
             results = {}
@@ -215,9 +226,9 @@ class SecurityScanner:
         """Generate a summary security report."""
         self.results["total_duration"] = time.time() - self.start_time
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🛡️ SECURITY SCAN SUMMARY")
-        print("="*60)
+        print("=" * 60)
 
         for scan_type, result in self.results.items():
             if isinstance(result, dict):
@@ -230,11 +241,13 @@ class SecurityScanner:
                     "completed_with_issues": "⚠️",
                     "failed": "❌",
                     "skipped": "⏭️",
-                    "pending": "⏳"
+                    "pending": "⏳",
                 }.get(status, "❓")
 
-                print(f"{status_emoji} {scan_type.replace('_', ' ').title()}: "
-                      f"{status} ({issues} issues, {duration:.1f}s)")
+                print(
+                    f"{status_emoji} {scan_type.replace('_', ' ').title()}: "
+                    f"{status} ({issues} issues, {duration:.1f}s)"
+                )
 
         print(f"⏱️ Total Duration: {self.results['total_duration']:.1f}s")
 
@@ -254,7 +267,7 @@ class SecurityScanner:
         else:
             print(f"🔴 High risk: {total_issues} security issues found")
 
-        print("="*60)
+        print("=" * 60)
 
     def save_reports(self) -> None:
         """Save security scan results."""
@@ -264,7 +277,7 @@ class SecurityScanner:
         print(f"📄 Results saved to {results_file}")
 
 
-def main():
+def main() -> None:
     """Main security scanner entry point."""
     project_root = Path(__file__).parent.parent
     scanner = SecurityScanner(project_root)
@@ -273,17 +286,28 @@ def main():
     required_tools = ["safety", "bandit"]
     for tool in required_tools:
         try:
-            result = subprocess.run([sys.executable, "-m", tool, "--version"],
-                                  capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                [sys.executable, "-m", tool, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
             if result.returncode == 0:
                 print(f"✅ Tool '{tool}' is available")
             else:
                 raise subprocess.CalledProcessError(result.returncode, tool)
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        except (
+            subprocess.CalledProcessError,
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+        ):
             print(f"⚠️ Installing tool '{tool}'...")
             try:
-                subprocess.run([sys.executable, "-m", "pip", "install", tool],
-                             check=True, timeout=60)
+                subprocess.run(
+                    [sys.executable, "-m", "pip", "install", tool],
+                    check=True,
+                    timeout=60,
+                )
                 print(f"✅ Tool '{tool}' installed successfully")
             except subprocess.TimeoutExpired:
                 print(f"❌ Failed to install '{tool}' - timeout")

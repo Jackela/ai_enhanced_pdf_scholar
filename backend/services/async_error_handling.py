@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class ErrorSeverity(Enum):
     """Error severity levels for categorization."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -27,6 +28,7 @@ class ErrorSeverity(Enum):
 
 class ErrorCategory(Enum):
     """Categories of errors for specific handling strategies."""
+
     NETWORK = "network"
     MEMORY = "memory"
     TIMEOUT = "timeout"
@@ -39,6 +41,7 @@ class ErrorCategory(Enum):
 
 class RecoveryStrategy(Enum):
     """Recovery strategies for different error types."""
+
     RETRY = "retry"
     FALLBACK = "fallback"
     GRACEFUL_DEGRADATION = "graceful_degradation"
@@ -51,6 +54,7 @@ class RecoveryStrategy(Enum):
 @dataclass
 class ErrorContext:
     """Context information for error handling."""
+
     error: Exception
     category: ErrorCategory
     severity: ErrorSeverity
@@ -60,9 +64,9 @@ class ErrorContext:
     attempt_count: int = 1
     first_occurrence: datetime = field(default_factory=datetime.now)
     last_occurrence: datetime = field(default_factory=datetime.now)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict[str, Any])
 
-    def update_occurrence(self):
+    def update_occurrence(self) -> None:
         """Update last occurrence timestamp."""
         self.last_occurrence = datetime.now()
         self.attempt_count += 1
@@ -71,13 +75,14 @@ class ErrorContext:
 @dataclass
 class RecoveryConfig:
     """Configuration for recovery strategies."""
+
     max_retries: int = 3
     base_delay: float = 1.0
     max_delay: float = 60.0
     backoff_multiplier: float = 2.0
     jitter: bool = True
     timeout_seconds: float | None = None
-    fallback_handler: Callable | None = None
+    fallback_handler: Callable[..., Any] | None = None
     circuit_breaker_failure_threshold: int = 5
     circuit_breaker_recovery_timeout: float = 300.0
 
@@ -89,8 +94,8 @@ class AsyncCircuitBreaker:
         self,
         failure_threshold: int = 5,
         recovery_timeout: float = 300.0,
-        expected_exception: type[Exception] = Exception
-    ):
+        expected_exception: type[Exception] = Exception,
+    ) -> None:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.expected_exception = expected_exception
@@ -99,7 +104,7 @@ class AsyncCircuitBreaker:
         self.last_failure_time = None
         self.state = "closed"  # closed, open, half-open
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> None:
         """Enter circuit breaker context."""
         if self.state == "open":
             if self._should_attempt_reset():
@@ -110,7 +115,7 @@ class AsyncCircuitBreaker:
                 )
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit circuit breaker context."""
         if exc_type is None:
             # Success
@@ -127,12 +132,12 @@ class AsyncCircuitBreaker:
             return True
         return time.time() - self.last_failure_time >= self.recovery_timeout
 
-    def _on_success(self):
+    def _on_success(self) -> None:
         """Handle successful operation."""
         self.failure_count = 0
         self.state = "closed"
 
-    def _on_failure(self):
+    def _on_failure(self) -> None:
         """Handle failed operation."""
         self.failure_count += 1
         self.last_failure_time = time.time()
@@ -143,24 +148,33 @@ class AsyncCircuitBreaker:
 
 class CircuitBreakerOpenError(Exception):
     """Raised when circuit breaker is in open state."""
+
     pass
 
 
 class AsyncErrorHandler:
     """Comprehensive async error handling with recovery strategies."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.error_history: dict[str, list[ErrorContext]] = {}
         self.circuit_breakers: dict[str, AsyncCircuitBreaker] = {}
         self.recovery_configs: dict[ErrorCategory, RecoveryConfig] = {
             ErrorCategory.NETWORK: RecoveryConfig(max_retries=3, base_delay=1.0),
             ErrorCategory.MEMORY: RecoveryConfig(max_retries=1, base_delay=2.0),
             ErrorCategory.TIMEOUT: RecoveryConfig(max_retries=2, base_delay=0.5),
-            ErrorCategory.VALIDATION: RecoveryConfig(max_retries=0),  # Don't retry validation errors
-            ErrorCategory.EXTERNAL_SERVICE: RecoveryConfig(max_retries=3, base_delay=2.0, max_delay=30.0),
+            ErrorCategory.VALIDATION: RecoveryConfig(
+                max_retries=0
+            ),  # Don't retry validation errors
+            ErrorCategory.EXTERNAL_SERVICE: RecoveryConfig(
+                max_retries=3, base_delay=2.0, max_delay=30.0
+            ),
             ErrorCategory.SYSTEM: RecoveryConfig(max_retries=1, base_delay=1.0),
-            ErrorCategory.USER_INPUT: RecoveryConfig(max_retries=0),  # Don't retry user input errors
-            ErrorCategory.RESOURCE_EXHAUSTION: RecoveryConfig(max_retries=2, base_delay=5.0, max_delay=120.0),
+            ErrorCategory.USER_INPUT: RecoveryConfig(
+                max_retries=0
+            ),  # Don't retry user input errors
+            ErrorCategory.RESOURCE_EXHAUSTION: RecoveryConfig(
+                max_retries=2, base_delay=5.0, max_delay=120.0
+            ),
         }
 
     def categorize_error(self, error: Exception) -> ErrorCategory:
@@ -169,42 +183,58 @@ class AsyncErrorHandler:
         error_type = type(error).__name__
 
         # Network-related errors
-        if any(keyword in error_str for keyword in ['connection', 'network', 'timeout', 'unreachable']):
+        if any(
+            keyword in error_str
+            for keyword in ["connection", "network", "timeout", "unreachable"]
+        ):
             return ErrorCategory.NETWORK
 
         # Memory-related errors
-        if 'memory' in error_str or error_type in ['MemoryError', 'OutOfMemoryError']:
+        if "memory" in error_str or error_type in ["MemoryError", "OutOfMemoryError"]:
             return ErrorCategory.MEMORY
 
         # Timeout errors
-        if 'timeout' in error_str or error_type in ['TimeoutError', 'asyncio.TimeoutError']:
+        if "timeout" in error_str or error_type in [
+            "TimeoutError",
+            "asyncio.TimeoutError",
+        ]:
             return ErrorCategory.TIMEOUT
 
         # Validation errors
-        if any(keyword in error_str for keyword in ['validation', 'invalid', 'not found', 'permission']):
+        if any(
+            keyword in error_str
+            for keyword in ["validation", "invalid", "not found", "permission"]
+        ):
             return ErrorCategory.VALIDATION
 
         # External service errors
-        if any(keyword in error_str for keyword in ['api', 'service', 'gemini', 'llama']):
+        if any(
+            keyword in error_str for keyword in ["api", "service", "gemini", "llama"]
+        ):
             return ErrorCategory.EXTERNAL_SERVICE
 
         # Resource exhaustion
-        if any(keyword in error_str for keyword in ['exhausted', 'limit', 'quota', 'capacity']):
+        if any(
+            keyword in error_str
+            for keyword in ["exhausted", "limit", "quota", "capacity"]
+        ):
             return ErrorCategory.RESOURCE_EXHAUSTION
 
         # System errors
-        if error_type in ['SystemError', 'OSError', 'IOError']:
+        if error_type in ["SystemError", "OSError", "IOError"]:
             return ErrorCategory.SYSTEM
 
         # Default to system error
         return ErrorCategory.SYSTEM
 
-    def determine_severity(self, error: Exception, category: ErrorCategory) -> ErrorSeverity:
+    def determine_severity(
+        self, error: Exception, category: ErrorCategory
+    ) -> ErrorSeverity:
         """Determine error severity based on category and error details."""
         error_str = str(error).lower()
 
         # Critical errors
-        if category == ErrorCategory.MEMORY or 'critical' in error_str:
+        if category == ErrorCategory.MEMORY or "critical" in error_str:
             return ErrorSeverity.CRITICAL
 
         # High severity errors
@@ -224,7 +254,7 @@ class AsyncErrorHandler:
         operation: str,
         task_id: str | None = None,
         client_id: str | None = None,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> ErrorContext:
         """Handle an error with appropriate categorization and logging."""
 
@@ -238,7 +268,7 @@ class AsyncErrorHandler:
             task_id=task_id,
             client_id=client_id,
             operation=operation,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Store error in history
@@ -252,12 +282,12 @@ class AsyncErrorHandler:
             ErrorSeverity.LOW: logging.INFO,
             ErrorSeverity.MEDIUM: logging.WARNING,
             ErrorSeverity.HIGH: logging.ERROR,
-            ErrorSeverity.CRITICAL: logging.CRITICAL
+            ErrorSeverity.CRITICAL: logging.CRITICAL,
         }[severity]
 
         logger.log(
             log_level,
-            f"Error in {operation} (Task: {task_id}, Category: {category.value}, Severity: {severity.value}): {error}"
+            f"Error in {operation} (Task: {task_id}, Category: {category.value}, Severity: {severity.value}): {error}",
         )
 
         return error_context
@@ -268,8 +298,8 @@ class AsyncErrorHandler:
         operation: str,
         config: RecoveryConfig | None = None,
         task_id: str | None = None,
-        client_id: str | None = None
-    ):
+        client_id: str | None = None,
+    ) -> None:
         """Context manager for retry logic with exponential backoff."""
 
         attempt = 0
@@ -286,38 +316,47 @@ class AsyncErrorHandler:
 
                 # Handle error
                 error_context = await self.handle_error(
-                    error, operation, task_id, client_id,
-                    metadata={"attempt": attempt}
+                    error, operation, task_id, client_id, metadata={"attempt": attempt}
                 )
 
                 # Check if we should retry
                 if not config:
                     config = self.recovery_configs.get(
-                        error_context.category,
-                        RecoveryConfig()
+                        error_context.category, RecoveryConfig()
                     )
 
                 if attempt > config.max_retries:
-                    logger.error(f"Max retries ({config.max_retries}) exceeded for {operation}")
+                    logger.error(
+                        f"Max retries ({config.max_retries}) exceeded for {operation}"
+                    )
                     break
 
                 # Don't retry certain error categories
-                if error_context.category in [ErrorCategory.VALIDATION, ErrorCategory.USER_INPUT]:
-                    logger.info(f"Not retrying {error_context.category.value} error for {operation}")
+                if error_context.category in [
+                    ErrorCategory.VALIDATION,
+                    ErrorCategory.USER_INPUT,
+                ]:
+                    logger.info(
+                        f"Not retrying {error_context.category.value} error for {operation}"
+                    )
                     break
 
                 # Calculate delay with exponential backoff
                 delay = min(
                     config.base_delay * (config.backoff_multiplier ** (attempt - 1)),
-                    config.max_delay
+                    config.max_delay,
                 )
 
                 # Add jitter if enabled
                 if config.jitter:
                     import random
-                    delay *= (0.5 + random.random() * 0.5)
 
-                logger.info(f"Retrying {operation} in {delay:.2f}s (attempt {attempt}/{config.max_retries})")
+                    # Note: random is acceptable here for retry jitter (non-security)
+                    delay *= 0.5 + random.random() * 0.5  # nosec B311
+
+                logger.info(
+                    f"Retrying {operation} in {delay:.2f}s (attempt {attempt}/{config.max_retries})"
+                )
                 await asyncio.sleep(delay)
 
         # All retries failed
@@ -328,23 +367,22 @@ class AsyncErrorHandler:
         self,
         operation: str,
         failure_threshold: int = 5,
-        recovery_timeout: float = 300.0
+        recovery_timeout: float = 300.0,
     ) -> AsyncCircuitBreaker:
         """Get or create circuit breaker for an operation."""
 
         if operation not in self.circuit_breakers:
             self.circuit_breakers[operation] = AsyncCircuitBreaker(
-                failure_threshold=failure_threshold,
-                recovery_timeout=recovery_timeout
+                failure_threshold=failure_threshold, recovery_timeout=recovery_timeout
             )
 
         return self.circuit_breakers[operation]
 
     async def with_timeout(
         self,
-        operation: Callable,
+        operation: Callable[..., Any],
         timeout_seconds: float,
-        operation_name: str = "async_operation"
+        operation_name: str = "async_operation",
     ) -> Any:
         """Execute operation with timeout handling."""
 
@@ -352,8 +390,7 @@ class AsyncErrorHandler:
             return await asyncio.wait_for(operation(), timeout=timeout_seconds)
         except asyncio.TimeoutError as e:
             await self.handle_error(
-                e, operation_name,
-                metadata={"timeout_seconds": timeout_seconds}
+                e, operation_name, metadata={"timeout_seconds": timeout_seconds}
             )
             raise
 
@@ -363,10 +400,10 @@ class AsyncErrorHandler:
         total_errors = sum(len(errors) for errors in self.error_history.values())
 
         # Category breakdown
-        category_stats = {}
-        severity_stats = {}
+        category_stats: dict[str, Any] = {}
+        severity_stats: dict[str, Any] = {}
 
-        for operation_key, errors in self.error_history.items():
+        for _operation_key, errors in self.error_history.values():
             for error_context in errors:
                 category = error_context.category.value
                 severity = error_context.severity.value
@@ -379,26 +416,28 @@ class AsyncErrorHandler:
             operation: {
                 "state": cb.state,
                 "failure_count": cb.failure_count,
-                "last_failure": cb.last_failure_time
+                "last_failure": cb.last_failure_time,
             }
             for operation, cb in self.circuit_breakers.items()
         }
 
         # Recent errors (last hour)
         cutoff_time = datetime.now() - timedelta(hours=1)
-        recent_errors = []
-
-        for operation_key, errors in self.error_history.items():
-            for error_context in errors:
-                if error_context.last_occurrence >= cutoff_time:
-                    recent_errors.append({
-                        "operation": operation_key,
-                        "category": error_context.category.value,
-                        "severity": error_context.severity.value,
-                        "attempt_count": error_context.attempt_count,
-                        "last_occurrence": error_context.last_occurrence.isoformat(),
-                        "error_message": str(error_context.error)[:200]  # Truncate long messages
-                    })
+        recent_errors = [
+            {
+                "operation": operation_key,
+                "category": error_context.category.value,
+                "severity": error_context.severity.value,
+                "attempt_count": error_context.attempt_count,
+                "last_occurrence": error_context.last_occurrence.isoformat(),
+                "error_message": str(error_context.error)[
+                    :200
+                ],  # Truncate long messages
+            }
+            for operation_key, errors in self.error_history.items()
+            for error_context in errors
+            if error_context.last_occurrence >= cutoff_time
+        ]
 
         return {
             "total_errors": total_errors,
@@ -406,20 +445,19 @@ class AsyncErrorHandler:
             "severity_breakdown": severity_stats,
             "circuit_breaker_status": circuit_breaker_stats,
             "recent_errors": recent_errors[:20],  # Last 20 recent errors
-            "error_operations": list(self.error_history.keys())
+            "error_operations": list[Any](self.error_history.keys()),
         }
 
-    async def clear_error_history(self, older_than_hours: int = 24):
+    async def clear_error_history(self, older_than_hours: int = 24) -> Any:
         """Clear old error history to prevent memory buildup."""
 
         cutoff_time = datetime.now() - timedelta(hours=older_than_hours)
         cleared_count = 0
 
-        for operation_key in list(self.error_history.keys()):
+        for operation_key in list[Any](self.error_history.keys()):
             errors = self.error_history[operation_key]
             self.error_history[operation_key] = [
-                error for error in errors
-                if error.last_occurrence >= cutoff_time
+                error for error in errors if error.last_occurrence >= cutoff_time
             ]
 
             cleared_count += len(errors) - len(self.error_history[operation_key])
@@ -434,16 +472,16 @@ class AsyncErrorHandler:
 
 # Decorator for automatic error handling
 def with_async_error_handling(
-    operation_name: str = None,
+    operation_name: str | None = None,
     max_retries: int = 3,
     circuit_breaker: bool = False,
-    timeout_seconds: float | None = None
-):
+    timeout_seconds: float | None = None,
+) -> Any:
     """Decorator for automatic async error handling."""
 
-    def decorator(func):
+    def decorator(func) -> Any:
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs) -> Any:
             nonlocal operation_name
             if operation_name is None:
                 operation_name = f"{func.__module__}.{func.__name__}"
@@ -452,14 +490,16 @@ def with_async_error_handling(
 
             # Apply circuit breaker if requested
             if circuit_breaker:
-                circuit_breaker_context = await handler.with_circuit_breaker(operation_name)
+                circuit_breaker_context = await handler.with_circuit_breaker(
+                    operation_name
+                )
                 async with circuit_breaker_context:
                     # Apply timeout if specified
                     if timeout_seconds:
                         return await handler.with_timeout(
                             lambda: func(*args, **kwargs),
                             timeout_seconds,
-                            operation_name
+                            operation_name,
                         )
                     else:
                         return await func(*args, **kwargs)
@@ -472,12 +512,13 @@ def with_async_error_handling(
                         return await handler.with_timeout(
                             lambda: func(*args, **kwargs),
                             timeout_seconds,
-                            operation_name
+                            operation_name,
                         )
                     else:
                         return await func(*args, **kwargs)
 
         return wrapper
+
     return decorator
 
 

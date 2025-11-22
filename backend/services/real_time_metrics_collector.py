@@ -6,6 +6,7 @@ performance monitoring dashboard with WebSocket integration.
 """
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections.abc import Callable
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class MetricType(Enum):
     """Types of metrics collected."""
+
     SYSTEM = "system"
     DATABASE = "database"
     WEBSOCKET = "websocket"
@@ -32,6 +34,7 @@ class MetricType(Enum):
 @dataclass
 class SystemMetrics:
     """System performance metrics."""
+
     timestamp: datetime
     cpu_percent: float
     memory_percent: float
@@ -50,6 +53,7 @@ class SystemMetrics:
 @dataclass
 class DatabaseMetrics:
     """Database performance metrics."""
+
     timestamp: datetime
     active_connections: int
     connection_pool_size: int
@@ -65,6 +69,7 @@ class DatabaseMetrics:
 @dataclass
 class WebSocketMetrics:
     """WebSocket connection and RAG task metrics."""
+
     timestamp: datetime
     active_connections: int
     total_rooms: int
@@ -81,6 +86,7 @@ class WebSocketMetrics:
 @dataclass
 class APIMetrics:
     """API performance metrics."""
+
     timestamp: datetime
     requests_per_second: float
     avg_response_time_ms: float
@@ -94,6 +100,7 @@ class APIMetrics:
 @dataclass
 class MemoryLeakMetrics:
     """Memory leak detection metrics."""
+
     timestamp: datetime
     heap_size_mb: float
     heap_growth_rate_mb_per_min: float
@@ -107,6 +114,7 @@ class MemoryLeakMetrics:
 @dataclass
 class AlertMetric:
     """Alert/notification metric."""
+
     timestamp: datetime
     metric_type: MetricType
     severity: str  # "info", "warning", "error", "critical"
@@ -127,8 +135,8 @@ class RealTimeMetricsCollector:
         websocket_manager=None,
         integrated_monitor=None,
         collection_interval: float = 1.0,  # seconds
-        retention_hours: int = 24
-    ):
+        retention_hours: int = 24,
+    ) -> None:
         self.websocket_manager = websocket_manager
         self.integrated_monitor = integrated_monitor
         self.collection_interval = collection_interval
@@ -141,13 +149,13 @@ class RealTimeMetricsCollector:
         self.max_history_size = int((retention_hours * 3600) / collection_interval)
 
         # Background tasks
-        self._collector_task: asyncio.Task | None = None
-        self._streaming_task: asyncio.Task | None = None
-        self._cleanup_task: asyncio.Task | None = None
+        self._collector_task: asyncio.Task[None] | None = None
+        self._streaming_task: asyncio.Task[None] | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._running = False
 
         # Subscribers for real-time updates
-        self.metric_subscribers: set[Callable] = set()
+        self.metric_subscribers: set[Callable[..., Any]] = set[str]()
 
         # System baseline for comparisons
         self._system_baseline: SystemMetrics | None = None
@@ -164,9 +172,11 @@ class RealTimeMetricsCollector:
             "avg_response_time_ms": 1000.0,
         }
 
-        logger.info(f"RealTimeMetricsCollector initialized with {collection_interval}s interval")
+        logger.info(
+            f"RealTimeMetricsCollector initialized with {collection_interval}s interval"
+        )
 
-    async def start_collection(self):
+    async def start_collection(self) -> None:
         """Start real-time metrics collection."""
         if self._running:
             logger.warning("Metrics collection already running")
@@ -181,7 +191,7 @@ class RealTimeMetricsCollector:
 
         logger.info("Real-time metrics collection started")
 
-    async def stop_collection(self):
+    async def stop_collection(self) -> None:
         """Stop metrics collection."""
         self._running = False
 
@@ -189,22 +199,20 @@ class RealTimeMetricsCollector:
         for task in [self._collector_task, self._streaming_task, self._cleanup_task]:
             if task and not task.done():
                 task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await task
-                except asyncio.CancelledError:
-                    pass
 
         logger.info("Real-time metrics collection stopped")
 
-    def subscribe_to_metrics(self, callback: Callable[[dict[str, Any]], None]):
+    def subscribe_to_metrics(self, callback: Callable[[dict[str, Any]], None]) -> None:
         """Subscribe to real-time metric updates."""
         self.metric_subscribers.add(callback)
 
-    def unsubscribe_from_metrics(self, callback: Callable):
+    def unsubscribe_from_metrics(self, callback: Callable[..., Any]) -> None:
         """Unsubscribe from metric updates."""
         self.metric_subscribers.discard(callback)
 
-    async def _collect_metrics_loop(self):
+    async def _collect_metrics_loop(self) -> None:
         """Main metrics collection loop."""
         while self._running:
             try:
@@ -217,24 +225,31 @@ class RealTimeMetricsCollector:
 
                 # Store metrics
                 metrics_update = {
-                    MetricType.SYSTEM: asdict(system_metrics) if system_metrics else None,
+                    MetricType.SYSTEM: (
+                        asdict(system_metrics) if system_metrics else None
+                    ),
                     MetricType.DATABASE: asdict(db_metrics) if db_metrics else None,
                     MetricType.WEBSOCKET: asdict(ws_metrics) if ws_metrics else None,
                     MetricType.API: asdict(api_metrics) if api_metrics else None,
-                    MetricType.MEMORY: asdict(memory_metrics) if memory_metrics else None,
+                    MetricType.MEMORY: (
+                        asdict(memory_metrics) if memory_metrics else None
+                    ),
                 }
 
                 # Add to history
                 for metric_type, data in metrics_update.items():
                     if data:
                         # Convert datetime to ISO string for JSON serialization
-                        if 'timestamp' in data:
-                            data['timestamp'] = data['timestamp'].isoformat()
+                        if "timestamp" in data:
+                            data["timestamp"] = data["timestamp"].isoformat()
 
                         self.metrics_history[metric_type].append(data)
 
                         # Maintain history size limit
-                        if len(self.metrics_history[metric_type]) > self.max_history_size:
+                        if (
+                            len(self.metrics_history[metric_type])
+                            > self.max_history_size
+                        ):
                             self.metrics_history[metric_type].pop(0)
 
                 # Check for alerts
@@ -259,7 +274,7 @@ class RealTimeMetricsCollector:
             memory = psutil.virtual_memory()
 
             # Disk usage
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
 
             # Network I/O (calculate rate since last measurement)
             net_io = psutil.net_io_counters()
@@ -292,7 +307,7 @@ class RealTimeMetricsCollector:
                 network_bytes_recv=net_io.bytes_recv if net_io else 0,
                 process_count=process_count,
                 thread_count=thread_count,
-                uptime_seconds=uptime_seconds
+                uptime_seconds=uptime_seconds,
             )
 
         except Exception as e:
@@ -314,7 +329,7 @@ class RealTimeMetricsCollector:
                 avg_query_time_ms=25.5,
                 database_size_mb=125.0,  # Calculate actual size
                 index_usage_percent=85.0,
-                cache_hit_ratio=92.5
+                cache_hit_ratio=92.5,
             )
 
         except Exception as e:
@@ -331,12 +346,15 @@ class RealTimeMetricsCollector:
 
             # Calculate average task duration
             completed_tasks = [
-                task for task in self.websocket_manager.rag_tasks.values()
+                task
+                for task in self.websocket_manager.rag_tasks.values()
                 if task.processing_time_ms is not None
             ]
             avg_duration = (
-                sum(task.processing_time_ms for task in completed_tasks) / len(completed_tasks)
-                if completed_tasks else 0.0
+                sum(task.processing_time_ms for task in completed_tasks)
+                / len(completed_tasks)
+                if completed_tasks
+                else 0.0
             )
 
             return WebSocketMetrics(
@@ -350,7 +368,7 @@ class RealTimeMetricsCollector:
                 rag_tasks_completed=stats["rag_streaming"]["completed_tasks"],
                 rag_tasks_failed=stats["rag_streaming"]["failed_tasks"],
                 avg_task_duration_ms=avg_duration,
-                concurrent_task_limit=stats["rag_config"]["max_concurrent_tasks"]
+                concurrent_task_limit=stats["rag_config"]["max_concurrent_tasks"],
             )
 
         except Exception as e:
@@ -370,7 +388,7 @@ class RealTimeMetricsCollector:
                 active_sessions=25,
                 rate_limit_hits=3,
                 auth_success_rate=98.5,
-                cache_hit_rate=87.2
+                cache_hit_rate=87.2,
             )
 
         except Exception as e:
@@ -388,7 +406,7 @@ class RealTimeMetricsCollector:
 
             # Garbage collection stats
             gc_stats = gc.get_stats()
-            gc_count = sum(stat['collections'] for stat in gc_stats)
+            gc_count = sum(stat["collections"] for stat in gc_stats)
 
             return MemoryLeakMetrics(
                 timestamp=datetime.now(),
@@ -398,14 +416,16 @@ class RealTimeMetricsCollector:
                 object_leaks=len(gc.get_objects()),
                 gc_collections=gc_count,
                 gc_time_ms=10.0,  # Mock value
-                memory_pressure_events=0
+                memory_pressure_events=0,
             )
 
         except Exception as e:
             logger.error(f"Error collecting memory leak metrics: {e}")
             return None
 
-    def _check_alert_conditions(self, metrics: dict[MetricType, dict[str, Any]]) -> list[AlertMetric]:
+    def _check_alert_conditions(
+        self, metrics: dict[MetricType, dict[str, Any]]
+    ) -> list[AlertMetric]:
         """Check if any metrics exceed alert thresholds."""
         alerts = []
 
@@ -415,63 +435,84 @@ class RealTimeMetricsCollector:
                 system_data = metrics[MetricType.SYSTEM]
 
                 # CPU usage alert
-                if system_data['cpu_percent'] > self.alert_thresholds['cpu_percent']:
-                    alerts.append(AlertMetric(
-                        timestamp=datetime.now(),
-                        metric_type=MetricType.SYSTEM,
-                        severity="warning",
-                        message=f"High CPU usage: {system_data['cpu_percent']:.1f}%",
-                        source="system_monitor",
-                        value=system_data['cpu_percent'],
-                        threshold=self.alert_thresholds['cpu_percent']
-                    ))
+                if system_data["cpu_percent"] > self.alert_thresholds["cpu_percent"]:
+                    alerts.append(
+                        AlertMetric(
+                            timestamp=datetime.now(),
+                            metric_type=MetricType.SYSTEM,
+                            severity="warning",
+                            message=f"High CPU usage: {system_data['cpu_percent']:.1f}%",
+                            source="system_monitor",
+                            value=system_data["cpu_percent"],
+                            threshold=self.alert_thresholds["cpu_percent"],
+                        )
+                    )
 
                 # Memory usage alert
-                if system_data['memory_percent'] > self.alert_thresholds['memory_percent']:
-                    alerts.append(AlertMetric(
-                        timestamp=datetime.now(),
-                        metric_type=MetricType.SYSTEM,
-                        severity="error" if system_data['memory_percent'] > 90 else "warning",
-                        message=f"High memory usage: {system_data['memory_percent']:.1f}%",
-                        source="system_monitor",
-                        value=system_data['memory_percent'],
-                        threshold=self.alert_thresholds['memory_percent']
-                    ))
+                if (
+                    system_data["memory_percent"]
+                    > self.alert_thresholds["memory_percent"]
+                ):
+                    alerts.append(
+                        AlertMetric(
+                            timestamp=datetime.now(),
+                            metric_type=MetricType.SYSTEM,
+                            severity=(
+                                "error"
+                                if system_data["memory_percent"] > 90
+                                else "warning"
+                            ),
+                            message=f"High memory usage: {system_data['memory_percent']:.1f}%",
+                            source="system_monitor",
+                            value=system_data["memory_percent"],
+                            threshold=self.alert_thresholds["memory_percent"],
+                        )
+                    )
 
             # Check API metrics
             if MetricType.API in metrics and metrics[MetricType.API]:
                 api_data = metrics[MetricType.API]
 
                 # Error rate alert
-                if api_data['error_rate_percent'] > self.alert_thresholds['error_rate_percent']:
-                    alerts.append(AlertMetric(
-                        timestamp=datetime.now(),
-                        metric_type=MetricType.API,
-                        severity="warning",
-                        message=f"High API error rate: {api_data['error_rate_percent']:.1f}%",
-                        source="api_monitor",
-                        value=api_data['error_rate_percent'],
-                        threshold=self.alert_thresholds['error_rate_percent']
-                    ))
+                if (
+                    api_data["error_rate_percent"]
+                    > self.alert_thresholds["error_rate_percent"]
+                ):
+                    alerts.append(
+                        AlertMetric(
+                            timestamp=datetime.now(),
+                            metric_type=MetricType.API,
+                            severity="warning",
+                            message=f"High API error rate: {api_data['error_rate_percent']:.1f}%",
+                            source="api_monitor",
+                            value=api_data["error_rate_percent"],
+                            threshold=self.alert_thresholds["error_rate_percent"],
+                        )
+                    )
 
                 # Response time alert
-                if api_data['avg_response_time_ms'] > self.alert_thresholds['avg_response_time_ms']:
-                    alerts.append(AlertMetric(
-                        timestamp=datetime.now(),
-                        metric_type=MetricType.API,
-                        severity="warning",
-                        message=f"Slow API responses: {api_data['avg_response_time_ms']:.1f}ms",
-                        source="api_monitor",
-                        value=api_data['avg_response_time_ms'],
-                        threshold=self.alert_thresholds['avg_response_time_ms']
-                    ))
+                if (
+                    api_data["avg_response_time_ms"]
+                    > self.alert_thresholds["avg_response_time_ms"]
+                ):
+                    alerts.append(
+                        AlertMetric(
+                            timestamp=datetime.now(),
+                            metric_type=MetricType.API,
+                            severity="warning",
+                            message=f"Slow API responses: {api_data['avg_response_time_ms']:.1f}ms",
+                            source="api_monitor",
+                            value=api_data["avg_response_time_ms"],
+                            threshold=self.alert_thresholds["avg_response_time_ms"],
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error checking alert conditions: {e}")
 
         return alerts
 
-    def _handle_alert(self, alert: AlertMetric):
+    def _handle_alert(self, alert: AlertMetric) -> None:
         """Handle triggered alert."""
         try:
             # Log the alert
@@ -479,21 +520,22 @@ class RealTimeMetricsCollector:
 
             # Add to metrics history
             alert_data = asdict(alert)
-            alert_data['timestamp'] = alert.timestamp.isoformat()
+            alert_data["timestamp"] = alert.timestamp.isoformat()
 
             if MetricType.MEMORY not in self.metrics_history:
                 self.metrics_history[MetricType.MEMORY] = []
 
             # Store alert as special metric type
-            self.metrics_history[MetricType.MEMORY].append({
-                **alert_data,
-                'metric_category': 'alert'
-            })
+            self.metrics_history[MetricType.MEMORY].append(
+                {**alert_data, "metric_category": "alert"}
+            )
 
         except Exception as e:
             logger.error(f"Error handling alert: {e}")
 
-    async def _notify_subscribers(self, metrics_update: dict[MetricType, dict[str, Any]]):
+    async def _notify_subscribers(
+        self, metrics_update: dict[MetricType, dict[str, Any]]
+    ) -> None:
         """Notify all subscribers of metric updates."""
         for callback in self.metric_subscribers:
             try:
@@ -504,11 +546,13 @@ class RealTimeMetricsCollector:
             except Exception as e:
                 logger.error(f"Error notifying metric subscriber: {e}")
 
-    async def _stream_metrics_loop(self):
+    async def _stream_metrics_loop(self) -> None:
         """Stream metrics to WebSocket clients."""
         while self._running:
             try:
-                if self.websocket_manager and hasattr(self.websocket_manager, 'broadcast_json'):
+                if self.websocket_manager and hasattr(
+                    self.websocket_manager, "broadcast_json"
+                ):
                     # Get latest metrics
                     current_metrics = {}
                     for metric_type, history in self.metrics_history.items():
@@ -517,18 +561,20 @@ class RealTimeMetricsCollector:
 
                     if current_metrics:
                         # Broadcast to all connected clients
-                        await self.websocket_manager.broadcast_json({
-                            "type": "metrics_update",
-                            "timestamp": datetime.now().isoformat(),
-                            "metrics": current_metrics
-                        })
+                        await self.websocket_manager.broadcast_json(
+                            {
+                                "type": "metrics_update",
+                                "timestamp": datetime.now().isoformat(),
+                                "metrics": current_metrics,
+                            }
+                        )
 
             except Exception as e:
                 logger.error(f"Error streaming metrics: {e}")
 
             await asyncio.sleep(self.collection_interval)
 
-    async def _cleanup_old_metrics_loop(self):
+    async def _cleanup_old_metrics_loop(self) -> None:
         """Clean up old metrics data."""
         while self._running:
             try:
@@ -537,9 +583,10 @@ class RealTimeMetricsCollector:
                 for metric_type, history in self.metrics_history.items():
                     # Remove old entries
                     self.metrics_history[metric_type] = [
-                        entry for entry in history
-                        if 'timestamp' in entry and
-                        datetime.fromisoformat(entry['timestamp']) > cutoff_time
+                        entry
+                        for entry in history
+                        if "timestamp" in entry
+                        and datetime.fromisoformat(entry["timestamp"]) > cutoff_time
                     ]
 
             except Exception as e:
@@ -558,9 +605,7 @@ class RealTimeMetricsCollector:
         return current_metrics
 
     def get_metrics_history(
-        self,
-        metric_type: MetricType,
-        hours_back: int = 1
+        self, metric_type: MetricType, hours_back: int = 1
     ) -> list[dict[str, Any]]:
         """Get historical metrics for a specific type."""
         if metric_type not in self.metrics_history:
@@ -569,9 +614,10 @@ class RealTimeMetricsCollector:
         cutoff_time = datetime.now() - timedelta(hours=hours_back)
 
         return [
-            entry for entry in self.metrics_history[metric_type]
-            if 'timestamp' in entry and
-            datetime.fromisoformat(entry['timestamp']) > cutoff_time
+            entry
+            for entry in self.metrics_history[metric_type]
+            if "timestamp" in entry
+            and datetime.fromisoformat(entry["timestamp"]) > cutoff_time
         ]
 
     def get_system_health_summary(self) -> dict[str, Any]:
@@ -588,12 +634,12 @@ class RealTimeMetricsCollector:
                 sys_data = current_metrics[MetricType.SYSTEM.value]
 
                 # CPU health (reduce score if > 80%)
-                cpu_factor = max(0, 100 - max(0, sys_data['cpu_percent'] - 80) * 2)
+                cpu_factor = max(0, 100 - max(0, sys_data["cpu_percent"] - 80) * 2)
                 health_score = min(health_score, cpu_factor)
                 health_factors.append(f"CPU: {cpu_factor:.1f}")
 
                 # Memory health (reduce score if > 85%)
-                mem_factor = max(0, 100 - max(0, sys_data['memory_percent'] - 85) * 3)
+                mem_factor = max(0, 100 - max(0, sys_data["memory_percent"] - 85) * 3)
                 health_score = min(health_score, mem_factor)
                 health_factors.append(f"Memory: {mem_factor:.1f}")
 
@@ -602,7 +648,7 @@ class RealTimeMetricsCollector:
                 api_data = current_metrics[MetricType.API.value]
 
                 # Error rate health
-                error_factor = max(0, 100 - api_data['error_rate_percent'] * 10)
+                error_factor = max(0, 100 - api_data["error_rate_percent"] * 10)
                 health_score = min(health_score, error_factor)
                 health_factors.append(f"API: {error_factor:.1f}")
 
@@ -621,7 +667,7 @@ class RealTimeMetricsCollector:
                 "status": status,
                 "factors": health_factors,
                 "last_updated": datetime.now().isoformat(),
-                "metrics_available": list(current_metrics.keys())
+                "metrics_available": list[Any](current_metrics.keys()),
             }
 
         except Exception as e:
@@ -631,5 +677,5 @@ class RealTimeMetricsCollector:
                 "status": "unknown",
                 "factors": [],
                 "error": str(e),
-                "last_updated": datetime.now().isoformat()
+                "last_updated": datetime.now().isoformat(),
             }

@@ -24,7 +24,6 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 try:
-    from backend.database.read_write_splitter import QueryType, ReadWriteSplitter
     from backend.services.connection_pool_manager import AdvancedConnectionPoolManager
     from src.database.connection import DatabaseConnection
 except ImportError as e:
@@ -34,15 +33,17 @@ except ImportError as e:
 
 class ShardingStrategy(Enum):
     """Sharding strategies for data distribution."""
-    HASH_BASED = "hash_based"           # Hash-based sharding
-    RANGE_BASED = "range_based"         # Range-based sharding
-    DIRECTORY_BASED = "directory_based" # Directory/lookup-based sharding
-    CONSISTENT_HASH = "consistent_hash" # Consistent hashing
-    GEOGRAPHIC = "geographic"           # Geographic sharding
+
+    HASH_BASED = "hash_based"  # Hash-based sharding
+    RANGE_BASED = "range_based"  # Range-based sharding
+    DIRECTORY_BASED = "directory_based"  # Directory/lookup-based sharding
+    CONSISTENT_HASH = "consistent_hash"  # Consistent hashing
+    GEOGRAPHIC = "geographic"  # Geographic sharding
 
 
 class ShardState(Enum):
     """Shard states."""
+
     ACTIVE = "active"
     READONLY = "readonly"
     MIGRATING = "migrating"
@@ -53,27 +54,30 @@ class ShardState(Enum):
 @dataclass
 class ShardKey:
     """Represents a shard key configuration."""
+
     column_name: str
     data_type: str  # string, integer, uuid, date
     hash_function: str = "md5"  # md5, sha256, crc32
 
-    def extract_from_query(self, query: str, parameters: tuple[Any, ...] | None = None) -> Any | None:
+    def extract_from_query(
+        self, query: str, parameters: tuple[Any, ...] | None = None
+    ) -> Any | None:
         """Extract shard key value from query."""
         query_lower = query.lower()
 
         # Look for WHERE conditions on the shard key column
         patterns = [
-            rf'\b{self.column_name}\s*=\s*\?',
+            rf"\b{self.column_name}\s*=\s*\?",
             rf'\b{self.column_name}\s*=\s*[\'"]([^\'"]+)[\'"]',
-            rf'\b{self.column_name}\s*=\s*(\d+)',
+            rf"\b{self.column_name}\s*=\s*(\d+)",
         ]
 
         for pattern in patterns:
             match = re.search(pattern, query_lower)
             if match:
-                if '?' in pattern and parameters:
+                if "?" in pattern and parameters:
                     # Find parameter index
-                    param_count = query_lower[:match.start()].count('?')
+                    param_count = query_lower[: match.start()].count("?")
                     if param_count < len(parameters):
                         return parameters[param_count]
                 elif match.groups():
@@ -93,7 +97,8 @@ class ShardKey:
             return int(hashlib.sha256(str_value.encode()).hexdigest(), 16)
         elif self.hash_function == "crc32":
             import zlib
-            return zlib.crc32(str_value.encode()) & 0xffffffff
+
+            return zlib.crc32(str_value.encode()) & 0xFFFFFFFF
         else:
             # Default to simple hash
             return hash(str_value)
@@ -102,6 +107,7 @@ class ShardKey:
 @dataclass
 class ShardRange:
     """Represents a range for range-based sharding."""
+
     start_value: Any
     end_value: Any
     shard_id: str
@@ -114,6 +120,7 @@ class ShardRange:
 @dataclass
 class ShardInfo:
     """Information about a database shard."""
+
     shard_id: str
     connection_string: str
     state: ShardState
@@ -148,6 +155,7 @@ class ShardInfo:
 @dataclass
 class ShardingConfiguration:
     """Configuration for the sharding manager."""
+
     strategy: ShardingStrategy
     shard_key: ShardKey
     replication_factor: int = 2
@@ -161,7 +169,9 @@ class ShardingConfiguration:
     range_boundaries: list[Any] = field(default_factory=list)
 
     # Geographic sharding configuration
-    geo_regions: list[str] = field(default_factory=lambda: ["us-east", "us-west", "eu-west"])
+    geo_regions: list[str] = field(
+        default_factory=lambda: ["us-east", "us-west", "eu-west"]
+    )
 
 
 class ShardingManager:
@@ -183,8 +193,8 @@ class ShardingManager:
         config: ShardingConfiguration,
         metadata_connection: DatabaseConnection,
         enable_cross_shard_queries: bool = True,
-        enable_auto_migration: bool = True
-    ):
+        enable_auto_migration: bool = True,
+    ) -> None:
         """
         Initialize the Sharding Manager.
 
@@ -219,12 +229,14 @@ class ShardingManager:
         self._shutdown_event = threading.Event()
 
         # Performance tracking
-        self._query_stats: dict[str, dict[str, Any]] = defaultdict(lambda: {
-            'total_queries': 0,
-            'cross_shard_queries': 0,
-            'avg_response_time': 0.0,
-            'errors': 0
-        })
+        self._query_stats: dict[str, dict[str, Any]] = defaultdict(
+            lambda: {
+                "total_queries": 0,
+                "cross_shard_queries": 0,
+                "avg_response_time": 0.0,
+                "errors": 0,
+            }
+        )
 
         # Initialize sharding infrastructure
         self._init_metadata_tables()
@@ -236,7 +248,8 @@ class ShardingManager:
         """Initialize metadata tables for shard management."""
         try:
             # Shards table
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shards (
                     shard_id TEXT PRIMARY KEY,
                     connection_string TEXT NOT NULL,
@@ -250,20 +263,24 @@ class ShardingManager:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-            """)
+            """
+            )
 
             # Shard directory table for directory-based sharding
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shard_directory (
                     key_value TEXT PRIMARY KEY,
                     shard_id TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (shard_id) REFERENCES shards(shard_id)
                 )
-            """)
+            """
+            )
 
             # Migration tracking table
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shard_migrations (
                     migration_id TEXT PRIMARY KEY,
                     source_shard TEXT NOT NULL,
@@ -275,10 +292,12 @@ class ShardingManager:
                     completed_at TIMESTAMP,
                     error_message TEXT
                 )
-            """)
+            """
+            )
 
             # Shard statistics table
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 CREATE TABLE IF NOT EXISTS shard_statistics (
                     shard_id TEXT NOT NULL,
                     metric_name TEXT NOT NULL,
@@ -286,7 +305,8 @@ class ShardingManager:
                     recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     PRIMARY KEY (shard_id, metric_name, recorded_at)
                 )
-            """)
+            """
+            )
 
             logger.info("Sharding metadata tables initialized")
 
@@ -297,19 +317,21 @@ class ShardingManager:
     def _load_shard_configuration(self) -> None:
         """Load shard configuration from metadata database."""
         try:
-            shard_rows = self.metadata_db.fetch_all("SELECT * FROM shards ORDER BY shard_id")
+            shard_rows = self.metadata_db.fetch_all(
+                "SELECT * FROM shards ORDER BY shard_id"
+            )
 
             for row in shard_rows:
                 shard_info = ShardInfo(
-                    shard_id=row['shard_id'],
-                    connection_string=row['connection_string'],
-                    state=ShardState(row['state']),
-                    weight=row['weight'],
-                    replica_count=row['replica_count'],
-                    range_start=row['range_start'],
-                    range_end=row['range_end'],
-                    region=row['region'],
-                    availability_zone=row['availability_zone']
+                    shard_id=row["shard_id"],
+                    connection_string=row["connection_string"],
+                    state=ShardState(row["state"]),
+                    weight=row["weight"],
+                    replica_count=row["replica_count"],
+                    range_start=row["range_start"],
+                    range_end=row["range_end"],
+                    region=row["region"],
+                    availability_zone=row["availability_zone"],
                 )
 
                 self.shards[shard_info.shard_id] = shard_info
@@ -327,24 +349,29 @@ class ShardingManager:
         """Initialize connection and pool for a shard."""
         try:
             # Create database connection
-            connection = DatabaseConnection(shard_info.connection_string, max_connections=20)
+            connection = DatabaseConnection(
+                shard_info.connection_string, max_connections=20
+            )
             self.shard_connections[shard_info.shard_id] = connection
 
             # Create connection pool
             from backend.services.connection_pool_manager import PoolConfiguration
+
             pool_config = PoolConfiguration(
-                max_connections=20,
-                min_connections=2,
-                initial_connections=2
+                max_connections=20, min_connections=2, initial_connections=2
             )
 
-            pool = AdvancedConnectionPoolManager(shard_info.connection_string, pool_config)
+            pool = AdvancedConnectionPoolManager(
+                shard_info.connection_string, pool_config
+            )
             self.shard_pools[shard_info.shard_id] = pool
 
             logger.debug(f"Initialized connection pool for shard {shard_info.shard_id}")
 
         except Exception as e:
-            logger.error(f"Failed to initialize shard connection {shard_info.shard_id}: {e}")
+            logger.error(
+                f"Failed to initialize shard connection {shard_info.shard_id}: {e}"
+            )
             shard_info.state = ShardState.FAILED
 
     def _build_routing_structures(self) -> None:
@@ -364,7 +391,8 @@ class ShardingManager:
     def _build_hash_routing(self) -> None:
         """Build hash-based routing structure."""
         active_shards = [
-            shard for shard in self.shards.values()
+            shard
+            for shard in self.shards.values()
             if shard.state in [ShardState.ACTIVE, ShardState.READONLY]
         ]
 
@@ -382,13 +410,15 @@ class ShardingManager:
         self._range_map.clear()
 
         for shard in self.shards.values():
-            if (shard.state in [ShardState.ACTIVE, ShardState.READONLY] and
-                shard.range_start is not None and shard.range_end is not None):
-
+            if (
+                shard.state in [ShardState.ACTIVE, ShardState.READONLY]
+                and shard.range_start is not None
+                and shard.range_end is not None
+            ):
                 range_obj = ShardRange(
                     start_value=shard.range_start,
                     end_value=shard.range_end,
-                    shard_id=shard.shard_id
+                    shard_id=shard.shard_id,
                 )
                 self._range_map.append(range_obj)
 
@@ -404,14 +434,18 @@ class ShardingManager:
         for shard in self.shards.values():
             if shard.state in [ShardState.ACTIVE, ShardState.READONLY]:
                 # Create virtual nodes for this shard
-                virtual_nodes = self.config.hash_ring_virtual_nodes * shard.weight // 100
+                virtual_nodes = (
+                    self.config.hash_ring_virtual_nodes * shard.weight // 100
+                )
 
                 for i in range(virtual_nodes):
                     virtual_key = f"{shard.shard_id}:{i}"
                     hash_value = self.config.shard_key.hash_value(virtual_key)
                     self._hash_ring[hash_value] = shard.shard_id
 
-        logger.info(f"Built consistent hash ring with {len(self._hash_ring)} virtual nodes")
+        logger.info(
+            f"Built consistent hash ring with {len(self._hash_ring)} virtual nodes"
+        )
 
     def _load_directory_routing(self) -> None:
         """Load directory-based routing from metadata."""
@@ -420,7 +454,7 @@ class ShardingManager:
 
             self._directory_map.clear()
             for row in directory_rows:
-                self._directory_map[row['key_value']] = row['shard_id']
+                self._directory_map[row["key_value"]] = row["shard_id"]
 
             logger.info(f"Loaded directory routing for {len(self._directory_map)} keys")
 
@@ -442,18 +476,14 @@ class ShardingManager:
         """Start background monitoring and maintenance tasks."""
         # Health monitoring
         self._health_monitor_thread = threading.Thread(
-            target=self._health_monitor_worker,
-            daemon=True,
-            name="ShardHealthMonitor"
+            target=self._health_monitor_worker, daemon=True, name="ShardHealthMonitor"
         )
         self._health_monitor_thread.start()
 
         # Auto-rebalancing
         if self.config.auto_rebalancing:
             self._rebalancer_thread = threading.Thread(
-                target=self._rebalancer_worker,
-                daemon=True,
-                name="ShardRebalancer"
+                target=self._rebalancer_worker, daemon=True, name="ShardRebalancer"
             )
             self._rebalancer_thread.start()
 
@@ -497,7 +527,9 @@ class ShardingManager:
                     # Update state based on response time
                     if response_time > 5000:  # > 5 seconds
                         shard_info.state = ShardState.READONLY
-                    elif shard_info.state == ShardState.READONLY and response_time < 1000:
+                    elif (
+                        shard_info.state == ShardState.READONLY and response_time < 1000
+                    ):
                         shard_info.state = ShardState.ACTIVE
 
             except Exception as e:
@@ -508,7 +540,7 @@ class ShardingManager:
         self,
         query: str,
         parameters: tuple[Any, ...] | None = None,
-        preferred_region: str | None = None
+        preferred_region: str | None = None,
     ) -> list[str]:
         """
         Route a query to appropriate shards.
@@ -523,7 +555,9 @@ class ShardingManager:
         """
         try:
             # Extract shard key value from query
-            shard_key_value = self.config.shard_key.extract_from_query(query, parameters)
+            shard_key_value = self.config.shard_key.extract_from_query(
+                query, parameters
+            )
 
             if shard_key_value is not None:
                 # Single-shard query
@@ -533,26 +567,32 @@ class ShardingManager:
                 # Cross-shard query - route to all active shards
                 if self.enable_cross_shard_queries:
                     active_shards = [
-                        shard_id for shard_id, shard in self.shards.items()
+                        shard_id
+                        for shard_id, shard in self.shards.items()
                         if shard.state in [ShardState.ACTIVE, ShardState.READONLY]
                     ]
 
                     # Filter by region if specified
                     if preferred_region:
                         active_shards = [
-                            shard_id for shard_id in active_shards
+                            shard_id
+                            for shard_id in active_shards
                             if self.shards[shard_id].region == preferred_region
                         ]
 
                     return active_shards
                 else:
-                    raise ValueError("Cross-shard queries are not enabled and no shard key found in query")
+                    raise ValueError(
+                        "Cross-shard queries are not enabled and no shard key found in query"
+                    )
 
         except Exception as e:
             logger.error(f"Query routing failed: {e}")
             raise
 
-    def _find_shard_for_key(self, key_value: Any, preferred_region: str | None = None) -> str | None:
+    def _find_shard_for_key(
+        self, key_value: Any, preferred_region: str | None = None
+    ) -> str | None:
         """Find the appropriate shard for a given key value."""
         with self._routing_lock:
             if self.config.strategy == ShardingStrategy.HASH_BASED:
@@ -570,7 +610,7 @@ class ShardingManager:
 
     def _find_shard_hash_based(self, key_value: Any) -> str | None:
         """Find shard using hash-based strategy."""
-        if not hasattr(self, '_hash_shard_count') or self._hash_shard_count == 0:
+        if not hasattr(self, "_hash_shard_count") or self._hash_shard_count == 0:
             return None
 
         hash_value = self.config.shard_key.hash_value(key_value)
@@ -607,7 +647,9 @@ class ShardingManager:
         """Find shard using directory-based strategy."""
         return self._directory_map.get(key_value)
 
-    def _find_shard_geographic(self, key_value: Any, preferred_region: str | None = None) -> str | None:
+    def _find_shard_geographic(
+        self, key_value: Any, preferred_region: str | None = None
+    ) -> str | None:
         """Find shard using geographic strategy."""
         target_region = preferred_region or "default"
 
@@ -630,7 +672,7 @@ class ShardingManager:
         self,
         query: str,
         parameters: tuple[Any, ...] | None = None,
-        preferred_region: str | None = None
+        preferred_region: str | None = None,
     ) -> dict[str, Any]:
         """
         Execute a query across appropriate shards.
@@ -678,8 +720,7 @@ class ShardingManager:
                     shard_info = self.shards[shard_id]
                     execution_time = (time.time() - start_time) * 1000
                     shard_info.avg_response_time_ms = (
-                        0.9 * shard_info.avg_response_time_ms +
-                        0.1 * execution_time
+                        0.9 * shard_info.avg_response_time_ms + 0.1 * execution_time
                     )
 
                 except Exception as e:
@@ -689,25 +730,24 @@ class ShardingManager:
             # Update query statistics
             total_time = (time.time() - start_time) * 1000
             stats = self._query_stats[query[:100]]  # Use first 100 chars as key
-            stats['total_queries'] += 1
+            stats["total_queries"] += 1
             if is_cross_shard:
-                stats['cross_shard_queries'] += 1
+                stats["cross_shard_queries"] += 1
 
             # Update average response time
-            stats['avg_response_time'] = (
-                0.9 * stats['avg_response_time'] +
-                0.1 * total_time
+            stats["avg_response_time"] = (
+                0.9 * stats["avg_response_time"] + 0.1 * total_time
             )
 
             if errors:
-                stats['errors'] += 1
+                stats["errors"] += 1
 
             return {
-                'results': results,
-                'errors': errors,
-                'execution_time_ms': total_time,
-                'shards_queried': len(target_shards),
-                'cross_shard': is_cross_shard
+                "results": results,
+                "errors": errors,
+                "execution_time_ms": total_time,
+                "shards_queried": len(target_shards),
+                "cross_shard": is_cross_shard,
             }
 
         except Exception as e:
@@ -720,7 +760,7 @@ class ShardingManager:
         connection_string: str,
         weight: int = 100,
         region: str = "default",
-        availability_zone: str = "default"
+        availability_zone: str = "default",
     ) -> bool:
         """
         Add a new shard to the cluster.
@@ -748,7 +788,7 @@ class ShardingManager:
                     state=ShardState.ACTIVE,
                     weight=weight,
                     region=region,
-                    availability_zone=availability_zone
+                    availability_zone=availability_zone,
                 )
 
                 # Initialize shard connection
@@ -758,12 +798,21 @@ class ShardingManager:
                 self.shards[shard_id] = shard_info
 
                 # Store in metadata database
-                self.metadata_db.execute("""
+                self.metadata_db.execute(
+                    """
                     INSERT INTO shards
                     (shard_id, connection_string, state, weight, region, availability_zone)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (shard_id, connection_string, shard_info.state.value,
-                     weight, region, availability_zone))
+                """,
+                    (
+                        shard_id,
+                        connection_string,
+                        shard_info.state.value,
+                        weight,
+                        region,
+                        availability_zone,
+                    ),
+                )
 
                 # Rebuild routing structures
                 self._build_routing_structures()
@@ -817,7 +866,9 @@ class ShardingManager:
                 del self.shards[shard_id]
 
                 # Update metadata database
-                self.metadata_db.execute("DELETE FROM shards WHERE shard_id = ?", (shard_id,))
+                self.metadata_db.execute(
+                    "DELETE FROM shards WHERE shard_id = ?", (shard_id,)
+                )
 
                 # Rebuild routing structures
                 self._build_routing_structures()
@@ -848,23 +899,26 @@ class ShardingManager:
             migration_id = str(uuid.uuid4())
 
             # Record migration
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 INSERT INTO shard_migrations
                 (migration_id, source_shard, target_shard, migration_type, status)
                 VALUES (?, ?, ?, ?, ?)
-            """, (migration_id, source_shard_id, "distributed", "rebalance", "started"))
+            """,
+                (migration_id, source_shard_id, "distributed", "rebalance", "started"),
+            )
 
             # For each table, migrate data
             for table_row in tables:
-                table_name = table_row['name']
+                table_name = table_row["name"]
 
                 # Get all data from source
-                data_rows = source_conn.fetch_all(f"SELECT * FROM {table_name}")
+                data_rows = source_conn.fetch_all(f"SELECT * FROM {table_name}")  # noqa: S608 - safe SQL construction
 
                 # Redistribute data to appropriate shards
                 for row in data_rows:
                     # Extract shard key from row
-                    if self.config.shard_key.column_name in row.keys():
+                    if self.config.shard_key.column_name in row:
                         key_value = row[self.config.shard_key.column_name]
                         target_shard_id = self._find_shard_for_key(key_value)
 
@@ -874,22 +928,25 @@ class ShardingManager:
                             if target_conn:
                                 # Build INSERT query
                                 columns = list(row.keys())
-                                placeholders = ', '.join(['?' for _ in columns])
+                                placeholders = ", ".join(["?" for _ in columns])
                                 values = [row[col] for col in columns]
 
                                 insert_query = f"""
                                     INSERT OR REPLACE INTO {table_name}
                                     ({', '.join(columns)}) VALUES ({placeholders})
-                                """
+                                """  # noqa: S608 - safe SQL construction
 
                                 target_conn.execute(insert_query, tuple(values))
 
             # Mark migration as completed
-            self.metadata_db.execute("""
+            self.metadata_db.execute(
+                """
                 UPDATE shard_migrations
                 SET status = 'completed', completed_at = CURRENT_TIMESTAMP
                 WHERE migration_id = ?
-            """, (migration_id,))
+            """,
+                (migration_id,),
+            )
 
             logger.info(f"Successfully migrated data from shard {source_shard_id}")
             return True
@@ -917,18 +974,20 @@ class ShardingManager:
                             total_records = 0
 
                             for table_row in tables:
-                                table_name = table_row['name']
+                                table_name = table_row["name"]
                                 count_result = connection.fetch_one(
-                                    f"SELECT COUNT(*) as count FROM {table_name}"
+                                    f"SELECT COUNT(*) as count FROM {table_name}"  # noqa: S608 - safe SQL construction
                                 )
                                 if count_result:
-                                    total_records += count_result['count']
+                                    total_records += count_result["count"]
 
                             shard_sizes[shard_id] = total_records
                             shard_info.total_records = total_records
 
                         except Exception as e:
-                            logger.debug(f"Failed to get size for shard {shard_id}: {e}")
+                            logger.debug(
+                                f"Failed to get size for shard {shard_id}: {e}"
+                            )
 
             if not shard_sizes:
                 return
@@ -938,9 +997,12 @@ class ShardingManager:
             max_size = max(shard_sizes.values())
 
             # If the largest shard is more than 3x the average, consider rebalancing
-            if max_size > avg_size * 3 and max_size > 10000:  # Only for significant sizes
+            if (
+                max_size > avg_size * 3 and max_size > 10000
+            ):  # Only for significant sizes
                 oversized_shards = [
-                    shard_id for shard_id, size in shard_sizes.items()
+                    shard_id
+                    for shard_id, size in shard_sizes.items()
                     if size > avg_size * 2
                 ]
 
@@ -956,19 +1018,22 @@ class ShardingManager:
             for shard_id, shard_info in self.shards.items():
                 # Store key metrics
                 metrics = [
-                    ('avg_response_time_ms', shard_info.avg_response_time_ms),
-                    ('connection_count', shard_info.connection_count),
-                    ('total_records', shard_info.total_records),
-                    ('total_size_bytes', shard_info.total_size_bytes)
+                    ("avg_response_time_ms", shard_info.avg_response_time_ms),
+                    ("connection_count", shard_info.connection_count),
+                    ("total_records", shard_info.total_records),
+                    ("total_size_bytes", shard_info.total_size_bytes),
                 ]
 
                 for metric_name, metric_value in metrics:
                     if metric_value > 0:
-                        self.metadata_db.execute("""
+                        self.metadata_db.execute(
+                            """
                             INSERT INTO shard_statistics
                             (shard_id, metric_name, metric_value)
                             VALUES (?, ?, ?)
-                        """, (shard_id, metric_name, metric_value))
+                        """,
+                            (shard_id, metric_name, metric_value),
+                        )
 
         except Exception as e:
             logger.debug(f"Failed to update shard statistics: {e}")
@@ -976,51 +1041,50 @@ class ShardingManager:
     def get_shard_statistics(self) -> dict[str, Any]:
         """Get comprehensive sharding statistics."""
         stats = {
-            'total_shards': len(self.shards),
-            'active_shards': 0,
-            'readonly_shards': 0,
-            'failed_shards': 0,
-            'sharding_strategy': self.config.strategy.value,
-            'shard_key': {
-                'column': self.config.shard_key.column_name,
-                'type': self.config.shard_key.data_type,
-                'hash_function': self.config.shard_key.hash_function
+            "total_shards": len(self.shards),
+            "active_shards": 0,
+            "readonly_shards": 0,
+            "failed_shards": 0,
+            "sharding_strategy": self.config.strategy.value,
+            "shard_key": {
+                "column": self.config.shard_key.column_name,
+                "type": self.config.shard_key.data_type,
+                "hash_function": self.config.shard_key.hash_function,
             },
-            'shards': {},
-            'query_stats': dict(self._query_stats),
-            'total_cross_shard_queries': sum(
-                stats.get('cross_shard_queries', 0)
+            "shards": {},
+            "query_stats": dict(self._query_stats),
+            "total_cross_shard_queries": sum(
+                stats.get("cross_shard_queries", 0)
                 for stats in self._query_stats.values()
             ),
-            'total_queries': sum(
-                stats.get('total_queries', 0)
-                for stats in self._query_stats.values()
-            )
+            "total_queries": sum(
+                stats.get("total_queries", 0) for stats in self._query_stats.values()
+            ),
         }
 
         # Collect individual shard statistics
         for shard_id, shard_info in self.shards.items():
             shard_stats = {
-                'state': shard_info.state.value,
-                'weight': shard_info.weight,
-                'region': shard_info.region,
-                'availability_zone': shard_info.availability_zone,
-                'total_records': shard_info.total_records,
-                'total_size_bytes': shard_info.total_size_bytes,
-                'avg_response_time_ms': shard_info.avg_response_time_ms,
-                'last_health_check': shard_info.last_health_check,
-                'created_at': shard_info.created_at
+                "state": shard_info.state.value,
+                "weight": shard_info.weight,
+                "region": shard_info.region,
+                "availability_zone": shard_info.availability_zone,
+                "total_records": shard_info.total_records,
+                "total_size_bytes": shard_info.total_size_bytes,
+                "avg_response_time_ms": shard_info.avg_response_time_ms,
+                "last_health_check": shard_info.last_health_check,
+                "created_at": shard_info.created_at,
             }
 
-            stats['shards'][shard_id] = shard_stats
+            stats["shards"][shard_id] = shard_stats
 
             # Count shard states
             if shard_info.state == ShardState.ACTIVE:
-                stats['active_shards'] += 1
+                stats["active_shards"] += 1
             elif shard_info.state == ShardState.READONLY:
-                stats['readonly_shards'] += 1
+                stats["readonly_shards"] += 1
             elif shard_info.state == ShardState.FAILED:
-                stats['failed_shards'] += 1
+                stats["failed_shards"] += 1
 
         return stats
 
@@ -1053,7 +1117,7 @@ class ShardingManager:
         logger.info("Sharding manager shutdown complete")
 
 
-def main():
+def main() -> Any:
     """CLI interface for testing the Sharding Manager."""
     import argparse
 
@@ -1061,9 +1125,15 @@ def main():
     parser.add_argument("--metadata-db", required=True, help="Metadata database path")
     parser.add_argument("--test", action="store_true", help="Run sharding test")
     parser.add_argument("--stats", action="store_true", help="Show sharding statistics")
-    parser.add_argument("--add-shard", help="Add a shard (format: shard_id:connection_string)")
-    parser.add_argument("--strategy", choices=["hash_based", "range_based", "consistent_hash"],
-                       default="hash_based", help="Sharding strategy")
+    parser.add_argument(
+        "--add-shard", help="Add a shard (format: shard_id:connection_string)"
+    )
+    parser.add_argument(
+        "--strategy",
+        choices=["hash_based", "range_based", "consistent_hash"],
+        default="hash_based",
+        help="Sharding strategy",
+    )
 
     args = parser.parse_args()
 
@@ -1072,15 +1142,10 @@ def main():
         metadata_db = DatabaseConnection(args.metadata_db)
 
         # Create sharding configuration
-        shard_key = ShardKey(
-            column_name="id",
-            data_type="string",
-            hash_function="md5"
-        )
+        shard_key = ShardKey(column_name="id", data_type="string", hash_function="md5")
 
         config = ShardingConfiguration(
-            strategy=ShardingStrategy(args.strategy),
-            shard_key=shard_key
+            strategy=ShardingStrategy(args.strategy), shard_key=shard_key
         )
 
         # Initialize sharding manager
@@ -1088,11 +1153,11 @@ def main():
             config=config,
             metadata_connection=metadata_db,
             enable_cross_shard_queries=True,
-            enable_auto_migration=True
+            enable_auto_migration=True,
         )
 
         if args.add_shard:
-            shard_id, connection_string = args.add_shard.split(':', 1)
+            shard_id, connection_string = args.add_shard.split(":", 1)
             success = shard_manager.add_shard(shard_id, connection_string)
             print(f"Add shard result: {success}")
 
@@ -1103,7 +1168,10 @@ def main():
             test_queries = [
                 ("SELECT * FROM documents WHERE id = ?", ("doc_123",)),
                 ("SELECT * FROM documents WHERE title LIKE ?", ("%test%",)),
-                ("INSERT INTO documents (id, title) VALUES (?, ?)", ("doc_456", "Test Document")),
+                (
+                    "INSERT INTO documents (id, title) VALUES (?, ?)",
+                    ("doc_456", "Test Document"),
+                ),
             ]
 
             for query, params in test_queries:
@@ -1117,18 +1185,24 @@ def main():
             stats = shard_manager.get_shard_statistics()
             print("Sharding Statistics:")
             print(f"Total Shards: {stats['total_shards']}")
-            print(f"Active: {stats['active_shards']}, ReadOnly: {stats['readonly_shards']}, Failed: {stats['failed_shards']}")
+            print(
+                f"Active: {stats['active_shards']}, ReadOnly: {stats['readonly_shards']}, Failed: {stats['failed_shards']}"
+            )
             print(f"Strategy: {stats['sharding_strategy']}")
-            print(f"Shard Key: {stats['shard_key']['column']} ({stats['shard_key']['type']})")
+            print(
+                f"Shard Key: {stats['shard_key']['column']} ({stats['shard_key']['type']})"
+            )
             print(f"Total Queries: {stats['total_queries']}")
             print(f"Cross-Shard Queries: {stats['total_cross_shard_queries']}")
 
-            if stats['shards']:
+            if stats["shards"]:
                 print("\nShard Details:")
-                for shard_id, shard_stats in stats['shards'].items():
-                    print(f"  {shard_id}: {shard_stats['state']} "
-                         f"({shard_stats['total_records']} records, "
-                         f"{shard_stats['avg_response_time_ms']:.2f}ms avg)")
+                for shard_id, shard_stats in stats["shards"].items():
+                    print(
+                        f"  {shard_id}: {shard_stats['state']} "
+                        f"({shard_stats['total_records']} records, "
+                        f"{shard_stats['avg_response_time_ms']:.2f}ms avg)"
+                    )
 
         shard_manager.shutdown()
 

@@ -16,7 +16,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.database.models import VectorIndexModel
 from src.repositories.vector_repository import VectorIndexRepository
@@ -140,7 +140,7 @@ class RAGRecoveryService:
         """
         logger.debug(f"Analyzing corruption for index {vector_index.id}")
 
-        analysis_result = {
+        analysis_result: Any = {
             "index_id": vector_index.id,
             "document_id": vector_index.document_id,
             "corruption_detected": False,
@@ -221,15 +221,14 @@ class RAGRecoveryService:
                         data = json.load(f)
 
                     # Basic structure validation for vector store
-                    if file_path.name == "default__vector_store.json":
-                        if not isinstance(data, dict) or "embedding_dict" not in data:
-                            analysis_result["corrupted_files"].append(
-                                f"{file_path.name}: Invalid structure"
-                            )
-                            analysis_result["corruption_detected"] = True
-                            analysis_result["corruption_types"].append(
-                                "corrupted_files"
-                            )
+                    if file_path.name == "default__vector_store.json" and (
+                        not isinstance(data, dict) or "embedding_dict" not in data
+                    ):
+                        analysis_result["corrupted_files"].append(
+                            f"{file_path.name}: Invalid structure"
+                        )
+                        analysis_result["corruption_detected"] = True
+                        analysis_result["corruption_types"].append("corrupted_files")
 
                 except json.JSONDecodeError as e:
                     analysis_result["corrupted_files"].append(
@@ -297,7 +296,7 @@ class RAGRecoveryService:
         self,
         vector_index: VectorIndexModel,
         force_rebuild: bool = False,
-        rebuild_callback: Callable | None = None,
+        rebuild_callback: Callable[..., Any] | None = None,
     ) -> dict[str, Any]:
         """
         Recover a corrupted vector index with comprehensive repair strategies.
@@ -316,7 +315,7 @@ class RAGRecoveryService:
         recovery_start_time = datetime.now()
         logger.info(f"Starting index recovery for index {vector_index.id}")
 
-        recovery_result = {
+        recovery_result: Any = {
             "index_id": vector_index.id,
             "document_id": vector_index.document_id,
             "recovery_successful": False,
@@ -407,7 +406,7 @@ class RAGRecoveryService:
                         vector_data = json.load(f)
 
                     if (
-                        isinstance(vector_data, dict)
+                        isinstance(vector_data, dict[str, Any])
                         and "embedding_dict" in vector_data
                     ):
                         # Vector store seems intact, try to regenerate missing metadata
@@ -434,7 +433,7 @@ class RAGRecoveryService:
             # Generate basic graph_store.json if missing
             graph_store_file = index_path / "graph_store.json"
             if not graph_store_file.exists():
-                graph_store_data = {"graph": {}, "node_list": []}
+                graph_store_data: Any = {"graph": {}, "node_list": []}
                 with open(graph_store_file, "w") as f:
                     json.dump(graph_store_data, f)
                 logger.debug("Regenerated graph_store.json")
@@ -442,7 +441,7 @@ class RAGRecoveryService:
             # Generate basic index_store.json if missing
             index_store_file = index_path / "index_store.json"
             if not index_store_file.exists():
-                index_store_data = {"index_struct": {"nodes": []}}
+                index_store_data: Any = {"index_struct": {"nodes": []}}
                 with open(index_store_file, "w") as f:
                     json.dump(index_store_data, f)
                 logger.debug("Regenerated index_store.json")

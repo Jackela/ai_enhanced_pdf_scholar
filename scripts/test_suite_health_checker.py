@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Test Suite Health Checker for AI Enhanced PDF Scholar
@@ -5,6 +7,7 @@ Comprehensive validation of test suite health and readiness for production.
 """
 
 import argparse
+import contextlib
 import json
 import subprocess
 import sys
@@ -17,6 +20,7 @@ from pathlib import Path
 @dataclass
 class TestCategoryResult:
     """Result of a test category execution."""
+
     category: str
     total_tests: int
     passed_tests: int
@@ -30,6 +34,7 @@ class TestCategoryResult:
 @dataclass
 class TestSuiteHealthReport:
     """Complete test suite health report."""
+
     overall_health_score: float
     total_tests: int
     total_passed: int
@@ -44,32 +49,44 @@ class TestSuiteHealthReport:
 class TestSuiteHealthChecker:
     """Comprehensive test suite health checker."""
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str | None = None) -> None:
         """Initialize health checker."""
-        self.project_root = Path(project_root) if project_root else Path(__file__).parent.parent
+        self.project_root = (
+            Path(project_root) if project_root else Path(__file__).parent.parent
+        )
         self.test_categories = {
             "API Tests": ["tests/api/test_minimal_endpoints.py"],
             "Citation System": [
                 "tests/test_citation_models.py",
                 "tests/test_citation_repositories.py",
-                "tests/test_citation_services.py"
+                "tests/test_citation_services.py",
             ],
             "Database Models": ["tests/test_database_models.py"],
             "Unit Tests": ["tests/unit/test_smoke.py"],
-            "Security Tests": ["tests/security/test_security_suite.py", "--ignore-import-errors"],
-            "Integration Tests": ["tests/integration/test_api_endpoints.py", "--ignore-import-errors"]
+            "Security Tests": [
+                "tests/security/test_security_suite.py",
+                "--ignore-import-errors",
+            ],
+            "Integration Tests": [
+                "tests/integration/test_api_endpoints.py",
+                "--ignore-import-errors",
+            ],
         }
 
-    def run_test_category(self, category: str, test_patterns: list[str], timeout: int = 120) -> TestCategoryResult:
+    def run_test_category(
+        self, category: str, test_patterns: list[str], timeout: int = 120
+    ) -> TestCategoryResult:
         """Run tests for a specific category."""
         print(f"🧪 Running {category}...")
 
         # Build pytest command
         cmd = [
-            sys.executable, "-m", "pytest",
+            sys.executable,
+            "-m",
+            "pytest",
             "-v",
             "--tb=no",  # No traceback for cleaner output
-            f"--timeout={timeout}"
+            f"--timeout={timeout}",
         ]
 
         # Handle special flags
@@ -90,7 +107,7 @@ class TestSuiteHealthChecker:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
             )
 
             execution_time = time.time() - start_time
@@ -103,45 +120,35 @@ class TestSuiteHealthChecker:
             skipped_tests = 0
 
             # Extract test counts from pytest summary
-            lines = stdout.split('\n')
+            lines = stdout.split("\n")
             for line in lines:
-                if 'passed' in line and 'failed' in line:
+                if "passed" in line and "failed" in line:
                     # Parse line like "5 failed, 10 passed in 2.34s"
                     parts = line.split()
                     for i, part in enumerate(parts):
-                        if part == 'passed' and i > 0:
-                            try:
-                                passed_tests = int(parts[i-1])
-                            except ValueError:
-                                pass
-                        elif part == 'failed' and i > 0:
-                            try:
-                                failed_tests = int(parts[i-1])
-                            except ValueError:
-                                pass
-                        elif part == 'skipped' and i > 0:
-                            try:
-                                skipped_tests = int(parts[i-1])
-                            except ValueError:
-                                pass
-                elif 'passed' in line and 'failed' not in line:
+                        if part == "passed" and i > 0:
+                            with contextlib.suppress(ValueError):
+                                passed_tests = int(parts[i - 1])
+                        elif part == "failed" and i > 0:
+                            with contextlib.suppress(ValueError):
+                                failed_tests = int(parts[i - 1])
+                        elif part == "skipped" and i > 0:
+                            with contextlib.suppress(ValueError):
+                                skipped_tests = int(parts[i - 1])
+                elif "passed" in line and "failed" not in line:
                     # Parse line like "10 passed in 2.34s"
                     parts = line.split()
                     for i, part in enumerate(parts):
-                        if part == 'passed' and i > 0:
-                            try:
-                                passed_tests = int(parts[i-1])
-                            except ValueError:
-                                pass
-                elif 'skipped' in line and 'passed' not in line:
+                        if part == "passed" and i > 0:
+                            with contextlib.suppress(ValueError):
+                                passed_tests = int(parts[i - 1])
+                elif "skipped" in line and "passed" not in line:
                     # Parse line like "5 skipped"
                     parts = line.split()
                     for i, part in enumerate(parts):
-                        if part == 'skipped' and i > 0:
-                            try:
-                                skipped_tests = int(parts[i-1])
-                            except ValueError:
-                                pass
+                        if part == "skipped" and i > 0:
+                            with contextlib.suppress(ValueError):
+                                skipped_tests = int(parts[i - 1])
 
             total_tests = passed_tests + failed_tests + skipped_tests
 
@@ -177,7 +184,7 @@ class TestSuiteHealthChecker:
                 skipped_tests=skipped_tests,
                 pass_rate=pass_rate,
                 execution_time=execution_time,
-                status=status
+                status=status,
             )
 
         except subprocess.TimeoutExpired:
@@ -190,7 +197,7 @@ class TestSuiteHealthChecker:
                 skipped_tests=0,
                 pass_rate=0.0,
                 execution_time=timeout,
-                status="critical"
+                status="critical",
             )
         except Exception as e:
             print(f"❌ Error running {category}: {e}")
@@ -202,7 +209,7 @@ class TestSuiteHealthChecker:
                 skipped_tests=0,
                 pass_rate=0.0,
                 execution_time=0.0,
-                status="critical"
+                status="critical",
             )
 
     def calculate_health_score(self, categories: list[TestCategoryResult]) -> float:
@@ -212,12 +219,12 @@ class TestSuiteHealthChecker:
 
         # Weight different categories differently
         category_weights = {
-            "API Tests": 0.25,       # Critical for system functionality
+            "API Tests": 0.25,  # Critical for system functionality
             "Citation System": 0.25,  # Core business value
             "Database Models": 0.20,  # Foundation reliability
-            "Unit Tests": 0.15,      # Basic functionality
-            "Security Tests": 0.10,   # Important but may have import issues
-            "Integration Tests": 0.05  # Nice to have but often have dependency issues
+            "Unit Tests": 0.15,  # Basic functionality
+            "Security Tests": 0.10,  # Important but may have import issues
+            "Integration Tests": 0.05,  # Nice to have but often have dependency issues
         }
 
         weighted_score = 0.0
@@ -230,53 +237,79 @@ class TestSuiteHealthChecker:
 
         return weighted_score / total_weight if total_weight > 0 else 0.0
 
-    def generate_recommendations(self, categories: list[TestCategoryResult], health_score: float) -> list[str]:
+    def generate_recommendations(
+        self, categories: list[TestCategoryResult], health_score: float
+    ) -> list[str]:
         """Generate actionable recommendations based on test results."""
         recommendations = []
 
         # Overall health assessment
         if health_score >= 90:
-            recommendations.append("🎯 Excellent test health! System is production-ready.")
+            recommendations.append(
+                "🎯 Excellent test health! System is production-ready."
+            )
         elif health_score >= 80:
-            recommendations.append("✅ Good test health. Address minor issues for optimal reliability.")
+            recommendations.append(
+                "✅ Good test health. Address minor issues for optimal reliability."
+            )
         elif health_score >= 70:
-            recommendations.append("⚠️  Moderate test health. Focus on critical test failures.")
+            recommendations.append(
+                "⚠️  Moderate test health. Focus on critical test failures."
+            )
         elif health_score >= 60:
             recommendations.append("🔶 Poor test health. Immediate attention required.")
         else:
-            recommendations.append("🚨 Critical test health issues. Production deployment NOT recommended.")
+            recommendations.append(
+                "🚨 Critical test health issues. Production deployment NOT recommended."
+            )
 
         # Category-specific recommendations
         critical_categories = [c for c in categories if c.status == "critical"]
         poor_categories = [c for c in categories if c.status == "poor"]
 
         if critical_categories:
-            recommendations.append("🚨 CRITICAL: Fix these failing test categories immediately:")
+            recommendations.append(
+                "🚨 CRITICAL: Fix these failing test categories immediately:"
+            )
             for cat in critical_categories:
-                recommendations.append(f"   • {cat.category}: {cat.pass_rate:.1f}% pass rate")
+                recommendations.append(
+                    f"   • {cat.category}: {cat.pass_rate:.1f}% pass rate"
+                )
 
         if poor_categories:
             recommendations.append("⚠️  HIGH PRIORITY: Improve these test categories:")
             for cat in poor_categories:
-                recommendations.append(f"   • {cat.category}: {cat.pass_rate:.1f}% pass rate")
+                recommendations.append(
+                    f"   • {cat.category}: {cat.pass_rate:.1f}% pass rate"
+                )
 
         # Specific improvement suggestions
         api_result = next((c for c in categories if c.category == "API Tests"), None)
         if api_result and api_result.pass_rate < 80:
-            recommendations.append("📋 API Tests: Ensure endpoints return expected responses and handle errors gracefully.")
+            recommendations.append(
+                "📋 API Tests: Ensure endpoints return expected responses and handle errors gracefully."
+            )
 
-        citation_result = next((c for c in categories if c.category == "Citation System"), None)
+        citation_result = next(
+            (c for c in categories if c.category == "Citation System"), None
+        )
         if citation_result and citation_result.pass_rate < 95:
-            recommendations.append("📋 Citation System: This is core business logic - aim for 95%+ test coverage.")
+            recommendations.append(
+                "📋 Citation System: This is core business logic - aim for 95%+ test coverage."
+            )
 
         # Import error detection
         failed_categories = [c for c in categories if c.failed_tests > 0]
         if failed_categories:
-            recommendations.append("🔧 Import Issues: Some tests may be failing due to missing dependencies or import errors.")
+            recommendations.append(
+                "🔧 Import Issues: Some tests may be failing due to missing dependencies or import errors."
+            )
 
         return recommendations
 
-    def check_production_readiness(self, health_score: float, categories: list[TestCategoryResult]) -> bool:
+    def check_production_readiness(
+        self, health_score: float, categories: list[TestCategoryResult]
+    ) -> bool:
         """Determine if system is ready for production based on test health."""
         # Minimum requirements for production
         min_health_score = 70.0
@@ -295,7 +328,9 @@ class TestSuiteHealthChecker:
 
         return True
 
-    def generate_health_report(self, categories: list[TestCategoryResult]) -> TestSuiteHealthReport:
+    def generate_health_report(
+        self, categories: list[TestCategoryResult]
+    ) -> TestSuiteHealthReport:
         """Generate comprehensive health report."""
         health_score = self.calculate_health_score(categories)
 
@@ -304,7 +339,9 @@ class TestSuiteHealthChecker:
         total_failed = sum(c.failed_tests for c in categories)
         total_skipped = sum(c.skipped_tests for c in categories)
 
-        overall_pass_rate = (total_passed / total_tests * 100) if total_tests > 0 else 0.0
+        overall_pass_rate = (
+            (total_passed / total_tests * 100) if total_tests > 0 else 0.0
+        )
 
         recommendations = self.generate_recommendations(categories, health_score)
         production_ready = self.check_production_readiness(health_score, categories)
@@ -318,14 +355,14 @@ class TestSuiteHealthChecker:
             overall_pass_rate=overall_pass_rate,
             categories=categories,
             recommendations=recommendations,
-            production_ready=production_ready
+            production_ready=production_ready,
         )
 
     def print_detailed_report(self, report: TestSuiteHealthReport) -> None:
         """Print detailed health report to console."""
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🧪 TEST SUITE HEALTH CHECK COMPLETE")
-        print("="*60)
+        print("=" * 60)
 
         # Overall metrics
         print(f"🏥 Overall Health Score: {report.overall_health_score:.1f}%")
@@ -350,12 +387,14 @@ class TestSuiteHealthChecker:
             "good": "🟡",
             "acceptable": "🟠",
             "poor": "🔴",
-            "critical": "🚨"
+            "critical": "🚨",
         }
 
         for category in report.categories:
             icon = status_icons.get(category.status, "❓")
-            print(f"{icon} {category.category}: {category.passed_tests}/{category.total_tests} passed ({category.pass_rate:.1f}%)")
+            print(
+                f"{icon} {category.category}: {category.passed_tests}/{category.total_tests} passed ({category.pass_rate:.1f}%)"
+            )
 
         # Recommendations
         print("\n🎯 Recommendations:")
@@ -363,7 +402,9 @@ class TestSuiteHealthChecker:
         for rec in report.recommendations:
             print(rec)
 
-    def save_health_report_json(self, report: TestSuiteHealthReport, filename: str = "test_health_report.json") -> Path:
+    def save_health_report_json(
+        self, report: TestSuiteHealthReport, filename: str = "test_health_report.json"
+    ) -> Path:
         """Save health report as JSON."""
         report_data = {
             "timestamp": datetime.now().isoformat(),
@@ -383,27 +424,31 @@ class TestSuiteHealthChecker:
                     "skipped_tests": c.skipped_tests,
                     "pass_rate": c.pass_rate,
                     "execution_time": c.execution_time,
-                    "status": c.status
+                    "status": c.status,
                 }
                 for c in report.categories
             ],
-            "recommendations": report.recommendations
+            "recommendations": report.recommendations,
         }
 
         report_path = self.project_root / filename
-        with open(report_path, 'w', encoding='utf-8') as f:
+        with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report_data, f, indent=2)
 
         return report_path
 
-    def run_comprehensive_health_check(self, timeout_per_category: int = 120) -> TestSuiteHealthReport:
+    def run_comprehensive_health_check(
+        self, timeout_per_category: int = 120
+    ) -> TestSuiteHealthReport:
         """Run comprehensive test suite health check."""
         print("🚀 Starting comprehensive test suite health check...")
 
         categories = []
 
         for category_name, test_patterns in self.test_categories.items():
-            result = self.run_test_category(category_name, test_patterns, timeout_per_category)
+            result = self.run_test_category(
+                category_name, test_patterns, timeout_per_category
+            )
             categories.append(result)
 
             # Print immediate feedback
@@ -412,10 +457,12 @@ class TestSuiteHealthChecker:
                 "good": "🟡",
                 "acceptable": "🟠",
                 "poor": "🔴",
-                "critical": "🚨"
+                "critical": "🚨",
             }.get(result.status, "❓")
 
-            print(f"   {status_icon} {category_name}: {result.passed_tests}/{result.total_tests} passed ({result.pass_rate:.1f}%)")
+            print(
+                f"   {status_icon} {category_name}: {result.passed_tests}/{result.total_tests} passed ({result.pass_rate:.1f}%)"
+            )
 
         # Generate comprehensive report
         report = self.generate_health_report(categories)
@@ -423,13 +470,21 @@ class TestSuiteHealthChecker:
         return report
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Check test suite health")
-    parser.add_argument("--timeout", type=int, default=120,
-                       help="Timeout per test category in seconds (default: 120)")
-    parser.add_argument("--output", type=str, default="test_health_report.json",
-                       help="Output JSON file name (default: test_health_report.json)")
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=120,
+        help="Timeout per test category in seconds (default: 120)",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="test_health_report.json",
+        help="Output JSON file name (default: test_health_report.json)",
+    )
 
     args = parser.parse_args()
 

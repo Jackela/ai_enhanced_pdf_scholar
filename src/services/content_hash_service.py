@@ -11,9 +11,17 @@ import logging
 from pathlib import Path
 from typing import Any
 
-import fitz  # PyMuPDF
+try:
+    import fitz
+except ImportError:  # pragma: no cover - optional dependency
+    fitz = None
 
 logger = logging.getLogger(__name__)
+
+if fitz is None:  # pragma: no cover - runtime informational log
+    logger.warning(
+        "PyMuPDF (fitz) is not installed - PDF content hashing will be limited."
+    )
 
 
 class ContentHashError(Exception):
@@ -173,6 +181,8 @@ class ContentHashService:
             ContentHashError: If PDF processing fails
         """
         try:
+            if fitz is None:
+                raise ContentHashError("PyMuPDF is not available for PDF parsing")
             text_content = []
             with fitz.open(file_path) as pdf_doc:
                 for page_num in range(len(pdf_doc)):
@@ -344,9 +354,10 @@ class ContentHashService:
                         with fitz.open(file_path) as pdf_doc:
                             info["page_count"] = len(pdf_doc)
                         # Calculate hashes
-                        file_hash, content_hash = (
-                            ContentHashService.calculate_combined_hashes(file_path)
-                        )
+                        (
+                            file_hash,
+                            content_hash,
+                        ) = ContentHashService.calculate_combined_hashes(file_path)
                         info["file_hash"] = file_hash
                         info["content_hash"] = content_hash
                         # Get text length

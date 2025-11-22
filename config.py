@@ -348,7 +348,7 @@ AI_FEATURE_SETTINGS = {
 
 class Config:
     @staticmethod
-    def get_gemini_api_key():
+    def get_gemini_api_key() -> str | None:
         """
         Get Gemini API key from multiple sources (按优先级):
         1. 环境变量 GEMINI_API_KEY
@@ -380,10 +380,18 @@ class Config:
         return None
 
     @staticmethod
-    def is_api_key_configured():
+    def is_api_key_configured() -> bool:
         """
         Check if API key is configured from any source.
 
         @returns {boolean} True if API key is available
         """
         return Config.get_gemini_api_key() is not None
+
+    @staticmethod
+    def is_rag_services_enabled() -> bool:
+        """
+        Feature flag used by the API routes to gate unfinished RAG endpoints.
+        """
+        value = os.getenv("ENABLE_RAG_SERVICES", "").strip().lower()
+        return value in {"1", "true", "yes", "on"}

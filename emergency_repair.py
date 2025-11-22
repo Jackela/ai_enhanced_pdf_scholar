@@ -15,14 +15,14 @@ from pathlib import Path
 
 
 class EmergencyRepair:
-    def __init__(self):
+    def __init__(self) -> None:
         self.project_root = Path(__file__).parent
         self.db_path = self.project_root / "data" / "pdf_scholar.db"
 
-    def log(self, msg):
+    def log(self, msg) -> None:
         print(f"[EMERGENCY REPAIR] {msg}")
 
-    def fix_database(self):
+    def fix_database(self) -> None:
         """Ensure all required tables exist."""
         self.log("Fixing database schema...")
 
@@ -114,7 +114,7 @@ class EmergencyRepair:
         conn.close()
         self.log("Database schema fixed")
 
-    def fix_api_server(self):
+    def fix_api_server(self) -> None:
         """Create a bulletproof API server startup."""
         self.log("Creating bulletproof API server...")
 
@@ -176,18 +176,18 @@ class Document(BaseModel):
 def create_document(doc: DocumentCreate):
     doc_id = str(uuid.uuid4())
     now = datetime.now()
-    
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     cursor.execute("""
         INSERT INTO documents (id, title, content, metadata, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?)
     """, (doc_id, doc.title, doc.content, json.dumps(doc.metadata), now, now))
-    
+
     conn.commit()
     conn.close()
-    
+
     return Document(
         id=doc_id,
         title=doc.title,
@@ -201,18 +201,18 @@ def create_document(doc: DocumentCreate):
 def get_document(doc_id: str):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     cursor.execute("""
         SELECT id, title, content, metadata, created_at, updated_at
         FROM documents WHERE id = ?
     """, (doc_id,))
-    
+
     row = cursor.fetchone()
     conn.close()
-    
+
     if not row:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
     return Document(
         id=row[0],
         title=row[1],
@@ -226,15 +226,15 @@ def get_document(doc_id: str):
 def list_documents():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     cursor.execute("""
         SELECT id, title, content, metadata, created_at, updated_at
         FROM documents ORDER BY created_at DESC LIMIT 100
     """)
-    
+
     rows = cursor.fetchall()
     conn.close()
-    
+
     return [
         Document(
             id=row[0],
@@ -256,18 +256,18 @@ class CollectionCreate(BaseModel):
 def create_collection(collection: CollectionCreate):
     coll_id = str(uuid.uuid4())
     now = datetime.now()
-    
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     cursor.execute("""
         INSERT INTO collections (id, name, description, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?)
     """, (coll_id, collection.name, collection.description, now, now))
-    
+
     conn.commit()
     conn.close()
-    
+
     return {
         "id": coll_id,
         "name": collection.name,
@@ -281,12 +281,12 @@ def create_collection(collection: CollectionCreate):
 def create_index(data: Dict[str, Any]):
     index_id = str(uuid.uuid4())
     now = datetime.now()
-    
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     cursor.execute("""
-        INSERT INTO multi_document_indexes 
+        INSERT INTO multi_document_indexes
         (id, collection_id, name, description, config, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
@@ -298,10 +298,10 @@ def create_index(data: Dict[str, Any]):
         now,
         now
     ))
-    
+
     conn.commit()
     conn.close()
-    
+
     return {
         "id": index_id,
         "collection_id": data.get("collection_id"),
@@ -344,7 +344,7 @@ if __name__ == "__main__":
         startup_file.write_text(startup_content)
         self.log("Bulletproof startup script created")
 
-    def fix_pdf_workflow(self):
+    def fix_pdf_workflow(self) -> None:
         """Fix PDF workflow argument issues."""
         self.log("Fixing PDF workflow...")
 
@@ -383,7 +383,7 @@ if __name__ == "__main__":
                 doc_service.write_text('\n'.join(new_lines))
                 self.log("Document service fixed")
 
-    def verify_fixes(self):
+    def verify_fixes(self) -> None:
         """Quick verification of fixes."""
         self.log("Verifying fixes...")
 
@@ -410,7 +410,7 @@ if __name__ == "__main__":
         if (self.project_root / "start_bulletproof_server.py").exists():
             self.log("✓ Bulletproof startup exists")
 
-    def run(self):
+    def run(self) -> None:
         """Execute all emergency repairs."""
         self.log("=" * 60)
         self.log("EMERGENCY REPAIR PROTOCOL ACTIVATED")

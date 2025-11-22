@@ -29,10 +29,11 @@ logger = logging.getLogger(__name__)
 # Cache Configuration
 # ============================================================================
 
+
 class CacheConfig:
     """Configuration for cache optimization middleware."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Cache strategies
         self.enabled = True
         self.cache_get_requests = True
@@ -55,7 +56,7 @@ class CacheConfig:
             "application/json",
             "text/plain",
             "text/html",
-            "application/xml"
+            "application/xml",
         }
 
         # Performance settings
@@ -79,10 +80,11 @@ class CacheConfig:
 # Cache Key Generation
 # ============================================================================
 
+
 class CacheKeyGenerator:
     """Generate cache keys for HTTP requests."""
 
-    def __init__(self, config: CacheConfig):
+    def __init__(self, config: CacheConfig) -> None:
         self.config = config
 
     async def generate_key(self, request: Request) -> str:
@@ -98,7 +100,9 @@ class CacheKeyGenerator:
         if request.query_params:
             query_items = sorted(request.query_params.items())
             query_string = "&".join(f"{k}={v}" for k, v in query_items)
-            components.append(f"q:{hashlib.sha256(query_string.encode()).hexdigest()[:8]}")
+            components.append(
+                f"q:{hashlib.sha256(query_string.encode()).hexdigest()[:8]}"
+            )
 
         # Add request body hash for POST/PUT requests
         if request.method in {"POST", "PUT", "PATCH"}:
@@ -109,7 +113,7 @@ class CacheKeyGenerator:
                 components.append(f"b:{body_hash}")
 
                 # Replace request stream for downstream processing
-                async def receive():
+                async def receive() -> Any:
                     return {"type": "http.request", "body": body, "more_body": False}
 
                 request._receive = receive
@@ -153,10 +157,7 @@ class CacheKeyGenerator:
         # Check route-specific config
         path = str(request.url.path)
         route_config = self.config.route_configs.get(path)
-        if route_config and not route_config.get("enabled", True):
-            return False
-
-        return True
+        return not (route_config and not route_config.get("enabled", True))
 
     def should_cache_response(self, response: Response) -> bool:
         """Determine if response should be cached."""
@@ -171,15 +172,13 @@ class CacheKeyGenerator:
 
         # Check cache control headers
         cache_control = response.headers.get("cache-control", "")
-        if "no-cache" in cache_control or "no-store" in cache_control:
-            return False
-
-        return True
+        return not ("no-cache" in cache_control or "no-store" in cache_control)
 
 
 # ============================================================================
 # Cache Optimization Middleware
 # ============================================================================
+
 
 class CacheOptimizationMiddleware(BaseHTTPMiddleware):
     """
@@ -193,8 +192,8 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         smart_cache: SmartCacheManager | None = None,
         warming_service: CacheWarmingService | None = None,
         metrics_service: MetricsService | None = None,
-        config: CacheConfig | None = None
-    ):
+        config: CacheConfig | None = None,
+    ) -> None:
         """Initialize cache optimization middleware."""
         super().__init__(app)
 
@@ -213,12 +212,12 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             "cache_sets": 0,
             "cache_bypassed": 0,
             "errors": 0,
-            "total_time_saved_ms": 0.0
+            "total_time_saved_ms": 0.0,
         }
 
         logger.info("Cache Optimization Middleware initialized")
 
-    async def dispatch(self, request: Request, call_next: Callable):
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Any:
         """Main middleware dispatch method."""
         start_time = time.time()
 
@@ -246,8 +245,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 # Record cache hit for smart caching
                 if self.smart_cache:
                     await self.smart_cache.get(
-                        cache_key,
-                        user_id=self._extract_user_id(request)
+                        cache_key, user_id=self._extract_user_id(request)
                     )
 
                 # Report metrics
@@ -256,7 +254,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                         operation="get",
                         cache_type="http",
                         hit=True,
-                        duration=processing_time / 1000
+                        duration=processing_time / 1000,
                     )
 
                 logger.debug(f"Cache HIT for {request.method} {request.url.path}")
@@ -275,15 +273,13 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 # Handle cache miss for warming service
                 if self.warming_service:
                     await self.warming_service.handle_cache_miss(
-                        cache_key,
-                        user_id=self._extract_user_id(request)
+                        cache_key, user_id=self._extract_user_id(request)
                     )
 
                 # Record cache miss
                 if self.smart_cache:
                     await self.smart_cache.get(
-                        cache_key,
-                        user_id=self._extract_user_id(request)
+                        cache_key, user_id=self._extract_user_id(request)
                     )
 
                 # Report metrics
@@ -293,7 +289,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                         operation="get",
                         cache_type="http",
                         hit=False,
-                        duration=processing_time / 1000
+                        duration=processing_time / 1000,
                     )
 
                 logger.debug(f"Cache MISS for {request.method} {request.url.path}")
@@ -310,7 +306,9 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
     # Cache Operations
     # ========================================================================
 
-    async def _get_cached_response(self, request: Request, cache_key: str) -> Response | None:
+    async def _get_cached_response(
+        self, request: Request, cache_key: str
+    ) -> Response | None:
         """Get cached response if available."""
         try:
             # Get from cache
@@ -320,10 +318,10 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 return None
 
             # Deserialize cached response
-            if isinstance(cached_data, dict):
+            if isinstance(cached_data, dict[str, Any]):
                 response_data = cached_data
             else:
-                # Fallback for non-dict cached data
+                # Fallback for non-dict[str, Any] cached data
                 return None
 
             # Reconstruct response
@@ -334,16 +332,12 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             # Create response
             if isinstance(content, str):
                 response = Response(
-                    content=content,
-                    status_code=status_code,
-                    headers=headers
+                    content=content, status_code=status_code, headers=headers
                 )
             else:
                 # JSON response
                 response = JSONResponse(
-                    content=content,
-                    status_code=status_code,
-                    headers=headers
+                    content=content, status_code=status_code, headers=headers
                 )
 
             # Add cache headers
@@ -356,7 +350,9 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             logger.error(f"Error getting cached response: {e}")
             return None
 
-    async def _cache_response(self, request: Request, cache_key: str, response: Response):
+    async def _cache_response(
+        self, request: Request, cache_key: str, response: Response
+    ) -> None:
         """Cache response for future use."""
         try:
             # Read response body
@@ -383,11 +379,11 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
             cache_data = {
                 "content": content,
-                "headers": dict(response.headers),
+                "headers": dict[str, Any](response.headers),
                 "status_code": response.status_code,
                 "cached_at": datetime.utcnow().isoformat(),
                 "request_method": request.method,
-                "request_path": str(request.url.path)
+                "request_path": str(request.url.path),
             }
 
             # Calculate TTL
@@ -395,17 +391,17 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
             # Store in cache
             if self.smart_cache:
-                await self.smart_cache.set(
+                await self.smart_cache.set[str](
                     cache_key,
                     cache_data,
                     ttl=ttl,
-                    user_id=self._extract_user_id(request)
+                    user_id=self._extract_user_id(request),
                 )
             else:
-                self.redis_cache.set(cache_key, cache_data, ttl=ttl)
+                self.redis_cache.set[str](cache_key, cache_data, ttl=ttl)
 
             # Replace response body iterator
-            async def new_body_iterator():
+            async def new_body_iterator() -> None:
                 yield response_body
 
             response.body_iterator = new_body_iterator()
@@ -454,7 +450,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                 token = auth_header[7:]
                 # Would decode JWT and extract user_id
                 return f"token_{hashlib.sha256(token.encode()).hexdigest()[:8]}"
-            except:
+            except Exception:
                 pass
 
         # Try to get from session
@@ -463,7 +459,9 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             return f"session_{session_id}"
 
         # Fallback to IP-based identifier
-        client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+        client_ip = request.headers.get(
+            "x-forwarded-for", request.client.host if request.client else "unknown"
+        )
         return f"ip_{hashlib.sha256(client_ip.encode()).hexdigest()[:8]}"
 
     # ========================================================================
@@ -473,8 +471,12 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
     async def invalidate_cache_pattern(self, pattern: str) -> int:
         """Invalidate cache entries matching a pattern."""
         try:
-            count = self.redis_cache.delete_by_pattern(f"{self.config.cache_key_prefix}{pattern}")
-            logger.info(f"Invalidated {count} cache entries matching pattern: {pattern}")
+            count = self.redis_cache.delete_by_pattern(
+                f"{self.config.cache_key_prefix}{pattern}"
+            )
+            logger.info(
+                f"Invalidated {count} cache entries matching pattern: {pattern}"
+            )
             return count
         except Exception as e:
             logger.error(f"Error invalidating cache pattern {pattern}: {e}")
@@ -492,7 +494,9 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         logger.info(f"User cache invalidation requested for user: {user_id}")
         return 0
 
-    async def preload_cache(self, paths: list[str], base_url: str = "http://localhost"):
+    async def preload_cache(
+        self, paths: list[str], base_url: str = "http://localhost"
+    ) -> Any:
         """Preload cache with common requests."""
         if not self.warming_service:
             logger.warning("No warming service available for cache preloading")
@@ -503,7 +507,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             cache_key = f"{self.config.cache_key_prefix}GET:{path}"
 
             # Define a loader function
-            async def load_path_data(url=f"{base_url}{path}"):
+            async def load_path_data(url=f"{base_url}{path}") -> Any:
                 # This would make an internal HTTP request
                 # For now, just a placeholder
                 return {"preloaded": True, "path": path}
@@ -513,7 +517,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
                     key=cache_key,
                     priority=self.warming_service.WarmingPriority.MEDIUM,
                     strategy=self.warming_service.WarmingStrategy.SCHEDULED,
-                    loader_func=load_path_data
+                    loader_func=load_path_data,
                 )
 
         logger.info(f"Scheduled preloading for {len(paths)} paths")
@@ -535,24 +539,28 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             "errors": self.stats["errors"],
             "hit_rate": (
                 (self.stats["cache_hits"] / total_requests * 100)
-                if total_requests > 0 else 0
+                if total_requests > 0
+                else 0
             ),
             "miss_rate": (
                 (self.stats["cache_misses"] / total_requests * 100)
-                if total_requests > 0 else 0
+                if total_requests > 0
+                else 0
             ),
             "bypass_rate": (
                 (self.stats["cache_bypassed"] / total_requests * 100)
-                if total_requests > 0 else 0
+                if total_requests > 0
+                else 0
             ),
             "total_time_saved_seconds": self.stats["total_time_saved_ms"] / 1000,
             "average_time_saved_per_hit_ms": (
                 (self.stats["total_time_saved_ms"] / self.stats["cache_hits"])
-                if self.stats["cache_hits"] > 0 else 0
-            )
+                if self.stats["cache_hits"] > 0
+                else 0
+            ),
         }
 
-    def reset_stats(self):
+    def reset_stats(self) -> None:
         """Reset cache statistics."""
         self.stats = {
             "total_requests": 0,
@@ -561,7 +569,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             "cache_sets": 0,
             "cache_bypassed": 0,
             "errors": 0,
-            "total_time_saved_ms": 0.0
+            "total_time_saved_ms": 0.0,
         }
         logger.info("Cache statistics reset")
 
@@ -571,7 +579,11 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 
         # Determine health status
         hit_rate = stats["hit_rate"]
-        error_rate = (stats["errors"] / stats["total_requests"] * 100) if stats["total_requests"] > 0 else 0
+        error_rate = (
+            (stats["errors"] / stats["total_requests"] * 100)
+            if stats["total_requests"] > 0
+            else 0
+        )
 
         if hit_rate >= 80 and error_rate < 1:
             health_status = "healthy"
@@ -584,7 +596,7 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
             "status": health_status,
             "hit_rate": hit_rate,
             "error_rate": error_rate,
-            "recommendations": self._get_health_recommendations(stats)
+            "recommendations": self._get_health_recommendations(stats),
         }
 
     def _get_health_recommendations(self, stats: dict[str, Any]) -> list[str]:
@@ -592,19 +604,31 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
         recommendations = []
 
         hit_rate = stats["hit_rate"]
-        error_rate = (stats["errors"] / stats["total_requests"] * 100) if stats["total_requests"] > 0 else 0
+        error_rate = (
+            (stats["errors"] / stats["total_requests"] * 100)
+            if stats["total_requests"] > 0
+            else 0
+        )
 
         if hit_rate < 50:
-            recommendations.append("Low cache hit rate. Consider increasing TTL or improving cache key generation.")
+            recommendations.append(
+                "Low cache hit rate. Consider increasing TTL or improving cache key generation."
+            )
 
         if error_rate > 5:
-            recommendations.append("High error rate detected. Check Redis connectivity and error logs.")
+            recommendations.append(
+                "High error rate detected. Check Redis connectivity and error logs."
+            )
 
         if stats["cache_bypassed"] > stats["cache_hits"]:
-            recommendations.append("Many requests are being bypassed. Review cache configuration and bypass conditions.")
+            recommendations.append(
+                "Many requests are being bypassed. Review cache configuration and bypass conditions."
+            )
 
         if stats["total_requests"] > 0 and stats["cache_sets"] == 0:
-            recommendations.append("No responses are being cached. Check response caching conditions.")
+            recommendations.append(
+                "No responses are being cached. Check response caching conditions."
+            )
 
         return recommendations
 
@@ -613,12 +637,13 @@ class CacheOptimizationMiddleware(BaseHTTPMiddleware):
 # Utility Functions
 # ============================================================================
 
+
 def create_cache_middleware(
     redis_cache: RedisCacheService,
     smart_cache: SmartCacheManager | None = None,
     warming_service: CacheWarmingService | None = None,
     metrics_service: MetricsService | None = None,
-    config: CacheConfig | None = None
+    config: CacheConfig | None = None,
 ) -> CacheOptimizationMiddleware:
     """Factory function to create cache middleware."""
     return lambda app: CacheOptimizationMiddleware(
@@ -627,7 +652,7 @@ def create_cache_middleware(
         smart_cache=smart_cache,
         warming_service=warming_service,
         metrics_service=metrics_service,
-        config=config
+        config=config,
     )
 
 
@@ -645,19 +670,19 @@ if __name__ == "__main__":
     app = FastAPI()
 
     # Add cache middleware
-    cache_middleware = CacheOptimizationMiddleware(
-        app,
-        redis_cache=redis_cache
-    )
+    cache_middleware = CacheOptimizationMiddleware(app, redis_cache=redis_cache)
 
     app.add_middleware(CacheOptimizationMiddleware, redis_cache=redis_cache)
 
     @app.get("/api/test")
-    async def test_endpoint():
-        return {"message": "This response will be cached", "timestamp": datetime.utcnow().isoformat()}
+    async def test_endpoint() -> Any:
+        return {
+            "message": "This response will be cached",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
 
     @app.get("/api/cache/stats")
-    async def cache_stats():
+    async def cache_stats() -> Any:
         return cache_middleware.get_cache_stats()
 
     print("Example FastAPI app with cache middleware created")

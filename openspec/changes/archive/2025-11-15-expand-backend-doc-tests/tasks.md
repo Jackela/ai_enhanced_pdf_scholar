@@ -1,0 +1,5 @@
+- [x] Capture current gaps by listing untested document route branches (list, upload, download, preview) and prioritize scenarios.
+- [x] Add pytest contract tests that cover success + error cases for `list_documents` and `get_document`, including pagination metadata and 400/500 handling.
+- [x] Add pytest contract tests for preview + download helpers that assert headers, status codes, and path-safety enforcement.
+- [x] Document new stubs/fixtures in `tests/README` (or relevant doc) so future contributors can reuse them.
+- [x] Run `pytest -q` and `make lint-ci` locally; update coverage notes to confirm the backend routes exceed their prior coverage.

@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python
 """Test that the server starts and responds to requests."""
 
@@ -8,7 +10,7 @@ import time
 import requests
 
 
-def test_server():
+def test_server() -> Any:
     """Start server and test endpoints."""
     # Start the server
     print("Starting server using start_api_server_simple.py...")

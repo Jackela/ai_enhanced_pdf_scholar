@@ -10,7 +10,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class SigningAlgorithm(str, Enum):
     """Supported HMAC signing algorithms."""
+
     SHA256 = "sha256"
     SHA384 = "sha384"
     SHA512 = "sha512"
@@ -31,12 +32,14 @@ class SigningAlgorithm(str, Enum):
 
 class RequestSigningError(Exception):
     """Request signing validation error."""
+
     pass
 
 
 @dataclass
 class SigningKey:
     """API signing key configuration."""
+
     key_id: str
     secret: bytes
     algorithm: SigningAlgorithm
@@ -45,7 +48,9 @@ class SigningKey:
     is_active: bool = True
     usage_count: int = 0
     last_used: float | None = None
-    allowed_methods: set[str] = field(default_factory=lambda: {"GET", "POST", "PUT", "DELETE"})
+    allowed_methods: set[str] = field(
+        default_factory=lambda: {"GET", "POST", "PUT", "DELETE"}
+    )
     allowed_paths: set[str] = field(default_factory=set)  # Empty = allow all
     client_id: str | None = None
     description: str = ""
@@ -54,6 +59,7 @@ class SigningKey:
 @dataclass
 class SignatureValidationResult:
     """Result of signature validation."""
+
     is_valid: bool
     key_id: str | None = None
     algorithm: SigningAlgorithm | None = None
@@ -65,6 +71,7 @@ class SignatureValidationResult:
 @dataclass
 class RequestSignature:
     """Parsed request signature information."""
+
     key_id: str
     signature: str
     algorithm: SigningAlgorithm
@@ -83,8 +90,8 @@ class ProductionRequestSigning:
         self,
         secrets_manager: ProductionSecretsManager | None = None,
         production_config: ProductionConfig | None = None,
-        metrics_service: MetricsService | None = None
-    ):
+        metrics_service: MetricsService | None = None,
+    ) -> None:
         """Initialize request signing system."""
         self.secrets_manager = secrets_manager
         self.production_config = production_config
@@ -107,14 +114,19 @@ class ProductionRequestSigning:
         self.require_timestamp = True
         self.require_nonce = False  # Can be enabled for extra security
         self.max_timestamp_age = 300  # 5 minutes
-        self.default_headers_to_sign = ["host", "date", "content-type", "content-length"]
+        self.default_headers_to_sign = [
+            "host",
+            "date",
+            "content-type",
+            "content-length",
+        ]
 
         # Load signing keys
         self._load_signing_keys()
 
         logger.info("Production request signing system initialized")
 
-    def _load_signing_keys(self):
+    def _load_signing_keys(self) -> None:
         """Load signing keys from secrets manager or configuration."""
         if self.secrets_manager:
             try:
@@ -125,7 +137,7 @@ class ProductionRequestSigning:
                     secret=b"default-signing-key-change-in-production",
                     algorithm=SigningAlgorithm.SHA256,
                     created_at=time.time(),
-                    description="Default signing key"
+                    description="Default signing key",
                 )
                 self.signing_keys["default"] = default_key
                 logger.info("Loaded signing keys from secrets manager")
@@ -133,20 +145,22 @@ class ProductionRequestSigning:
                 logger.error(f"Failed to load signing keys: {e}")
 
         # Load from production config if available
-        if self.production_config and hasattr(self.production_config.security, 'signing_keys'):
+        if self.production_config and hasattr(
+            self.production_config.security, "signing_keys"
+        ):
             # This would load from production configuration
             pass
 
     def add_signing_key(
         self,
         key_id: str,
-        secret: Union[str, bytes],
+        secret: str | bytes,
         algorithm: SigningAlgorithm = SigningAlgorithm.SHA256,
         expires_in: int | None = None,
         allowed_methods: set[str] | None = None,
         allowed_paths: set[str] | None = None,
         client_id: str | None = None,
-        description: str = ""
+        description: str = "",
     ) -> bool:
         """
         Add new signing key.
@@ -166,7 +180,7 @@ class ProductionRequestSigning:
         """
         try:
             if isinstance(secret, str):
-                secret = secret.encode('utf-8')
+                secret = secret.encode("utf-8")
 
             expires_at = None
             if expires_in:
@@ -181,7 +195,7 @@ class ProductionRequestSigning:
                 allowed_methods=allowed_methods or {"GET", "POST", "PUT", "DELETE"},
                 allowed_paths=allowed_paths or set(),
                 client_id=client_id,
-                description=description
+                description=description,
             )
 
             self.signing_keys[key_id] = signing_key
@@ -196,7 +210,7 @@ class ProductionRequestSigning:
             logger.error(f"Failed to add signing key {key_id}: {e}")
             return False
 
-    def rotate_signing_key(self, key_id: str, new_secret: Union[str, bytes]) -> bool:
+    def rotate_signing_key(self, key_id: str, new_secret: str | bytes) -> bool:
         """
         Rotate signing key secret.
 
@@ -213,7 +227,7 @@ class ProductionRequestSigning:
 
         try:
             if isinstance(new_secret, str):
-                new_secret = new_secret.encode('utf-8')
+                new_secret = new_secret.encode("utf-8")
 
             signing_key = self.signing_keys[key_id]
             old_secret_hash = hashlib.sha256(signing_key.secret).hexdigest()[:8]
@@ -225,7 +239,9 @@ class ProductionRequestSigning:
             self.signature_cache.clear()
 
             new_secret_hash = hashlib.sha256(new_secret).hexdigest()[:8]
-            logger.info(f"Rotated signing key {key_id}: {old_secret_hash} -> {new_secret_hash}")
+            logger.info(
+                f"Rotated signing key {key_id}: {old_secret_hash} -> {new_secret_hash}"
+            )
             return True
 
         except Exception as e:
@@ -290,14 +306,16 @@ class ProductionRequestSigning:
                 algorithm=algorithm,
                 timestamp=timestamp or time.time(),
                 nonce=params.get("nonce"),
-                headers_to_sign=headers_to_sign or self.default_headers_to_sign
+                headers_to_sign=headers_to_sign or self.default_headers_to_sign,
             )
 
         except Exception as e:
             logger.error(f"Failed to parse authorization header: {e}")
             return None
 
-    def _build_string_to_sign(self, request: Request, signature_info: RequestSignature) -> str:
+    def _build_string_to_sign(
+        self, request: Request, signature_info: RequestSignature
+    ) -> str:
         """
         Build the string that should be signed.
 
@@ -337,10 +355,7 @@ class ProductionRequestSigning:
         return "\n".join(parts)
 
     def _compute_signature(
-        self,
-        string_to_sign: str,
-        secret: bytes,
-        algorithm: SigningAlgorithm
+        self, string_to_sign: str, secret: bytes, algorithm: SigningAlgorithm
     ) -> str:
         """Compute HMAC signature for string."""
         import base64
@@ -356,16 +371,14 @@ class ProductionRequestSigning:
             raise ValueError(f"Unsupported algorithm: {algorithm}")
 
         # Compute HMAC
-        signature = hmac.new(
-            secret,
-            string_to_sign.encode('utf-8'),
-            hash_func
-        )
+        signature = hmac.new(secret, string_to_sign.encode("utf-8"), hash_func)
 
         # Return base64-encoded signature
-        return base64.b64encode(signature.digest()).decode('ascii')
+        return base64.b64encode(signature.digest()).decode("ascii")
 
-    async def validate_request_signature(self, request: Request) -> SignatureValidationResult:
+    async def validate_request_signature(
+        self, request: Request
+    ) -> SignatureValidationResult:
         """
         Validate request signature.
 
@@ -384,7 +397,7 @@ class ProductionRequestSigning:
                 return SignatureValidationResult(
                     is_valid=False,
                     error_message="Missing Authorization header",
-                    validation_time=time.time() - start_time
+                    validation_time=time.time() - start_time,
                 )
 
             # Parse signature information
@@ -393,7 +406,7 @@ class ProductionRequestSigning:
                 return SignatureValidationResult(
                     is_valid=False,
                     error_message="Invalid signature format",
-                    validation_time=time.time() - start_time
+                    validation_time=time.time() - start_time,
                 )
 
             # Check cache first
@@ -416,8 +429,7 @@ class ProductionRequestSigning:
             # Record metrics
             if self.metrics_service:
                 self.metrics_service.record_security_event(
-                    "signature_validation",
-                    "info" if result.is_valid else "warning"
+                    "signature_validation", "info" if result.is_valid else "warning"
                 )
 
             return result
@@ -427,21 +439,18 @@ class ProductionRequestSigning:
             return SignatureValidationResult(
                 is_valid=False,
                 error_message=f"Validation error: {str(e)}",
-                validation_time=time.time() - start_time
+                validation_time=time.time() - start_time,
             )
 
     async def _validate_signature(
-        self,
-        request: Request,
-        signature_info: RequestSignature
+        self, request: Request, signature_info: RequestSignature
     ) -> SignatureValidationResult:
         """Internal signature validation logic."""
 
         # Check if key exists
         if signature_info.key_id not in self.signing_keys:
             return SignatureValidationResult(
-                is_valid=False,
-                error_message=f"Unknown key ID: {signature_info.key_id}"
+                is_valid=False, error_message=f"Unknown key ID: {signature_info.key_id}"
             )
 
         signing_key = self.signing_keys[signature_info.key_id]
@@ -450,28 +459,30 @@ class ProductionRequestSigning:
         if not signing_key.is_active:
             return SignatureValidationResult(
                 is_valid=False,
-                error_message=f"Inactive key ID: {signature_info.key_id}"
+                error_message=f"Inactive key ID: {signature_info.key_id}",
             )
 
         # Check if key is expired
         if signing_key.expires_at and time.time() > signing_key.expires_at:
             return SignatureValidationResult(
-                is_valid=False,
-                error_message=f"Expired key ID: {signature_info.key_id}"
+                is_valid=False, error_message=f"Expired key ID: {signature_info.key_id}"
             )
 
         # Check allowed methods
         if request.method.upper() not in signing_key.allowed_methods:
             return SignatureValidationResult(
                 is_valid=False,
-                error_message=f"Method {request.method} not allowed for key {signature_info.key_id}"
+                error_message=f"Method {request.method} not allowed for key {signature_info.key_id}",
             )
 
         # Check allowed paths
-        if signing_key.allowed_paths and request.url.path not in signing_key.allowed_paths:
+        if (
+            signing_key.allowed_paths
+            and request.url.path not in signing_key.allowed_paths
+        ):
             return SignatureValidationResult(
                 is_valid=False,
-                error_message=f"Path {request.url.path} not allowed for key {signature_info.key_id}"
+                error_message=f"Path {request.url.path} not allowed for key {signature_info.key_id}",
             )
 
         # Validate timestamp
@@ -481,19 +492,19 @@ class ProductionRequestSigning:
 
             if time_diff > self.max_timestamp_age:
                 return SignatureValidationResult(
-                    is_valid=False,
-                    error_message="Request timestamp too old"
+                    is_valid=False, error_message="Request timestamp too old"
                 )
 
             if time_diff > self.clock_skew_tolerance:
-                logger.warning(f"Clock skew detected: {time_diff}s for key {signature_info.key_id}")
+                logger.warning(
+                    f"Clock skew detected: {time_diff}s for key {signature_info.key_id}"
+                )
 
         # Check for replay attacks
         if signature_info.nonce:
             if signature_info.nonce in self.used_nonces:
                 return SignatureValidationResult(
-                    is_valid=False,
-                    error_message="Nonce already used (replay attack)"
+                    is_valid=False, error_message="Nonce already used (replay attack)"
                 )
             self.used_nonces.add(signature_info.nonce)
 
@@ -507,16 +518,13 @@ class ProductionRequestSigning:
 
         # Compute expected signature
         expected_signature = self._compute_signature(
-            string_to_sign,
-            signing_key.secret,
-            signature_info.algorithm
+            string_to_sign, signing_key.secret, signature_info.algorithm
         )
 
         # Compare signatures (timing-safe comparison)
         if not hmac.compare_digest(signature_info.signature, expected_signature):
             return SignatureValidationResult(
-                is_valid=False,
-                error_message="Invalid signature"
+                is_valid=False, error_message="Invalid signature"
             )
 
         # Check for signature reuse
@@ -526,7 +534,7 @@ class ProductionRequestSigning:
             if time.time() - last_used < self.signature_ttl:
                 return SignatureValidationResult(
                     is_valid=False,
-                    error_message="Signature already used (replay attack)"
+                    error_message="Signature already used (replay attack)",
                 )
 
         # Record signature usage
@@ -536,7 +544,8 @@ class ProductionRequestSigning:
         if len(self.used_signatures) > 10000:
             cutoff_time = time.time() - self.signature_ttl
             self.used_signatures = {
-                sig: timestamp for sig, timestamp in self.used_signatures.items()
+                sig: timestamp
+                for sig, timestamp in self.used_signatures.items()
                 if timestamp > cutoff_time
             }
 
@@ -548,22 +557,25 @@ class ProductionRequestSigning:
             is_valid=True,
             key_id=signature_info.key_id,
             algorithm=signature_info.algorithm,
-            timestamp=signature_info.timestamp
+            timestamp=signature_info.timestamp,
         )
 
     def get_signing_statistics(self) -> dict[str, Any]:
         """Get signing system statistics."""
         stats = {
             "total_keys": len(self.signing_keys),
-            "active_keys": sum(1 for key in self.signing_keys.values() if key.is_active),
+            "active_keys": sum(
+                1 for key in self.signing_keys.values() if key.is_active
+            ),
             "expired_keys": sum(
-                1 for key in self.signing_keys.values()
+                1
+                for key in self.signing_keys.values()
                 if key.expires_at and time.time() > key.expires_at
             ),
             "cache_size": len(self.signature_cache),
             "used_nonces": len(self.used_nonces),
             "used_signatures": len(self.used_signatures),
-            "key_statistics": {}
+            "key_statistics": {},
         }
 
         # Per-key statistics
@@ -575,7 +587,7 @@ class ProductionRequestSigning:
                 "expires_at": key.expires_at,
                 "client_id": key.client_id,
                 "allowed_methods": list(key.allowed_methods),
-                "allowed_paths_count": len(key.allowed_paths)
+                "allowed_paths_count": len(key.allowed_paths),
             }
 
         return stats
@@ -587,18 +599,18 @@ class RequestSigningMiddleware:
     def __init__(
         self,
         request_signing: ProductionRequestSigning,
-        exempt_paths: set[str] | None = None
-    ):
+        exempt_paths: set[str] | None = None,
+    ) -> None:
         """Initialize request signing middleware."""
         self.request_signing = request_signing
         self.exempt_paths = exempt_paths or {
             "/health",
             "/docs",
             "/openapi.json",
-            "/security/csp-report"
+            "/security/csp-report",
         }
 
-    async def __call__(self, request: Request, call_next):
+    async def __call__(self, request: Request, call_next) -> Any:
         """Validate request signature before processing."""
         # Skip validation for exempt paths
         if request.url.path in self.exempt_paths:
@@ -612,10 +624,12 @@ class RequestSigningMiddleware:
         result = await self.request_signing.validate_request_signature(request)
 
         if not result.is_valid:
-            logger.warning(f"Invalid signature for {request.method} {request.url.path}: {result.error_message}")
+            logger.warning(
+                f"Invalid signature for {request.method} {request.url.path}: {result.error_message}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid request signature"
+                detail="Invalid request signature",
             )
 
         # Add signature info to request state
@@ -629,6 +643,7 @@ class RequestSigningMiddleware:
 # Dependency for request signature validation
 security = HTTPBearer()
 
+
 def get_request_signing() -> ProductionRequestSigning:
     """Dependency to get request signing instance."""
     # This would be injected or configured in the application
@@ -638,14 +653,13 @@ def get_request_signing() -> ProductionRequestSigning:
 async def validate_signature(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    request_signing: ProductionRequestSigning = Depends(get_request_signing)
+    request_signing: ProductionRequestSigning = Depends(get_request_signing),
 ) -> SignatureValidationResult:
     """FastAPI dependency for signature validation."""
     result = await request_signing.validate_request_signature(request)
     if not result.is_valid:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=result.error_message
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=result.error_message
         )
     return result
 
@@ -653,7 +667,7 @@ async def validate_signature(
 def create_production_request_signing(
     secrets_manager: ProductionSecretsManager | None = None,
     production_config: ProductionConfig | None = None,
-    metrics_service: MetricsService | None = None
+    metrics_service: MetricsService | None = None,
 ) -> ProductionRequestSigning:
     """Create production request signing instance."""
     return ProductionRequestSigning(secrets_manager, production_config, metrics_service)
@@ -664,7 +678,7 @@ def setup_request_signing_middleware(
     secrets_manager: ProductionSecretsManager | None = None,
     production_config: ProductionConfig | None = None,
     metrics_service: MetricsService | None = None,
-    exempt_paths: set[str] | None = None
+    exempt_paths: set[str] | None = None,
 ) -> ProductionRequestSigning:
     """Set up request signing middleware for FastAPI application."""
     request_signing = create_production_request_signing(
@@ -677,7 +691,7 @@ def setup_request_signing_middleware(
 
     # Add management endpoints
     @app.get("/admin/signing/stats")
-    async def get_signing_stats():
+    async def get_signing_stats() -> Any:
         """Get request signing statistics."""
         return request_signing.get_signing_statistics()
 
@@ -688,8 +702,8 @@ def setup_request_signing_middleware(
         algorithm: str = "sha256",
         expires_in: int | None = None,
         client_id: str | None = None,
-        description: str = ""
-    ):
+        description: str = "",
+    ) -> Any:
         """Add new signing key."""
         try:
             algorithm_enum = SigningAlgorithm(algorithm)
@@ -699,20 +713,20 @@ def setup_request_signing_middleware(
                 algorithm=algorithm_enum,
                 expires_in=expires_in,
                 client_id=client_id,
-                description=description
+                description=description,
             )
             return {"success": result}
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
     @app.put("/admin/signing/keys/{key_id}/rotate")
-    async def rotate_signing_key(key_id: str, new_secret: str):
+    async def rotate_signing_key(key_id: str, new_secret: str) -> Any:
         """Rotate signing key secret."""
         result = request_signing.rotate_signing_key(key_id, new_secret)
         return {"success": result}
 
     @app.delete("/admin/signing/keys/{key_id}")
-    async def remove_signing_key(key_id: str):
+    async def remove_signing_key(key_id: str) -> Any:
         """Remove signing key."""
         result = request_signing.remove_signing_key(key_id)
         return {"success": result}

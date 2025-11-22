@@ -1,3 +1,5 @@
+from typing import Any
+
 #!/usr/bin/env python3
 """
 Memory Usage Optimization Script
@@ -18,7 +20,7 @@ import psutil
 # Add project root to path
 sys.path.append('.')
 
-def analyze_memory_usage():
+def analyze_memory_usage() -> Any:
     """Analyze current memory usage patterns."""
     print("🔍 Memory Usage Analysis")
     print("=" * 50)
@@ -163,7 +165,7 @@ def analyze_memory_usage():
     finally:
         tracemalloc.stop()
 
-def optimize_memory_settings():
+def optimize_memory_settings() -> Any:
     """Apply memory optimization settings."""
     print("\n🔧 Applying Memory Optimizations")
     print("=" * 50)
@@ -231,7 +233,7 @@ def optimize_memory_settings():
         traceback.print_exc()
         return False
 
-def create_memory_monitoring():
+def create_memory_monitoring() -> Any:
     """Create memory monitoring configuration."""
     print("\n📊 Setting up Memory Monitoring")
     print("=" * 50)
@@ -314,7 +316,7 @@ if __name__ == "__main__":
         print(f"❌ Memory monitoring setup failed: {e}")
         return False
 
-def main():
+def main() -> None:
     """Main optimization function."""
     print("🚀 AI Enhanced PDF Scholar - Memory Optimization")
     print("=" * 60)

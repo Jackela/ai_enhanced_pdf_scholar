@@ -11,6 +11,7 @@ import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from enum import StrEnum, auto
 from typing import Any
 
 from ..core.secrets_vault import (
@@ -26,13 +27,30 @@ from .production import ProductionConfig
 logger = logging.getLogger(__name__)
 
 
+class SecretType(StrEnum):
+    """Classifies the different secret use-cases."""
+
+    def _generate_next_value_(self, start, count, last_values) -> Any:
+        return self.lower()
+
+    GENERIC = auto()
+    DATABASE_PASSWORD = auto()
+    DATABASE_URL = auto()
+    API_KEY = auto()
+    JWT_SECRET = auto()
+    JWT_PRIVATE_KEY = auto()
+    ENCRYPTION_KEY = auto()
+    WEBHOOK_SECRET = auto()
+
+
 @dataclass
 class SecretDefinition:
     """Definition of a required secret."""
+
     key: str
     description: str
     required: bool = True
-    secret_type: str = "generic"
+    secret_type: SecretType = SecretType.GENERIC
     min_length: int = 8
     validation_pattern: str | None = None
     rotation_interval_days: int | None = None
@@ -42,90 +60,101 @@ class SecretDefinition:
 @dataclass
 class ProductionSecretsConfig:
     """Production secrets configuration."""
+
     # Database secrets
-    database_secrets: list[SecretDefinition] = field(default_factory=lambda: [
-        SecretDefinition(
-            key="DATABASE_PASSWORD",
-            description="PostgreSQL database password",
-            secret_type="database_password",
-            min_length=16,
-            rotation_interval_days=90
-        ),
-        SecretDefinition(
-            key="DATABASE_URL",
-            description="Complete database connection URL",
-            secret_type="database_url",
-            min_length=20
-        )
-    ])
+    database_secrets: list[SecretDefinition] = field(
+        default_factory=lambda: [
+            SecretDefinition(
+                key="DATABASE_PASSWORD",
+                description="PostgreSQL database password",
+                secret_type=SecretType.DATABASE_PASSWORD,
+                min_length=16,
+                rotation_interval_days=90,
+            ),
+            SecretDefinition(
+                key="DATABASE_URL",
+                description="Complete database connection URL",
+                secret_type=SecretType.DATABASE_URL,
+                min_length=20,
+            ),
+        ]
+    )
 
     # API Keys
-    api_secrets: list[SecretDefinition] = field(default_factory=lambda: [
-        SecretDefinition(
-            key="GOOGLE_API_KEY",
-            description="Google Gemini API key",
-            secret_type="api_key",
-            min_length=20
-        ),
-        SecretDefinition(
-            key="OPENAI_API_KEY",
-            description="OpenAI API key",
-            secret_type="api_key",
-            required=False
-        )
-    ])
+    api_secrets: list[SecretDefinition] = field(
+        default_factory=lambda: [
+            SecretDefinition(
+                key="GOOGLE_API_KEY",
+                description="Google Gemini API key",
+                secret_type=SecretType.API_KEY,
+                min_length=20,
+            ),
+            SecretDefinition(
+                key="OPENAI_API_KEY",
+                description="OpenAI API key",
+                secret_type=SecretType.API_KEY,
+                required=False,
+            ),
+        ]
+    )
 
     # Security secrets
-    security_secrets: list[SecretDefinition] = field(default_factory=lambda: [
-        SecretDefinition(
-            key="SECRET_KEY",
-            description="Application secret key for signing",
-            secret_type="jwt_secret",
-            min_length=32,
-            rotation_interval_days=30
-        ),
-        SecretDefinition(
-            key="JWT_PRIVATE_KEY",
-            description="JWT signing private key",
-            secret_type="jwt_private_key",
-            min_length=100
-        ),
-        SecretDefinition(
-            key="ENCRYPTION_KEY",
-            description="Data encryption key",
-            secret_type="encryption_key",
-            min_length=32,
-            rotation_interval_days=60
-        )
-    ])
+    security_secrets: list[SecretDefinition] = field(
+        default_factory=lambda: [
+            SecretDefinition(
+                key="SECRET_KEY",
+                description="Application secret key for signing",
+                secret_type=SecretType.JWT_SECRET,
+                min_length=32,
+                rotation_interval_days=30,
+            ),
+            SecretDefinition(
+                key="JWT_PRIVATE_KEY",
+                description="JWT signing private key",
+                secret_type=SecretType.JWT_PRIVATE_KEY,
+                min_length=100,
+            ),
+            SecretDefinition(
+                key="ENCRYPTION_KEY",
+                description="Data encryption key",
+                secret_type=SecretType.ENCRYPTION_KEY,
+                min_length=32,
+                rotation_interval_days=60,
+            ),
+        ]
+    )
 
     # Infrastructure secrets
-    infrastructure_secrets: list[SecretDefinition] = field(default_factory=lambda: [
-        SecretDefinition(
-            key="REDIS_PASSWORD",
-            description="Redis cache password",
-            secret_type="database_password",
-            min_length=16,
-            required=False
-        ),
-        SecretDefinition(
-            key="MONITORING_API_KEY",
-            description="Monitoring system API key",
-            secret_type="api_key",
-            required=False
-        )
-    ])
+    infrastructure_secrets: list[SecretDefinition] = field(
+        default_factory=lambda: [
+            SecretDefinition(
+                key="REDIS_PASSWORD",
+                description="Redis cache password",
+                secret_type=SecretType.DATABASE_PASSWORD,
+                min_length=16,
+                required=False,
+            ),
+            SecretDefinition(
+                key="MONITORING_API_KEY",
+                description="Monitoring system API key",
+                secret_type=SecretType.API_KEY,
+                required=False,
+            ),
+        ]
+    )
 
     # Application-specific secrets
-    application_secrets: list[SecretDefinition] = field(default_factory=lambda: [
-        SecretDefinition(
-            key="WEBHOOK_SECRET",
-            description="Webhook signature secret",
-            secret_type="webhook_secret",
-            min_length=24,
-            required=False
-        )
-    ])
+    application_secrets: list[SecretDefinition] = field(
+        default_factory=lambda: [
+            SecretDefinition(
+                key="WEBHOOK_SECRET",
+                description="Webhook signature secret",
+                secret_type=SecretType.WEBHOOK_SECRET,
+                min_length=24,
+                required=False,
+            )
+        ]
+    )
 
 
 class ProductionSecretsIntegration:
@@ -138,8 +167,8 @@ class ProductionSecretsIntegration:
         self,
         secrets_manager: ProductionSecretsManager | None = None,
         production_config: ProductionConfig | None = None,
-        metrics_service: MetricsService | None = None
-    ):
+        metrics_service: MetricsService | None = None,
+    ) -> None:
         """Initialize secrets integration."""
         self.secrets_manager = secrets_manager or ProductionSecretsManager()
         self.production_config = production_config
@@ -154,8 +183,10 @@ class ProductionSecretsIntegration:
         self.secret_metadata: dict[str, dict[str, Any]] = {}
 
         # Rotation tracking
-        self.rotation_schedule: dict[str, float] = {}  # secret_key -> next_rotation_time
-        self.rotation_in_progress: set = set()
+        self.rotation_schedule: dict[
+            str, float
+        ] = {}  # secret_key -> next_rotation_time
+        self.rotation_in_progress: set[str] = set[str]()
 
         # Security monitoring
         self.access_tracking: dict[str, list[float]] = {}  # secret_key -> access_times
@@ -163,7 +194,7 @@ class ProductionSecretsIntegration:
 
         logger.info("Production secrets integration initialized")
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize secrets management system."""
         try:
             # Initialize the secrets manager
@@ -190,17 +221,17 @@ class ProductionSecretsIntegration:
             logger.error(f"Failed to initialize secrets integration: {e}")
             raise
 
-    async def load_production_secrets(self):
+    async def load_production_secrets(self) -> None:
         """Load all production secrets from various sources."""
         all_secrets = {}
 
         # Collect all secret definitions
         all_secret_defs = (
-            self.secrets_config.database_secrets +
-            self.secrets_config.api_secrets +
-            self.secrets_config.security_secrets +
-            self.secrets_config.infrastructure_secrets +
-            self.secrets_config.application_secrets
+            self.secrets_config.database_secrets
+            + self.secrets_config.api_secrets
+            + self.secrets_config.security_secrets
+            + self.secrets_config.infrastructure_secrets
+            + self.secrets_config.application_secrets
         )
 
         for secret_def in all_secret_defs:
@@ -238,7 +269,7 @@ class ProductionSecretsIntegration:
             encrypted_data, context = await asyncio.to_thread(
                 self.secrets_manager.encrypt_secret,
                 secret_def.default_value or "placeholder",
-                secret_def.key
+                secret_def.key,
             )
 
             if encrypted_data and context:
@@ -246,7 +277,7 @@ class ProductionSecretsIntegration:
                     self.secrets_manager.decrypt_secret,
                     encrypted_data,
                     secret_def.key,
-                    context
+                    context,
                 )
 
                 if decrypted_value and decrypted_value != "placeholder":
@@ -258,13 +289,21 @@ class ProductionSecretsIntegration:
             logger.warning(f"Failed to load {secret_def.key} from vault: {e}")
 
         # Generate secure secret if missing and not required
-        if not secret_def.required and not secret_value:
-            if secret_def.secret_type in ["jwt_secret", "encryption_key", "webhook_secret"]:
-                secret_value = await self._generate_secret(secret_def)
-                if secret_value:
-                    logger.info(f"Generated secure secret for {secret_def.key}")
-                    # Store in vault for future use
-                    await self._store_secret(secret_def.key, secret_value)
+        if (
+            not secret_def.required
+            and not secret_value
+            and secret_def.secret_type
+            in {
+                SecretType.JWT_SECRET,
+                SecretType.ENCRYPTION_KEY,
+                SecretType.WEBHOOK_SECRET,
+            }
+        ):
+            secret_value = await self._generate_secret(secret_def)
+            if secret_value:
+                logger.info(f"Generated secure secret for {secret_def.key}")
+                # Store in vault for future use
+                await self._store_secret(secret_def.key, secret_value)
 
         return secret_value
 
@@ -272,18 +311,22 @@ class ProductionSecretsIntegration:
         """Generate secure secret based on definition."""
         try:
             # Determine strength based on secret type
-            if secret_def.secret_type in ["encryption_key", "jwt_secret"]:
+            if secret_def.secret_type in {
+                SecretType.ENCRYPTION_KEY,
+                SecretType.JWT_SECRET,
+            }:
                 strength = SecretStrength.HIGH
-            elif secret_def.secret_type in ["database_password", "webhook_secret"]:
+            elif secret_def.secret_type in {
+                SecretType.DATABASE_PASSWORD,
+                SecretType.WEBHOOK_SECRET,
+            }:
                 strength = SecretStrength.MEDIUM
             else:
                 strength = SecretStrength.MEDIUM
 
             # Generate secret
             secret_value = await asyncio.to_thread(
-                generate_secure_secret,
-                secret_def.secret_type,
-                strength
+                generate_secure_secret, secret_def.secret_type.value, strength
             )
 
             return secret_value
@@ -292,13 +335,11 @@ class ProductionSecretsIntegration:
             logger.error(f"Failed to generate secret for {secret_def.key}: {e}")
             return None
 
-    async def _store_secret(self, secret_key: str, secret_value: str):
+    async def _store_secret(self, secret_key: str, secret_value: str) -> None:
         """Store secret in encrypted vault."""
         try:
             encrypted_data, context = await asyncio.to_thread(
-                self.secrets_manager.encrypt_secret,
-                secret_value,
-                secret_key
+                self.secrets_manager.encrypt_secret, secret_value, secret_key
             )
 
             if encrypted_data and context:
@@ -338,12 +379,16 @@ class ProductionSecretsIntegration:
             logger.error(f"Failed to get secret {secret_key}: {e}")
             return default
 
-    async def get_secret_async(self, secret_key: str, default: str | None = None) -> str | None:
+    async def get_secret_async(
+        self, secret_key: str, default: str | None = None
+    ) -> str | None:
         """Async version of get_secret."""
         return self.get_secret(secret_key, default)
 
     @asynccontextmanager
-    async def get_temporary_secret(self, secret_key: str) -> AsyncGenerator[str | None, None]:
+    async def get_temporary_secret(
+        self, secret_key: str
+    ) -> AsyncGenerator[str | None, None]:
         """
         Get secret with automatic cleanup (for temporary use).
 
@@ -364,7 +409,9 @@ class ProductionSecretsIntegration:
                 secret_value = "x" * len(secret_value)
                 del secret_value
 
-    async def rotate_secret(self, secret_key: str, new_value: str | None = None) -> bool:
+    async def rotate_secret(
+        self, secret_key: str, new_value: str | None = None
+    ) -> bool:
         """
         Rotate a secret with the new value.
 
@@ -406,7 +453,9 @@ class ProductionSecretsIntegration:
 
                 # Update rotation schedule
                 if secret_def.rotation_interval_days:
-                    next_rotation = time.time() + (secret_def.rotation_interval_days * 24 * 3600)
+                    next_rotation = time.time() + (
+                        secret_def.rotation_interval_days * 24 * 3600
+                    )
                     self.rotation_schedule[secret_key] = next_rotation
 
                 # Record rotation
@@ -414,13 +463,15 @@ class ProductionSecretsIntegration:
                     "secret_key": secret_key,
                     "timestamp": time.time(),
                     "success": True,
-                    "method": "automatic" if not new_value else "manual"
+                    "method": "automatic" if not new_value else "manual",
                 }
                 self.rotation_history.append(rotation_record)
 
                 # Metrics
                 if self.metrics_service:
-                    self.metrics_service.record_security_event("secret_rotation", "info")
+                    self.metrics_service.record_security_event(
+                        "secret_rotation", "info"
+                    )
 
                 logger.info(f"Successfully rotated secret: {secret_key}")
                 return True
@@ -441,11 +492,11 @@ class ProductionSecretsIntegration:
     def _find_secret_definition(self, secret_key: str) -> SecretDefinition | None:
         """Find secret definition by key."""
         all_defs = (
-            self.secrets_config.database_secrets +
-            self.secrets_config.api_secrets +
-            self.secrets_config.security_secrets +
-            self.secrets_config.infrastructure_secrets +
-            self.secrets_config.application_secrets
+            self.secrets_config.database_secrets
+            + self.secrets_config.api_secrets
+            + self.secrets_config.security_secrets
+            + self.secrets_config.infrastructure_secrets
+            + self.secrets_config.application_secrets
         )
 
         for secret_def in all_defs:
@@ -454,38 +505,51 @@ class ProductionSecretsIntegration:
 
         return None
 
-    def _setup_rotation_schedules(self):
+    def _setup_rotation_schedules(self) -> None:
         """Set up automatic secret rotation schedules."""
         current_time = time.time()
 
         all_defs = (
-            self.secrets_config.database_secrets +
-            self.secrets_config.api_secrets +
-            self.secrets_config.security_secrets +
-            self.secrets_config.infrastructure_secrets +
-            self.secrets_config.application_secrets
+            self.secrets_config.database_secrets
+            + self.secrets_config.api_secrets
+            + self.secrets_config.security_secrets
+            + self.secrets_config.infrastructure_secrets
+            + self.secrets_config.application_secrets
         )
 
         for secret_def in all_defs:
-            if secret_def.rotation_interval_days and secret_def.key in self.decrypted_secrets:
-                next_rotation = current_time + (secret_def.rotation_interval_days * 24 * 3600)
+            if (
+                secret_def.rotation_interval_days
+                and secret_def.key in self.decrypted_secrets
+            ):
+                next_rotation = current_time + (
+                    secret_def.rotation_interval_days * 24 * 3600
+                )
                 self.rotation_schedule[secret_def.key] = next_rotation
 
-        logger.info(f"Set up rotation schedules for {len(self.rotation_schedule)} secrets")
+        logger.info(
+            f"Set up rotation schedules for {len(self.rotation_schedule)} secrets"
+        )
 
-    async def _rotation_monitor(self):
+    async def _rotation_monitor(self) -> None:
         """Background task to monitor and execute secret rotations."""
         while True:
             try:
                 current_time = time.time()
 
-                for secret_key, next_rotation_time in list(self.rotation_schedule.items()):
+                for secret_key, next_rotation_time in list[Any](
+                    self.rotation_schedule.items()
+                ):
                     if current_time >= next_rotation_time:
-                        logger.info(f"Starting automatic rotation for secret: {secret_key}")
+                        logger.info(
+                            f"Starting automatic rotation for secret: {secret_key}"
+                        )
                         success = await self.rotate_secret(secret_key)
 
                         if success:
-                            logger.info(f"Automatic rotation completed for: {secret_key}")
+                            logger.info(
+                                f"Automatic rotation completed for: {secret_key}"
+                            )
                         else:
                             logger.error(f"Automatic rotation failed for: {secret_key}")
                             # Reschedule for retry in 1 hour
@@ -498,7 +562,7 @@ class ProductionSecretsIntegration:
                 logger.error(f"Error in rotation monitor: {e}")
                 await asyncio.sleep(300)  # Wait 5 minutes on error
 
-    async def _access_monitor(self):
+    async def _access_monitor(self) -> None:
         """Background task to monitor secret access patterns."""
         while True:
             try:
@@ -506,9 +570,10 @@ class ProductionSecretsIntegration:
 
                 # Clean old access records (keep last 24 hours)
                 cutoff_time = current_time - 86400
-                for secret_key in list(self.access_tracking.keys()):
+                for secret_key in list[Any](self.access_tracking.keys()):
                     self.access_tracking[secret_key] = [
-                        access_time for access_time in self.access_tracking[secret_key]
+                        access_time
+                        for access_time in self.access_tracking[secret_key]
                         if access_time > cutoff_time
                     ]
 
@@ -519,7 +584,9 @@ class ProductionSecretsIntegration:
                 # Monitor for unusual access patterns
                 for secret_key, access_times in self.access_tracking.items():
                     if len(access_times) > 1000:  # More than 1000 accesses per day
-                        logger.warning(f"High access frequency for secret: {secret_key}")
+                        logger.warning(
+                            f"High access frequency for secret: {secret_key}"
+                        )
 
                 # Check every 10 minutes
                 await asyncio.sleep(600)
@@ -528,7 +595,7 @@ class ProductionSecretsIntegration:
                 logger.error(f"Error in access monitor: {e}")
                 await asyncio.sleep(300)
 
-    def _track_secret_access(self, secret_key: str):
+    def _track_secret_access(self, secret_key: str) -> None:
         """Track secret access for monitoring."""
         current_time = time.time()
 
@@ -543,10 +610,7 @@ class ProductionSecretsIntegration:
             return validate_prod_secrets(self.decrypted_secrets, "production")
         except Exception as e:
             logger.error(f"Secret validation failed: {e}")
-            return {
-                "overall_status": "failed",
-                "error": str(e)
-            }
+            return {"overall_status": "failed", "error": str(e)}
 
     def get_secrets_health(self) -> dict[str, Any]:
         """Get comprehensive secrets health report."""
@@ -558,7 +622,7 @@ class ProductionSecretsIntegration:
             "api": len(self.secrets_config.api_secrets),
             "security": len(self.secrets_config.security_secrets),
             "infrastructure": len(self.secrets_config.infrastructure_secrets),
-            "application": len(self.secrets_config.application_secrets)
+            "application": len(self.secrets_config.application_secrets),
         }
 
         # Rotation status
@@ -567,16 +631,18 @@ class ProductionSecretsIntegration:
             days_until_rotation = (next_rotation - current_time) / 86400
             rotation_status[secret_key] = {
                 "days_until_rotation": round(days_until_rotation, 1),
-                "overdue": days_until_rotation < 0
+                "overdue": days_until_rotation < 0,
             }
 
         # Access statistics
         access_stats = {}
         for secret_key, access_times in self.access_tracking.items():
-            recent_accesses = len([t for t in access_times if current_time - t < 3600])  # Last hour
+            recent_accesses = len(
+                [t for t in access_times if current_time - t < 3600]
+            )  # Last hour
             access_stats[secret_key] = {
                 "total_accesses_today": len(access_times),
-                "accesses_last_hour": recent_accesses
+                "accesses_last_hour": recent_accesses,
             }
 
         return {
@@ -586,8 +652,18 @@ class ProductionSecretsIntegration:
             "secrets_by_category": secret_counts,
             "rotation_status": rotation_status,
             "access_statistics": access_stats,
-            "vault_health": self.secrets_manager.health_check() if hasattr(self.secrets_manager, 'health_check') else {},
-            "recent_rotations": len([r for r in self.rotation_history if current_time - r["timestamp"] < 86400])
+            "vault_health": (
+                self.secrets_manager.health_check()
+                if hasattr(self.secrets_manager, "health_check")
+                else {}
+            ),
+            "recent_rotations": len(
+                [
+                    r
+                    for r in self.rotation_history
+                    if current_time - r["timestamp"] < 86400
+                ]
+            ),
         }
 
     def get_configuration_dict(self) -> dict[str, Any]:
@@ -607,29 +683,33 @@ class ProductionSecretsIntegration:
             db_name = os.getenv("DATABASE_NAME", "ai_pdf_scholar")
 
             if "DATABASE_URL" not in config:
-                config["DATABASE_URL"] = f"postgresql://{db_user}:{config['DATABASE_PASSWORD']}@{db_host}:{db_port}/{db_name}"
+                config["DATABASE_URL"] = (
+                    f"postgresql://{db_user}:{config['DATABASE_PASSWORD']}@{db_host}:{db_port}/{db_name}"
+                )
 
         return config
 
 
 def create_production_secrets_integration(
     production_config: ProductionConfig | None = None,
-    metrics_service: MetricsService | None = None
+    metrics_service: MetricsService | None = None,
 ) -> ProductionSecretsIntegration:
     """Create production secrets integration instance."""
     secrets_manager = ProductionSecretsManager()
     return ProductionSecretsIntegration(
         secrets_manager=secrets_manager,
         production_config=production_config,
-        metrics_service=metrics_service
+        metrics_service=metrics_service,
     )
 
 
 async def initialize_production_secrets(
     production_config: ProductionConfig | None = None,
-    metrics_service: MetricsService | None = None
+    metrics_service: MetricsService | None = None,
 ) -> ProductionSecretsIntegration:
     """Initialize and load all production secrets."""
-    secrets_integration = create_production_secrets_integration(production_config, metrics_service)
+    secrets_integration = create_production_secrets_integration(
+        production_config, metrics_service
+    )
     await secrets_integration.initialize()
     return secrets_integration
