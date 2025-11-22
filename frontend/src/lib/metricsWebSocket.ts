@@ -1,6 +1,6 @@
 /**
  * Real-time Metrics WebSocket Client
- * 
+ *
  * Handles WebSocket connection for streaming performance metrics
  * with automatic reconnection and subscription management.
  */
@@ -12,35 +12,30 @@ export interface MetricsData {
     memory_percent: number;
     disk_usage_percent: number;
     uptime_seconds: number;
-    [key: string]: any;
   };
   database?: {
     timestamp: string;
     active_connections: number;
     avg_query_time_ms: number;
     connection_pool_available: number;
-    [key: string]: any;
   };
   websocket?: {
     timestamp: string;
     active_connections: number;
     rag_tasks_total: number;
     rag_tasks_processing: number;
-    [key: string]: any;
   };
   api?: {
     timestamp: string;
     requests_per_second: number;
     avg_response_time_ms: number;
     error_rate_percent: number;
-    [key: string]: any;
   };
   memory?: {
     timestamp: string;
     heap_size_mb: number;
     connection_leaks: number;
     memory_pressure_events: number;
-    [key: string]: any;
   };
 }
 
@@ -63,7 +58,16 @@ export interface Alert {
 
 export interface WebSocketMessage {
   type: string;
-  [key: string]: any;
+  data?: unknown;
+  metrics?: MetricsData;  // Fixed: was SystemMetrics (undefined type), now uses MetricsData
+  health?: SystemHealthStatus;
+  alert?: Alert;
+  // Additional properties used by backend WebSocket messages
+  message?: string;  // Used in 'connected' message type
+  health_summary?: SystemHealthStatus;  // Used in 'current_metrics' and 'health_update' messages
+  alerts?: Alert[];  // Used in 'health_update' message type (array of alerts)
+  subscribed_metrics?: string[];  // Used in 'subscription_updated' message type
+  error?: string;  // Used in 'error' message type
 }
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -106,7 +110,7 @@ export class MetricsWebSocketClient {
 
     try {
       this.websocket = new WebSocket(this.url);
-      
+
       this.websocket.onopen = () => {
         console.log('Metrics WebSocket connected');
         this.reconnectAttempts = 0;
@@ -121,7 +125,7 @@ export class MetricsWebSocketClient {
         this.setConnectionState('disconnected');
         this.stopPingInterval();
         this.onDisconnect?.();
-        
+
         // Attempt reconnection if not manually closed
         if (event.code !== 1000) {
           this.scheduleReconnect();
@@ -157,7 +161,7 @@ export class MetricsWebSocketClient {
    */
   public disconnect(): void {
     this.stopPingInterval();
-    
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
@@ -192,7 +196,7 @@ export class MetricsWebSocketClient {
    */
   public unsubscribe(metricTypes?: string[]): void {
     const typesToUnsubscribe = metricTypes || this.subscriptions;
-    
+
     if (typesToUnsubscribe.length > 0 && this.connectionState === 'connected') {
       this.sendMessage({
         type: 'unsubscribe',
@@ -288,7 +292,9 @@ export class MetricsWebSocketClient {
 
       case 'error':
         console.error('Server error:', message.error);
-        this.onError?.(message.error);
+        if (message.error) {
+          this.onError?.(message.error);
+        }
         break;
 
       default:
@@ -312,7 +318,7 @@ export class MetricsWebSocketClient {
 
   private startPingInterval(): void {
     this.stopPingInterval();
-    
+
     this.pingInterval = setInterval(() => {
       if (this.connectionState === 'connected') {
         this.sendMessage({ type: 'ping' });
@@ -341,7 +347,7 @@ export class MetricsWebSocketClient {
     );
 
     console.log(`Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
-    
+
     this.reconnectTimeout = setTimeout(() => {
       console.log(`Reconnect attempt ${this.reconnectAttempts}`);
       this.connect();
@@ -357,7 +363,7 @@ export function createMetricsWebSocketClient(clientId?: string): MetricsWebSocke
   const baseUrl = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.host;
   const url = `${baseUrl}//${host}/api/system/ws/metrics/${id}`;
-  
+
   return new MetricsWebSocketClient(url);
 }
 
@@ -369,6 +375,6 @@ export function createHealthWebSocketClient(clientId?: string): MetricsWebSocket
   const baseUrl = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.host;
   const url = `${baseUrl}//${host}/api/system/ws/system-health/${id}`;
-  
+
   return new MetricsWebSocketClient(url);
 }

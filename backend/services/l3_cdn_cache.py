@@ -10,7 +10,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlencode, urlparse
 
 import aiohttp

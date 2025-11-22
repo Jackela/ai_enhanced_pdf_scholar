@@ -12,7 +12,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 # Import our cache services
 from .l1_memory_cache import L1MemoryCache
@@ -968,12 +968,14 @@ class CacheCoherencyManager:
         """Record coherency event."""
         self.coherency_events.append(event)
 
-        if self.config.enable_coherency_monitoring:
-            # Log significant events
-            if event.event_type in ["write", "invalidate"]:
-                logger.debug(
-                    f"Coherency event: {event.event_type} for key {event.key} in {event.cache_level}"
-                )
+        # Log significant coherency events when monitoring is enabled
+        if self.config.enable_coherency_monitoring and event.event_type in [
+            "write",
+            "invalidate",
+        ]:
+            logger.debug(
+                f"Coherency event: {event.event_type} for key {event.key} in {event.cache_level}"
+            )
 
     def get_coherency_stats(self) -> dict[str, Any]:
         """Get coherency statistics."""

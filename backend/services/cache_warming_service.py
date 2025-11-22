@@ -356,25 +356,28 @@ class CacheWarmingService:
 
         # Schedule warming tasks for high-probability keys
         for key, probability in predictions.items():
-            if probability >= self.config["warming_threshold_probability"]:
-                if key not in self.warming_tasks and not self.redis_cache.exists(key):
-                    # Determine priority based on probability
-                    if probability >= 0.8:
-                        priority = WarmingPriority.HIGH
-                    elif probability >= 0.5:
-                        priority = WarmingPriority.MEDIUM
-                    else:
-                        priority = WarmingPriority.LOW
+            if (
+                probability >= self.config["warming_threshold_probability"]
+                and key not in self.warming_tasks
+                and not self.redis_cache.exists(key)
+            ):
+                # Determine priority based on probability
+                if probability >= 0.8:
+                    priority = WarmingPriority.HIGH
+                elif probability >= 0.5:
+                    priority = WarmingPriority.MEDIUM
+                else:
+                    priority = WarmingPriority.LOW
 
-                    # Schedule for near future
-                    schedule_time = datetime.utcnow() + timedelta(minutes=5)
+                # Schedule for near future
+                schedule_time = datetime.utcnow() + timedelta(minutes=5)
 
-                    self.add_warming_task(
-                        key=key,
-                        priority=priority,
-                        strategy=WarmingStrategy.PREDICTIVE,
-                        scheduled_time=schedule_time,
-                    )
+                self.add_warming_task(
+                    key=key,
+                    priority=priority,
+                    strategy=WarmingStrategy.PREDICTIVE,
+                    scheduled_time=schedule_time,
+                )
 
         logger.info(
             f"Scheduled {len([p for p in predictions.values() if p >= self.config['warming_threshold_probability']])} predictive warming tasks"
@@ -404,14 +407,18 @@ class CacheWarmingService:
             # Pattern-based adjustments
             if profile.access_pattern == AccessPattern.HOTSPOT:
                 probability += 0.2  # Hot keys likely to be accessed again
-            elif profile.access_pattern == AccessPattern.TEMPORAL:
-                # Check if we're in a typical access time window
-                if self._in_typical_access_window(profile, current_time):
-                    probability += 0.3
-            elif profile.access_pattern == AccessPattern.SEASONAL:
-                # Seasonal pattern prediction
-                if self._predict_seasonal_access(profile, current_time):
-                    probability += 0.25
+            elif (
+                profile.access_pattern == AccessPattern.TEMPORAL
+                and self._in_typical_access_window(profile, current_time)
+            ):
+                # In typical access time window - boost probability
+                probability += 0.3
+            elif (
+                profile.access_pattern == AccessPattern.SEASONAL
+                and self._predict_seasonal_access(profile, current_time)
+            ):
+                # Seasonal pattern prediction indicates access likely
+                probability += 0.25
 
             # Frequency and recency adjustments
             probability += min(profile.frequency_score * 0.1, 0.2)
@@ -447,20 +454,19 @@ class CacheWarmingService:
     def _predict_seasonal_access(self, profile, current_time: datetime) -> bool:
         """Predict if seasonal pattern indicates access is likely."""
         # Simple implementation - would be more sophisticated in production
-        if profile.seasonality_score > 0.7:  # High seasonality
-            # Check day-of-week pattern
-            if profile.access_times:
-                days = [t.weekday() for t in profile.access_times]
-                current_day = current_time.weekday()
+        # Check day-of-week pattern (high seasonality with access times)
+        if profile.seasonality_score > 0.7 and profile.access_times:
+            days = [t.weekday() for t in profile.access_times]
+            current_day = current_time.weekday()
 
-                day_counts: Any = defaultdict(int)
-                for day in days:
-                    day_counts[day] += 1
+            day_counts: Any = defaultdict(int)
+            for day in days:
+                day_counts[day] += 1
 
-                total_accesses = len(days)
-                current_day_ratio = day_counts[current_day] / total_accesses
+            total_accesses = len(days)
+            current_day_ratio = day_counts[current_day] / total_accesses
 
-                return current_day_ratio > 0.3  # More than 30% of accesses on this day
+            return current_day_ratio > 0.3  # More than 30% of accesses on this day
 
         return False
 
@@ -718,9 +724,10 @@ class CacheWarmingService:
 
         finally:
             # Clean up from active tasks
-            if task.key in self.warming_tasks:
-                if task.completed or task.attempts >= 3:
-                    del self.warming_tasks[task.key]
+            if task.key in self.warming_tasks and (
+                task.completed or task.attempts >= 3
+            ):
+                del self.warming_tasks[task.key]
 
     # ========================================================================
     # Scheduled Warming
@@ -751,17 +758,16 @@ class CacheWarmingService:
         business_hour_keys = []
 
         for key, profile in self.smart_cache.key_profiles.items():
-            if not self.redis_cache.exists(key):
-                # Check if key is commonly accessed during business hours
-                if profile.access_times:
-                    business_accesses = [
-                        t for t in profile.access_times if 9 <= t.hour <= 17
-                    ]
+            # Check if key is not cached and commonly accessed during business hours
+            if not self.redis_cache.exists(key) and profile.access_times:
+                business_accesses = [
+                    t for t in profile.access_times if 9 <= t.hour <= 17
+                ]
 
-                    business_ratio = len(business_accesses) / len(profile.access_times)
+                business_ratio = len(business_accesses) / len(profile.access_times)
 
-                    if business_ratio > 0.6:  # 60% of accesses during business hours
-                        business_hour_keys.append(key)
+                if business_ratio > 0.6:  # 60% of accesses during business hours
+                    business_hour_keys.append(key)
 
         # Schedule warming
         for key in business_hour_keys[:20]:  # Limit to top 20

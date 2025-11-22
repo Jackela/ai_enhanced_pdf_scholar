@@ -309,21 +309,20 @@ async def get_slow_traces(
         slow_traces = monitor.amp.get_slow_traces(threshold_ms, limit)
 
         # Convert traces to serializable format
-        traces_data = []
-        for trace in slow_traces:
-            traces_data.append(
-                {
-                    "trace_id": trace.trace_id,
-                    "trace_type": trace.trace_type.value,
-                    "duration_ms": trace.duration_ms,
-                    "has_errors": trace.has_errors,
-                    "error_count": trace.error_count,
-                    "user_id": trace.user_id,
-                    "session_id": trace.session_id,
-                    "root_operation": trace.root_span.operation_name,
-                    "start_time": trace.root_span.start_time.isoformat(),
-                }
-            )
+        traces_data = [
+            {
+                "trace_id": trace.trace_id,
+                "trace_type": trace.trace_type.value,
+                "duration_ms": trace.duration_ms,
+                "has_errors": trace.has_errors,
+                "error_count": trace.error_count,
+                "user_id": trace.user_id,
+                "session_id": trace.session_id,
+                "root_operation": trace.root_span.operation_name,
+                "start_time": trace.root_span.start_time.isoformat(),
+            }
+            for trace in slow_traces
+        ]
 
         return {"status": "success", "data": traces_data}
     except Exception as e:
@@ -341,21 +340,20 @@ async def get_error_traces(
         error_traces = monitor.amp.get_error_traces(limit)
 
         # Convert traces to serializable format
-        traces_data = []
-        for trace in error_traces:
-            traces_data.append(
-                {
-                    "trace_id": trace.trace_id,
-                    "trace_type": trace.trace_type.value,
-                    "duration_ms": trace.duration_ms,
-                    "error_count": trace.error_count,
-                    "user_id": trace.user_id,
-                    "session_id": trace.session_id,
-                    "root_operation": trace.root_span.operation_name,
-                    "start_time": trace.root_span.start_time.isoformat(),
-                    "root_error": trace.root_span.error,
-                }
-            )
+        traces_data = [
+            {
+                "trace_id": trace.trace_id,
+                "trace_type": trace.trace_type.value,
+                "duration_ms": trace.duration_ms,
+                "error_count": trace.error_count,
+                "user_id": trace.user_id,
+                "session_id": trace.session_id,
+                "root_operation": trace.root_span.operation_name,
+                "start_time": trace.root_span.start_time.isoformat(),
+                "root_error": trace.root_span.error,
+            }
+            for trace in error_traces
+        ]
 
         return {"status": "success", "data": traces_data}
     except Exception as e:

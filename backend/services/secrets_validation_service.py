@@ -616,9 +616,9 @@ class SecretValidationService:
         secret_lower = secret_value.lower()
 
         # Check for weak patterns
-        for pattern in weak_patterns:
-            if pattern in secret_lower:
-                found_patterns.append(pattern)
+        found_patterns.extend(
+            pattern for pattern in weak_patterns if pattern in secret_lower
+        )
 
         # Check for sequential patterns if enabled
         if rule.custom_params.get("sequential_patterns", False):
@@ -934,9 +934,11 @@ class SecretValidationService:
 
         # Check for alphabetical sequences
         alpha_sequences = ["abcd", "efgh", "ijkl", "mnop", "qrst", "uvwx", "wxyz"]
-        for seq in alpha_sequences:
-            if seq in text_lower or seq[::-1] in text_lower:
-                patterns.append(f"alphabetical_sequence:{seq}")
+        patterns.extend(
+            f"alphabetical_sequence:{seq}"
+            for seq in alpha_sequences
+            if seq in text_lower or seq[::-1] in text_lower
+        )
 
         # Check for numerical sequences
         for i in range(10 - 3):
@@ -965,9 +967,11 @@ class SecretValidationService:
         ]
 
         text_lower = text.lower()
-        for pattern in keyboard_patterns:
-            if pattern in text_lower:
-                patterns.append(f"keyboard_pattern:{pattern}")
+        patterns.extend(
+            f"keyboard_pattern:{pattern}"
+            for pattern in keyboard_patterns
+            if pattern in text_lower
+        )
 
         return patterns
 

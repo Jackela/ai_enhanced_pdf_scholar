@@ -150,21 +150,20 @@ async def list_roles(
 
     roles = query.order_by(Role.priority, Role.name).all()
 
-    response = []
-    for role in roles:
-        response.append(
-            RoleResponse(
-                id=role.id,
-                name=role.name,
-                description=role.description,
-                is_system_role=role.is_system_role,
-                priority=role.priority,
-                permissions=[f"{p.resource}:{p.action}" for p in role.permissions],
-                user_count=len(role.users),
-                created_at=role.created_at,
-                parent_role=role.parent_role.name if role.parent_role else None,
-            )
+    response = [
+        RoleResponse(
+            id=role.id,
+            name=role.name,
+            description=role.description,
+            is_system_role=role.is_system_role,
+            priority=role.priority,
+            permissions=[f"{p.resource}:{p.action}" for p in role.permissions],
+            user_count=len(role.users),
+            created_at=role.created_at,
+            parent_role=role.parent_role.name if role.parent_role else None,
         )
+        for role in roles
+    ]
 
     logger.info(f"User {current_user.email} listed {len(response)} roles")
     return response
@@ -371,19 +370,18 @@ async def list_permissions(
 
     permissions = query.order_by(Permission.resource, Permission.action).all()
 
-    response = []
-    for permission in permissions:
-        response.append(
-            PermissionResponse(
-                id=permission.id,
-                name=permission.name,
-                resource=permission.resource,
-                action=permission.action,
-                description=permission.description,
-                is_system_permission=permission.is_system_permission,
-                role_count=len(permission.roles),
-            )
+    response = [
+        PermissionResponse(
+            id=permission.id,
+            name=permission.name,
+            resource=permission.resource,
+            action=permission.action,
+            description=permission.description,
+            is_system_permission=permission.is_system_permission,
+            role_count=len(permission.roles),
         )
+        for permission in permissions
+    ]
 
     return response
 

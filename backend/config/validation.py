@@ -6,7 +6,7 @@ Provides validation utilities for configuration settings across all modules.
 
 import logging
 import os
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -314,18 +314,15 @@ class SecurityValidator:
             for key, value in d.items():
                 current_path = f"{path}.{key}" if path else key
 
-                # Check if key name suggests it's sensitive
-                if any(sensitive in key.lower() for sensitive in sensitive_keys):
-                    if isinstance(value, str):
-                        # Check if value looks like a hardcoded secret
-                        if (
-                            len(value) > 10
-                            and not value.startswith("${")  # Environment variable
-                            and not value.startswith("$(")
-                        ):  # Command substitution
-                            issues.append(
-                                f"Potential hardcoded secret at {current_path}"
-                            )
+                # Check if key name suggests it's sensitive and value looks hardcoded
+                if (
+                    any(sensitive in key.lower() for sensitive in sensitive_keys)
+                    and isinstance(value, str)
+                    and len(value) > 10
+                    and not value.startswith("${")  # Environment variable
+                    and not value.startswith("$(")  # Command substitution
+                ):
+                    issues.append(f"Potential hardcoded secret at {current_path}")
 
                 # Recursively check nested dictionaries
                 elif isinstance(value, dict):

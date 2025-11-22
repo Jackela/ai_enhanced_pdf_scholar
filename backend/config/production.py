@@ -6,7 +6,7 @@ Optimized production settings with performance tuning, security hardening, and m
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any
 
 from ..core.secrets_vault import ProductionSecretsManager
 from ..services.metrics_service import MetricsService

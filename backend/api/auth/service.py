@@ -1,5 +1,3 @@
-from typing import Any
-
 """
 Authentication Service
 Core authentication business logic and user management.

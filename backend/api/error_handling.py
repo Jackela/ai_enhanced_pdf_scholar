@@ -9,7 +9,7 @@ import traceback
 import uuid
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Union
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse

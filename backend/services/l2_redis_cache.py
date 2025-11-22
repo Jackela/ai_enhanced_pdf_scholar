@@ -315,7 +315,8 @@ class L2RedisCache:
                 jitter = entry.ttl_seconds * (self.config.ttl_jitter_percent / 100)
                 import random
 
-                entry.ttl_seconds += random.randint(-int(jitter), int(jitter))
+                # Note: random is acceptable here for cache TTL jitter (non-security)
+                entry.ttl_seconds += random.randint(-int(jitter), int(jitter))  # nosec B311
 
             # Handle hot data TTL extension
             if key in self.hot_keys:
@@ -662,14 +663,11 @@ class L2RedisCache:
         if not self.write_behind_queue:
             return
 
-        batch = []
-
         # Collect batch
-        for _ in range(
-            min(self.config.write_behind_batch_size, len(self.write_behind_queue))
-        ):
-            if self.write_behind_queue:
-                batch.append(self.write_behind_queue.popleft())
+        batch_size = min(
+            self.config.write_behind_batch_size, len(self.write_behind_queue)
+        )
+        batch = [self.write_behind_queue.popleft() for _ in range(batch_size)]
 
         if not batch:
             return

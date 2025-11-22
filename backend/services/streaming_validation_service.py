@@ -455,12 +455,12 @@ class StreamingValidationService:
                     is_valid = False
                 else:
                     # Quick security check on first chunk
-                    for threat_type, patterns in self.SECURITY_PATTERNS.items():
-                        for pattern in patterns:
-                            if re.search(pattern, chunk_data[:1024], re.IGNORECASE):
-                                warnings.append(
-                                    f"Potential {threat_type.replace('_', ' ')} detected in file header"
-                                )
+                    warnings.extend(
+                        f"Potential {threat_type.replace('_', ' ')} detected in file header"
+                        for threat_type, patterns in self.SECURITY_PATTERNS.items()
+                        for pattern in patterns
+                        if re.search(pattern, chunk_data[:1024], re.IGNORECASE)
+                    )
 
             # Check for null bytes (potential corruption indicator)
             null_count = chunk_data.count(b"\x00")

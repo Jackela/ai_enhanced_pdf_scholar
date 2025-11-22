@@ -351,7 +351,8 @@ class AsyncErrorHandler:
                 if config.jitter:
                     import random
 
-                    delay *= 0.5 + random.random() * 0.5
+                    # Note: random is acceptable here for retry jitter (non-security)
+                    delay *= 0.5 + random.random() * 0.5  # nosec B311
 
                 logger.info(
                     f"Retrying {operation} in {delay:.2f}s (attempt {attempt}/{config.max_retries})"
@@ -422,23 +423,21 @@ class AsyncErrorHandler:
 
         # Recent errors (last hour)
         cutoff_time = datetime.now() - timedelta(hours=1)
-        recent_errors = []
-
-        for operation_key, errors in self.error_history.items():
-            for error_context in errors:
-                if error_context.last_occurrence >= cutoff_time:
-                    recent_errors.append(
-                        {
-                            "operation": operation_key,
-                            "category": error_context.category.value,
-                            "severity": error_context.severity.value,
-                            "attempt_count": error_context.attempt_count,
-                            "last_occurrence": error_context.last_occurrence.isoformat(),
-                            "error_message": str(error_context.error)[
-                                :200
-                            ],  # Truncate long messages
-                        }
-                    )
+        recent_errors = [
+            {
+                "operation": operation_key,
+                "category": error_context.category.value,
+                "severity": error_context.severity.value,
+                "attempt_count": error_context.attempt_count,
+                "last_occurrence": error_context.last_occurrence.isoformat(),
+                "error_message": str(error_context.error)[
+                    :200
+                ],  # Truncate long messages
+            }
+            for operation_key, errors in self.error_history.items()
+            for error_context in errors
+            if error_context.last_occurrence >= cutoff_time
+        ]
 
         return {
             "total_errors": total_errors,

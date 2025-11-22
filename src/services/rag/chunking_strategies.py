@@ -395,24 +395,23 @@ class CitationAwareChunking(ChunkingStrategy):
         """Find positions where citations occur for boundary detection"""
         positions = []
 
-        for pattern in self.citation_patterns:
-            for match in re.finditer(pattern, text):
-                # Add position after citation for potential break point
-                positions.append(match.end())
+        positions.extend(
+            match.end()
+            for pattern in self.citation_patterns
+            for match in re.finditer(pattern, text)
+        )
 
         return positions
 
     def _find_section_boundaries(self, text: str) -> list[int]:
         """Find section boundaries (headers, paragraph breaks)"""
-        positions = []
-
         # Find paragraph boundaries
-        for match in re.finditer(r"\n\n+", text):
-            positions.append(match.end())
+        positions = [match.end() for match in re.finditer(r"\n\n+", text)]
 
         # Find potential headers (lines with few words, capitalized)
-        for match in re.finditer(r"\n([A-Z][A-Za-z\s]{5,50})\n", text):
-            positions.append(match.start())
+        positions.extend(
+            match.start() for match in re.finditer(r"\n([A-Z][A-Za-z\s]{5,50})\n", text)
+        )
 
         return positions
 

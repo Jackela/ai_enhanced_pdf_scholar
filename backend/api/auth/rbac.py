@@ -562,14 +562,20 @@ class RBACService:
         )
 
         for policy in policies:
-            if policy.policy_type == "owner":
-                # Check if user is the owner
-                if context and context.get("owner_id") == user.id:
-                    return True
-            elif policy.policy_type == "department":
-                # Check department-based access
-                if context and context.get("department") == user.department:
-                    return True
+            if (
+                policy.policy_type == "owner"
+                and context
+                and context.get("owner_id") == user.id
+            ):
+                # User is the owner
+                return True
+            elif (
+                policy.policy_type == "department"
+                and context
+                and context.get("department") == user.department
+            ):
+                # Department-based access
+                return True
 
         return False
 

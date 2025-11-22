@@ -12,7 +12,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 from uuid import UUID
 
 import aiofiles

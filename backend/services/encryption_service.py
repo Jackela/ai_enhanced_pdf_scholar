@@ -11,7 +11,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend

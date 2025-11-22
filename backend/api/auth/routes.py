@@ -226,8 +226,8 @@ async def refresh_tokens(
 
 @router.post("/logout", response_model=BaseResponse)
 async def logout(
+    response: Response,
     token_data: TokenRefresh | None = None,
-    response: Response | None = None,
     user: UserModel | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ) -> BaseResponse:
@@ -245,9 +245,8 @@ async def logout(
         auth_service.revoke_refresh_token(token_data.refresh_token)
 
     # Clear cookies
-    if response:
-        response.delete_cookie(key="refresh_token", path="/api/auth")
-        response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/api/auth")
+    response.delete_cookie(key="access_token", path="/")
 
     if user:
         logger.info(f"User logged out: {user.username}")

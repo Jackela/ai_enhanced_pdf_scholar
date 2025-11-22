@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Union
+from typing import Any
 
 from opentelemetry import baggage, context, trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter

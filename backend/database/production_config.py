@@ -10,7 +10,7 @@ import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urlparse
 
 import sqlalchemy as sa
@@ -405,8 +405,9 @@ class ProductionDatabaseManager:
             # Use read replica based on weight
             import random
 
-            if random.random() < self.performance_config.read_weight:
-                return random.choice(self.read_engines)
+            # Note: random is acceptable here for load balancing (non-security)
+            if random.random() < self.performance_config.read_weight:  # nosec B311
+                return random.choice(self.read_engines)  # nosec B311
 
         return self.master_engine
 

@@ -221,18 +221,14 @@ class RAGRecoveryService:
                         data = json.load(f)
 
                     # Basic structure validation for vector store
-                    if file_path.name == "default__vector_store.json":
-                        if (
-                            not isinstance(data, dict[str, Any])
-                            or "embedding_dict" not in data
-                        ):
-                            analysis_result["corrupted_files"].append(
-                                f"{file_path.name}: Invalid structure"
-                            )
-                            analysis_result["corruption_detected"] = True
-                            analysis_result["corruption_types"].append(
-                                "corrupted_files"
-                            )
+                    if file_path.name == "default__vector_store.json" and (
+                        not isinstance(data, dict) or "embedding_dict" not in data
+                    ):
+                        analysis_result["corrupted_files"].append(
+                            f"{file_path.name}: Invalid structure"
+                        )
+                        analysis_result["corruption_detected"] = True
+                        analysis_result["corruption_types"].append("corrupted_files")
 
                 except json.JSONDecodeError as e:
                     analysis_result["corrupted_files"].append(

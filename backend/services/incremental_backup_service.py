@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import aiofiles
 from sqlalchemy import create_engine, text
@@ -202,17 +202,17 @@ class FileSystemTracker:
                 continue
 
         # Check for deleted files
-        for relative_path in self.last_snapshot.checksum_map:
-            if relative_path not in current_files:
-                changes.append(
-                    ChangeRecord(
-                        path=relative_path,
-                        change_type=ChangeType.DELETED,
-                        timestamp=datetime.utcnow(),
-                        size=0,
-                        checksum="",
-                    )
-                )
+        changes.extend(
+            ChangeRecord(
+                path=relative_path,
+                change_type=ChangeType.DELETED,
+                timestamp=datetime.utcnow(),
+                size=0,
+                checksum="",
+            )
+            for relative_path in self.last_snapshot.checksum_map
+            if relative_path not in current_files
+        )
 
         logger.info(f"Detected {len(changes)} changes since last snapshot")
         return changes

@@ -4,7 +4,6 @@
 import re
 from pathlib import Path
 
-
 # B007错误位置和变量名
 B007_FIXES = {
     "backend/api/middleware/rate_limiting.py": [(296, "endpoint")],
@@ -63,7 +62,7 @@ def fix_unused_variable(file_path: str, fixes: list[tuple[int, str]]) -> int:
             continue
 
         # 方案2: for (var1, var_name) in ... 或 for var1, var_name in ...
-        pattern2 = rf"\bfor\s+\(?([^)]+)\)?\s+in\s+"
+        pattern2 = r"\bfor\s+\(?([^)]+)\)?\s+in\s+"
         match = re.search(pattern2, line)
         if match:
             vars_part = match.group(1)
@@ -101,7 +100,7 @@ def main() -> None:
         fixed = fix_unused_variable(file_path, fixes)
         total_fixes += fixed
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   Files processed: {len(B007_FIXES)}")
     print(f"   Total fixes: {total_fixes}")
     print("\n✅ Done! All unused loop variables renamed with _ prefix.")

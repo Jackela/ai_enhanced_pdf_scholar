@@ -761,19 +761,18 @@ class ConnectionPool:
                 }
 
             # Active connection details (for debugging)
-            active_details = []
-            for conn_info in self._active_connections.values():
-                active_details.append(
-                    {
-                        "connection_id": conn_info.connection_id,
-                        "thread_id": conn_info.thread_id,
-                        "age": time.time() - conn_info.created_at,
-                        "idle_time": time.time() - conn_info.last_activity,
-                        "transaction_level": conn_info.transaction_level,
-                        "access_count": conn_info.access_count,
-                        "potentially_leaked": conn_info.is_potentially_leaked(),
-                    }
-                )
+            active_details = [
+                {
+                    "connection_id": conn_info.connection_id,
+                    "thread_id": conn_info.thread_id,
+                    "age": time.time() - conn_info.created_at,
+                    "idle_time": time.time() - conn_info.last_activity,
+                    "transaction_level": conn_info.transaction_level,
+                    "access_count": conn_info.access_count,
+                    "potentially_leaked": conn_info.is_potentially_leaked(),
+                }
+                for conn_info in self._active_connections.values()
+            ]
 
             return {
                 **basic_stats,
@@ -827,13 +826,15 @@ class ConnectionPool:
                         # Check only active (in-use) connections for leaks
                         # Skip pooled connections as they're not leaked
                         for conn_info in list(self._active_connections.values()):
-                            # Only check connections that are actually in use
-                            if conn_info.in_use and conn_info.is_potentially_leaked():
-                                # Avoid alerting if we're already handling this connection
-                                if not hasattr(conn_info, "_being_handled"):
-                                    self._log_to_leak_detector(
-                                        "", conn_info, "periodic_check"
-                                    )
+                            # Only check connections that are actually in use and potentially leaked
+                            if (
+                                conn_info.in_use
+                                and conn_info.is_potentially_leaked()
+                                and not hasattr(conn_info, "_being_handled")
+                            ):
+                                self._log_to_leak_detector(
+                                    "", conn_info, "periodic_check"
+                                )
 
                     time.sleep(self.LEAK_DETECTION_INTERVAL)
                 except Exception as e:

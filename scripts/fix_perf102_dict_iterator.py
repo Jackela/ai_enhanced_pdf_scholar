@@ -3,7 +3,6 @@
 
 from pathlib import Path
 
-
 # PERF102错误位置（从ruff输出获取）
 PERF102_FIXES = {
     "backend/api/middleware/rate_limiting.py": [(296, "values")],
@@ -68,7 +67,7 @@ def main() -> None:
         fixed = fix_dict_iterator(file_path, fixes)
         total_fixes += fixed
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   Files processed: {len(PERF102_FIXES)}")
     print(f"   Total fixes: {total_fixes}")
     print("\n✅ Done! All PERF102 dict iterator issues fixed.")

@@ -5,7 +5,6 @@ Creates tables for users and refresh tokens.
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +14,8 @@ class ExecutionResult:
     """Result of executing a SQL statement or database operation."""
 
     success: bool
-    error_message: Optional[str] = None
-    context: Optional[str] = None
+    error_message: str | None = None
+    context: str | None = None
 
     @property
     def has_error(self) -> bool:

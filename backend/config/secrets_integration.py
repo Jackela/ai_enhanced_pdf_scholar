@@ -289,17 +289,21 @@ class ProductionSecretsIntegration:
             logger.warning(f"Failed to load {secret_def.key} from vault: {e}")
 
         # Generate secure secret if missing and not required
-        if not secret_def.required and not secret_value:
-            if secret_def.secret_type in {
+        if (
+            not secret_def.required
+            and not secret_value
+            and secret_def.secret_type
+            in {
                 SecretType.JWT_SECRET,
                 SecretType.ENCRYPTION_KEY,
                 SecretType.WEBHOOK_SECRET,
-            }:
-                secret_value = await self._generate_secret(secret_def)
-                if secret_value:
-                    logger.info(f"Generated secure secret for {secret_def.key}")
-                    # Store in vault for future use
-                    await self._store_secret(secret_def.key, secret_value)
+            }
+        ):
+            secret_value = await self._generate_secret(secret_def)
+            if secret_value:
+                logger.info(f"Generated secure secret for {secret_def.key}")
+                # Store in vault for future use
+                await self._store_secret(secret_def.key, secret_value)
 
         return secret_value
 

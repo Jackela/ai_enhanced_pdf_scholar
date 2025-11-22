@@ -248,13 +248,13 @@ async def update_settings(
 ) -> Any:
     """Update system settings."""
     try:
-        # Update API key if provided
-        if request.gemini_api_key is not None:
-            # Don't update if it's a masked value
-            if not request.gemini_api_key.startswith("●"):
-                settings_manager.set_setting(
-                    "gemini_api_key", request.gemini_api_key.strip()
-                )
+        # Update API key if provided (skip if masked value)
+        if request.gemini_api_key is not None and not request.gemini_api_key.startswith(
+            "●"
+        ):
+            settings_manager.set_setting(
+                "gemini_api_key", request.gemini_api_key.strip()
+            )
         # Update RAG enabled status
         settings_manager.set_setting("rag_enabled", request.rag_enabled)
         logger.info("System settings updated successfully")

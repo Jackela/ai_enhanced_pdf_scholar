@@ -119,11 +119,11 @@ def validate_environment_consistency() -> str | None:
         dev_indicators = ["localhost", "127.0.0.1", "dev", "debug"]
         cors_origins = os.getenv("CORS_ORIGINS", "")
 
-        for indicator in dev_indicators:
-            if indicator in cors_origins.lower():
-                issues.append(
-                    f"CORS origins contain development indicator '{indicator}' in production"
-                )
+        issues.extend(
+            f"CORS origins contain development indicator '{indicator}' in production"
+            for indicator in dev_indicators
+            if indicator in cors_origins.lower()
+        )
 
     # Development environment checks
     elif current_env.is_development():

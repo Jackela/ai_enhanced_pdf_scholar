@@ -305,23 +305,21 @@ class ErrorMonitoringMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
 
             # Record error metrics for 4xx and 5xx responses
-            if response.status_code >= 400:
-                # Try to extract error information from response
-                if hasattr(response, "body"):
-                    try:
-                        body = json.loads(response.body.decode())
-                        if "error" in body:
-                            error_info = body["error"]
-                            error_metrics.record_error(
-                                error_info.get("code", "UNKNOWN"),
-                                error_info.get("category", "unknown"),
-                                response.status_code,
-                            )
-                    except (json.JSONDecodeError, AttributeError):
-                        # Fallback for non-JSON responses
+            if response.status_code >= 400 and hasattr(response, "body"):
+                try:
+                    body = json.loads(response.body.decode())
+                    if "error" in body:
+                        error_info = body["error"]
                         error_metrics.record_error(
-                            "HTTP_ERROR", "unknown", response.status_code
+                            error_info.get("code", "UNKNOWN"),
+                            error_info.get("category", "unknown"),
+                            response.status_code,
                         )
+                except (json.JSONDecodeError, AttributeError):
+                    # Fallback for non-JSON responses
+                    error_metrics.record_error(
+                        "HTTP_ERROR", "unknown", response.status_code
+                    )
 
             return response
 

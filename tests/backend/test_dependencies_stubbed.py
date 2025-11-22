@@ -1,7 +1,29 @@
 import types
-from contextlib import contextmanager
+
+import pytest
 
 import backend.api.dependencies as deps
+
+
+@pytest.fixture(autouse=True)
+def isolate_singleton_state():
+    """Save and restore global singleton state to prevent test pollution in parallel runs."""
+    # Save original state
+    original_db = deps._db_connection
+    original_rag = deps._enhanced_rag_service
+    original_library_ctrl = deps._library_controller
+
+    # Reset for test isolation
+    deps._db_connection = None
+    deps._enhanced_rag_service = None
+    deps._library_controller = None
+
+    yield
+
+    # Restore original state
+    deps._db_connection = original_db
+    deps._enhanced_rag_service = original_rag
+    deps._library_controller = original_library_ctrl
 
 
 class _DummyDB(types.SimpleNamespace):
@@ -23,7 +45,6 @@ def test_get_db_generator(monkeypatch):
     monkeypatch.setattr(deps, "DatabaseConnection", _DBConn)
     db = deps.get_db()
     assert db is dummy_db
-    deps._db_connection = None  # reset singleton
 
 
 def test_get_enhanced_rag_stub(monkeypatch):
@@ -34,7 +55,6 @@ def test_get_enhanced_rag_stub(monkeypatch):
         return enhanced
 
     monkeypatch.setattr(deps, "EnhancedRAGService", _enhanced)
-    deps._enhanced_rag_service = None
     result = deps.get_enhanced_rag(db=None)
     assert result is enhanced
 

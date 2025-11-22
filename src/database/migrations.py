@@ -1461,12 +1461,11 @@ if "DatabaseMigrator" not in globals():
                 "Table scan detected. Consider adding appropriate indexes."
             )
 
-        # LIKE pattern optimization
-        if "like" in query_lower and "%" in query:
-            if query.count("%") >= 2:  # Leading and trailing wildcards
-                recommendations.append(
-                    "LIKE with leading wildcards can't use indexes efficiently. Consider FTS if full-text search is needed."
-                )
+        # LIKE pattern optimization (leading and trailing wildcards)
+        if "like" in query_lower and "%" in query and query.count("%") >= 2:
+            recommendations.append(
+                "LIKE with leading wildcards can't use indexes efficiently. Consider FTS if full-text search is needed."
+            )
 
         # ORDER BY without index
         if "order by" in query_lower and "using index" not in plan_text.lower():
@@ -1634,7 +1633,9 @@ if "DatabaseMigrator" not in globals():
 
         return benchmark_results
 
-    def analyze_index_effectiveness(self) -> dict[str, Any]:  # noqa: C901 - Index analysis algorithm with multi-branch decision tree
+    def analyze_index_effectiveness(
+        self,
+    ) -> dict[str, Any]:  # noqa: C901 - Index analysis algorithm with multi-branch decision tree
         """
         Analyze the effectiveness of all indexes in the database.
         Returns:

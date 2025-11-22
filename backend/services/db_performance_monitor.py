@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import psutil
 
@@ -956,7 +956,9 @@ class DatabasePerformanceMonitor:
                 alert for alert in self._alerts.values() if alert.resolved_at is None
             ]
 
-    def get_database_health(self) -> DatabaseHealthStatus:  # noqa: C901 - Multi-metric health aggregation with clear sequential logic
+    def get_database_health(
+        self,
+    ) -> DatabaseHealthStatus:  # noqa: C901 - Multi-metric health aggregation with clear sequential logic
         """Calculate overall database health status."""
         try:
             health_scores = {}

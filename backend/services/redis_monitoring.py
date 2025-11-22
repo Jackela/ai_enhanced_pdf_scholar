@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 from redis import Redis
 from redis.cluster import RedisCluster

@@ -7,7 +7,6 @@ import hashlib
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_validator

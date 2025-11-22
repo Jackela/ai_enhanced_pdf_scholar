@@ -8,12 +8,15 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
-
-import fitz  # PyMuPDF
+from typing import TYPE_CHECKING, NamedTuple
 
 from src.database.models import DocumentModel
 from src.interfaces.repository_interfaces import IDocumentRepository
+
+# Lazy import PyMuPDF to avoid test-time import errors
+# The fitz module is only imported when actually rendering PDFs
+if TYPE_CHECKING:
+    import fitz  # PyMuPDF - type checking only
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +178,15 @@ class DocumentPreviewService:
     def _render_page(
         self, document: DocumentModel, page: int, width: int
     ) -> tuple[bytes, int, int]:
+        # Lazy import fitz (PyMuPDF) only when actually rendering
+        # This prevents import errors in test environments where PyMuPDF may not be available
+        try:
+            import fitz  # PyMuPDF
+        except ImportError as exc:
+            raise PreviewError(
+                "PyMuPDF (fitz) is not installed. Install it with: pip install PyMuPDF"
+            ) from exc
+
         file_path = Path(document.file_path)
         if not file_path.exists():
             raise PreviewNotFoundError("Document file is not available on disk")

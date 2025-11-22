@@ -495,11 +495,11 @@ class PerformanceDashboardService:
 
         # Build tree recursively
         def build_children(parent_span_id) -> Any:
-            children = []
-            for span in trace.spans:
-                if span.parent_span_id == parent_span_id:
-                    children.append(build_node(span, build_children(span.span_id)))
-            return children
+            return [
+                build_node(span, build_children(span.span_id))
+                for span in trace.spans
+                if span.parent_span_id == parent_span_id
+            ]
 
         return build_node(trace.root_span, build_children(trace.root_span.span_id))
 

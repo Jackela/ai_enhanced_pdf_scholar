@@ -49,7 +49,7 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
 
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                content=error_response.dict[str, Any](),
+                content=error_response.dict(),
             )
 
         except ValidationError as e:
@@ -60,7 +60,7 @@ class SecurityValidationMiddleware(BaseHTTPMiddleware):
 
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=error_response.dict[str, Any](),
+                content=error_response.dict(),
             )
 
         except Exception as e:
@@ -90,7 +90,7 @@ def create_security_exception_handlers() -> dict[Any, Callable[..., Any]]:
 
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content=error_response.dict[str, Any](),
+            content=error_response.dict(),
         )
 
     async def validation_error_handler(
@@ -103,7 +103,7 @@ def create_security_exception_handlers() -> dict[Any, Callable[..., Any]]:
 
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content=error_response.dict[str, Any](),
+            content=error_response.dict(),
         )
 
     return {

@@ -581,12 +581,11 @@ class DynamicQueryOptimizer:
             r"\blength\s*\(\s*(\w+)\s*\)",
         ]
 
-        issues_found = []
-        for pattern in function_patterns:
-            if re.search(pattern, query_lower):
-                issues_found.append(
-                    "Function call in WHERE clause prevents index usage"
-                )
+        issues_found = [
+            "Function call in WHERE clause prevents index usage"
+            for pattern in function_patterns
+            if re.search(pattern, query_lower)
+        ]
 
         # Look for LIKE with leading wildcard
         if re.search(r"like\s+['\"]%", query_lower):

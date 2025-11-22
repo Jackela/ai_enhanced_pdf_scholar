@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 from redis import Redis
 from redis.backoff import ExponentialBackoff
@@ -699,30 +699,28 @@ class RedisClusterFactory:
     def create_from_config(config_dict: dict[str, Any]) -> RedisClusterManager:
         """Create cluster manager from configuration dictionary."""
         # Parse nodes
-        nodes = []
-        for node_config in config_dict.get("nodes", []):
-            nodes.append(
-                RedisNodeConfig(
-                    host=node_config["host"],
-                    port=node_config["port"],
-                    role=NodeRole(node_config.get("role", "master")),
-                    password=node_config.get("password"),
-                    db=node_config.get("db", 0),
-                    max_connections=node_config.get("max_connections", 100),
-                )
+        nodes = [
+            RedisNodeConfig(
+                host=node_config["host"],
+                port=node_config["port"],
+                role=NodeRole(node_config.get("role", "master")),
+                password=node_config.get("password"),
+                db=node_config.get("db", 0),
+                max_connections=node_config.get("max_connections", 100),
             )
+            for node_config in config_dict.get("nodes", [])
+        ]
 
         # Parse sentinel nodes if present
-        sentinel_nodes = []
-        for sentinel_config in config_dict.get("sentinel_nodes", []):
-            sentinel_nodes.append(
-                RedisNodeConfig(
-                    host=sentinel_config["host"],
-                    port=sentinel_config["port"],
-                    role=NodeRole.SENTINEL,
-                    password=sentinel_config.get("password"),
-                )
+        sentinel_nodes = [
+            RedisNodeConfig(
+                host=sentinel_config["host"],
+                port=sentinel_config["port"],
+                role=NodeRole.SENTINEL,
+                password=sentinel_config.get("password"),
             )
+            for sentinel_config in config_dict.get("sentinel_nodes", [])
+        ]
 
         # Create cluster config
         cluster_config = ClusterConfig(

@@ -1,9 +1,9 @@
 /**
  * XSS Protection Utilities
- * 
+ *
  * Comprehensive security utilities for preventing Cross-Site Scripting (XSS) attacks
  * and ensuring safe content rendering throughout the application.
- * 
+ *
  * @security This module handles content sanitization and XSS prevention
  * @author AI Enhanced PDF Scholar Security Team
  * @version 2.1.0
@@ -64,7 +64,7 @@ const SAFE_ATTRIBUTES = {
  * DOMPurify configuration builder
  */
 function createDOMPurifyConfig(options: SecurityConfig = {}) {
-  let allowedTags = [...SAFE_TAGS.BASIC_FORMATTING]
+  const allowedTags = [...SAFE_TAGS.BASIC_FORMATTING]
   const allowedAttributes: { [key: string]: string[] } = {}
 
   // Always allow global attributes on all elements
@@ -155,8 +155,9 @@ export function sanitizeText(text: string): string {
   // Remove dangerous protocol prefixes but preserve the rest
   cleaned = cleaned
     .replace(/javascript:\s*/gi, '') // Remove javascript: protocol but keep following text
-    .replace(/vbscript:\s*/gi, '') // Remove vbscript: protocol but keep following text  
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+    .replace(/vbscript:\s*/gi, '') // Remove vbscript: protocol but keep following text
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters (intentional for security)
     .trim()
 
   return cleaned
@@ -176,16 +177,16 @@ export function sanitizeHTML(html: string, options: SecurityConfig = {}): string
   }
 
   const config = createDOMPurifyConfig(options)
-  
-  // DOMPurify sanitization - let it handle most of the work
-  let sanitized = DOMPurify.sanitize(html, config)
 
-  // Post-processing: Additional security checks  
+  // DOMPurify sanitization - let it handle most of the work
+  const sanitized = DOMPurify.sanitize(html, config)
+
+  // Post-processing: Additional security checks
   let processedSanitized = postProcessSanitization(sanitized.toString(), options)
-  
+
   // Final pass: remove any remaining dangerous protocols that might have escaped
   processedSanitized = processedSanitized.replace(/javascript:\s*/gi, '').replace(/vbscript:\s*/gi, '')
-  
+
   return processedSanitized
 }
 
@@ -234,7 +235,7 @@ export function sanitizeUrl(url: string): string {
 
   // Allow safe protocols
   const safeProtocols = ['http:', 'https:', 'mailto:', 'tel:', 'ftp:', '#']
-  const hasProtocol = safeProtocols.some(protocol => 
+  const hasProtocol = safeProtocols.some(protocol =>
     trimmed.startsWith(protocol) || (protocol === '#' && trimmed.startsWith('#'))
   )
 
@@ -284,7 +285,7 @@ export function sanitizeAndRenderMarkdown(markdown: string, options: SecurityCon
 /**
  * Detect potential XSS attempts in content
  */
-export function detectXSSAttempt(content: string): { 
+export function detectXSSAttempt(content: string): {
   isDetected: boolean
   patterns: string[]
   severity: 'low' | 'medium' | 'high' | 'critical'
@@ -303,7 +304,7 @@ export function detectXSSAttempt(content: string): {
       const num = parseInt(dec, 10)
       return num > 0 && num < 1114112 ? String.fromCharCode(num) : ''
     })
-    // Handle malformed decimal entities without semicolon in img tags and similar contexts  
+    // Handle malformed decimal entities without semicolon in img tags and similar contexts
     .replace(/&#0*(\d+)(?=[^0-9;]|$)/g, (_, dec) => {
       const num = parseInt(dec, 10)
       return num > 0 && num < 1114112 ? String.fromCharCode(num) : ''
@@ -345,8 +346,8 @@ export function detectXSSAttempt(content: string): {
   if (content.includes('&#') || content.includes('&')) {
     // Check if decoded content contains dangerous patterns
     const decodedLower = decodedContent.toLowerCase()
-    if (decodedLower.includes('javascript:') || 
-        decodedLower.includes('vbscript:') || 
+    if (decodedLower.includes('javascript:') ||
+        decodedLower.includes('vbscript:') ||
         decodedLower.includes('alert') ||
         decodedLower.includes('<script') ||
         decodedLower.includes('onerror') ||
@@ -356,10 +357,10 @@ export function detectXSSAttempt(content: string): {
         highestSeverity = 'critical'
       }
     }
-    
+
     // Additional check: look for dangerous tags with external sources
     if ((decodedLower.includes('<img') || decodedLower.includes('<iframe') || decodedLower.includes('<script')) && (
-        decodedLower.includes('javascript:') || 
+        decodedLower.includes('javascript:') ||
         decodedLower.includes('vbscript:') ||
         decodedLower.includes('onerror') ||
         decodedLower.includes('src=http'))) {
@@ -401,7 +402,7 @@ export function escapeHTML(text: string): string {
     '=': '&#x3D;'
   }
 
-  return text.replace(/[&<>"'`=\/]/g, char => entityMap[char])
+  return text.replace(/[&<>"'`=/]/g, char => entityMap[char])
 }
 
 /**
@@ -460,7 +461,7 @@ export function validateFile(file: File, options: FileValidationOptions = {}): {
   sanitizedName: string
 } {
   const errors: string[] = []
-  
+
   // Sanitize filename
   const sanitizedName = file.name
     .replace(/[^a-zA-Z0-9.-]/g, '_')

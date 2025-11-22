@@ -961,10 +961,9 @@ class SecretsManager:
                 "set[str]", key, success, self.config.primary_provider
             )
 
-            if success:
-                # Clear cache for this key
-                if key in self._cache:
-                    del self._cache[key]
+            # Clear cache for this key on success
+            if success and key in self._cache:
+                del self._cache[key]
 
             return success
 
@@ -991,10 +990,9 @@ class SecretsManager:
                 "rotate", key, success, self.config.primary_provider
             )
 
-            if success:
-                # Clear cache for this key
-                if key in self._cache:
-                    del self._cache[key]
+            # Clear cache for this key on success
+            if success and key in self._cache:
+                del self._cache[key]
 
             return success
 
@@ -1137,16 +1135,20 @@ class SecretsManager:
 
         if start_time:
             logs = [
-                l for l in logs if datetime.fromisoformat(l["timestamp"]) >= start_time
+                log
+                for log in logs
+                if datetime.fromisoformat(log["timestamp"]) >= start_time
             ]
 
         if end_time:
             logs = [
-                l for l in logs if datetime.fromisoformat(l["timestamp"]) <= end_time
+                log
+                for log in logs
+                if datetime.fromisoformat(log["timestamp"]) <= end_time
             ]
 
         if operation:
-            logs = [l for l in logs if l["operation"] == operation]
+            logs = [log for log in logs if log["operation"] == operation]
 
         return logs
 

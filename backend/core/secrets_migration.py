@@ -395,35 +395,36 @@ class SecretsMigration:
         if self.migration_report["migrated"]:
             report.append("MIGRATED SECRETS")
             report.append("-" * 30)
-            for item in self.migration_report["migrated"]:
-                report.append(
-                    f"  ✓ {item['key']} ({item['type']}) from {item['source']}"
-                )
+            report.extend(
+                f"  ✓ {item['key']} ({item['type']}) from {item['source']}"
+                for item in self.migration_report["migrated"]
+            )
             report.append("")
 
         if self.migration_report["failed"]:
             report.append("FAILED MIGRATIONS")
             report.append("-" * 30)
-            for item in self.migration_report["failed"]:
-                report.append(
-                    f"  ✗ {item['key']} from {item['source']}: {item['error']}"
-                )
+            report.extend(
+                f"  ✗ {item['key']} from {item['source']}: {item['error']}"
+                for item in self.migration_report["failed"]
+            )
             report.append("")
 
         if self.migration_report["skipped"]:
             report.append("SKIPPED SECRETS")
             report.append("-" * 30)
-            for item in self.migration_report["skipped"]:
-                report.append(
-                    f"  - {item['key']} from {item['source']}: {item['reason']}"
-                )
+            report.extend(
+                f"  - {item['key']} from {item['source']}: {item['reason']}"
+                for item in self.migration_report["skipped"]
+            )
             report.append("")
 
         if self.migration_report["warnings"]:
             report.append("WARNINGS")
             report.append("-" * 30)
-            for warning in self.migration_report["warnings"]:
-                report.append(f"  ⚠ {warning}")
+            report.extend(
+                f"  ⚠ {warning}" for warning in self.migration_report["warnings"]
+            )
             report.append("")
 
         # Next steps

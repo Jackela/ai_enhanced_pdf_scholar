@@ -8,7 +8,7 @@ and recovery suggestions for robust error handling.
 from typing import Any
 
 
-class RAGBaseException(Exception):
+class RAGBaseError(Exception):
     """Base exception for all RAG-related errors."""
 
     def __init__(
@@ -38,91 +38,91 @@ class RAGBaseException(Exception):
 # Processing Exceptions
 
 
-class RAGProcessingError(RAGBaseException):
+class RAGProcessingError(RAGBaseError):
     """Raised when document processing fails."""
 
     pass
 
 
-class RAGIndexError(RAGBaseException):
+class RAGIndexError(RAGBaseError):
     """Raised when index operations fail."""
 
     pass
 
 
-class RAGQueryError(RAGBaseException):
+class RAGQueryError(RAGBaseError):
     """Raised when query processing fails."""
 
     pass
 
 
-class RAGRecoveryError(RAGBaseException):
+class RAGRecoveryError(RAGBaseError):
     """Raised when recovery operations fail."""
 
     pass
 
 
-class RAGFileError(RAGBaseException):
+class RAGFileError(RAGBaseError):
     """Raised when file operations fail."""
 
     pass
 
 
-class RAGStorageError(RAGBaseException):
+class RAGStorageError(RAGBaseError):
     """Raised when storage operations fail."""
 
     pass
 
 
-class RAGVectorError(RAGBaseException):
+class RAGVectorError(RAGBaseError):
     """Raised when vector operations fail."""
 
     pass
 
 
-class RAGQualityError(RAGBaseException):
+class RAGQualityError(RAGBaseError):
     """Raised when quality assessment fails."""
 
     pass
 
 
-class RAGPerformanceError(RAGBaseException):
+class RAGPerformanceError(RAGBaseError):
     """Raised when performance issues detected."""
 
     pass
 
 
-class RAGMemoryError(RAGBaseException):
+class RAGMemoryError(RAGBaseError):
     """Raised when memory-related issues occur."""
 
     pass
 
 
-class RAGTimeoutError(RAGBaseException):
+class RAGTimeoutError(RAGBaseError):
     """Raised when operations timeout."""
 
     pass
 
 
-class RAGConfigurationError(RAGBaseException):
+class RAGConfigurationError(RAGBaseError):
     """Raised when configuration is invalid."""
 
     pass
 
 
-class RAGValidationError(RAGBaseException):
+class RAGValidationError(RAGBaseError):
     """Raised when input validation fails."""
 
     pass
 
 
-class RAGAuthenticationError(RAGBaseException):
+class RAGAuthenticationError(RAGBaseError):
     """Raised when authentication fails."""
 
     pass
 
 
-class RAGAuthorizationError(RAGBaseException):
+class RAGAuthorizationError(RAGBaseError):
     """Raised when authorization fails."""
 
     pass
@@ -209,7 +209,7 @@ class VectorStoreError(RAGVectorError):
         super().__init__(message, details=details, suggestions=suggestions)
 
 
-class LLMServiceError(RAGBaseException):
+class LLMServiceError(RAGBaseError):
     """Raised when LLM service interactions fail."""
 
     def __init__(self, service: str, message: str, **kwargs: Any) -> None:
@@ -223,7 +223,7 @@ class LLMServiceError(RAGBaseException):
         super().__init__(message, details=details, suggestions=suggestions)
 
 
-class ContextBuildError(RAGBaseException):
+class ContextBuildError(RAGBaseError):
     """Raised when context building fails."""
 
     def __init__(self, context_type: str, message: str, **kwargs: Any) -> None:
@@ -374,7 +374,7 @@ class MemoryLimitExceededError(RAGMemoryError):
         super().__init__(message, details=details, suggestions=suggestions)
 
 
-class ConcurrencyLimitError(RAGBaseException):
+class ConcurrencyLimitError(RAGBaseError):
     """Raised when concurrency limits are exceeded."""
 
     def __init__(
@@ -423,7 +423,7 @@ def create_query_error(
     )
 
 
-def is_retriable_error(exception: RAGBaseException) -> bool:
+def is_retriable_error(exception: RAGBaseError) -> bool:
     """Check if an exception represents a retriable error."""
     retriable_types = [
         RAGTimeoutError,
@@ -434,7 +434,7 @@ def is_retriable_error(exception: RAGBaseException) -> bool:
     return any(isinstance(exception, error_type) for error_type in retriable_types)
 
 
-def get_error_recovery_strategy(exception: RAGBaseException) -> dict[str, Any]:
+def get_error_recovery_strategy(exception: RAGBaseError) -> dict[str, Any]:
     """Get recovery strategy for an exception."""
     if isinstance(exception, MemoryLimitExceededError):
         return {
@@ -465,7 +465,7 @@ def get_error_recovery_strategy(exception: RAGBaseException) -> dict[str, Any]:
 
 # Export all exceptions
 __all__ = [
-    "RAGBaseException",
+    "RAGBaseError",
     "RAGProcessingError",
     "RAGIndexError",
     "RAGQueryError",

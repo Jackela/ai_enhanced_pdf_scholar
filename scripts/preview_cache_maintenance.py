@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 """Preview cache maintenance utility.
@@ -8,8 +10,6 @@ Usage examples:
     python scripts/preview_cache_maintenance.py purge-document --document-id 42
     python scripts/preview_cache_maintenance.py purge-max-size --max-gb 2
 """
-
-from __future__ import annotations
 
 import argparse
 import os

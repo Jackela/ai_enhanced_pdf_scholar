@@ -324,13 +324,11 @@ class CacheOptimizationService:
             for i in range(1, len(access_times))
         ]
 
-        # Check for regular patterns
-        if len(intervals) >= 3:
-            # Calculate coefficient of variation
-            if mean(intervals) > 0:
-                cv = (stdev(intervals) / mean(intervals)) if len(intervals) > 1 else 0
-                # Lower CV indicates more regular pattern
-                return cv < 0.5
+        # Check for regular patterns (calculate coefficient of variation)
+        if len(intervals) >= 3 and mean(intervals) > 0:
+            cv = (stdev(intervals) / mean(intervals)) if len(intervals) > 1 else 0
+            # Lower CV indicates more regular pattern
+            return cv < 0.5
 
         return False
 

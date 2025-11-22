@@ -4,6 +4,13 @@ from __future__ import annotations
 
 import sys
 import types
+from pathlib import Path
+
+# Add project root to Python path so backend module can be imported
+# This is necessary because tests import from `backend.api.*`
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 
 def _install_pdf_stub() -> None:

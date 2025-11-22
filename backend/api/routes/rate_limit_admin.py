@@ -200,9 +200,9 @@ else:
         )
 
         # Convert to response models and limit results
-        results = []
-        for ip_data in suspicious_ips[:limit]:
-            results.append(SuspiciousIPResponse(**ip_data))
+        results = [
+            SuspiciousIPResponse(**ip_data) for ip_data in suspicious_ips[:limit]
+        ]
 
         return results
 

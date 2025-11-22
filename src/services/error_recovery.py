@@ -20,7 +20,7 @@ from enum import Enum
 from functools import wraps
 from pathlib import Path
 from random import SystemRandom
-from typing import Any, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 _JITTER_RNG = SystemRandom()
@@ -32,10 +32,14 @@ class RecoveryError(Exception):
     pass
 
 
-class RetryExhaustedException(RecoveryError):
+class RetryExhaustedError(RecoveryError):
     """Raised when retry attempts are exhausted."""
 
     pass
+
+
+# Backwards compatibility alias
+RetryExhaustedException = RetryExhaustedError
 
 
 class CircuitBreakerOpenError(RecoveryError):

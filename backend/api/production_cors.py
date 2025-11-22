@@ -229,9 +229,10 @@ class ProductionCORSValidator:
         try:
             ip = ipaddress.ip_address(ip_str)
 
-            if self.security_policy.block_private_ips:
-                if ip.is_private or ip.is_loopback or ip.is_link_local:
-                    return False, f"Private/loopback IP not allowed: {ip}"
+            if self.security_policy.block_private_ips and (
+                ip.is_private or ip.is_loopback or ip.is_link_local
+            ):
+                return False, f"Private/loopback IP not allowed: {ip}"
 
             # Block specific dangerous IPs
             if ip.is_unspecified or ip.is_multicast:

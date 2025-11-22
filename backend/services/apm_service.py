@@ -707,7 +707,8 @@ class APMService:
         """Determine if trace should be sampled."""
         import random
 
-        return random.random() < self.sampling_rate
+        # Note: random is acceptable here for sampling (non-security)
+        return random.random() < self.sampling_rate  # nosec B311
 
     # ========================================================================
     # Analysis and Reporting
@@ -885,8 +886,9 @@ class APMService:
             otel_spans.append(self._convert_to_otel_format(trace.root_span))
 
             # Child spans
-            for span in trace.spans:
-                otel_spans.append(self._convert_to_otel_format(span))
+            otel_spans.extend(
+                self._convert_to_otel_format(span) for span in trace.spans
+            )
 
         return otel_spans
 

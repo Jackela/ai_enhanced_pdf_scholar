@@ -11,7 +11,7 @@ from collections.abc import Callable
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Union
+from typing import Any
 
 from redis import ConnectionPool, Redis
 from redis.exceptions import RedisError

@@ -208,11 +208,11 @@ class CORSConfig:
 
         # No localhost or 127.0.0.1 in production
         localhost_patterns = ["localhost", "127.0.0.1"]
-        for origin in origins:
-            if any(pattern in origin.lower() for pattern in localhost_patterns):
-                security_issues.append(
-                    f"Localhost origin '{origin}' should not be used in production"
-                )
+        security_issues.extend(
+            f"Localhost origin '{origin}' should not be used in production"
+            for origin in origins
+            if any(pattern in origin.lower() for pattern in localhost_patterns)
+        )
 
         # Must have at least one origin
         if not origins:
@@ -221,11 +221,11 @@ class CORSConfig:
             )
 
         # All origins should use HTTPS in production
-        for origin in origins:
-            if origin.startswith("http://") and not origin.startswith("https://"):
-                security_issues.append(
-                    f"Origin '{origin}' should use HTTPS in production"
-                )
+        security_issues.extend(
+            f"Origin '{origin}' should use HTTPS in production"
+            for origin in origins
+            if origin.startswith("http://") and not origin.startswith("https://")
+        )
 
         if security_issues:
             error_msg = "CORS security validation failed:\n" + "\n".join(

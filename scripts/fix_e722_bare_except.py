@@ -3,7 +3,6 @@
 
 from pathlib import Path
 
-
 # E722错误位置（所有bare except）
 E722_FIXES = {
     "backend/api/security/endpoint_protection.py": [78, 107],
@@ -66,7 +65,7 @@ def main() -> None:
         fixes = fix_bare_except(file_path, line_numbers)
         total_fixes += fixes
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   Files processed: {len(E722_FIXES)}")
     print(f"   Total fixes: {total_fixes}")
     print("\n✅ Done! All bare except statements fixed.")

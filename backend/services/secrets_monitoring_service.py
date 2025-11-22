@@ -543,14 +543,46 @@ class SecretsMonitoringService:
     def _evaluate_condition(
         self, value: float, condition: str, threshold: float
     ) -> bool:
-        """Evaluate alert condition."""
-        try:
-            # Replace placeholders in condition
-            condition = condition.replace("value", str(value))
-            condition = condition.replace("threshold", str(threshold))
+        """Evaluate alert condition safely using ast.literal_eval."""
+        import ast
+        import operator
 
-            # Evaluate the condition
-            return eval(condition)
+        # Allowed operators for safe evaluation
+        operators = {
+            ast.Gt: operator.gt,
+            ast.Lt: operator.lt,
+            ast.GtE: operator.ge,
+            ast.LtE: operator.le,
+            ast.Eq: operator.eq,
+            ast.NotEq: operator.ne,
+        }
+
+        try:
+            # Replace placeholders with actual values
+            condition_str = condition.replace("value", str(value)).replace(
+                "threshold", str(threshold)
+            )
+
+            # Parse the expression safely
+            tree = ast.parse(condition_str, mode="eval")
+
+            # Validate it's a simple comparison
+            if not isinstance(tree.body, ast.Compare):
+                logger.error(f"Invalid condition format: {condition}")
+                return False
+
+            # Extract left operand, operator, and right operand
+            left_val = ast.literal_eval(tree.body.left)
+            op_type = type(tree.body.ops[0])
+            right_val = ast.literal_eval(tree.body.comparators[0])
+
+            # Apply the safe operator
+            if op_type in operators:
+                return operators[op_type](left_val, right_val)
+            else:
+                logger.error(f"Unsupported operator in condition: {condition}")
+                return False
+
         except Exception as e:
             logger.error(f"Error evaluating condition '{condition}': {e}")
             return False

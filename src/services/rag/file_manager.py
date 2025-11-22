@@ -271,10 +271,13 @@ class RAGFileManager:
             valid_paths_set = {Path(path) for path in valid_index_paths}
 
             for item in self.vector_storage_dir.iterdir():
-                if item.is_dir() and item.name.startswith("doc_"):
-                    if item not in valid_paths_set:
-                        orphaned_dirs.append(item)
-                        logger.debug(f"Found orphaned directory: {item}")
+                if (
+                    item.is_dir()
+                    and item.name.startswith("doc_")
+                    and item not in valid_paths_set
+                ):
+                    orphaned_dirs.append(item)
+                    logger.debug(f"Found orphaned directory: {item}")
 
         except Exception as e:
             logger.error(f"Failed to find orphaned directories: {e}")
