@@ -20,14 +20,13 @@ interface DatabaseData {
   timestamp: string;
   active_connections: number;
   connection_pool_size?: number;
-  connection_pool_available: number;
+  connection_pool_available?: number;
   query_count?: number;
   slow_queries?: number;
-  avg_query_time_ms: number;
   database_size_mb?: number;
   index_usage_percent?: number;
   cache_hit_ratio?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 interface DatabaseMetricsPanelProps {
@@ -42,7 +41,7 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
   const getConnectionPoolStatus = () => {
     if (!data) return { status: 'unknown', color: 'text-gray-500' };
 
-    const utilizationPercent = ((data.connection_pool_size - data.connection_pool_available) / data.connection_pool_size) * 100;
+    const utilizationPercent = (((data.connection_pool_size ?? 0) - (data.connection_pool_available ?? 0)) / (data.connection_pool_size ?? 1)) * 100;
 
     if (utilizationPercent > 90) {
       return { status: 'critical', color: 'text-red-600', bgColor: 'bg-red-100' };
@@ -68,9 +67,9 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
   const getCacheEfficiencyStatus = () => {
     if (!data) return { status: 'unknown', color: 'text-gray-500' };
 
-    if (data.cache_hit_ratio < 70) {
+    if ((data.cache_hit_ratio ?? 0) < 70) {
       return { status: 'warning', color: 'text-yellow-600' };
-    } else if (data.cache_hit_ratio < 50) {
+    } else if ((data.cache_hit_ratio ?? 0) < 50) {
       return { status: 'critical', color: 'text-red-600' };
     } else {
       return { status: 'healthy', color: 'text-green-600' };
@@ -148,12 +147,12 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
                     connectionPoolStatus.status === 'warning' ? 'bg-yellow-500' : 'bg-green-500'
                   }`}
                   style={{
-                    width: `${((data.connection_pool_size - data.connection_pool_available) / data.connection_pool_size) * 100}%`
+                    width: `${(((data.connection_pool_size ?? 0) - (data.connection_pool_available ?? 0)) / (data.connection_pool_size ?? 1)) * 100}%`
                   }}
                 />
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                {(((data.connection_pool_size - data.connection_pool_available) / data.connection_pool_size) * 100).toFixed(1)}% utilized
+                {(((data.connection_pool_size ?? 0) - (data.connection_pool_available ?? 0)) / (data.connection_pool_size ?? 1) * 100).toFixed(1)}% utilized
               </div>
             </div>
           </div>
@@ -183,10 +182,10 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
             </div>
 
             {/* Slow queries indicator */}
-            {data.slow_queries > 0 && (
+            {(data.slow_queries ?? 0) > 0 && (
               <div className="mt-2 flex items-center space-x-2 text-sm text-yellow-600">
                 <Clock className="h-4 w-4" />
-                <span>{data.slow_queries} slow queries detected</span>
+                <span>{data.slow_queries ?? 0} slow queries detected</span>
               </div>
             )}
           </div>
@@ -202,7 +201,7 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
 
             <div className="text-center">
               <div className={`text-2xl font-bold ${cacheEfficiencyStatus.color}`}>
-                {data.cache_hit_ratio.toFixed(1)}%
+                {(data.cache_hit_ratio ?? 0).toFixed(1)}%
               </div>
               <div className="text-xs text-gray-500">Hit Ratio</div>
             </div>
@@ -212,8 +211,8 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full ${
-                    data.cache_hit_ratio >= 80 ? 'bg-green-500' :
-                    data.cache_hit_ratio >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    (data.cache_hit_ratio ?? 0) >= 80 ? 'bg-green-500' :
+                    (data.cache_hit_ratio ?? 0) >= 60 ? 'bg-yellow-500' : 'bg-red-500'
                   }`}
                   style={{ width: `${data.cache_hit_ratio}%` }}
                 />
@@ -232,16 +231,16 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
               <div>
                 <div className="text-gray-500">Size</div>
                 <div className="font-semibold">
-                  {formatBytes(data.database_size_mb)}
+                  {formatBytes(data.database_size_mb ?? 0)}
                 </div>
               </div>
               <div>
                 <div className="text-gray-500">Index Usage</div>
-                <div className={`font-semibold ${
-                  data.index_usage_percent > 80 ? 'text-green-600' :
-                  data.index_usage_percent > 60 ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                  {data.index_usage_percent.toFixed(1)}%
+                  <div className={`font-semibold ${
+                    (data.index_usage_percent ?? 0) > 80 ? 'text-green-600' :
+                    (data.index_usage_percent ?? 0) > 60 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {(data.index_usage_percent ?? 0).toFixed(1)}%
                 </div>
               </div>
             </div>

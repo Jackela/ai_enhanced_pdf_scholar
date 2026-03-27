@@ -296,7 +296,7 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
               {data.memory_percent.toFixed(1)}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {(data.memory_used_mb / 1024).toFixed(1)}GB / {((data.memory_used_mb + data.memory_available_mb) / 1024).toFixed(1)}GB
+              {((data.memory_used_mb ?? 0) / 1024).toFixed(1)}GB / {(((data.memory_used_mb ?? 0) + (data.memory_available_mb ?? 0)) / 1024).toFixed(1)}GB
             </div>
           </div>
 
