@@ -17,16 +17,17 @@ import {
 } from 'lucide-react';
 
 interface DatabaseData {
-  timestamp: string;
-  active_connections: number;
-  connection_pool_size?: number;
-  connection_pool_available?: number;
-  query_count?: number;
-  slow_queries?: number;
-  database_size_mb?: number;
-  index_usage_percent?: number;
+timestamp: string;
+active_connections: number;
+connection_pool_size?: number;
+  connection_pool_available: number;
+query_count?: number;
+slow_queries?: number;
+database_size_mb?: number;
+index_usage_percent?: number;
   cache_hit_ratio?: number;
-  [key: string]: unknown;
+  avg_query_time_ms: number;
+[key: string]: unknown;
 }
 
 interface DatabaseMetricsPanelProps {
