@@ -20,13 +20,21 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from backend.api.dependencies import get_document_repository, get_rag_cache_manager
+from backend.api.dependencies import (
+    get_document_repository,
+    get_rag_cache_manager,
+    require_rag_service,
+)
 from backend.api.models.requests import MultiDocumentQueryRequest, QueryRequest
 from backend.api.models.responses import APIResponse, Links
 from config import Config
 from src.interfaces.rag_service_interfaces import IRAGCacheManager
 from src.interfaces.repository_interfaces import IDocumentRepository
-from src.database.models import DocumentModel
+from src.services.enhanced_rag_service import (
+    EnhancedRAGService,
+    RAGQueryError,
+    VectorIndexNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +66,7 @@ class QueryResultData(BaseModel):
     )
     response: str = Field(..., description="Generated response")
     sources: list[dict[str, Any]] = Field(
-        default_factory=list[Any], description="Source chunks used"
+        default_factory=list, description="Source chunks used"
     )
     cached: bool = Field(False, description="Whether result was cached")
     processing_time_ms: int = Field(..., description="Processing time in milliseconds")
@@ -110,7 +118,8 @@ class QueryResponse(APIResponse[QueryResultData]):
     responses={
         200: {"description": "Query executed successfully"},
         400: {"description": "Invalid query parameters"},
-        404: {"description": "Document not found"},
+        404: {"description": "Document not found or index not built"},
+        503: {"description": "RAG service not available"},
         500: {"description": "Query execution failed"},
     },
 )
@@ -119,7 +128,7 @@ async def query_document(
     request: QueryRequest,
     doc_repo: IDocumentRepository = Depends(get_document_repository),
     cache_manager: IRAGCacheManager = Depends(get_rag_cache_manager),
-    # query_executor will be injected when implemented
+    rag_service: EnhancedRAGService = Depends(require_rag_service),
 ) -> QueryResponse:
     """
     Execute RAG query against a single document.
@@ -127,7 +136,7 @@ async def query_document(
     Process:
     1. Validate document exists
     2. Check cache for previous results
-    3. Execute query if not cached
+    3. Execute query using EnhancedRAGService if not cached
     4. Cache result for future queries
     5. Return response with sources
 
@@ -136,20 +145,19 @@ async def query_document(
         request: Query request with parameters
         doc_repo: Document repository (injected)
         cache_manager: Cache manager (injected)
+        rag_service: Enhanced RAG service (injected)
 
     Returns:
         QueryResponse with generated answer and sources
 
     Raises:
-        HTTPException: 404 if document not found, 500 if query fails
+        HTTPException: 404 if document/index not found, 503 if RAG unavailable, 500 if query fails
     """
-    _require_queries_enabled()
-
-    start_time: float = time.time()
+    start_time = time.time()
 
     try:
         # 1. Validate document exists
-        document: DocumentModel | None = doc_repo.get_by_id(document_id)
+        document = doc_repo.get_by_id(document_id)
         if document is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -157,16 +165,16 @@ async def query_document(
             )
 
         # 2. Check cache
-        cached_result: str | None = cache_manager.get_cached_query(
+        cached_result = cache_manager.get_cached_query(
             query=request.query,
             document_id=document_id,
         )
 
         if cached_result is not None:
             # Return cached result
-            processing_time_ms: int = int((time.time() - start_time) * 1000)
+            processing_time_ms = int((time.time() - start_time) * 1000)
 
-            result_data: QueryResultData = QueryResultData(
+            result_data = QueryResultData(
                 query=request.query,
                 document_id=document_id,
                 response=cached_result,
@@ -192,15 +200,29 @@ async def query_document(
                 errors=None,
             )
 
-        # 3. Execute query (placeholder - will be implemented with query_executor)
-        # For now, return a placeholder response
-        logger.warning("Query executor not yet integrated - returning placeholder")
-
-        response_text: str = (
-            f"[Placeholder] Query '{request.query}' would be executed "
-            f"against document {document_id} with temperature={request.temperature}, "
-            f"max_results={request.max_results}"
+        # 3. Execute query using EnhancedRAGService
+        logger.info(
+            f"Executing RAG query on document {document_id}: {request.query[:100]}..."
         )
+
+        try:
+            response_text = rag_service.query_document(
+                query=request.query,
+                document_id=document_id,
+            )
+        except VectorIndexNotFoundError as e:
+            logger.warning(f"Vector index not found for document {document_id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Vector index not found for document {document_id}. "
+                "Please build the index first.",
+            ) from e
+        except RAGQueryError as e:
+            logger.error(f"RAG query failed for document {document_id}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Query execution failed: {str(e)}",
+            ) from e
 
         # 4. Cache result
         cache_manager.cache_query_result(
@@ -217,7 +239,7 @@ async def query_document(
             query=request.query,
             document_id=document_id,
             response=response_text,
-            sources=[],  # Placeholder
+            sources=[],  # TODO: Extract sources from RAG response when available
             cached=False,
             processing_time_ms=processing_time_ms,
             _links=Links(
@@ -229,7 +251,7 @@ async def query_document(
         )
 
         logger.info(
-            f"Query executed on document {document_id} (time: {processing_time_ms}ms)"
+            f"RAG query executed on document {document_id} (time: {processing_time_ms}ms)"
         )
 
         return QueryResponse(
@@ -263,67 +285,143 @@ async def query_document(
         200: {"description": "Query executed successfully"},
         400: {"description": "Invalid query parameters"},
         404: {"description": "One or more documents not found"},
+        503: {"description": "RAG service not available"},
         500: {"description": "Query execution failed"},
     },
 )
 async def query_multiple_documents(
     request: MultiDocumentQueryRequest,
     doc_repo: IDocumentRepository = Depends(get_document_repository),
+    rag_service: EnhancedRAGService = Depends(require_rag_service),
 ) -> QueryResponse:
     """
     Execute RAG query across multiple documents.
 
     Process:
     1. Validate all documents exist
-    2. Execute query across all documents
-    3. Synthesize results based on mode
+    2. Execute query across all documents using EnhancedRAGService
+    3. Synthesize results based on synthesis_mode
     4. Return combined response
 
     Args:
         request: Multi-document query request
         doc_repo: Document repository (injected)
+        rag_service: Enhanced RAG service (injected)
 
     Returns:
         QueryResponse with synthesized answer from multiple documents
 
     Raises:
-        HTTPException: 404 if documents not found, 500 if query fails
+        HTTPException: 404 if documents/indexes not found, 503 if RAG unavailable, 500 if query fails
     """
-    _require_queries_enabled()
-
-    start_time: float = time.time()
+    start_time = time.time()
 
     try:
         # 1. Validate documents exist
-        documents: list[DocumentModel] = doc_repo.get_by_ids(request.document_ids)
+        documents = doc_repo.get_by_ids(request.document_ids)
 
         if len(documents) != len(request.document_ids):
-            found_ids: set[int] = {doc.id for doc in documents}
-            missing_ids: set[int] = set[int](request.document_ids) - found_ids
+            found_ids = {doc.id for doc in documents}
+            missing_ids = set(request.document_ids) - found_ids
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Documents not found: {list[Any](missing_ids)}",
+                detail=f"Documents not found: {list(missing_ids)}",
             )
 
-        # 2. Execute query (placeholder)
-        logger.warning(
-            "Multi-document query executor not yet integrated - returning placeholder"
+        # 2. Execute queries across all documents
+        logger.info(
+            f"Executing multi-document RAG query across {len(request.document_ids)} "
+            f"documents with mode={request.synthesis_mode}"
         )
 
-        response_text: str = (
-            f"[Placeholder] Multi-document query '{request.query}' would be "
-            f"executed against {len(request.document_ids)} documents "
-            f"with synthesis_mode={request.synthesis_mode}"
-        )
+        individual_responses = []
+        errors = []
 
-        processing_time_ms: int = int((time.time() - start_time) * 1000)
+        for doc_id in request.document_ids:
+            try:
+                response = rag_service.query_document(
+                    query=request.query,
+                    document_id=doc_id,
+                )
+                individual_responses.append({
+                    "document_id": doc_id,
+                    "response": response,
+                })
+            except VectorIndexNotFoundError:
+                logger.warning(f"Vector index not found for document {doc_id}")
+                errors.append(f"Document {doc_id}: index not built")
+            except RAGQueryError as e:
+                logger.error(f"RAG query failed for document {doc_id}: {e}")
+                errors.append(f"Document {doc_id}: query failed")
 
-        # 3. Return response
-        result_data: QueryResultData = QueryResultData(
+        if not individual_responses:
+            # No successful queries
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No vector indexes found for any documents. Errors: {errors}",
+            )
+
+        # 3. Synthesize results based on synthesis_mode
+        if request.synthesis_mode == "merge":
+            # Merge all responses into a single coherent answer
+            if len(individual_responses) == 1:
+                response_text = individual_responses[0]["response"]
+            else:
+                merged_parts = [
+                    f"[From document {r['document_id']}]: {r['response']}"
+                    for r in individual_responses
+                ]
+                response_text = "\n\n".join(merged_parts)
+
+        elif request.synthesis_mode == "compare":
+            # Present responses side by side for comparison
+            comparison_parts = [
+                f"=== Document {r['document_id']} ===\n{r['response']}"
+                for r in individual_responses
+            ]
+            response_text = "\n\n".join(comparison_parts)
+
+        elif request.synthesis_mode == "summarize":
+            # For now, merge with a summary prefix
+            # TODO: Use LLM to generate true synthesis
+            if len(individual_responses) == 1:
+                response_text = individual_responses[0]["response"]
+            else:
+                summary_parts = [
+                    f"Document {r['document_id']}: {r['response'][:200]}..."
+                    if len(r['response']) > 200
+                    else f"Document {r['document_id']}: {r['response']}"
+                    for r in individual_responses
+                ]
+                response_text = (
+                    f"Summary across {len(individual_responses)} documents:\n\n"
+                    + "\n".join(summary_parts)
+                )
+        else:
+            # Default to merge
+            response_text = "\n\n".join([
+                f"[From document {r['document_id']}]: {r['response']}"
+                for r in individual_responses
+            ])
+
+        if errors:
+            # Add warning about partial results
+            response_text += (
+                f"\n\n[Note: Partial results - some documents could not be queried: "
+                f"{', '.join(errors)}]"
+            )
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        # 4. Return response
+        result_data = QueryResultData(
             query=request.query,
             document_ids=request.document_ids,
             response=response_text,
-            sources=[],  # Placeholder
+            sources=[
+                {"document_id": r["document_id"], "excerpt": r["response"][:200]}
+                for r in individual_responses
+            ],
             cached=False,
             processing_time_ms=processing_time_ms,
             _links=Links(
@@ -335,8 +433,8 @@ async def query_multiple_documents(
         )
 
         logger.info(
-            f"Multi-document query executed across {len(request.document_ids)} "
-            f"documents (time: {processing_time_ms}ms)"
+            f"Multi-document RAG query executed across {len(individual_responses)}/"
+            f"{len(request.document_ids)} documents (time: {processing_time_ms}ms)"
         )
 
         return QueryResponse(
@@ -392,7 +490,7 @@ async def clear_document_cache(
     _require_queries_enabled()
 
     try:
-        invalidated_count: int = cache_manager.invalidate_document_cache(document_id)
+        invalidated_count = cache_manager.invalidate_document_cache(document_id)
 
         logger.info(
             f"Cleared {invalidated_count} cache entries for document {document_id}"
@@ -440,7 +538,7 @@ async def get_cache_stats(
     _require_queries_enabled()
 
     try:
-        stats: dict[str, Any] = cache_manager.get_cache_stats()
+        stats = cache_manager.get_cache_stats()
 
         logger.debug(f"Cache stats retrieved: {stats}")
 

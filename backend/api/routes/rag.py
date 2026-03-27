@@ -59,7 +59,9 @@ async def query_document(
         validate_document_access(query_request.document_id, controller)
 
         # Generate cache key for this specific query
-        cache_key: str = f"rag_query:{query_request.document_id}:{hash(query_request.query)}"
+        cache_key: str = (
+            f"rag_query:{query_request.document_id}:{hash(query_request.query)}"
+        )
 
         # Try to get cached response
         if cache_service:
@@ -70,7 +72,9 @@ async def query_document(
                 )
                 return RAGQueryResponse(**cached_response)
         # Check if document has a valid index
-        index_status: dict[str, Any] = controller.get_index_status(query_request.document_id)
+        index_status: dict[str, Any] = controller.get_index_status(
+            query_request.document_id
+        )
         if not index_status.get("can_query", False):
             raise ErrorTemplates.index_not_ready(query_request.document_id)
         # Perform query with timing
@@ -82,7 +86,9 @@ async def query_document(
             query_request.document_id, query_request.query
         )
 
-        processing_time: float = (time.time() - start_time) * 1000  # Convert to milliseconds
+        processing_time: float = (
+            time.time() - start_time
+        ) * 1000  # Convert to milliseconds
 
         if response is None:
             raise SystemException(
@@ -133,7 +139,9 @@ async def build_index(
         validate_document_access(build_request.document_id, controller)
         # Check if index already exists and force_rebuild is False
         if not build_request.force_rebuild:
-            index_status: dict[str, Any] = controller.get_index_status(build_request.document_id)
+            index_status: dict[str, Any] = controller.get_index_status(
+                build_request.document_id
+            )
             if index_status.get("has_index", False) and index_status.get(
                 "index_valid", False
             ):

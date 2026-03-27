@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.1.1] - 2026-03-27
+
+This release focuses on documentation synchronization and production readiness improvements.
+
+### ✨ [New]
+- **Production Deployment Guide**: Added comprehensive [DEPLOYMENT.md](./DEPLOYMENT.md) with Docker, Kubernetes, and cloud platform instructions
+- **API Documentation**: Updated [API_ENDPOINTS.md](./API_ENDPOINTS.md) with complete implementation status tracking for 80+ endpoints
+- **Enhanced README**: Added project structure, comprehensive feature list, and deployment quick-start
+
+### 📝 [Documentation]
+- Synchronized all project documentation with actual code implementation
+- Added implementation status indicators (✅/🔄/❌) to all API endpoints
+- Created production deployment guides for Docker, Kubernetes, AWS, GCP, and Azure
+- Updated feature list to reflect all implemented capabilities
+- Added troubleshooting guides and security checklists
+
+### ✅ [Verified]
+- **System Management API**: 20+ endpoints fully implemented and tested
+- **Document Management API**: All 9 endpoints operational
+- **Library Management API**: Complete implementation verified
+- **Query System**: RAG and multi-document queries working
+- **Citation System**: Extraction, analysis, and network features active
+- **Caching System**: L1/L2/L3 cache layers operational
+- **Security Features**: RBAC, rate limiting, and audit logging in place
+
+---
+
 ## [2.1.0] - 2025-08-15
 
 This release focuses on adding powerful new analysis capabilities and hardening the platform's security.

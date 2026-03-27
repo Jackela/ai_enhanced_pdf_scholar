@@ -31,43 +31,65 @@ interface SystemHealthStatus {
   metrics_available: string[];
 }
 
+interface SystemMetricsData {
+  timestamp: string;
+  cpu_percent: number;
+  memory_percent: number;
+  disk_usage_percent: number;
+  uptime_seconds: number;
+  memory_used_mb?: number;
+  memory_available_mb?: number;
+}
+
+interface DatabaseMetricsData {
+  timestamp: string;
+  active_connections: number;
+  avg_query_time_ms: number;
+  connection_pool_available: number;
+  connection_pool_size?: number;
+  query_count?: number;
+  slow_queries?: number;
+  cache_hit_ratio?: number;
+  database_size_mb?: number;
+  index_usage_percent?: number;
+}
+
+interface WebSocketMetricsData {
+  timestamp: string;
+  active_connections: number;
+  rag_tasks_total: number;
+  rag_tasks_processing: number;
+  total_rooms?: number;
+  concurrent_task_limit?: number;
+  rag_tasks_pending?: number;
+  rag_tasks_streaming?: number;
+  rag_tasks_completed?: number;
+  rag_tasks_failed?: number;
+  avg_task_duration_ms?: number;
+}
+
+interface ApiMetricsData {
+  timestamp: string;
+  requests_per_second: number;
+  avg_response_time_ms: number;
+  error_rate_percent: number;
+  active_sessions?: number;
+}
+
+interface MemoryMetricsData {
+  timestamp: string;
+  heap_size_mb: number;
+  connection_leaks: number;
+  memory_pressure_events: number;
+  gc_collections?: number;
+}
+
 interface MetricsData {
-  system?: {
-    timestamp: string;
-    cpu_percent: number;
-    memory_percent: number;
-    disk_usage_percent: number;
-    uptime_seconds: number;
-    [key: string]: any;
-  };
-  database?: {
-    timestamp: string;
-    active_connections: number;
-    avg_query_time_ms: number;
-    connection_pool_available: number;
-    [key: string]: any;
-  };
-  websocket?: {
-    timestamp: string;
-    active_connections: number;
-    rag_tasks_total: number;
-    rag_tasks_processing: number;
-    [key: string]: any;
-  };
-  api?: {
-    timestamp: string;
-    requests_per_second: number;
-    avg_response_time_ms: number;
-    error_rate_percent: number;
-    [key: string]: any;
-  };
-  memory?: {
-    timestamp: string;
-    heap_size_mb: number;
-    connection_leaks: number;
-    memory_pressure_events: number;
-    [key: string]: any;
-  };
+  system?: SystemMetricsData;
+  database?: DatabaseMetricsData;
+  websocket?: WebSocketMetricsData;
+  api?: ApiMetricsData;
+  memory?: MemoryMetricsData;
 }
 
 interface Alert {
@@ -399,7 +421,7 @@ export const MonitoringDashboard: React.FC = () => {
         {/* System Metrics Chart - Takes 2/3 width */}
         <div className="xl:col-span-2">
           <SystemMetricsChart 
-            data={metricsData.system as any}
+            data={metricsData.system}
             isConnected={isConnected}
           />
         </div>
@@ -412,7 +434,7 @@ export const MonitoringDashboard: React.FC = () => {
         {/* Database Metrics */}
         <div className="xl:col-span-1">
           <DatabaseMetricsPanel 
-            data={metricsData.database as any}
+            data={metricsData.database}
             isConnected={isConnected}
           />
         </div>
@@ -420,7 +442,7 @@ export const MonitoringDashboard: React.FC = () => {
         {/* WebSocket Metrics */}
         <div className="xl:col-span-1">
           <WebSocketMetricsPanel 
-            data={metricsData.websocket as any}
+            data={metricsData.websocket}
             isConnected={isConnected}
           />
         </div>

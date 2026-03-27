@@ -70,7 +70,9 @@ async def find_duplicate_documents(
 ) -> DuplicatesResponse:
     """Find duplicate documents in the library."""
     try:
-        duplicates: list[tuple[str, list[DocumentModel]]] = controller.find_duplicate_documents()
+        duplicates: list[tuple[str, list[DocumentModel]]] = (
+            controller.find_duplicate_documents()
+        )
         duplicate_groups: list[DuplicateGroup] = []
         total_duplicates: int = 0
         for criteria, docs in duplicates:
@@ -203,7 +205,9 @@ async def search_documents(
 ) -> DocumentListResponse:
     """Search documents by title and content."""
     try:
-        documents: list[DocumentModel] = controller.get_documents(search_query=q, limit=limit)
+        documents: list[DocumentModel] = controller.get_documents(
+            search_query=q, limit=limit
+        )
         # Convert to response models
         doc_responses: list[DocumentResponse] = []
         for doc in documents:
@@ -222,13 +226,14 @@ async def search_documents(
 
 @router.get("/recent", response_model=DocumentListResponse)
 async def get_recent_documents(
-    limit: int = 20, 
-    controller: LibraryController = Depends(get_library_controller)
+    limit: int = 20, controller: LibraryController = Depends(get_library_controller)
 ) -> DocumentListResponse:
     """Get recently accessed documents."""
     try:
         # Use the library service directly for recent documents
-        recent_docs: list[DocumentModel] = controller.library_service.get_recent_documents(limit)
+        recent_docs: list[DocumentModel] = (
+            controller.library_service.get_recent_documents(limit)
+        )
         # Convert to response models
         doc_responses: list[DocumentResponse] = []
         for doc in recent_docs:

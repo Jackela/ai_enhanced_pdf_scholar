@@ -43,7 +43,7 @@ from backend.api.models.responses import (
 )
 from src.database.connection import DatabaseConnection
 from src.database.models import CitationModel
-from src.exceptions import DatabaseError, ResourceNotFoundError, ValidationError
+from src.exceptions import DatabaseError, ValidationError
 from src.interfaces.repository_interfaces import (
     ICitationRelationRepository,
     ICitationRepository,
@@ -61,6 +61,7 @@ router = APIRouter(tags=["citations"])
 # Dependency Injection
 # ============================================================================
 
+
 def get_citation_repository(
     db: DatabaseConnection = Depends(get_db),
 ) -> ICitationRepository:
@@ -77,7 +78,9 @@ def get_citation_relation_repository(
 
 def get_citation_service(
     citation_repo: ICitationRepository = Depends(get_citation_repository),
-    relation_repo: ICitationRelationRepository = Depends(get_citation_relation_repository),
+    relation_repo: ICitationRelationRepository = Depends(
+        get_citation_relation_repository
+    ),
 ) -> CitationService:
     """Provide a CitationService instance."""
     return CitationService(citation_repo, relation_repo)
@@ -102,8 +105,12 @@ class CitationData(BaseModel):
     journal_or_venue: str | None = Field(None, description="Journal or venue")
     doi: str | None = Field(None, description="DOI")
     page_range: str | None = Field(None, description="Page range")
-    citation_type: str | None = Field(None, description="Citation type (journal, conference, etc.)")
-    confidence_score: float | None = Field(None, ge=0, le=1, description="Confidence score")
+    citation_type: str | None = Field(
+        None, description="Citation type (journal, conference, etc.)"
+    )
+    confidence_score: float | None = Field(
+        None, ge=0, le=1, description="Confidence score"
+    )
     created_at: str | None = Field(None, description="Creation timestamp")
     updated_at: str | None = Field(None, description="Update timestamp")
 
@@ -141,7 +148,9 @@ class CitationExtractRequest(BaseModel):
     """Request model for citation extraction."""
 
     text_content: str | None = Field(None, description="Optional text content to parse")
-    force_reparse: bool = Field(False, description="Force reparse even if citations exist")
+    force_reparse: bool = Field(
+        False, description="Force reparse even if citations exist"
+    )
 
 
 class CitationExtractResponseData(BaseModel):
@@ -216,7 +225,9 @@ class CitationSearchParams(BaseModel):
     year_to: int | None = Field(None, description="End year")
     citation_type: str | None = Field(None, description="Citation type")
     doi: str | None = Field(None, description="DOI exact match")
-    min_confidence: float = Field(0.0, ge=0, le=1, description="Minimum confidence score")
+    min_confidence: float = Field(
+        0.0, ge=0, le=1, description="Minimum confidence score"
+    )
     limit: int = Field(50, ge=1, le=200, description="Result limit")
 
 
@@ -256,6 +267,7 @@ CitationExportResponse = APIResponse[ExportResponseData]
 # Helper Functions
 # ============================================================================
 
+
 def model_to_citation_data(citation: CitationModel) -> CitationData:
     """Convert CitationModel to CitationData response."""
     return CitationData(
@@ -292,7 +304,7 @@ def format_bibtex(citation: CitationModel) -> str:
     """Format citation as BibTeX entry."""
     cite_key = f"cite{citation.id}"
     lines = [f"@article{{{cite_key},"]
-    
+
     if citation.title:
         lines.append(f"  title={{{citation.title}}},")
     if citation.authors:
@@ -305,7 +317,7 @@ def format_bibtex(citation: CitationModel) -> str:
         lines.append(f"  doi={{{citation.doi}}},")
     if citation.page_range:
         lines.append(f"  pages={{{citation.page_range}}},")
-    
+
     lines.append("}")
     return "\n".join(lines)
 
@@ -314,26 +326,47 @@ def format_csv(citations: list[CitationModel]) -> str:
     """Format citations as CSV."""
     output = io.StringIO()
     writer = csv.writer(output)
-    
+
     # Header
-    writer.writerow([
-        "id", "document_id", "authors", "title", "publication_year",
-        "journal_or_venue", "doi", "page_range", "citation_type", "confidence_score"
-    ])
-    
+    writer.writerow(
+        [
+            "id",
+            "document_id",
+            "authors",
+            "title",
+            "publication_year",
+            "journal_or_venue",
+            "doi",
+            "page_range",
+            "citation_type",
+            "confidence_score",
+        ]
+    )
+
     # Data rows
     for c in citations:
-        writer.writerow([
-            c.id, c.document_id, c.authors, c.title, c.publication_year,
-            c.journal_or_venue, c.doi, c.page_range, c.citation_type, c.confidence_score
-        ])
-    
+        writer.writerow(
+            [
+                c.id,
+                c.document_id,
+                c.authors,
+                c.title,
+                c.publication_year,
+                c.journal_or_venue,
+                c.doi,
+                c.page_range,
+                c.citation_type,
+                c.confidence_score,
+            ]
+        )
+
     return output.getvalue()
 
 
 def format_json_export(citations: list[CitationModel]) -> str:
     """Format citations as JSON string."""
     import json
+
     data = [c.to_api_dict() for c in citations]
     return json.dumps(data, indent=2, default=str)
 
@@ -341,6 +374,7 @@ def format_json_export(citations: list[CitationModel]) -> str:
 # ============================================================================
 # Citation Extraction
 # ============================================================================
+
 
 @router.post(
     "/extract/{document_id}",
@@ -393,8 +427,7 @@ async def extract_citations(
         # Calculate statistics
         total_extracted = len(citations)
         high_confidence_count = sum(
-            1 for c in citations
-            if c.confidence_score and c.confidence_score >= 0.8
+            1 for c in citations if c.confidence_score and c.confidence_score >= 0.8
         )
         avg_confidence = (
             sum(c.confidence_score or 0 for c in citations) / total_extracted
@@ -434,6 +467,7 @@ async def extract_citations(
 # Get Citations for Document
 # ============================================================================
 
+
 @router.get(
     "/document/{document_id}",
     response_model=CitationListResponse,
@@ -449,7 +483,9 @@ async def get_document_citations(
     document_id: int,
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(50, ge=1, le=200, description="Items per page"),
-    min_confidence: float = Query(0.0, ge=0, le=1, description="Minimum confidence filter"),
+    min_confidence: float = Query(
+        0.0, ge=0, le=1, description="Minimum confidence filter"
+    ),
     citation_service: CitationService = Depends(get_citation_service),
     doc_repo: IDocumentRepository = Depends(get_document_repository),
 ) -> CitationListResponse:
@@ -480,7 +516,8 @@ async def get_document_citations(
         # Filter by confidence if specified
         if min_confidence > 0:
             citations = [
-                c for c in citations
+                c
+                for c in citations
                 if c.confidence_score and c.confidence_score >= min_confidence
             ]
 
@@ -488,12 +525,13 @@ async def get_document_citations(
         total = len(citations)
         total_pages = (total + limit - 1) // limit
         offset = (page - 1) * limit
-        paginated_citations = citations[offset:offset + limit]
+        paginated_citations = citations[offset : offset + limit]
 
         # Convert to response format
         citation_data = [model_to_citation_data(c) for c in paginated_citations]
 
         from backend.api.models.responses import PaginationMeta
+
         return CitationListResponse(
             success=True,
             data=citation_data,
@@ -511,7 +549,9 @@ async def get_document_citations(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get citations for document {document_id}: {e}", exc_info=True)
+        logger.error(
+            f"Failed to get citations for document {document_id}: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve citations",
@@ -521,6 +561,7 @@ async def get_document_citations(
 # ============================================================================
 # Get Single Citation
 # ============================================================================
+
 
 @router.get(
     "/{citation_id}",
@@ -580,6 +621,7 @@ async def get_citation(
 # ============================================================================
 # Update Citation
 # ============================================================================
+
 
 @router.put(
     "/{citation_id}",
@@ -672,6 +714,7 @@ async def update_citation(
 # Delete Citation
 # ============================================================================
 
+
 @router.delete(
     "/{citation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -719,6 +762,7 @@ async def delete_citation(
 # ============================================================================
 # Search Citations
 # ============================================================================
+
 
 @router.get(
     "/search",
@@ -788,7 +832,8 @@ async def search_citations(
         # Filter by confidence
         if min_confidence > 0:
             citations = [
-                c for c in citations
+                c
+                for c in citations
                 if c.confidence_score and c.confidence_score >= min_confidence
             ]
 
@@ -796,11 +841,12 @@ async def search_citations(
         total = len(citations)
         total_pages = (total + limit - 1) // limit
         offset = (page - 1) * limit
-        paginated_citations = citations[offset:offset + limit]
+        paginated_citations = citations[offset : offset + limit]
 
         citation_data = [model_to_citation_data(c) for c in paginated_citations]
 
         from backend.api.models.responses import PaginationMeta
+
         return CitationListResponse(
             success=True,
             data=citation_data,
@@ -833,6 +879,7 @@ async def search_citations(
 # Get Citation Network
 # ============================================================================
 
+
 @router.get(
     "/network/{document_id}",
     response_model=CitationNetworkResponse,
@@ -848,7 +895,9 @@ async def search_citations(
 async def get_citation_network(
     document_id: int,
     depth: int = Query(1, ge=1, le=3, description="Network depth (1-3)"),
-    min_confidence: float = Query(0.5, ge=0, le=1, description="Minimum relation confidence"),
+    min_confidence: float = Query(
+        0.5, ge=0, le=1, description="Minimum relation confidence"
+    ),
     citation_service: CitationService = Depends(get_citation_service),
     doc_repo: IDocumentRepository = Depends(get_document_repository),
 ) -> CitationNetworkResponse:
@@ -936,6 +985,7 @@ async def get_citation_network(
 # ============================================================================
 # Export Citations
 # ============================================================================
+
 
 @router.post(
     "/export/{format}",
@@ -1035,6 +1085,7 @@ async def export_citations(
 # Get Citation Statistics
 # ============================================================================
 
+
 @router.get(
     "/statistics",
     response_model=CitationStatisticsResponse,
@@ -1067,7 +1118,9 @@ async def get_citation_statistics(
             citations = citation_service.get_citations_for_document(document_id)
             total = len(citations)
             complete = sum(1 for c in citations if c.is_complete())
-            high_conf = sum(1 for c in citations if c.confidence_score and c.confidence_score >= 0.8)
+            high_conf = sum(
+                1 for c in citations if c.confidence_score and c.confidence_score >= 0.8
+            )
             avg_conf = (
                 sum(c.confidence_score or 0 for c in citations) / total
                 if total > 0
@@ -1104,7 +1157,9 @@ async def get_citation_statistics(
                 complete_citations=repo_stats.get("complete_citations", 0),
                 average_confidence_score=repo_stats.get("avg_confidence_score", 0.0),
                 by_type=repo_stats.get("citation_types", {}),
-                by_year={str(k): v for k, v in repo_stats.get("years_breakdown", {}).items()},
+                by_year={
+                    str(k): v for k, v in repo_stats.get("years_breakdown", {}).items()
+                },
                 high_confidence_count=0,  # Would need to calculate
                 documents_with_citations=repo_stats.get("documents_with_citations", 0),
             )

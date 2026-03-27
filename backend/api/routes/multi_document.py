@@ -18,21 +18,23 @@ from backend.api.models.multi_document_models import (
     CollectionStatisticsResponse,
     CreateCollectionRequest,
     CrossDocumentQueryRequest,
+    CrossReferenceResponse,
+    DocumentSourceResponse,
     MultiDocumentQueryResponse,
     QueryHistoryResponse,
     UpdateCollectionRequest,
-    DocumentSourceResponse,
-    CrossReferenceResponse,
 )
+from src.database.multi_document_models import DocumentCollection
 from src.services.multi_document_rag_service import MultiDocumentRAGService
-from src.database.models import DocumentCollection
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-def convert_collection_to_response(collection: DocumentCollection) -> CollectionResponse:
+def convert_collection_to_response(
+    collection: DocumentCollection,
+) -> CollectionResponse:
     """Convert collection model to API response."""
     return CollectionResponse(
         id=collection.id,
@@ -119,7 +121,9 @@ async def list_collections(
 
         # Simple pagination (should be done in repository layer)
         total_count: int = len(collections)
-        paginated_collections: list[DocumentCollection] = collections[offset : offset + limit]
+        paginated_collections: list[DocumentCollection] = collections[
+            offset : offset + limit
+        ]
 
         collection_responses: list[CollectionResponse] = [
             convert_collection_to_response(c) for c in paginated_collections
@@ -222,7 +226,9 @@ async def remove_document_from_collection(
 ) -> CollectionResponse:
     """Remove a document from a collection."""
     try:
-        collection: DocumentCollection = service.remove_document_from_collection(collection_id, document_id)
+        collection: DocumentCollection = service.remove_document_from_collection(
+            collection_id, document_id
+        )
         return convert_collection_to_response(collection)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
