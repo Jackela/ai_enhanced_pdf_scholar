@@ -93,7 +93,7 @@
     "typescript": "^5.2.2",
     "vite": "^6.0.7",
     "vite-bundle-analyzer": "^0.9.4",
-    "vite-plugin-pwa": "^0.21.1",
+    "vite-plugin-pwa": "^0.19.8",
     "vitest": "^3.2.4"
   },
   "engines": {
