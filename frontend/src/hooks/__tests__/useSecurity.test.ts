@@ -15,6 +15,7 @@ import {
   detectXSSAttempt,
   escapeHTML,
   DEFAULT_SECURITY_CONFIG,
+  sanitizeAndRenderMarkdown,
 } from '../../utils/security'
 
 // Mock the security utils

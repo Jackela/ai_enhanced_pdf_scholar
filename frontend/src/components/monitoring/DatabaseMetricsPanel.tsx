@@ -1,16 +1,16 @@
 /**
  * Database Metrics Panel Component
- * 
+ *
  * Displays database performance metrics including connection pool status,
  * query performance, and database health indicators.
  */
 
 import React from 'react';
-import { 
-  Database, 
-  Zap, 
-  Clock, 
-  Users, 
+import {
+  Database,
+  Zap,
+  Clock,
+  Users,
   Activity,
   AlertTriangle,
   CheckCircle
@@ -27,7 +27,7 @@ interface DatabaseData {
   database_size_mb: number;
   index_usage_percent: number;
   cache_hit_ratio: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface DatabaseMetricsPanelProps {
@@ -35,15 +35,15 @@ interface DatabaseMetricsPanelProps {
   isConnected: boolean;
 }
 
-export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({ 
-  data, 
-  isConnected 
+export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
+  data,
+  isConnected
 }) => {
   const getConnectionPoolStatus = () => {
     if (!data) return { status: 'unknown', color: 'text-gray-500' };
-    
+
     const utilizationPercent = ((data.connection_pool_size - data.connection_pool_available) / data.connection_pool_size) * 100;
-    
+
     if (utilizationPercent > 90) {
       return { status: 'critical', color: 'text-red-600', bgColor: 'bg-red-100' };
     } else if (utilizationPercent > 70) {
@@ -55,7 +55,7 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
 
   const getQueryPerformanceStatus = () => {
     if (!data) return { status: 'unknown', color: 'text-gray-500' };
-    
+
     if (data.avg_query_time_ms > 1000) {
       return { status: 'critical', color: 'text-red-600' };
     } else if (data.avg_query_time_ms > 500) {
@@ -67,7 +67,7 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
 
   const getCacheEfficiencyStatus = () => {
     if (!data) return { status: 'unknown', color: 'text-gray-500' };
-    
+
     if (data.cache_hit_ratio < 70) {
       return { status: 'warning', color: 'text-yellow-600' };
     } else if (data.cache_hit_ratio < 50) {
@@ -79,11 +79,11 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
 
   const formatBytes = (bytes: number, decimals = 1) => {
     if (bytes === 0) return '0 B';
-    
+
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['B', 'KB', 'MB', 'GB'];
-    
+
     const i = Math.floor(Math.log(bytes * 1024 * 1024) / Math.log(k));
     return parseFloat(((bytes * 1024 * 1024) / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
@@ -117,7 +117,7 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
                 <AlertTriangle className="h-4 w-4 text-yellow-500" />
               )}
             </div>
-            
+
             <div className="grid grid-cols-3 gap-2 text-sm">
               <div className="text-center">
                 <div className={`text-lg font-bold ${connectionPoolStatus.color}`}>
@@ -138,7 +138,7 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
                 <div className="text-xs text-gray-500">Pool Size</div>
               </div>
             </div>
-            
+
             {/* Connection pool utilization bar */}
             <div className="mt-2">
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -252,20 +252,20 @@ export const DatabaseMetricsPanel: React.FC<DatabaseMetricsPanelProps> = ({
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1">Overall Status</div>
               <div className={`px-2 py-1 rounded text-xs font-medium ${
-                connectionPoolStatus.status === 'healthy' && 
-                queryPerformanceStatus.status === 'healthy' && 
+                connectionPoolStatus.status === 'healthy' &&
+                queryPerformanceStatus.status === 'healthy' &&
                 cacheEfficiencyStatus.status === 'healthy'
                   ? 'bg-green-100 text-green-700'
-                  : connectionPoolStatus.status === 'critical' || 
+                  : connectionPoolStatus.status === 'critical' ||
                     queryPerformanceStatus.status === 'critical'
                     ? 'bg-red-100 text-red-700'
                     : 'bg-yellow-100 text-yellow-700'
               }`}>
-                {connectionPoolStatus.status === 'healthy' && 
-                 queryPerformanceStatus.status === 'healthy' && 
+                {connectionPoolStatus.status === 'healthy' &&
+                 queryPerformanceStatus.status === 'healthy' &&
                  cacheEfficiencyStatus.status === 'healthy'
                   ? 'HEALTHY'
-                  : connectionPoolStatus.status === 'critical' || 
+                  : connectionPoolStatus.status === 'critical' ||
                     queryPerformanceStatus.status === 'critical'
                     ? 'CRITICAL'
                     : 'WARNING'}

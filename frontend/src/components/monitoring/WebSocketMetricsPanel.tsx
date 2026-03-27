@@ -1,18 +1,18 @@
 /**
  * WebSocket Metrics Panel Component
- * 
+ *
  * Displays WebSocket connection statistics and RAG task metrics
  * with real-time updates and task lifecycle tracking.
  */
 
 import React from 'react';
-import { 
-  Wifi, 
-  Users, 
-  MessageSquare, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Wifi,
+  Users,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Loader,
   Activity,
@@ -31,7 +31,7 @@ interface WebSocketData {
   rag_tasks_failed: number;
   avg_task_duration_ms: number;
   concurrent_task_limit: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface WebSocketMetricsPanelProps {
@@ -39,9 +39,9 @@ interface WebSocketMetricsPanelProps {
   isConnected: boolean;
 }
 
-export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({ 
-  data, 
-  isConnected 
+export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
+  data,
+  isConnected
 }) => {
   const getTaskUtilization = () => {
     if (!data) return 0;
@@ -57,7 +57,7 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
 
   const getTaskStatusColor = (status: string, count: number) => {
     if (count === 0) return 'text-gray-400';
-    
+
     switch (status) {
       case 'pending': return 'text-blue-600';
       case 'processing': return 'text-yellow-600';
