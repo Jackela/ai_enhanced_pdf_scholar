@@ -24,7 +24,6 @@ interface SystemData {
   uptime_seconds: number;
   memory_used_mb: number;
   memory_available_mb: number;
-  [key: string]: any;
 }
 
 interface SystemMetricsChartProps {

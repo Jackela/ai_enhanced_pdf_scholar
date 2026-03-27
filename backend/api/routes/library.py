@@ -1,11 +1,10 @@
-from typing import Any
-
 """
 Library Management API Routes
 RESTful API endpoints for document library management operations.
 """
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -22,6 +21,7 @@ from backend.api.models import (
     LibraryStatsResponse,
 )
 from src.controllers.library_controller import LibraryController
+from src.database.models import DocumentModel
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -30,10 +30,10 @@ router = APIRouter()
 @router.get("/stats", response_model=LibraryStatsResponse)
 async def get_library_statistics(
     controller: LibraryController = Depends(get_library_controller),
-) -> Any:
+) -> LibraryStatsResponse:
     """Get comprehensive library statistics."""
     try:
-        stats = controller.get_library_statistics()
+        stats: dict[str, Any] = controller.get_library_statistics()
         if "error" in stats:
             raise SystemException(
                 message=f"Failed to get library statistics: {stats['error']}",
@@ -42,11 +42,11 @@ async def get_library_statistics(
 
         # Transform data to match LibraryStatsResponse model from multi_document_models
         # which expects: total_documents, total_size, average_size, file_types, recent_documents
-        total_documents = stats.get("total_count", 0)
-        total_size = int(stats.get("total_size_bytes", 0))
-        average_size = float(stats.get("average_size_bytes", 0.0))
-        file_types = stats.get("file_extensions", {})
-        recent_documents = 0  # Could be calculated if needed
+        total_documents: int = stats.get("total_count", 0)
+        total_size: int = int(stats.get("total_size_bytes", 0))
+        average_size: float = float(stats.get("average_size_bytes", 0.0))
+        file_types: dict[str, int] = stats.get("file_extensions", {})
+        recent_documents: int = 0  # Could be calculated if needed
 
         return LibraryStatsResponse(
             total_documents=total_documents,
@@ -67,17 +67,17 @@ async def get_library_statistics(
 @router.get("/duplicates", response_model=DuplicatesResponse)
 async def find_duplicate_documents(
     controller: LibraryController = Depends(get_library_controller),
-) -> Any:
+) -> DuplicatesResponse:
     """Find duplicate documents in the library."""
     try:
-        duplicates = controller.find_duplicate_documents()
-        duplicate_groups = []
-        total_duplicates = 0
+        duplicates: list[tuple[str, list[DocumentModel]]] = controller.find_duplicate_documents()
+        duplicate_groups: list[DuplicateGroup] = []
+        total_duplicates: int = 0
         for criteria, docs in duplicates:
             # Convert documents to response models
-            doc_responses = []
+            doc_responses: list[DocumentResponse] = []
             for doc in docs:
-                doc_dict = doc.to_api_dict()
+                doc_dict: dict[str, Any] = doc.to_api_dict()
                 doc_dict["is_file_available"] = doc.is_file_available()
                 doc_responses.append(DocumentResponse(**doc_dict))
             duplicate_groups.append(
@@ -98,10 +98,10 @@ async def find_duplicate_documents(
 async def cleanup_library(
     cleanup_request: CleanupRequest,
     controller: LibraryController = Depends(get_library_controller),
-) -> Any:
+) -> CleanupResponse:
     """Perform library cleanup operations."""
     try:
-        results = controller.cleanup_library()
+        results: dict[str, Any] = controller.cleanup_library()
         if "error" in results:
             raise SystemException(
                 message=f"Library cleanup failed: {results['error']}",
@@ -126,13 +126,13 @@ async def cleanup_library(
 @router.get("/health", response_model=BaseResponse)
 async def check_library_health(
     controller: LibraryController = Depends(get_library_controller),
-) -> Any:
+) -> BaseResponse:
     """Check library health status."""
     try:
-        stats = controller.get_library_statistics()
-        health = stats.get("health", {})
+        stats: dict[str, Any] = controller.get_library_statistics()
+        health: dict[str, Any] = stats.get("health", {})
         # Determine overall health
-        issues = []
+        issues: list[str] = []
         if health.get("orphaned_indexes", 0) > 0:
             issues.append(f"{health['orphaned_indexes']} orphaned indexes")
         if health.get("invalid_indexes", 0) > 0:
@@ -154,17 +154,17 @@ async def check_library_health(
 @router.post("/optimize", response_model=BaseResponse)
 async def optimize_library(
     controller: LibraryController = Depends(get_library_controller),
-) -> Any:
+) -> BaseResponse:
     """Optimize library storage and performance."""
     try:
         # This could include various optimization operations
-        results = controller.cleanup_library()
+        results: dict[str, Any] = controller.cleanup_library()
         if "error" in results:
             raise SystemException(
                 message=f"Library optimization failed: {results['error']}",
                 error_type="general",
             )
-        optimizations = []
+        optimizations: list[str] = []
         if results.get("orphaned_indexes_cleaned", 0) > 0:
             optimizations.append(
                 f"Removed {results['orphaned_indexes_cleaned']} orphaned indexes"
@@ -182,7 +182,7 @@ async def optimize_library(
                 f"Optimized {results['storage_optimized']} storage items"
             )
         if optimizations:
-            message = f"Library optimized: {', '.join(optimizations)}"
+            message: str = f"Library optimized: {', '.join(optimizations)}"
         else:
             message = "Library was already optimized"
         return BaseResponse(message=message)
@@ -200,14 +200,14 @@ async def search_documents(
     q: str,
     limit: int = 50,
     controller: LibraryController = Depends(get_library_controller),
-) -> Any:
+) -> DocumentListResponse:
     """Search documents by title and content."""
     try:
-        documents = controller.get_documents(search_query=q, limit=limit)
+        documents: list[DocumentModel] = controller.get_documents(search_query=q, limit=limit)
         # Convert to response models
-        doc_responses = []
+        doc_responses: list[DocumentResponse] = []
         for doc in documents:
-            doc_dict = doc.to_api_dict()
+            doc_dict: dict[str, Any] = doc.to_api_dict()
             doc_dict["is_file_available"] = doc.is_file_available()
             doc_responses.append(DocumentResponse(**doc_dict))
         return DocumentListResponse(
@@ -222,16 +222,17 @@ async def search_documents(
 
 @router.get("/recent", response_model=DocumentListResponse)
 async def get_recent_documents(
-    limit: int = 20, controller: LibraryController = Depends(get_library_controller)
-) -> Any:
+    limit: int = 20, 
+    controller: LibraryController = Depends(get_library_controller)
+) -> DocumentListResponse:
     """Get recently accessed documents."""
     try:
         # Use the library service directly for recent documents
-        recent_docs = controller.library_service.get_recent_documents(limit)
+        recent_docs: list[DocumentModel] = controller.library_service.get_recent_documents(limit)
         # Convert to response models
-        doc_responses = []
+        doc_responses: list[DocumentResponse] = []
         for doc in recent_docs:
-            doc_dict = doc.to_api_dict()
+            doc_dict: dict[str, Any] = doc.to_api_dict()
             doc_dict["is_file_available"] = doc.is_file_available()
             doc_responses.append(DocumentResponse(**doc_dict))
         return DocumentListResponse(

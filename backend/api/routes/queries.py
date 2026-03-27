@@ -14,6 +14,7 @@ References:
 """
 
 import logging
+import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,6 +26,7 @@ from backend.api.models.responses import APIResponse, Links
 from config import Config
 from src.interfaces.rag_service_interfaces import IRAGCacheManager
 from src.interfaces.repository_interfaces import IDocumentRepository
+from src.database.models import DocumentModel
 
 logger = logging.getLogger(__name__)
 
@@ -141,15 +143,13 @@ async def query_document(
     Raises:
         HTTPException: 404 if document not found, 500 if query fails
     """
-    import time
-
     _require_queries_enabled()
 
-    start_time = time.time()
+    start_time: float = time.time()
 
     try:
         # 1. Validate document exists
-        document = doc_repo.get_by_id(document_id)
+        document: DocumentModel | None = doc_repo.get_by_id(document_id)
         if document is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -157,16 +157,16 @@ async def query_document(
             )
 
         # 2. Check cache
-        cached_result = cache_manager.get_cached_query(
+        cached_result: str | None = cache_manager.get_cached_query(
             query=request.query,
             document_id=document_id,
         )
 
         if cached_result is not None:
             # Return cached result
-            processing_time_ms = int((time.time() - start_time) * 1000)
+            processing_time_ms: int = int((time.time() - start_time) * 1000)
 
-            result_data = QueryResultData(
+            result_data: QueryResultData = QueryResultData(
                 query=request.query,
                 document_id=document_id,
                 response=cached_result,
@@ -196,7 +196,7 @@ async def query_document(
         # For now, return a placeholder response
         logger.warning("Query executor not yet integrated - returning placeholder")
 
-        response_text = (
+        response_text: str = (
             f"[Placeholder] Query '{request.query}' would be executed "
             f"against document {document_id} with temperature={request.temperature}, "
             f"max_results={request.max_results}"
@@ -289,19 +289,17 @@ async def query_multiple_documents(
     Raises:
         HTTPException: 404 if documents not found, 500 if query fails
     """
-    import time
-
     _require_queries_enabled()
 
-    start_time = time.time()
+    start_time: float = time.time()
 
     try:
         # 1. Validate documents exist
-        documents = doc_repo.get_by_ids(request.document_ids)
+        documents: list[DocumentModel] = doc_repo.get_by_ids(request.document_ids)
 
         if len(documents) != len(request.document_ids):
-            found_ids = {doc.id for doc in documents}
-            missing_ids = set[str](request.document_ids) - found_ids
+            found_ids: set[int] = {doc.id for doc in documents}
+            missing_ids: set[int] = set[int](request.document_ids) - found_ids
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Documents not found: {list[Any](missing_ids)}",
@@ -312,16 +310,16 @@ async def query_multiple_documents(
             "Multi-document query executor not yet integrated - returning placeholder"
         )
 
-        response_text = (
+        response_text: str = (
             f"[Placeholder] Multi-document query '{request.query}' would be "
             f"executed against {len(request.document_ids)} documents "
             f"with synthesis_mode={request.synthesis_mode}"
         )
 
-        processing_time_ms = int((time.time() - start_time) * 1000)
+        processing_time_ms: int = int((time.time() - start_time) * 1000)
 
         # 3. Return response
-        result_data = QueryResultData(
+        result_data: QueryResultData = QueryResultData(
             query=request.query,
             document_ids=request.document_ids,
             response=response_text,
@@ -394,7 +392,7 @@ async def clear_document_cache(
     _require_queries_enabled()
 
     try:
-        invalidated_count = cache_manager.invalidate_document_cache(document_id)
+        invalidated_count: int = cache_manager.invalidate_document_cache(document_id)
 
         logger.info(
             f"Cleared {invalidated_count} cache entries for document {document_id}"
@@ -442,7 +440,7 @@ async def get_cache_stats(
     _require_queries_enabled()
 
     try:
-        stats = cache_manager.get_cache_stats()
+        stats: dict[str, Any] = cache_manager.get_cache_stats()
 
         logger.debug(f"Cache stats retrieved: {stats}")
 
