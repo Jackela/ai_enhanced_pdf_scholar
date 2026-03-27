@@ -32,40 +32,43 @@ interface SystemHealthStatus {
 }
 
 interface SystemMetricsData {
-  timestamp: string;
-  cpu_percent: number;
-  memory_percent: number;
-  disk_usage_percent: number;
-  uptime_seconds: number;
-  memory_used_mb?: number;
+timestamp: string;
+cpu_percent: number;
+memory_percent: number;
+disk_usage_percent: number;
+uptime_seconds: number;
+memory_used_mb?: number;
   memory_available_mb?: number;
+  [key: string]: unknown;
 }
 
 interface DatabaseMetricsData {
-  timestamp: string;
-  active_connections: number;
-  avg_query_time_ms: number;
-  connection_pool_available: number;
-  connection_pool_size?: number;
-  query_count?: number;
-  slow_queries?: number;
-  cache_hit_ratio?: number;
-  database_size_mb?: number;
+timestamp: string;
+active_connections: number;
+avg_query_time_ms: number;
+connection_pool_available: number;
+connection_pool_size?: number;
+query_count?: number;
+slow_queries?: number;
+cache_hit_ratio?: number;
+database_size_mb?: number;
   index_usage_percent?: number;
+  [key: string]: unknown;
 }
 
 interface WebSocketMetricsData {
-  timestamp: string;
-  active_connections: number;
-  rag_tasks_total: number;
-  rag_tasks_processing: number;
-  total_rooms?: number;
-  concurrent_task_limit?: number;
-  rag_tasks_pending?: number;
-  rag_tasks_streaming?: number;
-  rag_tasks_completed?: number;
-  rag_tasks_failed?: number;
+timestamp: string;
+active_connections: number;
+rag_tasks_total: number;
+rag_tasks_processing: number;
+total_rooms?: number;
+concurrent_task_limit?: number;
+rag_tasks_pending?: number;
+rag_tasks_streaming?: number;
+rag_tasks_completed?: number;
+rag_tasks_failed?: number;
   avg_task_duration_ms?: number;
+  [key: string]: unknown;
 }
 
 interface ApiMetricsData {
