@@ -25,14 +25,6 @@ interface SystemData {
   memory_used_mb?: number;
   memory_available_mb?: number;
 }
-  timestamp: string;
-  cpu_percent: number;
-  memory_percent: number;
-  disk_usage_percent: number;
-  uptime_seconds: number;
-  memory_used_mb: number;
-  memory_available_mb: number;
-}
 
 interface SystemMetricsChartProps {
   data?: SystemData;

@@ -26,7 +26,28 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   const { toast } = useToast()
 
   // Load available documents when modal opens
-  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const fetchAvailableDocuments = async () => {
+      try {
+        setIsLoadingDocuments(true)
+        const response = await api.getDocuments({ per_page: 100 })
+        setAvailableDocuments(response.data ?? [])
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load documents',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsLoadingDocuments(false)
+      }
+    }
+
+    if (isOpen) {
+      fetchAvailableDocuments()
+    }
+  }, [isOpen, toast])
+  useEffect(() => {
     if (isOpen) {
       fetchAvailableDocuments()
     }

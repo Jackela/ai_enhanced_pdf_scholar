@@ -36,7 +36,41 @@ const CollectionViewer: React.FC<CollectionViewerProps> = ({
   const [isCreatingIndex, setIsCreatingIndex] = useState(false)
   const { toast } = useToast()
 
-  }, [collection.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const loadCollectionDetails = async () => {
+      try {
+        setIsLoading(true)
+
+        // Load documents
+        const documentPromises = collection.document_ids.map(id => api.getDocument(id))
+        const documentResults = await Promise.allSettled(documentPromises)
+
+        const loadedDocuments = documentResults
+          .filter((result): result is PromiseFulfilledResult<Document> => result.status === 'fulfilled')
+          .map(result => result.value)
+
+        setDocuments(loadedDocuments)
+
+        // Load statistics
+        try {
+          const stats = await api.getCollectionStatistics(collection.id)
+          setStatistics(stats)
+        } catch (err) {
+          console.warn('Statistics not available:', err)
+        }
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load collection details',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadCollectionDetails()
+  }, [collection.id, toast])
     loadCollectionDetails()
   }, [collection.id])
 
