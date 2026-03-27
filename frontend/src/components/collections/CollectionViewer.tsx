@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
 import { useToast } from '../../hooks/useToast'
-import type { 
-  DocumentCollection, 
-  Document, 
-  CollectionStatistics 
+import type {
+  DocumentCollection,
+  Document,
+  CollectionStatistics
 } from '../../types'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -36,22 +36,22 @@ const CollectionViewer: React.FC<CollectionViewerProps> = ({
   const [isCreatingIndex, setIsCreatingIndex] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
+  }, [collection.id]) // eslint-disable-line react-hooks/exhaustive-deps
     loadCollectionDetails()
   }, [collection.id])
 
   const loadCollectionDetails = async () => {
     try {
       setIsLoading(true)
-      
+
       // Load documents
       const documentPromises = collection.document_ids.map(id => api.getDocument(id))
       const documentResults = await Promise.allSettled(documentPromises)
-      
+
       const loadedDocuments = documentResults
         .filter((result): result is PromiseFulfilledResult<Document> => result.status === 'fulfilled')
         .map(result => result.value)
-      
+
       setDocuments(loadedDocuments)
 
       // Load statistics
@@ -198,7 +198,7 @@ const CollectionViewer: React.FC<CollectionViewerProps> = ({
             )}
           </div>
         </div>
-        
+
         <div className="flex space-x-2">
           {!isEditing && (
             <Button variant="outline" onClick={() => setIsEditing(true)}>
@@ -264,7 +264,7 @@ const CollectionViewer: React.FC<CollectionViewerProps> = ({
                   </p>
                 </div>
               </div>
-              
+
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
                 <h3 className="font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h3>
                 <div className="flex space-x-4">

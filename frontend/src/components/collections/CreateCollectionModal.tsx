@@ -26,7 +26,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   const { toast } = useToast()
 
   // Load available documents when modal opens
-  useEffect(() => {
+  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
     if (isOpen) {
       fetchAvailableDocuments()
     }

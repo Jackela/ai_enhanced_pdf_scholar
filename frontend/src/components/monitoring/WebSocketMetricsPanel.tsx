@@ -22,6 +22,19 @@ import {
 interface WebSocketData {
   timestamp: string;
   active_connections: number;
+  total_rooms?: number;
+  rag_tasks_total: number;
+  rag_tasks_pending?: number;
+  rag_tasks_processing: number;
+  rag_tasks_streaming?: number;
+  rag_tasks_completed?: number;
+  rag_tasks_failed?: number;
+  avg_task_duration_ms?: number;
+  concurrent_task_limit?: number;
+  [key: string]: unknown;
+}
+  timestamp: string;
+  active_connections: number;
   total_rooms: number;
   rag_tasks_total: number;
   rag_tasks_pending: number;
