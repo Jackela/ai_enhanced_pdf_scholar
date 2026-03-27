@@ -26,7 +26,7 @@ interface DatabaseData {
   database_size_mb?: number;
   index_usage_percent?: number;
   cache_hit_ratio?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface DatabaseMetricsPanelProps {

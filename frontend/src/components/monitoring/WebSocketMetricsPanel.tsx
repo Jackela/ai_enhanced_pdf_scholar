@@ -31,7 +31,7 @@ interface WebSocketData {
   rag_tasks_failed?: number;
   avg_task_duration_ms?: number;
   concurrent_task_limit?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface WebSocketMetricsPanelProps {

@@ -30,7 +30,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
     if (isOpen) {
       fetchAvailableDocuments()
     }
-  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   // Reset form when modal closes
   useEffect(() => {
@@ -40,7 +40,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
       setSelectedDocuments([])
       setSearchQuery('')
     }
-  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   const fetchAvailableDocuments = async () => {
     try {
