@@ -22,7 +22,7 @@ const preloadedRoutes = new Set<RouteKey>()
 /**
  * Preload a specific route component
  */
-export function preloadRoute(route: RouteKey): Promise<any> {
+export function preloadRoute(route: RouteKey): Promise<unknown> {
   if (preloadedRoutes.has(route)) {
     return Promise.resolve()
   }
@@ -41,7 +41,7 @@ export function preloadRoute(route: RouteKey): Promise<any> {
 /**
  * Preload multiple routes with optional delay
  */
-export function preloadRoutes(routes: RouteKey[], delayMs: number = 0): Promise<any[]> {
+export function preloadRoutes(routes: RouteKey[], delayMs: number = 0): Promise<unknown[]> {
   if (delayMs > 0) {
     return new Promise(resolve => {
       setTimeout(() => {

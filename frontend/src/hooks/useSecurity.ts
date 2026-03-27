@@ -238,13 +238,13 @@ export function useSecurityMonitoring() {
     timestamp: Date
     event: string
     severity: 'low' | 'medium' | 'high' | 'critical'
-    details: any
+    details: unknown
   }[]>([])
 
   const logSecurityEvent = useCallback((
     event: string, 
     severity: 'low' | 'medium' | 'high' | 'critical',
-    details?: any
+    details?: unknown
   ) => {
     const logEntry = {
       timestamp: new Date(),

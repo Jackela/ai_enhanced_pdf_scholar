@@ -24,7 +24,7 @@ from backend.api.models.multi_document_models import (
     QueryHistoryResponse,
     UpdateCollectionRequest,
 )
-from src.database.multi_document_models import DocumentCollection
+from src.database.multi_document_models import MultiDocumentCollectionModel as DocumentCollection
 from src.services.multi_document_rag_service import MultiDocumentRAGService
 
 logger = logging.getLogger(__name__)

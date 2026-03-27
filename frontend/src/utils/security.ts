@@ -125,7 +125,7 @@ function createDOMPurifyConfig(options: SecurityConfig = {}) {
     attrs.forEach(attr => allAllowedAttributes.add(attr))
   })
 
-  const dompurifyConfig: any = {
+  const dompurifyConfig: { ALLOWED_TAGS: string[]; ALLOWED_ATTR: string[]; KEEP_CONTENT: boolean; ALLOW_DATA_ATTR: boolean; FORBID_TAGS: string[]; FORBID_ATTR: string[]; ALLOW_UNKNOWN_PROTOCOLS: boolean } = {
     ALLOWED_TAGS: allowedTags,
     ALLOWED_ATTR: Array.from(allAllowedAttributes),
     KEEP_CONTENT: true, // Keep text content even if tags are removed

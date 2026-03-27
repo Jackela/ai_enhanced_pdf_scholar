@@ -1,5 +1,0 @@
-# Wave 1: RAG Exceptions & Interfaces
-# Target: ~60 errors (mostly **kwargs in exception classes)
-
-src/services/rag/exceptions.py
-src/services/rag/interfaces.py

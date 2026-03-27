@@ -127,7 +127,7 @@ export const MonitoringDashboard: React.FC = () => {
     return () => {
       cleanup();
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle auto-refresh settings
   useEffect(() => {
