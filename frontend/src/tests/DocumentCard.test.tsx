@@ -94,7 +94,7 @@ describe('DocumentCard', () => {
     it('renders preview button when preview url exists', () => {
       renderWithProviders(<DocumentCard document={baseDocument} variant="grid" />)
 
-      const previewButton = screen.getByRole('button', { name: /preview/i })
+      const previewButton = screen.getByRole('button', { name: /^Preview$/i })
       expect(previewButton).toBeInTheDocument()
     })
 
@@ -102,7 +102,7 @@ describe('DocumentCard', () => {
       const noPreviewDoc: Document = { ...baseDocument, preview_url: null, thumbnail_url: null }
       renderWithProviders(<DocumentCard document={noPreviewDoc} variant="grid" />)
 
-      expect(screen.queryByRole('button', { name: /preview/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^Preview$/i })).not.toBeInTheDocument()
     })
 
     it('displays document title', () => {
@@ -178,7 +178,7 @@ describe('DocumentCard', () => {
     it('renders action buttons in list view', () => {
       renderWithProviders(<DocumentCard document={baseDocument} variant="list" />)
 
-      expect(screen.getByRole('button', { name: /preview/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^Preview$/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /view/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument()
     })
@@ -240,7 +240,7 @@ describe('DocumentCard', () => {
     it('opens preview modal when clicking preview button', () => {
       renderWithProviders(<DocumentCard document={baseDocument} variant="grid" />)
 
-      const previewButton = screen.getByRole('button', { name: /preview/i })
+      const previewButton = screen.getByRole('button', { name: /^Preview$/i })
       fireEvent.click(previewButton)
 
       // Preview modal should be triggered (checking button click works)
@@ -319,7 +319,7 @@ describe('DocumentCard', () => {
 
       expect(screen.getByRole('link', { name: /view/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /preview/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^Preview$/i })).toBeInTheDocument()
     })
   })
 })
