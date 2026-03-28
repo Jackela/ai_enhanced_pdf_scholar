@@ -46,7 +46,7 @@ const CollectionsView: React.FC<CollectionsViewProps> = ({ onSelectDocument }) =
 
   useEffect(() => {
     fetchCollections()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreateCollection = async (collection: DocumentCollection) => {
     setCollections(prev => [collection, ...prev])

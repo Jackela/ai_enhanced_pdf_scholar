@@ -121,7 +121,7 @@ function ChatView() {
     // This would be replaced with actual WebSocket message handling
     // For now, we'll simulate AI responses for testing
     
-    const handleAIResponse = (response: any) => {
+    const handleAIResponse = (response: { type: string; content?: string }) => {
       if (response.type === 'rag_response') {
         const assistantMessage: ChatMessage = {
           id: Date.now() + 1,

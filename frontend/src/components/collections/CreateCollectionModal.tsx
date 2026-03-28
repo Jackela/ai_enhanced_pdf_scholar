@@ -27,10 +27,26 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
 
   // Load available documents when modal opens
   useEffect(() => {
+    const fetchAvailableDocuments = async () => {
+      try {
+        setIsLoadingDocuments(true)
+        const response = await api.getDocuments({ per_page: 100 })
+        setAvailableDocuments(response.data ?? [])
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load documents',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsLoadingDocuments(false)
+      }
+    }
+
     if (isOpen) {
       fetchAvailableDocuments()
     }
-  }, [isOpen])
+  }, [isOpen, toast])
 
   // Reset form when modal closes
   useEffect(() => {
@@ -42,21 +58,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
     }
   }, [isOpen])
 
-  const fetchAvailableDocuments = async () => {
-    try {
-      setIsLoadingDocuments(true)
-      const response = await api.getDocuments({ per_page: 100 })
-      setAvailableDocuments(response.data ?? [])
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load documents',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoadingDocuments(false)
-    }
-  }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

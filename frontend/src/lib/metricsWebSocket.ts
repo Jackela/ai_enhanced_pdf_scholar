@@ -303,7 +303,7 @@ export class MetricsWebSocketClient {
     }
   }
 
-  private sendMessage(message: any): void {
+  private sendMessage(message: Record<string, unknown>): void {
     if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
       try {
         this.websocket.send(JSON.stringify(message));

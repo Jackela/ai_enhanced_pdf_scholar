@@ -1,18 +1,18 @@
 /**
  * WebSocket Metrics Panel Component
- * 
+ *
  * Displays WebSocket connection statistics and RAG task metrics
  * with real-time updates and task lifecycle tracking.
  */
 
 import React from 'react';
-import { 
-  Wifi, 
-  Users, 
-  MessageSquare, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Wifi,
+  Users,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Loader,
   Activity,
@@ -22,16 +22,16 @@ import {
 interface WebSocketData {
   timestamp: string;
   active_connections: number;
-  total_rooms: number;
+  total_rooms?: number;
   rag_tasks_total: number;
-  rag_tasks_pending: number;
+  rag_tasks_pending?: number;
   rag_tasks_processing: number;
-  rag_tasks_streaming: number;
-  rag_tasks_completed: number;
-  rag_tasks_failed: number;
-  avg_task_duration_ms: number;
-  concurrent_task_limit: number;
-  [key: string]: any;
+  rag_tasks_streaming?: number;
+  rag_tasks_completed?: number;
+  rag_tasks_failed?: number;
+  avg_task_duration_ms?: number;
+  concurrent_task_limit?: number;
+  [key: string]: unknown;
 }
 
 interface WebSocketMetricsPanelProps {
@@ -39,25 +39,25 @@ interface WebSocketMetricsPanelProps {
   isConnected: boolean;
 }
 
-export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({ 
-  data, 
-  isConnected 
+export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
+  data,
+  isConnected
 }) => {
   const getTaskUtilization = () => {
     if (!data) return 0;
-    const activeTasks = data.rag_tasks_processing + data.rag_tasks_streaming;
-    return data.concurrent_task_limit > 0 ? (activeTasks / data.concurrent_task_limit) * 100 : 0;
+    const activeTasks = (data.rag_tasks_processing ?? 0) + (data.rag_tasks_streaming ?? 0);
+    return (data.concurrent_task_limit ?? 0) > 0 ? (activeTasks / (data.concurrent_task_limit ?? 1)) * 100 : 0;
   };
 
   const getTaskSuccessRate = () => {
     if (!data) return 0;
-    const totalCompleted = data.rag_tasks_completed + data.rag_tasks_failed;
-    return totalCompleted > 0 ? (data.rag_tasks_completed / totalCompleted) * 100 : 0;
+    const totalCompleted = (data.rag_tasks_completed ?? 0) + (data.rag_tasks_failed ?? 0);
+    return totalCompleted > 0 ? ((data.rag_tasks_completed ?? 0) / totalCompleted) * 100 : 0;
   };
 
   const getTaskStatusColor = (status: string, count: number) => {
     if (count === 0) return 'text-gray-400';
-    
+
     switch (status) {
       case 'pending': return 'text-blue-600';
       case 'processing': return 'text-yellow-600';
@@ -116,7 +116,7 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {data.total_rooms}
+                  {data.total_rooms ?? 0}
                 </div>
                 <div className="text-xs text-gray-500">Rooms</div>
               </div>
@@ -143,7 +143,7 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
                 {taskUtilization.toFixed(1)}%
               </div>
               <div className="text-xs text-gray-500">
-                {data.rag_tasks_processing + data.rag_tasks_streaming} / {data.concurrent_task_limit} slots used
+                {(data.rag_tasks_processing ?? 0) + (data.rag_tasks_streaming ?? 0)} / {data.concurrent_task_limit ?? 0} slots used
               </div>
             </div>
 
@@ -173,8 +173,8 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
                   {getTaskStatusIcon('pending')}
                   <span className="text-gray-600">Pending</span>
                 </div>
-                <span className={`font-semibold ${getTaskStatusColor('pending', data.rag_tasks_pending)}`}>
-                  {data.rag_tasks_pending}
+                <span className={`font-semibold ${getTaskStatusColor('pending', data.rag_tasks_pending ?? 0)}`}>
+                  {data.rag_tasks_pending ?? 0}
                 </span>
               </div>
 
@@ -195,8 +195,8 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
                   {getTaskStatusIcon('streaming')}
                   <span className="text-gray-600">Streaming</span>
                 </div>
-                <span className={`font-semibold ${getTaskStatusColor('streaming', data.rag_tasks_streaming)}`}>
-                  {data.rag_tasks_streaming}
+                <span className={`font-semibold ${getTaskStatusColor('streaming', data.rag_tasks_streaming ?? 0)}`}>
+                  {data.rag_tasks_streaming ?? 0}
                 </span>
               </div>
 
@@ -206,8 +206,8 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
                   {getTaskStatusIcon('completed')}
                   <span className="text-gray-600">Completed</span>
                 </div>
-                <span className={`font-semibold ${getTaskStatusColor('completed', data.rag_tasks_completed)}`}>
-                  {data.rag_tasks_completed}
+                <span className={`font-semibold ${getTaskStatusColor('completed', data.rag_tasks_completed ?? 0)}`}>
+                  {data.rag_tasks_completed ?? 0}
                 </span>
               </div>
 
@@ -217,8 +217,8 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
                   {getTaskStatusIcon('failed')}
                   <span className="text-gray-600">Failed</span>
                 </div>
-                <span className={`font-semibold ${getTaskStatusColor('failed', data.rag_tasks_failed)}`}>
-                  {data.rag_tasks_failed}
+                <span className={`font-semibold ${getTaskStatusColor('failed', data.rag_tasks_failed ?? 0)}`}>
+                  {data.rag_tasks_failed ?? 0}
                 </span>
               </div>
             </div>
@@ -234,10 +234,10 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
                 <div className={`text-xl font-bold ${
-                  data.avg_task_duration_ms > 10000 ? 'text-red-600' :
-                  data.avg_task_duration_ms > 5000 ? 'text-yellow-600' : 'text-green-600'
+                  (data.avg_task_duration_ms ?? 0) > 10000 ? 'text-red-600' :
+                  (data.avg_task_duration_ms ?? 0) > 5000 ? 'text-yellow-600' : 'text-green-600'
                 }`}>
-                  {formatDuration(data.avg_task_duration_ms)}
+                  {formatDuration(data.avg_task_duration_ms ?? 0)}
                 </div>
                 <div className="text-xs text-gray-500">Avg Duration</div>
               </div>
@@ -284,7 +284,7 @@ export const WebSocketMetricsPanel: React.FC<WebSocketMetricsPanelProps> = ({
             </div>
           )}
 
-          {data.rag_tasks_failed > 0 && successRate < 80 && (
+          {(data.rag_tasks_failed ?? 0) > 0 && successRate < 80 && (
             <div className="flex items-center space-x-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
               <AlertCircle className="h-4 w-4" />
               <span>Low success rate - check system health</span>

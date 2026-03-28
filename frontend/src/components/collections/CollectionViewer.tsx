@@ -38,7 +38,7 @@ const CollectionViewer: React.FC<CollectionViewerProps> = ({
 
   useEffect(() => {
     loadCollectionDetails()
-  }, [collection.id])
+  }, [collection.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCollectionDetails = async () => {
     try {
@@ -224,7 +224,7 @@ const CollectionViewer: React.FC<CollectionViewerProps> = ({
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'

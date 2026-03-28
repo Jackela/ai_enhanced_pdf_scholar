@@ -38,7 +38,7 @@ function cspPlugin(): Plugin {
         const htmlFiles = Object.keys(bundle).filter(fileName => fileName.endsWith('.html'))
         
         htmlFiles.forEach(fileName => {
-          const htmlChunk = bundle[fileName] as any
+          const htmlChunk = bundle[fileName] as { source?: string }
           if (htmlChunk.source) {
             // Inject CSP meta tag
             const csp = [

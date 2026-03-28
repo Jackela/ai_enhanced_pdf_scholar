@@ -15,9 +15,9 @@ class RAGService(IRAGService):
     """Simple RAG service wrapper for UAT compatibility."""
 
     def __init__(self, db_connection: DatabaseConnection) -> None:
-        self.db = db_connection
+        self.db: DatabaseConnection = db_connection
         # Create EnhancedRAGService with required parameters
-        self.enhanced_rag = EnhancedRAGService(
+        self.enhanced_rag: EnhancedRAGService = EnhancedRAGService(
             api_key=os.getenv("GEMINI_API_KEY", "test_api_key"),
             db_connection=db_connection,
             test_mode=True,  # Use test mode for UAT
@@ -29,7 +29,7 @@ class RAGService(IRAGService):
         """Process a document for RAG functionality."""
         try:
             # Use enhanced RAG service
-            result = await self.enhanced_rag.process_document(document_id)
+            result: dict[str, Any] = await self.enhanced_rag.process_document(document_id)
             return {
                 "success": True,
                 "document_id": document_id,
@@ -40,11 +40,11 @@ class RAGService(IRAGService):
             return {"success": False, "error": str(e), "document_id": document_id}
 
     async def query_document(
-        self, document_id: int, query: str, **kwargs
+        self, document_id: int, query: str, **kwargs: Any
     ) -> dict[str, Any]:
         """Query a document with RAG functionality."""
         try:
-            result = await self.enhanced_rag.query_document(document_id, query)
+            result: dict[str, Any] = await self.enhanced_rag.query_document(document_id, query)
             return {
                 "success": True,
                 "answer": result.get("answer", ""),
@@ -114,7 +114,7 @@ class RAGService(IRAGService):
                 "processing_time": 0,
             }
 
-    async def query(self, document_id: int, query: str, **kwargs) -> dict[str, Any]:
+    async def query(self, document_id: int, query: str, **kwargs: Any) -> dict[str, Any]:
         """Query method for PDF workflow compatibility."""
         # Delegate to query_document method
         return await self.query_document(document_id, query, **kwargs)

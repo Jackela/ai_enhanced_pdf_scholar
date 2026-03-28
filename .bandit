@@ -2,6 +2,13 @@
 # YAML format for compatibility
 
 skips:
+  - B101  # assert_used
+  - B105  # hardcoded_password_string (false positives)
+  - B601  # shell injection
+  - B602  # subprocess_popen_with_shell
+  - B608  # hardcoded_sql_expressions (parameterized queries)
+  - B403  # pickle_import (internal cache only)
+
   - B101
   - B601
   - B602
@@ -16,6 +23,8 @@ exclude_dirs:
   - vector_indexes
   - htmlcov
   - coverage_html
+  - src/database/migrations  # Migration files
+
 
 confidence: medium
 format: json

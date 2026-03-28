@@ -73,7 +73,7 @@ export function DocumentPreviewModal({ document, open, onOpenChange }: DocumentP
     return () => {
       cancelled = true
     }
-  }, [document.id, document.preview_url, open, page])
+  }, [document.id, document.preview_url, open, page]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) {
     return null

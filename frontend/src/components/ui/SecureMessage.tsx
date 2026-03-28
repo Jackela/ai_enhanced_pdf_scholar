@@ -254,7 +254,7 @@ interface SecurityStatusProps {
 
 export const SecurityStatus = memo<SecurityStatusProps>(({ className }) => {
   const { getSecurityEvents } = useSecurityMonitoring()
-  const [events, setEvents] = React.useState<any[]>([])
+  const [events, setEvents] = React.useState<{ timestamp: Date; event: string; severity: 'low' | 'medium' | 'high' | 'critical'; details?: unknown }[]>([])
 
   React.useEffect(() => {
     const interval = setInterval(() => {

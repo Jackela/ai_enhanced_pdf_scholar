@@ -1,15 +1,15 @@
 /**
  * System Metrics Chart Component
- * 
+ *
  * Real-time chart displaying CPU, memory, and disk usage
  * with trend indicators and historical context.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Activity, 
-  Cpu, 
-  HardDrive, 
+import {
+  Activity,
+  Cpu,
+  HardDrive,
   MemoryStick,
   TrendingUp,
   TrendingDown,
@@ -22,9 +22,8 @@ interface SystemData {
   memory_percent: number;
   disk_usage_percent: number;
   uptime_seconds: number;
-  memory_used_mb: number;
-  memory_available_mb: number;
-  [key: string]: any;
+  memory_used_mb?: number;
+  memory_available_mb?: number;
 }
 
 interface SystemMetricsChartProps {
@@ -41,9 +40,9 @@ interface MetricHistory {
 
 const MAX_HISTORY_POINTS = 50;
 
-export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({ 
-  data, 
-  isConnected 
+export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
+  data,
+  isConnected
 }) => {
   const [history, setHistory] = useState<MetricHistory[]>([]);
   const [trends, setTrends] = useState({
@@ -66,25 +65,25 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
 
       setHistory(prevHistory => {
         const updated = [...prevHistory, newPoint].slice(-MAX_HISTORY_POINTS);
-        
+
         // Calculate trends
         if (updated.length >= 5) {
           const recent = updated.slice(-5);
           const older = updated.slice(-10, -5);
-          
+
           if (older.length > 0) {
             const recentAvg = {
               cpu: recent.reduce((sum, p) => sum + p.cpu, 0) / recent.length,
               memory: recent.reduce((sum, p) => sum + p.memory, 0) / recent.length,
               disk: recent.reduce((sum, p) => sum + p.disk, 0) / recent.length
             };
-            
+
             const olderAvg = {
               cpu: older.reduce((sum, p) => sum + p.cpu, 0) / older.length,
               memory: older.reduce((sum, p) => sum + p.memory, 0) / older.length,
               disk: older.reduce((sum, p) => sum + p.disk, 0) / older.length
             };
-            
+
             setTrends({
               cpu: recentAvg.cpu - olderAvg.cpu,
               memory: recentAvg.memory - olderAvg.memory,
@@ -92,7 +91,7 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
             });
           }
         }
-        
+
         return updated;
       });
     }
@@ -128,7 +127,7 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
       // Draw grid
       ctx.strokeStyle = '#e5e7eb';
       ctx.lineWidth = 1;
-      
+
       // Horizontal grid lines
       for (let i = 0; i <= 4; i++) {
         const y = padding + (chartHeight / 4) * i;
@@ -136,7 +135,7 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
         ctx.moveTo(padding, y);
         ctx.lineTo(width - padding, y);
         ctx.stroke();
-        
+
         // Labels
         ctx.fillStyle = '#6b7280';
         ctx.font = '12px system-ui';
@@ -148,20 +147,20 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
 
       // Helper function to draw metric line
       const drawMetricLine = (
-        values: number[], 
-        color: string, 
+        values: number[],
+        color: string,
         lineWidth = 2,
         fill = false,
         fillColor = ''
       ) => {
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
-        
+
         if (fill && fillColor) {
           ctx.fillStyle = fillColor;
           ctx.beginPath();
           ctx.moveTo(padding, padding + chartHeight);
-          
+
           values.forEach((value, index) => {
             const x = padding + (chartWidth / (values.length - 1)) * index;
             const y = padding + chartHeight - (value / 100) * chartHeight;
@@ -171,12 +170,12 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
               ctx.lineTo(x, y);
             }
           });
-          
+
           ctx.lineTo(padding + chartWidth, padding + chartHeight);
           ctx.closePath();
           ctx.fill();
         }
-        
+
         ctx.beginPath();
         values.forEach((value, index) => {
           const x = padding + (chartWidth / (values.length - 1)) * index;
@@ -203,21 +202,21 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
       // Draw current value indicators
       if (data) {
         const currentX = padding + chartWidth;
-        
+
         // CPU indicator
         const cpuY = padding + chartHeight - (data.cpu_percent / 100) * chartHeight;
         ctx.fillStyle = '#3b82f6';
         ctx.beginPath();
         ctx.arc(currentX - 2, cpuY, 4, 0, 2 * Math.PI);
         ctx.fill();
-        
+
         // Memory indicator
         const memY = padding + chartHeight - (data.memory_percent / 100) * chartHeight;
         ctx.fillStyle = '#10b981';
         ctx.beginPath();
         ctx.arc(currentX - 2, memY, 4, 0, 2 * Math.PI);
         ctx.fill();
-        
+
         // Disk indicator
         const diskY = padding + chartHeight - (data.disk_usage_percent / 100) * chartHeight;
         ctx.fillStyle = '#f59e0b';
@@ -228,15 +227,15 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
     };
 
     draw();
-    
+
     // Animation loop for smooth updates
     const animate = () => {
       draw();
       animationFrameRef.current = requestAnimationFrame(animate);
     };
-    
+
     animationFrameRef.current = requestAnimationFrame(animate);
-    
+
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -286,7 +285,7 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
               {data.cpu_percent.toFixed(1)}%
             </div>
           </div>
-          
+
           <div className="text-center">
             <div className="flex items-center justify-center space-x-1 mb-1">
               <MemoryStick className="h-4 w-4 text-green-500" />
@@ -297,10 +296,10 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
               {data.memory_percent.toFixed(1)}%
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {(data.memory_used_mb / 1024).toFixed(1)}GB / {((data.memory_used_mb + data.memory_available_mb) / 1024).toFixed(1)}GB
+              {((data.memory_used_mb ?? 0) / 1024).toFixed(1)}GB / {(((data.memory_used_mb ?? 0) + (data.memory_available_mb ?? 0)) / 1024).toFixed(1)}GB
             </div>
           </div>
-          
+
           <div className="text-center">
             <div className="flex items-center justify-center space-x-1 mb-1">
               <HardDrive className="h-4 w-4 text-orange-500" />
@@ -329,7 +328,7 @@ export const SystemMetricsChart: React.FC<SystemMetricsChartProps> = ({
           className="w-full h-64 rounded border border-gray-200"
           style={{ display: history.length > 0 ? 'block' : 'none' }}
         />
-        
+
         {history.length === 0 && (
           <div className="w-full h-64 border border-gray-200 rounded flex items-center justify-center text-gray-500">
             <div className="text-center">
