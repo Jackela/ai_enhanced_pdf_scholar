@@ -1,0 +1,23 @@
+{
+  "baseline_sha": "d02edb092b5f825539d89df0c0a7850fea0705b7",
+  "baseline": {
+    "command": "python -m unittest discover -s validation -v",
+    "tests": 9,
+    "failed": 8
+  },
+  "candidate": {
+    "same_command": true,
+    "tests": 9,
+    "passed": 9
+  },
+  "fixtures": "synthetic PDF bytes created/read by real PyMuPDF; real CitationRepository and SQLite",
+  "api": "unchanged service signature and model schema; route unchanged",
+  "not_verified": [
+    "academic corpus accuracy",
+    "OCR",
+    "multicolumn references",
+    "live provider APIs",
+    "browser user acceptance",
+    "deployment"
+  ]
+}

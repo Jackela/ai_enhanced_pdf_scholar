@@ -1,8 +1,9 @@
 # 🎓 AI Enhanced PDF Scholar
-### Stop Reading, Start Understanding.
+### Academic PDF library and query experiment.
 
-**AI Enhanced PDF Scholar is an intelligent platform that transforms your academic research workflow. Instead of drowning in a sea of PDFs, you can now have a conversation with your documents, uncover hidden connections, and focus on what truly matters: generating new insights.**
+AI Enhanced PDF Scholar is an AI-maintained experiment with a React/FastAPI document library, PDF preview, retrieval workflows and citation records. Markdown is the editable documentation source. Implemented routes, offline tests, live provider access and product acceptance are separate states; see [MAINTENANCE.md](MAINTENANCE.md).
 
+Citation extraction previously stored a hard-coded Sample Author/Title rather than reading the PDF. It now reads embedded PDF text and conservatively extracts supported reference sections. It remains experimental: scanned PDFs need OCR, unsupported layouts return no entries, unknown metadata stays empty, and no corpus-wide accuracy claim is made.
 ---
 
 ## The Problem: Information Overload is Slowing Down Research
@@ -39,7 +40,7 @@ Our mission is to help you move from tedious searching to accelerated understand
 | Feature | Your Benefit |
 | :--- | :--- |
 | 💬 **Chat with Your Documents** | Instantly get answers and summaries from your PDFs. Stop skimming and start learning. |
-| 🔗 **Untangle Research Connections** | Automatically extract citations and visualize the network to see how ideas connect and identify key papers. |
+| 🔗 **Untangle Research Connections** | Extract supported PDF reference entries with source text retained; inspect stored citation relationships. Corpus-wide extraction accuracy and automatic document resolution remain unverified. |
 | 🔒 **Secure & Private by Design** | Your research is yours alone. All documents are stored securely and are never used to train public models. |
 | ⚡️ **Quick & Easy Setup** | Get started in minutes. A clean, intuitive interface means you spend your time on research, not on learning a new tool. |
 | 📊 **Smart Document Library** | Organize, search, and manage your research documents with intelligent tagging and duplicate detection. |
@@ -60,7 +61,7 @@ The platform provides a comprehensive REST API with 80+ endpoints:
 | `/api/library/*` | Library statistics, duplicates detection, and cleanup | ✅ Implemented |
 | `/api/queries/*` | RAG query execution and history | ✅ Implemented |
 | `/api/indexes/*` | Vector index management for AI search | ✅ Implemented |
-| `/api/citations/*` | Citation extraction, search, and network analysis | ✅ Implemented |
+| `/api/citations/*` | Citation extraction, search, and network analysis | Routes implemented; bounded offline extraction checks |
 | `/api/multi-document/*` | Multi-document collections and cross-document queries | ✅ Implemented |
 | `/api/settings/*` | Application settings and API key management | ✅ Implemented |
 | `/api/auth/*` | Authentication and user management | ✅ Implemented |
@@ -70,25 +71,11 @@ The platform provides a comprehensive REST API with 80+ endpoints:
 
 ---
 
-## Product Demo
+## Documentation and local use
 
-See AI Enhanced PDF Scholar in action!
+[Read the docs](./docs/README.md) · [Developer quick start](#-developer-quick-start) · [Citation extraction contract](./docs/CITATION_EXTRACTION.md)
 
-*A picture is worth a thousand words. Here we would include high-quality screenshots or GIFs showcasing the core user flow.*
-
-![Screenshot of the main dashboard showing an organized library of papers.](https://via.placeholder.com/800x450.png?text=Dashboard:+Your+Research+Library)
-*Caption: Your entire research library, organized and ready for analysis.*
-
-![GIF showing a user typing a question and the AI providing a direct answer with sources.](https://via.placeholder.com/800x450.png?text=GIF:+Chat+with+your+documents)
-*Caption: Ask a question and get a direct answer, complete with citations from your documents.*
-
----
-
-## How to Get Started
-
-Ready to revolutionize your research process?
-
-[**🚀 View Live Demo**](https://your-live-demo-url.com) &nbsp;&nbsp; | &nbsp;&nbsp; [**📖 Read the Docs**](./docs/README.md) &nbsp;&nbsp; | &nbsp;&nbsp; [**🛠️ Developer Quick Start**](#-developer-quick-start)
+No verified hosted demo or product screenshots are provided in this repository. Use the local instructions to inspect the current implementation.
 
 ---
 

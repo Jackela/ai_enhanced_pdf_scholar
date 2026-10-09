@@ -1,5 +1,7 @@
 # 🔍 Current Verification Status Report
 
+> Historical report from 2025-09-02. The failures and completion claims below describe that run, not current verification or release. Current bounded extraction evidence is in [MAINTENANCE.md](MAINTENANCE.md).
+
 **Execution Time:** 2025-09-02 16:38:36 +10:00  
 **Command:** `python verify_dependencies.py`  
 **DevOps Analysis:** Docker Desktop Extended Initialization

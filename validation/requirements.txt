@@ -1,0 +1,4 @@
+PyMuPDF>=1.26.0,<1.30.0
+psutil>=5.9
+PyYAML>=6.0
+Jinja2>=3.1
