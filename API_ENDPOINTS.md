@@ -408,6 +408,8 @@ AI Enhanced PDF Scholar 提供了完整的 RESTful API 和 WebSocket 接口，�
 
 **POST** `/api/citations/extract/{document_id}`
 
+当前按 [PDF引用抽取契约](docs/CITATION_EXTRACTION.md) 处理实际文件：支持有限参考文献格式，不支持时返回空列表；缺失、损坏或加密文件返回400。未知元数据为空，不返回预设Sample条目。
+
 从指定文档中提取学术引用。
 
 #### 6.2 获取文档引用列表 ✅

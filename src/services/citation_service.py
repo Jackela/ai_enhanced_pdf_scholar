@@ -64,36 +64,31 @@ class CitationService:
         Raises:
             ValueError: If document is invalid
         """
-        try:
-            if not document or not document.id:
-                raise ValueError("Document must have a valid ID")
+        if document is None or document.id is None or document.id <= 0:
+            raise ValueError("Document must have a valid ID")
+        if not document.file_path:
+            raise ValueError("Document must have a PDF file path")
 
-            logger.info(f"Extracting citations from document {document.id}")
+        from src.services.pdf_citation_parser import extract_pdf_references
 
-            # For now, return a simple mock citation
-            # This will be enhanced with actual parsing logic
-            sample_citation = CitationModel(
-                document_id=document.id,
-                raw_text="Sample citation extracted from document",
-                authors="Sample Author",
-                title="Sample Title",
-                publication_year=2023,
-                confidence_score=0.8,
-            )
-
-            # Create the citation in the repository
-            created_citation = self.citation_repo.create(sample_citation)
-
-            logger.info(
-                f"Successfully extracted and created citation {created_citation.id}"
-            )
-            return [created_citation]
-
-        except Exception as e:
-            logger.error(
-                f"Failed to extract citations from document {document.id}: {e}"
-            )
-            raise
+        # Parse first: corrupt/missing input cannot create fabricated records.
+        parsed = extract_pdf_references(document.file_path, document.id)
+        existing = {
+            citation.raw_text: citation
+            for citation in self.citation_repo.find_by_document_id(document.id)
+        }
+        result = []
+        for citation in parsed:
+            if citation.raw_text in existing:
+                result.append(existing[citation.raw_text])
+            else:
+                created = self.citation_repo.create(citation)
+                existing[created.raw_text] = created
+                result.append(created)
+        logger.info(
+            "Extracted %d source references from document %s", len(result), document.id
+        )
+        return result
 
     def get_citations_for_document(self, document_id: int) -> list[CitationModel]:
         """

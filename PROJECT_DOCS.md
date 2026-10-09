@@ -1,5 +1,9 @@
 # AI Enhanced PDF Scholar - 项目文档
 
+## 当前引用抽取与验证
+
+本仓库使用 AI 协助维护，Markdown 是文档母稿。引用抽取服务已移除硬编码示例，按有限格式读取实际 PDF 的参考文献区域，未知字段保留为空。离线检查入口、格式限制和未验证项见 [引用抽取契约](docs/CITATION_EXTRACTION.md) 与 [维护记录](MAINTENANCE.md)。既有文档中的生产级和完成声明属于历史描述，不构成当前部署或用户验收证据。
+
 ## 项目概述
 
 AI Enhanced PDF Scholar 是一个现代化的智能文档管理与RAG增强平台，专为学术文献管理而设计。项目采用完全的Web UI架构，提供现代化的浏览器界面和RESTful API，已完全移除所有PyQt桌面组件。
